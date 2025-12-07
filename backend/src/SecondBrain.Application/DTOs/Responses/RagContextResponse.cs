@@ -55,6 +55,7 @@ public class IndexingJobResponse
     public int ProcessedChunks { get; set; }
     public List<string> Errors { get; set; } = new();
     public string EmbeddingProvider { get; set; } = string.Empty;
+    public string EmbeddingModel { get; set; } = string.Empty;
     public DateTime? StartedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -66,5 +67,30 @@ public class IndexingJobResponse
             return (int)((ProcessedNotes / (double)TotalNotes) * 100);
         }
     }
+}
+
+/// <summary>
+/// Response for embedding provider information including available models
+/// </summary>
+public class EmbeddingProviderResponse
+{
+    public string Name { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; }
+    public string CurrentModel { get; set; } = string.Empty;
+    public int CurrentDimensions { get; set; }
+    public List<EmbeddingModelResponse> AvailableModels { get; set; } = new();
+}
+
+/// <summary>
+/// Information about an embedding model
+/// </summary>
+public class EmbeddingModelResponse
+{
+    public string ModelId { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public int Dimensions { get; set; }
+    public bool SupportsPinecone { get; set; }
+    public string? Description { get; set; }
+    public bool IsDefault { get; set; }
 }
 

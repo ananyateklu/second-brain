@@ -86,6 +86,14 @@
   --color-error-text: #dc2626;
   --color-error-text-light: #f87171;
 
+  /* Success colors (using brand green) */
+  --color-success: var(--color-brand-400);
+  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+
+  /* Warning colors (subtle amber) */
+  --color-warning: #d4a574;
+  --color-warning-light: rgba(212, 165, 116, 0.12);
+
   /* Notes capability colors (lighter shade of brand green) */
   --color-notes: var(--color-brand-300); /* Light green from brand palette */
   --color-notes-alpha: color-mix(
@@ -249,6 +257,14 @@
   --color-error-text: #b91c1c;
   --color-error-text-light: #dc2626;
 
+  /* Success colors for light theme (using brand green) */
+  --color-success: var(--color-brand-600);
+  --color-success-light: color-mix(in srgb, var(--color-brand-600) 12%, transparent);
+
+  /* Warning colors for light theme (subtle amber) */
+  --color-warning: #b8956a;
+  --color-warning-light: rgba(184, 149, 106, 0.1);
+
   /* Notes capability colors for light theme */
   --color-notes: var(
     --color-brand-400
@@ -366,6 +382,14 @@
   --color-error-border: rgba(239, 68, 68, 0.3);
   --color-error-text: #f87171;
   --color-error-text-light: #fca5a5;
+
+  /* Success colors for dark/blue theme (using brand green) */
+  --color-success: var(--color-brand-400);
+  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+
+  /* Warning colors for dark/blue theme (subtle amber) */
+  --color-warning: #d4a574;
+  --color-warning-light: rgba(212, 165, 116, 0.12);
 
   /* Notes capability colors for dark theme */
   --color-notes: var(--color-brand-300); /* Light green from brand palette */

@@ -7,6 +7,7 @@ public class EmbeddingResponse
     public string Error { get; set; } = string.Empty;
     public int TokensUsed { get; set; }
     public string Provider { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
 }
 
 public class BatchEmbeddingResponse
@@ -16,5 +17,6 @@ public class BatchEmbeddingResponse
     public string Error { get; set; } = string.Empty;
     public int TotalTokensUsed { get; set; }
     public string Provider { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
 }
 

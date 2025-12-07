@@ -42,16 +42,67 @@ public class IndexingService : IIndexingService
         _serviceScopeFactory = serviceScopeFactory;
     }
 
+    /// <summary>
+    /// Pinecone requires exactly 1536 dimensions. This constant is used to validate embedding providers.
+    /// </summary>
+    private const int PineconeDimensions = 1536;
+
     public async Task<IndexingJob> StartIndexingAsync(
         string userId,
         string? embeddingProvider = null,
         string? vectorStoreProvider = null,
+        string? embeddingModel = null,
         CancellationToken cancellationToken = default)
     {
         var provider = embeddingProvider ?? _settings.DefaultProvider;
 
-        _logger.LogInformation("Starting indexing job request. UserId: {UserId}, EmbeddingProvider: {Provider}, VectorStore: {Store}",
-            userId, provider, vectorStoreProvider ?? "Default");
+        _logger.LogInformation("Starting indexing job request. UserId: {UserId}, EmbeddingProvider: {Provider}, Model: {Model}, VectorStore: {Store}",
+            userId, provider, embeddingModel ?? "default", vectorStoreProvider ?? "Default");
+
+        // Validate embedding dimensions for Pinecone
+        var embeddingProviderInstance = _embeddingProviderFactory.GetProvider(provider);
+
+        // Get dimensions for the selected model (or default model if not specified)
+        int providerDimensions;
+        string actualModel;
+
+        if (!string.IsNullOrEmpty(embeddingModel))
+        {
+            // Find the model in available models (fetch dynamically from provider)
+            var availableModels = (await embeddingProviderInstance.GetAvailableModelsAsync(cancellationToken)).ToList();
+            var selectedModel = availableModels.FirstOrDefault(m =>
+                m.ModelId.Equals(embeddingModel, StringComparison.OrdinalIgnoreCase));
+
+            if (selectedModel == null)
+            {
+                throw new ArgumentException(
+                    $"Model '{embeddingModel}' is not available for provider '{provider}'. " +
+                    $"Available models: {string.Join(", ", availableModels.Select(m => m.ModelId))}");
+            }
+
+            providerDimensions = selectedModel.Dimensions;
+            actualModel = selectedModel.ModelId;
+        }
+        else
+        {
+            providerDimensions = embeddingProviderInstance.Dimensions;
+            actualModel = embeddingProviderInstance.ModelName;
+        }
+
+        if ((vectorStoreProvider == "Pinecone" || vectorStoreProvider == "Both") && providerDimensions != PineconeDimensions)
+        {
+            var errorMessage = $"Pinecone requires {PineconeDimensions}-dimension embeddings. " +
+                $"{provider}/{actualModel} produces {providerDimensions} dimensions. " +
+                $"Use PostgreSQL for this embedding provider/model, or use a model with 1536 dimensions for Pinecone.";
+
+            _logger.LogWarning("Dimension mismatch for Pinecone. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}",
+                provider, actualModel, providerDimensions);
+
+            throw new InvalidOperationException(errorMessage);
+        }
+
+        _logger.LogInformation("Embedding provider validated. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}",
+            provider, actualModel, providerDimensions);
 
         // Fetch notes for the specific user (multi-tenant)
         var notes = (await _noteRepository.GetByUserIdAsync(userId)).ToList();
@@ -65,6 +116,7 @@ public class IndexingService : IIndexingService
             UserId = userId,
             Status = IndexingStatus.Pending,
             EmbeddingProvider = provider,
+            EmbeddingModel = actualModel,
             TotalNotes = notes.Count,
             CreatedAt = DateTime.UtcNow
         };
@@ -290,6 +342,7 @@ public class IndexingService : IIndexingService
                 ChunkIndex = chunk.ChunkIndex,
                 Content = chunk.Content,
                 Embedding = new Pgvector.Vector(embeddingResponse.Embedding.Select(d => (float)d).ToArray()),
+                EmbeddingDimensions = embeddingResponse.Embedding.Count, // Track embedding dimensions
                 EmbeddingProvider = embeddingProvider.ProviderName,
                 EmbeddingModel = embeddingProvider.ModelName, // Store actual model name
                 CreatedAt = DateTime.UtcNow,
@@ -317,15 +370,18 @@ public class IndexingService : IIndexingService
         }
     }
 
+    /// <summary>
+    /// Gets the expected dimensions from the configured embedding provider settings.
+    /// Returns null if provider is unknown (dimensions will be determined dynamically).
+    /// </summary>
     private int? GetExpectedDimensions(string providerName)
     {
-        return providerName switch
+        return providerName.ToUpperInvariant() switch
         {
-            "OpenAI" => 1536,
-            "Gemini" => 768,
-            "Ollama" => 768,
-            "Pinecone" => 1024, // Default for llama-text-embed-v2, but can vary
-            _ => null
+            "OPENAI" => _settings.OpenAI.Dimensions,
+            "GEMINI" => _settings.Gemini.Dimensions,
+            "OLLAMA" => _settings.Ollama.Dimensions,
+            _ => null // Unknown provider - dimensions will be determined dynamically
         };
     }
 
@@ -364,6 +420,49 @@ public class IndexingService : IIndexingService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error reindexing note. NoteId: {NoteId}", noteId);
+            return false;
+        }
+    }
+
+    public async Task<bool> CancelIndexingAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var job = await _indexingJobRepository.GetByIdAsync(jobId);
+
+            if (job == null)
+            {
+                _logger.LogWarning("Indexing job not found for cancellation. JobId: {JobId}", jobId);
+                return false;
+            }
+
+            // Only cancel jobs that are pending or running
+            if (job.Status != IndexingStatus.Pending && job.Status != IndexingStatus.Running)
+            {
+                _logger.LogInformation(
+                    "Cannot cancel indexing job - already in terminal state. JobId: {JobId}, Status: {Status}",
+                    jobId, job.Status);
+                return false;
+            }
+
+            // Update job status to cancelled
+            job.Status = IndexingStatus.Cancelled;
+            job.CompletedAt = DateTime.UtcNow;
+            job.Errors.Add("Job was cancelled by user");
+
+            await _indexingJobRepository.UpdateAsync(jobId, job);
+
+            _logger.LogInformation(
+                "Indexing job cancelled successfully. JobId: {JobId}, ProcessedNotes: {ProcessedNotes}, TotalNotes: {TotalNotes}",
+                jobId, job.ProcessedNotes, job.TotalNotes);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling indexing job. JobId: {JobId}", jobId);
             return false;
         }
     }

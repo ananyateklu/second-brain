@@ -55,6 +55,11 @@ services:
       - ./database/11_message_images.sql:/docker-entrypoint-initdb.d/11_message_images.sql:ro
       - ./database/12_agent_rag_enabled.sql:/docker-entrypoint-initdb.d/12_agent_rag_enabled.sql:ro
       - ./database/13_postgresql_18_features.sql:/docker-entrypoint-initdb.d/13_postgresql_18_features.sql:ro
+      - ./database/14_tool_call_analytics.sql:/docker-entrypoint-initdb.d/14_tool_call_analytics.sql:ro
+      - ./database/15_temporal_features.sql:/docker-entrypoint-initdb.d/15_temporal_features.sql:ro
+      - ./database/16_add_username_to_users.sql:/docker-entrypoint-initdb.d/16_add_username_to_users.sql:ro
+      - ./database/17_variable_embedding_dimensions.sql:/docker-entrypoint-initdb.d/17_variable_embedding_dimensions.sql:ro
+      - ./database/18_indexing_jobs_embedding_fields.sql:/docker-entrypoint-initdb.d/18_indexing_jobs_embedding_fields.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

@@ -45,6 +45,9 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
     public bool IsEnabled => _innerProvider.IsEnabled;
     public int Dimensions => _innerProvider.Dimensions;
 
+    public Task<IEnumerable<EmbeddingModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default) 
+        => _innerProvider.GetAvailableModelsAsync(cancellationToken);
+
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
         CancellationToken cancellationToken = default)

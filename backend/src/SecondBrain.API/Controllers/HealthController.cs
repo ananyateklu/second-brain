@@ -28,7 +28,7 @@ public class HealthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetHealth()
     {
-        var databaseProvider = _configuration["DatabaseProvider"] ?? "Firestore";
+        var databaseProvider = _configuration["DatabaseProvider"] ?? "PostgreSQL";
 
         return Ok(new
         {

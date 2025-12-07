@@ -203,9 +203,11 @@ export const API_ENDPOINTS = {
   INDEXING: {
     START: '/indexing/start',
     STATUS: (jobId: string) => `/indexing/status/${jobId}`,
+    CANCEL: (jobId: string) => `/indexing/cancel/${jobId}`,
     STATS: '/indexing/stats',
     REINDEX_NOTE: (noteId: string) => `/indexing/reindex/${noteId}`,
     DELETE_NOTES: '/indexing/notes',
+    EMBEDDING_PROVIDERS: '/indexing/embedding-providers',
   },
 
   // RAG Analytics

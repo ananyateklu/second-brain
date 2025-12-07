@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -27,6 +28,7 @@ public class IndexingController : ControllerBase
     private readonly IVectorStore _postgresStore;
     private readonly IVectorStore _pineconeStore;
     private readonly INoteRepository _noteRepository;
+    private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly ILogger<IndexingController> _logger;
 
     public IndexingController(
@@ -34,12 +36,14 @@ public class IndexingController : ControllerBase
         [FromKeyedServices(VectorStoreKeys.PostgreSQL)] IVectorStore postgresStore,
         [FromKeyedServices(VectorStoreKeys.Pinecone)] IVectorStore pineconeStore,
         INoteRepository noteRepository,
+        IEmbeddingProviderFactory embeddingProviderFactory,
         ILogger<IndexingController> logger)
     {
         _indexingService = indexingService;
         _postgresStore = postgresStore;
         _pineconeStore = pineconeStore;
         _noteRepository = noteRepository;
+        _embeddingProviderFactory = embeddingProviderFactory;
         _logger = logger;
     }
 
@@ -53,11 +57,12 @@ public class IndexingController : ControllerBase
         [FromQuery] string userId = "default-user",
         [FromQuery] string? embeddingProvider = null,
         [FromQuery] string? vectorStoreProvider = null,
+        [FromQuery] string? embeddingModel = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var job = await _indexingService.StartIndexingAsync(userId, embeddingProvider, vectorStoreProvider, cancellationToken);
+            var job = await _indexingService.StartIndexingAsync(userId, embeddingProvider, vectorStoreProvider, embeddingModel, cancellationToken);
 
             var response = new IndexingJobResponse
             {
@@ -71,12 +76,25 @@ public class IndexingController : ControllerBase
                 ProcessedChunks = job.ProcessedChunks,
                 Errors = job.Errors,
                 EmbeddingProvider = job.EmbeddingProvider,
+                EmbeddingModel = job.EmbeddingModel,
                 StartedAt = job.StartedAt,
                 CompletedAt = job.CompletedAt,
                 CreatedAt = job.CreatedAt
             };
 
             return Ok(response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Dimension mismatch or invalid model
+            _logger.LogWarning(ex, "Invalid indexing request. UserId: {UserId}", userId);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            // Invalid model name
+            _logger.LogWarning(ex, "Invalid model specified. UserId: {UserId}", userId);
+            return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
@@ -117,6 +135,7 @@ public class IndexingController : ControllerBase
                 ProcessedChunks = job.ProcessedChunks,
                 Errors = job.Errors,
                 EmbeddingProvider = job.EmbeddingProvider,
+                EmbeddingModel = job.EmbeddingModel,
                 StartedAt = job.StartedAt,
                 CompletedAt = job.CompletedAt,
                 CreatedAt = job.CreatedAt
@@ -242,6 +261,35 @@ public class IndexingController : ControllerBase
     }
 
     /// <summary>
+    /// Cancel an active indexing job
+    /// </summary>
+    [HttpPost("cancel/{jobId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> CancelIndexing(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var success = await _indexingService.CancelIndexingAsync(jobId, cancellationToken);
+
+            if (!success)
+            {
+                return NotFound(new { error = $"Indexing job '{jobId}' not found or already completed" });
+            }
+
+            return Ok(new { message = "Indexing job cancelled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling indexing job. JobId: {JobId}", jobId);
+            return StatusCode(500, new { error = "Failed to cancel indexing job" });
+        }
+    }
+
+    /// <summary>
     /// Reindex a specific note
     /// </summary>
     [HttpPost("reindex/{noteId}")]
@@ -326,6 +374,53 @@ public class IndexingController : ControllerBase
             _logger.LogError(ex, "Error deleting indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}",
                 userId, vectorStoreProvider);
             return StatusCode(500, new { error = "Failed to delete indexed notes" });
+        }
+    }
+
+    /// <summary>
+    /// Get all available embedding providers and their models.
+    /// Models are fetched dynamically from each provider's API when possible.
+    /// </summary>
+    [HttpGet("embedding-providers")]
+    [OutputCache(PolicyName = "AIHealth")]
+    [ProducesResponseType(typeof(IEnumerable<EmbeddingProviderResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<EmbeddingProviderResponse>>> GetEmbeddingProviders(
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var providers = _embeddingProviderFactory.GetAllProviders();
+            var response = new List<EmbeddingProviderResponse>();
+
+            foreach (var provider in providers)
+            {
+                // Fetch available models asynchronously from each provider
+                var models = await provider.GetAvailableModelsAsync(cancellationToken);
+
+                response.Add(new EmbeddingProviderResponse
+                {
+                    Name = provider.ProviderName,
+                    IsEnabled = provider.IsEnabled,
+                    CurrentModel = provider.ModelName,
+                    CurrentDimensions = provider.Dimensions,
+                    AvailableModels = models.Select(m => new EmbeddingModelResponse
+                    {
+                        ModelId = m.ModelId,
+                        DisplayName = m.DisplayName,
+                        Dimensions = m.Dimensions,
+                        SupportsPinecone = m.SupportsPinecone,
+                        Description = m.Description,
+                        IsDefault = m.IsDefault
+                    }).ToList()
+                });
+            }
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting embedding providers");
+            return StatusCode(500, new { error = "Failed to get embedding providers" });
         }
     }
 }

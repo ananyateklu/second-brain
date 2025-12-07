@@ -479,8 +479,9 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 }
 
 export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
-  const { data: stats, isLoading } = useIndexStats(userId);
   const activeVectorStores = useActiveIndexingVectorStores();
+  const isAnyIndexing = activeVectorStores.size > 0;
+  const { data: stats, isLoading } = useIndexStats(userId, isAnyIndexing);
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
   const [showPineconeSetup, setShowPineconeSetup] = useState(false);
 

@@ -11,12 +11,57 @@ export type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
 /**
  * Embedding provider options
  */
-export type EmbeddingProvider = 'OpenAI' | 'Ollama';
+export type EmbeddingProvider = 'OpenAI' | 'Gemini' | 'Ollama';
+
+/**
+ * Embedding model information
+ */
+export interface EmbeddingModelInfo {
+  modelId: string;
+  displayName: string;
+  dimensions: number;
+  supportsPinecone: boolean;
+  description?: string;
+  isDefault: boolean;
+}
+
+/**
+ * Embedding provider with available models from API
+ */
+export interface EmbeddingProviderResponse {
+  name: string;
+  isEnabled: boolean;
+  currentModel: string;
+  currentDimensions: number;
+  availableModels: EmbeddingModelInfo[];
+}
+
+/**
+ * Embedding provider dimension information (legacy, for backward compatibility)
+ */
+export interface EmbeddingProviderInfo {
+  name: EmbeddingProvider;
+  dimensions: number;
+  supportsPinecone: boolean;
+}
+
+/**
+ * Known embedding provider configurations (legacy fallback)
+ * 
+ * Note: Pinecone requires 1536 dimensions. Only OpenAI text-embedding-3-small
+ * natively outputs 1536 dimensions. Gemini text-embedding-004 outputs 768 dims
+ * and cannot be expanded to 1536 (outputDimensionality only supports truncation).
+ */
+export const EMBEDDING_PROVIDERS: Record<EmbeddingProvider, EmbeddingProviderInfo> = {
+  OpenAI: { name: 'OpenAI', dimensions: 1536, supportsPinecone: true },
+  Gemini: { name: 'Gemini', dimensions: 768, supportsPinecone: false },
+  Ollama: { name: 'Ollama', dimensions: 768, supportsPinecone: false },
+};
 
 /**
  * Indexing job status
  */
-export type IndexingStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type IndexingStatus = 'pending' | 'running' | 'completed' | 'failed' | 'partially_completed' | 'cancelled';
 
 /**
  * Indexing job response
@@ -32,6 +77,7 @@ export interface IndexingJobResponse {
   processedChunks: number;
   errors: string[];
   embeddingProvider: string;
+  embeddingModel?: string;
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
@@ -94,6 +140,7 @@ export interface StartIndexingOptions {
   userId?: string;
   embeddingProvider?: EmbeddingProvider;
   vectorStoreProvider?: VectorStoreProvider;
+  embeddingModel?: string;
 }
 
 /**

@@ -33,8 +33,11 @@ public class NoteEmbedding
     [Column("content")]
     public string Content { get; set; } = string.Empty;
 
-    [Column("embedding", TypeName = "vector(1536)")]
+    [Column("embedding", TypeName = "vector")]
     public Vector? Embedding { get; set; }
+
+    [Column("embedding_dimensions")]
+    public int EmbeddingDimensions { get; set; } = 1536;
 
     [Column("embedding_provider")]
     [MaxLength(50)]

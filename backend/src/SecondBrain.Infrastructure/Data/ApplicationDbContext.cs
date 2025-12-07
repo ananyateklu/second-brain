@@ -197,11 +197,22 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.UuidV7)
                 .HasDefaultValueSql("uuidv7()");
 
+            // Configure variable-dimension vector column
+            entity.Property(e => e.Embedding)
+                .HasColumnType("vector");
+
+            // Configure embedding dimensions with default value
+            entity.Property(e => e.EmbeddingDimensions)
+                .HasDefaultValue(1536);
+
             entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_embeddings_note_id");
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_note_embeddings_user_id");
             entity.HasIndex(e => new { e.NoteId, e.ChunkIndex }).HasDatabaseName("ix_note_embeddings_note_chunk");
             // Performance index for vector search by user
             entity.HasIndex(e => new { e.UserId, e.NoteId }).HasDatabaseName("ix_embeddings_user_note");
+            // Indexes for dimension-aware queries
+            entity.HasIndex(e => e.EmbeddingDimensions).HasDatabaseName("idx_note_embeddings_dimensions");
+            entity.HasIndex(e => new { e.UserId, e.EmbeddingDimensions }).HasDatabaseName("idx_note_embeddings_user_dimensions");
 
             // Configure tsvector for full-text search (GIN index created via SQL migration)
             entity.Property(e => e.SearchVector)

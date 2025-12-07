@@ -17,6 +17,7 @@ import type {
   RagQueryLogsResponse,
   RagQueryLog,
   TopicAnalyticsResponse,
+  EmbeddingProviderResponse,
 } from '../types/rag';
 
 /**
@@ -98,6 +99,13 @@ export const ragService = {
   // ============================================
 
   /**
+   * Get available embedding providers and their models
+   */
+  async getEmbeddingProviders(): Promise<EmbeddingProviderResponse[]> {
+    return apiClient.get<EmbeddingProviderResponse[]>(API_ENDPOINTS.INDEXING.EMBEDDING_PROVIDERS);
+  },
+
+  /**
    * Start indexing notes
    */
   async startIndexing(options: StartIndexingOptions = {}): Promise<IndexingJobResponse> {
@@ -109,6 +117,9 @@ export const ragService = {
     if (options.vectorStoreProvider) {
       params.append('vectorStoreProvider', options.vectorStoreProvider);
     }
+    if (options.embeddingModel) {
+      params.append('embeddingModel', options.embeddingModel);
+    }
     
     return apiClient.post<IndexingJobResponse>(`${API_ENDPOINTS.INDEXING.START}?${params}`);
   },
@@ -118,6 +129,13 @@ export const ragService = {
    */
   async getIndexingStatus(jobId: string): Promise<IndexingJobResponse> {
     return apiClient.get<IndexingJobResponse>(API_ENDPOINTS.INDEXING.STATUS(jobId));
+  },
+
+  /**
+   * Cancel an active indexing job
+   */
+  async cancelIndexing(jobId: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(API_ENDPOINTS.INDEXING.CANCEL(jobId));
   },
 
   /**
@@ -151,7 +169,7 @@ export const ragService = {
    * Check if indexing is in progress
    */
   isIndexingInProgress(job: IndexingJobResponse): boolean {
-    return job.status === 'pending' || job.status === 'processing';
+    return job.status === 'pending' || job.status === 'running';
   },
 
   /**

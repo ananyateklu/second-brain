@@ -22,6 +22,25 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
     // Pinecone can use various embedding models with different dimensions
     public int Dimensions => _settings.Dimensions;
 
+    /// <summary>
+    /// Available Pinecone inference API embedding models.
+    /// Pinecone's inference API has a fixed set of models.
+    /// </summary>
+    private static readonly EmbeddingModelInfo[] AvailableModels = new[]
+    {
+        new EmbeddingModelInfo
+        {
+            ModelId = "multilingual-e5-large",
+            DisplayName = "Multilingual E5 Large",
+            Dimensions = 1024,
+            Description = "Pinecone's multilingual embedding model",
+            IsDefault = true
+        }
+    };
+
+    public Task<IEnumerable<EmbeddingModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default) 
+        => Task.FromResult<IEnumerable<EmbeddingModelInfo>>(AvailableModels);
+
     public PineconeEmbeddingProvider(
         IOptions<PineconeSettings> settings,
         IHttpClientFactory httpClientFactory,

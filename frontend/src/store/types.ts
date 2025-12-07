@@ -191,10 +191,62 @@ export interface RagAnalyticsSlice {
 }
 
 // ============================================
+// Indexing Types (for background indexing notifications)
+// Supports multiple simultaneous jobs (one per vector store)
+// ============================================
+
+export interface StoredIndexingJob {
+  jobId: string;
+  vectorStore: string;
+  embeddingProvider: string;
+  userId: string;
+  startedAt: number;
+}
+
+export interface IndexingJobInfo {
+  jobId: string;
+  status: import('../types/rag').IndexingJobResponse | null;
+  vectorStore: string;
+  embeddingProvider: string;
+  userId: string;
+}
+
+export interface IndexingSliceState {
+  // Map of vector store -> job info (supports multiple simultaneous jobs)
+  activeJobs: Record<string, IndexingJobInfo>;
+  
+  // UI state
+  isRestoring: boolean;
+  isNotificationVisible: boolean;
+}
+
+export interface IndexingSliceActions {
+  // Job management
+  startIndexingJob: (job: import('../types/rag').IndexingJobResponse, vectorStore: string, embeddingProvider: string, userId: string) => void;
+  restoreIndexingJob: (job: import('../types/rag').IndexingJobResponse, vectorStore: string, embeddingProvider: string, userId: string) => void;
+  updateJobStatus: (status: import('../types/rag').IndexingJobResponse, vectorStore: string) => void;
+  clearJob: (vectorStore: string) => void;
+  clearAllJobs: () => void;
+  
+  // Restoration
+  restoreActiveJobs: (userId: string) => Promise<void>;
+  setIsRestoring: (isRestoring: boolean) => void;
+  
+  // Notification UI
+  showNotification: () => void;
+  hideNotification: () => void;
+
+  // Legacy compatibility
+  clearActiveJob: () => void;
+}
+
+export type IndexingSlice = IndexingSliceState & IndexingSliceActions;
+
+// ============================================
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice;
 
 // ============================================
 // Slice Creator Type

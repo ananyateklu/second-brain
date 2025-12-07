@@ -9,6 +9,7 @@ public interface IIndexingService
         string userId,
         string? embeddingProvider = null,
         string? vectorStoreProvider = null,
+        string? embeddingModel = null,
         CancellationToken cancellationToken = default);
 
     Task<IndexingJob?> GetIndexingStatusAsync(
@@ -21,5 +22,15 @@ public interface IIndexingService
 
     Task<bool> ReindexNoteAsync(
         string noteId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancel an active indexing job
+    /// </summary>
+    /// <param name="jobId">The ID of the job to cancel</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if the job was successfully cancelled, false if not found or already completed</returns>
+    Task<bool> CancelIndexingAsync(
+        string jobId,
         CancellationToken cancellationToken = default);
 }

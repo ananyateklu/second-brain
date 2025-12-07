@@ -29,8 +29,21 @@ public class GeminiEmbeddingSettings
     public bool Enabled { get; set; } = true;
     public string? ApiKey { get; set; }
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
-    public string Model { get; set; } = "models/text-embedding-004";
+    
+    /// <summary>
+    /// Gemini embedding model. Options: text-embedding-004 (768 dims)
+    /// </summary>
+    public string Model { get; set; } = "text-embedding-004";
+    
+    /// <summary>
+    /// Output dimensions for embeddings. 
+    /// text-embedding-004 outputs 768 dimensions natively.
+    /// The outputDimensionality API parameter only supports truncation (smaller values),
+    /// NOT expansion to larger values like 1536.
+    /// Therefore Gemini is NOT compatible with Pinecone (requires 1536).
+    /// </summary>
     public int Dimensions { get; set; } = 768;
+    
     public int TimeoutSeconds { get; set; } = 30;
 }
 
@@ -38,8 +51,22 @@ public class OllamaEmbeddingSettings
 {
     public bool Enabled { get; set; } = false;
     public string BaseUrl { get; set; } = "http://localhost:11434";
+    
+    /// <summary>
+    /// Ollama embedding model. Common options:
+    /// - nomic-embed-text (768 dims)
+    /// - mxbai-embed-large (1024 dims)
+    /// - all-minilm (384 dims)
+    /// - bge-m3 (1024 dims)
+    /// </summary>
     public string Model { get; set; } = "nomic-embed-text";
+    
+    /// <summary>
+    /// Embedding dimensions. Auto-detected for known models.
+    /// Note: Ollama models have fixed dimensions and cannot index to Pinecone (requires 1536).
+    /// </summary>
     public int Dimensions { get; set; } = 768;
+    
     public int TimeoutSeconds { get; set; } = 120;
 }
 

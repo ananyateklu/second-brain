@@ -11,11 +11,16 @@ import {
 } from './lib/tauri-bridge';
 import { useUIStore } from './store/ui-store';
 import { AboutModal } from './components/ui/AboutModal';
+import { IndexingNotification } from './components/ui/IndexingNotification';
+import { useIndexingRestoration } from './hooks/use-indexing-restoration';
 import { isTauri } from './lib/native-notifications';
 
 function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const openCreateModal = useUIStore((state) => state.openCreateModal);
+
+  // Restore any active indexing jobs on app mount
+  useIndexingRestoration();
 
   // Listen for macOS app menu events
   useEffect(() => {
@@ -95,6 +100,7 @@ function App() {
           setShowAboutModal(false);
         }}
       />
+      <IndexingNotification />
     </>
   );
 }

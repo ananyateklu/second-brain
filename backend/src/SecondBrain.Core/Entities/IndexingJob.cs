@@ -37,6 +37,10 @@ public class IndexingJob
     [MaxLength(50)]
     public string EmbeddingProvider { get; set; } = string.Empty;
 
+    [Column("embedding_model")]
+    [MaxLength(100)]
+    public string EmbeddingModel { get; set; } = string.Empty;
+
     [Column("started_at")]
     public DateTime? StartedAt { get; set; }
 

@@ -19,6 +19,7 @@ import { createThemeSlice } from './slices/theme-slice';
 import { createOllamaSlice } from './slices/ollama-slice';
 import { createNotesSlice } from './slices/notes-slice';
 import { createRagAnalyticsSlice } from './slices/rag-analytics-slice';
+import { createIndexingSlice } from './slices/indexing-slice';
 
 // ============================================
 // Combined Store
@@ -34,6 +35,7 @@ const _useBoundStore = create<BoundStore>()(
       ...createOllamaSlice(...args),
       ...createNotesSlice(...args),
       ...createRagAnalyticsSlice(...args),
+      ...createIndexingSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility

@@ -1,17 +1,32 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { ragService } from '../../../services';
-import { IndexingJobResponse, IndexStatsResponse, VectorStoreProvider, EmbeddingProvider } from '../../../types/rag';
+import { IndexingJobResponse, IndexStatsResponse, VectorStoreProvider, EmbeddingProvider, EmbeddingProviderResponse } from '../../../types/rag';
 import { indexingKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
+/**
+ * Hook to fetch available embedding providers and their models.
+ * Models are fetched dynamically from provider APIs.
+ */
+export const useEmbeddingProviders = () => {
+  return useApiQuery<EmbeddingProviderResponse[]>(
+    [...indexingKeys.all, 'embedding-providers'],
+    () => ragService.getEmbeddingProviders(),
+    {
+      staleTime: 60 * 1000, // 1 minute - Ollama models can change locally
+      refetchOnWindowFocus: true, // Refetch when user returns to tab
+    }
+  );
+};
+
 export const useStartIndexing = () => {
   const queryClient = useQueryClient();
 
-  return useApiMutation<IndexingJobResponse, { userId?: string; embeddingProvider?: EmbeddingProvider; vectorStoreProvider?: VectorStoreProvider }>(
-    async ({ userId, embeddingProvider, vectorStoreProvider }) => {
-      const job = await ragService.startIndexing({ userId, embeddingProvider, vectorStoreProvider });
+  return useApiMutation<IndexingJobResponse, { userId?: string; embeddingProvider?: EmbeddingProvider; vectorStoreProvider?: VectorStoreProvider; embeddingModel?: string }>(
+    async ({ userId, embeddingProvider, vectorStoreProvider, embeddingModel }) => {
+      const job = await ragService.startIndexing({ userId, embeddingProvider, vectorStoreProvider, embeddingModel });
 
       // Store the vector store provider for this job in localStorage so we can track it
       if (job.id && vectorStoreProvider) {
@@ -58,8 +73,8 @@ export const useIndexingStatus = (jobId: string | null, enabled = true) => {
     {
       refetchInterval: (query) => {
         const data = query.state.data;
-        // Continue polling if job is still processing or pending
-        if (data?.status === 'processing' || data?.status === 'pending') {
+        // Continue polling if job is still running or pending
+        if (data?.status === 'running' || data?.status === 'pending') {
           return 1000; // Poll every 1 second for faster updates
         }
         // For completed/failed status, stop polling
@@ -73,12 +88,13 @@ export const useIndexingStatus = (jobId: string | null, enabled = true) => {
   );
 };
 
-export const useIndexStats = (userId = 'default-user') => {
+export const useIndexStats = (userId = 'default-user', isIndexing = false) => {
   return useApiQuery<IndexStatsResponse>(
     indexingKeys.stats({ userId }),
     () => ragService.getIndexStats(userId),
     {
-      staleTime: 30000, // Consider data fresh for 30 seconds
+      staleTime: isIndexing ? 0 : 30000, // No stale time during indexing
+      refetchInterval: isIndexing ? 2000 : false, // Poll every 2s during indexing
     }
   );
 };
@@ -106,6 +122,24 @@ export const useDeleteIndexedNotes = () => {
   );
 };
 
+export const useCancelIndexing = () => {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<{ message: string }, { jobId: string; userId?: string }>(
+    ({ jobId }) => ragService.cancelIndexing(jobId),
+    {
+      onSuccess: (_, variables) => {
+        // Invalidate the job query to get the updated status
+        void queryClient.invalidateQueries({ queryKey: indexingKeys.job(variables.jobId) });
+        // Invalidate stats query if userId is provided
+        if (variables.userId) {
+          void queryClient.invalidateQueries({ queryKey: indexingKeys.stats({ userId: variables.userId }) });
+        }
+      },
+    }
+  );
+};
+
 /**
  * Hook to track active indexing jobs and their vector stores
  * Returns a Set of vector store providers that are currently being indexed
@@ -128,7 +162,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
           const jobData = query.state.data as IndexingJobResponse | undefined;
 
           // If job is active, check localStorage for vector store
-          if (jobData && (jobData.status === 'processing' || jobData.status === 'pending')) {
+          if (jobData && (jobData.status === 'running' || jobData.status === 'pending')) {
             const storedJob = localStorage.getItem(`indexing_job_${jobId}`);
             if (storedJob) {
               try {

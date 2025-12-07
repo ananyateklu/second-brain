@@ -69,16 +69,7 @@ export function RAGSettings() {
           </span>
         </div>
 
-        <IndexingButton
-          userId={user.userId}
-          onComplete={() => {
-            const statsQueryKey = indexingKeys.stats({ userId: user.userId });
-            // Invalidate to mark as stale
-            void queryClient.invalidateQueries({ queryKey: statsQueryKey });
-            // Force immediate refetch to update UI right away
-            void queryClient.refetchQueries({ queryKey: statsQueryKey });
-          }}
-        />
+        <IndexingButton userId={user.userId} />
       </section>
 
       {/* Stats */}

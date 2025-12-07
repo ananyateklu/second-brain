@@ -56,7 +56,7 @@ if (File.Exists(envPath))
     var existingConnString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
     var pgHostEnv = Environment.GetEnvironmentVariable("POSTGRES_HOST");
     var pgPortEnv = Environment.GetEnvironmentVariable("POSTGRES_PORT");
-    
+
     // Only build connection string from individual vars if at least one is set,
     // or if no connection string was provided
     if (!string.IsNullOrEmpty(pgHostEnv) || !string.IsNullOrEmpty(pgPortEnv) || string.IsNullOrEmpty(existingConnString))
@@ -442,6 +442,7 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     // 5. AddRagLogIdToMessages - adds rag_log_id to chat_messages
     // 6. AddPerformanceIndexes - adds rag_query_logs, generated_images, search_vector, etc.
     // 7. AddSoftDeleteSupport - adds soft delete columns
+    // 8. AddEmbeddingFieldsToIndexingJobs - adds embedding_provider and embedding_model to indexing_jobs
 
     var commands = new[]
     {
@@ -542,7 +543,11 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS deleted_by character varying(128)",
         "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT FALSE",
         "CREATE INDEX IF NOT EXISTS ix_notes_user_deleted ON notes (user_id, is_deleted)",
-        "CREATE INDEX IF NOT EXISTS ix_conversations_user_deleted ON chat_conversations (user_id, is_deleted)"
+        "CREATE INDEX IF NOT EXISTS ix_conversations_user_deleted ON chat_conversations (user_id, is_deleted)",
+        
+        // === AddEmbeddingFieldsToIndexingJobs migration ===
+        "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_provider character varying(50) NOT NULL DEFAULT ''",
+        "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_model character varying(100) NOT NULL DEFAULT ''"
     };
 
     var allSucceeded = true;
