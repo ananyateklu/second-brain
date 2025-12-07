@@ -249,7 +249,7 @@ Provide a relevance score and brief reasoning.";
             var options = new StructuredOutputOptions
             {
                 Temperature = 0.0f,
-                MaxTokens = 100,
+                MaxTokens = 300, // Increased from 100 to prevent JSON truncation when reasoning field is included
                 SystemInstruction = "You are a document relevance scoring system. Evaluate how well a document matches a search query."
             };
 

@@ -11,5 +11,6 @@ public class UserPreferencesResponse
     public bool EnableNotifications { get; set; } = true;
     public string? OllamaRemoteUrl { get; set; }
     public bool UseRemoteOllama { get; set; } = false;
+    public string? RerankingProvider { get; set; }
 }
 

@@ -15,29 +15,35 @@ public static class JsonSchemaBuilder
     /// <summary>
     /// Generate a JsonSchemaDefinition from a generic type parameter.
     /// </summary>
-    public static JsonSchemaDefinition FromType<T>()
+    /// <param name="strictMode">When true, all properties are marked as required (OpenAI strict mode requirement).</param>
+    public static JsonSchemaDefinition FromType<T>(bool strictMode = false)
     {
-        return FromType(typeof(T));
+        return FromType(typeof(T), strictMode);
     }
 
     /// <summary>
     /// Generate a JsonSchemaDefinition from a runtime type.
     /// </summary>
-    public static JsonSchemaDefinition FromType(Type type)
+    /// <param name="type">The type to generate a schema for.</param>
+    /// <param name="strictMode">When true, all properties are marked as required (OpenAI strict mode requirement).</param>
+    public static JsonSchemaDefinition FromType(Type type, bool strictMode = false)
     {
-        return BuildSchema(type, new HashSet<Type>());
+        return BuildSchema(type, new HashSet<Type>(), strictMode);
     }
 
     /// <summary>
     /// Builds a JsonSchemaDefinition for the given type, with cycle detection.
     /// </summary>
-    private static JsonSchemaDefinition BuildSchema(Type type, HashSet<Type> visitedTypes)
+    /// <param name="type">The type to build a schema for.</param>
+    /// <param name="visitedTypes">Set of already-visited types for cycle detection.</param>
+    /// <param name="strictMode">When true, all properties are marked as required.</param>
+    private static JsonSchemaDefinition BuildSchema(Type type, HashSet<Type> visitedTypes, bool strictMode)
     {
         // Handle nullable types
         var underlyingType = Nullable.GetUnderlyingType(type);
         if (underlyingType != null)
         {
-            var schema = BuildSchema(underlyingType, visitedTypes);
+            var schema = BuildSchema(underlyingType, visitedTypes, strictMode);
             schema.Nullable = true;
             return schema;
         }
@@ -109,7 +115,7 @@ public static class JsonSchemaBuilder
             return new JsonSchemaDefinition
             {
                 Type = "array",
-                Items = BuildSchema(elementType, visitedTypes)
+                Items = BuildSchema(elementType, visitedTypes, strictMode)
             };
         }
 
@@ -129,7 +135,7 @@ public static class JsonSchemaBuilder
                 return new JsonSchemaDefinition
                 {
                     Type = "array",
-                    Items = BuildSchema(elementType, visitedTypes)
+                    Items = BuildSchema(elementType, visitedTypes, strictMode)
                 };
             }
 
@@ -140,7 +146,7 @@ public static class JsonSchemaBuilder
                 return new JsonSchemaDefinition
                 {
                     Type = "array",
-                    Items = BuildSchema(elementType, visitedTypes)
+                    Items = BuildSchema(elementType, visitedTypes, strictMode)
                 };
             }
 
@@ -170,7 +176,8 @@ public static class JsonSchemaBuilder
             if (visitedTypes.Contains(type))
             {
                 // Return a simple object reference to avoid infinite recursion
-                return new JsonSchemaDefinition { Type = "object" };
+                // Still set AdditionalProperties = false for OpenAI strict mode compliance
+                return new JsonSchemaDefinition { Type = "object", AdditionalProperties = false };
             }
 
             visitedTypes.Add(type);
@@ -201,7 +208,7 @@ public static class JsonSchemaBuilder
                 var descAttr = prop.GetCustomAttribute<DescriptionAttribute>();
 
                 // Build schema for property type
-                var propSchema = BuildSchema(prop.PropertyType, new HashSet<Type>(visitedTypes));
+                var propSchema = BuildSchema(prop.PropertyType, new HashSet<Type>(visitedTypes), strictMode);
 
                 if (descAttr != null)
                 {
@@ -245,25 +252,18 @@ public static class JsonSchemaBuilder
                 properties[propName] = propSchema;
 
                 // Determine if required
-                var requiredAttr = prop.GetCustomAttribute<RequiredAttribute>();
-                if (requiredAttr != null)
+                // In strict mode (OpenAI), ALL properties must be in the required array
+                if (strictMode)
                 {
                     required.Add(propName);
                 }
                 else
                 {
-                    // Check nullability for reference types
-                    var isNullableValueType = Nullable.GetUnderlyingType(prop.PropertyType) != null;
-                    if (!isNullableValueType && !prop.PropertyType.IsValueType)
+                    // Standard mode: only add if [Required] attribute is present
+                    var requiredAttr = prop.GetCustomAttribute<RequiredAttribute>();
+                    if (requiredAttr != null)
                     {
-                        var nullabilityContext = new NullabilityInfoContext();
-                        var nullabilityInfo = nullabilityContext.Create(prop);
-                        var isNullableReference = nullabilityInfo.WriteState == NullabilityState.Nullable ||
-                                                  nullabilityInfo.ReadState == NullabilityState.Nullable;
-
-                        // If it's a non-nullable reference type, consider it required
-                        // But we'll be lenient and not add it to required unless [Required] is present
-                        // This matches the behavior most AI models expect
+                        required.Add(propName);
                     }
                 }
             }

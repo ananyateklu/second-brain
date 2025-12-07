@@ -72,6 +72,7 @@ export interface UserPreferences {
   enableNotifications: boolean;
   ollamaRemoteUrl: string | null;
   useRemoteOllama: boolean;
+  rerankingProvider: string | null;
 }
 
 /**
@@ -87,5 +88,6 @@ export interface UpdateUserPreferencesRequest {
   enableNotifications?: boolean;
   ollamaRemoteUrl?: string | null;
   useRemoteOllama?: boolean;
+  rerankingProvider?: string | null;
 }
 

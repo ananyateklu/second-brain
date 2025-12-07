@@ -24,6 +24,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   enableNotifications: true,
   ollamaRemoteUrl: null,
   useRemoteOllama: false,
+  rerankingProvider: null,
 };
 
 /**
@@ -126,6 +127,7 @@ export const userPreferencesService = {
         typeof preferences.useRemoteOllama === 'boolean'
           ? preferences.useRemoteOllama
           : currentPreferences.useRemoteOllama,
+      rerankingProvider: preferences.rerankingProvider ?? currentPreferences.rerankingProvider,
     };
   },
 
@@ -193,20 +195,20 @@ export const userPreferencesService = {
     try {
       const backendPrefs = await this.getPreferences(userId);
       const localPrefs = this.getLocalPreferences();
-      
+
       // Backend takes precedence, but local fills in gaps
       const merged = this.validatePreferences({
         ...localPrefs,
         ...backendPrefs,
       });
-      
+
       // Save merged preferences locally
       this.saveLocalPreferences(merged);
-      
+
       return merged;
     } catch (error) {
       console.error('Failed to load preferences from backend:', { error });
-      
+
       // Fall back to local or defaults
       const localPrefs = this.getLocalPreferences();
       return this.validatePreferences(localPrefs || {});
@@ -230,12 +232,12 @@ export const userPreferencesService = {
    */
   createDebouncedSync(delay = 1000): (userId: string, preferences: UserPreferences) => void {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    
+
     return (userId: string, preferences: UserPreferences) => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      
+
       timeoutId = setTimeout(() => {
         this.syncToBackend(userId, preferences).catch(console.error);
       }, delay);

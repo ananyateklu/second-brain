@@ -171,9 +171,15 @@
 \echo ''
 
 -- Step 26: Ollama features
-\echo 'Step 26/26: Creating Ollama features tables...'
+\echo 'Step 26/27: Creating Ollama features tables...'
 \i 25_ollama_features.sql
 \echo 'Ollama features tables created successfully.'
+\echo ''
+
+-- Step 27: Reranking provider preference
+\echo 'Step 27/27: Adding reranking provider to user preferences...'
+\i 26_reranking_provider.sql
+\echo 'Reranking provider column added successfully.'
 \echo ''
 
 \echo '============================================'

@@ -86,6 +86,7 @@ export function ChatPage() {
     streamDuration,
     ragLogId,
     groundingSources,
+    grokSearchSources,
     codeExecutionResult,
 
     // Scroll
@@ -298,6 +299,7 @@ export function ChatPage() {
             streamDuration={streamDuration}
             ragLogId={ragLogId}
             groundingSources={groundingSources}
+            grokSearchSources={grokSearchSources}
             codeExecutionResult={codeExecutionResult}
             agentModeEnabled={agentModeEnabled}
             userName={user?.displayName}

@@ -206,6 +206,7 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.EnableNotifications = user.Preferences.EnableNotifications;
                     existingUser.Preferences.OllamaRemoteUrl = user.Preferences.OllamaRemoteUrl;
                     existingUser.Preferences.UseRemoteOllama = user.Preferences.UseRemoteOllama;
+                    existingUser.Preferences.RerankingProvider = user.Preferences.RerankingProvider;
                 }
             }
 

@@ -407,3 +407,15 @@ button:focus-visible {
   opacity: 1;
   transform: translateY(0) translateX(0) scale(1) translateZ(0);
 }
+
+/* Streaming cursor - appears inline at end of last paragraph/element */
+.markdown-content.streaming-cursor > *:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.5rem;
+  height: 1em;
+  margin-left: 0.25rem;
+  background-color: var(--btn-primary-bg);
+  vertical-align: text-bottom;
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

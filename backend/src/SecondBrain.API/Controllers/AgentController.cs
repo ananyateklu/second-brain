@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
+using SecondBrain.Application.Services.AI;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using System.Text;
@@ -151,12 +152,24 @@ public class AgentController : ControllerBase
                 conversation.AgentEnabled = true;
             }
 
-            // Add user message to conversation
+            // Calculate input tokens from the FULL context sent to the AI:
+            // - All conversation messages (including the new user message)
+            // - Per-message formatting overhead
+            var inputTokens = 0;
+            foreach (var msg in agentRequest.Messages)
+            {
+                inputTokens += TokenEstimator.EstimateTokenCount(msg.Content);
+                // Add overhead for message role and formatting (~10 tokens per message)
+                inputTokens += 10;
+            }
+
+            // Add user message to conversation with total input token count
             var userMessage = new ChatMessage
             {
                 Role = "user",
                 Content = request.Content,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                InputTokens = inputTokens
             };
             conversation.Messages.Add(userMessage);
 
@@ -335,12 +348,16 @@ public class AgentController : ControllerBase
 
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
+            // Estimate output token usage for the response
+            var outputTokens = TokenEstimator.EstimateTokenCount(fullResponse.ToString());
+
             // Add assistant message to conversation with tool calls, retrieved notes, and RAG log ID
             var assistantMessage = new ChatMessage
             {
                 Role = "assistant",
                 Content = fullResponse.ToString(),
                 Timestamp = DateTime.UtcNow,
+                OutputTokens = outputTokens,
                 DurationMs = durationMs,
                 ToolCalls = toolCalls,
                 RetrievedNotes = retrievedNotes,
@@ -353,11 +370,14 @@ public class AgentController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event with retrieved notes count and RAG log ID for feedback
+            // Send end event with token usage, retrieved notes count, and RAG log ID for feedback
             var endData = JsonSerializer.Serialize(new
             {
                 conversationId = id,
                 messageId = conversation.Messages.Count - 1,
+                inputTokens = inputTokens,
+                outputTokens = outputTokens,
+                durationMs = durationMs,
                 toolCallsCount = toolCalls.Count,
                 retrievedNotesCount = retrievedNotes.Count,
                 ragLogId = ragLogId
@@ -365,8 +385,8 @@ public class AgentController : ControllerBase
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");
             await Response.Body.FlushAsync(cancellationToken);
 
-            _logger.LogInformation("Agent streaming completed. ConversationId: {ConversationId}, UserId: {UserId}, ToolCalls: {ToolCallsCount}, RetrievedNotes: {RetrievedNotesCount}",
-                id, userId, toolCalls.Count, retrievedNotes.Count);
+            _logger.LogInformation("Agent streaming completed. ConversationId: {ConversationId}, UserId: {UserId}, InputTokens: {InputTokens}, OutputTokens: {OutputTokens}, ToolCalls: {ToolCallsCount}, RetrievedNotes: {RetrievedNotesCount}",
+                id, userId, inputTokens, outputTokens, toolCalls.Count, retrievedNotes.Count);
         }
         catch (NotSupportedException ex)
         {

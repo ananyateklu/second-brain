@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     use_remote_ollama BOOLEAN NOT NULL DEFAULT FALSE,
     smart_prompts_model VARCHAR(100),
     smart_prompts_provider VARCHAR(50),
+    reranking_provider VARCHAR(50),
     
     -- Foreign key constraint
     CONSTRAINT fk_user_preferences_users
@@ -58,4 +59,5 @@ COMMENT ON COLUMN user_preferences.ollama_remote_url IS 'URL for remote Ollama s
 COMMENT ON COLUMN user_preferences.use_remote_ollama IS 'Whether to use a remote Ollama server instead of local';
 COMMENT ON COLUMN user_preferences.smart_prompts_model IS 'AI model used for smart prompt generation';
 COMMENT ON COLUMN user_preferences.smart_prompts_provider IS 'AI provider used for smart prompt generation';
+COMMENT ON COLUMN user_preferences.reranking_provider IS 'Preferred AI provider for RAG reranking (e.g., OpenAI, Anthropic, Gemini, Grok)';
 

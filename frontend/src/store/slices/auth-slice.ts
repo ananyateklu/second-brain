@@ -8,6 +8,8 @@ import { authService } from '../../services/auth.service';
 import { userPreferencesService } from '../../services/user-preferences.service';
 import type { AuthSlice, SliceCreator } from '../types';
 
+// Note: userPreferencesService is still needed for clearLocalPreferences in signOut
+
 export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
   // Initial state
   user: null,
@@ -42,9 +44,9 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
         error: null,
       });
 
-      // Load user preferences from backend
+      // Load user preferences from backend and set in store
       try {
-        await userPreferencesService.loadAndMergePreferences(response.userId);
+        await get().loadPreferencesFromBackend(response.userId);
       } catch (prefError) {
         console.error('Error loading user preferences:', { error: prefError });
         // Don't fail auth if preferences fail to load
@@ -75,9 +77,9 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
         error: null,
       });
 
-      // Load user preferences from backend
+      // Load user preferences from backend and set in store
       try {
-        await userPreferencesService.loadAndMergePreferences(response.userId);
+        await get().loadPreferencesFromBackend(response.userId);
       } catch (prefError) {
         console.error('Error loading user preferences:', { error: prefError });
         // Don't fail auth if preferences fail to load

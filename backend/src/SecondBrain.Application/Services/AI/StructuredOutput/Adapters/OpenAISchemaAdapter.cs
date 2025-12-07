@@ -27,10 +27,12 @@ public static class OpenAISchemaAdapter
 
     /// <summary>
     /// Convert a JsonSchemaDefinition to BinaryData from a type.
+    /// Uses strict mode by default since OpenAI requires all properties to be in the required array.
     /// </summary>
     public static BinaryData ToBinaryData<T>()
     {
-        var schema = JsonSchemaBuilder.FromType<T>();
+        // OpenAI strict mode requires ALL properties to be listed in the required array
+        var schema = JsonSchemaBuilder.FromType<T>(strictMode: true);
         return ToBinaryData(schema);
     }
 

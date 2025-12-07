@@ -87,6 +87,10 @@ public class UserPreferences
     [Column("use_remote_ollama")]
     public bool UseRemoteOllama { get; set; } = false;
 
+    [Column("reranking_provider")]
+    [MaxLength(50)]
+    public string? RerankingProvider { get; set; }
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

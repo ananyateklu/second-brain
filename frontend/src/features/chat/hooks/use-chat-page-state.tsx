@@ -10,7 +10,6 @@ import { useChatConversationManager } from './use-chat-conversation-manager';
 import { useChatProviderSelection } from './use-chat-provider-selection';
 import { useChatSettings } from './use-chat-settings';
 import { useChatScroll } from './use-chat-scroll';
-import { useCombinedStreaming } from './use-combined-streaming';
 import { useContextUsage } from './use-context-usage';
 import { chatService } from '../../../services';
 import { toast } from '../../../hooks/use-toast';
@@ -18,12 +17,14 @@ import { useAuthStore } from '../../../store/auth-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
-import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, CodeExecutionResult } from '../../../types/chat';
+import { useUnifiedStream, createLegacyAdapter } from '../../../hooks/use-unified-stream';
+import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, GrokSearchSource, CodeExecutionResult, GeneratedImage } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../../types/rag';
 import type { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import type { ContextUsageState } from '../../../types/context-usage';
+import type { ImageGenerationStage } from '../../../core/streaming/types';
 
 export interface ImageGenerationParams {
   prompt: string;
@@ -77,8 +78,26 @@ export interface ChatPageState {
   ragLogId?: string;
   /** Grounding sources from Google Search (Gemini only) */
   groundingSources?: GroundingSource[];
+  /** Search sources from Grok Live Search/DeepSearch (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
   /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
+
+  // Image Generation State (unified stream)
+  /** Current image generation stage */
+  imageGenerationStage: ImageGenerationStage;
+  /** Provider used for image generation */
+  imageGenerationProvider: string | null;
+  /** Model used for image generation */
+  imageGenerationModel: string | null;
+  /** Prompt used for image generation */
+  imageGenerationPrompt: string | null;
+  /** Progress percentage (0-100) */
+  imageGenerationProgress: number | null;
+  /** Generated images from the current generation */
+  generatedImages: GeneratedImage[];
+  /** Error from image generation */
+  imageGenerationError: string | null;
 
   // Scroll
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -133,7 +152,6 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   // Local UI state
   const [inputValue, setInputValue] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   // Auth
   const user = useAuthStore((state) => state.user);
@@ -230,8 +248,16 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     }
   }, [isImageGenerationMode, ragEnabled, agentModeEnabled, handleRagToggle, setAgentModeEnabled]);
 
-  // Combined streaming
-  const streaming = useCombinedStreaming(agentModeEnabled);
+  // Unified streaming with new architecture
+  const unifiedStream = useUnifiedStream({
+    mode: agentModeEnabled ? 'agent' : 'chat',
+    conversationId: conversationId || '',
+  });
+
+  // Create legacy adapter for backward compatibility with existing components
+  const legacyState = useMemo(() => createLegacyAdapter(unifiedStream), [unifiedStream]);
+
+  // Destructure for use in components
   const {
     isStreaming,
     streamingMessage,
@@ -246,11 +272,22 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamDuration,
     ragLogId,
     groundingSources,
+    grokSearchSources,
     codeExecutionResult,
-    sendMessage: sendStreamingMessage,
-    cancelStream,
-    resetStream,
-  } = streaming;
+    // Image generation fields
+    isGeneratingImage,
+    imageGenerationStage,
+    imageGenerationProvider,
+    imageGenerationModel,
+    imageGenerationPrompt,
+    imageGenerationProgress,
+    generatedImages,
+    imageGenerationError,
+  } = legacyState;
+
+  // Use unified stream actions
+  const cancelStream = unifiedStream.cancel;
+  const resetStream = unifiedStream.reset;
 
   // Scroll management
   const { messagesEndRef, messagesContainerRef } = useChatScroll({
@@ -395,11 +432,12 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
           currentConversationId = newConversation.id;
         }
 
-        // Send message via streaming
+        // Send message via unified streaming
         resetStream();
-        await sendStreamingMessage(currentConversationId, messageToSend, {
-          agentMode: agentModeEnabled,
-          ragEnabled,
+        await unifiedStream.send({
+          content: messageToSend,
+          conversationId: currentConversationId,
+          useRag: ragEnabled,
           userId: user?.userId || DEFAULT_USER_ID,
           vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
           capabilities: capabilities.length > 0 ? capabilities : undefined,
@@ -432,7 +470,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       selectedVectorStore,
       user?.userId,
       createConversation,
-      sendStreamingMessage,
+      unifiedStream,
       resetStream,
       setPendingMessage,
     ]
@@ -467,12 +505,11 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     [conversationId, queryClient]
   );
 
-  // Handle image generation
+  // Handle image generation using unified stream
   const handleGenerateImage = useCallback(
     async (params: ImageGenerationParams) => {
       setPendingMessage({ content: `[Image Generation Request]\n${params.prompt}` });
       setInputValue('');
-      setIsGeneratingImage(true);
 
       try {
         let currentConversationId = conversationId;
@@ -490,25 +527,33 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
           currentConversationId = newConversation.id;
         }
 
-        // Generate the image
-        const response = await chatService.generateImage(currentConversationId, {
+        // Generate the image using unified stream
+        await unifiedStream.generateImage({
           prompt: params.prompt,
           provider: selectedProvider,
           model: selectedModel,
+          conversationId: currentConversationId,
           size: params.size,
           quality: params.quality,
           style: params.style,
           count: 1,
         });
 
-        if (response.success) {
-          handleImageGenerated(response);
-        } else {
-          throw new Error(response.error || 'Failed to generate image');
+        // If generation was successful, show success toast
+        // Note: The unified stream will automatically invalidate queries
+        if (unifiedStream.imageGeneration.images.length > 0) {
+          toast.success(
+            'Image generated',
+            `Successfully generated ${unifiedStream.imageGeneration.images.length} image${unifiedStream.imageGeneration.images.length > 1 ? 's' : ''}`
+          );
+        }
+      } catch (error) {
+        console.error('Error generating image:', error);
+        if (error instanceof Error && error.message) {
+          toast.error('Failed to generate image', error.message);
         }
       } finally {
         setPendingMessage(null);
-        setIsGeneratingImage(false);
       }
     },
     [
@@ -516,7 +561,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       selectedProvider,
       selectedModel,
       createConversation,
-      handleImageGenerated,
+      unifiedStream,
       setPendingMessage,
     ]
   );
@@ -597,7 +642,17 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamDuration,
     ragLogId,
     groundingSources,
+    grokSearchSources,
     codeExecutionResult,
+
+    // Image Generation State
+    imageGenerationStage,
+    imageGenerationProvider,
+    imageGenerationModel,
+    imageGenerationPrompt,
+    imageGenerationProgress,
+    generatedImages,
+    imageGenerationError,
 
     // Scroll
     messagesEndRef,

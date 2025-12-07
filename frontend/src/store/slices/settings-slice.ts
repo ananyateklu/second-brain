@@ -124,6 +124,28 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // RAG Reranking Settings
+  // ============================================
+
+  setRerankingProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ rerankingProvider: provider });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            rerankingProvider: provider,
+          });
+        } catch (error) {
+          console.error('Failed to sync reranking provider to backend:', { error });
+        }
+      }
+    }
+  },
+
+  // ============================================
   // Sync Actions
   // ============================================
 
@@ -141,6 +163,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         enableNotifications: preferences.enableNotifications,
         ollamaRemoteUrl: preferences.ollamaRemoteUrl,
         useRemoteOllama: preferences.useRemoteOllama,
+        rerankingProvider: preferences.rerankingProvider,
       });
     } catch (error) {
       console.error('Failed to load preferences from backend:', { error });
@@ -184,5 +207,6 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     enableNotifications: state.enableNotifications,
     ollamaRemoteUrl: state.ollamaRemoteUrl,
     useRemoteOllama: state.useRemoteOllama,
+    rerankingProvider: state.rerankingProvider,
   };
 }

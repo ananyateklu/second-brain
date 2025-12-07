@@ -78,8 +78,9 @@ public class OpenAIStructuredOutputService : IProviderStructuredOutputService
 
         try
         {
-            // Build the schema from the type
-            var schema = JsonSchemaBuilder.FromType<T>();
+            // Build the schema from the type with strict mode for OpenAI
+            // OpenAI's strict mode requires ALL properties to be in the required array
+            var schema = JsonSchemaBuilder.FromType<T>(strictMode: true);
             var schemaBinaryData = OpenAISchemaAdapter.ToBinaryData(schema);
 
             // Build messages

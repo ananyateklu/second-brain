@@ -443,6 +443,7 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     // 6. AddPerformanceIndexes - adds rag_query_logs, generated_images, search_vector, etc.
     // 7. AddSoftDeleteSupport - adds soft delete columns
     // 8. AddEmbeddingFieldsToIndexingJobs - adds embedding_provider and embedding_model to indexing_jobs
+    // 9. AddRerankingProviderToUserPreferences - adds reranking_provider to user_preferences
 
     var commands = new[]
     {
@@ -547,7 +548,10 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         
         // === AddEmbeddingFieldsToIndexingJobs migration ===
         "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_provider character varying(50) NOT NULL DEFAULT ''",
-        "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_model character varying(100) NOT NULL DEFAULT ''"
+        "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_model character varying(100) NOT NULL DEFAULT ''",
+        
+        // === AddRerankingProviderToUserPreferences ===
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS reranking_provider character varying(50)"
     };
 
     var allSucceeded = true;

@@ -143,6 +143,7 @@ describe('auth-store', () => {
                 enableNotifications: true,
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
+                rerankingProvider: null,
             });
 
             // Act
@@ -181,6 +182,7 @@ describe('auth-store', () => {
                 enableNotifications: true,
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
+                rerankingProvider: null,
             });
 
             // Act
@@ -255,6 +257,7 @@ describe('auth-store', () => {
                 enableNotifications: true,
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
+                rerankingProvider: null,
             });
 
             // Act

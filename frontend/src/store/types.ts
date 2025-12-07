@@ -99,6 +99,7 @@ export interface SettingsSliceActions {
   setChatModel: (model: string | null) => void;
   setOllamaRemoteUrl: (url: string | null) => void;
   setUseRemoteOllama: (enabled: boolean) => void;
+  setRerankingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;
@@ -214,7 +215,7 @@ export interface IndexingJobInfo {
 export interface IndexingSliceState {
   // Map of vector store -> job info (supports multiple simultaneous jobs)
   activeJobs: Record<string, IndexingJobInfo>;
-  
+
   // UI state
   isRestoring: boolean;
   isNotificationVisible: boolean;
@@ -227,11 +228,11 @@ export interface IndexingSliceActions {
   updateJobStatus: (status: import('../types/rag').IndexingJobResponse, vectorStore: string) => void;
   clearJob: (vectorStore: string) => void;
   clearAllJobs: () => void;
-  
+
   // Restoration
   restoreActiveJobs: (userId: string) => Promise<void>;
   setIsRestoring: (isRestoring: boolean) => void;
-  
+
   // Notification UI
   showNotification: () => void;
   hideNotification: () => void;

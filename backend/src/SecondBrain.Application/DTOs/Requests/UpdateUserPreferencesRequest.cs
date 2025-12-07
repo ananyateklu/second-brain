@@ -11,5 +11,6 @@ public class UpdateUserPreferencesRequest
     public bool? EnableNotifications { get; set; }
     public string? OllamaRemoteUrl { get; set; }
     public bool? UseRemoteOllama { get; set; }
+    public string? RerankingProvider { get; set; }
 }
 

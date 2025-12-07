@@ -1,5 +1,5 @@
 import { RefObject, useMemo } from 'react';
-import { ChatConversation, ChatMessage, ToolCall, GroundingSource, CodeExecutionResult } from '../../../types/chat';
+import { ChatConversation, ChatMessage, ToolCall, GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { MessageBubble } from './MessageBubble';
@@ -35,6 +35,8 @@ export interface ChatMessageListProps {
   ragLogId?: string;
   /** Grounding sources from Google Search (Gemini only) */
   groundingSources?: GroundingSource[];
+  /** Search sources from Grok Live Search/DeepSearch (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
   /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
   // Settings
@@ -69,6 +71,7 @@ export function ChatMessageList({
   streamDuration,
   ragLogId,
   groundingSources = [],
+  grokSearchSources = [],
   codeExecutionResult = null,
   agentModeEnabled,
   userName,
@@ -173,6 +176,7 @@ export function ChatMessageList({
                 retrievedNotes={retrievedNotes}
                 agentRetrievedNotes={agentRetrievedNotes}
                 groundingSources={groundingSources}
+                grokSearchSources={grokSearchSources}
                 codeExecutionResult={codeExecutionResult}
               />
             )}
@@ -225,57 +229,21 @@ function MessageWithContext({
   const isAssistantMessage = message.role === 'assistant';
   const isLastMessage = index === totalMessages - 1;
 
-  // Hide the last assistant message if:
-  // 1. We're currently streaming (to avoid showing both streaming indicator AND persisted message)
-  // 2. OR the persisted message is a duplicate of what's in the streaming buffer
-  // This prevents double rendering of the same content.
+  // Hide the last assistant message only while actively streaming.
+  // This prevents showing both the streaming indicator AND the persisted message
+  // during streaming. Once streaming ends (isStreaming=false), we immediately show
+  // the persisted message to ensure a seamless handoff with no visual gap/blink.
+  // The hasMatchingPersistedMessage check in StreamingIndicator handles hiding the
+  // streaming content when the persisted message appears.
   const isStreamingDuplicate = useMemo(() => {
     if (!isAssistantMessage || !isLastMessage) {
       return false;
     }
 
-    // If we're currently streaming, always hide the last assistant message
-    // to prevent showing both the streaming indicator and the persisted message
-    if (isStreaming && streamingMessage) {
-      return true;
-    }
-
-    // If not streaming but there's still streaming content in the buffer,
-    // check if this persisted message matches it
-    if (!streamingMessage) {
-      return false;
-    }
-
-    const messageContent = message.content.trim();
-    const streamContent = streamingMessage.trim();
-
-    // Empty streaming content shouldn't hide anything
-    if (streamContent.length === 0) {
-      return false;
-    }
-
-    // Direct match
-    if (messageContent === streamContent) {
-      return true;
-    }
-
-    // Check if this persisted message is a duplicate of the streaming content
-    // This handles cases where the message is persisted while streaming is still in progress
-    if (streamContent.length > 20) {
-      const compareLength = Math.min(100, streamContent.length);
-      const streamPrefix = streamContent.substring(0, compareLength);
-      // Message content starts with or matches the beginning of streaming content
-      if (messageContent.startsWith(streamPrefix)) {
-        return true;
-      }
-      // Streaming content starts with or matches the beginning of message content
-      if (streamContent.startsWith(messageContent.substring(0, compareLength))) {
-        return true;
-      }
-    }
-
-    return false;
-  }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage, message.content]);
+    // Only hide during active streaming with content
+    // When streaming ends, always show the persisted message immediately
+    return isStreaming && streamingMessage.length > 0;
+  }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
 

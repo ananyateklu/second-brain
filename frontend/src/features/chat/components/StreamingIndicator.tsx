@@ -3,13 +3,16 @@ import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
 import { GroundingSourcesCard } from '../../agents/components/GroundingSourcesCard';
+import { GrokSearchSourcesCard } from '../../agents/components/GrokSearchSourcesCard';
 import { CodeExecutionCard } from '../../agents/components/CodeExecutionCard';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
+import { ImageGenerationProgress } from './ImageGenerationProgress';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
-import { GroundingSource, CodeExecutionResult } from '../../../types/chat';
+import { GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
+import type { ImageGenerationStage } from '../../../core/streaming/types';
 
 export interface StreamingIndicatorProps {
   isStreaming: boolean;
@@ -27,8 +30,22 @@ export interface StreamingIndicatorProps {
   agentRetrievedNotes?: RetrievedNoteContext[];
   /** Grounding sources from Google Search (Gemini only) */
   groundingSources?: GroundingSource[];
+  /** Search sources from Grok Live Search/DeepSearch (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
   /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
+  /** Whether image generation is in progress */
+  isGeneratingImage?: boolean;
+  /** Current image generation stage */
+  imageGenerationStage?: ImageGenerationStage;
+  /** Provider used for image generation */
+  imageGenerationProvider?: string | null;
+  /** Model used for image generation */
+  imageGenerationModel?: string | null;
+  /** Prompt used for image generation */
+  imageGenerationPrompt?: string | null;
+  /** Progress percentage (0-100) */
+  imageGenerationProgress?: number | null;
 }
 
 /**
@@ -48,14 +65,23 @@ export function StreamingIndicator({
   retrievedNotes = [],
   agentRetrievedNotes = [],
   groundingSources = [],
+  grokSearchSources = [],
   codeExecutionResult = null,
+  isGeneratingImage = false,
+  imageGenerationStage = 'idle',
+  imageGenerationProvider = null,
+  imageGenerationModel = null,
+  imageGenerationPrompt = null,
+  imageGenerationProgress = null,
 }: StreamingIndicatorProps) {
   const hasAgentRetrievedNotes = agentRetrievedNotes.length > 0;
   const hasRegularRagNotes = retrievedNotes.length > 0;
   const hasAnyRetrievedNotes = hasAgentRetrievedNotes || hasRegularRagNotes;
   const hasGroundingSources = groundingSources.length > 0;
+  const hasGrokSearchSources = grokSearchSources.length > 0;
   const hasCodeExecution = codeExecutionResult !== null;
-  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes || hasGroundingSources || hasCodeExecution;
+  const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
+  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration;
 
   return (
     <div>
@@ -85,8 +111,25 @@ export function StreamingIndicator({
           <GroundingSourcesCard sources={groundingSources} isStreaming={isStreaming} />
         )}
 
+        {/* Grok-specific features */}
+        {hasGrokSearchSources && (
+          <GrokSearchSourcesCard sources={grokSearchSources} isStreaming={isStreaming} />
+        )}
+
         {hasCodeExecution && codeExecutionResult && (
           <CodeExecutionCard result={codeExecutionResult} isStreaming={isStreaming} />
+        )}
+
+        {/* Image generation progress */}
+        {hasImageGeneration && (
+          <ImageGenerationProgress
+            stage={imageGenerationStage}
+            provider={imageGenerationProvider}
+            model={imageGenerationModel}
+            prompt={imageGenerationPrompt}
+            progress={imageGenerationProgress}
+            isGenerating={isGeneratingImage}
+          />
         )}
       </ProcessTimeline>
 
@@ -185,21 +228,10 @@ export function StreamingIndicator({
                 </span>
               </div>
             )}
-            <div>
-              <MarkdownMessage
-                content={agentModeEnabled ? stripThinkingTags(streamingMessage) : streamingMessage}
-              />
-              {/* Blinking cursor - only show while actively streaming main message */}
-              {isStreaming && (
-                <span
-                  className="inline-block w-2 h-4 ml-1 animate-pulse"
-                  style={{
-                    backgroundColor: 'var(--btn-primary-bg)',
-                    verticalAlign: 'middle',
-                  }}
-                />
-              )}
-            </div>
+            <MarkdownMessage
+              content={agentModeEnabled ? stripThinkingTags(streamingMessage) : streamingMessage}
+              showCursor={isStreaming}
+            />
             <TokenUsageDisplay
               inputTokens={undefined}
               outputTokens={outputTokens}

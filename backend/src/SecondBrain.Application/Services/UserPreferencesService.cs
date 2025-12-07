@@ -92,6 +92,9 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.UseRemoteOllama.HasValue)
             user.Preferences.UseRemoteOllama = request.UseRemoteOllama.Value;
 
+        if (request.RerankingProvider != null)
+            user.Preferences.RerankingProvider = request.RerankingProvider;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -125,7 +128,8 @@ public class UserPreferencesService : IUserPreferencesService
             FontSize = preferences.FontSize,
             EnableNotifications = preferences.EnableNotifications,
             OllamaRemoteUrl = preferences.OllamaRemoteUrl,
-            UseRemoteOllama = preferences.UseRemoteOllama
+            UseRemoteOllama = preferences.UseRemoteOllama,
+            RerankingProvider = preferences.RerankingProvider
         };
     }
 }

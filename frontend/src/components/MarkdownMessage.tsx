@@ -57,9 +57,11 @@ SyntaxHighlighter.registerLanguage('diff', diff);
 
 interface MarkdownMessageProps {
   content: string;
+  /** Show a blinking cursor at the end of the content (for streaming) */
+  showCursor?: boolean;
 }
 
-export function MarkdownMessage({ content }: MarkdownMessageProps) {
+export function MarkdownMessage({ content, showCursor = false }: MarkdownMessageProps) {
   const theme = useThemeStore((state) => state.theme);
   const isDark = theme === 'dark' || theme === 'blue';
   const { data: notes } = useNotes();
@@ -82,7 +84,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
   }, [content]);
 
   return (
-    <div className="markdown-content">
+    <div className={`markdown-content${showCursor ? ' streaming-cursor' : ''}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -202,10 +204,10 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             // Convert children to string safely
             const childrenStr = Array.isArray(children)
               ? children.map((child) => {
-                  if (typeof child === 'string') return child;
-                  if (typeof child === 'number' || typeof child === 'boolean') return String(child);
-                  return '';
-                }).join('')
+                if (typeof child === 'string') return child;
+                if (typeof child === 'number' || typeof child === 'boolean') return String(child);
+                return '';
+              }).join('')
               : typeof children === 'string'
                 ? children
                 : typeof children === 'number' || typeof children === 'boolean'

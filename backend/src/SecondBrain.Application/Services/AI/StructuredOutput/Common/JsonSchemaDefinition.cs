@@ -58,11 +58,13 @@ public class JsonSchemaDefinition
 
     /// <summary>
     /// Whether additional properties are allowed (for strict mode).
-    /// Default is false for strict JSON schema validation.
+    /// Set to false explicitly for object types (required by OpenAI strict mode).
+    /// Set to true for dictionary types that need to allow additional properties.
+    /// Leave as null for non-object types where it's not applicable.
     /// </summary>
     [JsonPropertyName("additionalProperties")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public bool AdditionalProperties { get; set; } = false;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? AdditionalProperties { get; set; }
 
     /// <summary>
     /// Default value for the property.
