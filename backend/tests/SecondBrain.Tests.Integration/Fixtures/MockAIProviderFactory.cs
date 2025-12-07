@@ -226,6 +226,23 @@ public class MockEmbeddingProvider : IEmbeddingProvider
     public bool IsEnabled => true;
     public int Dimensions => 1536;
 
+    public Task<IEnumerable<EmbeddingModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
+    {
+        var models = new List<EmbeddingModelInfo>
+        {
+            new()
+            {
+                ModelId = ModelName,
+                DisplayName = "Mock Embedding Model",
+                Dimensions = Dimensions,
+                IsDefault = true,
+                Description = "Deterministic mock embedding model for tests"
+            }
+        };
+
+        return Task.FromResult<IEnumerable<EmbeddingModelInfo>>(models);
+    }
+
     /// <summary>
     /// Whether the provider should simulate failures.
     /// </summary>

@@ -2,18 +2,25 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings.Providers;
+using System.Net;
+using System.Net.Http;
+using Moq.Protected;
 
 namespace SecondBrain.Tests.Unit.Application.Services.Embeddings;
 
 public class OllamaEmbeddingProviderTests
 {
     private readonly Mock<IOptions<EmbeddingProvidersSettings>> _mockSettings;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<ILogger<OllamaEmbeddingProvider>> _mockLogger;
 
     public OllamaEmbeddingProviderTests()
     {
         _mockSettings = new Mock<IOptions<EmbeddingProvidersSettings>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockLogger = new Mock<ILogger<OllamaEmbeddingProvider>>();
+
+        SetupHttpClient(HttpStatusCode.InternalServerError, "{\"error\":\"not implemented\"}");
     }
 
     #region Constructor and Properties Tests
@@ -142,7 +149,7 @@ public class OllamaEmbeddingProviderTests
         // Assert
         // Current implementation returns an error as Ollama embedding is not fully implemented
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("configuration");
+        result.Error.Should().Contain("not implemented");
         result.Provider.Should().Be("Ollama");
     }
 
@@ -226,7 +233,7 @@ public class OllamaEmbeddingProviderTests
         // Assert
         // Current implementation returns an error as Ollama embedding is not fully implemented
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("configuration");
+        result.Error.Should().Contain("not implemented");
     }
 
     #endregion
@@ -270,6 +277,7 @@ public class OllamaEmbeddingProviderTests
     {
         return new OllamaEmbeddingProvider(
             _mockSettings.Object,
+            _mockHttpClientFactory.Object,
             _mockLogger.Object
         );
     }
@@ -292,6 +300,29 @@ public class OllamaEmbeddingProviderTests
             }
         };
         _mockSettings.Setup(s => s.Value).Returns(settings);
+    }
+
+    private void SetupHttpClient(HttpStatusCode statusCode, string content)
+    {
+        var handler = new Mock<HttpMessageHandler>();
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(content)
+            });
+
+        var httpClient = new HttpClient(handler.Object)
+        {
+            BaseAddress = new Uri("http://localhost")
+        };
+
+        _mockHttpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(httpClient);
     }
 
     #endregion

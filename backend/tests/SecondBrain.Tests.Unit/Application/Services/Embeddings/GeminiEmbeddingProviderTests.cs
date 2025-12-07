@@ -2,12 +2,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings.Providers;
+using System.Net;
+using System.Net.Http;
+using Moq.Protected;
 
 namespace SecondBrain.Tests.Unit.Application.Services.Embeddings;
 
 public class GeminiEmbeddingProviderTests
 {
     private readonly Mock<IOptions<EmbeddingProvidersSettings>> _mockSettings;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<ILogger<GeminiEmbeddingProvider>> _mockLogger;
 
     // Fake API key for testing - NOT a real key, format satisfies Gemini SDK validation (39 chars, starts with AIza)
@@ -17,7 +21,10 @@ public class GeminiEmbeddingProviderTests
     public GeminiEmbeddingProviderTests()
     {
         _mockSettings = new Mock<IOptions<EmbeddingProvidersSettings>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockLogger = new Mock<ILogger<GeminiEmbeddingProvider>>();
+
+        SetupHttpClient(HttpStatusCode.BadRequest, "{\"error\":\"configuration missing\"}");
     }
 
     #region Constructor and Properties Tests
@@ -333,6 +340,7 @@ public class GeminiEmbeddingProviderTests
     {
         return new GeminiEmbeddingProvider(
             _mockSettings.Object,
+            _mockHttpClientFactory.Object,
             _mockLogger.Object
         );
     }
@@ -355,6 +363,29 @@ public class GeminiEmbeddingProviderTests
             }
         };
         _mockSettings.Setup(s => s.Value).Returns(settings);
+    }
+
+    private void SetupHttpClient(HttpStatusCode statusCode, string content)
+    {
+        var handler = new Mock<HttpMessageHandler>();
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = statusCode,
+                Content = new StringContent(content)
+            });
+
+        var httpClient = new HttpClient(handler.Object)
+        {
+            BaseAddress = new Uri("http://localhost")
+        };
+
+        _mockHttpClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(httpClient);
     }
 
     #endregion

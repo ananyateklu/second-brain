@@ -6,7 +6,6 @@
  */
 
 import { useBoundStore } from '../../store/bound-store';
-import { selectActiveJobs } from '../../store/slices/indexing-slice';
 
 export function IndexingIndicator() {
   const {
@@ -19,7 +18,7 @@ export function IndexingIndicator() {
   const hasJobs = jobs.length > 0;
 
   // Calculate aggregate status
-  const anyIndexing = jobs.some((job) => 
+  const anyIndexing = jobs.some((job) =>
     job.status?.status === 'running' || job.status?.status === 'pending'
   );
   const allCompleted = jobs.length > 0 && jobs.every((job) => job.status?.status === 'completed');

@@ -15,7 +15,6 @@ import { router } from '../../lib/router';
 import { indexingKeys } from '../../lib/query-keys';
 import { DEFAULT_USER_ID } from '../../lib/constants';
 import type { IndexingJobInfo } from '../../store/slices/indexing-slice';
-import type { IndexingJobResponse } from '../../types/rag';
 
 // Note: Job restoration is handled by useIndexingRestoration hook in App.tsx
 
@@ -132,9 +131,6 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
 
     if (completionHandledRef.current !== statusKey) {
       if (isCompleted || isFailed || isCancelled) {
-        if (isCancelled) {
-          setIsCancelling(false);
-        }
         completionHandledRef.current = statusKey;
 
         // Refresh stats
@@ -148,16 +144,16 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
     }
   }, [status, job.jobId, job.vectorStore, isCompleted, isFailed, isCancelled, onClear, onRefreshStats]);
 
-  const handleStopIndexing = useCallback(async () => {
+  const handleStopIndexing = useCallback(() => {
     if (!job.jobId || isCancelling) return;
 
     setIsCancelling(true);
-    try {
-      await cancelMutation.mutateAsync({ jobId: job.jobId });
-    } catch {
-      setIsCancelling(false);
-      toast.error('Failed to Stop', 'Could not stop the indexing job');
-    }
+    void cancelMutation
+      .mutateAsync({ jobId: job.jobId })
+      .catch(() => {
+        toast.error('Failed to Stop', 'Could not stop the indexing job');
+      })
+      .finally(() => setIsCancelling(false));
   }, [job.jobId, isCancelling, cancelMutation]);
 
   const processedNotes = status?.processedNotes ?? 0;
@@ -169,8 +165,8 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
 
   // Get color based on vector store
   const storeColor = job.vectorStore === 'PostgreSQL' ? 'var(--color-brand-500)' : 'var(--color-success)';
-  const storeBgColor = job.vectorStore === 'PostgreSQL' 
-    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' 
+  const storeBgColor = job.vectorStore === 'PostgreSQL'
+    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
     : 'color-mix(in srgb, var(--color-success) 15%, transparent)';
 
   return (
@@ -363,7 +359,7 @@ export function IndexingNotification() {
 
   const jobs = Object.values(activeJobs);
   const hasActiveJobs = jobs.length > 0;
-  const anyIndexing = jobs.some((job) => 
+  const anyIndexing = jobs.some((job) =>
     job.status?.status === 'running' || job.status?.status === 'pending'
   );
 

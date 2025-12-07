@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -16,6 +17,7 @@ public class IndexingControllerTests
     private readonly Mock<IVectorStore> _mockPostgresStore;
     private readonly Mock<IVectorStore> _mockPineconeStore;
     private readonly Mock<INoteRepository> _mockNoteRepository;
+    private readonly Mock<IEmbeddingProviderFactory> _mockEmbeddingProviderFactory;
     private readonly Mock<ILogger<IndexingController>> _mockLogger;
     private readonly IndexingController _sut;
 
@@ -25,6 +27,7 @@ public class IndexingControllerTests
         _mockPostgresStore = new Mock<IVectorStore>();
         _mockPineconeStore = new Mock<IVectorStore>();
         _mockNoteRepository = new Mock<INoteRepository>();
+        _mockEmbeddingProviderFactory = new Mock<IEmbeddingProviderFactory>();
         _mockLogger = new Mock<ILogger<IndexingController>>();
 
         // Default setup for note repository
@@ -36,6 +39,7 @@ public class IndexingControllerTests
             _mockPostgresStore.Object,
             _mockPineconeStore.Object,
             _mockNoteRepository.Object,
+            _mockEmbeddingProviderFactory.Object,
             _mockLogger.Object
         );
 
@@ -50,7 +54,7 @@ public class IndexingControllerTests
         // Arrange
         var userId = "user-123";
         var job = CreateTestIndexingJob("job-1", userId);
-        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, null, null, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
         // Act
@@ -70,14 +74,14 @@ public class IndexingControllerTests
         var userId = "user-123";
         var embeddingProvider = "openai";
         var job = CreateTestIndexingJob("job-1", userId);
-        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, embeddingProvider, null, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, embeddingProvider, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
         // Act
         await _sut.StartIndexing(userId, embeddingProvider);
 
         // Assert
-        _mockIndexingService.Verify(s => s.StartIndexingAsync(userId, embeddingProvider, null, It.IsAny<CancellationToken>()), Times.Once);
+        _mockIndexingService.Verify(s => s.StartIndexingAsync(userId, embeddingProvider, null, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -87,21 +91,21 @@ public class IndexingControllerTests
         var userId = "user-123";
         var vectorStoreProvider = "postgresql";
         var job = CreateTestIndexingJob("job-1", userId);
-        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, null, vectorStoreProvider, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync(userId, null, vectorStoreProvider, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
         // Act
         await _sut.StartIndexing(userId, null, vectorStoreProvider);
 
         // Assert
-        _mockIndexingService.Verify(s => s.StartIndexingAsync(userId, null, vectorStoreProvider, It.IsAny<CancellationToken>()), Times.Once);
+        _mockIndexingService.Verify(s => s.StartIndexingAsync(userId, null, vectorStoreProvider, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task StartIndexing_WhenExceptionThrown_Returns500()
     {
         // Arrange
-        _mockIndexingService.Setup(s => s.StartIndexingAsync(It.IsAny<string>(), null, null, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync(It.IsAny<string>(), null, null, null, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -117,14 +121,14 @@ public class IndexingControllerTests
     {
         // Arrange
         var job = CreateTestIndexingJob("job-1", "default-user");
-        _mockIndexingService.Setup(s => s.StartIndexingAsync("default-user", null, null, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync("default-user", null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
         // Act
         await _sut.StartIndexing();
 
         // Assert
-        _mockIndexingService.Verify(s => s.StartIndexingAsync("default-user", null, null, It.IsAny<CancellationToken>()), Times.Once);
+        _mockIndexingService.Verify(s => s.StartIndexingAsync("default-user", null, null, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -146,7 +150,7 @@ public class IndexingControllerTests
             CompletedAt = null,
             CreatedAt = DateTime.UtcNow.AddMinutes(-10)
         };
-        _mockIndexingService.Setup(s => s.StartIndexingAsync(It.IsAny<string>(), null, null, It.IsAny<CancellationToken>()))
+        _mockIndexingService.Setup(s => s.StartIndexingAsync(It.IsAny<string>(), null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
         // Act

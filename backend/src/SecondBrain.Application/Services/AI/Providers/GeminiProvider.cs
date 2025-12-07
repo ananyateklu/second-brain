@@ -1,4 +1,5 @@
-using Mscc.GenerativeAI;
+using Google.GenAI;
+using Google.GenAI.Types;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
@@ -18,7 +19,7 @@ public class GeminiProvider : IAIProvider
     private readonly GeminiSettings _settings;
     private readonly ILogger<GeminiProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly GoogleAI? _client;
+    private readonly Client? _client;
 
     public string ProviderName => "Gemini";
     public bool IsEnabled => _settings.Enabled;
@@ -36,7 +37,7 @@ public class GeminiProvider : IAIProvider
         {
             try
             {
-                _client = new GoogleAI(_settings.ApiKey);
+                _client = new Client(apiKey: _settings.ApiKey);
             }
             catch (Exception ex)
             {
@@ -48,6 +49,36 @@ public class GeminiProvider : IAIProvider
     private HttpClient CreateHttpClient()
     {
         return _httpClientFactory.CreateClient(HttpClientName);
+    }
+
+    /// <summary>
+    /// Build generation config from settings
+    /// </summary>
+    private GenerateContentConfig BuildGenerationConfig(int? maxTokens = null, float? temperature = null)
+    {
+        return new GenerateContentConfig
+        {
+            MaxOutputTokens = maxTokens ?? _settings.MaxTokens,
+            Temperature = temperature ?? _settings.Temperature,
+            TopP = _settings.TopP,
+            TopK = _settings.TopK
+        };
+    }
+
+    /// <summary>
+    /// Extract text from GenerateContentResponse
+    /// </summary>
+    private static string ExtractText(GenerateContentResponse? response)
+    {
+        if (response?.Candidates == null || response.Candidates.Count == 0)
+            return string.Empty;
+
+        var candidate = response.Candidates[0];
+        if (candidate?.Content?.Parts == null || candidate.Content.Parts.Count == 0)
+            return string.Empty;
+
+        var part = candidate.Content.Parts[0];
+        return part?.Text ?? string.Empty;
     }
 
     public async Task<AIResponse> GenerateCompletionAsync(
@@ -72,19 +103,12 @@ public class GeminiProvider : IAIProvider
 
         try
         {
-            var model = _client.GenerativeModel(model: modelName);
+            var config = BuildGenerationConfig(request.MaxTokens, request.Temperature);
 
-            var generationConfig = new GenerationConfig
-            {
-                MaxOutputTokens = request.MaxTokens ?? _settings.MaxTokens,
-                Temperature = request.Temperature ?? _settings.Temperature,
-                TopP = _settings.TopP,
-                TopK = _settings.TopK
-            };
-
-            var response = await model.GenerateContent(
-                request.Prompt,
-                generationConfig: generationConfig);
+            var response = await _client.Models.GenerateContentAsync(
+                model: modelName,
+                contents: request.Prompt,
+                config: config);
 
             stopwatch.Stop();
             var tokensUsed = response?.UsageMetadata?.TotalTokenCount ?? 0;
@@ -96,7 +120,7 @@ public class GeminiProvider : IAIProvider
             return new AIResponse
             {
                 Success = true,
-                Content = response?.Text ?? string.Empty,
+                Content = ExtractText(response),
                 Model = modelName,
                 TokensUsed = tokensUsed,
                 Provider = ProviderName
@@ -142,23 +166,24 @@ public class GeminiProvider : IAIProvider
 
         try
         {
-            var model = _client.GenerativeModel(model: modelName);
-
-            var generationConfig = new GenerationConfig
-            {
-                MaxOutputTokens = settings?.MaxTokens ?? _settings.MaxTokens,
-                Temperature = settings?.Temperature ?? _settings.Temperature,
-                TopP = _settings.TopP,
-                TopK = _settings.TopK
-            };
+            var config = BuildGenerationConfig(settings?.MaxTokens, settings?.Temperature);
 
             // Separate system messages from conversation
-            var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
-            var conversationMessages = messageList.Where(m => m.Role.ToLower() != "system").ToList();
+            var systemMessage = messageList.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            var conversationMessages = messageList.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
 
             if (conversationMessages.Count == 0)
             {
                 throw new InvalidOperationException("No conversation messages found");
+            }
+
+            // Add system instruction to config if present
+            if (systemMessage != null)
+            {
+                config.SystemInstruction = new Content
+                {
+                    Parts = new List<Part> { new Part { Text = systemMessage.Content } }
+                };
             }
 
             // Check if the last message has images (multimodal)
@@ -170,38 +195,23 @@ public class GeminiProvider : IAIProvider
                 activity?.SetTag("ai.multimodal", true);
                 activity?.SetTag("ai.images.count", lastMessage.Images.Count);
 
-                // Build multimodal prompt for Gemini with images
-                var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
+                // Build multimodal content with text and images
+                var contents = BuildMultimodalContents(conversationMessages);
 
-                // Generate content with text and images using Parts
-                var parts = new List<IPart> { new TextData { Text = textPrompt } };
-                foreach (var image in lastMessage.Images)
-                {
-                    // Add inline image data as Part
-                    parts.Add(new InlineData { MimeType = image.MediaType, Data = image.Base64Data });
-                }
-                response = await model.GenerateContent(parts, generationConfig: generationConfig);
+                response = await _client.Models.GenerateContentAsync(
+                    model: modelName,
+                    contents: contents,
+                    config: config);
             }
             else
             {
-                // Text-only conversation
-                var conversationBuilder = new System.Text.StringBuilder();
+                // Build text-only contents
+                var contents = BuildTextContents(conversationMessages);
 
-                if (systemMessage != null)
-                {
-                    conversationBuilder.AppendLine($"System: {systemMessage.Content}");
-                    conversationBuilder.AppendLine();
-                }
-
-                foreach (var msg in conversationMessages)
-                {
-                    var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
-                    conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
-                    conversationBuilder.AppendLine();
-                }
-
-                var fullPrompt = conversationBuilder.ToString().TrimEnd();
-                response = await model.GenerateContent(fullPrompt, generationConfig: generationConfig);
+                response = await _client.Models.GenerateContentAsync(
+                    model: modelName,
+                    contents: contents,
+                    config: config);
             }
 
             stopwatch.Stop();
@@ -214,7 +224,7 @@ public class GeminiProvider : IAIProvider
             return new AIResponse
             {
                 Success = true,
-                Content = response?.Text ?? string.Empty,
+                Content = ExtractText(response),
                 Model = modelName,
                 TokensUsed = tokensUsed,
                 Provider = ProviderName
@@ -263,22 +273,19 @@ public class GeminiProvider : IAIProvider
         var stopwatch = Stopwatch.StartNew();
         var firstTokenReceived = false;
 
-        var model = _client.GenerativeModel(model: modelName);
-
-        var generationConfig = new GenerationConfig
-        {
-            MaxOutputTokens = request.MaxTokens ?? _settings.MaxTokens,
-            Temperature = request.Temperature ?? _settings.Temperature,
-            TopP = _settings.TopP,
-            TopK = _settings.TopK
-        };
+        var config = BuildGenerationConfig(request.MaxTokens, request.Temperature);
 
         var tokenCount = 0;
-        await foreach (var chunk in model.GenerateContentStream(
-            request.Prompt,
-            generationConfig: generationConfig))
+        await foreach (var chunk in _client.Models.GenerateContentStreamAsync(
+            model: modelName,
+            contents: request.Prompt,
+            config: config))
         {
-            if (!string.IsNullOrEmpty(chunk?.Text))
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+
+            var text = ExtractText(chunk);
+            if (!string.IsNullOrEmpty(text))
             {
                 if (!firstTokenReceived)
                 {
@@ -289,7 +296,7 @@ public class GeminiProvider : IAIProvider
                         new("model", modelName));
                 }
                 tokenCount++;
-                yield return chunk.Text;
+                yield return text;
             }
         }
 
@@ -329,99 +336,72 @@ public class GeminiProvider : IAIProvider
         var stopwatch = Stopwatch.StartNew();
         var firstTokenReceived = false;
 
-        var model = _client.GenerativeModel(model: modelName);
-
-        var generationConfig = new GenerationConfig
-        {
-            MaxOutputTokens = settings?.MaxTokens ?? _settings.MaxTokens,
-            Temperature = settings?.Temperature ?? _settings.Temperature,
-            TopP = _settings.TopP,
-            TopK = _settings.TopK
-        };
+        var config = BuildGenerationConfig(settings?.MaxTokens, settings?.Temperature);
 
         // Separate system messages from conversation
-        var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
-        var conversationMessages = messageList.Where(m => m.Role.ToLower() != "system").ToList();
+        var systemMessage = messageList.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+        var conversationMessages = messageList.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
 
         if (conversationMessages.Count == 0)
             yield break;
+
+        // Add system instruction to config if present
+        if (systemMessage != null)
+        {
+            config.SystemInstruction = new Content
+            {
+                Parts = new List<Part> { new Part { Text = systemMessage.Content } }
+            };
+        }
 
         var tokenCount = 0;
 
         // Check if the last message has images (multimodal)
         var lastMessage = conversationMessages.LastOrDefault();
+        IAsyncEnumerable<GenerateContentResponse> streamResponse;
+
         if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
         {
             activity?.SetTag("ai.multimodal", true);
             activity?.SetTag("ai.images.count", lastMessage.Images.Count);
 
-            // Build multimodal prompt for Gemini with images
-            var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
+            // Build multimodal content with text and images
+            var contents = BuildMultimodalContents(conversationMessages);
 
-            // Generate content with text and images using Parts
-            var parts = new List<IPart> { new TextData { Text = textPrompt } };
-            foreach (var image in lastMessage.Images)
-            {
-                // Add inline image data as Part
-                parts.Add(new InlineData { MimeType = image.MediaType, Data = image.Base64Data });
-            }
-
-            await foreach (var chunk in model.GenerateContentStream(
-                parts,
-                generationConfig: generationConfig))
-            {
-                if (!string.IsNullOrEmpty(chunk?.Text))
-                {
-                    if (!firstTokenReceived)
-                    {
-                        firstTokenReceived = true;
-                        ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
-                            stopwatch.ElapsedMilliseconds,
-                            new("provider", ProviderName),
-                            new("model", modelName));
-                    }
-                    tokenCount++;
-                    yield return chunk.Text;
-                }
-            }
+            streamResponse = _client.Models.GenerateContentStreamAsync(
+                model: modelName,
+                contents: contents,
+                config: config);
         }
         else
         {
-            // Text-only conversation
-            var conversationBuilder = new System.Text.StringBuilder();
+            // Build text-only contents
+            var contents = BuildTextContents(conversationMessages);
 
-            if (systemMessage != null)
+            streamResponse = _client.Models.GenerateContentStreamAsync(
+                model: modelName,
+                contents: contents,
+                config: config);
+        }
+
+        await foreach (var chunk in streamResponse)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+
+            var text = ExtractText(chunk);
+            if (!string.IsNullOrEmpty(text))
             {
-                conversationBuilder.AppendLine($"System: {systemMessage.Content}");
-                conversationBuilder.AppendLine();
-            }
-
-            foreach (var msg in conversationMessages)
-            {
-                var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
-                conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
-                conversationBuilder.AppendLine();
-            }
-
-            var fullPrompt = conversationBuilder.ToString().TrimEnd();
-
-            await foreach (var chunk in model.GenerateContentStream(
-                fullPrompt,
-                generationConfig: generationConfig))
-            {
-                if (!string.IsNullOrEmpty(chunk?.Text))
+                if (!firstTokenReceived)
                 {
-                    if (!firstTokenReceived)
-                    {
-                        firstTokenReceived = true;
-                        ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
-                            stopwatch.ElapsedMilliseconds,
-                            new("provider", ProviderName),
-                            new("model", modelName));
-                    }
-                    tokenCount++;
-                    yield return chunk.Text;
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", modelName));
                 }
+                tokenCount++;
+                yield return text;
             }
         }
 
@@ -432,30 +412,63 @@ public class GeminiProvider : IAIProvider
     }
 
     /// <summary>
-    /// Build text prompt for Gemini from conversation history
+    /// Build text-only contents from conversation messages
     /// </summary>
-    private static string BuildGeminiTextPrompt(
-        List<Models.ChatMessage> conversationMessages,
-        Models.ChatMessage? systemMessage)
+    private static List<Content> BuildTextContents(List<Models.ChatMessage> conversationMessages)
     {
-        var fullText = new System.Text.StringBuilder();
+        var contents = new List<Content>();
 
-        // Add system context if present
-        if (systemMessage != null)
-        {
-            fullText.AppendLine($"System: {systemMessage.Content}");
-            fullText.AppendLine();
-        }
-
-        // Add all messages
         foreach (var msg in conversationMessages)
         {
-            var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
-            fullText.AppendLine($"{roleLabel}: {msg.Content}");
-            fullText.AppendLine();
+            var role = msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) ? "model" : "user";
+            contents.Add(new Content
+            {
+                Role = role,
+                Parts = new List<Part> { new Part { Text = msg.Content } }
+            });
         }
 
-        return fullText.ToString().TrimEnd();
+        return contents;
+    }
+
+    /// <summary>
+    /// Build multimodal contents from conversation messages (with images)
+    /// </summary>
+    private static List<Content> BuildMultimodalContents(List<Models.ChatMessage> conversationMessages)
+    {
+        var contents = new List<Content>();
+
+        foreach (var msg in conversationMessages)
+        {
+            var role = msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) ? "model" : "user";
+            var parts = new List<Part> { new Part { Text = msg.Content } };
+
+            // Add images if present
+            if (msg.Images != null && msg.Images.Count > 0)
+            {
+                foreach (var image in msg.Images)
+                {
+                    // Convert base64 string to byte array
+                    var imageBytes = Convert.FromBase64String(image.Base64Data);
+                    parts.Add(new Part
+                    {
+                        InlineData = new Blob
+                        {
+                            MimeType = image.MediaType,
+                            Data = imageBytes
+                        }
+                    });
+                }
+            }
+
+            contents.Add(new Content
+            {
+                Role = role,
+                Parts = parts
+            });
+        }
+
+        return contents;
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
@@ -465,16 +478,15 @@ public class GeminiProvider : IAIProvider
 
         try
         {
-            var model = _client.GenerativeModel(model: _settings.DefaultModel);
-
-            var generationConfig = new GenerationConfig
+            var config = new GenerateContentConfig
             {
                 MaxOutputTokens = 5
             };
 
-            var response = await model.GenerateContent(
-                "Hello",
-                generationConfig: generationConfig);
+            var response = await _client.Models.GenerateContentAsync(
+                model: _settings.DefaultModel,
+                contents: "Hello",
+                config: config);
 
             return response != null;
         }

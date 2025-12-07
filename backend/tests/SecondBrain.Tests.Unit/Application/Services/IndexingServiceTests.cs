@@ -18,6 +18,7 @@ public class IndexingServiceTests
     private readonly Mock<INoteRepository> _mockNoteRepository;
     private readonly Mock<IIndexingJobRepository> _mockIndexingJobRepository;
     private readonly Mock<IEmbeddingProviderFactory> _mockEmbeddingProviderFactory;
+    private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
     private readonly Mock<IVectorStore> _mockVectorStore;
     private readonly Mock<IChunkingService> _mockChunkingService;
     private readonly Mock<IOptions<EmbeddingProvidersSettings>> _mockSettings;
@@ -32,6 +33,7 @@ public class IndexingServiceTests
         _mockNoteRepository = new Mock<INoteRepository>();
         _mockIndexingJobRepository = new Mock<IIndexingJobRepository>();
         _mockEmbeddingProviderFactory = new Mock<IEmbeddingProviderFactory>();
+        _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
         _mockVectorStore = new Mock<IVectorStore>();
         _mockChunkingService = new Mock<IChunkingService>();
         _mockSettings = new Mock<IOptions<EmbeddingProvidersSettings>>();
@@ -43,6 +45,25 @@ public class IndexingServiceTests
         {
             DefaultProvider = "openai"
         });
+
+        _mockEmbeddingProvider.Setup(p => p.ProviderName).Returns("openai");
+        _mockEmbeddingProvider.Setup(p => p.ModelName).Returns("text-embedding-3-small");
+        _mockEmbeddingProvider.Setup(p => p.IsEnabled).Returns(true);
+        _mockEmbeddingProvider.Setup(p => p.Dimensions).Returns(1536);
+        _mockEmbeddingProvider.Setup(p => p.GetAvailableModelsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new EmbeddingModelInfo
+                {
+                    ModelId = "text-embedding-3-small",
+                    DisplayName = "text-embedding-3-small",
+                    Dimensions = 1536,
+                    IsDefault = true
+                }
+            }.AsEnumerable());
+
+        _mockEmbeddingProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>()))
+            .Returns(_mockEmbeddingProvider.Object);
 
         // Create a concrete service provider that implements GetRequiredService
         _serviceProvider = new TestServiceProvider

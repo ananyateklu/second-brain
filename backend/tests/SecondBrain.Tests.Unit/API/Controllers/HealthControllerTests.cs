@@ -42,7 +42,7 @@ public class HealthControllerTests
     }
 
     [Fact]
-    public void GetHealth_WhenDatabaseProviderNotConfigured_ReturnsFirestoreDefault()
+    public void GetHealth_WhenDatabaseProviderNotConfigured_ReturnsPostgresDefault()
     {
         // Arrange
         _mockConfiguration.Setup(c => c["DatabaseProvider"]).Returns((string?)null);
@@ -56,7 +56,7 @@ public class HealthControllerTests
         value.Should().NotBeNull();
 
         var databaseProperty = value!.GetType().GetProperty("database");
-        databaseProperty!.GetValue(value).Should().Be("Firestore");
+        databaseProperty!.GetValue(value).Should().Be("PostgreSQL");
     }
 
     [Fact]
