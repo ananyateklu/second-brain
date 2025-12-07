@@ -191,12 +191,37 @@ public class ClaudeProvider : IAIProvider
                 };
             }
 
+            // Add prompt caching for large system prompts
+            var enableCaching = settings?.EnablePromptCaching ?? _settings.Caching.Enabled;
+            if (enableCaching && (systemMessage?.Content.Length ?? 0) >= _settings.Caching.MinContentTokens * 4) // Rough estimate: 4 chars per token
+            {
+                parameters.PromptCaching = PromptCacheType.AutomaticToolsAndSystem;
+                activity?.SetTag("ai.cache.enabled", true);
+            }
+
+            // Add extended thinking support if enabled
+            var enableThinking = settings?.EnableThinking ?? _settings.Features.EnableExtendedThinking;
+            if (enableThinking && IsThinkingCapableModel(model))
+            {
+                var thinkingBudget = settings?.ThinkingBudget ?? _settings.Thinking.DefaultBudget;
+                thinkingBudget = Math.Min(thinkingBudget, _settings.Thinking.MaxBudget);
+
+                parameters.Thinking = new ThinkingParameters
+                {
+                    BudgetTokens = thinkingBudget
+                };
+
+                activity?.SetTag("ai.thinking.enabled", true);
+                activity?.SetTag("ai.thinking.budget", thinkingBudget);
+
+                _logger.LogDebug("Extended thinking enabled with budget {Budget} for model {Model}", thinkingBudget, model);
+            }
+
             var response = await _client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
             if (response == null) throw new InvalidOperationException("No response from Claude API");
 
-            var textContent = response.Content
-                .OfType<Anthropic.SDK.Messaging.TextContent>()
-                .FirstOrDefault();
+            // Parse response content including thinking blocks
+            var (textContent, thinkingContent) = ParseResponseContent(response);
 
             stopwatch.Stop();
             var tokensUsed = response.Usage.InputTokens + response.Usage.OutputTokens;
@@ -204,17 +229,47 @@ public class ClaudeProvider : IAIProvider
             activity?.SetTag("ai.tokens.total", tokensUsed);
             activity?.SetTag("ai.tokens.input", response.Usage.InputTokens);
             activity?.SetTag("ai.tokens.output", response.Usage.OutputTokens);
+            if (thinkingContent != null)
+            {
+                activity?.SetTag("ai.thinking.present", true);
+            }
             activity?.SetStatus(ActivityStatusCode.Ok);
             ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
 
-            return new AIResponse
+            var aiResponse = new AIResponse
             {
                 Success = true,
-                Content = textContent?.Text ?? string.Empty,
+                Content = textContent,
                 Model = response.Model,
                 TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
+
+            // Include thinking process if available and configured to show
+            if (thinkingContent != null && _settings.Thinking.IncludeThinkingInResponse)
+            {
+                aiResponse.ThinkingProcess = thinkingContent;
+            }
+
+            // Track cache usage if available
+            if (response.Usage.CacheCreationInputTokens > 0 || response.Usage.CacheReadInputTokens > 0)
+            {
+                aiResponse.CacheUsage = new CacheUsageStats
+                {
+                    CacheCreationTokens = response.Usage.CacheCreationInputTokens,
+                    CacheReadTokens = response.Usage.CacheReadInputTokens
+                };
+
+                activity?.SetTag("ai.cache.creation_tokens", response.Usage.CacheCreationInputTokens);
+                activity?.SetTag("ai.cache.read_tokens", response.Usage.CacheReadInputTokens);
+
+                _logger.LogDebug("Cache usage - Creation: {Creation}, Read: {Read}, Savings: {Savings}%",
+                    response.Usage.CacheCreationInputTokens,
+                    response.Usage.CacheReadInputTokens,
+                    aiResponse.CacheUsage.SavingsPercent);
+            }
+
+            return aiResponse;
         }
         catch (Exception ex)
         {
@@ -230,6 +285,47 @@ public class ClaudeProvider : IAIProvider
                 Provider = ProviderName
             };
         }
+    }
+
+    /// <summary>
+    /// Check if the model supports extended thinking
+    /// </summary>
+    private static bool IsThinkingCapableModel(string model)
+    {
+        // Extended thinking is supported on Claude 3.5 Sonnet and newer models
+        // Claude 3.7, Claude 4 (Sonnet/Opus) all support it
+        var thinkingCapableModels = new[]
+        {
+            "claude-opus-4",
+            "claude-sonnet-4",
+            "claude-3-7-sonnet",
+            "claude-3-5-sonnet"
+        };
+
+        return thinkingCapableModels.Any(m => model.Contains(m, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Parse response content to extract text and thinking blocks
+    /// </summary>
+    private static (string TextContent, string? ThinkingContent) ParseResponseContent(MessageResponse response)
+    {
+        var textBuilder = new System.Text.StringBuilder();
+        string? thinkingContent = null;
+
+        foreach (var content in response.Content)
+        {
+            if (content is Anthropic.SDK.Messaging.TextContent textBlock)
+            {
+                textBuilder.Append(textBlock.Text);
+            }
+            else if (content is ThinkingContent thinkingBlock)
+            {
+                thinkingContent = thinkingBlock.Thinking;
+            }
+        }
+
+        return (textBuilder.ToString(), thinkingContent);
     }
 
     public async Task<IAsyncEnumerable<string>> StreamCompletionAsync(
@@ -353,11 +449,69 @@ public class ClaudeProvider : IAIProvider
             };
         }
 
+        // Add prompt caching for large system prompts
+        var enableCaching = settings?.EnablePromptCaching ?? _settings.Caching.Enabled;
+        if (enableCaching && (systemMessage?.Content.Length ?? 0) >= _settings.Caching.MinContentTokens * 4) // Rough estimate: 4 chars per token
+        {
+            parameters.PromptCaching = PromptCacheType.AutomaticToolsAndSystem;
+            activity?.SetTag("ai.cache.enabled", true);
+        }
+
+        // Add extended thinking support if enabled
+        var enableThinking = settings?.EnableThinking ?? _settings.Features.EnableExtendedThinking;
+        if (enableThinking && IsThinkingCapableModel(model))
+        {
+            var thinkingBudget = settings?.ThinkingBudget ?? _settings.Thinking.DefaultBudget;
+            thinkingBudget = Math.Min(thinkingBudget, _settings.Thinking.MaxBudget);
+
+            parameters.Thinking = new ThinkingParameters
+            {
+                BudgetTokens = thinkingBudget
+            };
+
+            activity?.SetTag("ai.thinking.enabled", true);
+            activity?.SetTag("ai.thinking.budget", thinkingBudget);
+        }
+
         var tokenCount = 0;
+        var isInThinkingBlock = false;
+
         await foreach (var messageChunk in _client.Messages.StreamClaudeMessageAsync(
             parameters,
             cancellationToken))
         {
+            // Handle thinking block start
+            if (messageChunk.ContentBlock?.Type == "thinking")
+            {
+                isInThinkingBlock = true;
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return "<thinking>";
+                }
+                continue;
+            }
+
+            // Handle thinking content delta
+            if (messageChunk.Delta?.Thinking != null)
+            {
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return messageChunk.Delta.Thinking;
+                }
+                continue;
+            }
+
+            // Handle content block start (text block after thinking)
+            if (messageChunk.ContentBlock?.Type == "text" && isInThinkingBlock)
+            {
+                isInThinkingBlock = false;
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return "</thinking>\n\n";
+                }
+            }
+
+            // Handle text delta
             if (messageChunk.Delta?.Text != null)
             {
                 if (!firstTokenReceived)
@@ -380,34 +534,58 @@ public class ClaudeProvider : IAIProvider
     }
 
     /// <summary>
-    /// Convert a ChatMessage to Claude format, handling multimodal content
+    /// Convert a ChatMessage to Claude format, handling multimodal content (images and PDFs)
     /// </summary>
     private static Message ConvertToClaudeMessage(Models.ChatMessage message)
     {
         var role = message.Role.ToLower() == "assistant" ? RoleType.Assistant : RoleType.User;
 
-        // Check for images - use multimodal format
-        if (message.Images != null && message.Images.Count > 0)
+        var hasImages = message.Images != null && message.Images.Count > 0;
+        var hasDocuments = message.Documents != null && message.Documents.Count > 0;
+
+        // Check for multimodal content (images or documents)
+        if (hasImages || hasDocuments)
         {
             // Build multimodal content for Claude using ContentBase list
             var contentBlocks = new List<ContentBase>();
 
-            // Add images first (Claude prefers images before text)
-            foreach (var image in message.Images)
+            // Add documents first (PDFs for context)
+            if (hasDocuments)
             {
-                // Create ImageContent with ImageSource directly
-                var imageContent = new ImageContent
+                foreach (var doc in message.Documents!)
                 {
-                    Source = new ImageSource
+                    // Create DocumentContent for PDF files
+                    var documentContent = new DocumentContent
                     {
-                        MediaType = image.MediaType,
-                        Data = image.Base64Data
-                    }
-                };
-                contentBlocks.Add(imageContent);
+                        Source = new DocumentSource
+                        {
+                            MediaType = doc.MediaType,
+                            Data = doc.Base64Data
+                        }
+                    };
+                    contentBlocks.Add(documentContent);
+                }
             }
 
-            // Add text content after images
+            // Add images (Claude prefers images before text)
+            if (hasImages)
+            {
+                foreach (var image in message.Images!)
+                {
+                    // Create ImageContent with ImageSource directly
+                    var imageContent = new ImageContent
+                    {
+                        Source = new ImageSource
+                        {
+                            MediaType = image.MediaType,
+                            Data = image.Base64Data
+                        }
+                    };
+                    contentBlocks.Add(imageContent);
+                }
+            }
+
+            // Add text content after documents and images
             if (!string.IsNullOrEmpty(message.Content))
             {
                 contentBlocks.Add(new Anthropic.SDK.Messaging.TextContent { Text = message.Content });

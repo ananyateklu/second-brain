@@ -3,6 +3,7 @@ namespace SecondBrain.Application.Services.AI.StructuredOutput;
 /// <summary>
 /// Service for generating structured JSON output from Gemini using type-safe schemas.
 /// Ensures model responses conform to specified C# types.
+/// This is the legacy Gemini-specific interface. Consider using IStructuredOutputService for cross-provider support.
 /// </summary>
 public interface IGeminiStructuredOutputService
 {
@@ -42,29 +43,5 @@ public interface IGeminiStructuredOutputService
     bool IsAvailable { get; }
 }
 
-/// <summary>
-/// Options for structured output generation.
-/// </summary>
-public class StructuredOutputOptions
-{
-    /// <summary>
-    /// The Gemini model to use. If null, uses default from configuration.
-    /// </summary>
-    public string? Model { get; set; }
-
-    /// <summary>
-    /// Temperature for generation (0.0-1.0). Lower = more deterministic.
-    /// Default is 0.1 for structured output to ensure consistency.
-    /// </summary>
-    public float Temperature { get; set; } = 0.1f;
-
-    /// <summary>
-    /// Maximum tokens for the response.
-    /// </summary>
-    public int? MaxTokens { get; set; }
-
-    /// <summary>
-    /// System instruction to prepend to the prompt.
-    /// </summary>
-    public string? SystemInstruction { get; set; }
-}
+// Note: StructuredOutputOptions is now defined in IStructuredOutputService.cs
+// and used by all providers for consistency.

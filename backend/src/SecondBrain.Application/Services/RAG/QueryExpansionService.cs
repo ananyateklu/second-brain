@@ -4,6 +4,8 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Models;
 
@@ -67,6 +69,7 @@ public class QueryExpansionService : IQueryExpansionService
 {
     private readonly IAIProviderFactory _aiProviderFactory;
     private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
+    private readonly IStructuredOutputService? _structuredOutputService;
     private readonly RagSettings _settings;
     private readonly ILogger<QueryExpansionService> _logger;
 
@@ -74,10 +77,12 @@ public class QueryExpansionService : IQueryExpansionService
         IAIProviderFactory aiProviderFactory,
         IEmbeddingProviderFactory embeddingProviderFactory,
         IOptions<RagSettings> settings,
-        ILogger<QueryExpansionService> logger)
+        ILogger<QueryExpansionService> logger,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _aiProviderFactory = aiProviderFactory;
         _embeddingProviderFactory = embeddingProviderFactory;
+        _structuredOutputService = structuredOutputService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -100,17 +105,101 @@ public class QueryExpansionService : IQueryExpansionService
             _logger.LogInformation("Generating hypothetical document for query: {Query}",
                 query.Substring(0, Math.Min(50, query.Length)));
 
-            // Get the AI provider for HyDE generation
-            var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
-            if (provider == null)
+            // Try structured output first for reliable document extraction
+            if (_structuredOutputService != null)
             {
-                _logger.LogWarning("AI provider {Provider} not available for HyDE", _settings.RerankingProvider);
-                result.Success = false;
-                result.Error = $"AI provider {_settings.RerankingProvider} not available";
-                return result;
+                var structuredResult = await GenerateStructuredHyDEDocumentAsync(query, cancellationToken);
+                if (structuredResult != null)
+                {
+                    result.HypotheticalDocument = structuredResult;
+                    result.Success = true;
+                    _logger.LogDebug("Generated structured HyDE document: {Doc}",
+                        result.HypotheticalDocument.Substring(0, Math.Min(100, result.HypotheticalDocument.Length)));
+                    return result;
+                }
+
+                _logger.LogDebug("Structured output failed for HyDE, falling back to text generation");
             }
 
-            var hydePrompt = $@"You are a helpful assistant that generates hypothetical documents.
+            // Fallback to text-based generation
+            return await GenerateTextBasedHyDEDocumentAsync(query, result, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating HyDE document for query");
+            result.Success = false;
+            result.Error = ex.Message;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Generates HyDE document using structured output for reliable extraction.
+    /// </summary>
+    private async Task<string?> GenerateStructuredHyDEDocumentAsync(
+        string query,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prompt = $@"Generate a hypothetical document that would answer this question.
+
+Question: {query}
+
+Write a detailed paragraph as if it were found in a document that directly answers this question.
+Be specific and include relevant details, facts, and terminology.
+Also identify the key concepts covered in your response.";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.7f,
+                MaxTokens = 600,
+                SystemInstruction = "You are a document generator. Create hypothetical documents that would contain information to answer the given question."
+            };
+
+            var result = await _structuredOutputService!.GenerateAsync<HyDEDocumentResult>(
+                _settings.RerankingProvider,
+                prompt,
+                options,
+                cancellationToken);
+
+            if (result != null && !string.IsNullOrWhiteSpace(result.Document))
+            {
+                if (result.KeyConcepts.Any())
+                {
+                    _logger.LogDebug("HyDE key concepts: {Concepts}", string.Join(", ", result.KeyConcepts));
+                }
+                return result.Document;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Structured HyDE generation failed");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generates HyDE document using text-based response.
+    /// </summary>
+    private async Task<QueryExpansionResult> GenerateTextBasedHyDEDocumentAsync(
+        string query,
+        QueryExpansionResult result,
+        CancellationToken cancellationToken)
+    {
+        var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
+        if (provider == null)
+        {
+            _logger.LogWarning("AI provider {Provider} not available for HyDE", _settings.RerankingProvider);
+            result.Success = false;
+            result.Error = $"AI provider {_settings.RerankingProvider} not available";
+            return result;
+        }
+
+        var hydePrompt = $@"You are a helpful assistant that generates hypothetical documents.
 
 Given the following question, write a detailed paragraph that would be found in a document that directly answers this question. 
 Write as if you are writing content from that document, not as if you are answering the question.
@@ -120,28 +209,21 @@ Question: {query}
 
 Hypothetical document paragraph:";
 
-            var request = new AIRequest { Prompt = hydePrompt, MaxTokens = 500, Temperature = 0.7f };
-            var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
-            var response = aiResponse.Content;
+        var request = new AIRequest { Prompt = hydePrompt, MaxTokens = 500, Temperature = 0.7f };
+        var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
+        var response = aiResponse.Content;
 
-            if (!string.IsNullOrWhiteSpace(response))
-            {
-                result.HypotheticalDocument = response.Trim();
-                result.Success = true;
-                _logger.LogDebug("Generated HyDE document: {Doc}",
-                    result.HypotheticalDocument.Substring(0, Math.Min(100, result.HypotheticalDocument.Length)));
-            }
-            else
-            {
-                result.Success = false;
-                result.Error = "Empty response from AI provider";
-            }
-        }
-        catch (Exception ex)
+        if (!string.IsNullOrWhiteSpace(response))
         {
-            _logger.LogError(ex, "Error generating HyDE document for query");
+            result.HypotheticalDocument = response.Trim();
+            result.Success = true;
+            _logger.LogDebug("Generated text-based HyDE document: {Doc}",
+                result.HypotheticalDocument.Substring(0, Math.Min(100, result.HypotheticalDocument.Length)));
+        }
+        else
+        {
             result.Success = false;
-            result.Error = ex.Message;
+            result.Error = "Empty response from AI provider";
         }
 
         return result;
@@ -164,41 +246,24 @@ Hypothetical document paragraph:";
             _logger.LogInformation("Generating {Count} query variations for: {Query}",
                 count, query.Substring(0, Math.Min(50, query.Length)));
 
-            var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
-            if (provider == null)
+            // Try structured output first for reliable query list extraction
+            if (_structuredOutputService != null)
             {
-                _logger.LogWarning("AI provider not available for multi-query generation");
-                return variations;
+                var structuredQueries = await GenerateStructuredMultiQueryAsync(query, count - 1, cancellationToken);
+                if (structuredQueries != null && structuredQueries.Any())
+                {
+                    variations.AddRange(structuredQueries);
+                    _logger.LogDebug("Generated {Count} structured query variations: {Queries}",
+                        structuredQueries.Count, string.Join(" | ", structuredQueries));
+                    return variations;
+                }
+
+                _logger.LogDebug("Structured output failed for multi-query, falling back to text parsing");
             }
 
-            var multiQueryPrompt = $@"You are a helpful assistant that generates search query variations.
-
-Given the following question, generate {count - 1} alternative phrasings or related queries that would help find relevant information. 
-Each variation should capture a different aspect or phrasing of the original question.
-Return ONLY the queries, one per line, without numbering or bullets.
-
-Original question: {query}
-
-Alternative queries:";
-
-            var request = new AIRequest { Prompt = multiQueryPrompt, MaxTokens = 300, Temperature = 0.8f };
-            var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
-            var response = aiResponse.Content;
-
-            if (!string.IsNullOrWhiteSpace(response))
-            {
-                var generatedQueries = response
-                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(q => q.Trim())
-                    .Where(q => !string.IsNullOrWhiteSpace(q) && q.Length > 5)
-                    .Take(count - 1)
-                    .ToList();
-
-                variations.AddRange(generatedQueries);
-
-                _logger.LogDebug("Generated {Count} query variations: {Queries}",
-                    generatedQueries.Count, string.Join(" | ", generatedQueries));
-            }
+            // Fallback to text-based generation
+            var textQueries = await GenerateTextBasedMultiQueryAsync(query, count - 1, cancellationToken);
+            variations.AddRange(textQueries);
         }
         catch (Exception ex)
         {
@@ -206,6 +271,112 @@ Alternative queries:";
         }
 
         return variations;
+    }
+
+    /// <summary>
+    /// Generates query variations using structured output for reliable list extraction.
+    /// </summary>
+    private async Task<List<string>?> GenerateStructuredMultiQueryAsync(
+        string query,
+        int count,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prompt = $@"Generate {count} alternative search queries for the following question.
+
+Original question: {query}
+
+Generate variations that:
+- Use different phrasings or synonyms
+- Capture different aspects of the question
+- Would help find relevant documents in a search
+
+Provide exactly {count} alternative queries.";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.8f,
+                MaxTokens = 400,
+                SystemInstruction = "You are a search query generator. Create alternative phrasings of user queries to improve search recall."
+            };
+
+            var result = await _structuredOutputService!.GenerateAsync<MultiQueryResult>(
+                _settings.RerankingProvider,
+                prompt,
+                options,
+                cancellationToken);
+
+            if (result != null && result.Queries.Any())
+            {
+                // Filter and clean queries
+                var cleanedQueries = result.Queries
+                    .Where(q => !string.IsNullOrWhiteSpace(q) && q.Length > 5)
+                    .Take(count)
+                    .ToList();
+
+                if (!string.IsNullOrEmpty(result.Explanation))
+                {
+                    _logger.LogDebug("Multi-query explanation: {Explanation}", result.Explanation);
+                }
+
+                return cleanedQueries;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Structured multi-query generation failed");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generates query variations using text-based response with line parsing.
+    /// </summary>
+    private async Task<List<string>> GenerateTextBasedMultiQueryAsync(
+        string query,
+        int count,
+        CancellationToken cancellationToken)
+    {
+        var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
+        if (provider == null)
+        {
+            _logger.LogWarning("AI provider not available for multi-query generation");
+            return new List<string>();
+        }
+
+        var multiQueryPrompt = $@"You are a helpful assistant that generates search query variations.
+
+Given the following question, generate {count} alternative phrasings or related queries that would help find relevant information. 
+Each variation should capture a different aspect or phrasing of the original question.
+Return ONLY the queries, one per line, without numbering or bullets.
+
+Original question: {query}
+
+Alternative queries:";
+
+        var request = new AIRequest { Prompt = multiQueryPrompt, MaxTokens = 300, Temperature = 0.8f };
+        var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
+        var response = aiResponse.Content;
+
+        if (!string.IsNullOrWhiteSpace(response))
+        {
+            var generatedQueries = response
+                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                .Select(q => q.Trim())
+                .Where(q => !string.IsNullOrWhiteSpace(q) && q.Length > 5)
+                .Take(count)
+                .ToList();
+
+            _logger.LogDebug("Generated {Count} text-based query variations: {Queries}",
+                generatedQueries.Count, string.Join(" | ", generatedQueries));
+
+            return generatedQueries;
+        }
+
+        return new List<string>();
     }
 
     public async Task<ExpandedQueryEmbeddings> GetExpandedQueryEmbeddingsAsync(

@@ -4,6 +4,8 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -61,6 +63,7 @@ public class TopicClusteringService : ITopicClusteringService
     private readonly IRagQueryLogRepository _repository;
     private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly IAIProviderFactory _aiProviderFactory;
+    private readonly IStructuredOutputService? _structuredOutputService;
     private readonly RagSettings _settings;
     private readonly ILogger<TopicClusteringService> _logger;
 
@@ -73,11 +76,13 @@ public class TopicClusteringService : ITopicClusteringService
         IEmbeddingProviderFactory embeddingProviderFactory,
         IAIProviderFactory aiProviderFactory,
         IOptions<RagSettings> settings,
-        ILogger<TopicClusteringService> logger)
+        ILogger<TopicClusteringService> logger,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _repository = repository;
         _embeddingProviderFactory = embeddingProviderFactory;
         _aiProviderFactory = aiProviderFactory;
+        _structuredOutputService = structuredOutputService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -138,11 +143,11 @@ public class TopicClusteringService : ITopicClusteringService
                 {
                     var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(
                         log.Query, cancellationToken);
-                    
+
                     if (embeddingResponse.Success)
                     {
                         embedding = embeddingResponse.Embedding;
-                        
+
                         // Cache the embedding
                         log.QueryEmbeddingJson = JsonSerializer.Serialize(embedding);
                         await _repository.UpdateAsync(log.Id, log);
@@ -218,7 +223,7 @@ public class TopicClusteringService : ITopicClusteringService
         try
         {
             var logs = (await _repository.GetByUserIdAsync(userId)).ToList();
-            
+
             var clusteredLogs = logs
                 .Where(l => l.TopicCluster.HasValue)
                 .GroupBy(l => l.TopicCluster!.Value)
@@ -238,8 +243,8 @@ public class TopicClusteringService : ITopicClusteringService
                     QueryCount = clusterLogs.Count,
                     PositiveFeedback = positive,
                     NegativeFeedback = negative,
-                    PositiveFeedbackRate = logsWithFeedback.Count > 0 
-                        ? (double)positive / logsWithFeedback.Count 
+                    PositiveFeedbackRate = logsWithFeedback.Count > 0
+                        ? (double)positive / logsWithFeedback.Count
                         : 0,
                     AvgCosineScore = clusterLogs
                         .Where(l => l.TopCosineScore.HasValue)
@@ -277,7 +282,7 @@ public class TopicClusteringService : ITopicClusteringService
 
         var random = new Random(42); // Fixed seed for reproducibility
         var dimensions = embeddings[0].Length;
-        
+
         // Initialize centroids randomly
         var centroids = embeddings
             .OrderBy(_ => random.Next())
@@ -350,15 +355,6 @@ public class TopicClusteringService : ITopicClusteringService
 
         try
         {
-            var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
-            if (provider == null)
-            {
-                // Return default labels if no provider available
-                return Enumerable.Range(0, clusterCount)
-                    .Select(i => $"Topic {i + 1}")
-                    .ToList();
-            }
-
             // Group queries by cluster
             var clusterGroups = embeddings
                 .Select((e, i) => new { Log = e.Log, Cluster = clusters[i] })
@@ -373,29 +369,25 @@ public class TopicClusteringService : ITopicClusteringService
                     .Select(g => g.Log.Query)
                     .ToList();
 
-                var prompt = $@"Given these similar queries from a user's knowledge base search:
-
-{string.Join("\n", sampleQueries.Select((q, i) => $"{i + 1}. {q}"))}
-
-Generate a SHORT topic label (2-4 words) that describes what these queries have in common.
-Respond with ONLY the topic label, nothing else.";
-
-                var request = new AIRequest
+                // Try structured output first for reliable label extraction
+                if (_structuredOutputService != null)
                 {
-                    Prompt = prompt,
-                    MaxTokens = 20,
-                    Temperature = 0.3f
-                };
+                    var structuredLabel = await GenerateStructuredTopicLabelAsync(
+                        sampleQueries, group.Key, cancellationToken);
 
-                var response = await provider.GenerateCompletionAsync(request, cancellationToken);
-                var label = response.Content?.Trim() ?? $"Topic {group.Key + 1}";
-                
-                // Clean up the label
-                label = label.Replace("\"", "").Replace(".", "").Trim();
-                if (label.Length > 50) label = label.Substring(0, 50);
-                if (string.IsNullOrWhiteSpace(label)) label = $"Topic {group.Key + 1}";
+                    if (!string.IsNullOrWhiteSpace(structuredLabel))
+                    {
+                        labels.Add(structuredLabel);
+                        continue;
+                    }
 
-                labels.Add(label);
+                    _logger.LogDebug("Structured output failed for cluster {ClusterId}, falling back to text parsing", group.Key);
+                }
+
+                // Fallback to text-based label generation
+                var textLabel = await GenerateTextBasedTopicLabelAsync(
+                    sampleQueries, group.Key, cancellationToken);
+                labels.Add(textLabel);
             }
 
             return labels;
@@ -407,6 +399,99 @@ Respond with ONLY the topic label, nothing else.";
                 .Select(i => $"Topic {i + 1}")
                 .ToList();
         }
+    }
+
+    /// <summary>
+    /// Generates a topic label using structured output for reliable extraction.
+    /// </summary>
+    private async Task<string?> GenerateStructuredTopicLabelAsync(
+        List<string> sampleQueries,
+        int clusterId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prompt = $@"Analyze these similar queries from a user's knowledge base search and generate a topic label.
+
+Queries:
+{string.Join("\n", sampleQueries.Select((q, i) => $"{i + 1}. {q}"))}
+
+Generate a SHORT topic label (2-4 words) that describes what these queries have in common.
+Also identify key terms that define this topic.";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.3f,
+                MaxTokens = 100,
+                SystemInstruction = "You are a topic classifier. Generate concise, descriptive labels for groups of related queries."
+            };
+
+            var result = await _structuredOutputService!.GenerateAsync<TopicLabelResult>(
+                _settings.RerankingProvider,
+                prompt,
+                options,
+                cancellationToken);
+
+            if (result != null && !string.IsNullOrWhiteSpace(result.Label))
+            {
+                var label = result.Label.Trim();
+                // Ensure label isn't too long
+                if (label.Length > 50)
+                    label = label.Substring(0, 50).TrimEnd();
+
+                _logger.LogDebug(
+                    "Generated structured topic label for cluster {ClusterId}: {Label} (confidence: {Confidence})",
+                    clusterId, label, result.Confidence);
+
+                return label;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Structured topic label generation failed for cluster {ClusterId}", clusterId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Generates a topic label using text-based response with cleanup.
+    /// </summary>
+    private async Task<string> GenerateTextBasedTopicLabelAsync(
+        List<string> sampleQueries,
+        int clusterId,
+        CancellationToken cancellationToken)
+    {
+        var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
+        if (provider == null)
+        {
+            return $"Topic {clusterId + 1}";
+        }
+
+        var prompt = $@"Given these similar queries from a user's knowledge base search:
+
+{string.Join("\n", sampleQueries.Select((q, i) => $"{i + 1}. {q}"))}
+
+Generate a SHORT topic label (2-4 words) that describes what these queries have in common.
+Respond with ONLY the topic label, nothing else.";
+
+        var request = new AIRequest
+        {
+            Prompt = prompt,
+            MaxTokens = 20,
+            Temperature = 0.3f
+        };
+
+        var response = await provider.GenerateCompletionAsync(request, cancellationToken);
+        var label = response.Content?.Trim() ?? $"Topic {clusterId + 1}";
+
+        // Clean up the label
+        label = label.Replace("\"", "").Replace(".", "").Trim();
+        if (label.Length > 50) label = label.Substring(0, 50);
+        if (string.IsNullOrWhiteSpace(label)) label = $"Topic {clusterId + 1}";
+
+        return label;
     }
 }
 

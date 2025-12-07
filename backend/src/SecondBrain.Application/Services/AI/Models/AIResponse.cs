@@ -21,7 +21,7 @@ public class AIResponse
     public CodeExecutionResult? CodeExecutionResult { get; set; }
 
     /// <summary>
-    /// Extended thinking/reasoning process (Gemini 2.0+ thinking mode)
+    /// Extended thinking/reasoning process (Gemini 2.0+ thinking mode, Claude extended thinking)
     /// </summary>
     public string? ThinkingProcess { get; set; }
 
@@ -29,6 +29,39 @@ public class AIResponse
     /// Function calls requested by the model (for agent/tool use)
     /// </summary>
     public List<FunctionCallInfo>? FunctionCalls { get; set; }
+
+    /// <summary>
+    /// Citations from source documents (Claude only, when documents are provided)
+    /// </summary>
+    public List<Citation>? Citations { get; set; }
+
+    /// <summary>
+    /// Cache statistics for prompt caching (Claude only)
+    /// </summary>
+    public CacheUsageStats? CacheUsage { get; set; }
+}
+
+/// <summary>
+/// Statistics about prompt cache usage (Claude only)
+/// </summary>
+public class CacheUsageStats
+{
+    /// <summary>
+    /// Tokens used to create the cache
+    /// </summary>
+    public int CacheCreationTokens { get; set; }
+
+    /// <summary>
+    /// Tokens read from cache (saved from re-processing)
+    /// </summary>
+    public int CacheReadTokens { get; set; }
+
+    /// <summary>
+    /// Estimated cost savings percentage from caching
+    /// </summary>
+    public decimal SavingsPercent => CacheReadTokens > 0 && (CacheCreationTokens + CacheReadTokens) > 0
+        ? Math.Round((decimal)CacheReadTokens / (CacheCreationTokens + CacheReadTokens) * 100, 2)
+        : 0;
 }
 
 /// <summary>

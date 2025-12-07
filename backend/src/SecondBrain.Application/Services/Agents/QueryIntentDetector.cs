@@ -1,15 +1,42 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 
 namespace SecondBrain.Application.Services.Agents;
 
 /// <summary>
 /// Detects whether a user query would benefit from automatic note context retrieval.
-/// Uses heuristics to identify knowledge/recall queries vs. action commands.
+/// Uses heuristics for fast detection and optional AI-powered intent classification for richer analysis.
 /// </summary>
 public class QueryIntentDetector
 {
+    private readonly IStructuredOutputService? _structuredOutputService;
+    private readonly ILogger<QueryIntentDetector>? _logger;
+
+    /// <summary>
+    /// Creates a QueryIntentDetector with optional AI-powered intent detection.
+    /// </summary>
+    /// <param name="structuredOutputService">Optional structured output service for AI-powered detection.</param>
+    /// <param name="logger">Optional logger for diagnostic output.</param>
+    public QueryIntentDetector(
+        IStructuredOutputService? structuredOutputService = null,
+        ILogger<QueryIntentDetector>? logger = null)
+    {
+        _structuredOutputService = structuredOutputService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Default constructor for backward compatibility.
+    /// Uses heuristic-only detection without AI.
+    /// </summary>
+    public QueryIntentDetector() : this(null, null)
+    {
+    }
+
     // Question words that indicate information seeking
-    private static readonly string[] QuestionWords = 
+    private static readonly string[] QuestionWords =
     {
         "what", "where", "when", "how", "why", "which", "who", "whose",
         "did i", "have i", "do i", "am i", "was i", "were there",
@@ -186,6 +213,258 @@ public class QueryIntentDetector
                 return true;
         }
         return false;
+    }
+
+    // ============================================================================
+    // AI-Powered Intent Detection Methods
+    // ============================================================================
+
+    /// <summary>
+    /// Detects query intent using AI-powered structured output.
+    /// Provides richer intent classification than heuristic-only detection.
+    /// Falls back to heuristic-based detection if AI is unavailable.
+    /// </summary>
+    /// <param name="query">The user's query text</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>QueryIntent with detailed classification, or null if detection failed</returns>
+    public async Task<QueryIntent?> DetectIntentAsync(
+        string query,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        // If no structured output service, fall back to heuristic-based intent
+        if (_structuredOutputService == null)
+        {
+            _logger?.LogDebug("No structured output service available, using heuristic fallback");
+            return CreateHeuristicIntent(query);
+        }
+
+        try
+        {
+            var prompt = BuildIntentDetectionPrompt(query);
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.1f, // Low temperature for consistent classification
+                MaxTokens = 500,
+                SystemInstruction = "You are an intent classifier for a personal knowledge management system. Analyze user queries to determine their intent, required features, and suggested tools."
+            };
+
+            var intent = await _structuredOutputService.GenerateAsync<QueryIntent>(prompt, options, cancellationToken);
+
+            if (intent != null)
+            {
+                _logger?.LogDebug(
+                    "AI detected intent: Type={IntentType}, RequiresRAG={RequiresRAG}, RequiresTools={RequiresTools}, Confidence={Confidence}",
+                    intent.IntentType, intent.RequiresRAG, intent.RequiresTools, intent.Confidence);
+                return intent;
+            }
+
+            _logger?.LogWarning("AI intent detection returned null, falling back to heuristics");
+            return CreateHeuristicIntent(query);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "AI intent detection failed, falling back to heuristics");
+            return CreateHeuristicIntent(query);
+        }
+    }
+
+    /// <summary>
+    /// Detects query intent using AI with a specific provider.
+    /// </summary>
+    /// <param name="provider">The AI provider to use (e.g., "OpenAI", "Gemini")</param>
+    /// <param name="query">The user's query text</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>QueryIntent with detailed classification, or null if detection failed</returns>
+    public async Task<QueryIntent?> DetectIntentAsync(
+        string provider,
+        string query,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        if (_structuredOutputService == null)
+        {
+            _logger?.LogDebug("No structured output service available, using heuristic fallback");
+            return CreateHeuristicIntent(query);
+        }
+
+        try
+        {
+            var prompt = BuildIntentDetectionPrompt(query);
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.1f,
+                MaxTokens = 500,
+                SystemInstruction = "You are an intent classifier for a personal knowledge management system. Analyze user queries to determine their intent, required features, and suggested tools."
+            };
+
+            var intent = await _structuredOutputService.GenerateAsync<QueryIntent>(provider, prompt, options, cancellationToken);
+
+            if (intent != null)
+            {
+                _logger?.LogDebug(
+                    "AI ({Provider}) detected intent: Type={IntentType}, RequiresRAG={RequiresRAG}, Confidence={Confidence}",
+                    provider, intent.IntentType, intent.RequiresRAG, intent.Confidence);
+                return intent;
+            }
+
+            return CreateHeuristicIntent(query);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "AI intent detection with provider {Provider} failed", provider);
+            return CreateHeuristicIntent(query);
+        }
+    }
+
+    /// <summary>
+    /// Checks if AI-powered intent detection is available.
+    /// </summary>
+    public bool IsAIDetectionAvailable => _structuredOutputService != null;
+
+    /// <summary>
+    /// Builds the prompt for intent detection.
+    /// </summary>
+    private static string BuildIntentDetectionPrompt(string query)
+    {
+        return $@"Analyze this user query from a personal knowledge management system and classify its intent.
+
+User Query: ""{query}""
+
+Consider:
+1. What is the user trying to accomplish? (search, create, update, delete, question, analyze, summarize, compare)
+2. Would retrieving relevant notes from their knowledge base help answer this query?
+3. Does this query require using tools to manipulate notes or search?
+4. What specific tools might be needed?
+
+Intent types:
+- search: Looking for specific information in notes
+- create: Creating new notes or content
+- update: Modifying existing notes
+- delete: Removing notes
+- question: Asking a question that might benefit from note context
+- analyze: Requesting analysis of notes or content
+- summarize: Requesting a summary of notes or topics
+- compare: Comparing notes or concepts
+
+Classify this query and provide your analysis.";
+    }
+
+    /// <summary>
+    /// Creates a QueryIntent based on heuristic detection when AI is unavailable.
+    /// </summary>
+    private QueryIntent CreateHeuristicIntent(string query)
+    {
+        var normalizedQuery = query.ToLowerInvariant().Trim();
+        var isAction = IsActionCommand(normalizedQuery);
+        var shouldRetrieve = ShouldRetrieveContext(query);
+
+        // Determine intent type based on heuristics
+        string intentType;
+        var suggestedTools = new List<string>();
+
+        if (isAction)
+        {
+            if (normalizedQuery.Contains("create") || normalizedQuery.Contains("make") || normalizedQuery.Contains("add") || normalizedQuery.Contains("write"))
+            {
+                intentType = "create";
+                suggestedTools.Add("create_note");
+            }
+            else if (normalizedQuery.Contains("delete") || normalizedQuery.Contains("remove"))
+            {
+                intentType = "delete";
+                suggestedTools.Add("delete_note");
+            }
+            else if (normalizedQuery.Contains("update") || normalizedQuery.Contains("edit") || normalizedQuery.Contains("modify"))
+            {
+                intentType = "update";
+                suggestedTools.Add("update_note");
+            }
+            else
+            {
+                intentType = "update"; // Default action type
+            }
+        }
+        else if (shouldRetrieve)
+        {
+            if (normalizedQuery.Contains("summar"))
+            {
+                intentType = "summarize";
+            }
+            else if (normalizedQuery.Contains("compare") || normalizedQuery.Contains("difference"))
+            {
+                intentType = "compare";
+            }
+            else if (normalizedQuery.Contains("analyz") || normalizedQuery.Contains("analys"))
+            {
+                intentType = "analyze";
+            }
+            else if (ContainsRecallPhrase(normalizedQuery) || normalizedQuery.Contains("search") || normalizedQuery.Contains("find"))
+            {
+                intentType = "search";
+                suggestedTools.Add("search_notes");
+            }
+            else
+            {
+                intentType = "question";
+            }
+        }
+        else
+        {
+            intentType = "question";
+        }
+
+        return new QueryIntent
+        {
+            IntentType = intentType,
+            RequiresRAG = shouldRetrieve,
+            RequiresTools = isAction || suggestedTools.Count > 0,
+            SuggestedTools = suggestedTools,
+            Confidence = 0.7f, // Heuristic confidence is moderate
+            Reasoning = "Classified using heuristic pattern matching (AI unavailable)",
+            Entities = ExtractSimpleEntities(query)
+        };
+    }
+
+    /// <summary>
+    /// Extracts simple entities from the query using basic patterns.
+    /// </summary>
+    private static List<string> ExtractSimpleEntities(string query)
+    {
+        var entities = new List<string>();
+
+        // Extract quoted strings as potential entities
+        var quotedMatches = Regex.Matches(query, @"""([^""]+)""|'([^']+)'");
+        foreach (Match match in quotedMatches)
+        {
+            var value = match.Groups[1].Success ? match.Groups[1].Value : match.Groups[2].Value;
+            if (!string.IsNullOrWhiteSpace(value))
+                entities.Add(value);
+        }
+
+        // Extract words after common prepositions as potential topics
+        var topicMatches = Regex.Matches(query, @"\b(?:about|on|regarding|for|called|named|titled)\s+([a-zA-Z0-9]+(?:\s+[a-zA-Z0-9]+)?)", RegexOptions.IgnoreCase);
+        foreach (Match match in topicMatches)
+        {
+            if (match.Groups[1].Success && !string.IsNullOrWhiteSpace(match.Groups[1].Value))
+                entities.Add(match.Groups[1].Value);
+        }
+
+        return entities.Distinct().ToList();
     }
 }
 

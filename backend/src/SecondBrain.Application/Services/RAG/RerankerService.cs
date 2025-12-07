@@ -6,6 +6,8 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 using SecondBrain.Application.Telemetry;
 
 namespace SecondBrain.Application.Services.RAG;
@@ -60,6 +62,7 @@ public class RerankedResult
 public class RerankerService : IRerankerService
 {
     private readonly IAIProviderFactory _aiProviderFactory;
+    private readonly IStructuredOutputService? _structuredOutputService;
     private readonly RagSettings _settings;
     private readonly ILogger<RerankerService> _logger;
 
@@ -69,9 +72,11 @@ public class RerankerService : IRerankerService
     public RerankerService(
         IAIProviderFactory aiProviderFactory,
         IOptions<RagSettings> settings,
-        ILogger<RerankerService> logger)
+        ILogger<RerankerService> logger,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _aiProviderFactory = aiProviderFactory;
+        _structuredOutputService = structuredOutputService;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -188,12 +193,107 @@ public class RerankerService : IRerankerService
                 ? result.Content.Substring(0, 1500) + "..."
                 : result.Content;
 
-            var prompt = $@"You are a relevance scoring system. Rate how relevant the following document is to the given query.
+            // Try structured output first for reliable score extraction
+            if (_structuredOutputService != null)
+            {
+                var structuredScore = await GetStructuredRelevanceScoreAsync(
+                    query, result.NoteTitle, truncatedContent, cancellationToken);
+
+                if (structuredScore.HasValue)
+                {
+                    _logger.LogDebug("Structured rerank score for '{Title}': {Score}",
+                        result.NoteTitle.Substring(0, Math.Min(30, result.NoteTitle.Length)), structuredScore.Value);
+                    return structuredScore.Value;
+                }
+
+                _logger.LogDebug("Structured output failed, falling back to text parsing");
+            }
+
+            // Fallback to text-based scoring with regex parsing
+            return await GetTextBasedRelevanceScoreAsync(provider, query, result.NoteTitle, truncatedContent, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting relevance score for document {Id}", result.Id);
+            return 5.0f; // Return neutral score on error
+        }
+    }
+
+    /// <summary>
+    /// Gets relevance score using structured output for reliable parsing.
+    /// </summary>
+    private async Task<float?> GetStructuredRelevanceScoreAsync(
+        string query,
+        string noteTitle,
+        string content,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prompt = $@"Rate how relevant this document is to the given query.
 
 Query: {query}
 
-Document Title: {result.NoteTitle}
-Document Content: {truncatedContent}
+Document Title: {noteTitle}
+Document Content: {content}
+
+Scoring guide:
+- 0: Completely irrelevant, no connection to the query
+- 3: Tangentially related, mentions similar topics but doesn't address the query
+- 5: Somewhat relevant, contains related information but not directly useful
+- 7: Relevant, contains information that helps answer the query
+- 10: Highly relevant, directly addresses or answers the query
+
+Provide a relevance score and brief reasoning.";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.0f,
+                MaxTokens = 100,
+                SystemInstruction = "You are a document relevance scoring system. Evaluate how well a document matches a search query."
+            };
+
+            var result = await _structuredOutputService!.GenerateAsync<RelevanceScoreResult>(
+                _settings.RerankingProvider,
+                prompt,
+                options,
+                cancellationToken);
+
+            if (result != null)
+            {
+                var score = Math.Clamp(result.Score, 0, 10);
+                if (!string.IsNullOrEmpty(result.Reasoning))
+                {
+                    _logger.LogDebug("Rerank reasoning: {Reasoning}", result.Reasoning);
+                }
+                return score;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Structured relevance scoring failed");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets relevance score using text-based response with regex fallback.
+    /// </summary>
+    private async Task<float> GetTextBasedRelevanceScoreAsync(
+        IAIProvider provider,
+        string query,
+        string noteTitle,
+        string content,
+        CancellationToken cancellationToken)
+    {
+        var prompt = $@"You are a relevance scoring system. Rate how relevant the following document is to the given query.
+
+Query: {query}
+
+Document Title: {noteTitle}
+Document Content: {content}
 
 Rate the relevance on a scale of 0 to 10, where:
 - 0: Completely irrelevant
@@ -204,26 +304,20 @@ Rate the relevance on a scale of 0 to 10, where:
 
 Respond with ONLY a single number between 0 and 10. No explanation.";
 
-            var request = new AIRequest { Prompt = prompt, MaxTokens = 10, Temperature = 0.0f };
-            var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
-            var response = aiResponse.Content;
+        var request = new AIRequest { Prompt = prompt, MaxTokens = 10, Temperature = 0.0f };
+        var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
+        var response = aiResponse.Content;
 
-            if (TryParseScore(response, out var score))
-            {
-                _logger.LogDebug("Rerank score for '{Title}': {Score}",
-                    result.NoteTitle.Substring(0, Math.Min(30, result.NoteTitle.Length)), score);
-                return score;
-            }
-
-            // If we couldn't parse, return a neutral score
-            _logger.LogWarning("Could not parse rerank score from response: {Response}", response);
-            return 5.0f;
-        }
-        catch (Exception ex)
+        if (TryParseScore(response, out var score))
         {
-            _logger.LogError(ex, "Error getting relevance score for document {Id}", result.Id);
-            return 5.0f; // Return neutral score on error
+            _logger.LogDebug("Text-based rerank score for '{Title}': {Score}",
+                noteTitle.Substring(0, Math.Min(30, noteTitle.Length)), score);
+            return score;
         }
+
+        // If we couldn't parse, return a neutral score
+        _logger.LogWarning("Could not parse rerank score from response: {Response}", response);
+        return 5.0f;
     }
 
     private bool TryParseScore(string response, out float score)

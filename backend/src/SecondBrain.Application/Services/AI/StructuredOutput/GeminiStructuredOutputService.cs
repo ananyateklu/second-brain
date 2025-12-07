@@ -4,11 +4,15 @@ using Google.GenAI.Types;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.AI.StructuredOutput.Adapters;
+using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 
 namespace SecondBrain.Application.Services.AI.StructuredOutput;
 
 /// <summary>
 /// Implementation of structured output generation using Gemini's JSON schema support.
+/// This is the legacy interface - consider using IStructuredOutputService for cross-provider support.
+/// Now uses the shared JsonSchemaBuilder via GeminiSchemaAdapter.
 /// </summary>
 public class GeminiStructuredOutputService : IGeminiStructuredOutputService
 {
@@ -70,8 +74,8 @@ public class GeminiStructuredOutputService : IGeminiStructuredOutputService
 
         try
         {
-            // Build the schema from the type
-            var schema = GeminiSchemaBuilder.FromType<T>();
+            // Build the schema from the type using shared builder and adapter
+            var schema = GeminiSchemaAdapter.FromType<T>();
 
             // Build generation config with JSON response
             var config = new GenerateContentConfig

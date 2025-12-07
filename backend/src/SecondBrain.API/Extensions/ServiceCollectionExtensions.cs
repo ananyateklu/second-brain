@@ -34,6 +34,7 @@ using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Embeddings;
@@ -203,7 +204,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGeminiFunctionHandler>(sp =>
             sp.GetRequiredService<SecondBrain.Application.Services.AI.FunctionCalling.Handlers.NotesGeminiFunctionHandler>());
 
-        // Register Gemini Structured Output service for type-safe JSON generation
+        // Register Ollama function registry for native function calling
+        // The registry collects all IOllamaFunctionHandler implementations and provides them to the OllamaProvider
+        services.AddScoped<IOllamaFunctionRegistry, OllamaFunctionRegistry>();
+
+        // Register Ollama function handlers (similar pattern to Gemini)
+        // Note: Ollama uses the same plugin infrastructure but with OllamaSharp Tool format
+
+        // Register Gemini Structured Output service for type-safe JSON generation (legacy interface)
         services.AddSingleton<IGeminiStructuredOutputService, GeminiStructuredOutputService>();
 
         // Register Gemini Context Cache service for reducing latency/costs with large contexts
@@ -211,6 +219,33 @@ public static class ServiceCollectionExtensions
 
         // Register Agent service for agent mode functionality
         services.AddScoped<IAgentService, AgentService>();
+
+        // Register unified structured output services (cross-provider)
+        services.AddStructuredOutputServices(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers unified structured output services for all AI providers.
+    /// These services enable type-safe JSON generation across OpenAI, Claude, Gemini, Grok, and Ollama.
+    /// </summary>
+    public static IServiceCollection AddStructuredOutputServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure structured output settings
+        services.Configure<StructuredOutputSettings>(configuration.GetSection(StructuredOutputSettings.SectionName));
+
+        // Register provider-specific structured output services
+        // Each implements IProviderStructuredOutputService for the unified factory
+        services.AddSingleton<IProviderStructuredOutputService, OpenAIStructuredOutputService>();
+        services.AddSingleton<IProviderStructuredOutputService, GrokStructuredOutputService>();
+        services.AddSingleton<IProviderStructuredOutputService, GeminiStructuredOutputProviderService>();
+        services.AddSingleton<IProviderStructuredOutputService, ClaudeStructuredOutputService>();
+        services.AddSingleton<IProviderStructuredOutputService, OllamaStructuredOutputService>();
+
+        // Register the unified structured output service
+        // This resolves the appropriate provider based on configuration or explicit request
+        services.AddSingleton<IStructuredOutputService, StructuredOutputService>();
 
         return services;
     }

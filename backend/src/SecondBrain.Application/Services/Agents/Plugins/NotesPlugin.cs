@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
@@ -13,6 +15,7 @@ public class NotesPlugin : IAgentPlugin
 {
     private readonly INoteRepository _noteRepository;
     private readonly IRagService? _ragService;
+    private readonly IStructuredOutputService? _structuredOutputService;
     private readonly RagSettings? _ragSettings;
     private string _currentUserId = string.Empty;
     private bool _agentRagEnabled = true;
@@ -20,11 +23,16 @@ public class NotesPlugin : IAgentPlugin
     // Maximum length for content preview in list operations
     private const int MaxPreviewLength = 200;
 
-    public NotesPlugin(INoteRepository noteRepository, IRagService? ragService = null, RagSettings? ragSettings = null)
+    public NotesPlugin(
+        INoteRepository noteRepository,
+        IRagService? ragService = null,
+        RagSettings? ragSettings = null,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _noteRepository = noteRepository;
         _ragService = ragService;
         _ragSettings = ragSettings;
+        _structuredOutputService = structuredOutputService;
     }
 
     /// <summary>
@@ -1599,6 +1607,360 @@ For simple additions, use AppendToNote instead.";
         catch (Exception ex)
         {
             return $"Error duplicating note: {ex.Message}";
+        }
+    }
+
+    // ============================================================================
+    // AI-Powered Analysis Tools
+    // ============================================================================
+
+    [KernelFunction("AnalyzeNote")]
+    [Description("Analyzes a note using AI to extract key information, suggest tags, identify key points, and determine sentiment. Requires AI structured output service to be available.")]
+    public async Task<string> AnalyzeNoteAsync(
+        [Description("The ID of the note to analyze")] string noteId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot analyze note.";
+        }
+
+        if (_structuredOutputService == null)
+        {
+            return "Error: Note analysis requires AI structured output service which is not available.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to analyze this note.";
+            }
+
+            var prompt = $@"Analyze the following note and extract structured information.
+
+Note Title: {note.Title}
+
+Note Content:
+{note.Content}
+
+Current Tags: {(note.Tags.Any() ? string.Join(", ", note.Tags) : "none")}
+Current Folder: {note.Folder ?? "none"}
+
+Provide a comprehensive analysis including:
+- A brief summary
+- Suggested tags for categorization
+- Key points or main ideas
+- Overall sentiment
+- Suggested folder for organization";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.3f,
+                MaxTokens = 800,
+                SystemInstruction = "You are a note analysis assistant. Analyze notes to extract key information, suggest organization, and identify themes."
+            };
+
+            var analysis = await _structuredOutputService.GenerateAsync<NoteAnalysis>(prompt, options);
+
+            if (analysis == null)
+            {
+                return "Error: Failed to analyze the note. The AI service did not return a valid analysis.";
+            }
+
+            var response = new
+            {
+                type = "analysis",
+                message = $"Analysis complete for note \"{note.Title}\"",
+                noteId = note.Id,
+                noteTitle = note.Title,
+                analysis = new
+                {
+                    suggestedTitle = analysis.Title,
+                    summary = analysis.Summary,
+                    suggestedTags = analysis.Tags,
+                    currentTags = note.Tags,
+                    keyPoints = analysis.KeyPoints,
+                    sentiment = analysis.Sentiment,
+                    suggestedFolder = analysis.SuggestedFolder,
+                    currentFolder = note.Folder
+                }
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error analyzing note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("SuggestTags")]
+    [Description("Uses AI to suggest relevant tags for a note based on its content. Helpful for organizing and categorizing notes.")]
+    public async Task<string> SuggestTagsAsync(
+        [Description("The ID of the note to suggest tags for")] string noteId,
+        [Description("Maximum number of tags to suggest (default: 5)")] int maxTags = 5)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot suggest tags.";
+        }
+
+        if (_structuredOutputService == null)
+        {
+            return "Error: Tag suggestion requires AI structured output service which is not available.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to access this note.";
+            }
+
+            var prompt = $@"Suggest {maxTags} relevant tags for categorizing this note.
+
+Note Title: {note.Title}
+
+Note Content:
+{note.Content}
+
+Current Tags: {(note.Tags.Any() ? string.Join(", ", note.Tags) : "none")}
+
+Suggest tags that:
+- Capture the main topics and themes
+- Would help with future searches
+- Are concise (1-2 words each)
+- Are different from existing tags when possible";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.3f,
+                MaxTokens = 300,
+                SystemInstruction = "You are a note categorization assistant. Suggest concise, relevant tags for organizing notes."
+            };
+
+            var analysis = await _structuredOutputService.GenerateAsync<NoteAnalysis>(prompt, options);
+
+            if (analysis == null || !analysis.Tags.Any())
+            {
+                return "Error: Failed to generate tag suggestions.";
+            }
+
+            var suggestedTags = analysis.Tags.Take(maxTags).ToList();
+            var newTags = suggestedTags.Where(t => !note.Tags.Contains(t, StringComparer.OrdinalIgnoreCase)).ToList();
+
+            var response = new
+            {
+                type = "tags",
+                message = $"Suggested tags for note \"{note.Title}\"",
+                noteId = note.Id,
+                noteTitle = note.Title,
+                currentTags = note.Tags,
+                suggestedTags = suggestedTags,
+                newTags = newTags,
+                hint = newTags.Any()
+                    ? $"Use UpdateNote to add these tags: {string.Join(", ", newTags)}"
+                    : "All suggested tags are already present on this note."
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error suggesting tags: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("SummarizeNote")]
+    [Description("Generates a comprehensive summary of a note using AI, including a one-liner, short summary, and key takeaways.")]
+    public async Task<string> SummarizeNoteAsync(
+        [Description("The ID of the note to summarize")] string noteId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot summarize note.";
+        }
+
+        if (_structuredOutputService == null)
+        {
+            return "Error: Note summarization requires AI structured output service which is not available.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to access this note.";
+            }
+
+            var prompt = $@"Create a comprehensive summary of this note.
+
+Note Title: {note.Title}
+
+Note Content:
+{note.Content}
+
+Provide:
+1. A one-line summary (like a title)
+2. A short summary (2-4 sentences)
+3. A detailed summary with key points
+4. Main topics covered
+5. Key takeaways or action items";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.3f,
+                MaxTokens = 800,
+                SystemInstruction = "You are a summarization assistant. Create clear, concise summaries that capture the essential information."
+            };
+
+            var summary = await _structuredOutputService.GenerateAsync<ContentSummary>(prompt, options);
+
+            if (summary == null)
+            {
+                return "Error: Failed to generate summary.";
+            }
+
+            var response = new
+            {
+                type = "summary",
+                message = $"Summary of note \"{note.Title}\"",
+                noteId = note.Id,
+                noteTitle = note.Title,
+                summary = new
+                {
+                    oneLiner = summary.OneLiner,
+                    shortSummary = summary.ShortSummary,
+                    detailedSummary = summary.DetailedSummary,
+                    topics = summary.Topics,
+                    keyTakeaways = summary.KeyTakeaways
+                }
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error summarizing note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("CompareNotes")]
+    [Description("Compares two notes using AI to identify similarities, differences, and relationships between them.")]
+    public async Task<string> CompareNotesAsync(
+        [Description("The ID of the first note")] string noteId1,
+        [Description("The ID of the second note")] string noteId2)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot compare notes.";
+        }
+
+        if (_structuredOutputService == null)
+        {
+            return "Error: Note comparison requires AI structured output service which is not available.";
+        }
+
+        try
+        {
+            var note1 = await _noteRepository.GetByIdAsync(noteId1);
+            var note2 = await _noteRepository.GetByIdAsync(noteId2);
+
+            if (note1 == null)
+            {
+                return $"Note with ID \"{noteId1}\" not found.";
+            }
+
+            if (note2 == null)
+            {
+                return $"Note with ID \"{noteId2}\" not found.";
+            }
+
+            if (note1.UserId != _currentUserId || note2.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to access one or both notes.";
+            }
+
+            // Truncate content if too long
+            var content1 = note1.Content.Length > 2000 ? note1.Content.Substring(0, 2000) + "..." : note1.Content;
+            var content2 = note2.Content.Length > 2000 ? note2.Content.Substring(0, 2000) + "..." : note2.Content;
+
+            var prompt = $@"Compare these two notes and identify their similarities, differences, and relationships.
+
+Note 1:
+Title: {note1.Title}
+Tags: {(note1.Tags.Any() ? string.Join(", ", note1.Tags) : "none")}
+Content: {content1}
+
+Note 2:
+Title: {note2.Title}
+Tags: {(note2.Tags.Any() ? string.Join(", ", note2.Tags) : "none")}
+Content: {content2}
+
+Analyze:
+- What themes or topics do they share?
+- How do they differ in content or approach?
+- What is the overall similarity level?
+- Any recommendations for organizing or linking them?";
+
+            var options = new StructuredOutputOptions
+            {
+                Temperature = 0.3f,
+                MaxTokens = 800,
+                SystemInstruction = "You are a note comparison assistant. Analyze notes to identify relationships, similarities, and differences."
+            };
+
+            var comparison = await _structuredOutputService.GenerateAsync<ComparisonResult>(prompt, options);
+
+            if (comparison == null)
+            {
+                return "Error: Failed to generate comparison.";
+            }
+
+            var response = new
+            {
+                type = "comparison",
+                message = $"Comparison of \"{note1.Title}\" and \"{note2.Title}\"",
+                notes = new[]
+                {
+                    new { id = note1.Id, title = note1.Title },
+                    new { id = note2.Id, title = note2.Title }
+                },
+                comparison = new
+                {
+                    similarities = comparison.Similarities,
+                    differences = comparison.Differences,
+                    similarityScore = comparison.SimilarityScore,
+                    recommendation = comparison.Recommendation
+                }
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error comparing notes: {ex.Message}";
         }
     }
 }

@@ -215,6 +215,94 @@ public class AnthropicSettings
     public float Temperature { get; set; } = 0.7f;
     public int TimeoutSeconds { get; set; } = 60;
     public string Version { get; set; } = "2023-06-01";
+
+    /// <summary>
+    /// Feature flags for Anthropic/Claude SDK capabilities
+    /// </summary>
+    public AnthropicFeaturesConfig Features { get; set; } = new();
+
+    /// <summary>
+    /// Extended thinking configuration for complex reasoning
+    /// </summary>
+    public AnthropicThinkingConfig Thinking { get; set; } = new();
+
+    /// <summary>
+    /// Prompt caching configuration for reducing latency and costs
+    /// </summary>
+    public AnthropicCachingConfig Caching { get; set; } = new();
+}
+
+/// <summary>
+/// Feature flags for enabling/disabling Anthropic/Claude SDK capabilities
+/// </summary>
+public class AnthropicFeaturesConfig
+{
+    /// <summary>
+    /// Enable native function calling (tools) support
+    /// </summary>
+    public bool EnableFunctionCalling { get; set; } = true;
+
+    /// <summary>
+    /// Enable extended thinking for complex reasoning (Claude 3.5+ models)
+    /// </summary>
+    public bool EnableExtendedThinking { get; set; } = false;
+
+    /// <summary>
+    /// Enable prompt caching to reduce costs and latency
+    /// </summary>
+    public bool EnablePromptCaching { get; set; } = true;
+
+    /// <summary>
+    /// Enable citation support for document grounding
+    /// </summary>
+    public bool EnableCitations { get; set; } = false;
+
+    /// <summary>
+    /// Enable PDF document processing
+    /// </summary>
+    public bool EnablePdfSupport { get; set; } = true;
+}
+
+/// <summary>
+/// Extended thinking configuration for Claude's step-by-step reasoning
+/// </summary>
+public class AnthropicThinkingConfig
+{
+    /// <summary>
+    /// Whether extended thinking is enabled by default
+    /// </summary>
+    public bool Enabled { get; set; } = false;
+
+    /// <summary>
+    /// Default token budget for thinking process (min: 1024)
+    /// </summary>
+    public int DefaultBudget { get; set; } = 10000;
+
+    /// <summary>
+    /// Maximum allowed thinking budget
+    /// </summary>
+    public int MaxBudget { get; set; } = 50000;
+
+    /// <summary>
+    /// Include thinking process in response for transparency
+    /// </summary>
+    public bool IncludeThinkingInResponse { get; set; } = true;
+}
+
+/// <summary>
+/// Prompt caching configuration for reducing latency and costs
+/// </summary>
+public class AnthropicCachingConfig
+{
+    /// <summary>
+    /// Whether prompt caching is enabled
+    /// </summary>
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Minimum content tokens required for caching to be cost-effective
+    /// </summary>
+    public int MinContentTokens { get; set; } = 1024;
 }
 
 public class OllamaSettings
@@ -226,6 +314,58 @@ public class OllamaSettings
     public float Temperature { get; set; } = 0.7f;
     public int TimeoutSeconds { get; set; } = 120;
     public bool StreamingEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Feature flags for Ollama SDK capabilities
+    /// </summary>
+    public OllamaFeaturesConfig Features { get; set; } = new();
+
+    /// <summary>
+    /// Function calling configuration
+    /// </summary>
+    public OllamaFunctionCallingConfig FunctionCalling { get; set; } = new();
+}
+
+/// <summary>
+/// Feature flags for enabling/disabling Ollama SDK capabilities
+/// </summary>
+public class OllamaFeaturesConfig
+{
+    /// <summary>
+    /// Enable native function calling (tools) support
+    /// </summary>
+    public bool EnableFunctionCalling { get; set; } = true;
+
+    /// <summary>
+    /// Enable structured output (JSON mode) support
+    /// </summary>
+    public bool EnableStructuredOutput { get; set; } = true;
+
+    /// <summary>
+    /// Enable vision/multimodal model support
+    /// </summary>
+    public bool EnableVision { get; set; } = true;
+}
+
+/// <summary>
+/// Function calling configuration for Ollama
+/// </summary>
+public class OllamaFunctionCallingConfig
+{
+    /// <summary>
+    /// Maximum iterations for tool call loops
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
+
+    /// <summary>
+    /// Enable parallel execution of multiple tool calls
+    /// </summary>
+    public bool ParallelExecution { get; set; } = true;
+
+    /// <summary>
+    /// Timeout in seconds for individual tool executions
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 30;
 }
 
 public class XAISettings

@@ -11,6 +11,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
@@ -552,6 +553,260 @@ public class OllamaProvider : IAIProvider
         return ollamaMessage;
     }
 
+    /// <summary>
+    /// Stream chat completion with native tool/function calling support.
+    /// This method handles the Ollama tool calling protocol for agentic workflows.
+    /// </summary>
+    /// <param name="messages">The conversation messages</param>
+    /// <param name="tools">The tools available for the model to call</param>
+    /// <param name="settings">Optional AI request settings</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async enumerable of tool stream events</returns>
+    public async IAsyncEnumerable<OllamaToolStreamEvent> StreamWithToolsAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        IEnumerable<Tool> tools,
+        AIRequest? settings = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(settings?.OllamaBaseUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(settings?.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = "Ollama provider is not enabled or configured"
+            };
+            yield break;
+        }
+
+        if (!_settings.StreamingEnabled)
+        {
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = "Streaming is not enabled for Ollama"
+            };
+            yield break;
+        }
+
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        var toolsList = tools.ToList();
+
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.StreamWithTools", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.tools.count", toolsList.Count);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ollama.url", effectiveUrl);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var chatMessages = messageList.Select(m => ConvertToOllamaMessage(m)).ToList();
+
+        var chatRequest = new ChatRequest
+        {
+            Model = model,
+            Messages = chatMessages,
+            Tools = toolsList,
+            Stream = true,
+            Options = new RequestOptions
+            {
+                Temperature = settings?.Temperature ?? _settings.Temperature,
+                NumPredict = settings?.MaxTokens
+            }
+        };
+
+        IAsyncEnumerable<ChatResponseStream?>? stream = null;
+        try
+        {
+            stream = client.ChatAsync(chatRequest, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama tool streaming failed - service unreachable (connection refused)");
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
+            };
+            yield break;
+        }
+        catch (HttpRequestException ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama tool streaming failed - service unreachable");
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = $"HTTP error connecting to Ollama: {ex.Message}"
+            };
+            yield break;
+        }
+        catch (SocketException ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama tool streaming failed - socket connection refused");
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
+            };
+            yield break;
+        }
+        catch (Exception ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogError(ex, "Ollama tool streaming failed with unexpected error");
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = ex.Message
+            };
+            yield break;
+        }
+
+        if (stream == null)
+        {
+            yield return new OllamaToolStreamEvent
+            {
+                Type = OllamaToolStreamEventType.Error,
+                Error = "Failed to initialize stream"
+            };
+            yield break;
+        }
+
+        var tokenCount = 0;
+        var pendingToolCalls = new List<OllamaToolCallInfo>();
+
+        await foreach (var chunk in stream)
+        {
+            if (chunk == null) continue;
+
+            // Handle text content
+            if (!string.IsNullOrEmpty(chunk.Message?.Content))
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
+
+                yield return new OllamaToolStreamEvent
+                {
+                    Type = OllamaToolStreamEventType.Text,
+                    Text = chunk.Message.Content
+                };
+            }
+
+            // Handle tool calls from the response
+            if (chunk.Message?.ToolCalls != null && chunk.Message.ToolCalls.Any())
+            {
+                foreach (var toolCall in chunk.Message.ToolCalls)
+                {
+                    if (toolCall.Function != null)
+                    {
+                        var toolInfo = new OllamaToolCallInfo
+                        {
+                            Name = toolCall.Function.Name ?? "",
+                            Arguments = toolCall.Function.Arguments != null
+                                ? JsonSerializer.Serialize(toolCall.Function.Arguments)
+                                : "{}"
+                        };
+                        pendingToolCalls.Add(toolInfo);
+
+                        _logger.LogDebug("Ollama tool call detected: {ToolName}", toolInfo.Name);
+                    }
+                }
+            }
+
+            // Check if stream is done
+            if (chunk.Done)
+            {
+                // Emit any pending tool calls
+                if (pendingToolCalls.Count > 0)
+                {
+                    yield return new OllamaToolStreamEvent
+                    {
+                        Type = OllamaToolStreamEventType.ToolCalls,
+                        ToolCalls = pendingToolCalls
+                    };
+                }
+
+                // Emit done event with usage info
+                yield return new OllamaToolStreamEvent
+                {
+                    Type = OllamaToolStreamEventType.Done,
+                    Usage = new OllamaTokenUsage
+                    {
+                        PromptTokens = chunk.PromptEvalCount ?? 0,
+                        CompletionTokens = chunk.EvalCount ?? 0
+                    }
+                };
+
+                break;
+            }
+        }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.tools.called", pendingToolCalls.Count);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+    }
+
+    /// <summary>
+    /// Continue a conversation with tool results.
+    /// Call this after executing tool calls to send results back to the model.
+    /// </summary>
+    /// <param name="messages">The conversation messages including previous assistant message with tool calls</param>
+    /// <param name="toolResults">The results from executing the tools (functionName, result)</param>
+    /// <param name="tools">The tools available for subsequent calls</param>
+    /// <param name="settings">Optional AI request settings</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async enumerable of tool stream events</returns>
+    public async IAsyncEnumerable<OllamaToolStreamEvent> ContinueWithToolResultsAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        IEnumerable<(string Name, string Result)> toolResults,
+        IEnumerable<Tool> tools,
+        AIRequest? settings = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var messageList = messages.ToList();
+
+        // Add tool results as tool messages
+        foreach (var (name, result) in toolResults)
+        {
+            messageList.Add(new Models.ChatMessage
+            {
+                Role = "tool",
+                Content = result,
+                // Note: Ollama expects tool results with the function name in the message
+            });
+        }
+
+        // Continue streaming with the updated messages
+        await foreach (var evt in StreamWithToolsAsync(messageList, tools, settings, cancellationToken))
+        {
+            yield return evt;
+        }
+    }
+
+    /// <summary>
+    /// Gets the OllamaApiClient for a given URL (for external access by AgentService).
+    /// </summary>
+    public OllamaApiClient? GetClient(string? overrideUrl = null)
+    {
+        return GetClientForUrl(overrideUrl);
+    }
+
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
         if (!IsEnabled || _defaultClient == null)
@@ -948,5 +1203,328 @@ public class OllamaProvider : IAIProvider
             _logger.LogError(ex, "Failed to delete model {ModelName}", modelName);
             return (false, ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Get detailed information about a specific model.
+    /// </summary>
+    /// <param name="modelName">Name of the model to query</param>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Model details or null if not found</returns>
+    public async Task<OllamaModelDetails?> ShowModelAsync(
+        string modelName,
+        string? remoteOllamaUrl = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            _logger.LogWarning("ShowModel failed - Ollama provider is not enabled or configured");
+            return null;
+        }
+
+        try
+        {
+            _logger.LogDebug("Getting model details for: {ModelName} from {Url}", modelName, effectiveUrl);
+            var response = await client.ShowModelAsync(modelName, cancellationToken);
+
+            if (response == null)
+            {
+                return null;
+            }
+
+            var details = new OllamaModelDetails
+            {
+                Name = modelName,
+                Modelfile = response.Modelfile,
+                Template = response.Template,
+                License = response.License,
+                Parameters = response.Parameters,
+                ModifiedAt = response.ModifiedAt
+            };
+
+            // Extract additional info from ModelInfo if available
+            if (response.ModelInfo != null)
+            {
+                // Try to extract parameter size, family, etc. from ModelInfo dictionary
+                if (response.ModelInfo.TryGetValue("general.parameter_count", out var paramCount))
+                {
+                    details.ParameterSize = FormatParameterCount(paramCount?.ToString());
+                }
+                if (response.ModelInfo.TryGetValue("general.file_type", out var fileType))
+                {
+                    details.Format = fileType?.ToString();
+                }
+                if (response.ModelInfo.TryGetValue("general.quantization_version", out var quant))
+                {
+                    details.QuantizationLevel = quant?.ToString();
+                }
+            }
+
+            // Try to extract info from Details
+            if (response.Details != null)
+            {
+                details.Family = response.Details.Family;
+                details.ParameterSize = response.Details.ParameterSize;
+                details.QuantizationLevel = response.Details.QuantizationLevel;
+                details.Format = response.Details.Format;
+            }
+
+            _logger.LogDebug("Retrieved model details for: {ModelName}", modelName);
+            return details;
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            _logger.LogWarning(ex, "ShowModel failed - service unreachable at {Url}", effectiveUrl);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get model details for {ModelName}", modelName);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Copy/rename a model.
+    /// </summary>
+    /// <param name="source">Source model name</param>
+    /// <param name="destination">Destination model name</param>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result of the copy operation</returns>
+    public async Task<OllamaModelCopyResult> CopyModelAsync(
+        string source,
+        string destination,
+        string? remoteOllamaUrl = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            return new OllamaModelCopyResult
+            {
+                Success = false,
+                Error = "Ollama provider is not enabled or configured",
+                Source = source,
+                Destination = destination
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation("Copying model: {Source} -> {Destination} at {Url}",
+                source, destination, effectiveUrl);
+
+            await client.CopyModelAsync(source, destination, cancellationToken);
+
+            _logger.LogInformation("Model copied successfully: {Source} -> {Destination}",
+                source, destination);
+
+            return new OllamaModelCopyResult
+            {
+                Success = true,
+                Source = source,
+                Destination = destination
+            };
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            _logger.LogWarning(ex, "CopyModel failed - service unreachable at {Url}", effectiveUrl);
+            return new OllamaModelCopyResult
+            {
+                Success = false,
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
+                Source = source,
+                Destination = destination
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to copy model {Source} -> {Destination}", source, destination);
+            return new OllamaModelCopyResult
+            {
+                Success = false,
+                Error = ex.Message,
+                Source = source,
+                Destination = destination
+            };
+        }
+    }
+
+    /// <summary>
+    /// Create a new model from a Modelfile.
+    /// </summary>
+    /// <param name="name">Name for the new model</param>
+    /// <param name="modelfileContent">Content of the Modelfile</param>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async enumerable of creation progress updates</returns>
+    public async IAsyncEnumerable<OllamaCreateProgress> CreateModelAsync(
+        string name,
+        string modelfileContent,
+        string? remoteOllamaUrl = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            yield return new OllamaCreateProgress
+            {
+                Status = "Error: Ollama provider is not enabled or configured"
+            };
+            yield break;
+        }
+
+        _logger.LogInformation("Creating model: {ModelName} at {Url}", name, effectiveUrl);
+
+        OllamaCreateProgress? errorProgress = null;
+
+        var createRequest = new OllamaSharp.Models.CreateModelRequest
+        {
+            Name = name,
+            ModelFileContent = modelfileContent,
+            Stream = true
+        };
+
+        IAsyncEnumerator<OllamaSharp.Models.CreateModelResponse?>? enumerator = null;
+
+        try
+        {
+            enumerator = client.CreateModelAsync(createRequest, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            _logger.LogWarning(ex, "CreateModel failed - service unreachable at {Url}", effectiveUrl);
+            yield return new OllamaCreateProgress
+            {
+                Status = $"Error: Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
+            };
+            yield break;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CreateModel failed for {ModelName}", name);
+            yield return new OllamaCreateProgress { Status = $"Error: {ex.Message}" };
+            yield break;
+        }
+
+        if (enumerator == null)
+        {
+            yield return new OllamaCreateProgress { Status = "Error: Failed to start model creation" };
+            yield break;
+        }
+
+        try
+        {
+            while (true)
+            {
+                bool hasNext;
+                try
+                {
+                    hasNext = await enumerator.MoveNextAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during model creation for {ModelName}", name);
+                    errorProgress = new OllamaCreateProgress { Status = $"Error: {ex.Message}" };
+                    break;
+                }
+
+                if (!hasNext) break;
+
+                var response = enumerator.Current;
+                if (response != null)
+                {
+                    yield return new OllamaCreateProgress
+                    {
+                        Status = response.Status ?? "Processing..."
+                    };
+
+                    if (response.Status?.Equals("success", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        _logger.LogInformation("Model creation completed: {ModelName}", name);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
+
+        if (errorProgress != null)
+        {
+            yield return errorProgress;
+        }
+    }
+
+    /// <summary>
+    /// List all locally available models.
+    /// </summary>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of available models</returns>
+    public async Task<IEnumerable<OllamaModelInfo>> ListModelsAsync(
+        string? remoteOllamaUrl = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            _logger.LogWarning("ListModels failed - Ollama provider is not enabled or configured");
+            return Enumerable.Empty<OllamaModelInfo>();
+        }
+
+        try
+        {
+            var models = await client.ListLocalModelsAsync(cancellationToken);
+
+            return models?.Select(m => new OllamaModelInfo
+            {
+                Name = m.Name,
+                Size = m.Size,
+                ModifiedAt = m.ModifiedAt,
+                Digest = m.Digest
+            }) ?? Enumerable.Empty<OllamaModelInfo>();
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            _logger.LogWarning(ex, "ListModels failed - service unreachable at {Url}", effectiveUrl);
+            return Enumerable.Empty<OllamaModelInfo>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list models from {Url}", effectiveUrl);
+            return Enumerable.Empty<OllamaModelInfo>();
+        }
+    }
+
+    /// <summary>
+    /// Helper to format parameter count (e.g., "7000000000" -> "7B")
+    /// </summary>
+    private static string? FormatParameterCount(string? count)
+    {
+        if (string.IsNullOrEmpty(count)) return null;
+
+        if (long.TryParse(count, out var num))
+        {
+            if (num >= 1_000_000_000)
+                return $"{num / 1_000_000_000.0:F1}B";
+            if (num >= 1_000_000)
+                return $"{num / 1_000_000.0:F1}M";
+            return num.ToString();
+        }
+
+        return count;
     }
 }

@@ -28,6 +28,16 @@ public class AgentRequest
     /// Optional override for Ollama base URL (for remote Ollama support)
     /// </summary>
     public string? OllamaBaseUrl { get; set; }
+
+    /// <summary>
+    /// Enable extended thinking for complex reasoning (Claude 3.5+ models)
+    /// </summary>
+    public bool? EnableThinking { get; set; }
+
+    /// <summary>
+    /// Token budget for thinking process (min: 1024, default: 10000)
+    /// </summary>
+    public int? ThinkingBudget { get; set; }
 }
 
 /// <summary>

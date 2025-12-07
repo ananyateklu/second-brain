@@ -22,6 +22,7 @@ using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
+using OllamaTool = OllamaSharp.Models.Chat.Tool;
 
 namespace SecondBrain.Application.Services.Agents;
 
@@ -59,6 +60,7 @@ public class AgentService : IAgentService
     private readonly QueryIntentDetector _intentDetector = new();
     private readonly IGeminiFunctionRegistry? _geminiFunctionRegistry;
     private readonly GeminiProvider? _geminiProvider;
+    private readonly OllamaProvider? _ollamaProvider;
 
     public AgentService(
         IOptions<AIProvidersSettings> settings,
@@ -67,7 +69,8 @@ public class AgentService : IAgentService
         IRagService ragService,
         ILogger<AgentService> logger,
         IGeminiFunctionRegistry? geminiFunctionRegistry = null,
-        GeminiProvider? geminiProvider = null)
+        GeminiProvider? geminiProvider = null,
+        OllamaProvider? ollamaProvider = null)
     {
         _settings = settings.Value;
         _ragSettings = ragSettings.Value;
@@ -76,6 +79,7 @@ public class AgentService : IAgentService
         _logger = logger;
         _geminiFunctionRegistry = geminiFunctionRegistry;
         _geminiProvider = geminiProvider;
+        _ollamaProvider = ollamaProvider;
 
         // Register available plugins
         RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value));
@@ -138,6 +142,23 @@ public class AgentService : IAgentService
         if (useNativeGeminiFunctionCalling)
         {
             await foreach (var evt in ProcessGeminiStreamAsync(request, cancellationToken))
+            {
+                yield return evt;
+            }
+            yield break;
+        }
+
+        // Use native Ollama function calling when available
+        var isOllama = request.Provider.Equals("ollama", StringComparison.OrdinalIgnoreCase);
+        var useNativeOllamaFunctionCalling = isOllama &&
+            _ollamaProvider != null &&
+            _settings.Ollama.Features.EnableFunctionCalling &&
+            request.Capabilities != null &&
+            request.Capabilities.Count > 0;
+
+        if (useNativeOllamaFunctionCalling)
+        {
+            await foreach (var evt in ProcessOllamaStreamAsync(request, cancellationToken))
             {
                 yield return evt;
             }
@@ -522,7 +543,7 @@ public class AgentService : IAgentService
                         }
 
                         // Create tool using Function class with parameters in constructor
-                        var function = new Function(toolName, toolDescription, schemaObj);
+                        var function = new Anthropic.SDK.Common.Function(toolName, toolDescription, schemaObj);
                         tools.Add(new Anthropic.SDK.Common.Tool(function));
                         pluginMethods[toolName] = (plugin, method);
 
@@ -645,9 +666,32 @@ public class AgentService : IAgentService
                 Stream = true // Enable streaming
             };
 
+            // Add prompt caching for large system prompts
+            var enableCaching = _settings.Anthropic.Caching.Enabled;
+            if (enableCaching && systemPrompt.Length >= _settings.Anthropic.Caching.MinContentTokens * 4)
+            {
+                parameters.PromptCaching = PromptCacheType.AutomaticToolsAndSystem;
+                _logger.LogDebug("Prompt caching enabled for system prompt ({Length} chars)", systemPrompt.Length);
+            }
+
             if (tools.Count > 0)
             {
                 parameters.Tools = tools;
+            }
+
+            // Add extended thinking support if enabled
+            var enableThinking = request.EnableThinking ?? _settings.Anthropic.Features.EnableExtendedThinking;
+            if (enableThinking && IsAnthropicThinkingCapableModel(request.Model))
+            {
+                var thinkingBudget = request.ThinkingBudget ?? _settings.Anthropic.Thinking.DefaultBudget;
+                thinkingBudget = Math.Min(thinkingBudget, _settings.Anthropic.Thinking.MaxBudget);
+
+                parameters.Thinking = new ThinkingParameters
+                {
+                    BudgetTokens = thinkingBudget
+                };
+
+                _logger.LogDebug("Extended thinking enabled with budget {Budget} for model {Model}", thinkingBudget, request.Model);
             }
 
             var shouldContinue = false;
@@ -658,14 +702,15 @@ public class AgentService : IAgentService
             var responseContentBlocks = new List<ContentBase>();
             var iterationTextContent = new StringBuilder();
 
-            // Use streaming for text delivery when no tools, non-streaming when tools are enabled
-            // This ensures reliable tool call handling while still providing fast text streaming
-            var useStreaming = tools.Count == 0;
+            // Enable streaming for all requests - collect outputs and reconstruct message for tool calls
+            var useStreaming = true;
 
             if (useStreaming)
             {
-                // Stream text tokens in real-time (no tool handling needed)
+                // Stream text tokens in real-time, collect outputs for tool call extraction
                 var hasEmittedFirstToken = false;
+                var streamOutputs = new List<MessageResponse>();
+                var hasToolUse = false;
 
                 await foreach (var streamEvent in StreamAnthropicWithErrorHandling(
                     client, parameters, cancellationToken, e => errorMessage = e))
@@ -673,6 +718,33 @@ public class AgentService : IAgentService
                     if (cancellationToken.IsCancellationRequested)
                     {
                         yield break;
+                    }
+
+                    // Collect all outputs for tool call reconstruction
+                    streamOutputs.Add(streamEvent);
+
+                    // Detect tool_use content blocks
+                    if (streamEvent.ContentBlock?.Type == "tool_use")
+                    {
+                        hasToolUse = true;
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Status,
+                            Content = $"Planning to use {streamEvent.ContentBlock.Name}..."
+                        };
+                        continue;
+                    }
+
+                    // Handle native thinking content delta
+                    if (streamEvent.Delta?.Thinking != null)
+                    {
+                        var thinkingText = streamEvent.Delta.Thinking;
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Thinking,
+                            Content = thinkingText
+                        };
+                        continue;
                     }
 
                     // Handle text deltas
@@ -692,31 +764,34 @@ public class AgentService : IAgentService
                             };
                         }
 
-                        // Check for thinking blocks
-                        var currentContent = fullResponse.ToString();
-                        var thinkingStartIndex = 0;
-                        while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                        // Check for XML-style thinking blocks (fallback for models without native thinking)
+                        if (!enableThinking || !IsAnthropicThinkingCapableModel(request.Model))
                         {
-                            var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
-                            if (thinkingEndIndex != -1)
+                            var currentContent = fullResponse.ToString();
+                            var thinkingStartIndex = 0;
+                            while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
                             {
-                                var thinkingContent = currentContent.Substring(
-                                    thinkingStartIndex + 10,
-                                    thinkingEndIndex - thinkingStartIndex - 10
-                                ).Trim();
-
-                                if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                if (thinkingEndIndex != -1)
                                 {
-                                    emittedThinkingBlocks.Add(thinkingContent);
-                                    yield return new AgentStreamEvent
+                                    var thinkingContent = currentContent.Substring(
+                                        thinkingStartIndex + 10,
+                                        thinkingEndIndex - thinkingStartIndex - 10
+                                    ).Trim();
+
+                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
                                     {
-                                        Type = AgentEventType.Thinking,
-                                        Content = thinkingContent
-                                    };
+                                        emittedThinkingBlocks.Add(thinkingContent);
+                                        yield return new AgentStreamEvent
+                                        {
+                                            Type = AgentEventType.Thinking,
+                                            Content = thinkingContent
+                                        };
+                                    }
+                                    thinkingStartIndex = thinkingEndIndex + 11;
                                 }
-                                thinkingStartIndex = thinkingEndIndex + 11;
+                                else break;
                             }
-                            else break;
                         }
 
                         yield return new AgentStreamEvent
@@ -724,6 +799,45 @@ public class AgentService : IAgentService
                             Type = AgentEventType.Token,
                             Content = text
                         };
+                    }
+                }
+
+                // After streaming, extract tool calls from collected outputs
+                if (hasToolUse && streamOutputs.Count > 0)
+                {
+                    try
+                    {
+                        // Reconstruct the full message from stream outputs using SDK's Message constructor
+                        var reconstructedMessage = new Anthropic.SDK.Messaging.Message(streamOutputs);
+
+                        // Extract tool use content blocks
+                        foreach (var content in reconstructedMessage.Content)
+                        {
+                            if (content is ToolUseContent toolUse)
+                            {
+                                pendingToolCalls.Add((toolUse.Id ?? "", toolUse.Name ?? "", toolUse.Input));
+                                responseContentBlocks.Add(toolUse);
+
+                                _logger.LogInformation("Tool call extracted from stream: {ToolName}, Id: {ToolId}",
+                                    toolUse.Name, toolUse.Id);
+                            }
+                            else if (content is Anthropic.SDK.Messaging.TextContent textContent)
+                            {
+                                responseContentBlocks.Add(textContent);
+                            }
+                            else if (content is ThinkingContent thinkingContent)
+                            {
+                                var thinking = thinkingContent.Thinking ?? "";
+                                if (!string.IsNullOrEmpty(thinking) && !emittedThinkingBlocks.Contains(thinking))
+                                {
+                                    emittedThinkingBlocks.Add(thinking);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to reconstruct message from stream outputs for tool extraction");
                     }
                 }
             }
@@ -746,9 +860,19 @@ public class AgentService : IAgentService
 
                 if (response?.Content != null)
                 {
-                    // Process response content
+                    // Process response content - first check for native thinking blocks
+                    var hasThinkingContent = response.Content.Any(c => c is ThinkingContent);
                     var hasTextContent = response.Content.Any(c => c is Anthropic.SDK.Messaging.TextContent tc && !string.IsNullOrEmpty(tc.Text));
-                    if (hasTextContent)
+
+                    if (hasThinkingContent)
+                    {
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Status,
+                            Content = "Thinking..."
+                        };
+                    }
+                    else if (hasTextContent)
                     {
                         yield return new AgentStreamEvent
                         {
@@ -759,36 +883,55 @@ public class AgentService : IAgentService
 
                     foreach (var content in response.Content)
                     {
+                        // Handle native thinking blocks
+                        if (content is ThinkingContent thinkingBlock)
+                        {
+                            var thinkingText = thinkingBlock.Thinking ?? "";
+                            if (!string.IsNullOrEmpty(thinkingText) && !emittedThinkingBlocks.Contains(thinkingText))
+                            {
+                                emittedThinkingBlocks.Add(thinkingText);
+                                yield return new AgentStreamEvent
+                                {
+                                    Type = AgentEventType.Thinking,
+                                    Content = thinkingText
+                                };
+                            }
+                            continue;
+                        }
+
                         if (content is Anthropic.SDK.Messaging.TextContent textContent)
                         {
                             var text = textContent.Text ?? "";
                             fullResponse.Append(text);
                             iterationTextContent.Append(text);
 
-                            // Check for thinking blocks
-                            var thinkingStartIndex = 0;
-                            while ((thinkingStartIndex = text.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                            // Fallback: Check for XML-style thinking blocks (for models without native thinking)
+                            if (!enableThinking || !IsAnthropicThinkingCapableModel(request.Model))
                             {
-                                var thinkingEndIndex = text.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
-                                if (thinkingEndIndex != -1)
+                                var thinkingStartIndex = 0;
+                                while ((thinkingStartIndex = text.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
                                 {
-                                    var thinkingContent = text.Substring(
-                                        thinkingStartIndex + 10,
-                                        thinkingEndIndex - thinkingStartIndex - 10
-                                    ).Trim();
-
-                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                    var thinkingEndIndex = text.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                    if (thinkingEndIndex != -1)
                                     {
-                                        emittedThinkingBlocks.Add(thinkingContent);
-                                        yield return new AgentStreamEvent
+                                        var thinkingContent = text.Substring(
+                                            thinkingStartIndex + 10,
+                                            thinkingEndIndex - thinkingStartIndex - 10
+                                        ).Trim();
+
+                                        if (!emittedThinkingBlocks.Contains(thinkingContent))
                                         {
-                                            Type = AgentEventType.Thinking,
-                                            Content = thinkingContent
-                                        };
+                                            emittedThinkingBlocks.Add(thinkingContent);
+                                            yield return new AgentStreamEvent
+                                            {
+                                                Type = AgentEventType.Thinking,
+                                                Content = thinkingContent
+                                            };
+                                        }
+                                        thinkingStartIndex = thinkingEndIndex + 11;
                                     }
-                                    thinkingStartIndex = thinkingEndIndex + 11;
+                                    else break;
                                 }
-                                else break;
                             }
 
                             yield return new AgentStreamEvent
@@ -1319,6 +1462,321 @@ public class AgentService : IAgentService
             Type = AgentEventType.End,
             Content = fullResponse.ToString()
         };
+    }
+
+    /// <summary>
+    /// Native Ollama function calling implementation using OllamaSharp SDK.
+    /// Supports parallel function execution and streaming responses.
+    /// </summary>
+    private async IAsyncEnumerable<AgentStreamEvent> ProcessOllamaStreamAsync(
+        AgentRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (_ollamaProvider == null)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Error,
+                Content = "Ollama provider is not properly configured"
+            };
+            yield break;
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Preparing Ollama tools..."
+        };
+
+        // Build tool definitions from enabled plugins
+        var tools = new List<OllamaTool>();
+        var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var capabilityId in request.Capabilities ?? new List<string>())
+        {
+            if (_plugins.TryGetValue(capabilityId, out var plugin))
+            {
+                plugin.SetCurrentUserId(request.UserId);
+                plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+
+                var pluginInstance = plugin.GetPluginInstance();
+                var methods = pluginInstance.GetType().GetMethods()
+                    .Where(m => m.GetCustomAttributes(typeof(Microsoft.SemanticKernel.KernelFunctionAttribute), false).Any());
+
+                foreach (var method in methods)
+                {
+                    var funcAttr = method.GetCustomAttribute<Microsoft.SemanticKernel.KernelFunctionAttribute>();
+                    var toolName = funcAttr?.Name ?? method.Name;
+
+                    var tool = OllamaFunctionDeclarationBuilder.BuildFromMethod(method, funcAttr);
+                    if (tool != null)
+                    {
+                        tools.Add(tool);
+                        pluginMethods[toolName] = (plugin, method);
+                        _logger.LogDebug("Registered Ollama tool: {ToolName}", toolName);
+                    }
+                }
+            }
+        }
+
+        _logger.LogInformation("Registered {Count} tools for Ollama", tools.Count);
+
+        // Build messages
+        var messages = new List<Services.AI.Models.ChatMessage>
+        {
+            new Services.AI.Models.ChatMessage
+            {
+                Role = "system",
+                Content = GetSystemPrompt(request.Capabilities)
+            }
+        };
+
+        // Convert request messages
+        foreach (var msg in request.Messages)
+        {
+            if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) &&
+                msg.ToolCalls != null && msg.ToolCalls.Any())
+            {
+                var contextBuilder = new StringBuilder();
+                if (!string.IsNullOrWhiteSpace(msg.Content))
+                    contextBuilder.AppendLine(msg.Content);
+                contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
+                foreach (var tc in msg.ToolCalls)
+                    contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
+                contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+
+                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = contextBuilder.ToString() });
+            }
+            else
+            {
+                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = msg.Content });
+            }
+        }
+
+        // Automatic context injection for knowledge queries
+        var lastUserMessage = GetLastUserMessage(request);
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
+
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
+                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
+                };
+                messages[0].Content += "\n\n" + contextMessage;
+            }
+        }
+
+        var fullResponse = new StringBuilder();
+        var emittedThinkingBlocks = new HashSet<string>();
+        var maxIterations = _settings.Ollama.FunctionCalling.MaxIterations;
+
+        var aiSettings = new Services.AI.Models.AIRequest
+        {
+            Model = request.Model,
+            MaxTokens = request.MaxTokens ?? 4096,
+            Temperature = request.Temperature ?? 0.7f,
+            OllamaBaseUrl = request.OllamaBaseUrl
+        };
+
+        for (int iteration = 0; iteration < maxIterations; iteration++)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = iteration == 0 ? "Analyzing your request..." : "Continuing with tool results..."
+            };
+
+            var pendingToolCalls = new List<Services.AI.Models.OllamaToolCallInfo>();
+            var iterationText = new StringBuilder();
+            var hasEmittedFirstToken = false;
+
+            await foreach (var evt in _ollamaProvider.StreamWithToolsAsync(
+                messages, tools, aiSettings, cancellationToken))
+            {
+                switch (evt.Type)
+                {
+                    case Services.AI.Models.OllamaToolStreamEventType.Text:
+                        if (!string.IsNullOrEmpty(evt.Text))
+                        {
+                            if (!hasEmittedFirstToken)
+                            {
+                                hasEmittedFirstToken = true;
+                                yield return new AgentStreamEvent
+                                {
+                                    Type = AgentEventType.Status,
+                                    Content = "Generating response..."
+                                };
+                            }
+
+                            iterationText.Append(evt.Text);
+
+                            // Check for thinking blocks
+                            var currentContent = fullResponse.ToString() + iterationText.ToString();
+                            var thinkingStartIndex = 0;
+                            while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                            {
+                                var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                if (thinkingEndIndex != -1)
+                                {
+                                    var thinkingContent = currentContent.Substring(
+                                        thinkingStartIndex + 10,
+                                        thinkingEndIndex - thinkingStartIndex - 10
+                                    ).Trim();
+
+                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                    {
+                                        emittedThinkingBlocks.Add(thinkingContent);
+                                        yield return new AgentStreamEvent
+                                        {
+                                            Type = AgentEventType.Thinking,
+                                            Content = thinkingContent
+                                        };
+                                    }
+                                    thinkingStartIndex = thinkingEndIndex + 11;
+                                }
+                                else break;
+                            }
+
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Token,
+                                Content = evt.Text
+                            };
+                        }
+                        break;
+
+                    case Services.AI.Models.OllamaToolStreamEventType.ToolCalls:
+                        if (evt.ToolCalls != null)
+                        {
+                            pendingToolCalls.AddRange(evt.ToolCalls);
+                        }
+                        break;
+
+                    case Services.AI.Models.OllamaToolStreamEventType.Error:
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Error,
+                            Content = $"Error from Ollama: {evt.Error}"
+                        };
+                        yield break;
+                }
+            }
+
+            fullResponse.Append(iterationText);
+
+            // Process function calls
+            if (pendingToolCalls.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = $"Executing {pendingToolCalls.Count} tool(s)..."
+                };
+
+                // Emit start events for all tools
+                foreach (var call in pendingToolCalls)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallStart,
+                        ToolName = call.Name,
+                        ToolArguments = call.Arguments
+                    };
+                }
+
+                // Execute tools (parallel if enabled)
+                var executionTasks = pendingToolCalls.Select(async call =>
+                {
+                    try
+                    {
+                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        {
+                            var argsNode = JsonNode.Parse(call.Arguments);
+                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                            return (call.Name, Result: result, Success: true);
+                        }
+                        return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error executing Ollama tool {ToolName}", call.Name);
+                        return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                    }
+                }).ToList();
+
+                var results = _settings.Ollama.FunctionCalling.ParallelExecution
+                    ? await Task.WhenAll(executionTasks)
+                    : await ExecuteSequentiallyAsync(executionTasks);
+
+                // Emit end events for all tools
+                foreach (var (name, result, _) in results)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallEnd,
+                        ToolName = name,
+                        ToolResult = result
+                    };
+                }
+
+                // Add assistant message if there was text content before tools
+                if (iterationText.Length > 0)
+                {
+                    messages.Add(new Services.AI.Models.ChatMessage
+                    {
+                        Role = "assistant",
+                        Content = iterationText.ToString()
+                    });
+                }
+
+                // Add tool results as messages for next iteration
+                foreach (var (name, result, _) in results)
+                {
+                    messages.Add(new Services.AI.Models.ChatMessage
+                    {
+                        Role = "tool",
+                        Content = $"[{name}]: {result}"
+                    });
+                }
+
+                // Continue to next iteration
+                continue;
+            }
+            else
+            {
+                // No function calls - we're done
+                break;
+            }
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.End,
+            Content = fullResponse.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Helper to execute tasks sequentially when parallel execution is disabled
+    /// </summary>
+    private static async Task<(string Name, string Result, bool Success)[]> ExecuteSequentiallyAsync(
+        List<Task<(string Name, string Result, bool Success)>> tasks)
+    {
+        var results = new List<(string Name, string Result, bool Success)>();
+        foreach (var task in tasks)
+        {
+            results.Add(await task);
+        }
+        return results.ToArray();
     }
 
     /// <summary>
@@ -1946,5 +2404,23 @@ If a tool call fails:
         }
 
         return basePrompt + capabilityPrompts.ToString();
+    }
+
+    /// <summary>
+    /// Check if the Anthropic model supports extended thinking
+    /// </summary>
+    private static bool IsAnthropicThinkingCapableModel(string model)
+    {
+        // Extended thinking is supported on Claude 3.5 Sonnet and newer models
+        // Claude 3.7, Claude 4 (Sonnet/Opus) all support it
+        var thinkingCapableModels = new[]
+        {
+            "claude-opus-4",
+            "claude-sonnet-4",
+            "claude-3-7-sonnet",
+            "claude-3-5-sonnet"
+        };
+
+        return thinkingCapableModels.Any(m => model.Contains(m, StringComparison.OrdinalIgnoreCase));
     }
 }
