@@ -47,6 +47,94 @@ export interface GeneratedImage {
 }
 
 // ============================================
+// Grok/X.AI-specific Feature Types
+// ============================================
+
+/**
+ * Grok Think Mode options
+ */
+export interface GrokThinkOptions {
+  /** Whether think mode is enabled */
+  enabled: boolean;
+  /** Effort level for thinking: low, medium, high */
+  effort: 'low' | 'medium' | 'high';
+  /** Whether to include reasoning in response */
+  includeReasoning?: boolean;
+}
+
+/**
+ * Grok thinking step from Think Mode
+ */
+export interface GrokThinkingStep {
+  /** Step number in the reasoning process */
+  step: number;
+  /** The thought or reasoning content */
+  thought: string;
+  /** Optional conclusion for this step */
+  conclusion?: string;
+}
+
+/**
+ * Grok Live Search options
+ */
+export interface GrokSearchOptions {
+  /** Search mode: auto, on, off */
+  mode: 'auto' | 'on' | 'off';
+  /** Sources to search: web, x */
+  sources: ('web' | 'x')[];
+  /** Recency filter: hour, day, week, month */
+  recency: 'hour' | 'day' | 'week' | 'month';
+  /** Maximum number of results */
+  maxResults: number;
+}
+
+/**
+ * Grok search source from Live Search or DeepSearch
+ */
+export interface GrokSearchSource {
+  /** URL of the source */
+  url: string;
+  /** Title of the source */
+  title: string;
+  /** Snippet or excerpt */
+  snippet: string;
+  /** Type of source: web, x_post, news */
+  sourceType: 'web' | 'x_post' | 'news';
+  /** When the content was published */
+  publishedAt?: string;
+  /** Relevance score (0-1) */
+  relevanceScore?: number;
+}
+
+/**
+ * Grok DeepSearch options
+ */
+export interface GrokDeepSearchOptions {
+  /** Whether DeepSearch is enabled */
+  enabled: boolean;
+  /** Maximum sources to search */
+  maxSources: number;
+  /** Maximum time in seconds */
+  maxTimeSeconds: number;
+  /** Focus areas for the search */
+  focusAreas?: string[];
+}
+
+/**
+ * Grok DeepSearch result
+ */
+export interface GrokDeepSearchResult {
+  /** Summary of findings */
+  summary: string;
+  /** Sources found */
+  sources: GrokSearchSource[];
+  /** Key findings organized by topic */
+  keyFindings: Record<string, string>;
+  /** Analysis of the findings */
+  analysis: string;
+}
+
+// ============================================
 // Gemini-specific Feature Types
 // ============================================
 
@@ -147,6 +235,12 @@ export interface ChatMessage {
   codeExecutionResult?: CodeExecutionResult;
   /** Extended thinking/reasoning process (Gemini 2.0+ thinking mode) */
   thinkingProcess?: string;
+  /** Grok search sources from Live Search (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
+  /** Grok DeepSearch result (Grok only) */
+  deepSearchResult?: GrokDeepSearchResult;
+  /** Grok thinking steps from Think Mode (Grok only) */
+  grokThinkingSteps?: GrokThinkingStep[];
 }
 
 /**
@@ -174,6 +268,12 @@ export interface ChatConversation {
   codeExecutionEnabled?: boolean;
   /** Thinking mode enabled by default for this conversation (Gemini 2.0+ only) */
   thinkingEnabled?: boolean;
+  /** Grok Think Mode enabled for this conversation (Grok only) */
+  grokThinkModeEnabled?: boolean;
+  /** Grok Live Search enabled for this conversation (Grok only) */
+  grokSearchEnabled?: boolean;
+  /** Grok DeepSearch enabled for this conversation (Grok only) */
+  grokDeepSearchEnabled?: boolean;
 }
 
 /**
@@ -196,6 +296,12 @@ export interface CreateConversationRequest {
   codeExecutionEnabled?: boolean;
   /** Enable thinking mode by default for this conversation (Gemini 2.0+ only) */
   thinkingEnabled?: boolean;
+  /** Enable Grok Think Mode for this conversation (Grok only) */
+  grokThinkModeEnabled?: boolean;
+  /** Enable Grok Live Search for this conversation (Grok only) */
+  grokSearchEnabled?: boolean;
+  /** Enable Grok DeepSearch for this conversation (Grok only) */
+  grokDeepSearchEnabled?: boolean;
 }
 
 /**
@@ -231,6 +337,18 @@ export interface SendMessageRequest {
   contextCacheName?: string;
   /** Token budget for thinking process (Gemini only) */
   thinkingBudget?: number;
+  /** Enable Grok Think Mode for this message (Grok only) */
+  enableGrokThinkMode?: boolean;
+  /** Grok Think Mode options (Grok only) */
+  grokThinkOptions?: GrokThinkOptions;
+  /** Enable Grok Live Search for this message (Grok only) */
+  enableGrokSearch?: boolean;
+  /** Grok Search options (Grok only) */
+  grokSearchOptions?: GrokSearchOptions;
+  /** Enable Grok DeepSearch for this message (Grok only) */
+  enableGrokDeepSearch?: boolean;
+  /** Grok DeepSearch options (Grok only) */
+  grokDeepSearchOptions?: GrokDeepSearchOptions;
 }
 
 /**
@@ -307,6 +425,12 @@ export interface StreamingCallbacks {
   onCodeExecution?: (result: CodeExecutionResult) => void;
   /** Called when thinking process is received (Gemini 2.0+ only) */
   onThinking?: (thinking: string) => void;
+  /** Called when Grok search sources are received (Grok only) */
+  onGrokSearchSources?: (sources: GrokSearchSource[]) => void;
+  /** Called when Grok DeepSearch result is received (Grok only) */
+  onGrokDeepSearch?: (result: GrokDeepSearchResult) => void;
+  /** Called when Grok thinking step is received (Grok only) */
+  onGrokThinkingStep?: (step: GrokThinkingStep) => void;
 }
 
 /**
@@ -324,6 +448,12 @@ export interface StreamEndData {
   codeExecutionResult?: CodeExecutionResult;
   /** Extended thinking/reasoning process (Gemini 2.0+ only) */
   thinkingProcess?: string;
+  /** Grok search sources from Live Search (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
+  /** Grok DeepSearch result (Grok only) */
+  grokDeepSearchResult?: GrokDeepSearchResult;
+  /** Grok thinking steps from Think Mode (Grok only) */
+  grokThinkingSteps?: GrokThinkingStep[];
 }
 
 /**
@@ -343,6 +473,12 @@ export interface CombinedStreamingState {
   codeExecutionResult?: CodeExecutionResult;
   /** Thinking process content (Gemini 2.0+ only) */
   thinkingProcess?: string;
+  /** Grok search sources from Live Search (Grok only) */
+  grokSearchSources?: GrokSearchSource[];
+  /** Grok DeepSearch result (Grok only) */
+  grokDeepSearchResult?: GrokDeepSearchResult;
+  /** Grok thinking steps from Think Mode (Grok only) */
+  grokThinkingSteps?: GrokThinkingStep[];
 }
 
 // ============================================

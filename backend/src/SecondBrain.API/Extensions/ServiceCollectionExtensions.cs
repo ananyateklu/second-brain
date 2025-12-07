@@ -36,6 +36,7 @@ using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 using SecondBrain.Application.Services.AI.Caching;
+using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Providers;
@@ -210,6 +211,21 @@ public static class ServiceCollectionExtensions
 
         // Register Ollama function handlers (similar pattern to Gemini)
         // Note: Ollama uses the same plugin infrastructure but with OllamaSharp Tool format
+
+        // Register OpenAI function registry for native function calling
+        // The registry collects all IOpenAIFunctionHandler implementations and provides them to the OpenAIProvider
+        services.AddScoped<IOpenAIFunctionRegistry, OpenAIFunctionRegistry>();
+
+        // Register OpenAI function handlers (similar pattern to Gemini and Ollama)
+        // Note: OpenAI uses the same plugin infrastructure but with OpenAI ChatTool format
+
+        // Register Grok function registry for native function calling
+        // Grok uses OpenAI-compatible API, so patterns are similar to OpenAI
+        services.AddScoped<IGrokFunctionRegistry, GrokFunctionRegistry>();
+
+        // Register Grok search tools (Live Search and DeepSearch)
+        services.AddScoped<GrokSearchTool>();
+        services.AddScoped<GrokDeepSearchTool>();
 
         // Register Gemini Structured Output service for type-safe JSON generation (legacy interface)
         services.AddSingleton<IGeminiStructuredOutputService, GeminiStructuredOutputService>();

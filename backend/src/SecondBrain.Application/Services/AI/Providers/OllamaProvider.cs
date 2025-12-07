@@ -620,6 +620,7 @@ public class OllamaProvider : IAIProvider
         };
 
         IAsyncEnumerable<ChatResponseStream?>? stream = null;
+        OllamaToolStreamEvent? initError = null;
         try
         {
             stream = client.ChatAsync(chatRequest, cancellationToken);
@@ -628,44 +629,46 @@ public class OllamaProvider : IAIProvider
         {
             activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama tool streaming failed - service unreachable (connection refused)");
-            yield return new OllamaToolStreamEvent
+            initError = new OllamaToolStreamEvent
             {
                 Type = OllamaToolStreamEventType.Error,
                 Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
             };
-            yield break;
         }
         catch (HttpRequestException ex)
         {
             activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama tool streaming failed - service unreachable");
-            yield return new OllamaToolStreamEvent
+            initError = new OllamaToolStreamEvent
             {
                 Type = OllamaToolStreamEventType.Error,
                 Error = $"HTTP error connecting to Ollama: {ex.Message}"
             };
-            yield break;
         }
         catch (SocketException ex)
         {
             activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama tool streaming failed - socket connection refused");
-            yield return new OllamaToolStreamEvent
+            initError = new OllamaToolStreamEvent
             {
                 Type = OllamaToolStreamEventType.Error,
                 Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
             };
-            yield break;
         }
         catch (Exception ex)
         {
             activity?.RecordException(ex);
             _logger.LogError(ex, "Ollama tool streaming failed with unexpected error");
-            yield return new OllamaToolStreamEvent
+            initError = new OllamaToolStreamEvent
             {
                 Type = OllamaToolStreamEventType.Error,
                 Error = ex.Message
             };
+        }
+
+        if (initError != null)
+        {
+            yield return initError;
             yield break;
         }
 
@@ -741,13 +744,15 @@ public class OllamaProvider : IAIProvider
                 }
 
                 // Emit done event with usage info
+                // Note: Token counts are only available on the final ChatDoneResponseStream
+                var doneResponse = chunk as OllamaSharp.Models.Chat.ChatDoneResponseStream;
                 yield return new OllamaToolStreamEvent
                 {
                     Type = OllamaToolStreamEventType.Done,
                     Usage = new OllamaTokenUsage
                     {
-                        PromptTokens = chunk.PromptEvalCount ?? 0,
-                        CompletionTokens = chunk.EvalCount ?? 0
+                        PromptTokens = doneResponse?.PromptEvalCount ?? 0,
+                        CompletionTokens = doneResponse?.EvalCount ?? 0
                     }
                 };
 
@@ -1241,26 +1246,49 @@ public class OllamaProvider : IAIProvider
                 Name = modelName,
                 Modelfile = response.Modelfile,
                 Template = response.Template,
-                License = response.License,
-                Parameters = response.Parameters,
-                ModifiedAt = response.ModifiedAt
+                License = response.License
             };
 
-            // Extract additional info from ModelInfo if available
-            if (response.ModelInfo != null)
+            // Parse Parameters string if present (it's a string, not a dictionary)
+            if (!string.IsNullOrEmpty(response.Parameters))
             {
-                // Try to extract parameter size, family, etc. from ModelInfo dictionary
-                if (response.ModelInfo.TryGetValue("general.parameter_count", out var paramCount))
+                try
                 {
-                    details.ParameterSize = FormatParameterCount(paramCount?.ToString());
+                    // Parameters is a string like "num_ctx 4096\ntemperature 0.7"
+                    // Try to parse it into a dictionary for easier consumption
+                    var paramDict = new Dictionary<string, object>();
+                    foreach (var line in response.Parameters.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length == 2)
+                        {
+                            paramDict[parts[0]] = parts[1];
+                        }
+                    }
+                    details.Parameters = paramDict;
                 }
-                if (response.ModelInfo.TryGetValue("general.file_type", out var fileType))
+                catch
                 {
-                    details.Format = fileType?.ToString();
+                    // If parsing fails, store raw string as single entry
+                    details.Parameters = new Dictionary<string, object> { ["raw"] = response.Parameters };
                 }
-                if (response.ModelInfo.TryGetValue("general.quantization_version", out var quant))
+            }
+
+            // Extract additional info from Info if available
+            if (response.Info != null)
+            {
+                // ModelInfo is a class with direct properties
+                if (response.Info.ParameterCount != null)
                 {
-                    details.QuantizationLevel = quant?.ToString();
+                    details.ParameterSize = FormatParameterCount(response.Info.ParameterCount.Value.ToString());
+                }
+                if (response.Info.FileType != null)
+                {
+                    details.Format = response.Info.FileType.Value.ToString();
+                }
+                if (response.Info.QuantizationVersion != null)
+                {
+                    details.QuantizationLevel = response.Info.QuantizationVersion.Value.ToString();
                 }
             }
 
@@ -1387,10 +1415,62 @@ public class OllamaProvider : IAIProvider
 
         OllamaCreateProgress? errorProgress = null;
 
+        // Parse Modelfile content to extract base model and other parameters
+        // Modelfile format: FROM <base_model>\n[PARAMETER key value]\n[SYSTEM message]\n[TEMPLATE]
+        string? baseModel = null;
+        string? systemPrompt = null;
+        string? template = null;
+        var parameters = new Dictionary<string, object>();
+
+        foreach (var line in modelfileContent.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("FROM ", StringComparison.OrdinalIgnoreCase))
+            {
+                baseModel = trimmed.Substring(5).Trim();
+            }
+            else if (trimmed.StartsWith("SYSTEM ", StringComparison.OrdinalIgnoreCase))
+            {
+                systemPrompt = trimmed.Substring(7).Trim().Trim('"');
+            }
+            else if (trimmed.StartsWith("TEMPLATE ", StringComparison.OrdinalIgnoreCase))
+            {
+                template = trimmed.Substring(9).Trim().Trim('"');
+            }
+            else if (trimmed.StartsWith("PARAMETER ", StringComparison.OrdinalIgnoreCase))
+            {
+                var parts = trimmed.Substring(10).Trim().Split(' ', 2);
+                if (parts.Length == 2)
+                {
+                    // Try to parse numeric values
+                    if (int.TryParse(parts[1], out var intVal))
+                        parameters[parts[0]] = intVal;
+                    else if (float.TryParse(parts[1], out var floatVal))
+                        parameters[parts[0]] = floatVal;
+                    else if (bool.TryParse(parts[1], out var boolVal))
+                        parameters[parts[0]] = boolVal;
+                    else
+                        parameters[parts[0]] = parts[1];
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(baseModel))
+        {
+            yield return new OllamaCreateProgress
+            {
+                Status = "Error: Modelfile must contain a FROM directive specifying the base model"
+            };
+            yield break;
+        }
+
         var createRequest = new OllamaSharp.Models.CreateModelRequest
         {
-            Name = name,
-            ModelFileContent = modelfileContent,
+            Model = name,
+            From = baseModel,
+            System = systemPrompt,
+            Template = template,
+            Parameters = parameters.Count > 0 ? parameters : null,
             Stream = true
         };
 
@@ -1403,16 +1483,20 @@ public class OllamaProvider : IAIProvider
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
             _logger.LogWarning(ex, "CreateModel failed - service unreachable at {Url}", effectiveUrl);
-            yield return new OllamaCreateProgress
+            errorProgress = new OllamaCreateProgress
             {
                 Status = $"Error: Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
             };
-            yield break;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "CreateModel failed for {ModelName}", name);
-            yield return new OllamaCreateProgress { Status = $"Error: {ex.Message}" };
+            errorProgress = new OllamaCreateProgress { Status = $"Error: {ex.Message}" };
+        }
+
+        if (errorProgress != null)
+        {
+            yield return errorProgress;
             yield break;
         }
 

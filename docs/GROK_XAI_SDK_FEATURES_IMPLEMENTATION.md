@@ -86,12 +86,12 @@ var completion = await chatClient.CompleteChatAsync(
 | System Messages | ✅ Implemented | SystemChatMessage |
 | Multimodal (Images) | ✅ Implemented | Vision via base64 data URLs |
 | Image Generation | ✅ Implemented | Aurora (grok-2-image) via HTTP |
-| Function Calling | ⏳ Pending | Uses Semantic Kernel, not native |
+| Function Calling | ✅ Implemented | Native tool calling (OpenAI-compatible) |
 | Structured Output | ✅ Implemented | JSON schema via unified service (OpenAI-compatible) |
-| Think Mode | ❌ Not Started | Extended reasoning |
-| Live Search | ❌ Not Started | Real-time web data |
-| DeepSearch | ❌ Not Started | Comprehensive research |
-| Extended Context | ⏳ Partial | Basic support only |
+| Think Mode | ✅ Implemented | Extended reasoning via HTTP API |
+| Live Search | ✅ Implemented | Tool-based search (future-proof) |
+| DeepSearch | ✅ Implemented | Tool-based comprehensive research |
+| Extended Context | ✅ Implemented | Configurable via MaxContextTokens |
 
 ### Current Implementation Details
 
@@ -102,6 +102,11 @@ var completion = await chatClient.CompleteChatAsync(
 - **Multimodal Images**: User messages with image content parts via data URLs
 - **Image Generation**: Aurora (grok-2-image) via HTTP API
 - **Health Checks**: Provider availability and model listing
+- **Native Function Calling**: `StreamWithToolsAsync` for agent mode with tool execution
+- **Think Mode**: `GenerateWithThinkModeAsync` and `StreamWithThinkModeAsync` for extended reasoning
+- **Live Search Tool**: `GrokSearchTool` for real-time web and X search
+- **DeepSearch Tool**: `GrokDeepSearchTool` for comprehensive research
+- **Extended Context**: Configurable `MaxContextTokens` (default: 131072)
 - **Telemetry**: OpenTelemetry integration for requests
 
 #### Architecture Pattern
@@ -120,18 +125,46 @@ var openAIClient = new OpenAIClient(apiKeyCredential, openAIClientOptions);
 _client = openAIClient.GetChatClient(_settings.DefaultModel);
 ```
 
-#### Agent Integration
+#### Native Function Calling
 
-Currently uses Semantic Kernel for agent functionality:
+Grok now uses native tool calling (OpenAI-compatible) through `ProcessGrokStreamAsync` in AgentService:
 
 ```csharp
-// AgentService.cs
-case "grok":
-case "xai":
-    builder.AddOpenAIChatCompletion(
-        modelId: model,
-        apiKey: _settings.XAI.ApiKey,
-        endpoint: new Uri(_settings.XAI.BaseUrl));
+// GrokProvider.cs - Native tool calling
+public async IAsyncEnumerable<GrokToolStreamEvent> StreamWithToolsAsync(
+    IEnumerable<OpenAIChatMessage> messages,
+    IEnumerable<ChatTool> tools,
+    string model,
+    AIRequest? settings = null,
+    CancellationToken cancellationToken = default)
+
+// AgentService.cs - Grok detection and processing
+var isGrok = request.Provider.Equals("grok", StringComparison.OrdinalIgnoreCase) ||
+             request.Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
+var useNativeGrokFunctionCalling = isGrok &&
+    _grokProvider != null &&
+    _settings.XAI.Enabled &&
+    request.Capabilities != null &&
+    request.Capabilities.Count > 0;
+
+if (useNativeGrokFunctionCalling)
+{
+    await foreach (var evt in ProcessGrokStreamAsync(request, cancellationToken))
+    {
+        yield return evt;
+    }
+}
+```
+
+#### Function Calling Infrastructure
+
+```text
+Services/AI/FunctionCalling/
+├── IGrokFunctionHandler.cs         # Interface for Grok function handlers
+├── GrokFunctionDeclarationBuilder.cs # Builds ChatTool from [KernelFunction] methods
+├── GrokFunctionRegistry.cs         # Registry for managing handlers
+└── Handlers/
+    └── PluginBasedGrokFunctionHandler.cs # Plugin-based function execution
 ```
 
 ---
@@ -142,7 +175,7 @@ case "xai":
 
 **Priority:** HIGH  
 **Complexity:** Low (OpenAI-compatible)  
-**Status:** ⏳ Pending - Currently uses Semantic Kernel  
+**Status:** ✅ Implemented  
 **Target:** Native SDK tool calling
 
 #### Overview
@@ -250,11 +283,13 @@ The new Agent Tools API (replacing Live Search) provides built-in tools:
 
 | File | Action | Status |
 |------|--------|--------|
-| `Services/AI/FunctionCalling/IGrokFunctionHandler.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/GrokFunctionDeclarationBuilder.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/Handlers/NotesGrokFunctionHandler.cs` | Create | ⏳ Pending |
-| `Services/AI/Providers/GrokProvider.cs` | Modify | ⏳ Pending |
-| `Services/Agents/AgentService.cs` | Modify | ⏳ Pending |
+| `Services/AI/FunctionCalling/IGrokFunctionHandler.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/GrokFunctionDeclarationBuilder.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/GrokFunctionRegistry.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/Handlers/PluginBasedGrokFunctionHandler.cs` | Create | ✅ Implemented |
+| `Services/AI/Models/GrokToolStreamEvent.cs` | Create | ✅ Implemented |
+| `Services/AI/Providers/GrokProvider.cs` | Modify | ✅ Implemented |
+| `Services/Agents/AgentService.cs` | Modify | ✅ Implemented |
 
 ---
 
@@ -372,7 +407,7 @@ public class GrokStructuredOutputService : IGrokStructuredOutputService
 
 **Priority:** HIGH  
 **Complexity:** Medium  
-**Status:** ❌ Not Started  
+**Status:** ✅ Implemented  
 **Target:** Extended reasoning for complex problems
 
 #### Overview
@@ -474,7 +509,7 @@ interface ChatMessage {
 
 **Priority:** MEDIUM  
 **Complexity:** Medium  
-**Status:** ❌ Not Started  
+**Status:** ✅ Implemented (Tool-based)  
 **Target:** Real-time web and X (Twitter) data
 
 #### Overview
@@ -576,7 +611,7 @@ After December 15, 2025:
 
 **Priority:** MEDIUM  
 **Complexity:** Medium  
-**Status:** ❌ Not Started  
+**Status:** ✅ Implemented (Tool-based)  
 **Target:** Comprehensive web research agent
 
 #### Overview
@@ -774,7 +809,7 @@ public async Task<ImageGenerationResponse> GenerateImageAsync(
 
 **Priority:** MEDIUM  
 **Complexity:** Low  
-**Status:** ⏳ Partial  
+**Status:** ✅ Implemented  
 **Target:** Full support for long contexts
 
 #### Overview
@@ -1217,23 +1252,23 @@ public class GrokImageConfig
 
 ## Implementation Priority
 
-### Phase 1 - High Priority (Weeks 1-2)
+### Phase 1 - High Priority ✅ COMPLETED
 
-1. **Native Function Calling** - Replace Semantic Kernel
-2. **Structured Output** - JSON schema support
-3. **Think Mode** - Extended reasoning
+1. **Native Function Calling** - ✅ `StreamWithToolsAsync`, `ProcessGrokStreamAsync`
+2. **Structured Output** - ✅ JSON schema via unified service
+3. **Think Mode** - ✅ `GenerateWithThinkModeAsync`, `StreamWithThinkModeAsync`
 
-### Phase 2 - Medium Priority (Weeks 3-4)
+### Phase 2 - Medium Priority ✅ COMPLETED
 
-4. **Live Search** - Real-time web data
-5. **DeepSearch** - Comprehensive research
-6. **Extended Context** - 2M token support
+4. **Live Search** - ✅ `GrokSearchTool` (tool-based approach)
+5. **DeepSearch** - ✅ `GrokDeepSearchTool` (tool-based approach)
+6. **Extended Context** - ✅ `MaxContextTokens` configuration (131K default)
 
-### Phase 3 - Lower Priority (Weeks 5-6)
+### Phase 3 - Lower Priority (Pending)
 
-7. **Content Moderation** - Safety filtering
-8. **Analytics** - Search/think mode metrics
-9. **UI Components** - Full frontend integration
+7. **Content Moderation** - ❌ Not yet started
+8. **Analytics** - ⏳ Basic telemetry implemented
+9. **UI Components** - ✅ Frontend types added, UI pending
 
 ---
 

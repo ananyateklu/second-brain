@@ -97,15 +97,14 @@ The SDK provides specialized clients for each feature area:
 | Chat/Multi-turn | ✅ Implemented | UserChatMessage, AssistantChatMessage |
 | System Messages | ✅ Implemented | SystemChatMessage |
 | Multimodal (Images) | ✅ Implemented | `ChatMessageContentPart.CreateImagePart` |
-| Image Generation | ✅ Implemented | DALL-E 3 via HTTP (not SDK) |
+| Image Generation | ✅ Implemented | DALL-E 3 via SDK `ImageClient` |
 | Structured Output | ✅ Implemented | `ChatResponseFormat.CreateJsonSchemaFormat` via unified service |
-| Function Calling | ⏳ Pending | Uses Semantic Kernel, not native SDK |
-| Structured Output | ⏳ Pending | Not implemented |
+| Function Calling | ✅ Implemented | Native SDK with `ChatTool`, `ChatToolCall` |
+| Text Embeddings | ✅ Implemented | SDK `EmbeddingClient` with custom dimensions support |
 | Reasoning Models | ⏳ Pending | o1/o3 support minimal |
 | Responses API | ❌ Not Started | New API for web/file search |
 | Audio Input/Output | ❌ Not Started | gpt-4o-audio-preview |
 | Audio Transcription | ❌ Not Started | Whisper integration |
-| Text Embeddings | ❌ Not Started | Uses separate service |
 | Assistants API | ❌ Not Started | Persistent threads + RAG |
 | Web Search | ❌ Not Started | Responses API feature |
 | File Search | ❌ Not Started | Responses API feature |
@@ -121,14 +120,16 @@ The SDK provides specialized clients for each feature area:
 - **Chat Completion**: Basic `ChatClient.CompleteChatAsync` with temperature handling
 - **Streaming**: `CompleteChatStreamingAsync` with first-token latency tracking
 - **Multimodal Images**: User messages with image content parts via data URLs
-- **Image Generation**: DALL-E 3 via HTTP API (not SDK `ImageClient`)
+- **Image Generation**: DALL-E 3 via SDK `ImageClient` with size/quality/style mapping
+- **Text Embeddings**: SDK `EmbeddingClient` with custom dimensions (256-3072) and token usage tracking
 - **Health Checks**: Provider availability and model listing
 - **Telemetry**: OpenTelemetry integration for requests
+- **Function Calling**: Native SDK implementation with `ChatTool.CreateFunctionTool`, streaming tool calls, parallel tool execution
+- **Structured Output**: Via unified `IStructuredOutputService` with `ChatResponseFormat.CreateJsonSchemaFormat`
 
 #### ⚠️ Partial/Workaround Implementation
 
 - **Temperature Handling**: Retry logic for models that don't support temperature (o1, o1-mini)
-- **Function Calling**: Via Semantic Kernel `OpenAIPromptExecutionSettings.ToolCallBehavior`
 
 ---
 
@@ -138,7 +139,7 @@ The SDK provides specialized clients for each feature area:
 
 **Priority:** HIGH  
 **Complexity:** Medium  
-**Status:** ⏳ Pending - Currently uses Semantic Kernel  
+**Status:** ✅ Implemented  
 **Target:** Native SDK implementation like Gemini/Claude
 
 #### Overview
@@ -284,13 +285,45 @@ if (completion.FinishReason == ChatFinishReason.ToolCalls)
 
 | File | Action | Status |
 |------|--------|--------|
-| `Services/AI/FunctionCalling/IOpenAIFunctionHandler.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/OpenAIFunctionRegistry.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/OpenAIFunctionDeclarationBuilder.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/Handlers/NotesOpenAIFunctionHandler.cs` | Create | ⏳ Pending |
-| `Services/AI/FunctionCalling/Handlers/PluginBasedOpenAIFunctionHandler.cs` | Create | ⏳ Pending |
-| `Services/AI/Providers/OpenAIProvider.cs` | Modify | ⏳ Pending |
-| `Services/Agents/AgentService.cs` | Modify | ⏳ Pending |
+| `Services/AI/FunctionCalling/IOpenAIFunctionHandler.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/OpenAIFunctionRegistry.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/OpenAIFunctionDeclarationBuilder.cs` | Create | ✅ Implemented |
+| `Services/AI/FunctionCalling/Handlers/PluginBasedOpenAIFunctionHandler.cs` | Create | ✅ Implemented |
+| `Services/AI/Models/OpenAIToolStreamEvent.cs` | Create | ✅ Implemented |
+| `Services/AI/Providers/OpenAIProvider.cs` | Modify | ✅ Implemented |
+| `Services/Agents/AgentService.cs` | Modify | ✅ Implemented |
+| `Configuration/AIProvidersSettings.cs` | Modify | ✅ Implemented |
+| `API/Extensions/ServiceCollectionExtensions.cs` | Modify | ✅ Implemented |
+| `API/appsettings.json` | Modify | ✅ Implemented |
+
+#### Implementation Summary
+
+The native OpenAI function calling implementation follows the same pattern as Ollama, Gemini, and Claude:
+
+1. **`IOpenAIFunctionHandler`**: Interface for individual function handlers with `GetToolDefinition()` returning `ChatTool`
+2. **`OpenAIFunctionRegistry`**: Registry managing all registered handlers, providing `GetAllTools()` and `ExecuteAsync()`
+3. **`OpenAIFunctionDeclarationBuilder`**: Builds `ChatTool` from `[KernelFunction]` decorated methods using reflection
+4. **`PluginBasedOpenAIFunctionHandler`**: Wraps `NotesPlugin` methods as OpenAI tools
+5. **`OpenAIToolStreamEvent`**: Stream event model for text, tool calls, and completion events
+6. **`OpenAIProvider.StreamWithToolsAsync()`**: Streaming with tool support, handles `ChatFinishReason.ToolCalls`
+7. **`AgentService.ProcessOpenAIStreamAsync()`**: Tool execution loop with parallel execution support
+
+#### Configuration
+
+```json
+"OpenAI": {
+  "Features": {
+    "EnableFunctionCalling": true,
+    "EnableStructuredOutput": true,
+    "EnableVision": true
+  },
+  "FunctionCalling": {
+    "MaxIterations": 10,
+    "ParallelExecution": true,
+    "TimeoutSeconds": 30
+  }
+}
+```
 
 ---
 
@@ -450,10 +483,23 @@ var result = JsonSerializer.Deserialize<MathReasoning>(completion.Content[0].Tex
 
 | File | Action | Status |
 |------|--------|--------|
-| `Services/AI/StructuredOutput/OpenAISchemaBuilder.cs` | Create | ⏳ Pending |
-| `Services/AI/StructuredOutput/IOpenAIStructuredOutputService.cs` | Create | ⏳ Pending |
-| `Services/AI/StructuredOutput/OpenAIStructuredOutputService.cs` | Create | ⏳ Pending |
-| `API/Extensions/ServiceCollectionExtensions.cs` | Modify | ⏳ Pending |
+| `Services/AI/StructuredOutput/Common/JsonSchemaBuilder.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/Common/JsonSchemaDefinition.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/Adapters/OpenAISchemaAdapter.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/Providers/OpenAIStructuredOutputService.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/IProviderStructuredOutputService.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/IStructuredOutputService.cs` | Create | ✅ Implemented |
+| `Services/AI/StructuredOutput/StructuredOutputService.cs` | Create | ✅ Implemented |
+| `API/Extensions/ServiceCollectionExtensions.cs` | Modify | ✅ Implemented |
+
+#### Implementation Summary
+
+Structured output is implemented via a unified cross-provider service:
+
+1. **`JsonSchemaBuilder`**: Builds JSON schema from C# types using reflection
+2. **`OpenAISchemaAdapter`**: Adapts generic schema to OpenAI's `ChatResponseFormat.CreateJsonSchemaFormat`
+3. **`OpenAIStructuredOutputService`**: Provider-specific implementation using `ChatClient`
+4. **`StructuredOutputService`**: Unified service that routes to appropriate provider
 
 ---
 
@@ -809,12 +855,12 @@ public class TranscriptionResult
 
 **Priority:** HIGH  
 **Complexity:** Low  
-**Status:** ⏳ Uses Separate Service  
+**Status:** ✅ Implemented  
 **Target:** Migrate to SDK `EmbeddingClient`
 
 #### Overview
 
-Use the SDK's `EmbeddingClient` for text embeddings instead of raw HTTP calls.
+The SDK's `EmbeddingClient` is now used for text embeddings with support for custom dimensions (256-3072) and token usage tracking.
 
 #### SDK Usage
 
@@ -884,12 +930,12 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
 
 **Priority:** LOW  
 **Complexity:** Low  
-**Status:** ✅ HTTP Implementation Exists  
+**Status:** ✅ Implemented  
 **Target:** Migrate to SDK `ImageClient`
 
 #### Overview
 
-Replace current HTTP implementation with SDK's `ImageClient` for cleaner code and better maintainability.
+The SDK's `ImageClient` is now used for DALL-E image generation with proper size/quality/style mapping.
 
 #### SDK Usage
 
@@ -1830,10 +1876,10 @@ public class OpenAIImageConfig
 
 ### Phase 1 - High Priority (Weeks 1-2)
 
-1. **Native Function Calling** - Replace Semantic Kernel dependency
-2. **Structured Output** - JSON schema support
-3. **SDK Migration** - Update `OpenAIImageProvider` to use `ImageClient`
-4. **Embeddings** - Migrate to `EmbeddingClient`
+1. ✅ **Native Function Calling** - Replace Semantic Kernel dependency (COMPLETED)
+2. ✅ **Structured Output** - JSON schema support (COMPLETED - via unified service)
+3. ✅ **SDK Migration** - Update `OpenAIImageProvider` to use `ImageClient` (COMPLETED)
+4. ✅ **Embeddings** - SDK `EmbeddingClient` with custom dimensions + token tracking (COMPLETED)
 
 ### Phase 2 - Medium Priority (Weeks 3-4)
 

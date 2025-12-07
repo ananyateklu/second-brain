@@ -217,15 +217,15 @@ public class JsonSchemaBuilderTests
 
         Assert.Equal("array", schema.Properties["tags"].Type);
         Assert.NotNull(schema.Properties["tags"].Items);
-        Assert.Equal("string", schema.Properties["tags"].Items.Type);
+        Assert.Equal("string", schema.Properties["tags"].Items!.Type);
 
         Assert.Equal("array", schema.Properties["categories"].Type);
         Assert.NotNull(schema.Properties["categories"].Items);
-        Assert.Equal("string", schema.Properties["categories"].Items.Type);
+        Assert.Equal("string", schema.Properties["categories"].Items!.Type);
 
         Assert.Equal("array", schema.Properties["numbers"].Type);
         Assert.NotNull(schema.Properties["numbers"].Items);
-        Assert.Equal("integer", schema.Properties["numbers"].Items.Type);
+        Assert.Equal("integer", schema.Properties["numbers"].Items!.Type);
     }
 
     [Fact]
@@ -251,8 +251,8 @@ public class JsonSchemaBuilderTests
         Assert.Equal("string", schema.Properties["title"].Type);
         Assert.Equal("object", schema.Properties["details"].Type);
         Assert.NotNull(schema.Properties["details"].Properties);
-        Assert.Contains("description", schema.Properties["details"].Properties.Keys);
-        Assert.Contains("count", schema.Properties["details"].Properties.Keys);
+        Assert.Contains("description", schema.Properties["details"].Properties!.Keys);
+        Assert.Contains("count", schema.Properties["details"].Properties!.Keys);
     }
 
     [Fact]
@@ -265,10 +265,10 @@ public class JsonSchemaBuilderTests
         Assert.NotNull(schema.Properties);
         Assert.Equal("string", schema.Properties["status"].Type);
         Assert.NotNull(schema.Properties["status"].Enum);
-        Assert.Contains("Pending", schema.Properties["status"].Enum);
-        Assert.Contains("Active", schema.Properties["status"].Enum);
-        Assert.Contains("Completed", schema.Properties["status"].Enum);
-        Assert.Contains("Cancelled", schema.Properties["status"].Enum);
+        Assert.Contains("Pending", schema.Properties["status"].Enum!);
+        Assert.Contains("Active", schema.Properties["status"].Enum!);
+        Assert.Contains("Completed", schema.Properties["status"].Enum!);
+        Assert.Contains("Cancelled", schema.Properties["status"].Enum!);
     }
 
     [Fact]

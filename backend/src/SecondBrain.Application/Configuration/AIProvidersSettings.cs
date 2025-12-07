@@ -22,6 +22,78 @@ public class OpenAISettings
     public int MaxTokens { get; set; } = 4096;
     public float Temperature { get; set; } = 0.7f;
     public int TimeoutSeconds { get; set; } = 30;
+
+    /// <summary>
+    /// Feature flags for OpenAI SDK capabilities
+    /// </summary>
+    public OpenAIFeaturesConfig Features { get; set; } = new();
+
+    /// <summary>
+    /// Function calling configuration
+    /// </summary>
+    public OpenAIFunctionCallingConfig FunctionCalling { get; set; } = new();
+}
+
+/// <summary>
+/// Feature flags for enabling/disabling OpenAI SDK capabilities
+/// </summary>
+public class OpenAIFeaturesConfig
+{
+    /// <summary>
+    /// Enable native function calling (tools) support
+    /// </summary>
+    public bool EnableFunctionCalling { get; set; } = true;
+
+    /// <summary>
+    /// Enable structured output (JSON schema) support
+    /// </summary>
+    public bool EnableStructuredOutput { get; set; } = true;
+
+    /// <summary>
+    /// Enable vision/multimodal model support
+    /// </summary>
+    public bool EnableVision { get; set; } = true;
+
+    /// <summary>
+    /// Enable web search via Responses API (when available)
+    /// </summary>
+    public bool EnableWebSearch { get; set; } = false;
+
+    /// <summary>
+    /// Enable audio chat support (gpt-4o-audio-preview)
+    /// </summary>
+    public bool EnableAudioChat { get; set; } = false;
+
+    /// <summary>
+    /// Enable audio transcription (Whisper)
+    /// </summary>
+    public bool EnableTranscription { get; set; } = false;
+
+    /// <summary>
+    /// Enable content moderation
+    /// </summary>
+    public bool EnableModeration { get; set; } = false;
+}
+
+/// <summary>
+/// Function calling configuration for OpenAI
+/// </summary>
+public class OpenAIFunctionCallingConfig
+{
+    /// <summary>
+    /// Maximum iterations for tool call loops
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
+
+    /// <summary>
+    /// Enable parallel execution of multiple tool calls
+    /// </summary>
+    public bool ParallelExecution { get; set; } = true;
+
+    /// <summary>
+    /// Timeout in seconds for individual tool executions
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 30;
 }
 
 public class GeminiSettings
@@ -373,8 +445,175 @@ public class XAISettings
     public bool Enabled { get; set; }
     public string? ApiKey { get; set; }
     public string BaseUrl { get; set; } = "https://api.x.ai/v1";
-    public string DefaultModel { get; set; } = "grok-2-1212";
+    public string DefaultModel { get; set; } = "grok-3-mini";
     public int MaxTokens { get; set; } = 4096;
     public float Temperature { get; set; } = 0.7f;
+    public int TimeoutSeconds { get; set; } = 120;
+    public int MaxContextTokens { get; set; } = 131072;
+
+    /// <summary>
+    /// Feature flags for Grok/X.AI SDK capabilities
+    /// </summary>
+    public GrokFeaturesConfig Features { get; set; } = new();
+
+    /// <summary>
+    /// Function calling configuration
+    /// </summary>
+    public GrokFunctionCallingConfig FunctionCalling { get; set; } = new();
+
+    /// <summary>
+    /// Think mode configuration for extended reasoning
+    /// </summary>
+    public GrokThinkingConfig ThinkMode { get; set; } = new();
+
+    /// <summary>
+    /// Live Search configuration
+    /// </summary>
+    public GrokSearchConfig Search { get; set; } = new();
+
+    /// <summary>
+    /// DeepSearch configuration
+    /// </summary>
+    public GrokDeepSearchConfig DeepSearch { get; set; } = new();
+
+    /// <summary>
+    /// Image generation (Aurora) configuration
+    /// </summary>
+    public GrokImageConfig ImageGeneration { get; set; } = new();
+}
+
+/// <summary>
+/// Feature flags for enabling/disabling Grok/X.AI SDK capabilities
+/// </summary>
+public class GrokFeaturesConfig
+{
+    /// <summary>
+    /// Enable native function calling (tools) support
+    /// </summary>
+    public bool EnableFunctionCalling { get; set; } = true;
+
+    /// <summary>
+    /// Enable structured output (JSON schema) support
+    /// </summary>
+    public bool EnableStructuredOutput { get; set; } = true;
+
+    /// <summary>
+    /// Enable vision/multimodal model support
+    /// </summary>
+    public bool EnableVision { get; set; } = true;
+
+    /// <summary>
+    /// Enable Think Mode for extended reasoning
+    /// </summary>
+    public bool EnableThinkMode { get; set; } = true;
+
+    /// <summary>
+    /// Enable Live Search for real-time web data
+    /// </summary>
+    public bool EnableLiveSearch { get; set; } = true;
+
+    /// <summary>
+    /// Enable DeepSearch for comprehensive research
+    /// </summary>
+    public bool EnableDeepSearch { get; set; } = true;
+}
+
+/// <summary>
+/// Function calling configuration for Grok
+/// </summary>
+public class GrokFunctionCallingConfig
+{
+    /// <summary>
+    /// Maximum iterations for tool call loops
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
+
+    /// <summary>
+    /// Enable parallel execution of multiple tool calls
+    /// </summary>
+    public bool ParallelExecution { get; set; } = true;
+
+    /// <summary>
+    /// Timeout in seconds for individual tool executions
+    /// </summary>
     public int TimeoutSeconds { get; set; } = 30;
+}
+
+/// <summary>
+/// Think mode configuration for Grok's extended reasoning
+/// </summary>
+public class GrokThinkingConfig
+{
+    /// <summary>
+    /// Default effort level for thinking (low, medium, high)
+    /// </summary>
+    public string DefaultEffort { get; set; } = "medium";
+
+    /// <summary>
+    /// Include reasoning process in response for transparency
+    /// </summary>
+    public bool IncludeReasoningInResponse { get; set; } = false;
+}
+
+/// <summary>
+/// Live Search configuration for real-time web and X data
+/// </summary>
+public class GrokSearchConfig
+{
+    /// <summary>
+    /// Default search mode (auto, on, off)
+    /// </summary>
+    public string DefaultMode { get; set; } = "auto";
+
+    /// <summary>
+    /// Default search sources (web, x)
+    /// </summary>
+    public List<string> DefaultSources { get; set; } = new() { "web", "x" };
+
+    /// <summary>
+    /// Default recency filter (hour, day, week, month)
+    /// </summary>
+    public string DefaultRecency { get; set; } = "day";
+
+    /// <summary>
+    /// Maximum number of search results
+    /// </summary>
+    public int MaxResults { get; set; } = 10;
+}
+
+/// <summary>
+/// DeepSearch configuration for comprehensive research
+/// </summary>
+public class GrokDeepSearchConfig
+{
+    /// <summary>
+    /// Maximum number of sources to search
+    /// </summary>
+    public int MaxSources { get; set; } = 20;
+
+    /// <summary>
+    /// Maximum time in seconds for deep search
+    /// </summary>
+    public int MaxTimeSeconds { get; set; } = 120;
+}
+
+/// <summary>
+/// Image generation (Aurora) configuration for Grok
+/// </summary>
+public class GrokImageConfig
+{
+    /// <summary>
+    /// Default image generation model
+    /// </summary>
+    public string DefaultModel { get; set; } = "grok-2-image";
+
+    /// <summary>
+    /// Default image size
+    /// </summary>
+    public string DefaultSize { get; set; } = "1024x1024";
+
+    /// <summary>
+    /// Maximum images per request
+    /// </summary>
+    public int MaxCount { get; set; } = 4;
 }

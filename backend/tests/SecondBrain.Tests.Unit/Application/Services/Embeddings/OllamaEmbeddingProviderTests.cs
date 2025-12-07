@@ -137,20 +137,23 @@ public class OllamaEmbeddingProviderTests
     }
 
     [Fact]
-    public async Task GenerateEmbeddingAsync_WhenEnabled_ReturnsNotImplementedError()
+    public async Task GenerateEmbeddingAsync_WhenEnabledButServerUnavailable_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, baseUrl: "http://localhost:11434");
+        // Use an invalid URL that will fail to connect
+        SetupSettings(enabled: true, baseUrl: "http://nonexistent-host:11434");
+        SetupHttpClient(HttpStatusCode.ServiceUnavailable, "{\"error\":\"service unavailable\"}");
         var provider = CreateProvider();
 
         // Act
         var result = await provider.GenerateEmbeddingAsync("Test text");
 
         // Assert
-        // Current implementation returns an error as Ollama embedding is not fully implemented
+        // When Ollama server is unavailable, should return an error
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("not implemented");
         result.Provider.Should().Be("Ollama");
+        // Error should indicate server is not reachable or request failed
+        result.Error.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -220,10 +223,12 @@ public class OllamaEmbeddingProviderTests
     }
 
     [Fact]
-    public async Task GenerateEmbeddingsAsync_WhenEnabled_ReturnsNotImplementedError()
+    public async Task GenerateEmbeddingsAsync_WhenEnabledButServerUnavailable_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, baseUrl: "http://localhost:11434");
+        // Use an invalid URL that will fail to connect
+        SetupSettings(enabled: true, baseUrl: "http://nonexistent-host:11434");
+        SetupHttpClient(HttpStatusCode.ServiceUnavailable, "{\"error\":\"service unavailable\"}");
         var provider = CreateProvider();
         var texts = new List<string> { "Text 1", "Text 2" };
 
@@ -231,9 +236,11 @@ public class OllamaEmbeddingProviderTests
         var result = await provider.GenerateEmbeddingsAsync(texts);
 
         // Assert
-        // Current implementation returns an error as Ollama embedding is not fully implemented
+        // When Ollama server is unavailable, should return an error
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("not implemented");
+        result.Provider.Should().Be("Ollama");
+        // Error should indicate server is not reachable or request failed
+        result.Error.Should().NotBeNullOrEmpty();
     }
 
     #endregion

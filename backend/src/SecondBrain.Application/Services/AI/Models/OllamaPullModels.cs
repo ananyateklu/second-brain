@@ -90,7 +90,7 @@ public class OllamaModelInfo
     /// <summary>
     /// Model name (e.g., "llama3")
     /// </summary>
-    public required string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     /// Model description
@@ -103,9 +103,33 @@ public class OllamaModelInfo
     public List<string> Tags { get; set; } = new();
 
     /// <summary>
+    /// Size of the model in bytes (legacy property, use SizeBytes)
+    /// </summary>
+    public long Size { get; set; }
+
+    /// <summary>
     /// Estimated size in bytes (for the default tag)
     /// </summary>
-    public long? SizeBytes { get; set; }
+    public long? SizeBytes
+    {
+        get => Size > 0 ? Size : null;
+        set => Size = value ?? 0;
+    }
+
+    /// <summary>
+    /// Formatted size string
+    /// </summary>
+    public string SizeFormatted => FormatSize(Size);
+
+    /// <summary>
+    /// Model modification time
+    /// </summary>
+    public DateTime? ModifiedAt { get; set; }
+
+    /// <summary>
+    /// The digest/hash of the model
+    /// </summary>
+    public string? Digest { get; set; }
 
     /// <summary>
     /// Model category (e.g., "language", "code", "vision", "embedding")
@@ -116,6 +140,15 @@ public class OllamaModelInfo
     /// Whether this model is already downloaded locally
     /// </summary>
     public bool IsDownloaded { get; set; }
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes >= 1_000_000_000)
+            return $"{bytes / 1_000_000_000.0:F1} GB";
+        if (bytes >= 1_000_000)
+            return $"{bytes / 1_000_000.0:F1} MB";
+        return $"{bytes / 1_000.0:F1} KB";
+    }
 }
 
 

@@ -50,7 +50,8 @@ public class OllamaChatSession : IOllamaChatSession
         _client.SelectedModel = model;
 
         // Create the Chat instance with optional system prompt
-        _chat = new OllamaSharp.Chat(_client, systemPrompt);
+        // Pass empty string if null to satisfy non-nullable parameter
+        _chat = new OllamaSharp.Chat(_client, systemPrompt ?? string.Empty);
 
         _logger?.LogDebug("Created Ollama chat session with model {Model}", model);
     }

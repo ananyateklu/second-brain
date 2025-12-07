@@ -23,6 +23,8 @@ using SecondBrain.Core.Interfaces;
 
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
 using OllamaTool = OllamaSharp.Models.Chat.Tool;
+using OpenAIChatTool = OpenAI.Chat.ChatTool;
+using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
 
 namespace SecondBrain.Application.Services.Agents;
 
@@ -61,6 +63,8 @@ public class AgentService : IAgentService
     private readonly IGeminiFunctionRegistry? _geminiFunctionRegistry;
     private readonly GeminiProvider? _geminiProvider;
     private readonly OllamaProvider? _ollamaProvider;
+    private readonly OpenAIProvider? _openAIProvider;
+    private readonly GrokProvider? _grokProvider;
 
     public AgentService(
         IOptions<AIProvidersSettings> settings,
@@ -70,7 +74,9 @@ public class AgentService : IAgentService
         ILogger<AgentService> logger,
         IGeminiFunctionRegistry? geminiFunctionRegistry = null,
         GeminiProvider? geminiProvider = null,
-        OllamaProvider? ollamaProvider = null)
+        OllamaProvider? ollamaProvider = null,
+        OpenAIProvider? openAIProvider = null,
+        GrokProvider? grokProvider = null)
     {
         _settings = settings.Value;
         _ragSettings = ragSettings.Value;
@@ -80,6 +86,8 @@ public class AgentService : IAgentService
         _geminiFunctionRegistry = geminiFunctionRegistry;
         _geminiProvider = geminiProvider;
         _ollamaProvider = ollamaProvider;
+        _openAIProvider = openAIProvider;
+        _grokProvider = grokProvider;
 
         // Register available plugins
         RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value));
@@ -159,6 +167,42 @@ public class AgentService : IAgentService
         if (useNativeOllamaFunctionCalling)
         {
             await foreach (var evt in ProcessOllamaStreamAsync(request, cancellationToken))
+            {
+                yield return evt;
+            }
+            yield break;
+        }
+
+        // Use native OpenAI function calling when available
+        var isOpenAI = request.Provider.Equals("openai", StringComparison.OrdinalIgnoreCase);
+        var useNativeOpenAIFunctionCalling = isOpenAI &&
+            _openAIProvider != null &&
+            _settings.OpenAI.Features.EnableFunctionCalling &&
+            request.Capabilities != null &&
+            request.Capabilities.Count > 0;
+
+        if (useNativeOpenAIFunctionCalling)
+        {
+            await foreach (var evt in ProcessOpenAIStreamAsync(request, cancellationToken))
+            {
+                yield return evt;
+            }
+            yield break;
+        }
+
+        // Use native Grok function calling when available
+        // Grok uses an OpenAI-compatible API, so we have native tool support
+        var isGrok = request.Provider.Equals("grok", StringComparison.OrdinalIgnoreCase) ||
+                     request.Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
+        var useNativeGrokFunctionCalling = isGrok &&
+            _grokProvider != null &&
+            _settings.XAI.Enabled &&
+            request.Capabilities != null &&
+            request.Capabilities.Count > 0;
+
+        if (useNativeGrokFunctionCalling)
+        {
+            await foreach (var evt in ProcessGrokStreamAsync(request, cancellationToken))
             {
                 yield return evt;
             }
@@ -1746,6 +1790,651 @@ public class AgentService : IAgentService
                         Role = "tool",
                         Content = $"[{name}]: {result}"
                     });
+                }
+
+                // Continue to next iteration
+                continue;
+            }
+            else
+            {
+                // No function calls - we're done
+                break;
+            }
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.End,
+            Content = fullResponse.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Native OpenAI function calling implementation using OpenAI SDK.
+    /// Supports parallel function execution and streaming responses.
+    /// </summary>
+    private async IAsyncEnumerable<AgentStreamEvent> ProcessOpenAIStreamAsync(
+        AgentRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (_openAIProvider == null)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Error,
+                Content = "OpenAI provider is not properly configured"
+            };
+            yield break;
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Preparing OpenAI tools..."
+        };
+
+        // Build tool definitions from enabled plugins
+        var tools = new List<OpenAIChatTool>();
+        var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var capabilityId in request.Capabilities ?? new List<string>())
+        {
+            if (_plugins.TryGetValue(capabilityId, out var plugin))
+            {
+                plugin.SetCurrentUserId(request.UserId);
+                plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+
+                var pluginInstance = plugin.GetPluginInstance();
+                var methods = pluginInstance.GetType().GetMethods()
+                    .Where(m => m.GetCustomAttributes(typeof(Microsoft.SemanticKernel.KernelFunctionAttribute), false).Any());
+
+                foreach (var method in methods)
+                {
+                    var funcAttr = method.GetCustomAttribute<Microsoft.SemanticKernel.KernelFunctionAttribute>();
+                    var toolName = funcAttr?.Name ?? method.Name;
+
+                    var tool = OpenAIFunctionDeclarationBuilder.BuildFromMethod(method, funcAttr);
+                    if (tool != null)
+                    {
+                        tools.Add(tool);
+                        pluginMethods[toolName] = (plugin, method);
+                        _logger.LogDebug("Registered OpenAI tool: {ToolName}", toolName);
+                    }
+                }
+            }
+        }
+
+        _logger.LogInformation("Registered {Count} tools for OpenAI", tools.Count);
+
+        // Build messages list starting with system prompt
+        var messages = new List<OpenAIChatMessage>
+        {
+            new OpenAI.Chat.SystemChatMessage(GetSystemPrompt(request.Capabilities))
+        };
+
+        // Convert request messages to OpenAI format
+        foreach (var msg in request.Messages)
+        {
+            if (msg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            {
+                messages.Add(new OpenAI.Chat.UserChatMessage(msg.Content));
+            }
+            else if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+            {
+                if (msg.ToolCalls != null && msg.ToolCalls.Any())
+                {
+                    var contextBuilder = new StringBuilder();
+                    if (!string.IsNullOrWhiteSpace(msg.Content))
+                        contextBuilder.AppendLine(msg.Content);
+                    contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
+                    foreach (var tc in msg.ToolCalls)
+                        contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
+                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+
+                    messages.Add(new OpenAI.Chat.AssistantChatMessage(contextBuilder.ToString()));
+                }
+                else
+                {
+                    messages.Add(new OpenAI.Chat.AssistantChatMessage(msg.Content));
+                }
+            }
+            else if (msg.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
+            {
+                messages.Add(new OpenAI.Chat.SystemChatMessage(msg.Content));
+            }
+        }
+
+        // Automatic context injection for knowledge queries
+        var lastUserMessage = GetLastUserMessage(request);
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
+
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
+                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
+                };
+                // Append context to system message
+                var systemMsg = messages[0] as OpenAI.Chat.SystemChatMessage;
+                if (systemMsg != null)
+                {
+                    messages[0] = new OpenAI.Chat.SystemChatMessage(systemMsg.Content + "\n\n" + contextMessage);
+                }
+            }
+        }
+
+        var fullResponse = new StringBuilder();
+        var emittedThinkingBlocks = new HashSet<string>();
+        var maxIterations = _settings.OpenAI.FunctionCalling.MaxIterations;
+
+        var aiSettings = new Services.AI.Models.AIRequest
+        {
+            Model = request.Model,
+            MaxTokens = request.MaxTokens ?? 4096,
+            Temperature = request.Temperature ?? 0.7f
+        };
+
+        for (int iteration = 0; iteration < maxIterations; iteration++)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = iteration == 0 ? "Analyzing your request..." : "Continuing with tool results..."
+            };
+
+            var pendingToolCalls = new List<Services.AI.Models.OpenAIToolCallInfo>();
+            var iterationText = new StringBuilder();
+            var hasEmittedFirstToken = false;
+
+            await foreach (var evt in _openAIProvider.StreamWithToolsAsync(
+                messages, tools, request.Model, aiSettings, cancellationToken))
+            {
+                switch (evt.Type)
+                {
+                    case Services.AI.Models.OpenAIToolStreamEventType.Text:
+                        if (!string.IsNullOrEmpty(evt.Text))
+                        {
+                            if (!hasEmittedFirstToken)
+                            {
+                                hasEmittedFirstToken = true;
+                                yield return new AgentStreamEvent
+                                {
+                                    Type = AgentEventType.Status,
+                                    Content = "Generating response..."
+                                };
+                            }
+
+                            iterationText.Append(evt.Text);
+
+                            // Check for thinking blocks
+                            var currentContent = fullResponse.ToString() + iterationText.ToString();
+                            var thinkingStartIndex = 0;
+                            while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                            {
+                                var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                if (thinkingEndIndex != -1)
+                                {
+                                    var thinkingContent = currentContent.Substring(
+                                        thinkingStartIndex + 10,
+                                        thinkingEndIndex - thinkingStartIndex - 10
+                                    ).Trim();
+
+                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                    {
+                                        emittedThinkingBlocks.Add(thinkingContent);
+                                        yield return new AgentStreamEvent
+                                        {
+                                            Type = AgentEventType.Thinking,
+                                            Content = thinkingContent
+                                        };
+                                    }
+                                    thinkingStartIndex = thinkingEndIndex + 11;
+                                }
+                                else break;
+                            }
+
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Token,
+                                Content = evt.Text
+                            };
+                        }
+                        break;
+
+                    case Services.AI.Models.OpenAIToolStreamEventType.ToolCalls:
+                        if (evt.ToolCalls != null)
+                        {
+                            pendingToolCalls.AddRange(evt.ToolCalls);
+                        }
+                        break;
+
+                    case Services.AI.Models.OpenAIToolStreamEventType.Error:
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Error,
+                            Content = $"Error from OpenAI: {evt.Error}"
+                        };
+                        yield break;
+                }
+            }
+
+            fullResponse.Append(iterationText);
+
+            // Process function calls
+            if (pendingToolCalls.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = $"Executing {pendingToolCalls.Count} tool(s)..."
+                };
+
+                // Emit start events for all tools
+                foreach (var call in pendingToolCalls)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallStart,
+                        ToolName = call.Name,
+                        ToolArguments = call.Arguments
+                    };
+                }
+
+                // Execute tools (parallel if enabled)
+                var executionTasks = pendingToolCalls.Select(async call =>
+                {
+                    try
+                    {
+                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        {
+                            var argsNode = JsonNode.Parse(call.Arguments);
+                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                            return (call.Id, call.Name, Result: result, Success: true);
+                        }
+                        return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error executing OpenAI tool {ToolName}", call.Name);
+                        return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
+                    }
+                }).ToList();
+
+                var results = _settings.OpenAI.FunctionCalling.ParallelExecution
+                    ? await Task.WhenAll(executionTasks)
+                    : await ExecuteOpenAISequentiallyAsync(executionTasks);
+
+                // Emit end events for all tools
+                foreach (var (_, name, result, _) in results)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallEnd,
+                        ToolName = name,
+                        ToolResult = result
+                    };
+                }
+
+                // Add assistant message with tool calls to history
+                var assistantToolCallMessage = OpenAIProvider.CreateAssistantToolCallMessage(
+                    pendingToolCalls.Select(tc => new Services.AI.Models.OpenAIToolCallInfo
+                    {
+                        Id = tc.Id,
+                        Name = tc.Name,
+                        Arguments = tc.Arguments
+                    })
+                );
+                messages.Add(assistantToolCallMessage);
+
+                // Add tool results to messages
+                foreach (var (id, name, result, _) in results)
+                {
+                    messages.Add(OpenAIProvider.CreateToolResultMessage(id, result));
+                }
+
+                // Continue to next iteration
+                continue;
+            }
+            else
+            {
+                // No function calls - we're done
+                break;
+            }
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.End,
+            Content = fullResponse.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Helper to execute OpenAI tasks sequentially when parallel execution is disabled
+    /// </summary>
+    private static async Task<(string Id, string Name, string Result, bool Success)[]> ExecuteOpenAISequentiallyAsync(
+        List<Task<(string Id, string Name, string Result, bool Success)>> tasks)
+    {
+        var results = new List<(string Id, string Name, string Result, bool Success)>();
+        foreach (var task in tasks)
+        {
+            results.Add(await task);
+        }
+        return results.ToArray();
+    }
+
+    /// <summary>
+    /// Helper to execute Grok tasks sequentially when parallel execution is disabled
+    /// </summary>
+    private static async Task<(string Id, string Name, string Result, bool Success)[]> ExecuteGrokSequentiallyAsync(
+        List<Task<(string Id, string Name, string Result, bool Success)>> tasks)
+    {
+        var results = new List<(string Id, string Name, string Result, bool Success)>();
+        foreach (var task in tasks)
+        {
+            results.Add(await task);
+        }
+        return results.ToArray();
+    }
+
+    /// <summary>
+    /// Native Grok/X.AI function calling implementation using OpenAI-compatible SDK.
+    /// Supports parallel function execution and streaming responses.
+    /// </summary>
+    private async IAsyncEnumerable<AgentStreamEvent> ProcessGrokStreamAsync(
+        AgentRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (_grokProvider == null)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Error,
+                Content = "Grok provider is not properly configured"
+            };
+            yield break;
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Preparing Grok tools..."
+        };
+
+        // Build tool definitions from enabled plugins
+        var tools = new List<OpenAIChatTool>();
+        var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var capabilityId in request.Capabilities ?? new List<string>())
+        {
+            if (_plugins.TryGetValue(capabilityId, out var plugin))
+            {
+                plugin.SetCurrentUserId(request.UserId);
+                plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+
+                var pluginInstance = plugin.GetPluginInstance();
+                var methods = pluginInstance.GetType().GetMethods()
+                    .Where(m => m.GetCustomAttributes(typeof(Microsoft.SemanticKernel.KernelFunctionAttribute), false).Any());
+
+                foreach (var method in methods)
+                {
+                    var funcAttr = method.GetCustomAttribute<Microsoft.SemanticKernel.KernelFunctionAttribute>();
+                    var toolName = funcAttr?.Name ?? method.Name;
+
+                    var tool = GrokFunctionDeclarationBuilder.BuildFromMethod(method, funcAttr);
+                    if (tool != null)
+                    {
+                        tools.Add(tool);
+                        pluginMethods[toolName] = (plugin, method);
+                        _logger.LogDebug("Registered Grok tool: {ToolName}", toolName);
+                    }
+                }
+            }
+        }
+
+        _logger.LogInformation("Registered {Count} tools for Grok", tools.Count);
+
+        // Build messages list starting with system prompt
+        var messages = new List<OpenAIChatMessage>
+        {
+            new OpenAI.Chat.SystemChatMessage(GetSystemPrompt(request.Capabilities))
+        };
+
+        // Convert request messages to OpenAI-compatible format (Grok uses same format)
+        foreach (var msg in request.Messages)
+        {
+            if (msg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            {
+                messages.Add(new OpenAI.Chat.UserChatMessage(msg.Content));
+            }
+            else if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+            {
+                if (msg.ToolCalls != null && msg.ToolCalls.Any())
+                {
+                    var contextBuilder = new StringBuilder();
+                    if (!string.IsNullOrWhiteSpace(msg.Content))
+                        contextBuilder.AppendLine(msg.Content);
+                    contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
+                    foreach (var tc in msg.ToolCalls)
+                        contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
+                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+
+                    messages.Add(new OpenAI.Chat.AssistantChatMessage(contextBuilder.ToString()));
+                }
+                else
+                {
+                    messages.Add(new OpenAI.Chat.AssistantChatMessage(msg.Content));
+                }
+            }
+            else if (msg.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
+            {
+                messages.Add(new OpenAI.Chat.SystemChatMessage(msg.Content));
+            }
+        }
+
+        // Automatic context injection for knowledge queries
+        var lastUserMessage = GetLastUserMessage(request);
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
+
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
+                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
+                };
+                // Append context to system message
+                var systemMsg = messages[0] as OpenAI.Chat.SystemChatMessage;
+                if (systemMsg != null)
+                {
+                    messages[0] = new OpenAI.Chat.SystemChatMessage(systemMsg.Content + "\n\n" + contextMessage);
+                }
+            }
+        }
+
+        var fullResponse = new StringBuilder();
+        var emittedThinkingBlocks = new HashSet<string>();
+        var maxIterations = _settings.XAI.FunctionCalling.MaxIterations;
+
+        var aiSettings = new Services.AI.Models.AIRequest
+        {
+            Model = request.Model,
+            MaxTokens = request.MaxTokens ?? 4096,
+            Temperature = request.Temperature ?? 0.7f
+        };
+
+        for (int iteration = 0; iteration < maxIterations; iteration++)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = iteration == 0 ? "Analyzing your request..." : "Continuing with tool results..."
+            };
+
+            var pendingToolCalls = new List<Services.AI.Models.GrokToolCallInfo>();
+            var iterationText = new StringBuilder();
+            var hasEmittedFirstToken = false;
+
+            await foreach (var evt in _grokProvider.StreamWithToolsAsync(
+                messages, tools, request.Model, aiSettings, cancellationToken))
+            {
+                switch (evt.Type)
+                {
+                    case Services.AI.Models.GrokToolStreamEventType.Text:
+                        if (!string.IsNullOrEmpty(evt.Text))
+                        {
+                            if (!hasEmittedFirstToken)
+                            {
+                                hasEmittedFirstToken = true;
+                                yield return new AgentStreamEvent
+                                {
+                                    Type = AgentEventType.Status,
+                                    Content = "Generating response..."
+                                };
+                            }
+
+                            iterationText.Append(evt.Text);
+
+                            // Check for thinking blocks
+                            var currentContent = fullResponse.ToString() + iterationText.ToString();
+                            var thinkingStartIndex = 0;
+                            while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                            {
+                                var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                if (thinkingEndIndex != -1)
+                                {
+                                    var thinkingContent = currentContent.Substring(
+                                        thinkingStartIndex + 10,
+                                        thinkingEndIndex - thinkingStartIndex - 10
+                                    ).Trim();
+
+                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                    {
+                                        emittedThinkingBlocks.Add(thinkingContent);
+                                        yield return new AgentStreamEvent
+                                        {
+                                            Type = AgentEventType.Thinking,
+                                            Content = thinkingContent
+                                        };
+                                    }
+                                    thinkingStartIndex = thinkingEndIndex + 11;
+                                }
+                                else break;
+                            }
+
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Token,
+                                Content = evt.Text
+                            };
+                        }
+                        break;
+
+                    case Services.AI.Models.GrokToolStreamEventType.ToolCalls:
+                        if (evt.ToolCalls != null)
+                        {
+                            pendingToolCalls.AddRange(evt.ToolCalls);
+                        }
+                        break;
+
+                    case Services.AI.Models.GrokToolStreamEventType.Error:
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Error,
+                            Content = $"Error from Grok: {evt.Error}"
+                        };
+                        yield break;
+                }
+            }
+
+            fullResponse.Append(iterationText);
+
+            // Process function calls
+            if (pendingToolCalls.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = $"Executing {pendingToolCalls.Count} tool(s)..."
+                };
+
+                // Emit start events for all tools
+                foreach (var call in pendingToolCalls)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallStart,
+                        ToolName = call.Name,
+                        ToolArguments = call.Arguments
+                    };
+                }
+
+                // Execute tools (parallel by default)
+                var executionTasks = pendingToolCalls.Select(async call =>
+                {
+                    try
+                    {
+                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        {
+                            var argsNode = JsonNode.Parse(call.Arguments);
+                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                            return (call.Id, call.Name, Result: result, Success: true);
+                        }
+                        return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error executing Grok tool {ToolName}", call.Name);
+                        return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
+                    }
+                }).ToList();
+
+                // Execute tools based on configuration
+                var results = _settings.XAI.FunctionCalling.ParallelExecution
+                    ? await Task.WhenAll(executionTasks)
+                    : await ExecuteGrokSequentiallyAsync(executionTasks);
+
+                // Emit end events for all tools
+                foreach (var (_, name, result, _) in results)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallEnd,
+                        ToolName = name,
+                        ToolResult = result
+                    };
+                }
+
+                // Add assistant message with tool calls to history
+                var assistantToolCallMessage = GrokProvider.CreateAssistantToolCallMessage(
+                    pendingToolCalls.Select(tc => new Services.AI.Models.GrokToolCallInfo
+                    {
+                        Id = tc.Id,
+                        Name = tc.Name,
+                        Arguments = tc.Arguments
+                    })
+                );
+                messages.Add(assistantToolCallMessage);
+
+                // Add tool results to messages
+                foreach (var (id, name, result, _) in results)
+                {
+                    messages.Add(GrokProvider.CreateToolResultMessage(id, result));
                 }
 
                 // Continue to next iteration

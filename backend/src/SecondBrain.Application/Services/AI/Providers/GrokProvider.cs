@@ -9,8 +9,14 @@ using SecondBrain.Application.Telemetry;
 using System.ClientModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
+using GrokToolStreamEvent = SecondBrain.Application.Services.AI.Models.GrokToolStreamEvent;
+using GrokToolStreamEventType = SecondBrain.Application.Services.AI.Models.GrokToolStreamEventType;
+using GrokToolCallInfo = SecondBrain.Application.Services.AI.Models.GrokToolCallInfo;
+using GrokTokenUsage = SecondBrain.Application.Services.AI.Models.GrokTokenUsage;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
@@ -220,16 +226,16 @@ public class GrokProvider : IAIProvider
         }
     }
 
-    public async Task<IAsyncEnumerable<string>> StreamCompletionAsync(
+    public Task<IAsyncEnumerable<string>> StreamCompletionAsync(
         AIRequest request,
         CancellationToken cancellationToken = default)
     {
         if (!IsEnabled || _client == null)
         {
-            return EmptyAsyncEnumerable();
+            return Task.FromResult(EmptyAsyncEnumerable());
         }
 
-        return StreamCompletionInternalAsync(request, cancellationToken);
+        return Task.FromResult(StreamCompletionInternalAsync(request, cancellationToken));
     }
 
     private async IAsyncEnumerable<string> StreamCompletionInternalAsync(
@@ -285,17 +291,17 @@ public class GrokProvider : IAIProvider
         ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
-    public async Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
+    public Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
         IEnumerable<Models.ChatMessage> messages,
         AIRequest? settings = null,
         CancellationToken cancellationToken = default)
     {
         if (!IsEnabled || _client == null)
         {
-            return EmptyAsyncEnumerable();
+            return Task.FromResult(EmptyAsyncEnumerable());
         }
 
-        return StreamChatCompletionInternalAsync(messages, settings, cancellationToken);
+        return Task.FromResult(StreamChatCompletionInternalAsync(messages, settings, cancellationToken));
     }
 
     private async IAsyncEnumerable<string> StreamChatCompletionInternalAsync(
@@ -511,6 +517,740 @@ public class GrokProvider : IAIProvider
 
         return health;
     }
+
+    #region Think Mode
+
+    /// <summary>
+    /// Generate completion with Think Mode (extended reasoning).
+    /// Think Mode enables step-by-step reasoning for complex problems.
+    /// </summary>
+    public async Task<GrokThinkModeResponse> GenerateWithThinkModeAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        GrokThinkModeOptions thinkOptions,
+        AIRequest? settings = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled)
+        {
+            return new GrokThinkModeResponse
+            {
+                Success = false,
+                Error = "Grok provider is not enabled or configured",
+                Provider = ProviderName
+            };
+        }
+
+        var model = settings?.Model ?? "grok-3"; // Think mode works best with grok-3
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.GenerateWithThinkMode", ProviderName, model);
+        activity?.SetTag("ai.think_mode", true);
+        activity?.SetTag("ai.think_effort", thinkOptions.Effort);
+
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            using var httpClient = CreateHttpClient();
+
+            // Build request body for Think Mode (via HTTP since SDK may not support it)
+            var requestBody = new
+            {
+                model = model,
+                messages = messages.Select(m => new
+                {
+                    role = m.Role.ToLower(),
+                    content = m.Content
+                }).ToArray(),
+                reasoning = new
+                {
+                    enabled = thinkOptions.Enabled,
+                    effort = thinkOptions.Effort
+                },
+                max_tokens = settings?.MaxTokens ?? _settings.MaxTokens,
+                temperature = settings?.Temperature ?? _settings.Temperature
+            };
+
+            var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
+
+            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync("chat/completions", httpContent, cancellationToken);
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            stopwatch.Stop();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Grok Think Mode request failed. Status: {Status}, Response: {Response}",
+                    response.StatusCode, responseContent);
+
+                activity?.RecordException(new Exception($"HTTP {response.StatusCode}"));
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
+                return new GrokThinkModeResponse
+                {
+                    Success = false,
+                    Error = $"Grok API Error: {response.StatusCode}",
+                    Provider = ProviderName,
+                    Model = model
+                };
+            }
+
+            var result = ParseThinkModeResponse(responseContent);
+            result.Model = model;
+            result.Provider = ProviderName;
+
+            activity?.SetTag("ai.tokens.total", result.Usage?.TotalTokens ?? 0);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, result.Usage?.TotalTokens ?? 0);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
+            _logger.LogError(ex, "Error generating completion with Think Mode from Grok");
+            return new GrokThinkModeResponse
+            {
+                Success = false,
+                Error = ex.Message,
+                Provider = ProviderName,
+                Model = model
+            };
+        }
+    }
+
+    /// <summary>
+    /// Stream completion with Think Mode (extended reasoning).
+    /// Yields events including reasoning steps as they happen.
+    /// </summary>
+    public async IAsyncEnumerable<GrokToolStreamEvent> StreamWithThinkModeAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        GrokThinkModeOptions thinkOptions,
+        AIRequest? settings = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled)
+        {
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = "Grok provider is not enabled or configured"
+            };
+            yield break;
+        }
+
+        var model = settings?.Model ?? "grok-3";
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamWithThinkMode", ProviderName, model);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.think_mode", true);
+        activity?.SetTag("ai.think_effort", thinkOptions.Effort);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        HttpResponseMessage? response = null;
+        Exception? initError = null;
+
+        try
+        {
+            using var httpClient = CreateHttpClient();
+
+            var requestBody = new
+            {
+                model = model,
+                messages = messages.Select(m => new
+                {
+                    role = m.Role.ToLower(),
+                    content = m.Content
+                }).ToArray(),
+                reasoning = new
+                {
+                    enabled = thinkOptions.Enabled,
+                    effort = thinkOptions.Effort
+                },
+                max_tokens = settings?.MaxTokens ?? _settings.MaxTokens,
+                temperature = settings?.Temperature ?? _settings.Temperature,
+                stream = true
+            };
+
+            var jsonContent = JsonSerializer.Serialize(requestBody, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            });
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            {
+                Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
+            };
+
+            response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            initError = ex;
+        }
+
+        if (initError != null)
+        {
+            _logger.LogError(initError, "Error starting Think Mode stream from Grok");
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = initError.Message
+            };
+            yield break;
+        }
+
+        if (response == null || !response.IsSuccessStatusCode)
+        {
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = $"Grok API Error: {response?.StatusCode}"
+            };
+            yield break;
+        }
+
+        // Process SSE stream
+        var tokenCount = 0;
+        var stepCount = 0;
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
+
+        string? line;
+        while ((line = await reader.ReadLineAsync(cancellationToken)) != null)
+        {
+            if (string.IsNullOrEmpty(line)) continue;
+            if (!line.StartsWith("data: ")) continue;
+
+            var data = line.Substring(6);
+            if (data == "[DONE]") break;
+
+            JsonDocument? doc = null;
+            Exception? parseError = null;
+
+            try
+            {
+                doc = JsonDocument.Parse(data);
+            }
+            catch (Exception ex)
+            {
+                parseError = ex;
+            }
+
+            if (parseError != null || doc == null) continue;
+
+            using (doc)
+            {
+                var root = doc.RootElement;
+
+                // Check for reasoning content
+                if (root.TryGetProperty("reasoning", out var reasoningElement) &&
+                    reasoningElement.TryGetProperty("content", out var reasoningContent))
+                {
+                    var reasoningText = reasoningContent.GetString();
+                    if (!string.IsNullOrEmpty(reasoningText))
+                    {
+                        stepCount++;
+                        yield return new GrokToolStreamEvent
+                        {
+                            Type = GrokToolStreamEventType.Reasoning,
+                            Text = reasoningText,
+                            ThinkingStep = new GrokThinkingStep
+                            {
+                                StepNumber = stepCount,
+                                Thought = reasoningText
+                            }
+                        };
+                    }
+                }
+
+                // Check for regular content
+                if (root.TryGetProperty("choices", out var choices) &&
+                    choices.GetArrayLength() > 0)
+                {
+                    var firstChoice = choices[0];
+                    if (firstChoice.TryGetProperty("delta", out var delta) &&
+                        delta.TryGetProperty("content", out var content))
+                    {
+                        var text = content.GetString();
+                        if (!string.IsNullOrEmpty(text))
+                        {
+                            if (!firstTokenReceived)
+                            {
+                                firstTokenReceived = true;
+                                ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                                    stopwatch.ElapsedMilliseconds,
+                                    new("provider", ProviderName),
+                                    new("model", model));
+                            }
+                            tokenCount++;
+
+                            yield return new GrokToolStreamEvent
+                            {
+                                Type = GrokToolStreamEventType.Text,
+                                Text = text
+                            };
+                        }
+                    }
+                }
+            }
+        }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.think_steps", stepCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+
+        yield return new GrokToolStreamEvent
+        {
+            Type = GrokToolStreamEventType.Done,
+            Usage = new GrokTokenUsage
+            {
+                CompletionTokens = tokenCount,
+                ReasoningTokens = stepCount
+            }
+        };
+    }
+
+    /// <summary>
+    /// Parse Think Mode response from JSON
+    /// </summary>
+    private static GrokThinkModeResponse ParseThinkModeResponse(string json)
+    {
+        var response = new GrokThinkModeResponse { Success = true };
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Extract content
+            if (root.TryGetProperty("choices", out var choices) &&
+                choices.GetArrayLength() > 0)
+            {
+                var firstChoice = choices[0];
+                if (firstChoice.TryGetProperty("message", out var message) &&
+                    message.TryGetProperty("content", out var content))
+                {
+                    response.Content = content.GetString() ?? string.Empty;
+                }
+            }
+
+            // Extract reasoning if present
+            if (root.TryGetProperty("reasoning", out var reasoning))
+            {
+                if (reasoning.TryGetProperty("content", out var reasoningContent))
+                {
+                    response.ReasoningContent = reasoningContent.GetString();
+                }
+
+                if (reasoning.TryGetProperty("time_ms", out var timeMs))
+                {
+                    response.ReasoningTimeMs = timeMs.GetInt32();
+                }
+            }
+
+            // Extract usage
+            if (root.TryGetProperty("usage", out var usage))
+            {
+                response.Usage = new GrokTokenUsage
+                {
+                    PromptTokens = usage.TryGetProperty("prompt_tokens", out var pt) ? pt.GetInt32() : 0,
+                    CompletionTokens = usage.TryGetProperty("completion_tokens", out var ct) ? ct.GetInt32() : 0,
+                    ReasoningTokens = usage.TryGetProperty("reasoning_tokens", out var rt) ? rt.GetInt32() : 0
+                };
+            }
+        }
+        catch (Exception)
+        {
+            response.Content = json;
+        }
+
+        return response;
+    }
+
+    #endregion
+
+    #region Tool Support
+
+    /// <summary>
+    /// Creates a ChatClient for a specific model (useful when model differs from default)
+    /// Since Grok uses OpenAI-compatible API, we create an OpenAI client with Grok's endpoint.
+    /// </summary>
+    public ChatClient? CreateChatClient(string model)
+    {
+        if (!IsEnabled || string.IsNullOrWhiteSpace(_settings.ApiKey))
+            return null;
+
+        try
+        {
+            var apiKeyCredential = new ApiKeyCredential(_settings.ApiKey);
+            var openAIClientOptions = new OpenAIClientOptions
+            {
+                Endpoint = new Uri(_settings.BaseUrl)
+            };
+
+            var openAIClient = new OpenAIClient(apiKeyCredential, openAIClientOptions);
+            return openAIClient.GetChatClient(model);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create Grok ChatClient for model {Model}", model);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Stream chat completion with tool/function calling support.
+    /// Yields events for text content, tool calls, and completion.
+    /// </summary>
+    public async IAsyncEnumerable<GrokToolStreamEvent> StreamWithToolsAsync(
+        IEnumerable<OpenAIChatMessage> messages,
+        IEnumerable<ChatTool> tools,
+        string model,
+        AIRequest? settings = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = CreateChatClient(model);
+        if (client == null)
+        {
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = "Grok provider is not enabled or configured"
+            };
+            yield break;
+        }
+
+        // Use a wrapper that handles errors internally
+        await foreach (var evt in StreamWithToolsInternalAsync(client, messages, tools, model, settings, cancellationToken))
+        {
+            yield return evt;
+        }
+    }
+
+    /// <summary>
+    /// Internal streaming implementation that handles errors through events instead of exceptions
+    /// </summary>
+    private async IAsyncEnumerable<GrokToolStreamEvent> StreamWithToolsInternalAsync(
+        ChatClient client,
+        IEnumerable<OpenAIChatMessage> messages,
+        IEnumerable<ChatTool> tools,
+        string model,
+        AIRequest? settings,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamWithTools", ProviderName, model);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.tools.count", tools.Count());
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var messageList = messages.ToList();
+        var chatOptions = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = settings?.MaxTokens ?? _settings.MaxTokens
+        };
+
+        // Add tools to options
+        foreach (var tool in tools)
+        {
+            chatOptions.Tools.Add(tool);
+        }
+
+        // Only set temperature if supported (Grok models generally support temperature)
+        var temperature = settings?.Temperature ?? _settings.Temperature;
+        if (temperature > 0)
+        {
+            chatOptions.Temperature = temperature;
+        }
+
+        // Track accumulated tool calls during streaming
+        var accumulatedToolCalls = new Dictionary<int, GrokToolCallInfo>();
+        var tokenCount = 0;
+
+        // Use wrapper to avoid yield in catch
+        var streamResult = await CreateGrokStreamSafelyAsync(client, messageList, chatOptions, cancellationToken);
+
+        if (streamResult.ErrorMessage != null)
+        {
+            activity?.RecordException(new Exception(streamResult.ErrorMessage));
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = streamResult.ErrorMessage
+            };
+            yield break;
+        }
+
+        if (streamResult.Stream == null)
+        {
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = "Failed to create stream"
+            };
+            yield break;
+        }
+
+        // Process the stream
+        await foreach (var evt in ProcessGrokStreamSafelyAsync(
+            streamResult.Stream,
+            accumulatedToolCalls,
+            stopwatch,
+            model,
+            activity,
+            () =>
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+            },
+            () => tokenCount++,
+            cancellationToken))
+        {
+            yield return evt;
+        }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+
+        // Yield done event
+        yield return new GrokToolStreamEvent
+        {
+            Type = GrokToolStreamEventType.Done,
+            Usage = new GrokTokenUsage
+            {
+                CompletionTokens = tokenCount
+            }
+        };
+    }
+
+    private record GrokStreamCreationResult(IAsyncEnumerable<StreamingChatCompletionUpdate>? Stream, string? ErrorMessage);
+
+    private Task<GrokStreamCreationResult> CreateGrokStreamSafelyAsync(
+        ChatClient client,
+        List<OpenAIChatMessage> messages,
+        ChatCompletionOptions options,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var stream = client.CompleteChatStreamingAsync(messages, options, cancellationToken);
+            return Task.FromResult(new GrokStreamCreationResult(stream, null));
+        }
+        catch (ClientResultException ex) when (ex.Message.Contains("temperature"))
+        {
+            _logger.LogWarning("Model does not support temperature");
+            return Task.FromResult(new GrokStreamCreationResult(null, $"Model does not support temperature parameter: {ex.Message}"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting streaming with tools from Grok");
+            return Task.FromResult(new GrokStreamCreationResult(null, ex.Message));
+        }
+    }
+
+    private async IAsyncEnumerable<GrokToolStreamEvent> ProcessGrokStreamSafelyAsync(
+        IAsyncEnumerable<StreamingChatCompletionUpdate> stream,
+        Dictionary<int, GrokToolCallInfo> accumulatedToolCalls,
+        Stopwatch stopwatch,
+        string model,
+        Activity? activity,
+        Action onFirstToken,
+        Action onToken,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        IAsyncEnumerator<StreamingChatCompletionUpdate>? enumerator = null;
+
+        // Try to get enumerator
+        Exception? initError = null;
+        try
+        {
+            enumerator = stream.GetAsyncEnumerator(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            initError = ex;
+        }
+
+        if (initError != null)
+        {
+            _logger.LogError(initError, "Error getting Grok stream enumerator");
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = initError.Message
+            };
+            yield break;
+        }
+
+        if (enumerator == null)
+        {
+            yield return new GrokToolStreamEvent
+            {
+                Type = GrokToolStreamEventType.Error,
+                Error = "Failed to get stream enumerator"
+            };
+            yield break;
+        }
+
+        // Process updates
+        bool continueProcessing = true;
+        while (continueProcessing)
+        {
+            StreamingChatCompletionUpdate? update = null;
+            bool hasNext = false;
+            Exception? iterError = null;
+
+            try
+            {
+                hasNext = await enumerator.MoveNextAsync();
+                if (hasNext)
+                {
+                    update = enumerator.Current;
+                }
+            }
+            catch (Exception ex)
+            {
+                iterError = ex;
+            }
+
+            if (iterError != null)
+            {
+                _logger.LogError(iterError, "Error during Grok streaming");
+                stopwatch.Stop();
+                activity?.RecordException(iterError);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
+                yield return new GrokToolStreamEvent
+                {
+                    Type = GrokToolStreamEventType.Error,
+                    Error = iterError.Message
+                };
+
+                await enumerator.DisposeAsync();
+                yield break;
+            }
+
+            if (!hasNext)
+            {
+                continueProcessing = false;
+                continue;
+            }
+
+            if (update == null) continue;
+
+            // Handle text content
+            foreach (var contentPart in update.ContentUpdate)
+            {
+                onFirstToken();
+                onToken();
+
+                yield return new GrokToolStreamEvent
+                {
+                    Type = GrokToolStreamEventType.Text,
+                    Text = contentPart.Text
+                };
+            }
+
+            // Handle tool call updates (accumulate during streaming)
+            foreach (var toolCallUpdate in update.ToolCallUpdates)
+            {
+                var index = toolCallUpdate.Index;
+
+                if (!accumulatedToolCalls.TryGetValue(index, out var toolCallInfo))
+                {
+                    toolCallInfo = new GrokToolCallInfo
+                    {
+                        Id = toolCallUpdate.ToolCallId ?? "",
+                        Name = toolCallUpdate.FunctionName ?? "",
+                        Arguments = ""
+                    };
+                    accumulatedToolCalls[index] = toolCallInfo;
+                }
+
+                // Update ID if available
+                if (!string.IsNullOrEmpty(toolCallUpdate.ToolCallId))
+                {
+                    toolCallInfo.Id = toolCallUpdate.ToolCallId;
+                }
+
+                // Update function name if available
+                if (!string.IsNullOrEmpty(toolCallUpdate.FunctionName))
+                {
+                    toolCallInfo.Name = toolCallUpdate.FunctionName;
+                }
+
+                // Accumulate function arguments
+                if (toolCallUpdate.FunctionArgumentsUpdate != null)
+                {
+                    toolCallInfo.Arguments += toolCallUpdate.FunctionArgumentsUpdate.ToString();
+                }
+            }
+
+            // Check finish reason
+            if (update.FinishReason == ChatFinishReason.ToolCalls && accumulatedToolCalls.Count > 0)
+            {
+                // Yield all accumulated tool calls
+                yield return new GrokToolStreamEvent
+                {
+                    Type = GrokToolStreamEventType.ToolCalls,
+                    ToolCalls = accumulatedToolCalls.Values.ToList()
+                };
+            }
+        }
+
+        await enumerator.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Convert internal ChatMessage to Grok format for tool calling (public accessor)
+    /// </summary>
+    public static OpenAIChatMessage ConvertToGrokMessagePublic(Models.ChatMessage message)
+    {
+        return ConvertToGrokMessage(message);
+    }
+
+    /// <summary>
+    /// Create a tool result message for the next turn
+    /// </summary>
+    public static ToolChatMessage CreateToolResultMessage(string toolCallId, string result)
+    {
+        return new ToolChatMessage(toolCallId, result);
+    }
+
+    /// <summary>
+    /// Create an assistant message with tool calls for context
+    /// </summary>
+    public static AssistantChatMessage CreateAssistantToolCallMessage(IEnumerable<GrokToolCallInfo> toolCalls)
+    {
+        var chatToolCalls = toolCalls.Select(tc =>
+            ChatToolCall.CreateFunctionToolCall(tc.Id, tc.Name, BinaryData.FromString(tc.Arguments))
+        ).ToList();
+
+        return new AssistantChatMessage(chatToolCalls);
+    }
+
+    #endregion
 
     private static async IAsyncEnumerable<string> EmptyAsyncEnumerable()
     {

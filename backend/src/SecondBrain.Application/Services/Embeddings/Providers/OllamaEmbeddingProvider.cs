@@ -325,9 +325,14 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
                 return await GenerateEmbeddingWithHttpAsync(text, cancellationToken);
             }
 
-            var response = await client.EmbedAsync(_settings.Model, text, cancellationToken: cancellationToken);
+            var embedRequest = new OllamaSharp.Models.EmbedRequest
+            {
+                Model = _settings.Model,
+                Input = new List<string> { text }
+            };
+            var response = await client.EmbedAsync(embedRequest, cancellationToken);
 
-            if (response?.Embeddings == null || response.Embeddings.Length == 0)
+            if (response?.Embeddings == null || response.Embeddings.Count == 0)
             {
                 return new EmbeddingResponse
                 {
@@ -525,9 +530,14 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             }
 
             // OllamaSharp's EmbedAsync supports multiple inputs
-            var response = await client.EmbedAsync(_settings.Model, texts, cancellationToken: cancellationToken);
+            var embedRequest = new OllamaSharp.Models.EmbedRequest
+            {
+                Model = _settings.Model,
+                Input = texts.ToList()
+            };
+            var response = await client.EmbedAsync(embedRequest, cancellationToken);
 
-            if (response?.Embeddings == null || response.Embeddings.Length == 0)
+            if (response?.Embeddings == null || response.Embeddings.Count == 0)
             {
                 return new BatchEmbeddingResponse
                 {

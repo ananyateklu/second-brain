@@ -11,6 +11,10 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
+using OpenAIToolStreamEvent = SecondBrain.Application.Services.AI.Models.OpenAIToolStreamEvent;
+using OpenAIToolStreamEventType = SecondBrain.Application.Services.AI.Models.OpenAIToolStreamEventType;
+using OpenAIToolCallInfo = SecondBrain.Application.Services.AI.Models.OpenAIToolCallInfo;
+using OpenAITokenUsage = SecondBrain.Application.Services.AI.Models.OpenAITokenUsage;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
@@ -627,6 +631,378 @@ public class OpenAIProvider : IAIProvider
 
         return health;
     }
+
+    #region Tool Support
+
+    /// <summary>
+    /// Creates a ChatClient for a specific model (useful when model differs from default)
+    /// </summary>
+    public ChatClient? CreateChatClient(string model)
+    {
+        if (!IsEnabled || string.IsNullOrWhiteSpace(_settings.ApiKey))
+            return null;
+
+        try
+        {
+            return new ChatClient(model, _settings.ApiKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create ChatClient for model {Model}", model);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Stream chat completion with tool/function calling support.
+    /// Yields events for text content, tool calls, and completion.
+    /// </summary>
+    public async IAsyncEnumerable<OpenAIToolStreamEvent> StreamWithToolsAsync(
+        IEnumerable<OpenAIChatMessage> messages,
+        IEnumerable<ChatTool> tools,
+        string model,
+        AIRequest? settings = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = CreateChatClient(model);
+        if (client == null)
+        {
+            yield return new OpenAIToolStreamEvent
+            {
+                Type = OpenAIToolStreamEventType.Error,
+                Error = "OpenAI provider is not enabled or configured"
+            };
+            yield break;
+        }
+
+        // Use a wrapper that handles errors internally
+        await foreach (var evt in StreamWithToolsInternalAsync(client, messages, tools, model, settings, cancellationToken))
+        {
+            yield return evt;
+        }
+    }
+
+    /// <summary>
+    /// Internal streaming implementation that handles errors through events instead of exceptions
+    /// </summary>
+    private async IAsyncEnumerable<OpenAIToolStreamEvent> StreamWithToolsInternalAsync(
+        ChatClient client,
+        IEnumerable<OpenAIChatMessage> messages,
+        IEnumerable<ChatTool> tools,
+        string model,
+        AIRequest? settings,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.StreamWithTools", ProviderName, model);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.tools.count", tools.Count());
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var messageList = messages.ToList();
+        var chatOptions = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = settings?.MaxTokens ?? _settings.MaxTokens
+        };
+
+        // Add tools to options
+        foreach (var tool in tools)
+        {
+            chatOptions.Tools.Add(tool);
+        }
+
+        // Only set temperature if supported
+        var temperature = settings?.Temperature ?? _settings.Temperature;
+        if (temperature > 0 && !IsReasoningModel(model))
+        {
+            chatOptions.Temperature = temperature;
+        }
+
+        // Track accumulated tool calls during streaming
+        var accumulatedToolCalls = new Dictionary<int, OpenAIToolCallInfo>();
+        var tokenCount = 0;
+
+        // Use wrapper to avoid yield in catch
+        var streamResult = await CreateStreamSafelyAsync(client, messageList, chatOptions, cancellationToken);
+
+        if (streamResult.ErrorMessage != null)
+        {
+            activity?.RecordException(new Exception(streamResult.ErrorMessage));
+            yield return new OpenAIToolStreamEvent
+            {
+                Type = OpenAIToolStreamEventType.Error,
+                Error = streamResult.ErrorMessage
+            };
+            yield break;
+        }
+
+        if (streamResult.Stream == null)
+        {
+            yield return new OpenAIToolStreamEvent
+            {
+                Type = OpenAIToolStreamEventType.Error,
+                Error = "Failed to create stream"
+            };
+            yield break;
+        }
+
+        // Process the stream
+        await foreach (var evt in ProcessStreamSafelyAsync(
+            streamResult.Stream,
+            accumulatedToolCalls,
+            stopwatch,
+            model,
+            activity,
+            () =>
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+            },
+            () => tokenCount++,
+            cancellationToken))
+        {
+            yield return evt;
+        }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+
+        // Yield done event
+        yield return new OpenAIToolStreamEvent
+        {
+            Type = OpenAIToolStreamEventType.Done,
+            Usage = new OpenAITokenUsage
+            {
+                CompletionTokens = tokenCount
+            }
+        };
+    }
+
+    private record StreamCreationResult(IAsyncEnumerable<StreamingChatCompletionUpdate>? Stream, string? ErrorMessage);
+
+    private Task<StreamCreationResult> CreateStreamSafelyAsync(
+        ChatClient client,
+        List<OpenAIChatMessage> messages,
+        ChatCompletionOptions options,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var stream = client.CompleteChatStreamingAsync(messages, options, cancellationToken);
+            return Task.FromResult(new StreamCreationResult(stream, null));
+        }
+        catch (ClientResultException ex) when (ex.Message.Contains("temperature"))
+        {
+            _logger.LogWarning("Model does not support temperature");
+            return Task.FromResult(new StreamCreationResult(null, $"Model does not support temperature parameter: {ex.Message}"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting streaming with tools from OpenAI");
+            return Task.FromResult(new StreamCreationResult(null, ex.Message));
+        }
+    }
+
+    private async IAsyncEnumerable<OpenAIToolStreamEvent> ProcessStreamSafelyAsync(
+        IAsyncEnumerable<StreamingChatCompletionUpdate> stream,
+        Dictionary<int, OpenAIToolCallInfo> accumulatedToolCalls,
+        Stopwatch stopwatch,
+        string model,
+        Activity? activity,
+        Action onFirstToken,
+        Action onToken,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        IAsyncEnumerator<StreamingChatCompletionUpdate>? enumerator = null;
+
+        // Try to get enumerator
+        Exception? initError = null;
+        try
+        {
+            enumerator = stream.GetAsyncEnumerator(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            initError = ex;
+        }
+
+        if (initError != null)
+        {
+            _logger.LogError(initError, "Error getting stream enumerator");
+            yield return new OpenAIToolStreamEvent
+            {
+                Type = OpenAIToolStreamEventType.Error,
+                Error = initError.Message
+            };
+            yield break;
+        }
+
+        if (enumerator == null)
+        {
+            yield return new OpenAIToolStreamEvent
+            {
+                Type = OpenAIToolStreamEventType.Error,
+                Error = "Failed to get stream enumerator"
+            };
+            yield break;
+        }
+
+        // Process updates
+        bool continueProcessing = true;
+        while (continueProcessing)
+        {
+            StreamingChatCompletionUpdate? update = null;
+            bool hasNext = false;
+            Exception? iterError = null;
+
+            try
+            {
+                hasNext = await enumerator.MoveNextAsync();
+                if (hasNext)
+                {
+                    update = enumerator.Current;
+                }
+            }
+            catch (Exception ex)
+            {
+                iterError = ex;
+            }
+
+            if (iterError != null)
+            {
+                _logger.LogError(iterError, "Error during streaming");
+                stopwatch.Stop();
+                activity?.RecordException(iterError);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
+                yield return new OpenAIToolStreamEvent
+                {
+                    Type = OpenAIToolStreamEventType.Error,
+                    Error = iterError.Message
+                };
+
+                await enumerator.DisposeAsync();
+                yield break;
+            }
+
+            if (!hasNext)
+            {
+                continueProcessing = false;
+                continue;
+            }
+
+            if (update == null) continue;
+
+            // Handle text content
+            foreach (var contentPart in update.ContentUpdate)
+            {
+                onFirstToken();
+                onToken();
+
+                yield return new OpenAIToolStreamEvent
+                {
+                    Type = OpenAIToolStreamEventType.Text,
+                    Text = contentPart.Text
+                };
+            }
+
+            // Handle tool call updates (accumulate during streaming)
+            foreach (var toolCallUpdate in update.ToolCallUpdates)
+            {
+                var index = toolCallUpdate.Index;
+
+                if (!accumulatedToolCalls.TryGetValue(index, out var toolCallInfo))
+                {
+                    toolCallInfo = new OpenAIToolCallInfo
+                    {
+                        Id = toolCallUpdate.ToolCallId ?? "",
+                        Name = toolCallUpdate.FunctionName ?? "",
+                        Arguments = ""
+                    };
+                    accumulatedToolCalls[index] = toolCallInfo;
+                }
+
+                // Update ID if available
+                if (!string.IsNullOrEmpty(toolCallUpdate.ToolCallId))
+                {
+                    toolCallInfo.Id = toolCallUpdate.ToolCallId;
+                }
+
+                // Update function name if available
+                if (!string.IsNullOrEmpty(toolCallUpdate.FunctionName))
+                {
+                    toolCallInfo.Name = toolCallUpdate.FunctionName;
+                }
+
+                // Accumulate function arguments
+                if (toolCallUpdate.FunctionArgumentsUpdate != null)
+                {
+                    toolCallInfo.Arguments += toolCallUpdate.FunctionArgumentsUpdate.ToString();
+                }
+            }
+
+            // Check finish reason
+            if (update.FinishReason == ChatFinishReason.ToolCalls && accumulatedToolCalls.Count > 0)
+            {
+                // Yield all accumulated tool calls
+                yield return new OpenAIToolStreamEvent
+                {
+                    Type = OpenAIToolStreamEventType.ToolCalls,
+                    ToolCalls = accumulatedToolCalls.Values.ToList()
+                };
+            }
+        }
+
+        await enumerator.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Checks if the model is a reasoning model (o1, o3) that has special requirements
+    /// </summary>
+    private static bool IsReasoningModel(string model)
+    {
+        return model.StartsWith("o1", StringComparison.OrdinalIgnoreCase) ||
+               model.StartsWith("o3", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Convert internal ChatMessage to OpenAI format for tool calling
+    /// </summary>
+    public static OpenAIChatMessage ConvertToOpenAIMessagePublic(Models.ChatMessage message)
+    {
+        return ConvertToOpenAIMessage(message);
+    }
+
+    /// <summary>
+    /// Create a tool result message for the next turn
+    /// </summary>
+    public static ToolChatMessage CreateToolResultMessage(string toolCallId, string result)
+    {
+        return new ToolChatMessage(toolCallId, result);
+    }
+
+    /// <summary>
+    /// Create an assistant message with tool calls for context
+    /// </summary>
+    public static AssistantChatMessage CreateAssistantToolCallMessage(IEnumerable<OpenAIToolCallInfo> toolCalls)
+    {
+        var chatToolCalls = toolCalls.Select(tc =>
+            ChatToolCall.CreateFunctionToolCall(tc.Id, tc.Name, BinaryData.FromString(tc.Arguments))
+        ).ToList();
+
+        return new AssistantChatMessage(chatToolCalls);
+    }
+
+    #endregion
 
     private static async IAsyncEnumerable<string> EmptyAsyncEnumerable()
     {

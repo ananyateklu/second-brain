@@ -97,42 +97,4 @@ public class OllamaModelCopyResult
     public string Destination { get; set; } = string.Empty;
 }
 
-/// <summary>
-/// Information about an available Ollama model
-/// </summary>
-public class OllamaModelInfo
-{
-    /// <summary>
-    /// The model name
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Size of the model in bytes
-    /// </summary>
-    public long Size { get; set; }
-
-    /// <summary>
-    /// Formatted size string
-    /// </summary>
-    public string SizeFormatted => FormatSize(Size);
-
-    /// <summary>
-    /// Model modification time
-    /// </summary>
-    public DateTime? ModifiedAt { get; set; }
-
-    /// <summary>
-    /// The digest/hash of the model
-    /// </summary>
-    public string? Digest { get; set; }
-
-    private static string FormatSize(long bytes)
-    {
-        if (bytes >= 1_000_000_000)
-            return $"{bytes / 1_000_000_000.0:F1} GB";
-        if (bytes >= 1_000_000)
-            return $"{bytes / 1_000_000.0:F1} MB";
-        return $"{bytes / 1_000.0:F1} KB";
-    }
-}
+// Note: OllamaModelInfo is defined in OllamaPullModels.cs

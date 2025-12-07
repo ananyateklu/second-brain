@@ -1,26 +1,25 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using OpenAI;
+using OpenAI.Images;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using SdkGeneratedImage = OpenAI.Images.GeneratedImage;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
 /// <summary>
-/// OpenAI DALL-E 3 image generation provider
+/// OpenAI DALL-E image generation provider using the official OpenAI .NET SDK
 /// </summary>
 public class OpenAIImageProvider : IImageGenerationProvider
 {
     private readonly OpenAISettings _settings;
     private readonly ILogger<OpenAIImageProvider> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly OpenAIClient? _openAIClient;
 
     private static readonly string[] SupportedModels = { "dall-e-3", "dall-e-2" };
-    
+
     private static readonly Dictionary<string, string[]> ModelSizes = new()
     {
         { "dall-e-3", new[] { "1024x1024", "1792x1024", "1024x1792" } },
@@ -36,16 +35,17 @@ public class OpenAIImageProvider : IImageGenerationProvider
     {
         _settings = settings.Value.OpenAI;
         _logger = logger;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://api.openai.com/v1/"),
-            Timeout = TimeSpan.FromSeconds(120) // Image generation can take longer
-        };
 
         if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
+            try
+            {
+                _openAIClient = new OpenAIClient(_settings.ApiKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize OpenAI client for image generation");
+            }
         }
     }
 
@@ -53,7 +53,7 @@ public class OpenAIImageProvider : IImageGenerationProvider
         ImageGenerationRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled)
+        if (!IsEnabled || _openAIClient == null)
         {
             return new ImageGenerationResponse
             {
@@ -66,7 +66,7 @@ public class OpenAIImageProvider : IImageGenerationProvider
         try
         {
             var model = request.Model ?? "dall-e-3";
-            
+
             // Validate model
             if (!SupportedModels.Contains(model))
             {
@@ -89,77 +89,62 @@ public class OpenAIImageProvider : IImageGenerationProvider
                 };
             }
 
-            var requestBody = new Dictionary<string, object>
+            // Get the image client for the specified model
+            var imageClient = _openAIClient.GetImageClient(model);
+
+            // Build image generation options
+            var options = new ImageGenerationOptions
             {
-                { "model", model },
-                { "prompt", request.Prompt },
-                { "n", Math.Min(request.Count, model == "dall-e-3" ? 1 : 10) }, // DALL-E 3 only supports n=1
-                { "size", request.Size },
-                { "response_format", request.ResponseFormat }
+                Size = MapSize(request.Size),
+                ResponseFormat = GeneratedImageFormat.Bytes // Always get bytes for consistent handling
             };
 
             // DALL-E 3 specific options
             if (model == "dall-e-3")
             {
-                requestBody["quality"] = request.Quality;
-                requestBody["style"] = request.Style;
+                options.Quality = MapQuality(request.Quality);
+                options.Style = MapStyle(request.Style);
             }
 
-            var jsonContent = JsonSerializer.Serialize(requestBody);
-            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            _logger.LogInformation("Generating image with OpenAI DALL-E SDK. Model: {Model}, Size: {Size}, Quality: {Quality}, Style: {Style}",
+                model, request.Size, request.Quality, request.Style);
 
-            _logger.LogInformation("Generating image with OpenAI DALL-E. Model: {Model}, Size: {Size}", 
-                model, request.Size);
+            // Generate the image using SDK
+            var result = await imageClient.GenerateImageAsync(request.Prompt, options, cancellationToken);
 
-            var response = await _httpClient.PostAsync("images/generations", httpContent, cancellationToken);
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
+            if (result?.Value == null)
             {
-                _logger.LogError("OpenAI image generation failed. Status: {Status}, Response: {Response}", 
-                    response.StatusCode, responseContent);
-                
-                // Try to parse error message
-                var errorMessage = TryParseErrorMessage(responseContent) ?? 
-                    $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
-                
                 return new ImageGenerationResponse
                 {
                     Success = false,
-                    Error = errorMessage,
+                    Error = "No image returned from OpenAI",
                     Provider = ProviderName,
                     Model = model
                 };
             }
 
-            var result = JsonSerializer.Deserialize<OpenAIImageResponse>(responseContent, 
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            if (result?.Data == null || result.Data.Count == 0)
-            {
-                return new ImageGenerationResponse
-                {
-                    Success = false,
-                    Error = "No images returned from OpenAI",
-                    Provider = ProviderName,
-                    Model = model
-                };
-            }
+            SdkGeneratedImage sdkImage = result.Value;
 
             // Parse dimensions from size
             var dimensions = ParseDimensions(request.Size);
 
-            var images = result.Data.Select(img => new GeneratedImage
+            // Convert SDK response to our response format
+            var images = new List<Models.GeneratedImage>
             {
-                Base64Data = img.B64Json,
-                Url = img.Url,
-                RevisedPrompt = img.RevisedPrompt,
-                MediaType = "image/png",
-                Width = dimensions.width,
-                Height = dimensions.height
-            }).ToList();
+                new Models.GeneratedImage
+                {
+                    Base64Data = sdkImage.ImageBytes != null
+                        ? Convert.ToBase64String(sdkImage.ImageBytes.ToArray())
+                        : null,
+                    Url = sdkImage.ImageUri?.ToString(),
+                    RevisedPrompt = sdkImage.RevisedPrompt,
+                    MediaType = "image/png",
+                    Width = dimensions.width,
+                    Height = dimensions.height
+                }
+            };
 
-            _logger.LogInformation("Successfully generated {Count} image(s) with OpenAI DALL-E", images.Count);
+            _logger.LogInformation("Successfully generated image with OpenAI DALL-E SDK");
 
             return new ImageGenerationResponse
             {
@@ -181,7 +166,7 @@ public class OpenAIImageProvider : IImageGenerationProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating image with OpenAI");
+            _logger.LogError(ex, "Error generating image with OpenAI SDK");
             return new ImageGenerationResponse
             {
                 Success = false,
@@ -193,14 +178,15 @@ public class OpenAIImageProvider : IImageGenerationProvider
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled)
+        if (!IsEnabled || _openAIClient == null)
             return false;
 
         try
         {
-            // Just check if we can reach the models endpoint
-            var response = await _httpClient.GetAsync("models", cancellationToken);
-            return response.IsSuccessStatusCode;
+            // Use the models endpoint to check availability
+            var modelClient = _openAIClient.GetOpenAIModelClient();
+            var models = await modelClient.GetModelsAsync(cancellationToken);
+            return models?.Value != null;
         }
         catch (Exception ex)
         {
@@ -216,24 +202,46 @@ public class OpenAIImageProvider : IImageGenerationProvider
         return ModelSizes.TryGetValue(model, out var sizes) ? sizes : ModelSizes["dall-e-3"];
     }
 
-    private static string? TryParseErrorMessage(string responseContent)
+    /// <summary>
+    /// Map size string to SDK GeneratedImageSize enum
+    /// </summary>
+    private static GeneratedImageSize MapSize(string size)
     {
-        try
+        return size switch
         {
-            var doc = JsonDocument.Parse(responseContent);
-            if (doc.RootElement.TryGetProperty("error", out var errorElement))
-            {
-                if (errorElement.TryGetProperty("message", out var messageElement))
-                {
-                    return messageElement.GetString();
-                }
-            }
-        }
-        catch
+            "256x256" => GeneratedImageSize.W256xH256,
+            "512x512" => GeneratedImageSize.W512xH512,
+            "1024x1024" => GeneratedImageSize.W1024xH1024,
+            "1792x1024" => GeneratedImageSize.W1792xH1024,
+            "1024x1792" => GeneratedImageSize.W1024xH1792,
+            _ => GeneratedImageSize.W1024xH1024 // Default
+        };
+    }
+
+    /// <summary>
+    /// Map quality string to SDK GeneratedImageQuality enum
+    /// </summary>
+    private static GeneratedImageQuality MapQuality(string quality)
+    {
+        return quality?.ToLowerInvariant() switch
         {
-            // Ignore parsing errors
-        }
-        return null;
+            "hd" or "high" => GeneratedImageQuality.High,
+            "standard" or "low" => GeneratedImageQuality.Standard,
+            _ => GeneratedImageQuality.Standard // Default
+        };
+    }
+
+    /// <summary>
+    /// Map style string to SDK GeneratedImageStyle enum
+    /// </summary>
+    private static GeneratedImageStyle MapStyle(string style)
+    {
+        return style?.ToLowerInvariant() switch
+        {
+            "vivid" => GeneratedImageStyle.Vivid,
+            "natural" => GeneratedImageStyle.Natural,
+            _ => GeneratedImageStyle.Vivid // Default
+        };
     }
 
     private static (int width, int height) ParseDimensions(string size)
@@ -245,24 +253,4 @@ public class OpenAIImageProvider : IImageGenerationProvider
         }
         return (1024, 1024);
     }
-
-    // Response models for deserialization
-    private class OpenAIImageResponse
-    {
-        [JsonPropertyName("data")]
-        public List<OpenAIImageData> Data { get; set; } = new();
-    }
-
-    private class OpenAIImageData
-    {
-        [JsonPropertyName("url")]
-        public string? Url { get; set; }
-        
-        [JsonPropertyName("b64_json")]
-        public string? B64Json { get; set; }
-        
-        [JsonPropertyName("revised_prompt")]
-        public string? RevisedPrompt { get; set; }
-    }
 }
-
