@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { chatService } from '../../../services';
-import { SendMessageRequest } from '../../../types/chat';
+import { SendMessageRequest, GroundingSource, CodeExecutionResult } from '../../../types/chat';
 import { RagContextNote } from '../../../types/rag';
 import { estimateTokenCount } from '../../../utils/token-utils';
 import { conversationKeys } from '../../../lib/query-keys';
@@ -18,6 +18,12 @@ export interface StreamingState {
   ragLogId?: string;
   /** Whether a transition is pending (for UI feedback) */
   isPending?: boolean;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult;
+  /** Thinking process content (Gemini only) */
+  thinkingProcess?: string;
 }
 
 export function useChatStream() {
@@ -30,6 +36,9 @@ export function useChatStream() {
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
   const [ragLogId, setRagLogId] = useState<string | undefined>(undefined);
+  const [groundingSources, setGroundingSources] = useState<GroundingSource[]>([]);
+  const [codeExecutionResult, setCodeExecutionResult] = useState<CodeExecutionResult | null>(null);
+  const [thinkingProcess, setThinkingProcess] = useState<string>('');
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamStartTimeRef = useRef<number | null>(null);
 
@@ -48,6 +57,9 @@ export function useChatStream() {
         setStreamingError(null);
         setRetrievedNotes([]);
         setRagLogId(undefined);
+        setGroundingSources([]);
+        setCodeExecutionResult(null);
+        setThinkingProcess('');
       });
 
       // Calculate input tokens for the user's message
@@ -77,6 +89,15 @@ export function useChatStream() {
             },
             onRag: (notes: RagContextNote[]) => {
               setRetrievedNotes(notes);
+            },
+            onGroundingSources: (sources: GroundingSource[]) => {
+              setGroundingSources(sources);
+            },
+            onCodeExecution: (result: CodeExecutionResult) => {
+              setCodeExecutionResult(result);
+            },
+            onThinking: (thinking: string) => {
+              setThinkingProcess((prev) => prev + thinking);
             },
             onEnd: (data: { ragLogId?: string } | undefined) => {
               // Capture ragLogId from end data for feedback submission
@@ -175,6 +196,9 @@ export function useChatStream() {
     setOutputTokens(undefined);
     setStreamDuration(undefined);
     setRagLogId(undefined);
+    setGroundingSources([]);
+    setCodeExecutionResult(null);
+    setThinkingProcess('');
     setIsStreaming(false);
     streamStartTimeRef.current = null;
   }, []);
@@ -190,6 +214,10 @@ export function useChatStream() {
     streamDuration,
     ragLogId,
     isPending, // Transition pending state for UI feedback
+    // Gemini-specific state
+    groundingSources,
+    codeExecutionResult,
+    thinkingProcess,
 
     // Actions
     sendStreamingMessage,

@@ -1,5 +1,5 @@
 import { RefObject, useMemo } from 'react';
-import { ChatConversation, ChatMessage, ToolCall } from '../types/chat';
+import { ChatConversation, ChatMessage, ToolCall, GroundingSource, CodeExecutionResult } from '../../../types/chat';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { MessageBubble } from './MessageBubble';
@@ -33,6 +33,10 @@ export interface ChatMessageListProps {
   streamDuration?: number;
   /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
   ragLogId?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult | null;
   // Settings
   agentModeEnabled: boolean;
   // User info
@@ -64,6 +68,8 @@ export function ChatMessageList({
   outputTokens,
   streamDuration,
   ragLogId,
+  groundingSources = [],
+  codeExecutionResult = null,
   agentModeEnabled,
   userName,
   isSending,
@@ -166,6 +172,8 @@ export function ChatMessageList({
                 processingStatus={processingStatus}
                 retrievedNotes={retrievedNotes}
                 agentRetrievedNotes={agentRetrievedNotes}
+                groundingSources={groundingSources}
+                codeExecutionResult={codeExecutionResult}
               />
             )}
 

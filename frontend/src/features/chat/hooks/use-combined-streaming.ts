@@ -3,7 +3,7 @@ import { useChatStream } from './use-chat-stream';
 import { useAgentStream } from '../../agents/hooks/use-agent-stream';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
-import { MessageImage } from '../types/chat';
+import { MessageImage, GroundingSource, CodeExecutionResult } from '../../../types/chat';
 
 export interface CombinedStreamingState {
   isStreaming: boolean;
@@ -20,6 +20,12 @@ export interface CombinedStreamingState {
   streamDuration?: number;
   /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
   ragLogId?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult | null;
+  /** Thinking process content (Gemini only, for non-agent mode) */
+  thinkingProcess?: string;
 }
 
 export interface CombinedStreamingActions {
@@ -85,6 +91,14 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
     outputTokens: agentModeEnabled ? agentStream.outputTokens : chatStream.outputTokens,
     streamDuration: agentModeEnabled ? agentStream.streamDuration : chatStream.streamDuration,
     ragLogId: agentModeEnabled ? agentStream.ragLogId : chatStream.ragLogId,
+    // Gemini-specific fields - prefer agent stream when in agent mode
+    groundingSources: agentModeEnabled
+      ? agentStream.groundingSources
+      : chatStream.groundingSources,
+    codeExecutionResult: agentModeEnabled
+      ? agentStream.codeExecutionResult
+      : chatStream.codeExecutionResult,
+    thinkingProcess: agentModeEnabled ? undefined : chatStream.thinkingProcess,
   };
 
   // Unified send message function

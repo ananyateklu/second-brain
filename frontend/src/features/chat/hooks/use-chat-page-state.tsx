@@ -18,7 +18,7 @@ import { useAuthStore } from '../../../store/auth-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
-import type { MessageImage, ImageGenerationResponse, ChatConversation } from '../../../types/chat';
+import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, CodeExecutionResult } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../../types/rag';
@@ -75,6 +75,10 @@ export interface ChatPageState {
   streamDuration?: number;
   /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
   ragLogId?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult | null;
 
   // Scroll
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -241,6 +245,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     outputTokens,
     streamDuration,
     ragLogId,
+    groundingSources,
+    codeExecutionResult,
     sendMessage: sendStreamingMessage,
     cancelStream,
     resetStream,
@@ -590,6 +596,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     outputTokens,
     streamDuration,
     ragLogId,
+    groundingSources,
+    codeExecutionResult,
 
     // Scroll
     messagesEndRef,

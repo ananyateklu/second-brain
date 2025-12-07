@@ -2,10 +2,13 @@ import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { GroundingSourcesCard } from '../../agents/components/GroundingSourcesCard';
+import { CodeExecutionCard } from '../../agents/components/CodeExecutionCard';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
+import { GroundingSource, CodeExecutionResult } from '../../../types/chat';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
 
 export interface StreamingIndicatorProps {
@@ -22,6 +25,10 @@ export interface StreamingIndicatorProps {
   retrievedNotes?: RagContextNote[];
   /** Notes automatically retrieved via semantic search for agent context injection */
   agentRetrievedNotes?: RetrievedNoteContext[];
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult | null;
 }
 
 /**
@@ -40,11 +47,15 @@ export function StreamingIndicator({
   processingStatus = null,
   retrievedNotes = [],
   agentRetrievedNotes = [],
+  groundingSources = [],
+  codeExecutionResult = null,
 }: StreamingIndicatorProps) {
   const hasAgentRetrievedNotes = agentRetrievedNotes.length > 0;
   const hasRegularRagNotes = retrievedNotes.length > 0;
   const hasAnyRetrievedNotes = hasAgentRetrievedNotes || hasRegularRagNotes;
-  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes;
+  const hasGroundingSources = groundingSources.length > 0;
+  const hasCodeExecution = codeExecutionResult !== null;
+  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes || hasGroundingSources || hasCodeExecution;
 
   return (
     <div>
@@ -68,6 +79,15 @@ export function StreamingIndicator({
         {agentModeEnabled && toolExecutions.map((execution, index) => (
           <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
         ))}
+
+        {/* Gemini-specific features */}
+        {hasGroundingSources && (
+          <GroundingSourcesCard sources={groundingSources} isStreaming={isStreaming} />
+        )}
+
+        {hasCodeExecution && codeExecutionResult && (
+          <CodeExecutionCard result={codeExecutionResult} isStreaming={isStreaming} />
+        )}
       </ProcessTimeline>
 
       {/* Show processing status indicator when streaming (agent mode only) */}

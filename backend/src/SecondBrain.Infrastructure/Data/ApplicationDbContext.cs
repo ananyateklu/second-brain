@@ -27,6 +27,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<NoteVersion> NoteVersions { get; set; } = null!;
     public DbSet<ChatSession> ChatSessions { get; set; } = null!;
 
+    // Gemini Context Caching
+    public DbSet<GeminiContextCache> GeminiContextCaches { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -229,6 +232,17 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.CreatedAt })
                 .IsDescending(false, true)
                 .HasDatabaseName("ix_rag_logs_user_created");
+        });
+
+        // =========================================================================
+        // Gemini Context Caching Configuration
+        // =========================================================================
+        modelBuilder.Entity<GeminiContextCache>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).HasDatabaseName("idx_gemini_caches_user_id");
+            entity.HasIndex(e => e.CacheName).IsUnique().HasDatabaseName("idx_gemini_caches_cache_name");
+            entity.HasIndex(e => e.ExpiresAt).HasDatabaseName("idx_gemini_caches_expires");
+            entity.HasIndex(e => new { e.UserId, e.ContentHash, e.Model }).HasDatabaseName("idx_gemini_caches_content_hash");
         });
 
         // =========================================================================

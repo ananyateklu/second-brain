@@ -12,6 +12,7 @@ import type {
   ThinkingStep,
   RetrievedNoteContext,
 } from '../types/agent';
+import type { GroundingSource, CodeExecutionResult } from '../types/chat';
 
 /**
  * Agent service for AI agent operations
@@ -30,12 +31,12 @@ export const agentService = {
     const url = `${apiUrl}${API_ENDPOINTS.AGENT.STREAM(conversationId)}`;
 
     const authStore = useAuthStore.getState();
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
     };
-    
+
     if (authStore.token) {
       headers['Authorization'] = `Bearer ${authStore.token}`;
     }
@@ -194,6 +195,36 @@ export const agentService = {
             callbacks.onContextRetrieval?.({ notes, ragLogId });
           } catch (e) {
             console.error('Failed to parse context retrieval data:', { data, error: e });
+          }
+        }
+        break;
+
+      case 'grounding':
+        if (data) {
+          try {
+            const groundingData = JSON.parse(data);
+            const sources: GroundingSource[] = groundingData.sources || [];
+            callbacks.onGrounding?.(sources);
+          } catch (e) {
+            console.error('Failed to parse grounding data:', { data, error: e });
+          }
+        }
+        break;
+
+      case 'code_execution':
+        if (data) {
+          try {
+            const codeExecData = JSON.parse(data);
+            const result: CodeExecutionResult = {
+              code: codeExecData.code || '',
+              language: codeExecData.language || 'python',
+              output: codeExecData.output || '',
+              success: codeExecData.success ?? true,
+              errorMessage: codeExecData.errorMessage,
+            };
+            callbacks.onCodeExecution?.(result);
+          } catch (e) {
+            console.error('Failed to parse code execution data:', { data, error: e });
           }
         }
         break;

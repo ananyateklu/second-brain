@@ -14,5 +14,23 @@ public class CreateConversationRequest
     public bool ImageGenerationEnabled { get; set; } = false;
     public string? AgentCapabilities { get; set; }
     public string? VectorStoreProvider { get; set; }
+
+    /// <summary>
+    /// Enable Google Search grounding by default for this conversation (Gemini only).
+    /// Individual messages can override this setting.
+    /// </summary>
+    public bool GroundingEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Enable Python code execution by default for this conversation (Gemini only).
+    /// Individual messages can override this setting.
+    /// </summary>
+    public bool CodeExecutionEnabled { get; set; } = false;
+
+    /// <summary>
+    /// Enable thinking mode by default for this conversation (Gemini 2.0+ only).
+    /// Individual messages can override this setting.
+    /// </summary>
+    public bool ThinkingEnabled { get; set; } = false;
 }
 

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../../store/auth-store';
 import { ToolExecution, ThinkingStep, AgentMessageRequest, RetrievedNoteContext } from '../types/agent-types';
 import { estimateTokenCount } from '../../../utils/token-utils';
 import { getApiBaseUrl, API_ENDPOINTS } from '../../../lib/constants';
+import type { GroundingSource, CodeExecutionResult } from '../../../types/chat';
 
 // Type guards for parsed JSON data
 interface ToolStartData {
@@ -35,6 +36,22 @@ interface EndData {
 
 interface ErrorData {
   error?: string;
+}
+
+interface GroundingData {
+  sources?: Array<{
+    uri: string;
+    title: string;
+    snippet?: string;
+  }>;
+}
+
+interface CodeExecutionData {
+  code?: string;
+  language?: string;
+  output?: string;
+  success?: boolean;
+  errorMessage?: string;
 }
 
 function isToolStartData(data: unknown): data is ToolStartData {
@@ -86,6 +103,14 @@ function isEndData(data: unknown): data is EndData {
 }
 
 function isErrorData(data: unknown): data is ErrorData {
+  return typeof data === 'object' && data !== null;
+}
+
+function isGroundingData(data: unknown): data is GroundingData {
+  return typeof data === 'object' && data !== null;
+}
+
+function isCodeExecutionData(data: unknown): data is CodeExecutionData {
   return typeof data === 'object' && data !== null;
 }
 
@@ -167,6 +192,8 @@ export function useAgentStream() {
   const [retrievedNotes, setRetrievedNotes] = useState<RetrievedNoteContext[]>([]);
   const [ragLogId, setRagLogId] = useState<string | undefined>(undefined);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [groundingSources, setGroundingSources] = useState<GroundingSource[]>([]);
+  const [codeExecutionResult, setCodeExecutionResult] = useState<CodeExecutionResult | null>(null);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
@@ -185,6 +212,8 @@ export function useAgentStream() {
       setRetrievedNotes([]);
       setRagLogId(undefined);
       setProcessingStatus(null);
+      setGroundingSources([]);
+      setCodeExecutionResult(null);
       completeThinkingBlocksRef.current.clear();
 
       // Calculate input tokens for the user's message
@@ -452,6 +481,44 @@ export function useAgentStream() {
                 }
                 break;
 
+              case 'grounding':
+                if (data) {
+                  try {
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isGroundingData(parsed) && parsed.sources) {
+                      const sources: GroundingSource[] = parsed.sources.map(s => ({
+                        uri: s.uri,
+                        title: s.title,
+                        snippet: s.snippet,
+                      }));
+                      setGroundingSources(sources);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse grounding data:', e);
+                  }
+                }
+                break;
+
+              case 'code_execution':
+                if (data) {
+                  try {
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isCodeExecutionData(parsed)) {
+                      const result: CodeExecutionResult = {
+                        code: parsed.code ?? '',
+                        language: parsed.language ?? 'python',
+                        output: parsed.output ?? '',
+                        success: parsed.success ?? true,
+                        errorMessage: parsed.errorMessage,
+                      };
+                      setCodeExecutionResult(result);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse code_execution data:', e);
+                  }
+                }
+                break;
+
               case 'end':
                 if (data) {
                   try {
@@ -566,6 +633,9 @@ export function useAgentStream() {
     inputTokens,
     outputTokens,
     streamDuration,
+    // Gemini-specific state
+    groundingSources,
+    codeExecutionResult,
 
     // Actions
     sendAgentMessage,

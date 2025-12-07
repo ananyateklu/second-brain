@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage, GeneratedImage } from '../../../types/chat';
+import { ChatMessage, GeneratedImage, GroundingSource } from '../../../types/chat';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
@@ -64,9 +64,8 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
 
         {/* Hover overlay with actions */}
         <div
-          className={`absolute inset-0 flex items-end justify-between p-3 transition-opacity duration-200 ${
-            isHovered ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`absolute inset-0 flex items-end justify-between p-3 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
           style={{
             background: 'linear-gradient(transparent 50%, rgba(0,0,0,0.7))',
           }}
@@ -201,6 +200,119 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
 }
 
 /**
+ * Compact display of grounding sources in a persisted message
+ */
+function GroundingSourcesDisplay({ sources }: { sources: GroundingSource[] }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="mt-3 pt-3"
+      style={{ borderTop: '1px solid var(--border)' }}
+    >
+      <button
+        onClick={() => { setIsExpanded(!isExpanded); }}
+        className="flex items-center gap-2 text-xs hover:opacity-80 transition-opacity"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-accent-blue)' }}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <span style={{ color: 'var(--text-secondary)' }}>
+          {sources.length} source{sources.length !== 1 ? 's' : ''} from Google Search
+        </span>
+        <svg
+          className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div className="mt-2 space-y-1.5">
+          {sources.map((source, index) => (
+            <a
+              key={index}
+              href={source.uri}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs hover:underline"
+              style={{ color: 'var(--color-accent-blue)' }}
+            >
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <span className="truncate">{source.title || new URL(source.uri).hostname}</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Compact display of code execution result in a persisted message
+ */
+function CodeExecutionDisplay({ result }: { result: { code: string; language: string; output: string; success: boolean; errorMessage?: string } }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div
+      className="mt-3 pt-3"
+      style={{ borderTop: '1px solid var(--border)' }}
+    >
+      <button
+        onClick={() => { setIsExpanded(!isExpanded); }}
+        className="flex items-center gap-2 text-xs hover:opacity-80 transition-opacity"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+        <span style={{ color: 'var(--text-secondary)' }}>
+          Code executed ({result.language})
+        </span>
+        <span
+          className="px-1.5 py-0.5 rounded text-[10px]"
+          style={{
+            backgroundColor: result.success ? 'var(--color-success-alpha)' : 'var(--color-error-alpha)',
+            color: result.success ? 'var(--color-success)' : 'var(--color-error)',
+          }}
+        >
+          {result.success ? 'Success' : 'Failed'}
+        </span>
+        <svg
+          className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isExpanded && (
+        <div
+          className="mt-2 p-2 rounded text-xs font-mono overflow-x-auto"
+          style={{
+            backgroundColor: 'var(--surface-elevated)',
+            border: '1px solid var(--border)',
+          }}
+        >
+          <pre className="whitespace-pre-wrap break-words" style={{ color: 'var(--text-secondary)' }}>
+            {result.output || (result.success ? 'No output' : result.errorMessage || 'Execution failed')}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Renders a single message bubble (user or assistant).
  */
 /**
@@ -235,7 +347,7 @@ export function MessageBubble({
   const hasGeneratedImages = message.generatedImages && message.generatedImages.length > 0;
   const isImageRequest = isUser && isImageGenerationRequest(message.content);
   const displayContent = isImageRequest ? extractImagePrompt(message.content) : message.content;
-  
+
   // Determine if we should show feedback (assistant message with RAG log ID)
   const effectiveRagLogId = ragLogId || message.ragLogId;
   const shouldShowFeedback = !isUser && effectiveRagLogId && showFeedback;
@@ -243,9 +355,8 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${
-          isUser ? 'rounded-br-md' : 'rounded-bl-md'
-        }`}
+        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${isUser ? 'rounded-br-md' : 'rounded-bl-md'
+          }`}
         style={{
           backgroundColor: isUser ? 'var(--btn-primary-bg)' : 'var(--surface-card)',
           color: isUser ? 'var(--btn-primary-text)' : 'var(--text-primary)',
@@ -339,6 +450,16 @@ export function MessageBubble({
               </div>
             )}
 
+            {/* Display Gemini grounding sources */}
+            {message.groundingSources && message.groundingSources.length > 0 && (
+              <GroundingSourcesDisplay sources={message.groundingSources} />
+            )}
+
+            {/* Display Gemini code execution result */}
+            {message.codeExecutionResult && (
+              <CodeExecutionDisplay result={message.codeExecutionResult} />
+            )}
+
             <TokenUsageDisplay
               inputTokens={
                 message.inputTokens ??
@@ -358,8 +479,8 @@ export function MessageBubble({
 
             {/* RAG Feedback buttons */}
             {shouldShowFeedback && effectiveRagLogId && (
-              <MessageFeedback 
-                ragLogId={effectiveRagLogId} 
+              <MessageFeedback
+                ragLogId={effectiveRagLogId}
                 currentFeedback={message.ragFeedback as 'thumbs_up' | 'thumbs_down' | undefined}
               />
             )}

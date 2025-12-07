@@ -21,117 +21,135 @@
 \echo ''
 
 -- Step 1: Enable extensions
-\echo 'Step 1/19: Enabling extensions...'
+\echo 'Step 1/22: Enabling extensions...'
 \i 00_extensions.sql
 \echo 'Extensions enabled successfully.'
 \echo ''
 
 -- Step 2: Create users tables
-\echo 'Step 2/19: Creating users tables...'
+\echo 'Step 2/22: Creating users tables...'
 \i 01_users.sql
 \echo 'Users tables created successfully.'
 \echo ''
 
 -- Step 3: Create notes table
-\echo 'Step 3/19: Creating notes table...'
+\echo 'Step 3/22: Creating notes table...'
 \i 02_notes.sql
 \echo 'Notes table created successfully.'
 \echo ''
 
 -- Step 4: Create note embeddings table
-\echo 'Step 4/19: Creating note_embeddings table...'
+\echo 'Step 4/22: Creating note_embeddings table...'
 \i 03_note_embeddings.sql
 \echo 'Note embeddings table created successfully.'
 \echo ''
 
 -- Step 5: Create chat tables
-\echo 'Step 5/19: Creating chat tables...'
+\echo 'Step 5/22: Creating chat tables...'
 \i 04_chat.sql
 \echo 'Chat tables created successfully.'
 \echo ''
 
 -- Step 6: Create indexing jobs table
-\echo 'Step 6/19: Creating indexing_jobs table...'
+\echo 'Step 6/22: Creating indexing_jobs table...'
 \i 05_indexing_jobs.sql
 \echo 'Indexing jobs table created successfully.'
 \echo ''
 
 -- Step 7: Create base indexes
-\echo 'Step 7/19: Creating indexes...'
+\echo 'Step 7/22: Creating indexes...'
 \i 06_indexes.sql
 \echo 'Indexes created successfully.'
 \echo ''
 
 -- Step 8: Create generated images table
-\echo 'Step 8/19: Creating generated_images table...'
+\echo 'Step 8/22: Creating generated_images table...'
 \i 07_generated_images.sql
 \echo 'Generated images table created successfully.'
 \echo ''
 
 -- Step 9: Add search vectors for hybrid search
-\echo 'Step 9/19: Adding search vectors and RAG query logs...'
+\echo 'Step 9/22: Adding search vectors and RAG query logs...'
 \i 08_search_vectors.sql
 \echo 'Search vectors and RAG query logs created successfully.'
 \echo ''
 
 -- Step 10: Add RAG analytics extensions
-\echo 'Step 10/19: Adding RAG analytics columns...'
+\echo 'Step 10/22: Adding RAG analytics columns...'
 \i 09_rag_analytics.sql
 \echo 'RAG analytics columns added successfully.'
 \echo ''
 
 -- Step 11: Create brainstorm tables
-\echo 'Step 11/19: Creating brainstorm tables...'
+\echo 'Step 11/22: Creating brainstorm tables...'
 \i 10_brainstorm.sql
 \echo 'Brainstorm tables created successfully.'
 \echo ''
 
 -- Step 12: Create message images table
-\echo 'Step 12/19: Creating message_images table...'
+\echo 'Step 12/22: Creating message_images table...'
 \i 11_message_images.sql
 \echo 'Message images table created successfully.'
 \echo ''
 
 -- Step 13: Add agent_rag_enabled column
-\echo 'Step 13/19: Adding agent_rag_enabled column...'
+\echo 'Step 13/22: Adding agent_rag_enabled column...'
 \i 12_agent_rag_enabled.sql
 \echo 'Agent RAG enabled column added successfully.'
 \echo ''
 
 -- Step 14: PostgreSQL 18 features (UUIDv7, JSONB, optimized indexes)
-\echo 'Step 14/19: Enabling PostgreSQL 18 features...'
+\echo 'Step 14/22: Enabling PostgreSQL 18 features...'
 \i 13_postgresql_18_features.sql
 \echo 'PostgreSQL 18 features enabled successfully.'
 \echo ''
 
 -- Step 15: Tool call analytics
-\echo 'Step 15/19: Adding tool call analytics...'
+\echo 'Step 15/22: Adding tool call analytics...'
 \i 14_tool_call_analytics.sql
 \echo 'Tool call analytics added successfully.'
 \echo ''
 
 -- Step 16: Temporal features (PostgreSQL 18)
-\echo 'Step 16/19: Adding temporal features...'
+\echo 'Step 16/22: Adding temporal features...'
 \i 15_temporal_features.sql
 \echo 'Temporal features added successfully.'
 \echo ''
 
 -- Step 17: Add username to users
-\echo 'Step 17/19: Adding username to users...'
+\echo 'Step 17/22: Adding username to users...'
 \i 16_add_username_to_users.sql
 \echo 'Username column added successfully.'
 \echo ''
 
 -- Step 18: Variable embedding dimensions
-\echo 'Step 18/19: Adding variable embedding dimensions support...'
+\echo 'Step 18/22: Adding variable embedding dimensions support...'
 \i 17_variable_embedding_dimensions.sql
 \echo 'Variable embedding dimensions support added successfully.'
 \echo ''
 
 -- Step 19: Indexing jobs embedding fields
-\echo 'Step 19/19: Adding embedding fields to indexing_jobs...'
+\echo 'Step 19/22: Adding embedding fields to indexing_jobs...'
 \i 18_indexing_jobs_embedding_fields.sql
 \echo 'Embedding fields added to indexing_jobs successfully.'
+\echo ''
+
+-- Step 20: Gemini context caches
+\echo 'Step 20/22: Creating Gemini context caches table...'
+\i 19_gemini_context_caches.sql
+\echo 'Gemini context caches table created successfully.'
+\echo ''
+
+-- Step 21: Gemini function call analytics
+\echo 'Step 21/22: Creating Gemini function calls table...'
+\i 20_gemini_function_calls.sql
+\echo 'Gemini function calls table created successfully.'
+\echo ''
+
+-- Step 22: Grounding sources
+\echo 'Step 22/22: Creating grounding sources table...'
+\i 21_grounding_sources.sql
+\echo 'Grounding sources table created successfully.'
 \echo ''
 
 \echo '============================================'
@@ -155,6 +173,9 @@
 \echo '  - rag_query_logs'
 \echo '  - brainstorm_sessions'
 \echo '  - brainstorm_results'
+\echo '  - gemini_context_caches'
+\echo '  - gemini_function_calls'
+\echo '  - grounding_sources'
 \echo ''
 \echo 'PostgreSQL 18 Features:'
 \echo '  - UUIDv7 columns added'
@@ -165,6 +186,11 @@
 \echo '  - Skip-scan optimized indexes'
 \echo '  - Monitoring functions'
 \echo ''
-\echo 'Total tables: 16 (+ __EFMigrationsHistory created by EF Core)'
+\echo 'Gemini SDK Features:'
+\echo '  - Context caching metadata'
+\echo '  - Function call analytics'
+\echo '  - Grounding sources tracking'
+\echo ''
+\echo 'Total tables: 19 (+ __EFMigrationsHistory created by EF Core)'
 \echo '============================================'
 

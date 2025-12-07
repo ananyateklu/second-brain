@@ -1,3 +1,5 @@
+using SecondBrain.Application.Services.AI.Models;
+
 namespace SecondBrain.Application.Services.Agents.Models;
 
 public class AgentRequest
@@ -62,16 +64,26 @@ public class AgentStreamEvent
     public string? ToolName { get; set; }
     public string? ToolArguments { get; set; }
     public string? ToolResult { get; set; }
-    
+
     /// <summary>
     /// Retrieved notes from automatic context injection (for ContextRetrieval events)
     /// </summary>
     public List<RetrievedNoteContext>? RetrievedNotes { get; set; }
-    
+
     /// <summary>
     /// RAG query log ID for feedback submission (for ContextRetrieval events)
     /// </summary>
     public string? RagLogId { get; set; }
+
+    /// <summary>
+    /// Grounding sources from Google Search (Gemini only, for Grounding events)
+    /// </summary>
+    public List<GroundingSource>? GroundingSources { get; set; }
+
+    /// <summary>
+    /// Code execution result from Python sandbox (Gemini only, for CodeExecution events)
+    /// </summary>
+    public CodeExecutionResult? CodeExecutionResult { get; set; }
 }
 
 /// <summary>
@@ -84,7 +96,7 @@ public class RetrievedNoteContext
     public string Preview { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
     public float SimilarityScore { get; set; }
-    
+
     /// <summary>
     /// The full chunk content that was matched by RAG search.
     /// This contains the actual relevant content (not truncated).
@@ -104,7 +116,15 @@ public enum AgentEventType
     /// <summary>
     /// Automatic context retrieval from semantic search (shows "Searching your notes...")
     /// </summary>
-    ContextRetrieval
+    ContextRetrieval,
+    /// <summary>
+    /// Grounding sources from Google Search (Gemini only)
+    /// </summary>
+    Grounding,
+    /// <summary>
+    /// Code execution result from Python sandbox (Gemini only)
+    /// </summary>
+    CodeExecution
 }
 
 public class ToolExecutionResult

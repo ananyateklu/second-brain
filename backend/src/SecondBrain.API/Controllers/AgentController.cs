@@ -297,6 +297,39 @@ public class AgentController : ControllerBase
                         await Response.WriteAsync($"event: error\ndata: {{\"error\":\"{evt.Content}\"}}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);
                         return;
+
+                    case AgentEventType.Grounding:
+                        if (evt.GroundingSources != null && evt.GroundingSources.Count > 0)
+                        {
+                            var groundingJson = JsonSerializer.Serialize(new
+                            {
+                                sources = evt.GroundingSources.Select(s => new
+                                {
+                                    uri = s.Uri,
+                                    title = s.Title,
+                                    snippet = s.Snippet
+                                }).ToList()
+                            });
+                            await Response.WriteAsync($"event: grounding\ndata: {groundingJson}\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                        }
+                        break;
+
+                    case AgentEventType.CodeExecution:
+                        if (evt.CodeExecutionResult != null)
+                        {
+                            var codeExecJson = JsonSerializer.Serialize(new
+                            {
+                                code = evt.CodeExecutionResult.Code,
+                                language = evt.CodeExecutionResult.Language,
+                                output = evt.CodeExecutionResult.Output,
+                                success = evt.CodeExecutionResult.Success,
+                                errorMessage = evt.CodeExecutionResult.ErrorMessage
+                            });
+                            await Response.WriteAsync($"event: code_execution\ndata: {codeExecJson}\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                        }
+                        break;
                 }
             }
 

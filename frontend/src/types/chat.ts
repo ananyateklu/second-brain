@@ -46,6 +46,81 @@ export interface GeneratedImage {
   height?: number;
 }
 
+// ============================================
+// Gemini-specific Feature Types
+// ============================================
+
+/**
+ * Grounding source from Google Search (Gemini only)
+ */
+export interface GroundingSource {
+  /** URL of the source */
+  uri: string;
+  /** Title of the source page */
+  title: string;
+  /** Relevant snippet from the source */
+  snippet?: string;
+}
+
+/**
+ * Code execution result from Python sandbox (Gemini only)
+ */
+export interface CodeExecutionResult {
+  /** The executed code */
+  code: string;
+  /** Programming language (typically "python") */
+  language: string;
+  /** Output from code execution */
+  output: string;
+  /** Whether execution completed successfully */
+  success: boolean;
+  /** Error message if execution failed */
+  errorMessage?: string;
+}
+
+/**
+ * Gemini context cache entry (Gemini only)
+ * Represents a cached context on Gemini's servers for reducing latency and costs.
+ */
+export interface GeminiContextCache {
+  /** Local database ID */
+  id: string;
+  /** Cache name from Gemini API (e.g., "cachedContents/abc123") */
+  cacheName: string;
+  /** Human-readable display name */
+  displayName: string;
+  /** Model this cache was created for (e.g., "gemini-2.0-flash") */
+  model: string;
+  /** SHA-256 hash of the cached content */
+  contentHash: string;
+  /** User ID who owns this cache */
+  userId: string;
+  /** Estimated token count of the cached content */
+  tokenCount?: number;
+  /** When the cache was created */
+  createdAt: string;
+  /** When the cache will expire */
+  expiresAt: string;
+  /** Whether the cache is still valid (not expired) */
+  isValid: boolean;
+}
+
+/**
+ * Request to create a Gemini context cache (Gemini only)
+ */
+export interface CreateGeminiCacheRequest {
+  /** The model to create the cache for */
+  model: string;
+  /** Human-readable display name */
+  displayName: string;
+  /** The content to cache (large text, documents, etc.) */
+  content: string;
+  /** Optional system instruction to cache */
+  systemInstruction?: string;
+  /** Time-to-live in minutes (defaults to 60) */
+  ttlMinutes?: number;
+}
+
 /**
  * Chat message entity
  */
@@ -66,6 +141,12 @@ export interface ChatMessage {
   ragLogId?: string;
   /** User feedback on RAG response quality ('thumbs_up' or 'thumbs_down') */
   ragFeedback?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult;
+  /** Extended thinking/reasoning process (Gemini 2.0+ thinking mode) */
+  thinkingProcess?: string;
 }
 
 /**
@@ -87,6 +168,12 @@ export interface ChatConversation {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  /** Google Search grounding enabled by default for this conversation (Gemini only) */
+  groundingEnabled?: boolean;
+  /** Python code execution enabled by default for this conversation (Gemini only) */
+  codeExecutionEnabled?: boolean;
+  /** Thinking mode enabled by default for this conversation (Gemini 2.0+ only) */
+  thinkingEnabled?: boolean;
 }
 
 /**
@@ -103,6 +190,12 @@ export interface CreateConversationRequest {
   agentCapabilities?: string;
   vectorStoreProvider?: string;
   userId?: string;
+  /** Enable Google Search grounding by default for this conversation (Gemini only) */
+  groundingEnabled?: boolean;
+  /** Enable Python code execution by default for this conversation (Gemini only) */
+  codeExecutionEnabled?: boolean;
+  /** Enable thinking mode by default for this conversation (Gemini 2.0+ only) */
+  thinkingEnabled?: boolean;
 }
 
 /**
@@ -128,6 +221,16 @@ export interface SendMessageRequest {
   vectorStoreProvider?: string;
   /** Attached images for multimodal messages */
   images?: MessageImage[];
+  /** Enable Google Search grounding for this message (Gemini only) */
+  enableGrounding?: boolean;
+  /** Enable Python code execution for this message (Gemini only) */
+  enableCodeExecution?: boolean;
+  /** Enable thinking mode for extended reasoning (Gemini 2.0+ only) */
+  enableThinking?: boolean;
+  /** Name of a cached context to use for this message (Gemini only) */
+  contextCacheName?: string;
+  /** Token budget for thinking process (Gemini only) */
+  thinkingBudget?: number;
 }
 
 /**
@@ -198,6 +301,12 @@ export interface StreamingCallbacks {
   onStart?: () => void;
   onEnd?: (data: StreamEndData) => void;
   onError?: (error: Error) => void;
+  /** Called when grounding sources are received (Gemini only) */
+  onGroundingSources?: (sources: GroundingSource[]) => void;
+  /** Called when code execution result is received (Gemini only) */
+  onCodeExecution?: (result: CodeExecutionResult) => void;
+  /** Called when thinking process is received (Gemini 2.0+ only) */
+  onThinking?: (thinking: string) => void;
 }
 
 /**
@@ -209,6 +318,12 @@ export interface StreamEndData {
   durationMs?: number;
   /** RAG query log ID for feedback submission */
   ragLogId?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult;
+  /** Extended thinking/reasoning process (Gemini 2.0+ only) */
+  thinkingProcess?: string;
 }
 
 /**
@@ -222,6 +337,12 @@ export interface CombinedStreamingState {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult;
+  /** Thinking process content (Gemini 2.0+ only) */
+  thinkingProcess?: string;
 }
 
 // ============================================

@@ -16,8 +16,12 @@ using Anthropic.SDK.Common;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.AI.FunctionCalling;
+using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
+
+using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
 
 namespace SecondBrain.Application.Services.Agents;
 
@@ -53,19 +57,25 @@ public class AgentService : IAgentService
     private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, IAgentPlugin> _plugins = new();
     private readonly QueryIntentDetector _intentDetector = new();
+    private readonly IGeminiFunctionRegistry? _geminiFunctionRegistry;
+    private readonly GeminiProvider? _geminiProvider;
 
     public AgentService(
         IOptions<AIProvidersSettings> settings,
         IOptions<RagSettings> ragSettings,
         INoteRepository noteRepository,
         IRagService ragService,
-        ILogger<AgentService> logger)
+        ILogger<AgentService> logger,
+        IGeminiFunctionRegistry? geminiFunctionRegistry = null,
+        GeminiProvider? geminiProvider = null)
     {
         _settings = settings.Value;
         _ragSettings = ragSettings.Value;
         _noteRepository = noteRepository;
         _ragService = ragService;
         _logger = logger;
+        _geminiFunctionRegistry = geminiFunctionRegistry;
+        _geminiProvider = geminiProvider;
 
         // Register available plugins
         RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value));
@@ -110,6 +120,24 @@ public class AgentService : IAgentService
         if (isAnthropic)
         {
             await foreach (var evt in ProcessAnthropicStreamAsync(request, cancellationToken))
+            {
+                yield return evt;
+            }
+            yield break;
+        }
+
+        // Use native Gemini function calling when available
+        // Now uses reflection-based approach similar to Claude, no pre-registered handlers needed
+        var isGemini = request.Provider.Equals("gemini", StringComparison.OrdinalIgnoreCase);
+        var useNativeGeminiFunctionCalling = isGemini &&
+            _geminiProvider != null &&
+            _settings.Gemini.Features.EnableFunctionCalling &&
+            request.Capabilities != null &&
+            request.Capabilities.Count > 0;
+
+        if (useNativeGeminiFunctionCalling)
+        {
+            await foreach (var evt in ProcessGeminiStreamAsync(request, cancellationToken))
             {
                 yield return evt;
             }
@@ -943,6 +971,357 @@ public class AgentService : IAgentService
     }
 
     /// <summary>
+    /// Native Gemini function calling implementation using Google GenAI SDK.
+    /// Optimized for Gemini's agentic capabilities:
+    /// - Parallel function execution for multiple tool calls
+    /// - All function results sent back together (proper Gemini pattern)
+    /// - Real-time streaming with function call detection
+    /// - Optional grounding (Google Search) and code execution
+    /// </summary>
+    private async IAsyncEnumerable<AgentStreamEvent> ProcessGeminiStreamAsync(
+        AgentRequest request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (_geminiProvider == null)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Error,
+                Content = "Gemini provider is not properly configured"
+            };
+            yield break;
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Preparing Gemini tools..."
+        };
+
+        // Build function declarations from enabled plugins
+        var functionDeclarations = new List<GeminiFunctionDeclaration>();
+        var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var capabilityId in request.Capabilities ?? new List<string>())
+        {
+            if (_plugins.TryGetValue(capabilityId, out var plugin))
+            {
+                plugin.SetCurrentUserId(request.UserId);
+                plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+
+                var pluginInstance = plugin.GetPluginInstance();
+                var methods = pluginInstance.GetType().GetMethods()
+                    .Where(m => m.GetCustomAttributes(typeof(Microsoft.SemanticKernel.KernelFunctionAttribute), false).Any());
+
+                foreach (var method in methods)
+                {
+                    var funcAttr = method.GetCustomAttribute<Microsoft.SemanticKernel.KernelFunctionAttribute>();
+                    var toolName = funcAttr?.Name ?? method.Name;
+
+                    var declaration = GeminiFunctionDeclarationBuilder.BuildFromMethod(method, funcAttr);
+                    if (declaration != null)
+                    {
+                        functionDeclarations.Add(declaration);
+                        pluginMethods[toolName] = (plugin, method);
+                        _logger.LogDebug("Registered Gemini function: {FunctionName}", toolName);
+                    }
+                }
+            }
+        }
+
+        _logger.LogInformation("Registered {Count} function declarations for Gemini", functionDeclarations.Count);
+
+        // Build messages
+        var messages = new List<Services.AI.Models.ChatMessage>
+        {
+            new Services.AI.Models.ChatMessage
+            {
+                Role = "system",
+                Content = GetSystemPrompt(request.Capabilities)
+            }
+        };
+
+        // Convert request messages
+        foreach (var msg in request.Messages)
+        {
+            if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) &&
+                msg.ToolCalls != null && msg.ToolCalls.Any())
+            {
+                var contextBuilder = new StringBuilder();
+                if (!string.IsNullOrWhiteSpace(msg.Content))
+                    contextBuilder.AppendLine(msg.Content);
+                contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
+                foreach (var tc in msg.ToolCalls)
+                    contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
+                contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+
+                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = contextBuilder.ToString() });
+            }
+            else
+            {
+                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = msg.Content });
+            }
+        }
+
+        // Automatic context injection for knowledge queries
+        var lastUserMessage = GetLastUserMessage(request);
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
+
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
+                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
+                };
+                messages[0].Content += "\n\n" + contextMessage;
+            }
+        }
+
+        var fullResponse = new StringBuilder();
+        var emittedThinkingBlocks = new HashSet<string>();
+        var maxIterations = 10;
+
+        var aiSettings = new Services.AI.Models.AIRequest
+        {
+            Model = request.Model,
+            MaxTokens = request.MaxTokens ?? 4096,
+            Temperature = request.Temperature ?? 0.7f
+        };
+
+        // Detect if query might benefit from Gemini's unique features
+        var queryLower = lastUserMessage?.ToLowerInvariant() ?? "";
+        var mightNeedRealTimeInfo = queryLower.Contains("latest") || queryLower.Contains("current") ||
+                                    queryLower.Contains("today") || queryLower.Contains("news") ||
+                                    queryLower.Contains("weather") || queryLower.Contains("stock");
+        var mightNeedCalculation = queryLower.Contains("calculate") || queryLower.Contains("compute") ||
+                                   queryLower.Contains("math") || queryLower.Contains("equation");
+
+        var featureOptions = new GeminiFeatureOptions
+        {
+            FunctionDeclarations = functionDeclarations.Count > 0 ? functionDeclarations : null,
+            // Enable Gemini-specific features based on query analysis
+            EnableGrounding = mightNeedRealTimeInfo && _settings.Gemini.Features.EnableGrounding,
+            EnableCodeExecution = mightNeedCalculation && _settings.Gemini.Features.EnableCodeExecution,
+            EnableThinking = _settings.Gemini.Features.EnableThinking
+        };
+
+        if (featureOptions.EnableGrounding)
+        {
+            _logger.LogInformation("Enabling Google Search grounding for this query");
+        }
+        if (featureOptions.EnableCodeExecution)
+        {
+            _logger.LogInformation("Enabling code execution for this query");
+        }
+
+        for (int iteration = 0; iteration < maxIterations; iteration++)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = iteration == 0 ? "Analyzing your request..." : "Continuing with tool results..."
+            };
+
+            // Use streaming for real-time feedback
+            var pendingFunctionCalls = new List<Services.AI.Models.FunctionCallInfo>();
+            var iterationText = new StringBuilder();
+
+            await foreach (var evt in _geminiProvider.StreamWithFeaturesAsync(
+                messages, aiSettings, featureOptions, cancellationToken))
+            {
+                switch (evt.Type)
+                {
+                    case GeminiStreamEventType.Text:
+                        if (!string.IsNullOrEmpty(evt.Text))
+                        {
+                            iterationText.Append(evt.Text);
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Token,
+                                Content = evt.Text
+                            };
+                        }
+                        break;
+
+                    case GeminiStreamEventType.Thinking:
+                        if (!string.IsNullOrEmpty(evt.Text) && !emittedThinkingBlocks.Contains(evt.Text))
+                        {
+                            emittedThinkingBlocks.Add(evt.Text);
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Thinking,
+                                Content = evt.Text
+                            };
+                        }
+                        break;
+
+                    case GeminiStreamEventType.FunctionCalls:
+                        if (evt.FunctionCalls != null)
+                        {
+                            pendingFunctionCalls.AddRange(evt.FunctionCalls);
+                        }
+                        break;
+
+                    case GeminiStreamEventType.GroundingSources:
+                        if (evt.GroundingSources != null && evt.GroundingSources.Count > 0)
+                        {
+                            _logger.LogDebug("Forwarding {Count} grounding sources to frontend", evt.GroundingSources.Count);
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Grounding,
+                                GroundingSources = evt.GroundingSources
+                            };
+                        }
+                        break;
+
+                    case GeminiStreamEventType.CodeExecution:
+                        if (evt.CodeExecutionResult != null)
+                        {
+                            _logger.LogDebug("Forwarding code execution to frontend. Code: {Code}, Output: {Output}",
+                                evt.CodeExecutionResult.Code?.Substring(0, Math.Min(50, evt.CodeExecutionResult.Code?.Length ?? 0)),
+                                evt.CodeExecutionResult.Output?.Substring(0, Math.Min(50, evt.CodeExecutionResult.Output?.Length ?? 0)));
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.CodeExecution,
+                                CodeExecutionResult = evt.CodeExecutionResult
+                            };
+                        }
+                        break;
+
+                    case GeminiStreamEventType.Error:
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Error,
+                            Content = $"Error from Gemini: {evt.Error}"
+                        };
+                        yield break;
+                }
+            }
+
+            fullResponse.Append(iterationText);
+
+            // Process function calls in PARALLEL (Gemini's strength)
+            if (pendingFunctionCalls.Count > 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = $"Executing {pendingFunctionCalls.Count} tool(s) in parallel..."
+                };
+
+                // Emit start events for all tools
+                foreach (var call in pendingFunctionCalls)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallStart,
+                        ToolName = call.Name,
+                        ToolArguments = call.Arguments
+                    };
+                }
+
+                // Execute ALL function calls in parallel
+                var executionTasks = pendingFunctionCalls.Select(async call =>
+                {
+                    try
+                    {
+                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        {
+                            var argsNode = JsonNode.Parse(call.Arguments);
+                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                            return (call.Name, Result: result, Success: true);
+                        }
+                        return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error executing Gemini tool {ToolName}", call.Name);
+                        return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                    }
+                }).ToList();
+
+                var results = await Task.WhenAll(executionTasks);
+
+                // Emit end events for all tools
+                foreach (var (name, result, _) in results)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.ToolCallEnd,
+                        ToolName = name,
+                        ToolResult = result
+                    };
+                }
+
+                // Add assistant message if there was text content before tools
+                if (iterationText.Length > 0)
+                {
+                    messages.Add(new Services.AI.Models.ChatMessage
+                    {
+                        Role = "assistant",
+                        Content = iterationText.ToString()
+                    });
+                }
+
+                // Send ALL function results back to Gemini in one request (proper Gemini pattern)
+                var functionResults = results.Select(r => (r.Name, (object)r.Result)).ToArray();
+
+                var response = await _geminiProvider.ContinueWithFunctionResultsAsync(
+                    messages, functionResults, aiSettings, featureOptions, cancellationToken);
+
+                if (!response.Success)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.Error,
+                        Content = $"Error continuing with function results: {response.Error}"
+                    };
+                    yield break;
+                }
+
+                // Check if there are more function calls
+                if (response.FunctionCalls != null && response.FunctionCalls.Count > 0)
+                {
+                    // Add the response content and continue the loop
+                    if (!string.IsNullOrEmpty(response.Content))
+                    {
+                        fullResponse.Append(response.Content);
+                        yield return new AgentStreamEvent { Type = AgentEventType.Token, Content = response.Content };
+                    }
+                    continue;
+                }
+
+                // Emit final response
+                if (!string.IsNullOrEmpty(response.Content))
+                {
+                    fullResponse.Append(response.Content);
+                    yield return new AgentStreamEvent { Type = AgentEventType.Token, Content = response.Content };
+                }
+                break;
+            }
+            else
+            {
+                // No function calls - we're done
+                break;
+            }
+        }
+
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.End,
+            Content = fullResponse.ToString()
+        };
+    }
+
+    /// <summary>
     /// Helper to wrap Anthropic streaming API call with error handling.
     /// This allows us to avoid yield-in-try issues by wrapping the try-catch internally.
     /// </summary>
@@ -1345,7 +1724,7 @@ public class AgentService : IAgentService
             {
                 // Extract metadata from chunk content (uses same format as RagService)
                 var parsedNote = SecondBrain.Application.Utilities.NoteContentParser.Parse(note.Content);
-                
+
                 // Get tags from parsed content or note metadata
                 var tags = parsedNote.Tags?.Any() == true ? parsedNote.Tags : note.NoteTags;
                 var tagsStr = tags?.Any() == true ? $"Tags: {string.Join(", ", tags)}" : "";
@@ -1384,8 +1763,8 @@ public class AgentService : IAgentService
                 contextBuilder.AppendLine();
 
                 // Build preview for UI display (limited length)
-                var previewForUI = contentToShow.Length > 300 
-                    ? contentToShow.Substring(0, 300) + "..." 
+                var previewForUI = contentToShow.Length > 300
+                    ? contentToShow.Substring(0, 300) + "..."
                     : contentToShow;
 
                 retrievedNotes.Add(new RetrievedNoteContext
@@ -1409,7 +1788,7 @@ public class AgentService : IAgentService
             contextBuilder.AppendLine("- If you need more details from a note, use GetNote tool with the Note ID.");
             contextBuilder.AppendLine("- If the context doesn't contain the answer, say so clearly.");
 
-            _logger.LogInformation("Injected rich context from {Count} notes with RagLogId: {RagLogId}", 
+            _logger.LogInformation("Injected rich context from {Count} notes with RagLogId: {RagLogId}",
                 retrievedNotes.Count, ragContext.RagLogId);
 
             return (contextBuilder.ToString(), retrievedNotes, ragContext.RagLogId);

@@ -205,6 +205,45 @@ export const chatService = {
         }
         break;
 
+      case 'grounding':
+        if (data) {
+          try {
+            const groundingData = JSON.parse(data);
+            callbacks.onGroundingSources?.(groundingData.sources || []);
+          } catch (e) {
+            console.error('Failed to parse grounding data:', { data, error: e });
+          }
+        }
+        break;
+
+      case 'code_execution':
+        if (data) {
+          try {
+            const codeExecData = JSON.parse(data);
+            callbacks.onCodeExecution?.({
+              code: codeExecData.code || '',
+              language: codeExecData.language || 'python',
+              output: codeExecData.output || '',
+              success: codeExecData.success ?? true,
+              errorMessage: codeExecData.errorMessage,
+            });
+          } catch (e) {
+            console.error('Failed to parse code execution data:', { data, error: e });
+          }
+        }
+        break;
+
+      case 'thinking':
+        if (data) {
+          try {
+            const thinkingData = JSON.parse(data);
+            callbacks.onThinking?.(thinkingData.content || data);
+          } catch {
+            callbacks.onThinking?.(data.replace(/\\n/g, '\n'));
+          }
+        }
+        break;
+
       case 'end':
         if (data) {
           try {

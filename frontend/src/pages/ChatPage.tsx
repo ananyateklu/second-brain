@@ -31,7 +31,7 @@ export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
   const titleBarHeight = useTitleBarHeight();
-  
+
   // Fullscreen state for Tauri
   const isFullscreen = useUIStore((state) => state.isFullscreenChat);
   const isInTauri = isTauri();
@@ -85,6 +85,8 @@ export function ChatPage() {
     outputTokens,
     streamDuration,
     ragLogId,
+    groundingSources,
+    codeExecutionResult,
 
     // Scroll
     messagesEndRef,
@@ -206,26 +208,26 @@ export function ChatPage() {
   const isPageFullscreen = isInTauri && isFullscreen;
   const containerStyles = isPageFullscreen
     ? {
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: '100vh',
-        maxHeight: '100vh',
-        position: 'fixed' as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 30,
-        borderRadius: 0,
-      }
+      backgroundColor: 'var(--surface-card)',
+      borderColor: 'var(--border)',
+      boxShadow: 'var(--shadow-2xl)',
+      height: '100vh',
+      maxHeight: '100vh',
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 30,
+      borderRadius: 0,
+    }
     : {
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-      };
+      backgroundColor: 'var(--surface-card)',
+      borderColor: 'var(--border)',
+      boxShadow: 'var(--shadow-2xl)',
+      height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+    };
 
   return (
     <div
@@ -295,6 +297,8 @@ export function ChatPage() {
             outputTokens={outputTokens}
             streamDuration={streamDuration}
             ragLogId={ragLogId}
+            groundingSources={groundingSources}
+            codeExecutionResult={codeExecutionResult}
             agentModeEnabled={agentModeEnabled}
             userName={user?.displayName}
             isSending={sendMessage.isPending}

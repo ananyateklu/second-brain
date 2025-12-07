@@ -30,8 +30,11 @@ using SecondBrain.Application.Services.Stats;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.CircuitBreaker;
+using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Providers;
+using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Providers;
@@ -190,6 +193,22 @@ public static class ServiceCollectionExtensions
         // Register image generation factory
         services.AddSingleton<IImageGenerationProviderFactory, ImageGenerationProviderFactory>();
 
+        // Register Gemini function registry for native function calling
+        // The registry collects all IGeminiFunctionHandler implementations and provides them to the GeminiProvider
+        services.AddScoped<IGeminiFunctionRegistry, GeminiFunctionRegistry>();
+
+        // Register Gemini function handlers
+        // These handlers wrap plugin functionality for Gemini's native function calling
+        services.AddScoped<SecondBrain.Application.Services.AI.FunctionCalling.Handlers.NotesGeminiFunctionHandler>();
+        services.AddScoped<IGeminiFunctionHandler>(sp =>
+            sp.GetRequiredService<SecondBrain.Application.Services.AI.FunctionCalling.Handlers.NotesGeminiFunctionHandler>());
+
+        // Register Gemini Structured Output service for type-safe JSON generation
+        services.AddSingleton<IGeminiStructuredOutputService, GeminiStructuredOutputService>();
+
+        // Register Gemini Context Cache service for reducing latency/costs with large contexts
+        services.AddScoped<IGeminiCacheService, GeminiCacheService>();
+
         // Register Agent service for agent mode functionality
         services.AddScoped<IAgentService, AgentService>();
 
@@ -232,6 +251,9 @@ public static class ServiceCollectionExtensions
         // PostgreSQL 18 Temporal Features - Version History and Session Tracking Repositories
         services.AddScoped<INoteVersionRepository, SqlNoteVersionRepository>();
         services.AddScoped<IChatSessionRepository, SqlChatSessionRepository>();
+
+        // Gemini Context Caching repository
+        services.AddScoped<IGeminiCacheRepository, SqlGeminiCacheRepository>();
 
         return services;
     }

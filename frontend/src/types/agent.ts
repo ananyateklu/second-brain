@@ -3,6 +3,8 @@
  * Types for AI agent operations, tool executions, and capabilities
  */
 
+import type { GroundingSource, CodeExecutionResult } from './chat';
+
 /**
  * Tool execution status
  */
@@ -43,6 +45,10 @@ export interface AgentStreamState {
   streamDuration?: number;
   /** RAG query log ID for feedback submission when agent uses auto context fetching */
   ragLogId?: string;
+  /** Grounding sources from Google Search (Gemini only) */
+  groundingSources?: GroundingSource[];
+  /** Code execution result from Python sandbox (Gemini only) */
+  codeExecutionResult?: CodeExecutionResult;
 }
 
 /**
@@ -144,6 +150,10 @@ export interface AgentStreamingCallbacks {
   onStart?: () => void;
   onEnd?: (data: AgentEndData) => void;
   onError?: (error: Error) => void;
+  /** Called when grounding sources are received (Gemini only) */
+  onGrounding?: (sources: GroundingSource[]) => void;
+  /** Called when code execution result is received (Gemini only) */
+  onCodeExecution?: (result: CodeExecutionResult) => void;
 }
 
 /**
