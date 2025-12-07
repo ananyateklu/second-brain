@@ -1294,6 +1294,10 @@ public class OllamaKeepAliveConfig
 
 ## Database Schema Changes
 
+> ✅ **IMPLEMENTED**: Ollama database tables (`ollama_model_pulls`, `ollama_model_info`) have been created in `database/25_ollama_features.sql` and applied to both Docker and Desktop PostgreSQL instances.
+> 
+> **Note**: Function call logging uses the generic `gemini_function_calls` table (which has a `provider` column) or the `tool_calls` table with JSONB columns for cross-provider analytics.
+
 ### Ollama Function Call Logs
 
 ```sql

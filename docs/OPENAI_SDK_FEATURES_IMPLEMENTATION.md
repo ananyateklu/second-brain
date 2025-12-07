@@ -1492,6 +1492,10 @@ public class OpenAIModerationService : IContentModerationService
 
 ## Database Schema Changes
 
+> ✅ **IMPLEMENTED**: OpenAI database tables (`audio_transcriptions`, `moderation_logs`) have been created in `database/23_openai_features.sql` and applied to both Docker and Desktop PostgreSQL instances.
+> 
+> **Note**: Function call logging uses the generic `gemini_function_calls` table (which has a `provider` column) or the `tool_calls` table with JSONB columns for cross-provider analytics.
+
 ### Function Call Logs
 
 ```sql
