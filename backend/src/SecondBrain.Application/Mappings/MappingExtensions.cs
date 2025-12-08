@@ -11,7 +11,7 @@ namespace SecondBrain.Application.Mappings;
 public static class MappingExtensions
 {
     /// <summary>
-    /// Maps a Note entity to a NoteResponse DTO
+    /// Maps a Note entity to a NoteResponse DTO (full content, used for get-by-id)
     /// </summary>
     public static NoteResponse ToResponse(this Note note)
     {
@@ -20,6 +20,7 @@ public static class MappingExtensions
             Id = note.Id,
             Title = note.Title,
             Content = note.Content,
+            Summary = note.Summary,
             CreatedAt = note.CreatedAt,
             UpdatedAt = note.UpdatedAt,
             Tags = note.Tags,
@@ -28,6 +29,26 @@ public static class MappingExtensions
             Source = note.Source,
             ExternalId = note.ExternalId,
             Folder = note.Folder
+        };
+    }
+
+    /// <summary>
+    /// Maps a Note entity to a NoteListResponse DTO (lightweight, summary instead of content).
+    /// Used for list endpoints to reduce payload size and improve performance.
+    /// </summary>
+    public static NoteListResponse ToListResponse(this Note note)
+    {
+        return new NoteListResponse
+        {
+            Id = note.Id,
+            Title = note.Title,
+            Summary = note.Summary,
+            CreatedAt = note.CreatedAt,
+            UpdatedAt = note.UpdatedAt,
+            Tags = note.Tags,
+            IsArchived = note.IsArchived,
+            Folder = note.Folder,
+            Source = note.Source
         };
     }
 

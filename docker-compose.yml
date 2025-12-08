@@ -60,6 +60,16 @@ services:
       - ./database/16_add_username_to_users.sql:/docker-entrypoint-initdb.d/16_add_username_to_users.sql:ro
       - ./database/17_variable_embedding_dimensions.sql:/docker-entrypoint-initdb.d/17_variable_embedding_dimensions.sql:ro
       - ./database/18_indexing_jobs_embedding_fields.sql:/docker-entrypoint-initdb.d/18_indexing_jobs_embedding_fields.sql:ro
+      - ./database/19_gemini_context_caches.sql:/docker-entrypoint-initdb.d/19_gemini_context_caches.sql:ro
+      - ./database/20_gemini_function_calls.sql:/docker-entrypoint-initdb.d/20_gemini_function_calls.sql:ro
+      - ./database/21_grounding_sources.sql:/docker-entrypoint-initdb.d/21_grounding_sources.sql:ro
+      - ./database/22_grok_features.sql:/docker-entrypoint-initdb.d/22_grok_features.sql:ro
+      - ./database/23_openai_features.sql:/docker-entrypoint-initdb.d/23_openai_features.sql:ro
+      - ./database/24_claude_features.sql:/docker-entrypoint-initdb.d/24_claude_features.sql:ro
+      - ./database/25_ollama_features.sql:/docker-entrypoint-initdb.d/25_ollama_features.sql:ro
+      - ./database/26_reranking_provider.sql:/docker-entrypoint-initdb.d/26_reranking_provider.sql:ro
+      - ./database/27_note_summaries.sql:/docker-entrypoint-initdb.d/27_note_summaries.sql:ro
+      - ./database/28_note_summary_preferences.sql:/docker-entrypoint-initdb.d/28_note_summary_preferences.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

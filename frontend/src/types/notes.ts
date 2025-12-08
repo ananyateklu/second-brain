@@ -4,20 +4,30 @@
  */
 
 /**
- * Note entity (aligned with backend NoteResponse)
+ * Lightweight note item for list views (aligned with backend NoteListResponse).
+ * Contains summary instead of full content for better performance.
  */
-export interface Note {
+export interface NoteListItem {
   id: string;
   title: string;
-  content: string;
+  /** AI-generated summary of the note (title, tags, content) for list views */
+  summary?: string;
   createdAt: string;
   updatedAt: string;
   tags: string[];
   isArchived: boolean;
-  userId?: string;
-  source?: string;
-  externalId?: string;
   folder?: string;
+  source?: string;
+}
+
+/**
+ * Full note entity with content (aligned with backend NoteResponse).
+ * Used for get-by-id endpoint where full content is needed.
+ */
+export interface Note extends NoteListItem {
+  content: string;
+  userId?: string;
+  externalId?: string;
 }
 
 /**
@@ -163,4 +173,39 @@ export interface RestoreVersionResponse {
   message: string;
   newVersionNumber: number;
   noteId: string;
+}
+
+// ============================================
+// Note Summary Generation Types
+// ============================================
+
+/**
+ * Request to generate AI summaries for notes
+ */
+export interface GenerateSummariesRequest {
+  /** Note IDs to generate summaries for. If empty, generates for all notes without summaries. */
+  noteIds: string[];
+}
+
+/**
+ * Response from generating AI summaries
+ */
+export interface GenerateSummariesResponse {
+  totalProcessed: number;
+  successCount: number;
+  failureCount: number;
+  skippedCount: number;
+  results: SummaryGenerationResult[];
+}
+
+/**
+ * Result of generating a summary for a single note
+ */
+export interface SummaryGenerationResult {
+  noteId: string;
+  title: string;
+  success: boolean;
+  summary?: string;
+  error?: string;
+  skipped: boolean;
 }

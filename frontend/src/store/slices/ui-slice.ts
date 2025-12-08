@@ -3,7 +3,7 @@
  * Manages UI state like modals, sidebar, search
  */
 
-import type { Note } from '../../features/notes/types/note';
+import type { Note, NoteListItem } from '../../features/notes/types/note';
 import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode } from '../types';
 
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';
@@ -62,7 +62,8 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Initial state
   isCreateModalOpen: false,
   isEditModalOpen: false,
-  editingNote: null,
+  editingNoteId: null,
+  editingNote: null, // Deprecated - kept for backwards compatibility
   isMobileMenuOpen: false,
   isSearchOpen: true,
   searchQuery: '',
@@ -79,8 +80,14 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
 
   openCreateModal: () => set({ isCreateModalOpen: true }),
   closeCreateModal: () => set({ isCreateModalOpen: false }),
-  openEditModal: (note: Note) => set({ isEditModalOpen: true, editingNote: note }),
-  closeEditModal: () => set({ isEditModalOpen: false, editingNote: null }),
+  openEditModal: (noteOrId: Note | NoteListItem | string) => {
+    // Extract the ID whether it's a full Note, NoteListItem, or just the ID string
+    const noteId = typeof noteOrId === 'string' ? noteOrId : noteOrId.id;
+    // Keep editingNote for backwards compatibility if a full Note is passed
+    const editingNote = typeof noteOrId === 'object' && 'content' in noteOrId ? noteOrId : null;
+    set({ isEditModalOpen: true, editingNoteId: noteId, editingNote });
+  },
+  closeEditModal: () => set({ isEditModalOpen: false, editingNoteId: null, editingNote: null }),
 
   // ============================================
   // Mobile Menu Actions

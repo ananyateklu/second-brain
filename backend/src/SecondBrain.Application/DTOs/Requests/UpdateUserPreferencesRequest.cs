@@ -12,5 +12,10 @@ public class UpdateUserPreferencesRequest
     public string? OllamaRemoteUrl { get; set; }
     public bool? UseRemoteOllama { get; set; }
     public string? RerankingProvider { get; set; }
+
+    // Note Summary settings
+    public bool? NoteSummaryEnabled { get; set; }
+    public string? NoteSummaryProvider { get; set; }
+    public string? NoteSummaryModel { get; set; }
 }
 

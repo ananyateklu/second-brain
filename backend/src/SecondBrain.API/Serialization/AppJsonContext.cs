@@ -25,6 +25,11 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(NoteResponse[]))]
 [JsonSerializable(typeof(List<NoteResponse>))]
 [JsonSerializable(typeof(IEnumerable<NoteResponse>))]
+// Note list responses (lightweight, with summary instead of content)
+[JsonSerializable(typeof(NoteListResponse))]
+[JsonSerializable(typeof(NoteListResponse[]))]
+[JsonSerializable(typeof(List<NoteListResponse>))]
+[JsonSerializable(typeof(IEnumerable<NoteListResponse>))]
 // Note requests
 [JsonSerializable(typeof(CreateNoteRequest))]
 [JsonSerializable(typeof(UpdateNoteRequest))]
@@ -36,6 +41,11 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(ImportNotesResponse))]
 [JsonSerializable(typeof(ImportNoteResult))]
 [JsonSerializable(typeof(List<ImportNoteResult>))]
+// Note summary generation
+[JsonSerializable(typeof(GenerateSummariesRequest))]
+[JsonSerializable(typeof(GenerateSummariesResponse))]
+[JsonSerializable(typeof(SummaryGenerationResult))]
+[JsonSerializable(typeof(List<SummaryGenerationResult>))]
 // Note version responses (PostgreSQL 18 temporal)
 [JsonSerializable(typeof(NoteVersionResponse))]
 [JsonSerializable(typeof(NoteVersionResponse[]))]

@@ -53,6 +53,14 @@ public class Note : ISoftDeletable
     [MaxLength(256)]
     public string? Folder { get; set; }
 
+    /// <summary>
+    /// AI-generated summary of the note (considering title, tags, and content).
+    /// Used for list views to avoid fetching full content.
+    /// </summary>
+    [Column("summary")]
+    [MaxLength(1000)]
+    public string? Summary { get; set; }
+
     // Soft delete properties
     [Column("is_deleted")]
     public bool IsDeleted { get; set; } = false;

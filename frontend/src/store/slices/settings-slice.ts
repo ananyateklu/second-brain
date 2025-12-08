@@ -146,6 +146,64 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // Note Summary Settings
+  // ============================================
+
+  setNoteSummaryEnabled: async (enabled: boolean, syncToBackend = true) => {
+    set({ noteSummaryEnabled: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            noteSummaryEnabled: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync note summary enabled to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setNoteSummaryProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ noteSummaryProvider: provider });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            noteSummaryProvider: provider,
+          });
+        } catch (error) {
+          console.error('Failed to sync note summary provider to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setNoteSummaryModel: async (model: string | null, syncToBackend = true) => {
+    set({ noteSummaryModel: model });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            noteSummaryModel: model,
+          });
+        } catch (error) {
+          console.error('Failed to sync note summary model to backend:', { error });
+        }
+      }
+    }
+  },
+
+  // ============================================
   // Sync Actions
   // ============================================
 
@@ -164,6 +222,9 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ollamaRemoteUrl: preferences.ollamaRemoteUrl,
         useRemoteOllama: preferences.useRemoteOllama,
         rerankingProvider: preferences.rerankingProvider,
+        noteSummaryEnabled: preferences.noteSummaryEnabled,
+        noteSummaryProvider: preferences.noteSummaryProvider,
+        noteSummaryModel: preferences.noteSummaryModel,
       });
     } catch (error) {
       console.error('Failed to load preferences from backend:', { error });
@@ -208,5 +269,8 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ollamaRemoteUrl: state.ollamaRemoteUrl,
     useRemoteOllama: state.useRemoteOllama,
     rerankingProvider: state.rerankingProvider,
+    noteSummaryEnabled: state.noteSummaryEnabled,
+    noteSummaryProvider: state.noteSummaryProvider,
+    noteSummaryModel: state.noteSummaryModel,
   };
 }

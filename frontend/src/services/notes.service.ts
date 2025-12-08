@@ -7,6 +7,7 @@ import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, NOTES_FOLDERS } from '../lib/constants';
 import type {
   Note,
+  NoteListItem,
   NoteResponse,
   CreateNoteRequest,
   UpdateNoteRequest,
@@ -16,6 +17,8 @@ import type {
   NoteVersion,
   NoteVersionDiff,
   RestoreVersionResponse,
+  GenerateSummariesRequest,
+  GenerateSummariesResponse,
 } from '../types/notes';
 
 /**
@@ -23,10 +26,10 @@ import type {
  */
 export const notesService = {
   /**
-   * Get all notes
+   * Get all notes (lightweight list response with summaries instead of full content)
    */
-  async getAll(): Promise<NoteResponse[]> {
-    return apiClient.get<NoteResponse[]>(API_ENDPOINTS.NOTES.BASE);
+  async getAll(): Promise<NoteListItem[]> {
+    return apiClient.get<NoteListItem[]>(API_ENDPOINTS.NOTES.BASE);
   },
 
   /**
@@ -133,19 +136,24 @@ export const notesService = {
 
   /**
    * Search notes by query
+   * Works with both Note (full content) and NoteListItem (summary only)
    */
-  searchNotes(
-    notes: Note[],
+  searchNotes<T extends NoteListItem>(
+    notes: T[],
     query: string,
     mode: 'title' | 'content' | 'both' = 'both'
-  ): Note[] {
+  ): T[] {
     if (!query.trim()) return notes;
 
     const lowerQuery = query.toLowerCase();
 
     return notes.filter((note) => {
       const titleMatch = note.title.toLowerCase().includes(lowerQuery);
-      const contentMatch = note.content.toLowerCase().includes(lowerQuery);
+      // For NoteListItem, search in summary; for Note, search in content
+      const textToSearch = 'content' in note
+        ? (note as Note).content
+        : (note.summary || '');
+      const contentMatch = textToSearch.toLowerCase().includes(lowerQuery);
 
       switch (mode) {
         case 'title':
@@ -160,8 +168,9 @@ export const notesService = {
 
   /**
    * Filter notes by tags
+   * Works with both Note and NoteListItem
    */
-  filterByTags(notes: Note[], tags: string[]): Note[] {
+  filterByTags<T extends NoteListItem>(notes: T[], tags: string[]): T[] {
     if (tags.length === 0) return notes;
     return notes.filter((note) =>
       tags.some((tag) => note.tags.includes(tag))
@@ -170,11 +179,12 @@ export const notesService = {
 
   /**
    * Sort notes
+   * Works with both Note and NoteListItem
    */
-  sortNotes(
-    notes: Note[],
+  sortNotes<T extends NoteListItem>(
+    notes: T[],
     sortBy: 'newest' | 'oldest' | 'title-asc' | 'title-desc'
-  ): Note[] {
+  ): T[] {
     const sorted = [...notes];
 
     sorted.sort((a, b) => {
@@ -197,8 +207,9 @@ export const notesService = {
 
   /**
    * Get all unique tags from notes
+   * Works with both Note and NoteListItem
    */
-  getAllTags(notes: Note[]): string[] {
+  getAllTags<T extends NoteListItem>(notes: T[]): string[] {
     const tagSet = new Set<string>();
     for (const note of notes) {
       for (const tag of note.tags) {
@@ -210,8 +221,9 @@ export const notesService = {
 
   /**
    * Get tag counts
+   * Works with both Note and NoteListItem
    */
-  getTagCounts(notes: Note[]): Record<string, number> {
+  getTagCounts<T extends NoteListItem>(notes: T[]): Record<string, number> {
     const counts: Record<string, number> = {};
     for (const note of notes) {
       for (const tag of note.tags) {
@@ -291,6 +303,21 @@ export const notesService = {
     return apiClient.post<RestoreVersionResponse>(
       API_ENDPOINTS.NOTES.RESTORE_VERSION(noteId),
       { targetVersion }
+    );
+  },
+
+  // ============================================
+  // Note Summary Generation
+  // ============================================
+
+  /**
+   * Generate AI summaries for notes
+   * @param noteIds - Optional list of note IDs. If empty, generates for all notes without summaries.
+   */
+  async generateSummaries(noteIds: string[] = []): Promise<GenerateSummariesResponse> {
+    return apiClient.post<GenerateSummariesResponse>(
+      API_ENDPOINTS.NOTES.GENERATE_SUMMARIES,
+      { noteIds } as GenerateSummariesRequest
     );
   },
 };

@@ -56,18 +56,18 @@ export const waitForBackendReady = (timeoutMs = 30000): Promise<void> => {
       resolve();
       return;
     }
-    
+
     const timeoutId = setTimeout(() => {
       const idx = _backendReadyCallbacks.indexOf(callback);
       if (idx > -1) _backendReadyCallbacks.splice(idx, 1);
       reject(new Error('Timeout waiting for backend'));
     }, timeoutMs);
-    
+
     const callback = () => {
       clearTimeout(timeoutId);
       resolve();
     };
-    
+
     _backendReadyCallbacks.push(callback);
   });
 };
@@ -150,6 +150,7 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/notes/${id}`,
     BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',
+    GENERATE_SUMMARIES: '/notes/generate-summaries',
     // Note Version History (PostgreSQL 18 Temporal Features)
     VERSIONS: (id: string) => `/notes/${id}/versions`,
     VERSION_AT: (id: string) => `/notes/${id}/versions/at`,

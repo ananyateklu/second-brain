@@ -56,6 +56,9 @@ const _useBoundStore = create<BoundStore>()(
         ollamaRemoteUrl: state.ollamaRemoteUrl,
         useRemoteOllama: state.useRemoteOllama,
         autoSaveInterval: state.autoSaveInterval,
+        noteSummaryEnabled: state.noteSummaryEnabled,
+        noteSummaryProvider: state.noteSummaryProvider,
+        noteSummaryModel: state.noteSummaryModel,
         // Theme state
         theme: state.theme,
         // Notes state
@@ -111,6 +114,9 @@ const _useBoundStore = create<BoundStore>()(
           ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? currentState.ollamaRemoteUrl,
           useRemoteOllama: typeof parsed.useRemoteOllama === 'boolean' ? parsed.useRemoteOllama : currentState.useRemoteOllama,
           autoSaveInterval: typeof parsed.autoSaveInterval === 'number' ? parsed.autoSaveInterval : currentState.autoSaveInterval,
+          noteSummaryEnabled: typeof parsed.noteSummaryEnabled === 'boolean' ? parsed.noteSummaryEnabled : currentState.noteSummaryEnabled,
+          noteSummaryProvider: parsed.noteSummaryProvider ?? currentState.noteSummaryProvider,
+          noteSummaryModel: parsed.noteSummaryModel ?? currentState.noteSummaryModel,
           // Merge theme
           theme,
           // Merge notes state

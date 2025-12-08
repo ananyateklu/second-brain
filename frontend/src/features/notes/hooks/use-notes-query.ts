@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { notesService } from '../../../services';
-import { Note, CreateNoteRequest, UpdateNoteRequest } from '../../../types/notes';
+import { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, GenerateSummariesResponse } from '../../../types/notes';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 import { NOTES_FOLDERS } from '../../../lib/constants';
@@ -13,9 +13,12 @@ type UpdateNoteInput = UpdateNoteRequest;
 // Re-export query keys for backward compatibility
 export { noteKeys };
 
-// Query: Get all notes
+/**
+ * Query: Get all notes (lightweight list with summaries)
+ * Returns NoteListItem[] - contains summary instead of full content for better performance
+ */
 export function useNotes() {
-  return useApiQuery<Note[]>(
+  return useApiQuery<NoteListItem[]>(
     noteKeys.all,
     () => notesService.getAll()
   );
@@ -42,12 +45,18 @@ export function useCreateNote() {
       optimisticUpdate: {
         queryKey: noteKeys.all,
         getOptimisticData: (newNote, currentData) => {
-          const notes = (currentData as Note[] | undefined) ?? [];
-          const optimisticNote: Note = {
+          const notes = (currentData as NoteListItem[] | undefined) ?? [];
+          // Create optimistic NoteListItem (without content, just the list fields)
+          const optimisticNote: NoteListItem = {
             id: `temp-${Date.now()}`,
-            ...newNote,
+            title: newNote.title,
+            tags: newNote.tags,
+            isArchived: newNote.isArchived,
+            folder: newNote.folder,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            // Summary will be null until the server generates it
+            summary: undefined,
           };
           return [optimisticNote, ...notes];
         },
@@ -58,7 +67,7 @@ export function useCreateNote() {
 
 // Context type for update note mutation
 interface UpdateNoteContext {
-  previousNotes?: Note[];
+  previousNotes?: NoteListItem[];
   previousNote?: Note;
 }
 
@@ -78,12 +87,12 @@ export function useUpdateNote() {
         await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNotes = queryClient.getQueryData<NoteListItem[]>(noteKeys.all);
         const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list
         if (previousNotes) {
-          queryClient.setQueryData<Note[]>(
+          queryClient.setQueryData<NoteListItem[]>(
             noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
@@ -134,7 +143,7 @@ export function useDeleteNote() {
       optimisticUpdate: {
         queryKey: noteKeys.all,
         getOptimisticData: (id, currentData) => {
-          const notes = (currentData as Note[] | undefined) ?? [];
+          const notes = (currentData as NoteListItem[] | undefined) ?? [];
           return notes.filter((note) => note.id !== id);
         },
       },
@@ -152,7 +161,7 @@ export function useBulkDeleteNotes() {
       optimisticUpdate: {
         queryKey: noteKeys.all,
         getOptimisticData: (noteIds, currentData) => {
-          const notes = (currentData as Note[] | undefined) ?? [];
+          const notes = (currentData as NoteListItem[] | undefined) ?? [];
           return notes.filter((note) => !noteIds.includes(note.id));
         },
       },
@@ -162,7 +171,7 @@ export function useBulkDeleteNotes() {
 
 // Context type for archive/unarchive mutations
 interface ArchiveNoteContext {
-  previousNotes?: Note[];
+  previousNotes?: NoteListItem[];
   previousNote?: Note;
 }
 
@@ -182,12 +191,12 @@ export function useArchiveNote() {
         await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNotes = queryClient.getQueryData<NoteListItem[]>(noteKeys.all);
         const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list (set isArchived and move to Archived folder)
         if (previousNotes) {
-          queryClient.setQueryData<Note[]>(
+          queryClient.setQueryData<NoteListItem[]>(
             noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
@@ -243,12 +252,12 @@ export function useUnarchiveNote() {
         await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNotes = queryClient.getQueryData<NoteListItem[]>(noteKeys.all);
         const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list (set isArchived to false and remove from Archived folder)
         if (previousNotes) {
-          queryClient.setQueryData<Note[]>(
+          queryClient.setQueryData<NoteListItem[]>(
             noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
@@ -297,7 +306,7 @@ export function useUnarchiveNote() {
 
 // Context type for move to folder mutation
 interface MoveToFolderContext {
-  previousNotes?: Note[];
+  previousNotes?: NoteListItem[];
   previousNote?: Note;
 }
 
@@ -317,12 +326,12 @@ export function useMoveToFolder() {
         await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNotes = queryClient.getQueryData<NoteListItem[]>(noteKeys.all);
         const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list
         if (previousNotes) {
-          queryClient.setQueryData<Note[]>(
+          queryClient.setQueryData<NoteListItem[]>(
             noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
@@ -357,6 +366,17 @@ export function useMoveToFolder() {
         void queryClient.invalidateQueries({ queryKey: noteKeys.all });
         void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       },
+    }
+  );
+}
+
+// Mutation: Generate summaries for notes
+export function useGenerateSummaries() {
+  return useApiMutation<GenerateSummariesResponse, string[]>(
+    (noteIds) => notesService.generateSummaries(noteIds),
+    {
+      errorMessage: 'Failed to generate summaries',
+      invalidateQueries: [noteKeys.all],
     }
   );
 }

@@ -11,6 +11,7 @@ using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Controllers;
 
@@ -26,26 +27,33 @@ public class NotesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly INoteVersionService _versionService;
+    private readonly INoteSummaryService _summaryService;
+    private readonly INoteRepository _noteRepository;
     private readonly ILogger<NotesController> _logger;
 
     public NotesController(
         IMediator mediator,
         INoteVersionService versionService,
+        INoteSummaryService summaryService,
+        INoteRepository noteRepository,
         ILogger<NotesController> logger)
     {
         _mediator = mediator;
         _versionService = versionService;
+        _summaryService = summaryService;
+        _noteRepository = noteRepository;
         _logger = logger;
     }
 
     /// <summary>
-    /// Get all notes for the authenticated user
+    /// Get all notes for the authenticated user.
+    /// Returns lightweight response with summary instead of full content for better performance.
     /// </summary>
-    /// <returns>List of notes</returns>
+    /// <returns>List of notes with summaries</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<NoteResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<NoteListResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<NoteResponse>>> GetAllNotes(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<IEnumerable<NoteListResponse>>> GetAllNotes(CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
 
@@ -215,6 +223,123 @@ public class NotesController : ControllerBase
         return result.Match<ActionResult>(
             deletedCount => Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} note(s)" }),
             error => ResultExtensions.ToErrorActionResult(error));
+    }
+
+    // =========================================================================
+    // Note Summary Generation Endpoints
+    // =========================================================================
+
+    /// <summary>
+    /// Generate AI summaries for notes that don't have them.
+    /// </summary>
+    /// <param name="request">Request containing optional note IDs to generate summaries for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Summary generation results</returns>
+    [HttpPost("generate-summaries")]
+    [ProducesResponseType(typeof(GenerateSummariesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<GenerateSummariesResponse>> GenerateSummaries(
+        [FromBody] GenerateSummariesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (!_summaryService.IsEnabled)
+        {
+            return BadRequest(new { error = "Note summary generation is disabled" });
+        }
+
+        var response = new GenerateSummariesResponse();
+        var userNotes = await _noteRepository.GetByUserIdAsync(userId);
+        var notesList = userNotes.ToList();
+
+        // If specific note IDs provided, filter to those
+        IEnumerable<Core.Entities.Note> notesToProcess;
+        if (request.NoteIds.Count > 0)
+        {
+            var requestedIds = new HashSet<string>(request.NoteIds);
+            notesToProcess = notesList.Where(n => requestedIds.Contains(n.Id));
+        }
+        else
+        {
+            // Process notes without summaries
+            notesToProcess = notesList.Where(n => string.IsNullOrEmpty(n.Summary));
+        }
+
+        foreach (var note in notesToProcess)
+        {
+            response.TotalProcessed++;
+
+            // Skip if already has summary (unless specifically requested)
+            if (!string.IsNullOrEmpty(note.Summary) && request.NoteIds.Count == 0)
+            {
+                response.SkippedCount++;
+                response.Results.Add(new SummaryGenerationResult
+                {
+                    NoteId = note.Id,
+                    Title = note.Title,
+                    Success = false,
+                    Skipped = true,
+                    Summary = note.Summary
+                });
+                continue;
+            }
+
+            try
+            {
+                var summary = await _summaryService.GenerateSummaryAsync(
+                    note.Title,
+                    note.Content,
+                    note.Tags,
+                    cancellationToken);
+
+                if (!string.IsNullOrEmpty(summary))
+                {
+                    // Update the note with the summary
+                    note.Summary = summary;
+                    await _noteRepository.UpdateAsync(note.Id, note);
+
+                    response.SuccessCount++;
+                    response.Results.Add(new SummaryGenerationResult
+                    {
+                        NoteId = note.Id,
+                        Title = note.Title,
+                        Success = true,
+                        Summary = summary
+                    });
+                }
+                else
+                {
+                    response.FailureCount++;
+                    response.Results.Add(new SummaryGenerationResult
+                    {
+                        NoteId = note.Id,
+                        Title = note.Title,
+                        Success = false,
+                        Error = "Summary generation returned empty result"
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate summary for note {NoteId}", note.Id);
+                response.FailureCount++;
+                response.Results.Add(new SummaryGenerationResult
+                {
+                    NoteId = note.Id,
+                    Title = note.Title,
+                    Success = false,
+                    Error = ex.Message
+                });
+            }
+        }
+
+        return Ok(response);
     }
 
     // =========================================================================

@@ -26,20 +26,19 @@ interface NotesChartProps {
 }
 
 // Memoized time range button to prevent unnecessary re-renders
-const TimeRangeButton = memo(({ 
-  option, 
-  isSelected, 
-  onClick 
-}: { 
-  option: TimeRangeOption; 
-  isSelected: boolean; 
+const TimeRangeButton = memo(({
+  option,
+  isSelected,
+  onClick
+}: {
+  option: TimeRangeOption;
+  isSelected: boolean;
   onClick: () => void;
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-      isSelected ? 'scale-105' : 'hover:scale-105'
-    }`}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${isSelected ? 'scale-105' : 'hover:scale-105'
+      }`}
     style={{
       backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
       color: isSelected ? '#ffffff' : 'var(--text-secondary)',
@@ -68,9 +67,9 @@ const TimeRangeButton = memo(({
 
 TimeRangeButton.displayName = 'TimeRangeButton';
 
-export function NotesChart({ 
-  chartData, 
-  selectedTimeRange, 
+export function NotesChart({
+  chartData,
+  selectedTimeRange,
   onTimeRangeChange,
   animationDelay = 0,
   isAnimationReady = true,
@@ -83,8 +82,8 @@ export function NotesChart({
     backgroundColor: 'var(--surface-card)',
     borderColor: 'var(--border)',
     // Simpler shadow for WebKit
-    boxShadow: isWebKit 
-      ? 'var(--shadow-lg)' 
+    boxShadow: isWebKit
+      ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
     // Animation properties
     opacity: isAnimationReady ? 1 : 0,
@@ -98,13 +97,13 @@ export function NotesChart({
   }), [isWebKit, isAnimationReady, animationDelay]);
 
   // Glow effect styles - disabled on WebKit
-  const glowStyles = useMemo<CSSProperties>(() => 
-    isWebKit 
-      ? { display: 'none' } 
+  const glowStyles = useMemo<CSSProperties>(() =>
+    isWebKit
+      ? { display: 'none' }
       : {
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-          opacity: 0.2,
-        },
+        background: 'radial-gradient(circle, var(--color-primary), transparent)',
+        opacity: 0.2,
+      },
     [isWebKit]
   );
 
@@ -119,32 +118,32 @@ export function NotesChart({
         style={glowStyles}
         aria-hidden="true"
       />
-      
+
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <svg 
-              className="h-5 w-5" 
-              style={{ color: 'var(--color-brand-600)' }} 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="h-5 w-5"
+              style={{ color: 'var(--color-brand-600)' }}
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <h2 
-              className="text-xl font-semibold" 
+            <h2
+              className="text-xl font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Notes Created Over Time
             </h2>
           </div>
-          
+
           {/* Time Range Filters */}
           <div className="flex items-center gap-1">
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
@@ -157,9 +156,9 @@ export function NotesChart({
             ))}
           </div>
         </div>
-        
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
+
+        <div className="min-w-0">
+          <ResponsiveContainer width="100%" height={192}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis

@@ -5,6 +5,7 @@
 
 export type {
   Note,
+  NoteListItem,
   CreateNoteRequest as CreateNoteInput,
   UpdateNoteRequest as UpdateNoteInput,
   NoteResponse,

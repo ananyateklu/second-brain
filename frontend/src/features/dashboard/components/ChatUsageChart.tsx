@@ -41,20 +41,19 @@ const LINE_LABELS: Record<string, string> = {
 };
 
 // Memoized time range button to prevent unnecessary re-renders
-const TimeRangeButton = memo(({ 
-  option, 
-  isSelected, 
-  onClick 
-}: { 
-  option: TimeRangeOption; 
-  isSelected: boolean; 
+const TimeRangeButton = memo(({
+  option,
+  isSelected,
+  onClick
+}: {
+  option: TimeRangeOption;
+  isSelected: boolean;
   onClick: () => void;
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-      isSelected ? 'scale-105' : 'hover:scale-105'
-    }`}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${isSelected ? 'scale-105' : 'hover:scale-105'
+      }`}
     style={{
       backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
       color: isSelected ? '#ffffff' : 'var(--text-secondary)',
@@ -102,8 +101,8 @@ export function ChatUsageChart({
     backgroundColor: 'var(--surface-card)',
     borderColor: 'var(--border)',
     // Simpler shadow for WebKit
-    boxShadow: isWebKit 
-      ? 'var(--shadow-lg)' 
+    boxShadow: isWebKit
+      ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
     // Animation properties
     opacity: isAnimationReady ? 1 : 0,
@@ -117,13 +116,13 @@ export function ChatUsageChart({
   }), [isWebKit, isAnimationReady, animationDelay]);
 
   // Glow effect styles - disabled on WebKit
-  const glowStyles = useMemo<CSSProperties>(() => 
-    isWebKit 
-      ? { display: 'none' } 
+  const glowStyles = useMemo<CSSProperties>(() =>
+    isWebKit
+      ? { display: 'none' }
       : {
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-          opacity: 0.2,
-        },
+        background: 'radial-gradient(circle, var(--color-primary), transparent)',
+        opacity: 0.2,
+      },
     [isWebKit]
   );
 
@@ -140,32 +139,32 @@ export function ChatUsageChart({
         style={glowStyles}
         aria-hidden="true"
       />
-      
+
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <svg 
-              className="h-5 w-5" 
-              style={{ color: 'var(--color-brand-600)' }} 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="h-5 w-5"
+              style={{ color: 'var(--color-brand-600)' }}
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
               />
             </svg>
-            <h2 
-              className="text-xl font-semibold" 
+            <h2
+              className="text-xl font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Chat Usage Over Time
             </h2>
           </div>
-          
+
           {/* Time Range Filters */}
           <div className="flex items-center gap-1">
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
@@ -178,9 +177,9 @@ export function ChatUsageChart({
             ))}
           </div>
         </div>
-        
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
+
+        <div className="min-w-0">
+          <ResponsiveContainer width="100%" height={192}>
             <LineChart data={chatUsageChartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis
@@ -215,7 +214,7 @@ export function ChatUsageChart({
                 }}
                 labelStyle={{ color: 'var(--text-primary)' }}
                 formatter={(value: number, name: string) => [
-                  `${value}`, 
+                  `${value}`,
                   LINE_LABELS[name] || name
                 ]}
                 // Disable animation on WebKit for smoother tooltips
@@ -226,9 +225,9 @@ export function ChatUsageChart({
                 height={36}
                 iconType="line"
                 formatter={(value) => (
-                    <span style={{ color: 'var(--text-primary)', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '13px' }}>
                     {LINE_LABELS[value] || value}
-                    </span>
+                  </span>
                 )}
               />
               <Line

@@ -84,7 +84,7 @@ export function NotesPage() {
   const openCreateModal = useUIStore((state) => state.openCreateModal);
   const searchQuery = useUIStore((state) => state.searchQuery);
   const searchMode = useUIStore((state) => state.searchMode);
-  
+
   // Use filter state from global store
   const filterState = useBoundStore((state) => state.filterState);
   const notesViewMode = useBoundStore((state) => state.notesViewMode);
@@ -127,7 +127,7 @@ export function NotesPage() {
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
 
-    const query = deferredSearchQuery.trim().toLowerCase();
+    const query = (deferredSearchQuery || '').trim().toLowerCase();
     const hasSearchQuery = query.length > 0;
     const hasDateFilter = filterState.dateFilter !== 'all';
     const hasTagFilter = filterState.selectedTags.length > 0;
@@ -145,9 +145,9 @@ export function NotesPage() {
           case 'oldest':
             return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
           case 'title-asc':
-            return a.title.localeCompare(b.title);
+            return (a.title || '').localeCompare(b.title || '');
           case 'title-desc':
-            return b.title.localeCompare(a.title);
+            return (b.title || '').localeCompare(a.title || '');
           default:
             return 0;
         }
@@ -159,8 +159,8 @@ export function NotesPage() {
     const filtered = notes.filter((note: Note) => {
       // Search query filter
       if (hasSearchQuery) {
-        const titleMatch = note.title.toLowerCase().includes(query);
-        const contentMatch = note.content.toLowerCase().includes(query);
+        const titleMatch = (note.title || '').toLowerCase().includes(query);
+        const contentMatch = (note.content || '').toLowerCase().includes(query);
 
         const searchMatches =
           searchMode === 'title' ? titleMatch :
@@ -219,9 +219,9 @@ export function NotesPage() {
         case 'oldest':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'title-asc':
-          return a.title.localeCompare(b.title);
+          return (a.title || '').localeCompare(b.title || '');
         case 'title-desc':
-          return b.title.localeCompare(a.title);
+          return (b.title || '').localeCompare(a.title || '');
         default:
           return 0;
       }

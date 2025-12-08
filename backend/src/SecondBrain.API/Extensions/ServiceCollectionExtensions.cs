@@ -92,6 +92,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INoteVersionService, NoteVersionService>();
         services.AddScoped<IChatSessionService, ChatSessionService>();
 
+        // AI-powered note summary service for list endpoint optimization
+        services.AddScoped<INoteSummaryService, NoteSummaryService>();
+
         return services;
     }
 
@@ -538,6 +541,7 @@ public static class ServiceCollectionExtensions
         services.Configure<EmbeddingProvidersSettings>(configuration.GetSection(EmbeddingProvidersSettings.SectionName));
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
         services.Configure<PineconeSettings>(configuration.GetSection(PineconeSettings.SectionName));
+        services.Configure<NoteSummarySettings>(configuration.GetSection(NoteSummarySettings.SectionName));
 
         return services;
     }

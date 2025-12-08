@@ -12,5 +12,10 @@ public class UserPreferencesResponse
     public string? OllamaRemoteUrl { get; set; }
     public bool UseRemoteOllama { get; set; } = false;
     public string? RerankingProvider { get; set; }
+
+    // Note Summary settings
+    public bool NoteSummaryEnabled { get; set; } = true;
+    public string? NoteSummaryProvider { get; set; } = "OpenAI";
+    public string? NoteSummaryModel { get; set; } = "gpt-4o-mini";
 }
 

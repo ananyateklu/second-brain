@@ -91,6 +91,18 @@ public class UserPreferences
     [MaxLength(50)]
     public string? RerankingProvider { get; set; }
 
+    // Note Summary settings
+    [Column("note_summary_enabled")]
+    public bool NoteSummaryEnabled { get; set; } = true;
+
+    [Column("note_summary_provider")]
+    [MaxLength(50)]
+    public string? NoteSummaryProvider { get; set; } = "OpenAI";
+
+    [Column("note_summary_model")]
+    [MaxLength(100)]
+    public string? NoteSummaryModel { get; set; } = "gpt-4o-mini";
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

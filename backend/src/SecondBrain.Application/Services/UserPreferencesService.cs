@@ -95,6 +95,16 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.RerankingProvider != null)
             user.Preferences.RerankingProvider = request.RerankingProvider;
 
+        // Note Summary settings
+        if (request.NoteSummaryEnabled.HasValue)
+            user.Preferences.NoteSummaryEnabled = request.NoteSummaryEnabled.Value;
+
+        if (request.NoteSummaryProvider != null)
+            user.Preferences.NoteSummaryProvider = request.NoteSummaryProvider;
+
+        if (request.NoteSummaryModel != null)
+            user.Preferences.NoteSummaryModel = request.NoteSummaryModel;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -129,7 +139,10 @@ public class UserPreferencesService : IUserPreferencesService
             EnableNotifications = preferences.EnableNotifications,
             OllamaRemoteUrl = preferences.OllamaRemoteUrl,
             UseRemoteOllama = preferences.UseRemoteOllama,
-            RerankingProvider = preferences.RerankingProvider
+            RerankingProvider = preferences.RerankingProvider,
+            NoteSummaryEnabled = preferences.NoteSummaryEnabled,
+            NoteSummaryProvider = preferences.NoteSummaryProvider,
+            NoteSummaryModel = preferences.NoteSummaryModel
         };
     }
 }

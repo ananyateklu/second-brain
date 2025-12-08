@@ -1,4 +1,4 @@
-import { Note } from '../types/note';
+import { Note, NoteListItem } from '../types/note';
 import { useUIStore } from '../../../store/ui-store';
 import { useDeleteNote, useArchiveNote, useUnarchiveNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
@@ -9,7 +9,8 @@ import { useState, memo, useMemo } from 'react';
 import { useThemeStore } from '../../../store/theme-store';
 
 interface NoteCardProps {
-  note: Note;
+  /** Note data - can be NoteListItem (summary only) or full Note (with content) */
+  note: Note | NoteListItem;
   variant?: 'full' | 'compact' | 'micro';
   relevanceScore?: number;
   chunkIndex?: number;
@@ -132,10 +133,13 @@ export const NoteCard = memo(({
     }
   };
 
-  // Use parsed content if provided (preferred), otherwise fall back to chunkContent or note content
+  // Use summary if available (preferred for list views), fall back to content/chunkContent
+  // For small variants (compact/micro), prefer summary > content prop > chunkContent > note.content
+  // For full variant, prefer summary > note.content (show full content in edit modal)
+  const noteContent = 'content' in note ? note.content : undefined;
   const displayContent = isSmall
-    ? (content || chunkContent || note.content)
-    : note.content;
+    ? (note.summary || content || chunkContent || noteContent || '')
+    : (note.summary || noteContent || '');
 
   // Use parsed dates if provided, otherwise fall back to note dates
   const displayCreatedOn = createdOn || note.createdAt;
@@ -449,37 +453,37 @@ export const NoteCard = memo(({
             {/* Tags */}
             {displayTags.length > 0 && (
               <div className="flex flex-wrap gap-1">
-              {displayTags.slice(0, isMicro ? 2 : (isCompact ? 2 : 3)).map((tag, index) => (
-                <span
-                  key={`${tag}-${index}`}
-                  className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
-                    }`}
-                  style={{
-                    backgroundColor: isDarkMode
-                      ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                      : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                    color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                    opacity: isDarkMode ? 1 : 0.7,
-                  }}
-                >
-                  <span className="opacity-50 mr-0.5">#</span>{tag}
-                </span>
-              ))}
-              {displayTags.length > (isMicro ? 2 : (isCompact ? 2 : 3)) && (
-                <span
-                  className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
-                    }`}
-                  style={{
-                    backgroundColor: isDarkMode
-                      ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                      : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                    color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                    opacity: isDarkMode ? 1 : 0.7,
-                  }}
-                >
-                  +{displayTags.length - (isMicro ? 2 : (isCompact ? 2 : 3))}
-                </span>
-              )}
+                {displayTags.slice(0, isMicro ? 2 : (isCompact ? 2 : 3)).map((tag, index) => (
+                  <span
+                    key={`${tag}-${index}`}
+                    className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
+                      }`}
+                    style={{
+                      backgroundColor: isDarkMode
+                        ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                      color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                      opacity: isDarkMode ? 1 : 0.7,
+                    }}
+                  >
+                    <span className="opacity-50 mr-0.5">#</span>{tag}
+                  </span>
+                ))}
+                {displayTags.length > (isMicro ? 2 : (isCompact ? 2 : 3)) && (
+                  <span
+                    className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
+                      }`}
+                    style={{
+                      backgroundColor: isDarkMode
+                        ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                      color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                      opacity: isDarkMode ? 1 : 0.7,
+                    }}
+                  >
+                    +{displayTags.length - (isMicro ? 2 : (isCompact ? 2 : 3))}
+                  </span>
+                )}
               </div>
             )}
           </div>

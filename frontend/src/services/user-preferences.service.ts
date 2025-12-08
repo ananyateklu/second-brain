@@ -25,6 +25,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ollamaRemoteUrl: null,
   useRemoteOllama: false,
   rerankingProvider: null,
+  noteSummaryEnabled: true,
+  noteSummaryProvider: 'OpenAI',
+  noteSummaryModel: 'gpt-4o-mini',
 };
 
 /**
@@ -128,6 +131,12 @@ export const userPreferencesService = {
           ? preferences.useRemoteOllama
           : currentPreferences.useRemoteOllama,
       rerankingProvider: preferences.rerankingProvider ?? currentPreferences.rerankingProvider,
+      noteSummaryEnabled:
+        typeof preferences.noteSummaryEnabled === 'boolean'
+          ? preferences.noteSummaryEnabled
+          : currentPreferences.noteSummaryEnabled,
+      noteSummaryProvider: preferences.noteSummaryProvider ?? currentPreferences.noteSummaryProvider,
+      noteSummaryModel: preferences.noteSummaryModel ?? currentPreferences.noteSummaryModel,
     };
   },
 

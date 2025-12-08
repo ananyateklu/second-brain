@@ -73,6 +73,10 @@ export interface UserPreferences {
   ollamaRemoteUrl: string | null;
   useRemoteOllama: boolean;
   rerankingProvider: string | null;
+  // Note Summary settings
+  noteSummaryEnabled: boolean;
+  noteSummaryProvider: string | null;
+  noteSummaryModel: string | null;
 }
 
 /**
@@ -89,5 +93,9 @@ export interface UpdateUserPreferencesRequest {
   ollamaRemoteUrl?: string | null;
   useRemoteOllama?: boolean;
   rerankingProvider?: string | null;
+  // Note Summary settings
+  noteSummaryEnabled?: boolean;
+  noteSummaryProvider?: string | null;
+  noteSummaryModel?: string | null;
 }
 

@@ -4,7 +4,7 @@
  */
 
 import type { StateCreator } from 'zustand';
-import type { Note } from '../features/notes/types/note';
+import type { Note, NoteListItem } from '../features/notes/types/note';
 import type { User, UserPreferences } from '../types/auth';
 import type { VectorStoreProvider } from '../types/rag';
 import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
@@ -100,6 +100,10 @@ export interface SettingsSliceActions {
   setOllamaRemoteUrl: (url: string | null) => void;
   setUseRemoteOllama: (enabled: boolean) => void;
   setRerankingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  // Note Summary settings
+  setNoteSummaryEnabled: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  setNoteSummaryProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setNoteSummaryModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;
@@ -110,6 +114,9 @@ export type SettingsSlice = SettingsSliceState & SettingsSliceActions;
 export interface UISliceState {
   isCreateModalOpen: boolean;
   isEditModalOpen: boolean;
+  /** ID of the note being edited - full note is fetched in the modal */
+  editingNoteId: string | null;
+  /** @deprecated Use editingNoteId instead - kept for backwards compatibility during transition */
   editingNote: Note | null;
   isMobileMenuOpen: boolean;
   isSearchOpen: boolean;
@@ -125,7 +132,8 @@ export interface UISliceState {
 export interface UISliceActions {
   openCreateModal: () => void;
   closeCreateModal: () => void;
-  openEditModal: (note: Note) => void;
+  /** Opens edit modal - accepts full Note, NoteListItem, or just the note ID */
+  openEditModal: (noteOrId: Note | NoteListItem | string) => void;
   closeEditModal: () => void;
   openMobileMenu: () => void;
   closeMobileMenu: () => void;

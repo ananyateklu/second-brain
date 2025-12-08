@@ -50,6 +50,7 @@ export const router = createBrowserRouter([
       ]);
       return null;
     },
+    hydrateFallbackElement: <PageLoader />,
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
@@ -73,6 +74,7 @@ export const router = createBrowserRouter([
       });
       return null;
     },
+    hydrateFallbackElement: <PageLoader />,
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
@@ -110,6 +112,7 @@ export const router = createBrowserRouter([
       });
       return null;
     },
+    hydrateFallbackElement: <PageLoader />,
     element: (
       <ProtectedRoute>
         <ErrorBoundary>

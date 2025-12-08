@@ -40,22 +40,22 @@ public class NotesControllerTests
         var userId = "user-123";
         SetupAuthenticatedUser(userId);
 
-        var notes = new List<NoteResponse>
+        var notes = new List<NoteListResponse>
         {
-            CreateNoteResponse("note-1", userId, "First Note"),
-            CreateNoteResponse("note-2", userId, "Second Note")
+            CreateNoteListResponse("note-1", "First Note"),
+            CreateNoteListResponse("note-2", "Second Note")
         };
 
         _mockMediator
             .Setup(m => m.Send(It.IsAny<GetAllNotesQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<IEnumerable<NoteResponse>>.Success(notes));
+            .ReturnsAsync(Result<IEnumerable<NoteListResponse>>.Success(notes));
 
         // Act
         var result = await _sut.GetAllNotes();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var returnedNotes = okResult.Value.Should().BeAssignableTo<IEnumerable<NoteResponse>>().Subject;
+        var returnedNotes = okResult.Value.Should().BeAssignableTo<IEnumerable<NoteListResponse>>().Subject;
         returnedNotes.Should().HaveCount(2);
     }
 
@@ -500,6 +500,21 @@ public class NotesControllerTests
             UserId = userId,
             Title = title,
             Content = $"Content for {title}",
+            Tags = new List<string>(),
+            IsArchived = false,
+            Source = "web",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static NoteListResponse CreateNoteListResponse(string id, string title)
+    {
+        return new NoteListResponse
+        {
+            Id = id,
+            Title = title,
+            Summary = $"Summary for {title}",
             Tags = new List<string>(),
             IsArchived = false,
             Source = "web",

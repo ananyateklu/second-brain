@@ -3,7 +3,7 @@ import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
 import { useUIStore } from '../../../store/ui-store';
-import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotes } from '../hooks/use-notes-query';
+import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotes, useNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-form';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { useThemeStore } from '../../../store/theme-store';
@@ -12,8 +12,15 @@ import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
 
 export function EditNoteModal() {
   const isOpen = useUIStore((state) => state.isEditModalOpen);
-  const editingNote = useUIStore((state) => state.editingNote);
+  const editingNoteId = useUIStore((state) => state.editingNoteId);
   const closeModal = useUIStore((state) => state.closeEditModal);
+
+  // Fetch the full note with content when modal is open and we have an ID
+  const { data: fetchedNote, isLoading: isLoadingNote, error: noteError } = useNote(editingNoteId ?? '');
+
+  // The full note to edit (fetched from API)
+  const editingNote = fetchedNote ?? null;
+
   const updateNoteMutation = useUpdateNote();
   const archiveNoteMutation = useArchiveNote();
   const unarchiveNoteMutation = useUnarchiveNote();
@@ -133,7 +140,70 @@ export function EditNoteModal() {
     }
   }, [isOpen, reset]);
 
-  if (!editingNote) return null;
+  // Don't render if modal is not open or no note ID
+  if (!isOpen || !editingNoteId) return null;
+
+  // Show loading state while fetching full note
+  if (isLoadingNote) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={closeModal}
+        title="Edit Note"
+        maxWidth="max-w-[80vw]"
+        className="h-[85vh] flex flex-col"
+        icon={
+          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        }
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="w-8 h-8 border-2 rounded-full animate-spin"
+              style={{
+                borderColor: 'var(--border)',
+                borderTopColor: 'var(--color-brand-500)',
+              }}
+            />
+            <p style={{ color: 'var(--text-secondary)' }}>Loading note...</p>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Show error state if note fetch failed
+  if (noteError || !editingNote) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={closeModal}
+        title="Edit Note"
+        maxWidth="max-w-[80vw]"
+        className="h-[85vh] flex flex-col"
+        icon={
+          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        }
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-error)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p style={{ color: 'var(--text-primary)' }}>Failed to load note</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+              {noteError instanceof Error ? noteError.message : 'The note could not be found'}
+            </p>
+            <Button variant="secondary" onClick={closeModal}>Close</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

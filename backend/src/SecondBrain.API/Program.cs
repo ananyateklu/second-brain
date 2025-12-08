@@ -444,6 +444,7 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     // 7. AddSoftDeleteSupport - adds soft delete columns
     // 8. AddEmbeddingFieldsToIndexingJobs - adds embedding_provider and embedding_model to indexing_jobs
     // 9. AddRerankingProviderToUserPreferences - adds reranking_provider to user_preferences
+    // 10. AddNoteSummarySettings - adds summary to notes, note_summary_* columns to user_preferences
 
     var commands = new[]
     {
@@ -551,7 +552,16 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         "ALTER TABLE indexing_jobs ADD COLUMN IF NOT EXISTS embedding_model character varying(100) NOT NULL DEFAULT ''",
         
         // === AddRerankingProviderToUserPreferences ===
-        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS reranking_provider character varying(50)"
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS reranking_provider character varying(50)",
+        
+        // === AddNoteSummarySettings ===
+        // Add summary column to notes table
+        "ALTER TABLE notes ADD COLUMN IF NOT EXISTS summary text",
+        
+        // Add note summary user preference columns
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_enabled boolean NOT NULL DEFAULT TRUE",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_provider character varying(50) DEFAULT 'OpenAI'",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_model character varying(100) DEFAULT 'gpt-4o-mini'"
     };
 
     var allSucceeded = true;

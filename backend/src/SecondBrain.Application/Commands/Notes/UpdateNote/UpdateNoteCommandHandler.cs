@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Mappings;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Interfaces;
 
@@ -14,13 +15,16 @@ namespace SecondBrain.Application.Commands.Notes.UpdateNote;
 public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Result<NoteResponse>>
 {
     private readonly INoteRepository _noteRepository;
+    private readonly INoteSummaryService _summaryService;
     private readonly ILogger<UpdateNoteCommandHandler> _logger;
 
     public UpdateNoteCommandHandler(
         INoteRepository noteRepository,
+        INoteSummaryService summaryService,
         ILogger<UpdateNoteCommandHandler> logger)
     {
         _noteRepository = noteRepository;
+        _summaryService = summaryService;
         _logger = logger;
     }
 
@@ -49,6 +53,11 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
                 Error.Forbidden("Access denied to this note"));
         }
 
+        // Store old values for summary regeneration check
+        var oldContent = existingNote.Content;
+        var oldTitle = existingNote.Title;
+        var oldTags = existingNote.Tags.ToList();
+
         // Create an UpdateNoteRequest to use existing mapping logic
         var updateRequest = new UpdateNoteRequest
         {
@@ -61,6 +70,36 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
         };
 
         existingNote.UpdateFrom(updateRequest);
+
+        // Check if summary should be regenerated
+        var shouldRegenerate = _summaryService.ShouldRegenerateSummary(
+            oldContent,
+            existingNote.Content,
+            oldTitle,
+            existingNote.Title,
+            oldTags,
+            existingNote.Tags);
+
+        if (shouldRegenerate)
+        {
+            _logger.LogDebug("Regenerating summary for note: {NoteId}", request.NoteId);
+            existingNote.Summary = await _summaryService.GenerateSummaryAsync(
+                existingNote.Title,
+                existingNote.Content,
+                existingNote.Tags,
+                cancellationToken);
+        }
+        // If note has no summary yet and summary service is enabled, generate one
+        else if (string.IsNullOrEmpty(existingNote.Summary) && _summaryService.IsEnabled)
+        {
+            _logger.LogDebug("Generating initial summary for note without summary: {NoteId}", request.NoteId);
+            existingNote.Summary = await _summaryService.GenerateSummaryAsync(
+                existingNote.Title,
+                existingNote.Content,
+                existingNote.Tags,
+                cancellationToken);
+        }
+
         var updatedNote = await _noteRepository.UpdateAsync(request.NoteId, existingNote);
 
         if (updatedNote == null)
@@ -69,7 +108,10 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
                 new Error("UpdateFailed", "Failed to update the note"));
         }
 
-        _logger.LogInformation("Note updated successfully. NoteId: {NoteId}", request.NoteId);
+        _logger.LogInformation(
+            "Note updated successfully. NoteId: {NoteId}, SummaryRegenerated: {Regenerated}",
+            request.NoteId,
+            shouldRegenerate);
 
         return Result<NoteResponse>.Success(updatedNote.ToResponse());
     }

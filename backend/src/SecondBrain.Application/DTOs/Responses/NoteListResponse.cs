@@ -1,16 +1,17 @@
 namespace SecondBrain.Application.DTOs.Responses;
 
 /// <summary>
-/// Response model containing full note data (used for get-by-id endpoint)
+/// Lightweight response model for note list endpoints.
+/// Contains summary instead of full content for improved performance.
 /// </summary>
-public sealed class NoteResponse
+public sealed class NoteListResponse
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
 
     /// <summary>
     /// AI-generated summary of the note (considering title, tags, and content).
+    /// Used instead of full content for list views.
     /// </summary>
     public string? Summary { get; set; }
 
@@ -18,9 +19,6 @@ public sealed class NoteResponse
     public DateTime UpdatedAt { get; set; }
     public List<string> Tags { get; set; } = new();
     public bool IsArchived { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public string Source { get; set; } = "web";
-    public string? ExternalId { get; set; }
     public string? Folder { get; set; }
+    public string Source { get; set; } = "web";
 }
-

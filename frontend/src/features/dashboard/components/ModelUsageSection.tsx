@@ -42,20 +42,19 @@ interface ModelUsageSectionProps {
 }
 
 // Memoized time range button to prevent unnecessary re-renders
-const TimeRangeButton = memo(({ 
-  option, 
-  isSelected, 
-  onClick 
-}: { 
-  option: TimeRangeOption; 
-  isSelected: boolean; 
+const TimeRangeButton = memo(({
+  option,
+  isSelected,
+  onClick
+}: {
+  option: TimeRangeOption;
+  isSelected: boolean;
   onClick: () => void;
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
-      isSelected ? 'scale-105' : 'hover:scale-105'
-    }`}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${isSelected ? 'scale-105' : 'hover:scale-105'
+      }`}
     style={{
       backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
       color: isSelected ? '#ffffff' : 'var(--text-secondary)',
@@ -85,13 +84,13 @@ const TimeRangeButton = memo(({
 TimeRangeButton.displayName = 'TimeRangeButton';
 
 // Memoized legend button
-const LegendButton = memo(({ 
-  entry, 
-  isHidden, 
-  onClick 
-}: { 
-  entry: { name: string; originalName: string; value: number; color: string }; 
-  isHidden: boolean; 
+const LegendButton = memo(({
+  entry,
+  isHidden,
+  onClick
+}: {
+  entry: { name: string; originalName: string; value: number; color: string };
+  isHidden: boolean;
   onClick: () => void;
 }) => (
   <button
@@ -122,13 +121,13 @@ const LegendButton = memo(({
       className="w-3 h-3 rounded-full flex-shrink-0"
       style={{ backgroundColor: entry.color }}
     />
-    <span 
+    <span
       className="text-xs font-medium"
       style={{ color: 'var(--text-primary)' }}
     >
       {entry.name}
     </span>
-    <span 
+    <span
       className="text-xs"
       style={{ color: 'var(--text-secondary)' }}
     >
@@ -139,8 +138,8 @@ const LegendButton = memo(({
 
 LegendButton.displayName = 'LegendButton';
 
-export function ModelUsageSection({ 
-  modelUsageData, 
+export function ModelUsageSection({
+  modelUsageData,
   colors,
   getFilteredModelUsageData,
   animationDelay = 0,
@@ -157,8 +156,8 @@ export function ModelUsageSection({
     backgroundColor: 'var(--surface-card)',
     borderColor: 'var(--border)',
     // Simpler shadow for WebKit
-    boxShadow: isWebKit 
-      ? 'var(--shadow-lg)' 
+    boxShadow: isWebKit
+      ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
     // Animation properties
     opacity: isAnimationReady ? 1 : 0,
@@ -172,13 +171,13 @@ export function ModelUsageSection({
   }), [isWebKit, isAnimationReady, animationDelay]);
 
   // Glow effect styles - disabled on WebKit
-  const glowStyles = useMemo<CSSProperties>(() => 
-    isWebKit 
-      ? { display: 'none' } 
+  const glowStyles = useMemo<CSSProperties>(() =>
+    isWebKit
+      ? { display: 'none' }
       : {
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-          opacity: 0.2,
-        },
+        background: 'radial-gradient(circle, var(--color-primary), transparent)',
+        opacity: 0.2,
+      },
     [isWebKit]
   );
 
@@ -278,18 +277,18 @@ export function ModelUsageSection({
   }) => {
     if (!entry.percent || entry.percent < 0.05) return '';
     if (!entry.name) return '';
-    
-    const truncatedName = entry.name.length > 12 
-      ? entry.name.substring(0, 10) + '...' 
+
+    const truncatedName = entry.name.length > 12
+      ? entry.name.substring(0, 10) + '...'
       : entry.name;
-    
-    if (entry.cx !== undefined && entry.cy !== undefined && entry.midAngle !== undefined && 
-        entry.innerRadius !== undefined && entry.outerRadius !== undefined) {
+
+    if (entry.cx !== undefined && entry.cy !== undefined && entry.midAngle !== undefined &&
+      entry.innerRadius !== undefined && entry.outerRadius !== undefined) {
       const RADIAN = Math.PI / 180;
       const radius = entry.innerRadius + (entry.outerRadius - entry.innerRadius) * 0.5;
       const x = entry.cx + radius * Math.cos(-entry.midAngle * RADIAN);
       const y = entry.cy + radius * Math.sin(-entry.midAngle * RADIAN);
-      
+
       return (
         <text
           x={x}
@@ -307,7 +306,7 @@ export function ModelUsageSection({
         </text>
       );
     }
-    
+
     return `${truncatedName} ${(entry.percent * 100).toFixed(0)}%`;
   };
 
@@ -325,32 +324,32 @@ export function ModelUsageSection({
           style={glowStyles}
           aria-hidden="true"
         />
-        
+
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <svg 
-                className="h-5 w-5" 
-                style={{ color: 'var(--color-brand-600)' }} 
-                fill="none" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="h-5 w-5"
+                style={{ color: 'var(--color-brand-600)' }}
+                fill="none"
+                viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 />
               </svg>
-              <h3 
-                className="text-lg font-semibold" 
+              <h3
+                className="text-lg font-semibold"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Model Usage Distribution
               </h3>
             </div>
-            
+
             {/* Time Range Filters */}
             <div className="flex items-center gap-1">
               {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
@@ -366,7 +365,7 @@ export function ModelUsageSection({
               ))}
             </div>
           </div>
-          
+
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Models by Provider - Left Col */}
@@ -447,17 +446,17 @@ export function ModelUsageSection({
 
               {/* Charts - Right 2 Cols */}
               <div className="lg:col-span-2 flex flex-col gap-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-56">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Pie Chart - Conversations */}
-                  <div className="flex flex-col h-full">
-                    <h4 
-                      className="text-sm font-medium text-center mb-2" 
+                  <div className="flex flex-col min-w-0">
+                    <h4
+                      className="text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Conversation
                     </h4>
-                    <div className="flex-1 min-h-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="min-w-0">
+                      <ResponsiveContainer width="100%" height={200}>
                         <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                           <Pie
                             data={dataWithColors.map(({ name, value }) => ({ name, value }))}
@@ -488,7 +487,7 @@ export function ModelUsageSection({
                           </Pie>
                           <Tooltip
                             content={
-                              <PieChartTooltip 
+                              <PieChartTooltip
                                 isTokenUsage={false}
                                 modelDataMap={modelDataMap}
                                 totalConversations={visibleTotalConversations}
@@ -504,15 +503,15 @@ export function ModelUsageSection({
                   </div>
 
                   {/* Pie Chart - Token Usage */}
-                  <div className="flex flex-col h-full">
-                    <h4 
-                      className="text-sm font-medium text-center mb-2" 
+                  <div className="flex flex-col min-w-0">
+                    <h4
+                      className="text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Token Usage
                     </h4>
-                    <div className="flex-1 min-h-0">
-                      <ResponsiveContainer width="100%" height="100%">
+                    <div className="min-w-0">
+                      <ResponsiveContainer width="100%" height={200}>
                         <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                           <Pie
                             data={dataWithColors
@@ -548,7 +547,7 @@ export function ModelUsageSection({
                           </Pie>
                           <Tooltip
                             content={
-                              <PieChartTooltip 
+                              <PieChartTooltip
                                 isTokenUsage={true}
                                 modelDataMap={modelDataMap}
                                 totalConversations={visibleTotalConversations}
@@ -565,12 +564,12 @@ export function ModelUsageSection({
                 </div>
 
                 {/* Interactive Legend */}
-                <div 
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]" 
-                        style={{
-                    backgroundColor: 'var(--surface-elevated)', 
-                    scrollbarWidth: 'thin', 
-                    scrollbarColor: 'var(--border) transparent' 
+                <div
+                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'var(--border) transparent'
                   }}
                 >
                   {dataWithColors.map((entry) => (
