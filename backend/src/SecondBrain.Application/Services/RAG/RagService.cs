@@ -452,46 +452,75 @@ ANSWER:";
     {
         var contextParts = new List<string>();
 
-        for (int i = 0; i < searchResults.Count && i < _settings.TopK; i++)
-        {
-            var result = searchResults[i];
-            var reranked = rerankedResults.FirstOrDefault(r => r.Id == result.Id);
-            var parsedNote = NoteContentParser.Parse(result.Content);
-
-            var scoreInfo = reranked != null && reranked.WasReranked
-                ? $"Relevance: {reranked.RelevanceScore:F1}/10, Semantic: {reranked.VectorScore:F2}"
-                : $"Relevance Score: {result.SimilarityScore:F2}";
-
-            // Determine content to show - use parsed content, or fall back to raw content if empty
-            var contentToShow = parsedNote.Content;
-            if (string.IsNullOrWhiteSpace(contentToShow))
+        // Group chunks by NoteId to present consolidated notes to the AI
+        // This prevents the AI from seeing multiple chunks as separate "duplicate" notes
+        var groupedNotes = searchResults
+            .GroupBy(r => r.NoteId)
+            .Select(g =>
             {
-                // The note might not have a "Content:" section (e.g., notes with only titles)
-                // Fall back to showing the raw stored content, which includes metadata
-                // Strip the metadata prefixes we already show separately
-                contentToShow = ExtractFallbackContent(result.Content);
-                if (string.IsNullOrWhiteSpace(contentToShow))
+                // Get the chunk with the highest similarity score for metadata
+                var bestChunk = g.OrderByDescending(r => r.SimilarityScore).First();
+                // Get all chunks ordered by chunk index for content assembly
+                var orderedChunks = g.OrderBy(r => r.ChunkIndex).ToList();
+                // Find the best reranked result for this note
+                var bestReranked = rerankedResults
+                    .Where(r => r.NoteId == g.Key)
+                    .OrderByDescending(r => r.RelevanceScore)
+                    .FirstOrDefault();
+
+                return new
                 {
-                    contentToShow = "(No content available - this note may only have a title)";
-                }
+                    NoteId = g.Key,
+                    BestChunk = bestChunk,
+                    OrderedChunks = orderedChunks,
+                    BestReranked = bestReranked,
+                    BestScore = bestReranked?.RelevanceScore ?? g.Max(r => r.SimilarityScore),
+                    ChunkCount = g.Count()
+                };
+            })
+            .OrderByDescending(g => g.BestScore)
+            .Take(_settings.TopK)
+            .ToList();
+
+        for (int i = 0; i < groupedNotes.Count; i++)
+        {
+            var noteGroup = groupedNotes[i];
+            var bestChunk = noteGroup.BestChunk;
+            var parsedNote = NoteContentParser.Parse(bestChunk.Content);
+
+            // Build score info from the best reranked result or fall back to similarity score
+            var scoreInfo = noteGroup.BestReranked != null && noteGroup.BestReranked.WasReranked
+                ? $"Relevance: {noteGroup.BestReranked.RelevanceScore:F1}/10, Semantic: {noteGroup.BestReranked.VectorScore:F2}"
+                : $"Relevance Score: {bestChunk.SimilarityScore:F2}";
+
+            // Add chunk count indicator if multiple chunks were retrieved
+            var chunkIndicator = noteGroup.ChunkCount > 1
+                ? $" ({noteGroup.ChunkCount} chunks)"
+                : "";
+
+            // Combine content from all chunks in order
+            var combinedContent = CombineChunkContents(noteGroup.OrderedChunks);
+            if (string.IsNullOrWhiteSpace(combinedContent))
+            {
+                combinedContent = "(No content available - this note may only have a title)";
             }
 
             // Get tags - prefer parsed tags, fall back to result.NoteTags
             var tagsToShow = parsedNote.Tags?.Any() == true
                 ? parsedNote.Tags
-                : result.NoteTags;
+                : bestChunk.NoteTags;
 
             // Include AI-generated summary if available (provides semantic understanding)
-            var summaryLine = !string.IsNullOrWhiteSpace(result.NoteSummary)
-                ? $"Summary: {result.NoteSummary}\n"
+            var summaryLine = !string.IsNullOrWhiteSpace(bestChunk.NoteSummary)
+                ? $"Summary: {bestChunk.NoteSummary}\n"
                 : "";
 
             var contextPart = $@"
-=== NOTE {i + 1} ({scoreInfo}) ===
-Title: {parsedNote.Title ?? result.NoteTitle}
+=== NOTE {i + 1}{chunkIndicator} ({scoreInfo}) ===
+Title: {parsedNote.Title ?? bestChunk.NoteTitle}
 {summaryLine}{(tagsToShow?.Any() == true ? $"Tags: {string.Join(", ", tagsToShow)}\n" : "")}{(parsedNote.CreatedDate.HasValue ? $"Created: {parsedNote.CreatedDate:yyyy-MM-dd}\n" : "")}{(parsedNote.UpdatedDate.HasValue ? $"Last Updated: {parsedNote.UpdatedDate:yyyy-MM-dd}\n" : "")}
 Content:
-{contentToShow}
+{combinedContent}
 ";
             contextParts.Add(contextPart);
         }
@@ -505,6 +534,47 @@ Content:
         }
 
         return formattedContext;
+    }
+
+    /// <summary>
+    /// Combines content from multiple chunks of the same note into a single string.
+    /// Chunks are expected to be ordered by ChunkIndex.
+    /// </summary>
+    private string CombineChunkContents(List<VectorSearchResult> orderedChunks)
+    {
+        if (orderedChunks.Count == 0)
+            return string.Empty;
+
+        if (orderedChunks.Count == 1)
+        {
+            var parsedNote = NoteContentParser.Parse(orderedChunks[0].Content);
+            var content = parsedNote.Content;
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                content = ExtractFallbackContent(orderedChunks[0].Content);
+            }
+            return content;
+        }
+
+        // Multiple chunks - combine them with separators
+        var contentParts = new List<string>();
+        foreach (var chunk in orderedChunks)
+        {
+            var parsedNote = NoteContentParser.Parse(chunk.Content);
+            var content = parsedNote.Content;
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                content = ExtractFallbackContent(chunk.Content);
+            }
+
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                contentParts.Add(content);
+            }
+        }
+
+        // Join with a separator that indicates chunk boundaries
+        return string.Join("\n---\n", contentParts);
     }
 
     /// <summary>

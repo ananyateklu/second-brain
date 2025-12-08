@@ -236,6 +236,62 @@ public class StructuredOutputIntegrationTests
             Assert.Single(reranked);
             Assert.False(reranked[0].WasReranked);
         }
+
+        [Fact]
+        public async Task RerankAsync_FiltersOutLowScoreResults()
+        {
+            // Arrange
+            var settingsWithMinScore = new RagSettings
+            {
+                EnableReranking = true,
+                RerankingProvider = "OpenAI",
+                MinRerankScore = 5.0f // Set threshold to 5
+            };
+
+            var mockProvider = new Mock<IAIProvider>();
+            _aiProviderFactoryMock
+                .Setup(f => f.GetProvider("OpenAI"))
+                .Returns(mockProvider.Object);
+
+            var callCount = 0;
+            _structuredOutputServiceMock
+                .Setup(s => s.GenerateAsync<RelevanceScoreResult>(
+                    "OpenAI",
+                    It.IsAny<string>(),
+                    It.IsAny<StructuredOutputOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(() =>
+                {
+                    callCount++;
+                    // Return alternating high and low scores
+                    return new RelevanceScoreResult
+                    {
+                        Score = callCount % 2 == 1 ? 8.0f : 2.0f, // 8, 2, 8, 2
+                        Reasoning = "Test"
+                    };
+                });
+
+            var service = new RerankerService(
+                _aiProviderFactoryMock.Object,
+                Options.Create(settingsWithMinScore),
+                _loggerMock.Object,
+                _structuredOutputServiceMock.Object);
+
+            var results = new List<HybridSearchResult>
+            {
+                new HybridSearchResult { Id = "1", NoteId = "note-1", NoteTitle = "Note 1", Content = "Content 1", VectorScore = 0.9f, RRFScore = 0.5f },
+                new HybridSearchResult { Id = "2", NoteId = "note-2", NoteTitle = "Note 2", Content = "Content 2", VectorScore = 0.8f, RRFScore = 0.4f },
+                new HybridSearchResult { Id = "3", NoteId = "note-3", NoteTitle = "Note 3", Content = "Content 3", VectorScore = 0.7f, RRFScore = 0.3f },
+                new HybridSearchResult { Id = "4", NoteId = "note-4", NoteTitle = "Note 4", Content = "Content 4", VectorScore = 0.6f, RRFScore = 0.2f }
+            };
+
+            // Act
+            var reranked = await service.RerankAsync("test query", results, 5);
+
+            // Assert - Only results with score >= 5.0 should be returned (scores 8.0)
+            Assert.Equal(2, reranked.Count);
+            Assert.All(reranked, r => Assert.True(r.RelevanceScore >= 5.0f));
+        }
     }
 
     #endregion

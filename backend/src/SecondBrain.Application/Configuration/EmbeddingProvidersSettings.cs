@@ -29,12 +29,12 @@ public class GeminiEmbeddingSettings
     public bool Enabled { get; set; } = true;
     public string? ApiKey { get; set; }
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
-    
+
     /// <summary>
     /// Gemini embedding model. Options: text-embedding-004 (768 dims)
     /// </summary>
     public string Model { get; set; } = "text-embedding-004";
-    
+
     /// <summary>
     /// Output dimensions for embeddings. 
     /// text-embedding-004 outputs 768 dimensions natively.
@@ -43,7 +43,7 @@ public class GeminiEmbeddingSettings
     /// Therefore Gemini is NOT compatible with Pinecone (requires 1536).
     /// </summary>
     public int Dimensions { get; set; } = 768;
-    
+
     public int TimeoutSeconds { get; set; } = 30;
 }
 
@@ -51,7 +51,7 @@ public class OllamaEmbeddingSettings
 {
     public bool Enabled { get; set; } = false;
     public string BaseUrl { get; set; } = "http://localhost:11434";
-    
+
     /// <summary>
     /// Ollama embedding model. Common options:
     /// - nomic-embed-text (768 dims)
@@ -60,13 +60,13 @@ public class OllamaEmbeddingSettings
     /// - bge-m3 (1024 dims)
     /// </summary>
     public string Model { get; set; } = "nomic-embed-text";
-    
+
     /// <summary>
     /// Embedding dimensions. Auto-detected for known models.
     /// Note: Ollama models have fixed dimensions and cannot index to Pinecone (requires 1536).
     /// </summary>
     public int Dimensions { get; set; } = 768;
-    
+
     public int TimeoutSeconds { get; set; } = 120;
 }
 
@@ -107,6 +107,13 @@ public class RagSettings
     public bool EnableReranking { get; set; } = true;
     public int InitialRetrievalCount { get; set; } = 20; // Retrieve more, then rerank to TopK
     public string RerankingProvider { get; set; } = "OpenAI"; // Which LLM to use for reranking
+
+    /// <summary>
+    /// Minimum rerank score (0-10) required to include a result.
+    /// Results below this threshold are filtered out, even if fewer than TopK results remain.
+    /// Set to 0 to disable filtering (always return TopK results).
+    /// </summary>
+    public float MinRerankScore { get; set; } = 3.0f;
 
     // Semantic Chunking Settings
     public bool EnableSemanticChunking { get; set; } = true;

@@ -22,6 +22,8 @@ export interface StreamingIndicatorProps {
   outputTokens?: number;
   streamDuration?: number;
   agentModeEnabled?: boolean;
+  /** Whether RAG (Retrieval-Augmented Generation) is enabled for this chat */
+  ragEnabled?: boolean;
   thinkingSteps?: ThinkingStep[];
   toolExecutions?: ToolExecution[];
   processingStatus?: string | null;
@@ -59,6 +61,7 @@ export function StreamingIndicator({
   outputTokens,
   streamDuration,
   agentModeEnabled = false,
+  ragEnabled = false,
   thinkingSteps = [],
   toolExecutions = [],
   processingStatus = null,
@@ -192,6 +195,38 @@ export function StreamingIndicator({
               </div>
               <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Agent thinking...
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading indicator for normal/RAG chat when streaming but no content yet */}
+      {!agentModeEnabled && isStreaming && !streamingMessage && !hasSteps && (
+        <div className="flex justify-start">
+          <div
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
+            style={{
+              backgroundColor: 'var(--surface-card)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-5 h-5 flex-shrink-0">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                  style={{
+                    borderTopColor: 'var(--color-brand-500)',
+                    borderRightColor: 'var(--color-brand-500)',
+                  }}
+                />
+                <div
+                  className="absolute inset-1 rounded-full"
+                  style={{ backgroundColor: 'var(--surface-card)' }}
+                />
+              </div>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {ragEnabled ? 'Searching notes...' : 'Generating response...'}
               </span>
             </div>
           </div>

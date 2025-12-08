@@ -302,6 +302,7 @@ export function ChatPage() {
             grokSearchSources={grokSearchSources}
             codeExecutionResult={codeExecutionResult}
             agentModeEnabled={agentModeEnabled}
+            ragEnabled={ragEnabled}
             userName={user?.displayName}
             isSending={sendMessage.isPending}
             isCreating={isCreating}

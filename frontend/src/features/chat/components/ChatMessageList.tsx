@@ -41,6 +41,8 @@ export interface ChatMessageListProps {
   codeExecutionResult?: CodeExecutionResult | null;
   // Settings
   agentModeEnabled: boolean;
+  /** Whether RAG (Retrieval-Augmented Generation) is enabled for this chat */
+  ragEnabled: boolean;
   // User info
   userName?: string;
   // Loading state
@@ -74,6 +76,7 @@ export function ChatMessageList({
   grokSearchSources = [],
   codeExecutionResult = null,
   agentModeEnabled,
+  ragEnabled,
   userName,
   isSending,
   isCreating,
@@ -170,6 +173,7 @@ export function ChatMessageList({
                 outputTokens={outputTokens}
                 streamDuration={streamDuration}
                 agentModeEnabled={agentModeEnabled}
+                ragEnabled={ragEnabled}
                 thinkingSteps={thinkingSteps}
                 toolExecutions={toolExecutions}
                 processingStatus={processingStatus}

@@ -153,10 +153,11 @@ public class RerankerService : IRerankerService
             rerankedResults.AddRange(batchResults);
         }
 
-        // Sort by relevance score (descending) and assign final ranks
+        // Sort by relevance score (descending) and filter by minimum score threshold
         var sortedResults = rerankedResults
             .OrderByDescending(r => r.RelevanceScore)
             .ThenByDescending(r => r.RRFScore) // Tie-breaker using RRF score
+            .Where(r => r.RelevanceScore >= _settings.MinRerankScore) // Filter out low-relevance results
             .Take(topK)
             .Select((r, i) =>
             {
@@ -166,13 +167,25 @@ public class RerankerService : IRerankerService
             })
             .ToList();
 
+        if (rerankedResults.Count > sortedResults.Count)
+        {
+            var filteredCount = rerankedResults.Count - sortedResults.Count - (rerankedResults.Count - topK > 0 ? rerankedResults.Count - topK : 0);
+            _logger.LogInformation(
+                "Filtered out {FilteredCount} results below minimum rerank score ({MinScore}/10)",
+                Math.Max(0, rerankedResults.Count(r => r.RelevanceScore < _settings.MinRerankScore)),
+                _settings.MinRerankScore);
+        }
+
         stopwatch.Stop();
         activity?.SetTag("rag.rerank.output_count", sortedResults.Count);
         activity?.SetTag("rag.rerank.duration_ms", stopwatch.ElapsedMilliseconds);
+        activity?.SetTag("rag.rerank.min_score_threshold", _settings.MinRerankScore);
+        activity?.SetTag("rag.rerank.filtered_count", rerankedResults.Count(r => r.RelevanceScore < _settings.MinRerankScore));
         if (sortedResults.Any())
         {
             activity?.SetTag("rag.rerank.avg_score", sortedResults.Average(r => r.RelevanceScore));
             activity?.SetTag("rag.rerank.max_score", sortedResults.Max(r => r.RelevanceScore));
+            activity?.SetTag("rag.rerank.min_score", sortedResults.Min(r => r.RelevanceScore));
         }
         activity?.SetStatus(ActivityStatusCode.Ok);
 
