@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Note } from '../types/note';
+import { NoteListItem } from '../../../types/notes';
 import { useThemeStore } from '../../../store/theme-store';
 import { NotesViewMode } from '../../../store/ui-store';
 
@@ -64,7 +64,7 @@ export interface NotesFilterState {
 }
 
 interface NotesFilterProps {
-  notes: Note[];
+  notes: NoteListItem[];
   filterState: NotesFilterState;
   onFilterChange: (filters: NotesFilterState) => void;
   viewMode?: NotesViewMode;

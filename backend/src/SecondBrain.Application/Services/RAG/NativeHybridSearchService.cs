@@ -156,6 +156,7 @@ public class NativeHybridSearchService : INativeHybridSearchService
             Content = r.Content,
             NoteTitle = r.NoteTitle,
             NoteTags = r.NoteTags,
+            NoteSummary = r.NoteSummary,
             ChunkIndex = r.ChunkIndex,
             VectorScore = r.VectorScore,
             BM25Score = r.BM25Score,

@@ -26,6 +26,10 @@ public class BM25SearchResult
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
     public float BM25Score { get; set; }
     public int Rank { get; set; }
@@ -87,6 +91,7 @@ public class BM25SearchService : IBM25SearchService
                     Content = x.Embedding.Content,
                     NoteTitle = x.Embedding.NoteTitle,
                     NoteTags = x.Embedding.NoteTags ?? new List<string>(),
+                    NoteSummary = x.Embedding.NoteSummary,
                     ChunkIndex = x.Embedding.ChunkIndex,
                     BM25Score = x.Score,
                     Rank = index + 1

@@ -5,7 +5,6 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
-import { Note } from '../features/notes/types/note';
 import { NoteListItem } from '../features/notes/components/NoteListItem';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -68,7 +67,7 @@ export function NotesDirectoryPage() {
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
 
-    return notes.filter((note: Note) => {
+    return notes.filter((note) => {
       // Archive filter
       if (archiveFilter === 'archived' && !note.isArchived) return false;
       if (archiveFilter === 'not-archived' && note.isArchived) return false;
@@ -119,26 +118,26 @@ export function NotesDirectoryPage() {
   // Calculate container styles based on fullscreen mode
   const containerStyles = isPageFullscreen
     ? {
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: '100vh',
-        maxHeight: '100vh',
-        position: 'fixed' as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 30,
-        borderRadius: 0,
-      }
+      backgroundColor: 'var(--surface-card)',
+      borderColor: 'var(--border)',
+      boxShadow: 'var(--shadow-2xl)',
+      height: '100vh',
+      maxHeight: '100vh',
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 30,
+      borderRadius: 0,
+    }
     : {
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-      };
+      backgroundColor: 'var(--surface-card)',
+      borderColor: 'var(--border)',
+      boxShadow: 'var(--shadow-2xl)',
+      height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+    };
 
   if (error) {
     return (
@@ -456,10 +455,10 @@ export function NotesDirectoryPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
-          </span>
-            
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
+            </span>
+
             {/* Fullscreen Toggle - Only in Tauri */}
             {isInTauri && (
               <button

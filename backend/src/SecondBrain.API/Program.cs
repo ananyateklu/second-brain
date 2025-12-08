@@ -561,7 +561,11 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         // Add note summary user preference columns
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_enabled boolean NOT NULL DEFAULT TRUE",
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_provider character varying(50) DEFAULT 'OpenAI'",
-        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_model character varying(100) DEFAULT 'gpt-4o-mini'"
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS note_summary_model character varying(100) DEFAULT 'gpt-4o-mini'",
+        
+        // === AddNoteSummaryToEmbeddings ===
+        // Add note_summary column to note_embeddings for improved RAG context
+        "ALTER TABLE note_embeddings ADD COLUMN IF NOT EXISTS note_summary text"
     };
 
     var allSucceeded = true;

@@ -61,6 +61,14 @@ public class NoteEmbedding
     [Column("note_tags", TypeName = "text[]")]
     public List<string> NoteTags { get; set; } = new();
 
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// Stored with embeddings to provide semantic understanding during retrieval.
+    /// </summary>
+    [Column("note_summary")]
+    [MaxLength(1000)]
+    public string? NoteSummary { get; set; }
+
     // Full-text search vector for BM25/hybrid search
     [Column("search_vector")]
     public NpgsqlTsVector? SearchVector { get; set; }

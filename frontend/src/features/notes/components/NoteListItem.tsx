@@ -1,4 +1,4 @@
-import { Note } from '../types/note';
+import { NoteListItem as NoteListItemType } from '../../../types/notes';
 import { useUIStore } from '../../../store/ui-store';
 import { useDeleteNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
@@ -7,7 +7,7 @@ import { useState, memo, useMemo } from 'react';
 import { useThemeStore } from '../../../store/theme-store';
 
 interface NoteListItemProps {
-  note: Note;
+  note: NoteListItemType;
   showDeleteButton?: boolean;
   isBulkMode?: boolean;
   isSelected?: boolean;
@@ -57,12 +57,14 @@ export const NoteListItem = memo(({
       return note.tags;
     }
 
-    if (note.content) {
+    // NoteListItem doesn't have content, so we can't extract tags from content
+    // Tags should come from the tags array or summary if available
+    if (note.summary) {
       const tagPattern = /#([a-zA-Z0-9_-]+)/g;
       const tags: string[] = [];
       let match;
 
-      while ((match = tagPattern.exec(note.content)) !== null) {
+      while ((match = tagPattern.exec(note.summary)) !== null) {
         const tag = match[1];
         if (tag && !tags.includes(tag)) {
           tags.push(tag);
@@ -73,7 +75,7 @@ export const NoteListItem = memo(({
     }
 
     return [];
-  }, [note.tags, note.content]);
+  }, [note.tags, note.summary]);
 
   const getBorderColor = () => {
     if (isBulkMode && isSelected) {
@@ -210,9 +212,8 @@ export const NoteListItem = memo(({
         {showDeleteButton && !isBulkMode && (
           <button
             onClick={(e) => { void handleDelete(e); }}
-            className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${
-              isHovered ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
             style={{
               backgroundColor: 'var(--surface-hover)',
               color: 'var(--text-tertiary)',

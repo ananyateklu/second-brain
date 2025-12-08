@@ -38,6 +38,10 @@ public class RerankedResult
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
 
     // Original scores from hybrid search
@@ -361,6 +365,7 @@ Respond with ONLY a single number between 0 and 10. No explanation.";
             Content = result.Content,
             NoteTitle = result.NoteTitle,
             NoteTags = result.NoteTags,
+            NoteSummary = result.NoteSummary,
             ChunkIndex = result.ChunkIndex,
             VectorScore = result.VectorScore,
             BM25Score = result.BM25Score,

@@ -10,6 +10,10 @@ public class VectorSearchResult
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
     public float SimilarityScore { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
@@ -26,17 +30,17 @@ public class IndexStats
     public DateTime? LastIndexedAt { get; set; }
     public string EmbeddingProvider { get; set; } = string.Empty;
     public string VectorStoreProvider { get; set; } = string.Empty;
-    
+
     /// <summary>
     /// Total number of notes in the system for the user
     /// </summary>
     public int TotalNotesInSystem { get; set; }
-    
+
     /// <summary>
     /// Number of notes that are not indexed in this vector store
     /// </summary>
     public int NotIndexedCount { get; set; }
-    
+
     /// <summary>
     /// Number of notes that are indexed but have been modified since last indexing
     /// </summary>

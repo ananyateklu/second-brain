@@ -144,6 +144,9 @@ describe('auth-store', () => {
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
                 rerankingProvider: null,
+                noteSummaryEnabled: false,
+                noteSummaryProvider: null,
+                noteSummaryModel: null,
             });
 
             // Act
@@ -183,6 +186,9 @@ describe('auth-store', () => {
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
                 rerankingProvider: null,
+                noteSummaryEnabled: false,
+                noteSummaryProvider: null,
+                noteSummaryModel: null,
             });
 
             // Act
@@ -258,6 +264,9 @@ describe('auth-store', () => {
                 ollamaRemoteUrl: null,
                 useRemoteOllama: false,
                 rerankingProvider: null,
+                noteSummaryEnabled: false,
+                noteSummaryProvider: null,
+                noteSummaryModel: null,
             });
 
             // Act

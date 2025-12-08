@@ -76,6 +76,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         ne.content,
                         ne.note_title,
                         ne.note_tags,
+                        ne.note_summary,
                         ne.chunk_index,
                         ts_rank_cd(ne.search_vector, query, 32) AS bm25_score,
                         ts_headline(
@@ -101,6 +102,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         ne.content,
                         ne.note_title,
                         ne.note_tags,
+                        ne.note_summary,
                         ne.chunk_index,
                         ts_rank_cd(
                             ne.search_vector,
@@ -149,9 +151,10 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     Content = reader.GetString(2),
                     NoteTitle = reader.GetString(3),
                     NoteTags = noteTags,
-                    ChunkIndex = reader.GetInt32(5),
-                    BM25Score = reader.GetFloat(6),
-                    HighlightedContent = reader.IsDBNull(7) ? null : reader.GetString(7)
+                    NoteSummary = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    ChunkIndex = reader.GetInt32(6),
+                    BM25Score = reader.GetFloat(7),
+                    HighlightedContent = reader.IsDBNull(8) ? null : reader.GetString(8)
                 });
             }
 
@@ -222,6 +225,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         content,
                         note_title,
                         note_tags,
+                        note_summary,
                         chunk_index,
                         1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
                         ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
@@ -238,6 +242,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         content,
                         note_title,
                         note_tags,
+                        note_summary,
                         chunk_index,
                         ts_rank_cd(search_vector, plainto_tsquery('english', @query), 32) AS bm25_score,
                         ROW_NUMBER() OVER (
@@ -256,6 +261,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     COALESCE(v.content, b.content) AS content,
                     COALESCE(v.note_title, b.note_title) AS note_title,
                     COALESCE(v.note_tags, b.note_tags) AS note_tags,
+                    COALESCE(v.note_summary, b.note_summary) AS note_summary,
                     COALESCE(v.chunk_index, b.chunk_index) AS chunk_index,
                     COALESCE(v.vector_score, 0)::real AS vector_score,
                     COALESCE(b.bm25_score, 0)::real AS bm25_score,
@@ -310,14 +316,15 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     Content = reader.GetString(2),
                     NoteTitle = reader.GetString(3),
                     NoteTags = noteTags,
-                    ChunkIndex = reader.GetInt32(5),
-                    VectorScore = reader.GetFloat(6),
-                    BM25Score = reader.GetFloat(7),
-                    VectorRank = reader.GetInt32(8),
-                    BM25Rank = reader.GetInt32(9),
-                    RRFScore = reader.GetFloat(10),
-                    FoundInVectorSearch = reader.GetBoolean(11),
-                    FoundInBM25Search = reader.GetBoolean(12)
+                    NoteSummary = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    ChunkIndex = reader.GetInt32(6),
+                    VectorScore = reader.GetFloat(7),
+                    BM25Score = reader.GetFloat(8),
+                    VectorRank = reader.GetInt32(9),
+                    BM25Rank = reader.GetInt32(10),
+                    RRFScore = reader.GetFloat(11),
+                    FoundInVectorSearch = reader.GetBoolean(12),
+                    FoundInBM25Search = reader.GetBoolean(13)
                 });
             }
 
@@ -359,6 +366,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     content,
                     note_title,
                     note_tags,
+                    note_summary,
                     chunk_index,
                     1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
                     ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
@@ -402,12 +410,13 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     Content = reader.GetString(2),
                     NoteTitle = reader.GetString(3),
                     NoteTags = noteTags,
-                    ChunkIndex = reader.GetInt32(5),
-                    VectorScore = reader.GetFloat(6),
+                    NoteSummary = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    ChunkIndex = reader.GetInt32(6),
+                    VectorScore = reader.GetFloat(7),
                     BM25Score = 0,
-                    VectorRank = reader.GetInt32(7),
+                    VectorRank = reader.GetInt32(8),
                     BM25Rank = 0,
-                    RRFScore = reader.GetFloat(6), // Use vector score directly
+                    RRFScore = reader.GetFloat(7), // Use vector score directly
                     FoundInVectorSearch = true,
                     FoundInBM25Search = false
                 });

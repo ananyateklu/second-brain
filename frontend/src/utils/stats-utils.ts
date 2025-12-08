@@ -1,4 +1,4 @@
-import { Note } from '../features/notes/types/note';
+import { NoteListItem } from '../types/notes';
 import {
   format,
   parse,
@@ -73,7 +73,7 @@ function getMonthKey(date: Date): string {
 /**
  * Calculate dashboard statistics from notes array
  */
-export function calculateStats(notes: Note[]): DashboardStats {
+export function calculateStats(notes: NoteListItem[]): DashboardStats {
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
   const monthStart = startOfMonth(now);
@@ -114,7 +114,7 @@ export function calculateStats(notes: Note[]): DashboardStats {
  * For longer ranges (>90 days), groups by week or month for better readability
  * Note: "Last N days" includes today, so we subtract N-1 days from today
  */
-export function getChartData(notes: Note[], days = 30): ChartDataPoint[] {
+export function getChartData(notes: NoteListItem[], days = 30): ChartDataPoint[] {
   const now = new Date();
   // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today
   const rangeStart = startOfDay(subDays(now, days - 1));
@@ -132,9 +132,9 @@ export function getChartData(notes: Note[], days = 30): ChartDataPoint[] {
   }
 }
 
-function getMonthlyChartData(notes: Note[], rangeStart: Date, now: Date): ChartDataPoint[] {
+function getMonthlyChartData(notes: NoteListItem[], rangeStart: Date, now: Date): ChartDataPoint[] {
   const dataMap = new Map<string, number>();
-  
+
   // Initialize all months with 0 count
   let currentMonth = startOfMonth(rangeStart);
   while (!isAfter(currentMonth, now)) {
@@ -166,9 +166,9 @@ function getMonthlyChartData(notes: Note[], rangeStart: Date, now: Date): ChartD
     .map(({ date, count }) => ({ date, count }));
 }
 
-function getWeeklyChartData(notes: Note[], rangeStart: Date, now: Date): ChartDataPoint[] {
+function getWeeklyChartData(notes: NoteListItem[], rangeStart: Date, now: Date): ChartDataPoint[] {
   const dataMap = new Map<string, number>();
-  
+
   // Initialize all weeks with 0 count
   let currentWeek = startOfWeek(rangeStart, { weekStartsOn: 0 });
   while (!isAfter(currentWeek, now)) {
@@ -201,12 +201,12 @@ function getWeeklyChartData(notes: Note[], rangeStart: Date, now: Date): ChartDa
     .map(({ date, count }) => ({ date, count }));
 }
 
-function getDailyChartData(notes: Note[], rangeStart: Date, now: Date, days: number): ChartDataPoint[] {
+function getDailyChartData(notes: NoteListItem[], rangeStart: Date, now: Date, days: number): ChartDataPoint[] {
   const dataMap = new Map<string, number>();
-  
+
   // Extend range by 1 day to account for timezone differences
   const rangeEnd = endOfDay(addDays(now, 1));
-  
+
   // Initialize all days in the range with 0 counts
   for (let i = 0; i < days; i++) {
     const date = addDays(rangeStart, i);
@@ -241,7 +241,7 @@ function getDailyChartData(notes: Note[], rangeStart: Date, now: Date, days: num
 /**
  * Get recent notes sorted by updatedAt (most recent first)
  */
-export function getRecentNotes(notes: Note[], limit = 5): Note[] {
+export function getRecentNotes(notes: NoteListItem[], limit = 5): NoteListItem[] {
   return [...notes]
     .sort((a, b) => {
       const dateA = parseISO(a.updatedAt);
@@ -315,7 +315,7 @@ function getMonthlyChatData(
   now: Date
 ): ChatUsageDataPoint[] {
   const dataMap = new Map<string, ChatCounts>();
-  
+
   // Initialize all months
   let currentMonth = startOfMonth(rangeStart);
   while (!isAfter(currentMonth, now)) {
@@ -372,7 +372,7 @@ function getWeeklyChatData(
   now: Date
 ): ChatUsageDataPoint[] {
   const dataMap = new Map<string, ChatCounts>();
-  
+
   // Initialize all weeks
   let currentWeek = startOfWeek(rangeStart, { weekStartsOn: 0 });
   while (!isAfter(currentWeek, now)) {
@@ -381,7 +381,7 @@ function getWeeklyChatData(
   }
 
   // Helper to get week key
-  const getWeekKey = (date: Date): string => 
+  const getWeekKey = (date: Date): string =>
     formatDateKey(startOfWeek(date, { weekStartsOn: 0 }));
 
   // Aggregate counts per week
@@ -434,22 +434,22 @@ function getDailyChatData(
   days: number
 ): ChatUsageDataPoint[] {
   const dataMap = new Map<string, ChatCounts>();
-  
+
   // Extend range by 1 day to account for timezone differences
   const rangeEnd = endOfDay(addDays(now, 1));
-  
+
   // Collect all backend date strings
   const allBackendDates = new Set<string>();
   [dailyRagCounts, dailyNonRagCounts, dailyAgentCounts, dailyImageGenCounts].forEach(counts => {
     Object.keys(counts).forEach(dateStr => allBackendDates.add(dateStr));
   });
-  
+
   // Initialize all days in the range
   for (let i = 0; i < days; i++) {
     const date = addDays(rangeStart, i);
     dataMap.set(formatDateKey(date), emptyCounts());
   }
-  
+
   // Initialize any backend dates in range
   allBackendDates.forEach(dateStr => {
     const backendDate = parseDateKey(dateStr);

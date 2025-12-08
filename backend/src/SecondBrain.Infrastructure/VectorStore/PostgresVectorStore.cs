@@ -55,7 +55,8 @@ public class PostgresVectorStore : IVectorStore
                     @provider AS embedding_provider, 
                     @model AS embedding_model, 
                     @noteTitle AS note_title,
-                    @noteTags AS note_tags, 
+                    @noteTags AS note_tags,
+                    @noteSummary AS note_summary,
                     @noteUpdatedAt AS note_updated_at
                 ) AS source
                 ON target.id = source.id
@@ -70,17 +71,18 @@ public class PostgresVectorStore : IVectorStore
                         embedding_model = source.embedding_model,
                         note_title = source.note_title,
                         note_tags = source.note_tags,
+                        note_summary = source.note_summary,
                         note_updated_at = source.note_updated_at,
                         search_vector = setweight(to_tsvector('english', COALESCE(source.note_title, '')), 'A') ||
                                        setweight(to_tsvector('english', COALESCE(source.content, '')), 'B')
                 WHEN NOT MATCHED THEN
                     INSERT (id, note_id, user_id, chunk_index, content, embedding,
                             embedding_provider, embedding_model, note_title, note_tags,
-                            note_updated_at, created_at, search_vector)
+                            note_summary, note_updated_at, created_at, search_vector)
                     VALUES (source.id, source.note_id, source.user_id, source.chunk_index,
                             source.content, source.embedding, source.embedding_provider,
                             source.embedding_model, source.note_title, source.note_tags,
-                            source.note_updated_at, NOW(),
+                            source.note_summary, source.note_updated_at, NOW(),
                             setweight(to_tsvector('english', COALESCE(source.note_title, '')), 'A') ||
                             setweight(to_tsvector('english', COALESCE(source.content, '')), 'B'))
                 RETURNING merge_action() AS action, id";
@@ -106,6 +108,7 @@ public class PostgresVectorStore : IVectorStore
             command.Parameters.Add(new NpgsqlParameter("@model", NpgsqlDbType.Varchar) { Value = embedding.EmbeddingModel });
             command.Parameters.Add(new NpgsqlParameter("@noteTitle", NpgsqlDbType.Varchar) { Value = embedding.NoteTitle });
             command.Parameters.Add(new NpgsqlParameter("@noteTags", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = embedding.NoteTags?.ToArray() ?? Array.Empty<string>() });
+            command.Parameters.Add(new NpgsqlParameter("@noteSummary", NpgsqlDbType.Text) { Value = embedding.NoteSummary ?? (object)DBNull.Value });
             command.Parameters.Add(new NpgsqlParameter("@noteUpdatedAt", NpgsqlDbType.TimestampTz) { Value = embedding.NoteUpdatedAt });
 
             if (connection.State != System.Data.ConnectionState.Open)
@@ -202,6 +205,7 @@ public class PostgresVectorStore : IVectorStore
                 existingEmbedding.EmbeddingModel = embedding.EmbeddingModel;
                 existingEmbedding.NoteTitle = embedding.NoteTitle;
                 existingEmbedding.NoteTags = embedding.NoteTags;
+                existingEmbedding.NoteSummary = embedding.NoteSummary;
                 existingEmbedding.NoteUpdatedAt = embedding.NoteUpdatedAt;
             }
             else
@@ -250,6 +254,7 @@ public class PostgresVectorStore : IVectorStore
                     existingEmbedding.EmbeddingModel = embedding.EmbeddingModel;
                     existingEmbedding.NoteTitle = embedding.NoteTitle;
                     existingEmbedding.NoteTags = embedding.NoteTags;
+                    existingEmbedding.NoteSummary = embedding.NoteSummary;
                     existingEmbedding.NoteUpdatedAt = embedding.NoteUpdatedAt;
                 }
                 else
@@ -317,6 +322,7 @@ public class PostgresVectorStore : IVectorStore
                 Content = r.Embedding.Content,
                 NoteTitle = r.Embedding.NoteTitle,
                 NoteTags = r.Embedding.NoteTags,
+                NoteSummary = r.Embedding.NoteSummary,
                 ChunkIndex = r.Embedding.ChunkIndex,
                 SimilarityScore = 1 - (float)r.Distance, // Convert distance back to similarity
                 Metadata = new Dictionary<string, object>

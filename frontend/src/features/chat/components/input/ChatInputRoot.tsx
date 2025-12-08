@@ -7,7 +7,7 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { ChatInputContext, type ChatInputContextValue, type ImageGenerationSettings, type ImageModelInfo } from './ChatInputContext';
 import type { FileAttachment } from '../../../../utils/multimodal-models';
-import type { Note } from '../../../notes/types/note';
+import type { NoteListItem } from '../../../../types/notes';
 import type { SuggestedPrompt } from './suggested-prompts-data';
 import { SUGGESTED_PROMPTS } from './suggested-prompts-data';
 import { estimateTokenCount } from '../../../../utils/token-utils';
@@ -167,7 +167,7 @@ export function ChatInputRoot({
     if (!mentionQuery) return notes.slice(0, 5);
     const query = mentionQuery.toLowerCase();
     return notes
-      .filter((note: Note) => note.title.toLowerCase().includes(query))
+      .filter((note) => note.title.toLowerCase().includes(query))
       .slice(0, 5);
   }, [notes, mentionQuery]);
 
@@ -270,7 +270,7 @@ export function ChatInputRoot({
     setMentionStartPos(null);
   }, [onChange]);
 
-  const insertMention = useCallback((note: Note) => {
+  const insertMention = useCallback((note: NoteListItem) => {
     if (mentionStartPos === null) return;
 
     const beforeMention = value.slice(0, mentionStartPos);

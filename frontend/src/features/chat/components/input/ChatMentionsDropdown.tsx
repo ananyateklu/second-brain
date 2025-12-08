@@ -5,16 +5,16 @@
  * Can be used standalone with props or with ChatInputContext
  */
 
-import type { Note } from '../../../notes/types/note';
+import type { NoteListItem } from '../../../../types/notes';
 import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatMentionsDropdownProps {
   /** Notes to display (optional if using context) */
-  notes?: Note[];
+  notes?: NoteListItem[];
   /** Currently selected index (optional if using context) */
   selectedIndex?: number;
   /** Callback when note is selected (optional if using context) */
-  onSelect?: (note: Note) => void;
+  onSelect?: (note: NoteListItem) => void;
 }
 
 export function ChatMentionsDropdown({

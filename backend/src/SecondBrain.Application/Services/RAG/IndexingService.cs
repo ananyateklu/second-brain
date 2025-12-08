@@ -348,7 +348,8 @@ public class IndexingService : IIndexingService
                 CreatedAt = DateTime.UtcNow,
                 NoteUpdatedAt = note.UpdatedAt, // Track note modification for incremental indexing
                 NoteTitle = note.Title,
-                NoteTags = note.Tags
+                NoteTags = note.Tags,
+                NoteSummary = note.Summary // Store AI-generated summary for improved RAG context
             };
 
             embeddings.Add(noteEmbedding);

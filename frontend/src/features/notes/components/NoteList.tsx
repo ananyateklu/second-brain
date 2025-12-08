@@ -1,14 +1,14 @@
 import { memo } from 'react';
 import { NoteCard } from './NoteCard';
 import { NoteListItem } from './NoteListItem';
-import { Note } from '../types/note';
+import { NoteListItem as NoteListItemType } from '../../../types/notes';
 import { NotesViewMode } from '../../../store/ui-store';
 
 // Re-export the virtualized version for performance-critical use cases
 export { VirtualizedNoteList } from './VirtualizedNoteList';
 
 interface NoteListProps {
-  notes: Note[];
+  notes: NoteListItemType[];
   viewMode?: NotesViewMode;
   isBulkMode?: boolean;
   selectedNoteIds?: Set<string>;

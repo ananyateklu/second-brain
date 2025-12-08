@@ -158,6 +158,7 @@ public class RagService : IRagService
                 Content = r.Content,
                 NoteTitle = r.NoteTitle,
                 NoteTags = r.NoteTags,
+                NoteSummary = r.NoteSummary,
                 ChunkIndex = r.ChunkIndex,
                 SimilarityScore = r.FinalScore,
                 Metadata = new Dictionary<string, object>
@@ -480,10 +481,15 @@ ANSWER:";
                 ? parsedNote.Tags
                 : result.NoteTags;
 
+            // Include AI-generated summary if available (provides semantic understanding)
+            var summaryLine = !string.IsNullOrWhiteSpace(result.NoteSummary)
+                ? $"Summary: {result.NoteSummary}\n"
+                : "";
+
             var contextPart = $@"
 === NOTE {i + 1} ({scoreInfo}) ===
 Title: {parsedNote.Title ?? result.NoteTitle}
-{(tagsToShow?.Any() == true ? $"Tags: {string.Join(", ", tagsToShow)}\n" : "")}{(parsedNote.CreatedDate.HasValue ? $"Created: {parsedNote.CreatedDate:yyyy-MM-dd}\n" : "")}{(parsedNote.UpdatedDate.HasValue ? $"Last Updated: {parsedNote.UpdatedDate:yyyy-MM-dd}\n" : "")}
+{summaryLine}{(tagsToShow?.Any() == true ? $"Tags: {string.Join(", ", tagsToShow)}\n" : "")}{(parsedNote.CreatedDate.HasValue ? $"Created: {parsedNote.CreatedDate:yyyy-MM-dd}\n" : "")}{(parsedNote.UpdatedDate.HasValue ? $"Last Updated: {parsedNote.UpdatedDate:yyyy-MM-dd}\n" : "")}
 Content:
 {contentToShow}
 ";

@@ -8,7 +8,7 @@ import { useUIStore } from '../store/ui-store';
 import { useBoundStore } from '../store/bound-store';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
-import { Note } from '../features/notes/types/note';
+import { NoteListItem } from '../types/notes';
 import { toast } from '../hooks/use-toast';
 import {
   startOfDay,
@@ -42,7 +42,7 @@ const getDateBoundaries = () => {
 
 // Optimized filter function
 const applyDateFilter = (
-  note: Note,
+  note: NoteListItem,
   dateFilter: string,
   boundaries: ReturnType<typeof getDateBoundaries>,
   customDateStart?: string,
@@ -156,16 +156,16 @@ export function NotesPage() {
     }
 
     // Apply filters
-    const filtered = notes.filter((note: Note) => {
+    const filtered = notes.filter((note) => {
       // Search query filter
       if (hasSearchQuery) {
         const titleMatch = (note.title || '').toLowerCase().includes(query);
-        const contentMatch = (note.content || '').toLowerCase().includes(query);
+        const summaryMatch = (note.summary || '').toLowerCase().includes(query);
 
         const searchMatches =
           searchMode === 'title' ? titleMatch :
-            searchMode === 'content' ? contentMatch :
-              titleMatch || contentMatch;
+            searchMode === 'content' ? summaryMatch :
+              titleMatch || summaryMatch;
 
         if (!searchMatches) return false;
       }

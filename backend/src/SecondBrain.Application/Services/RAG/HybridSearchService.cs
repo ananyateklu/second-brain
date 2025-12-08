@@ -33,6 +33,10 @@ public class HybridSearchResult
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
 
     // Individual scores
@@ -166,6 +170,7 @@ public class HybridSearchService : IHybridSearchService
             Content = r.Content,
             NoteTitle = r.NoteTitle,
             NoteTags = r.NoteTags,
+            NoteSummary = r.NoteSummary,
             ChunkIndex = r.ChunkIndex,
             VectorScore = r.SimilarityScore,
             VectorRank = index + 1,
@@ -205,6 +210,7 @@ public class HybridSearchService : IHybridSearchService
                     Content = result.Content,
                     NoteTitle = result.NoteTitle,
                     NoteTags = result.NoteTags,
+                    NoteSummary = result.NoteSummary,
                     ChunkIndex = result.ChunkIndex,
                     Metadata = result.Metadata
                 };
@@ -233,6 +239,7 @@ public class HybridSearchService : IHybridSearchService
                     Content = result.Content,
                     NoteTitle = result.NoteTitle,
                     NoteTags = result.NoteTags,
+                    NoteSummary = result.NoteSummary,
                     ChunkIndex = result.ChunkIndex
                 };
                 resultMap[result.Id] = hybrid;

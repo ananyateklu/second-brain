@@ -66,6 +66,13 @@ public class ChunkingService : IChunkingService
             contentParts.Add($"Title: {note.Title}");
         }
 
+        // Add AI-generated summary for semantic understanding
+        // This improves RAG retrieval by providing a concise semantic representation
+        if (!string.IsNullOrWhiteSpace(note.Summary))
+        {
+            contentParts.Add($"Summary: {note.Summary}");
+        }
+
         // Add tags
         if (note.Tags != null && note.Tags.Any())
         {
@@ -92,8 +99,8 @@ public class ChunkingService : IChunkingService
         var enrichedContent = string.Join("\n", contentParts);
 
         _logger.LogDebug(
-            "Built enriched content for note. NoteId: {NoteId}, Title: {Title}, TagCount: {TagCount}, HasDates: {HasDates}, TotalLength: {Length}",
-            note.Id, note.Title, note.Tags?.Count ?? 0, note.CreatedAt != default, enrichedContent.Length);
+            "Built enriched content for note. NoteId: {NoteId}, Title: {Title}, TagCount: {TagCount}, HasSummary: {HasSummary}, HasDates: {HasDates}, TotalLength: {Length}",
+            note.Id, note.Title, note.Tags?.Count ?? 0, !string.IsNullOrWhiteSpace(note.Summary), note.CreatedAt != default, enrichedContent.Length);
 
         return enrichedContent;
     }
@@ -553,7 +560,7 @@ public class ChunkingService : IChunkingService
             {
                 // Can't merge, add pending chunk as-is
                 mergedChunks.Add(pendingChunk);
-                
+
                 if (chunk.TokenCount < minChunkTokens)
                 {
                     pendingChunk = chunk;

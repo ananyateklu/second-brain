@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './lib/router';
-import { PageLoader } from './lib/PageLoader';
 import {
   onNavigateToSettings,
   onShowAboutDialog,
@@ -94,7 +93,7 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} fallbackElement={<PageLoader />} />
+      <RouterProvider router={router} />
       <AboutModal
         isOpen={showAboutModal}
         onClose={() => {

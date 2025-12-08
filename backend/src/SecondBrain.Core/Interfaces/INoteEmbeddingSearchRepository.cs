@@ -12,6 +12,10 @@ public class NativeBM25Result
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
     public float BM25Score { get; set; }
     public string? HighlightedContent { get; set; }
@@ -27,6 +31,10 @@ public class NativeHybridSearchResult
     public string Content { get; set; } = string.Empty;
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
+    /// <summary>
+    /// AI-generated summary of the note for improved RAG context.
+    /// </summary>
+    public string? NoteSummary { get; set; }
     public int ChunkIndex { get; set; }
 
     // Individual scores

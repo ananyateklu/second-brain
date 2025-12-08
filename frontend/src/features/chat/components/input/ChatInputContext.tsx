@@ -9,7 +9,7 @@
 
 import { createContext, useContext, type RefObject } from 'react';
 import type { FileAttachment } from '../../../../utils/multimodal-models';
-import type { Note } from '../../../notes/types/note';
+import type { NoteListItem } from '../../../../types/notes';
 import type { SuggestedPrompt } from './suggested-prompts-data';
 
 export interface ImageGenerationSettings {
@@ -56,8 +56,8 @@ export interface ChatInputContextValue {
   showMentions: boolean;
   mentionQuery: string;
   mentionIndex: number;
-  filteredNotes: Note[];
-  onMentionSelect: (note: Note) => void;
+  filteredNotes: NoteListItem[];
+  onMentionSelect: (note: NoteListItem) => void;
   onMentionIndexChange: (index: number) => void;
 
   // Formatting toolbar
