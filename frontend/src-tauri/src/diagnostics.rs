@@ -135,6 +135,7 @@ pub struct DiagnosticReport {
 
 impl DiagnosticReport {
     /// Generate a diagnostic report
+    #[allow(clippy::too_many_arguments)]
     pub fn generate(
         app_version: String,
         postgres_ready: bool,

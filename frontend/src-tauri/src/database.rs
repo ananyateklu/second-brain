@@ -354,8 +354,7 @@ host    all             all             ::1/128                 trust
                     match self.wait_for_ready_with_backoff() {
                         Ok(()) => {
                             // Create database and enable extensions
-                            self.setup_database()
-                                .map_err(|e| PostgresError::StartFailed(e))?;
+                            self.setup_database().map_err(PostgresError::StartFailed)?;
 
                             log::info!(
                                 "PostgreSQL started successfully on port {} in {}ms",
