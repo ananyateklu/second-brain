@@ -3,14 +3,7 @@ import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
 import { useThemeStore } from '../../../store/theme-store';
-import anthropicLight from '../../../assets/anthropic-light.svg';
-import anthropicDark from '../../../assets/anthropic-dark.svg';
-import googleLogo from '../../../assets/google.svg';
-import ollamaLogo from '../../../assets/ollama.svg';
-import openaiLight from '../../../assets/openai-light.svg';
-import openaiDark from '../../../assets/openai-dark.svg';
-import xaiLight from '../../../assets/xai-light.svg';
-import xaiDark from '../../../assets/xai-dark.svg';
+import { getProviderLogo } from '../../../utils/provider-logos';
 
 /**
  * Custom circular checkbox component with animations
@@ -130,26 +123,6 @@ export function ConversationListItem({
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const isPlaceholder = conversation.id === 'placeholder-new-chat';
   const showCheckbox = isSelectionMode && !isPlaceholder;
-
-  // Get provider logo based on provider name and theme
-  const getProviderLogo = (providerName: string): string | null => {
-    const normalizedName = providerName.toLowerCase();
-
-    // Map provider names to logo IDs
-    if (normalizedName === 'openai') {
-      return isDarkMode ? openaiDark : openaiLight;
-    } else if (normalizedName === 'anthropic' || normalizedName === 'claude') {
-      return isDarkMode ? anthropicDark : anthropicLight;
-    } else if (normalizedName === 'google' || normalizedName === 'gemini') {
-      return googleLogo;
-    } else if (normalizedName === 'ollama') {
-      return ollamaLogo;
-    } else if (normalizedName === 'xai' || normalizedName === 'grok') {
-      return isDarkMode ? xaiDark : xaiLight;
-    }
-
-    return null;
-  };
 
   const handleClick = () => {
     if (isSelectionMode && !isPlaceholder) {
@@ -309,7 +282,7 @@ export function ConversationListItem({
                 }}
               >
                 {(() => {
-                  const logo = getProviderLogo(conversation.provider);
+                  const logo = getProviderLogo(conversation.provider, isDarkMode);
                   return logo ? (
                     <img
                       src={logo}

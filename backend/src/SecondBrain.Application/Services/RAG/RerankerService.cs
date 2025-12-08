@@ -394,13 +394,19 @@ Respond with ONLY a single number between 0 and 10. No explanation.";
     {
         if (!result.WasReranked)
         {
-            return result.RRFScore;
+            // When not reranked, use vector score (cosine similarity) as the final score
+            // This is more meaningful than RRF score which is rank-based and tiny (0.01-0.02)
+            return result.VectorScore;
         }
 
-        // Combine reranking score (normalized to 0-1) with RRF score
+        // Combine reranking score (normalized to 0-1) with vector similarity score
+        // Both are on 0-1 scale, making the combination meaningful
         // Weight reranking heavily since it's more semantically aware
         var normalizedRelevance = result.RelevanceScore / 10.0f;
-        return (normalizedRelevance * 0.7f) + (result.RRFScore * 0.3f);
+
+        // Use vector score (cosine similarity, 0-1) instead of RRF score (rank-based, ~0.01)
+        // This allows perfect matches to achieve scores close to 1.0
+        return (normalizedRelevance * 0.7f) + (result.VectorScore * 0.3f);
     }
 
     private void LogRerankingImpact(

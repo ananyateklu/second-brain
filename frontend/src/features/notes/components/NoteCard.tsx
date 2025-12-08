@@ -259,7 +259,7 @@ export const NoteCard = memo(({
       {isSmall && relevanceScore && relevanceScore > 0.8 && (
         <div
           className="absolute left-0 top-0 bottom-0 w-1 z-10"
-          style={{ backgroundColor: getRelevanceColor(relevanceScore) }}
+          style={{ backgroundColor: getRelevanceBg(relevanceScore) }}
         />
       )}
 

@@ -9,6 +9,7 @@ import { MessageFeedback } from './MessageFeedback';
 export interface MessageBubbleProps {
   message: ChatMessage;
   modelName?: string;
+  provider?: string; // Provider name (e.g., 'OpenAI', 'Anthropic')
   userName?: string;
   hasToolCalls?: boolean;
   hasThinkingContent?: boolean;
@@ -332,6 +333,7 @@ function extractImagePrompt(content: string): string {
 export function MessageBubble({
   message,
   modelName,
+  provider,
   userName,
   hasToolCalls = false,
   hasThinkingContent = false,
@@ -412,6 +414,7 @@ export function MessageBubble({
               outputTokens={message.outputTokens}
               role="user"
               userName={userName}
+              provider={provider}
             />
           </>
         ) : (
@@ -471,6 +474,7 @@ export function MessageBubble({
               }
               role="assistant"
               modelName={modelName}
+              provider={provider}
               durationMs={
                 message.durationMs ??
                 (isLastMessage && agentModeEnabled ? streamingDuration : undefined)

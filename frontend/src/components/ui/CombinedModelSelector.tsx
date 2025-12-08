@@ -2,14 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { formatModelName } from '../../utils/model-name-formatter';
 import { groupModelsByCategory } from '../../utils/model-categorizer';
 import { useThemeStore } from '../../store/theme-store';
-import anthropicLight from '../../assets/anthropic-light.svg';
-import anthropicDark from '../../assets/anthropic-dark.svg';
-import googleLogo from '../../assets/google.svg';
-import ollamaLogo from '../../assets/ollama.svg';
-import openaiLight from '../../assets/openai-light.svg';
-import openaiDark from '../../assets/openai-dark.svg';
-import xaiLight from '../../assets/xai-light.svg';
-import xaiDark from '../../assets/xai-dark.svg';
+import { useProviderLogo, getProviderLogo } from '../../utils/provider-logos';
 
 interface Provider {
   provider: string;
@@ -44,25 +37,8 @@ export function CombinedModelSelector({
   const isBlueTheme = theme === 'blue';
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
-  // Get provider logo based on provider name and theme
-  const getProviderLogo = (providerName: string): string | null => {
-    const normalizedName = providerName.toLowerCase();
-
-    // Map provider names to logo IDs
-    if (normalizedName === 'openai') {
-      return isDarkMode ? openaiDark : openaiLight;
-    } else if (normalizedName === 'anthropic' || normalizedName === 'claude') {
-      return isDarkMode ? anthropicDark : anthropicLight;
-    } else if (normalizedName === 'google' || normalizedName === 'gemini') {
-      return googleLogo;
-    } else if (normalizedName === 'ollama') {
-      return ollamaLogo;
-    } else if (normalizedName === 'xai' || normalizedName === 'grok') {
-      return isDarkMode ? xaiDark : xaiLight;
-    }
-
-    return null;
-  };
+  // Get logo for selected provider using hook
+  const selectedProviderLogo = useProviderLogo(selectedProvider || '');
 
   const selectedProviderData = providers.find((p) => p.provider === selectedProvider);
 
@@ -233,37 +209,29 @@ export function CombinedModelSelector({
         aria-haspopup="listbox"
       >
         {/* Provider logo */}
-        {(() => {
-          if (selectedProvider) {
-            const logo = getProviderLogo(selectedProvider);
-            if (logo) {
-              return (
-                <img
-                  src={logo}
-                  alt={selectedProvider}
-                  className="w-4 h-4 flex-shrink-0 object-contain"
-                />
-              );
-            }
-          }
+        {selectedProvider && selectedProviderLogo ? (
+          <img
+            src={selectedProviderLogo}
+            alt={selectedProvider}
+            className="w-4 h-4 flex-shrink-0 object-contain"
+          />
+        ) : (
           // Fallback icon when no provider selected or logo not found
-          return (
-            <svg
-              className="w-4 h-4 flex-shrink-0 transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-          );
-        })()}
+          <svg
+            className="w-4 h-4 flex-shrink-0 transition-colors"
+            style={{ color: 'var(--text-secondary)' }}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+            />
+          </svg>
+        )}
 
         <span className="truncate flex-1 text-left">
           {selectedProvider && selectedModel ? (
@@ -319,7 +287,7 @@ export function CombinedModelSelector({
             >
               {providers.map((provider) => {
                 const isSelected = provider.provider === selectedProvider;
-                const logo = getProviderLogo(provider.provider);
+                const logo = getProviderLogo(provider.provider, isDarkMode);
                 return (
                   <button
                     key={provider.provider}
@@ -333,8 +301,8 @@ export function CombinedModelSelector({
                   >
                     <span className="relative z-10 flex items-center justify-center gap-1.5">
                       {logo && (
-                        <img 
-                          src={logo} 
+                        <img
+                          src={logo}
                           alt={provider.provider}
                           className="w-2.5 h-2.5 flex-shrink-0 object-contain"
                         />

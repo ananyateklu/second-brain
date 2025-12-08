@@ -1,4 +1,6 @@
 import { formatModelName } from '../utils/model-name-formatter';
+import { useProviderLogo } from '../utils/provider-logos';
+import { useThemeStore } from '../store/theme-store';
 
 // Icon components defined outside the component
 const UserIcon = () => (
@@ -13,23 +15,38 @@ const ModelIcon = () => (
   </svg>
 );
 
-const TokenIcon = () => (
-  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
-  </svg>
-);
+// Theme-aware token icon
+const TokenIcon = () => {
+  const { theme } = useThemeStore();
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const strokeColor = isDarkMode ? 'white' : 'black';
 
-const SpeedIcon = () => (
-  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-  </svg>
-);
+  return (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke={strokeColor} strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+    </svg>
+  );
+};
+
+// Theme-aware speed icon
+const SpeedIcon = () => {
+  const { theme } = useThemeStore();
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const strokeColor = isDarkMode ? 'white' : 'black';
+
+  return (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke={strokeColor} strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+    </svg>
+  );
+};
 
 interface TokenUsageDisplayProps {
   inputTokens?: number;
   outputTokens?: number;
   role: 'user' | 'assistant';
   modelName?: string;
+  provider?: string; // Provider name (e.g., 'OpenAI', 'Anthropic') for showing provider logo
   userName?: string;
   durationMs?: number; // Duration in milliseconds
 }
@@ -39,9 +56,14 @@ export function TokenUsageDisplay({
   outputTokens,
   role,
   modelName,
+  provider,
   userName,
   durationMs
 }: TokenUsageDisplayProps) {
+  // Get provider logo for assistant messages (always call hook, but only use if needed)
+  // Must be called before any early returns to satisfy React hooks rules
+  const providerLogo = useProviderLogo(provider || '');
+
   // Don't render if no token data available
   if (!inputTokens && !outputTokens) {
     return null;
@@ -53,7 +75,6 @@ export function TokenUsageDisplay({
   const tokensPerSecond = role === 'assistant' && outputTokens && durationMs && durationMs > 0
     ? (outputTokens / (durationMs / 1000)).toFixed(1)
     : null;
-
 
   // Extract first name from userName for user messages
   const firstName = userName ? userName.split(' ')[0] : 'User';
@@ -74,7 +95,19 @@ export function TokenUsageDisplay({
     >
       {displayName && (
         <div className="flex items-center gap-1.5">
-          {role === 'user' ? <UserIcon /> : <ModelIcon />}
+          {role === 'user' ? (
+            <UserIcon />
+          ) : (
+            provider && providerLogo ? (
+              <img
+                src={providerLogo}
+                alt={provider}
+                className="w-2.5 h-2.5 flex-shrink-0 object-contain"
+              />
+            ) : (
+              <ModelIcon />
+            )
+          )}
           <span>{displayName}</span>
         </div>
       )}

@@ -19,6 +19,7 @@ export interface StreamingIndicatorProps {
   streamingMessage: string;
   streamingError: Error | null;
   modelName?: string;
+  provider?: string; // Provider name (e.g., 'OpenAI', 'Anthropic')
   outputTokens?: number;
   streamDuration?: number;
   agentModeEnabled?: boolean;
@@ -58,6 +59,7 @@ export function StreamingIndicator({
   streamingMessage,
   streamingError,
   modelName,
+  provider,
   outputTokens,
   streamDuration,
   agentModeEnabled = false,
@@ -272,6 +274,7 @@ export function StreamingIndicator({
               outputTokens={outputTokens}
               role="assistant"
               modelName={modelName}
+              provider={provider}
               durationMs={!isStreaming ? streamDuration : undefined}
             />
           </div>

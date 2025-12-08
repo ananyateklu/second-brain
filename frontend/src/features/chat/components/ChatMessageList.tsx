@@ -170,6 +170,7 @@ export function ChatMessageList({
                 streamingMessage={streamingMessage}
                 streamingError={streamingError}
                 modelName={conversation?.model}
+                provider={conversation?.provider}
                 outputTokens={outputTokens}
                 streamDuration={streamDuration}
                 agentModeEnabled={agentModeEnabled}
@@ -312,6 +313,7 @@ function MessageWithContext({
         <MessageBubble
           message={message}
           modelName={conversation.model}
+          provider={conversation.provider}
           userName={userName}
           hasToolCalls={hasToolCalls}
           hasThinkingContent={hasThinkingContent}
