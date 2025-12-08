@@ -61,7 +61,7 @@ pub async fn load_secrets_async(app_data_dir: std::path::PathBuf) -> Secrets {
 /// Save secrets to file with atomic write (temp file + rename)
 pub fn save_secrets(app_data_dir: &Path, secrets: &Secrets) -> Result<(), String> {
     use std::io::Write;
-    
+
     let secrets_path = app_data_dir.join("secrets.json");
     let temp_path = app_data_dir.join(".secrets.json.tmp");
 
@@ -76,10 +76,10 @@ pub fn save_secrets(app_data_dir: &Path, secrets: &Secrets) -> Result<(), String
     {
         let mut file = std::fs::File::create(&temp_path)
             .map_err(|e| format!("Failed to create temp secrets file: {}", e))?;
-        
+
         file.write_all(json.as_bytes())
             .map_err(|e| format!("Failed to write secrets: {}", e))?;
-        
+
         file.sync_all()
             .map_err(|e| format!("Failed to sync secrets file: {}", e))?;
     }
@@ -248,36 +248,31 @@ async fn set_dock_badge(_app: AppHandle, _badge: Option<String>) -> Result<(), S
 #[tauri::command]
 async fn get_diagnostic_report(app: AppHandle) -> Result<diagnostics::DiagnosticReport, String> {
     let state = app.state::<AppState>();
-    
+
     let app_version = app
         .config()
         .version
         .clone()
         .unwrap_or_else(|| "unknown".to_string());
-    
+
     let postgres_ready = *state.is_postgres_ready.lock().unwrap();
     let postgres_port = *state.postgres_port.lock().unwrap();
     let backend_ready = *state.is_backend_ready.lock().unwrap();
     let backend_port = *state.backend_port.lock().unwrap();
-    
+
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let log_dir = app_data_dir.join("logs");
-    
+
     // Get PostgreSQL bin directory if manager exists
-    let postgres_bin_dir = state
-        .postgres_manager
-        .lock()
-        .unwrap()
-        .as_ref()
-        .map(|_| {
-            // Get the bin directory from the standard locations
-            if cfg!(target_os = "macos") {
-                std::path::PathBuf::from("/opt/homebrew/opt/postgresql@18/bin")
-            } else {
-                std::path::PathBuf::from("/usr/bin")
-            }
-        });
-    
+    let postgres_bin_dir = state.postgres_manager.lock().unwrap().as_ref().map(|_| {
+        // Get the bin directory from the standard locations
+        if cfg!(target_os = "macos") {
+            std::path::PathBuf::from("/opt/homebrew/opt/postgresql@18/bin")
+        } else {
+            std::path::PathBuf::from("/usr/bin")
+        }
+    });
+
     let report = diagnostics::DiagnosticReport::generate(
         app_version,
         postgres_ready,
@@ -288,7 +283,7 @@ async fn get_diagnostic_report(app: AppHandle) -> Result<diagnostics::Diagnostic
         &log_dir,
         postgres_bin_dir.as_deref(),
     );
-    
+
     Ok(report)
 }
 
@@ -297,12 +292,12 @@ async fn get_diagnostic_report(app: AppHandle) -> Result<diagnostics::Diagnostic
 async fn get_recent_logs(app: AppHandle, max_lines: Option<usize>) -> Result<Vec<String>, String> {
     let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     let log_dir = app_data_dir.join("logs");
-    
+
     let lines = max_lines.unwrap_or(100);
-    
+
     // Read from log files
     let mut logs = Vec::new();
-    
+
     if let Ok(entries) = std::fs::read_dir(&log_dir) {
         let mut log_files: Vec<_> = entries
             .filter_map(|e| e.ok())
@@ -325,11 +320,15 @@ async fn get_recent_logs(app: AppHandle, max_lines: Option<usize>) -> Result<Vec
         if let Some(entry) = log_files.first() {
             if let Ok(content) = std::fs::read_to_string(entry.path()) {
                 let file_lines: Vec<_> = content.lines().rev().take(lines).collect();
-                logs = file_lines.into_iter().rev().map(|s| s.to_string()).collect();
+                logs = file_lines
+                    .into_iter()
+                    .rev()
+                    .map(|s| s.to_string())
+                    .collect();
             }
         }
     }
-    
+
     Ok(logs)
 }
 
@@ -408,14 +407,14 @@ async fn get_secrets_path(app: AppHandle) -> Result<String, String> {
 async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
     let overall_timer = StartupTimer::new();
     let state = app.state::<AppState>();
-    
+
     // Reset startup metrics
     *state.startup_metrics.lock().unwrap() = StartupMetrics::new();
 
     // Load cached config if available
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let cached_config = ServiceConfig::load(&app_data_dir);
-        
+
         // Use cached ports if they're available
         if is_port_available(cached_config.postgres_port) {
             *state.postgres_port.lock().unwrap() = cached_config.postgres_port;
@@ -423,16 +422,19 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
         if is_port_available(cached_config.backend_port) {
             *state.backend_port.lock().unwrap() = cached_config.backend_port;
         }
-        
+
         *state.service_config.lock().unwrap() = Some(cached_config);
     }
 
     // Start PostgreSQL first
     let pg_timer = StartupTimer::new();
     let postgres_port = *state.postgres_port.lock().unwrap();
-    
-    StartupEvent::PostgresStarting { port: postgres_port }.emit(app);
-    
+
+    StartupEvent::PostgresStarting {
+        port: postgres_port,
+    }
+    .emit(app);
+
     match start_postgres_internal(app) {
         Ok(()) => {
             let actual_port = *state.postgres_port.lock().unwrap();
@@ -441,7 +443,7 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
                 duration_ms: pg_timer.elapsed_ms(),
             }
             .emit(app);
-            
+
             state.startup_metrics.lock().unwrap().mark_postgres_started(
                 pg_timer.elapsed(),
                 actual_port,
@@ -454,7 +456,7 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
                 port: postgres_port,
             }
             .emit(app);
-            
+
             state.startup_metrics.lock().unwrap().mark_failed(e.clone());
             StartupEvent::StartupFailed { error: e.clone() }.emit(app);
             return Err(e);
@@ -464,9 +466,9 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
     // Then start the backend
     let backend_timer = StartupTimer::new();
     let backend_port = *state.backend_port.lock().unwrap();
-    
+
     StartupEvent::BackendStarting { port: backend_port }.emit(app);
-    
+
     match start_backend_internal(app).await {
         Ok(()) => {
             let actual_port = *state.backend_port.lock().unwrap();
@@ -475,7 +477,7 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
                 duration_ms: backend_timer.elapsed_ms(),
             }
             .emit(app);
-            
+
             state.startup_metrics.lock().unwrap().mark_backend_started(
                 backend_timer.elapsed(),
                 actual_port,
@@ -488,7 +490,7 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
                 port: backend_port,
             }
             .emit(app);
-            
+
             state.startup_metrics.lock().unwrap().mark_failed(e.clone());
             StartupEvent::StartupFailed { error: e.clone() }.emit(app);
             return Err(e);
@@ -497,8 +499,12 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
 
     // Mark complete and cache successful config
     let total_duration = overall_timer.elapsed();
-    state.startup_metrics.lock().unwrap().mark_complete(total_duration);
-    
+    state
+        .startup_metrics
+        .lock()
+        .unwrap()
+        .mark_complete(total_duration);
+
     StartupEvent::AllServicesReady {
         total_duration_ms: overall_timer.elapsed_ms(),
     }
@@ -508,10 +514,10 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let postgres_port = *state.postgres_port.lock().unwrap();
         let backend_port = *state.backend_port.lock().unwrap();
-        
+
         let mut config = ServiceConfig::default();
         config.mark_successful_startup(postgres_port, backend_port);
-        
+
         if let Err(e) = config.save(&app_data_dir) {
             log::warn!("Failed to save service config: {}", e);
         }
@@ -528,7 +534,7 @@ fn start_postgres_internal(app: &AppHandle) -> Result<(), String> {
     // Check if port is available, find alternative if not
     if !is_port_available(port) {
         log::warn!("Port {} is in use, searching for alternative...", port);
-        
+
         StartupEvent::PortConflict {
             port,
             service: "PostgreSQL".to_string(),
@@ -614,8 +620,11 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
 
     // Check if port is available, find alternative if not
     if !is_port_available(backend_port) {
-        log::warn!("Port {} is in use, searching for alternative...", backend_port);
-        
+        log::warn!(
+            "Port {} is in use, searching for alternative...",
+            backend_port
+        );
+
         StartupEvent::PortConflict {
             port: backend_port,
             service: "Backend".to_string(),
@@ -829,7 +838,7 @@ impl Default for HealthCheckConfig {
 async fn wait_for_backend_ready(app: &AppHandle, port: u16) -> Result<(), String> {
     let health_url = format!("http://localhost:{}/api/health", port);
     let config = HealthCheckConfig::default();
-    
+
     // Create client with reasonable timeouts
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
@@ -861,7 +870,7 @@ async fn wait_for_backend_ready(app: &AppHandle, port: u16) -> Result<(), String
 
         // Sleep with current interval
         tokio::time::sleep(tokio::time::Duration::from_millis(current_interval)).await;
-        
+
         // Increase interval with backoff (capped at max)
         current_interval = ((current_interval as f64) * config.backoff_multiplier)
             .min(config.max_interval_ms as f64) as u64;
@@ -960,17 +969,23 @@ fn create_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     // Window controls
     let show = MenuItem::with_id(app, "show", "Show Second Brain", true, None::<&str>)?;
     let hide = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
-    
+
     // Quick actions
     let new_note = MenuItem::with_id(app, "tray_new_note", "New Note", true, None::<&str>)?;
     let new_chat = MenuItem::with_id(app, "tray_new_chat", "New Chat", true, None::<&str>)?;
-    
+
     // Settings and info
     let settings = MenuItem::with_id(app, "settings", "Settings...", true, None::<&str>)?;
     let copy_api_url = MenuItem::with_id(app, "copy_api_url", "Copy API URL", true, None::<&str>)?;
-    
+
     // Service controls submenu
-    let restart_all = MenuItem::with_id(app, "restart_all", "Restart All Services", true, None::<&str>)?;
+    let restart_all = MenuItem::with_id(
+        app,
+        "restart_all",
+        "Restart All Services",
+        true,
+        None::<&str>,
+    )?;
     let restart_backend_item = MenuItem::with_id(
         app,
         "restart_backend",
@@ -985,18 +1000,18 @@ fn create_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
         true,
         None::<&str>,
     )?;
-    
+
     let services_submenu = Submenu::with_items(
         app,
         "Services",
         true,
         &[&restart_all, &restart_backend_item, &restart_db_item],
     )?;
-    
+
     // Folders
     let open_logs = MenuItem::with_id(app, "open_logs", "Open Logs Folder", true, None::<&str>)?;
     let open_data = MenuItem::with_id(app, "open_data", "Open Data Folder", true, None::<&str>)?;
-    
+
     // Quit
     let quit = MenuItem::with_id(app, "quit", "Quit Second Brain", true, None::<&str>)?;
 

@@ -197,7 +197,11 @@ fn get_os_version() -> String {
                 content
                     .lines()
                     .find(|line| line.starts_with("VERSION="))
-                    .map(|line| line.trim_start_matches("VERSION=").trim_matches('"').to_string())
+                    .map(|line| {
+                        line.trim_start_matches("VERSION=")
+                            .trim_matches('"')
+                            .to_string()
+                    })
             })
             .unwrap_or_else(|| "unknown".to_string())
     }
@@ -226,7 +230,9 @@ fn get_postgres_version(postgres_path: &Path) -> Option<String> {
 /// Check if pgvector extension is available
 fn check_pgvector_available(bin_dir: &Path) -> bool {
     // Check common extension directories relative to bin
-    let lib_dir = bin_dir.parent().map(|p| p.join("share/postgresql/extension"));
+    let lib_dir = bin_dir
+        .parent()
+        .map(|p| p.join("share/postgresql/extension"));
 
     if let Some(ref ext_dir) = lib_dir {
         if ext_dir.join("vector.control").exists() {
