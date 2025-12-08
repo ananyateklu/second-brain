@@ -253,38 +253,38 @@ export function AISettings() {
     const totalProviders = AI_PROVIDERS.length;
 
     return (
-        <div className="space-y-6">
-            <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">
-                <div className="space-y-6">
+        <div className="space-y-4">
+            <div className="grid gap-4 xl:grid-cols-[2fr,1fr]">
+                <div className="space-y-4">
                     <section
-                        className="rounded-3xl border p-6 transition-all duration-200 hover:shadow-xl"
+                        className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
                         style={{
                             backgroundColor: 'var(--surface-card)',
                             borderColor: 'var(--border)',
                             boxShadow: 'var(--shadow-lg)',
                         }}
                     >
-                        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                            <div className="flex items-start gap-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                            <div className="flex items-start gap-2">
                                 <div
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
                                     style={{
                                         backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                                         borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
                                     }}
                                 >
-                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.638-1.638l-1.183-.394 1.183-.394a2.25 2.25 0 001.638-1.638l.394-1.183.394 1.183a2.25 2.25 0 001.638 1.638l1.183.394-1.183.394a2.25 2.25 0 00-1.638 1.638z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <span className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--text-secondary)' }}>
+                                    <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
                                         Provider Grid
                                     </span>
-                                    <h3 className="text-xl font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
+                                    <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
                                         Connected AI services
                                     </h3>
-                                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                                         Click a provider to view configuration steps, health, and troubleshooting notes.
                                     </p>
                                 </div>
@@ -356,10 +356,10 @@ export function AISettings() {
                                                 e.currentTarget.style.boxShadow = 'none';
                                             }}
                                         >
-                                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:gap-6">
-                                                <div className="flex items-center gap-3 min-w-0">
+                                            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
+                                                <div className="flex items-center gap-2 min-w-0">
                                                     <div
-                                                        className="relative flex h-12 w-12 items-center justify-center rounded-xl border"
+                                                        className="relative flex h-12 w-12 items-center justify-center rounded-lg border"
                                                         style={{
                                                             borderColor: 'color-mix(in srgb, var(--border) 70%, transparent)',
                                                             backgroundColor: 'color-mix(in srgb, var(--surface-card) 60%, transparent)',
@@ -382,7 +382,7 @@ export function AISettings() {
                                                         />
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                        <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
                                                             {provider.name}
                                                         </p>
                                                         {isHealthLoading ? (
@@ -472,7 +472,7 @@ export function AISettings() {
 
                                             {errorMessage && (
                                                 <p
-                                                    className="mt-3 rounded-xl border px-3 py-2 text-xs"
+                                                    className="mt-3 rounded-lg border px-3 py-2 text-xs"
                                                     style={{
                                                         borderColor: 'color-mix(in srgb, #ef4444 40%, transparent)',
                                                         backgroundColor: 'color-mix(in srgb, #ef4444 6%, transparent)',
@@ -489,127 +489,352 @@ export function AISettings() {
                         </div>
                     </section>
 
-                    <section
-                        className="rounded-3xl border p-6 transition-all duration-200 hover:shadow-xl"
-                        style={{
-                            backgroundColor: 'var(--surface-card)',
-                            borderColor: 'var(--border)',
-                            boxShadow: 'var(--shadow-lg)',
-                        }}
-                    >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                                <div
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                        borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                    }}
-                                >
-                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <span className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--text-secondary)' }}>
-                                        Chat Preference
-                                    </span>
-                                    <h3 className="text-xl font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
-                                        Vector store provider
-                                    </h3>
-                                    <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
-                                        Choose which store powers Retrieval-Augmented responses in chat. Manual indexing can still target multiple stores.
-                                    </p>
-                                </div>
-                            </div>
-                            <span
-                                className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
-                                style={{
-                                    border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                    color: 'var(--color-brand-600)',
-                                }}
-                            >
-                                {isSavingVectorStore ? (
-                                    <>
-                                        <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                        Used in live conversations
-                                    </>
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2 mt-6">
-                            {VECTOR_STORE_OPTIONS.map((option) => {
-                                const isActive = vectorStoreProvider === option.id;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={option.id}
-                                        onClick={() => {
-                                            void (async () => {
-                                                if (!user?.userId) {
-                                                    console.error('User not authenticated');
-                                                    return;
-                                                }
-
-                                                setIsSavingVectorStore(true);
-                                                try {
-                                                    // Update local state first
-                                                    await setVectorStoreProvider(option.id, false);
-
-                                                    // Then sync to backend explicitly with userId
-                                                    await syncPreferencesToBackend(user.userId);
-                                                } catch (error) {
-                                                    console.error('Failed to update vector store provider:', { error });
-                                                    toast.error('Failed to save vector store preference', 'Please try again.');
-                                                } finally {
-                                                    setIsSavingVectorStore(false);
-                                                }
-                                            })();
-                                        }}
-                                        disabled={isSavingVectorStore}
-                                        className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    {/* Vector Store Provider and Reranking Provider - Inline */}
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <section
+                            className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+                            style={{
+                                backgroundColor: 'var(--surface-card)',
+                                borderColor: 'var(--border)',
+                                boxShadow: 'var(--shadow-lg)',
+                            }}
+                        >
+                            <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                                <div className="flex items-start gap-2">
+                                    <div
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
                                         style={{
-                                            backgroundColor: isActive
-                                                ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
-                                                : 'var(--surface-elevated)',
-                                            borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                            color: 'var(--text-primary)',
-                                            boxShadow: isActive
-                                                ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
-                                                : 'none',
-                                            transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
-                                                e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
-                                                e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                                                e.currentTarget.style.borderColor = 'var(--border)';
-                                                e.currentTarget.style.boxShadow = 'none';
-                                            }
+                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
                                         }}
                                     >
-                                        <div className="flex items-start justify-between gap-3 mb-3">
-                                            <div className="flex items-start gap-3 flex-1">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                                            Chat Preference
+                                        </span>
+                                        <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                                            Vector store provider
+                                        </h3>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                            Choose which store powers Retrieval-Augmented responses in chat. Manual indexing can still target multiple stores.
+                                        </p>
+                                    </div>
+                                </div>
+                                <span
+                                    className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
+                                    style={{
+                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
+                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                        color: 'var(--color-brand-600)',
+                                    }}
+                                >
+                                    {isSavingVectorStore ? (
+                                        <>
+                                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            </svg>
+                                            Used in live conversations
+                                        </>
+                                    )}
+                                </span>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2 mt-4">
+                                {VECTOR_STORE_OPTIONS.map((option) => {
+                                    const isActive = vectorStoreProvider === option.id;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={option.id}
+                                            onClick={() => {
+                                                void (async () => {
+                                                    if (!user?.userId) {
+                                                        console.error('User not authenticated');
+                                                        return;
+                                                    }
+
+                                                    setIsSavingVectorStore(true);
+                                                    try {
+                                                        // Update local state first
+                                                        await setVectorStoreProvider(option.id, false);
+
+                                                        // Then sync to backend explicitly with userId
+                                                        await syncPreferencesToBackend(user.userId);
+                                                    } catch (error) {
+                                                        console.error('Failed to update vector store provider:', { error });
+                                                        toast.error('Failed to save vector store preference', 'Please try again.');
+                                                    } finally {
+                                                        setIsSavingVectorStore(false);
+                                                    }
+                                                })();
+                                            }}
+                                            disabled={isSavingVectorStore}
+                                            className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    : 'var(--surface-elevated)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                                                color: 'var(--text-primary)',
+                                                boxShadow: isActive
+                                                    ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
+                                                    : 'none',
+                                                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
+                                                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
+                                                    e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+                                                    e.currentTarget.style.borderColor = 'var(--border)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-start justify-between gap-2 mb-3">
+                                                <div className="flex items-start gap-2 flex-1">
+                                                    <div
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                                                        style={{
+                                                            backgroundColor: isActive
+                                                                ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
+                                                                : 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
+                                                            borderColor: isActive
+                                                                ? 'var(--color-brand-600)'
+                                                                : 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                                        }}
+                                                    >
+                                                        {option.id === 'PostgreSQL' ? (
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                                            </svg>
+                                                        ) : (
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <p className="text-xs font-semibold">{option.label}</p>
+                                                            {option.badge && (
+                                                                <span
+                                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                                                                    style={{
+                                                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
+                                                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                                                        color: 'var(--color-brand-600)',
+                                                                    }}
+                                                                >
+                                                                    {option.badge}
+                                                                </span>
+                                                            )}
+                                                            {/* Show "Not Configured" badge for Pinecone in Tauri mode */}
+                                                            {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
+                                                                <span
+                                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                                                                    style={{
+                                                                        border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)',
+                                                                        backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
+                                                                        color: '#f59e0b',
+                                                                    }}
+                                                                >
+                                                                    Not Configured
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                                            {option.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {/* Setup Pinecone button */}
+                                                {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowPineconeSetup(true);
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5"
+                                                        style={{
+                                                            backgroundColor: 'var(--color-brand-600)',
+                                                            color: 'white',
+                                                        }}
+                                                    >
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                                        </svg>
+                                                        Setup Pinecone
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {option.features.map((feature) => (
+                                                    <span
+                                                        key={feature}
+                                                        className="text-[11px] font-medium px-2.5 py-1 rounded-md flex items-center gap-1"
+                                                        style={{
+                                                            backgroundColor: isActive
+                                                                ? (isDarkMode
+                                                                    ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
+                                                                    : 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)')
+                                                                : (isDarkMode
+                                                                    ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                                                                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)'),
+                                                            color: isActive
+                                                                ? 'var(--color-brand-600)'
+                                                                : (isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)'),
+                                                            opacity: isActive ? 1 : (isDarkMode ? 1 : 0.7),
+                                                        }}
+                                                    >
+                                                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        {feature}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+
+                        <section
+                            className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+                            style={{
+                                backgroundColor: 'var(--surface-card)',
+                                borderColor: 'var(--border)',
+                                boxShadow: 'var(--shadow-lg)',
+                            }}
+                        >
+                            <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                                <div className="flex items-start gap-2">
+                                    <div
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                                        style={{
+                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                        }}
+                                    >
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                                            RAG Enhancement
+                                        </span>
+                                        <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
+                                            Reranking provider
+                                        </h3>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                            Choose which AI provider reranks search results for more relevant RAG responses.
+                                        </p>
+                                    </div>
+                                </div>
+                                <span
+                                    className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
+                                    style={{
+                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
+                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                        color: 'var(--color-brand-600)',
+                                    }}
+                                >
+                                    {isSavingRerankingProvider ? (
+                                        <>
+                                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                            </svg>
+                                            Improves relevance
+                                        </>
+                                    )}
+                                </span>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2 mt-4">
+                                {RERANKING_PROVIDER_OPTIONS.map((option) => {
+                                    const isActive = rerankingProvider === option.id;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={option.id}
+                                            onClick={() => {
+                                                void (async () => {
+                                                    if (!user?.userId) {
+                                                        console.error('User not authenticated');
+                                                        return;
+                                                    }
+
+                                                    setIsSavingRerankingProvider(true);
+                                                    try {
+                                                        await setRerankingProvider(option.id, false);
+                                                        await syncPreferencesToBackend(user.userId);
+                                                    } catch (error) {
+                                                        console.error('Failed to update reranking provider:', { error });
+                                                        toast.error('Failed to save reranking provider', 'Please try again.');
+                                                    } finally {
+                                                        setIsSavingRerankingProvider(false);
+                                                    }
+                                                })();
+                                            }}
+                                            disabled={isSavingRerankingProvider}
+                                            className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    : 'var(--surface-elevated)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                                                color: 'var(--text-primary)',
+                                                boxShadow: isActive
+                                                    ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
+                                                    : 'none',
+                                                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
+                                                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
+                                                    e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (!isActive) {
+                                                    e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+                                                    e.currentTarget.style.borderColor = 'var(--border)';
+                                                    e.currentTarget.style.boxShadow = 'none';
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-start gap-2">
                                                 <div
-                                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
+                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
                                                     style={{
                                                         backgroundColor: isActive
                                                             ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
@@ -619,256 +844,33 @@ export function AISettings() {
                                                             : 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
                                                     }}
                                                 >
-                                                    {option.id === 'PostgreSQL' ? (
-                                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                                                        </svg>
-                                                    ) : (
-                                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                        </svg>
-                                                    )}
+                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                                    </svg>
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <p className="text-sm font-semibold">{option.label}</p>
-                                                        {option.badge && (
-                                                            <span
-                                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                                                                style={{
-                                                                    border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                                                    color: 'var(--color-brand-600)',
-                                                                }}
-                                                            >
-                                                                {option.badge}
-                                                            </span>
-                                                        )}
-                                                        {/* Show "Not Configured" badge for Pinecone in Tauri mode */}
-                                                        {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
-                                                            <span
-                                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                                                                style={{
-                                                                    border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)',
-                                                                    backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
-                                                                    color: '#f59e0b',
-                                                                }}
-                                                            >
-                                                                Not Configured
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs font-semibold">{option.name}</p>
                                                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                                                         {option.description}
                                                     </p>
                                                 </div>
+                                                {isActive && (
+                                                    <div
+                                                        className="flex h-4 w-4 items-center justify-center rounded-full flex-shrink-0"
+                                                        style={{ backgroundColor: 'var(--color-brand-600)' }}
+                                                    >
+                                                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {/* Setup Pinecone button */}
-                                            {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setShowPineconeSetup(true);
-                                                    }}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5"
-                                                    style={{
-                                                        backgroundColor: 'var(--color-brand-600)',
-                                                        color: 'white',
-                                                    }}
-                                                >
-                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                                                    </svg>
-                                                    Setup Pinecone
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {option.features.map((feature) => (
-                                                <span
-                                                    key={feature}
-                                                    className="text-[11px] font-medium px-2.5 py-1 rounded-md flex items-center gap-1"
-                                                    style={{
-                                                        backgroundColor: isActive
-                                                            ? (isDarkMode
-                                                                ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                                : 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)')
-                                                            : (isDarkMode
-                                                                ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                                                                : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)'),
-                                                        color: isActive
-                                                            ? 'var(--color-brand-600)'
-                                                            : (isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)'),
-                                                        opacity: isActive ? 1 : (isDarkMode ? 1 : 0.7),
-                                                    }}
-                                                >
-                                                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    {feature}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
-
-                    {/* Reranking Provider Section */}
-                    <section
-                        className="rounded-3xl border p-6 transition-all duration-200 hover:shadow-xl"
-                        style={{
-                            backgroundColor: 'var(--surface-card)',
-                            borderColor: 'var(--border)',
-                            boxShadow: 'var(--shadow-lg)',
-                        }}
-                    >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                                <div
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                        borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                    }}
-                                >
-                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <span className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--text-secondary)' }}>
-                                        RAG Enhancement
-                                    </span>
-                                    <h3 className="text-xl font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
-                                        Reranking provider
-                                    </h3>
-                                    <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
-                                        Choose which AI provider reranks search results for more relevant RAG responses.
-                                    </p>
-                                </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <span
-                                className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
-                                style={{
-                                    border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                    color: 'var(--color-brand-600)',
-                                }}
-                            >
-                                {isSavingRerankingProvider ? (
-                                    <>
-                                        <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                        </svg>
-                                        Improves relevance
-                                    </>
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-2 mt-6">
-                            {RERANKING_PROVIDER_OPTIONS.map((option) => {
-                                const isActive = rerankingProvider === option.id;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={option.id}
-                                        onClick={() => {
-                                            void (async () => {
-                                                if (!user?.userId) {
-                                                    console.error('User not authenticated');
-                                                    return;
-                                                }
-
-                                                setIsSavingRerankingProvider(true);
-                                                try {
-                                                    await setRerankingProvider(option.id, false);
-                                                    await syncPreferencesToBackend(user.userId);
-                                                } catch (error) {
-                                                    console.error('Failed to update reranking provider:', { error });
-                                                    toast.error('Failed to save reranking provider', 'Please try again.');
-                                                } finally {
-                                                    setIsSavingRerankingProvider(false);
-                                                }
-                                            })();
-                                        }}
-                                        disabled={isSavingRerankingProvider}
-                                        className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                        style={{
-                                            backgroundColor: isActive
-                                                ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
-                                                : 'var(--surface-elevated)',
-                                            borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                            color: 'var(--text-primary)',
-                                            boxShadow: isActive
-                                                ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
-                                                : 'none',
-                                            transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
-                                                e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
-                                                e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                                                e.currentTarget.style.borderColor = 'var(--border)';
-                                                e.currentTarget.style.boxShadow = 'none';
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div
-                                                className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
-                                                style={{
-                                                    backgroundColor: isActive
-                                                        ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                        : 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-                                                    borderColor: isActive
-                                                        ? 'var(--color-brand-600)'
-                                                        : 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                                }}
-                                            >
-                                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                                </svg>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-semibold">{option.name}</p>
-                                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                                    {option.description}
-                                                </p>
-                                            </div>
-                                            {isActive && (
-                                                <div
-                                                    className="flex h-5 w-5 items-center justify-center rounded-full flex-shrink-0"
-                                                    style={{ backgroundColor: 'var(--color-brand-600)' }}
-                                                >
-                                                    <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </section>
+                        </section>
+                    </div>
                 </div>
             </div>
 
@@ -880,7 +882,7 @@ export function AISettings() {
                     title={`Configure ${selectedProvider.name}`}
                     maxWidth="max-w-7xl"
                     icon={
-                        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -899,7 +901,7 @@ export function AISettings() {
                                 <>
                                     {providerDetails && (
                                         <div
-                                            className="rounded-xl border p-3 space-y-3"
+                                            className="rounded-lg border p-3 space-y-3"
                                             style={{
                                                 backgroundColor: 'var(--surface-elevated)',
                                                 borderColor: 'var(--border)',
@@ -912,7 +914,7 @@ export function AISettings() {
                                                         return logo ? (
                                                             <div className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
                                                                 {selectedProvider.id === 'ollama' ? (
-                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-5 w-5 object-contain" />
+                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-4 w-4 object-contain" />
                                                                 ) : (
                                                                     <img src={logo ?? undefined} alt={selectedProvider.name} className="h-4 w-auto object-contain" />
                                                                 )}
@@ -992,7 +994,7 @@ export function AISettings() {
 
                                     {/* Health Status & Available Models - For all providers */}
                                     <div
-                                        className="p-2.5 rounded-xl border"
+                                        className="p-2.5 rounded-lg border"
                                         style={{
                                             backgroundColor: 'var(--surface-elevated)',
                                             borderColor: 'var(--border)',
@@ -1064,7 +1066,7 @@ export function AISettings() {
                                     {selectedProvider.id === 'ollama' && (
                                         <div className="space-y-3">
                                             {/* Toggle Switch */}
-                                            <div className="flex items-center justify-between p-3 rounded-xl border" style={{
+                                            <div className="flex items-center justify-between p-3 rounded-lg border" style={{
                                                 backgroundColor: 'var(--surface-elevated)',
                                                 borderColor: 'var(--border)',
                                             }}>
@@ -1110,7 +1112,7 @@ export function AISettings() {
                                                     }}
                                                 >
                                                     <span
-                                                        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                                                        className="pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
                                                         style={{
                                                             backgroundColor: 'white',
                                                             transform: useRemoteOllama ? 'translateX(20px)' : 'translateX(0)',
@@ -1120,10 +1122,10 @@ export function AISettings() {
                                             </div>
 
                                             {/* Remote URL Input and Model Download - Side by Side */}
-                                            <div className="flex gap-3 flex-col sm:flex-row">
+                                            <div className="flex gap-2 flex-col sm:flex-row">
                                                 {/* Remote URL Input - Only shown when remote is enabled */}
                                                 {useRemoteOllama && (
-                                                    <div className="flex-1 p-3 rounded-xl border space-y-2" style={{
+                                                    <div className="flex-1 p-3 rounded-lg border space-y-2" style={{
                                                         backgroundColor: 'var(--surface-elevated)',
                                                         borderColor: 'var(--border)',
                                                     }}>
@@ -1141,7 +1143,7 @@ export function AISettings() {
                                                                 value={localOllamaUrl}
                                                                 onChange={(e) => { setLocalOllamaUrl(e.target.value); }}
                                                                 placeholder="http://192.168.1.100:11434"
-                                                                className="flex-1 px-3 py-2 rounded-xl border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
+                                                                className="flex-1 px-3 py-2 rounded-lg border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
                                                                 style={{
                                                                     backgroundColor: 'var(--surface-card)',
                                                                     borderColor: 'var(--border)',
@@ -1167,7 +1169,7 @@ export function AISettings() {
                                                                     }
                                                                 }}
                                                                 disabled={isSavingOllama || localOllamaUrl === (ollamaRemoteUrl || '')}
-                                                                className="px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                 style={{
                                                                     backgroundColor: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'var(--color-brand-600)' : 'var(--surface-card)',
                                                                     color: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'white' : 'var(--text-secondary)',
@@ -1185,7 +1187,7 @@ export function AISettings() {
                                                 )}
 
                                                 {/* Model Download Section */}
-                                                <div className={`p-3 rounded-xl border space-y-2.5 ${useRemoteOllama ? 'flex-1' : ''}`} style={{
+                                                <div className={`p-3 rounded-lg border space-y-2.5 ${useRemoteOllama ? 'flex-1' : ''}`} style={{
                                                     backgroundColor: 'var(--surface-elevated)',
                                                     borderColor: 'var(--border)',
                                                 }}>
@@ -1215,7 +1217,7 @@ export function AISettings() {
                                                                     setModelToDownload('');
                                                                 }
                                                             }}
-                                                            className="flex-1 px-3 py-2 rounded-xl border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
+                                                            className="flex-1 px-3 py-2 rounded-lg border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
                                                             style={{
                                                                 backgroundColor: 'var(--surface-card)',
                                                                 borderColor: 'var(--border)',
@@ -1234,7 +1236,7 @@ export function AISettings() {
                                                                 setModelToDownload('');
                                                             }}
                                                             disabled={!modelToDownload.trim()}
-                                                            className="px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                            className="px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                                                             style={{
                                                                 backgroundColor: modelToDownload.trim() ? 'var(--color-brand-600)' : 'var(--surface-card)',
                                                                 color: modelToDownload.trim() ? 'white' : 'var(--text-secondary)',
@@ -1257,7 +1259,7 @@ export function AISettings() {
                                                     <button
                                                         type="button"
                                                         onClick={() => { setShowPopularModels(!showPopularModels); }}
-                                                        className="w-full flex items-center justify-between p-2 rounded-xl border transition-all duration-200 hover:border-opacity-60"
+                                                        className="w-full flex items-center justify-between p-2 rounded-lg border transition-all duration-200 hover:border-opacity-60"
                                                         style={{
                                                             backgroundColor: 'var(--surface-card)',
                                                             borderColor: 'var(--border)',
@@ -1408,7 +1410,7 @@ export function AISettings() {
                                                             {activeDownloads.map((download) => (
                                                                 <div
                                                                     key={download.modelName}
-                                                                    className="p-3 rounded-xl border space-y-2"
+                                                                    className="p-3 rounded-lg border space-y-2"
                                                                     style={{
                                                                         backgroundColor: 'var(--surface-card)',
                                                                         borderColor: 'var(--border)',
@@ -1417,7 +1419,7 @@ export function AISettings() {
                                                                     <div className="flex items-center justify-between">
                                                                         <div className="flex items-center gap-2">
                                                                             <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-brand-600)' }} />
-                                                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                                                            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                                                                                 {download.modelName}
                                                                             </span>
                                                                         </div>
@@ -1446,7 +1448,7 @@ export function AISettings() {
 
                                                                             {/* Progress Details */}
                                                                             <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
-                                                                                <div className="flex items-center gap-3">
+                                                                                <div className="flex items-center gap-2">
                                                                                     <span>{download.progress.percentage?.toFixed(1) || 0}%</span>
                                                                                     {download.progress.completedBytes !== undefined && download.progress.totalBytes !== undefined && (
                                                                                         <span>
@@ -1454,7 +1456,7 @@ export function AISettings() {
                                                                                         </span>
                                                                                     )}
                                                                                 </div>
-                                                                                <div className="flex items-center gap-3">
+                                                                                <div className="flex items-center gap-2">
                                                                                     {download.progress.bytesPerSecond !== undefined && download.progress.bytesPerSecond > 0 && (
                                                                                         <span>{formatSpeed(download.progress.bytesPerSecond)}</span>
                                                                                     )}
@@ -1511,7 +1513,7 @@ export function AISettings() {
                                                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                                                                             </svg>
                                                                         )}
-                                                                        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                                                                        <span className="text-xs" style={{ color: 'var(--text-primary)' }}>
                                                                             {download.modelName}
                                                                         </span>
                                                                     </div>
@@ -1549,13 +1551,13 @@ export function AISettings() {
                                     {isDisabled && !isTauri() && (
                                         <div className="space-y-3">
                                             <div>
-                                                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                                                <h3 className="text-xs font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                                                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
                                                     How to Enable {selectedProvider.name}
                                                 </h3>
-                                                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                     To enable this provider, you need to update your backend configuration file:
                                                 </p>
                                             </div>
@@ -1584,20 +1586,20 @@ export function AISettings() {
                                                         <span style={{ color: 'var(--text-secondary)' }}> → </span>
                                                         <span style={{ color: '#10b981' }}>true</span>
                                                     </div>
-                                                    <div className="mt-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                                    <div className="mt-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                         In the <span className="font-semibold">"{configKey}"</span> section
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div
-                                                className="p-4 rounded-lg border-l-4 flex gap-3"
+                                                className="p-4 rounded-lg border-l-4 flex gap-2"
                                                 style={{
                                                     backgroundColor: 'var(--surface-elevated)',
                                                     borderLeftColor: '#3b82f6',
                                                 }}
                                             >
-                                                <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#3b82f6' }}>
+                                                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#3b82f6' }}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                 </svg>
                                                 <div>
@@ -1692,7 +1694,7 @@ export function AISettings() {
                                                                 </svg>
                                                                 Try these model names:
                                                             </p>
-                                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                            <div className="flex flex-wrap gap-2 mt-1">
                                                                 {suggestions.map((model) => (
                                                                     <code
                                                                         key={model}

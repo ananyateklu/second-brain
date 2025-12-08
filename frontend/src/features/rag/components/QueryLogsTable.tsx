@@ -100,7 +100,7 @@ export const QueryLogsTable = memo(({
 
   return (
     <div
-      className="rounded-2xl backdrop-blur-md relative overflow-hidden"
+      className="rounded-2xl backdrop-blur-md relative overflow-hidden flex flex-col h-full"
       style={{
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',
@@ -117,12 +117,12 @@ export const QueryLogsTable = memo(({
 
       {/* Header */}
       <div
-        className="px-5 py-2.5 border-b flex items-center justify-between relative z-10"
+        className="px-5 py-2 border-b flex items-center justify-between relative z-10 flex-shrink-0"
         style={{ borderColor: 'var(--border)' }}
       >
         <div className="flex items-center gap-3">
           <div
-            className="p-2.5 rounded-xl"
+            className="p-2 rounded-xl"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
             }}
@@ -198,290 +198,213 @@ export const QueryLogsTable = memo(({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto relative z-10">
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th
-                className="px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Query
-              </th>
-              <th
-                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Time
-              </th>
-              <th
-                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Results
-              </th>
-              <th
-                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Top Score
-              </th>
-              <th
-                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Feedback
-              </th>
-              <th
-                className="px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
-                style={{
-                  color: 'var(--text-secondary)',
-                  backgroundColor: 'var(--surface-elevated)',
-                }}
-              >
-                Date
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
+      <div className="flex-1 min-h-0 overflow-hidden relative z-10 flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
+          <table className="w-full">
+            <thead className="sticky top-0 z-20">
               <tr>
-                <td colSpan={6} className="px-5 py-12 text-center">
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div
-                      className="w-8 h-8 border-2 rounded-full animate-spin"
-                      style={{
-                        borderColor: 'var(--border)',
-                        borderTopColor: 'var(--color-brand-400)',
-                      }}
-                    />
-                    <span
-                      className="text-sm"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      Loading query logs...
-                    </span>
-                  </div>
-                </td>
-              </tr>
-            ) : logs.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-5 py-12 text-center"
+                <th
+                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
                 >
-                  <div
-                    className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--surface-elevated)' }}
-                  >
-                    <svg
-                      className="w-6 h-6 opacity-50"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      style={{ color: 'var(--text-tertiary)' }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                  </div>
-                  <p
-                    className="font-medium"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    No query logs found
-                  </p>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    Queries will appear here once RAG is used
-                  </p>
-                </td>
+                  Query
+                </th>
+                <th
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
+                >
+                  Time
+                </th>
+                <th
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
+                >
+                  Results
+                </th>
+                <th
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
+                >
+                  Top Score
+                </th>
+                <th
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
+                >
+                  Feedback
+                </th>
+                <th
+                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--surface-elevated)',
+                  }}
+                >
+                  Date
+                </th>
               </tr>
-            ) : (
-              logs.map((log, index) => (
-                <Fragment key={log.id}>
-                  <tr
-                    className="cursor-pointer transition-colors duration-150"
-                    style={{
-                      borderTop: index > 0 ? '1px solid var(--border)' : undefined,
-                      backgroundColor: expandedRow === log.id
-                        ? 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)'
-                        : 'transparent',
-                    }}
-                    onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
-                    onMouseEnter={(e) => {
-                      if (expandedRow !== log.id) {
-                        e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-elevated) 30%, transparent)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (expandedRow !== log.id) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div
+                        className="w-8 h-8 border-2 rounded-full animate-spin"
+                        style={{
+                          borderColor: 'var(--border)',
+                          borderTopColor: 'var(--color-brand-400)',
+                        }}
+                      />
+                      <span
+                        className="text-sm"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        Loading query logs...
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-5 py-8 text-center"
                   >
-                    <td className="px-4 py-2">
-                      <div>
-                        <p
-                          className="text-sm font-medium"
-                          style={{ color: 'var(--text-primary)' }}
-                          title={log.query}
-                        >
-                          {truncateQuery(log.query)}
-                        </p>
-                        {log.topicLabel && (
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
-                            style={{
-                              backgroundColor: 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)',
-                              color: 'var(--color-brand-400)',
-                            }}
-                          >
-                            {log.topicLabel}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td
-                      className="px-3 py-2 text-sm font-mono tabular-nums"
-                      style={{ color: 'var(--text-secondary)' }}
+                    <div
+                      className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: 'var(--surface-elevated)' }}
                     >
-                      {formatTime(log.totalTimeMs)}
-                    </td>
-                    <td
-                      className="px-3 py-2 text-sm tabular-nums"
-                      style={{ color: 'var(--text-secondary)' }}
+                      <svg
+                        className="w-6 h-6 opacity-50"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        style={{ color: 'var(--text-tertiary)' }}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                    </div>
+                    <p
+                      className="font-medium"
+                      style={{ color: 'var(--text-primary)' }}
                     >
-                      {log.finalCount ?? '-'}
-                    </td>
-                    <td
-                      className="px-3 py-2 text-sm font-mono tabular-nums"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {log.topCosineScore?.toFixed(3) ?? '-'}
-                    </td>
-                    <td className="px-3 py-2">
-                      <FeedbackBadge feedback={log.userFeedback} />
-                    </td>
-                    <td
-                      className="px-4 py-2 text-sm"
+                      No query logs found
+                    </p>
+                    <p
+                      className="text-sm mt-1"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
-                      {formatDate(log.createdAt)}
-                    </td>
-                  </tr>
-
-                  {/* Expanded row */}
-                  {expandedRow === log.id && (
-                    <tr>
+                      Queries will appear here once RAG is used
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log, index) => (
+                  <Fragment key={log.id}>
+                    <tr
+                      className="cursor-pointer transition-colors duration-150"
+                      style={{
+                        borderTop: index > 0 ? '1px solid var(--border)' : undefined,
+                        backgroundColor: expandedRow === log.id
+                          ? 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)'
+                          : 'transparent',
+                      }}
+                      onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
+                      onMouseEnter={(e) => {
+                        if (expandedRow !== log.id) {
+                          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-elevated) 30%, transparent)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (expandedRow !== log.id) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
+                      <td className="px-4 py-1.5">
+                        <div>
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: 'var(--text-primary)' }}
+                            title={log.query}
+                          >
+                            {truncateQuery(log.query)}
+                          </p>
+                          {log.topicLabel && (
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
+                              style={{
+                                backgroundColor: 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)',
+                                color: 'var(--color-brand-400)',
+                              }}
+                            >
+                              {log.topicLabel}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td
-                        colSpan={6}
-                        className="px-5 py-3"
-                        style={{
-                          backgroundColor: 'var(--surface-elevated)',
-                          borderTop: '1px solid var(--border)',
-                        }}
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        style={{ color: 'var(--text-secondary)' }}
                       >
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
-                          <div
-                            className="p-4 rounded-xl"
-                            style={{
-                              backgroundColor: 'var(--surface-card)',
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            <p
-                              className="text-xs uppercase tracking-wide mb-2"
-                              style={{ color: 'var(--text-tertiary)' }}
-                            >
-                              Full Query
-                            </p>
-                            <p
-                              className="font-medium leading-relaxed"
-                              style={{ color: 'var(--text-primary)' }}
-                            >
-                              {log.query}
-                            </p>
-                          </div>
+                        {formatTime(log.totalTimeMs)}
+                      </td>
+                      <td
+                        className="px-3 py-1.5 text-sm tabular-nums"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {log.finalCount ?? '-'}
+                      </td>
+                      <td
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {log.topCosineScore?.toFixed(3) ?? '-'}
+                      </td>
+                      <td className="px-3 py-1.5">
+                        <FeedbackBadge feedback={log.userFeedback} />
+                      </td>
+                      <td
+                        className="px-4 py-1.5 text-sm"
+                        style={{ color: 'var(--text-tertiary)' }}
+                      >
+                        {formatDate(log.createdAt)}
+                      </td>
+                    </tr>
 
-                          <div
-                            className="p-4 rounded-xl"
-                            style={{
-                              backgroundColor: 'var(--surface-card)',
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            <p
-                              className="text-xs uppercase tracking-wide mb-2"
-                              style={{ color: 'var(--text-tertiary)' }}
-                            >
-                              Features Enabled
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {log.hybridSearchEnabled && <FeatureBadge label="Hybrid" />}
-                              {log.hyDEEnabled && <FeatureBadge label="HyDE" />}
-                              {log.multiQueryEnabled && <FeatureBadge label="Multi-Query" />}
-                              {log.rerankingEnabled && <FeatureBadge label="Reranking" />}
-                              {!log.hybridSearchEnabled && !log.hyDEEnabled && !log.multiQueryEnabled && !log.rerankingEnabled && (
-                                <span style={{ color: 'var(--text-tertiary)' }}>Basic search only</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div
-                            className="p-4 rounded-xl"
-                            style={{
-                              backgroundColor: 'var(--surface-card)',
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            <p
-                              className="text-xs uppercase tracking-wide mb-2"
-                              style={{ color: 'var(--text-tertiary)' }}
-                            >
-                              Timing Breakdown
-                            </p>
-                            <div
-                              className="space-y-1.5 font-mono text-xs"
-                              style={{ color: 'var(--text-secondary)' }}
-                            >
-                              <div className="flex justify-between">
-                                <span>Embedding:</span>
-                                <span className="tabular-nums">{formatTime(log.queryEmbeddingTimeMs)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Search:</span>
-                                <span className="tabular-nums">{formatTime(log.vectorSearchTimeMs)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Rerank:</span>
-                                <span className="tabular-nums">{formatTime(log.rerankTimeMs)}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {log.feedbackCategory && (
+                    {/* Expanded row */}
+                    {expandedRow === log.id && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-5 py-2.5"
+                          style={{
+                            backgroundColor: 'var(--surface-elevated)',
+                            borderTop: '1px solid var(--border)',
+                          }}
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
                             <div
                               className="p-4 rounded-xl"
                               style={{
@@ -493,36 +416,115 @@ export const QueryLogsTable = memo(({
                                 className="text-xs uppercase tracking-wide mb-2"
                                 style={{ color: 'var(--text-tertiary)' }}
                               >
-                                Feedback Details
+                                Full Query
                               </p>
-                              <p style={{ color: 'var(--text-secondary)' }}>
-                                Category: <span style={{ color: 'var(--text-primary)' }}>{log.feedbackCategory}</span>
+                              <p
+                                className="font-medium leading-relaxed"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
+                                {log.query}
                               </p>
-                              {log.feedbackComment && (
+                            </div>
+
+                            <div
+                              className="p-4 rounded-xl"
+                              style={{
+                                backgroundColor: 'var(--surface-card)',
+                                border: '1px solid var(--border)',
+                              }}
+                            >
+                              <p
+                                className="text-xs uppercase tracking-wide mb-2"
+                                style={{ color: 'var(--text-tertiary)' }}
+                              >
+                                Features Enabled
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {log.hybridSearchEnabled && <FeatureBadge label="Hybrid" />}
+                                {log.hyDEEnabled && <FeatureBadge label="HyDE" />}
+                                {log.multiQueryEnabled && <FeatureBadge label="Multi-Query" />}
+                                {log.rerankingEnabled && <FeatureBadge label="Reranking" />}
+                                {!log.hybridSearchEnabled && !log.hyDEEnabled && !log.multiQueryEnabled && !log.rerankingEnabled && (
+                                  <span style={{ color: 'var(--text-tertiary)' }}>Basic search only</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div
+                              className="p-4 rounded-xl"
+                              style={{
+                                backgroundColor: 'var(--surface-card)',
+                                border: '1px solid var(--border)',
+                              }}
+                            >
+                              <p
+                                className="text-xs uppercase tracking-wide mb-2"
+                                style={{ color: 'var(--text-tertiary)' }}
+                              >
+                                Timing Breakdown
+                              </p>
+                              <div
+                                className="space-y-1.5 font-mono text-xs"
+                                style={{ color: 'var(--text-secondary)' }}
+                              >
+                                <div className="flex justify-between">
+                                  <span>Embedding:</span>
+                                  <span className="tabular-nums">{formatTime(log.queryEmbeddingTimeMs)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Search:</span>
+                                  <span className="tabular-nums">{formatTime(log.vectorSearchTimeMs)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Rerank:</span>
+                                  <span className="tabular-nums">{formatTime(log.rerankTimeMs)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {log.feedbackCategory && (
+                              <div
+                                className="p-4 rounded-xl"
+                                style={{
+                                  backgroundColor: 'var(--surface-card)',
+                                  border: '1px solid var(--border)',
+                                }}
+                              >
                                 <p
-                                  className="mt-2 text-xs italic"
+                                  className="text-xs uppercase tracking-wide mb-2"
                                   style={{ color: 'var(--text-tertiary)' }}
                                 >
-                                  "{log.feedbackComment}"
+                                  Feedback Details
                                 </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+                                <p style={{ color: 'var(--text-secondary)' }}>
+                                  Category: <span style={{ color: 'var(--text-primary)' }}>{log.feedbackCategory}</span>
+                                </p>
+                                {log.feedbackComment && (
+                                  <p
+                                    className="mt-2 text-xs italic"
+                                    style={{ color: 'var(--text-tertiary)' }}
+                                  >
+                                    "{log.feedbackComment}"
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div
-          className="px-5 py-2.5 border-t flex items-center justify-between relative z-10"
+          className="px-5 py-2 border-t flex items-center justify-between relative z-10 flex-shrink-0"
           style={{ borderColor: 'var(--border)' }}
         >
           <p

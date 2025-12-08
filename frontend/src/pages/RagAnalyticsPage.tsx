@@ -168,7 +168,7 @@ export function RagAnalyticsPage() {
 
         {/* Query Logs Tab */}
         {activeTab === 'logs' && (
-          <div className="pt-4 animate-in fade-in duration-300">
+          <div className="h-full flex flex-col animate-in fade-in duration-300 pb-2">
             <QueryLogsSection
               logsResponse={logsResponse}
               logsLoading={logsLoading}

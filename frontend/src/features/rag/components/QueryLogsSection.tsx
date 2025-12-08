@@ -31,9 +31,9 @@ export const QueryLogsSection = memo(({
   setPage,
 }: QueryLogsSectionProps) => {
   return (
-    <div className="flex flex-col min-h-full gap-4 overflow-visible">
-      {/* Query Logs Table - Takes remaining space */}
-      <div className="flex-1 overflow-auto">
+    <div className="flex flex-col" style={{ height: 'calc(100% - 0.34rem)' }}>
+      {/* Query Logs Table - Takes full height */}
+      <div className="flex-1 min-h-0">
         <QueryLogsTable
           logs={logsResponse?.logs ?? []}
           totalCount={logsResponse?.totalCount ?? 0}
