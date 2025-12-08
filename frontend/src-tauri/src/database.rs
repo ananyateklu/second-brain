@@ -2,20 +2,75 @@ use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
+use std::time::Duration;
+
+use crate::port_utils::{find_available_port, validate_port, PortStatus};
+use crate::startup::{ExponentialBackoff, StartupConfig, StartupTimer};
+
+/// Error types for PostgreSQL operations
+#[derive(Debug)]
+pub enum PostgresError {
+    NotInitialized,
+    BinaryNotFound(String),
+    InitFailed(String),
+    StartFailed(String),
+    PortConflict { port: u16, message: String },
+    Timeout(String),
+    ConfigError(String),
+}
+
+impl std::fmt::Display for PostgresError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PostgresError::NotInitialized => {
+                write!(f, "Database not initialized. Call init_database() first.")
+            }
+            PostgresError::BinaryNotFound(path) => {
+                write!(f, "PostgreSQL binary not found at {}. Please install PostgreSQL 18: brew install postgresql@18", path)
+            }
+            PostgresError::InitFailed(msg) => write!(f, "Database initialization failed: {}", msg),
+            PostgresError::StartFailed(msg) => write!(f, "Failed to start PostgreSQL: {}", msg),
+            PostgresError::PortConflict { port, message } => {
+                write!(f, "Port {} conflict: {}", port, message)
+            }
+            PostgresError::Timeout(msg) => write!(f, "Timeout: {}", msg),
+            PostgresError::ConfigError(msg) => write!(f, "Configuration error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for PostgresError {}
+
+impl From<PostgresError> for String {
+    fn from(err: PostgresError) -> String {
+        err.to_string()
+    }
+}
 
 /// Manages an embedded PostgreSQL instance for the desktop app
 pub struct PostgresManager {
     process: Mutex<Option<Child>>,
     data_dir: PathBuf,
     bin_dir: PathBuf,
-    port: u16,
+    port: Mutex<u16>,
     initialized: Mutex<bool>,
+    startup_config: StartupConfig,
 }
 
 impl PostgresManager {
     /// Create a new PostgreSQL manager
     /// In development mode, tries to use system PostgreSQL if bundled binaries don't work
     pub fn new(app_data_dir: PathBuf, resource_dir: PathBuf, port: u16) -> Self {
+        Self::with_config(app_data_dir, resource_dir, port, StartupConfig::default())
+    }
+
+    /// Create a new PostgreSQL manager with custom startup config
+    pub fn with_config(
+        app_data_dir: PathBuf,
+        resource_dir: PathBuf,
+        port: u16,
+        startup_config: StartupConfig,
+    ) -> Self {
         // Try bundled PostgreSQL first, then fall back to system installations
         let bin_dir = Self::find_postgres_bin_dir(&resource_dir);
 
@@ -25,9 +80,67 @@ impl PostgresManager {
             process: Mutex::new(None),
             data_dir: app_data_dir.join("postgresql"),
             bin_dir,
-            port,
+            port: Mutex::new(port),
             initialized: Mutex::new(false),
+            startup_config,
         }
+    }
+
+    /// Check if the configured port is available, find alternative if not
+    pub fn ensure_port_available(&self) -> Result<u16, PostgresError> {
+        let current_port = *self.port.lock().unwrap();
+
+        match validate_port(current_port) {
+            PortStatus::Available => {
+                log::info!("Port {} is available for PostgreSQL", current_port);
+                Ok(current_port)
+            }
+            PortStatus::InUse { process } => {
+                let process_info = process
+                    .map(|p| format!(" (PID: {}, name: {})", p.pid, p.name.unwrap_or_default()))
+                    .unwrap_or_default();
+
+                log::warn!(
+                    "Port {} is in use{}, searching for alternative...",
+                    current_port,
+                    process_info
+                );
+
+                // Try to find an alternative port
+                if let Some(new_port) = find_available_port(current_port + 1, 10) {
+                    log::info!("Found alternative port: {}", new_port);
+                    *self.port.lock().unwrap() = new_port;
+                    Ok(new_port)
+                } else {
+                    Err(PostgresError::PortConflict {
+                        port: current_port,
+                        message: format!(
+                            "Port {} is in use{} and no alternatives available in range {}-{}",
+                            current_port,
+                            process_info,
+                            current_port + 1,
+                            current_port + 10
+                        ),
+                    })
+                }
+            }
+            PortStatus::Reserved => Err(PostgresError::PortConflict {
+                port: current_port,
+                message: format!(
+                    "Port {} is reserved (ports < 1024 require root)",
+                    current_port
+                ),
+            }),
+            PortStatus::Invalid => Err(PostgresError::PortConflict {
+                port: current_port,
+                message: "Invalid port number".to_string(),
+            }),
+        }
+    }
+
+    /// Update the port (useful when resolving conflicts)
+    pub fn set_port(&self, port: u16) {
+        *self.port.lock().unwrap() = port;
     }
 
     /// Find PostgreSQL 18 bin directory from system installations
@@ -120,6 +233,7 @@ impl PostgresManager {
     fn configure_postgresql(&self) -> Result<(), String> {
         let conf_file = self.data_dir.join("postgresql.conf");
         let hba_file = self.data_dir.join("pg_hba.conf");
+        let port = *self.port.lock().unwrap();
 
         // Update postgresql.conf
         // Use UTF-8 compatible locale settings to support Unicode characters (emojis, etc.)
@@ -145,7 +259,7 @@ lc_time = 'C'
 client_encoding = 'UTF8'
 default_text_search_config = 'pg_catalog.english'
 "#,
-            self.port
+            port
         );
 
         std::fs::write(&conf_file, conf_content)
@@ -165,26 +279,127 @@ host    all             all             ::1/128                 trust
         Ok(())
     }
 
-    /// Start the PostgreSQL server
-    pub fn start(&self) -> Result<(), String> {
-        if !*self.initialized.lock().unwrap() {
-            return Err("Database not initialized. Call init_database() first.".to_string());
+    /// Update postgresql.conf port setting (needed when port changes after init)
+    pub fn update_port_config(&self) -> Result<(), String> {
+        let conf_file = self.data_dir.join("postgresql.conf");
+        let port = *self.port.lock().unwrap();
+
+        if !conf_file.exists() {
+            return Err("postgresql.conf not found".to_string());
         }
+
+        let content = std::fs::read_to_string(&conf_file)
+            .map_err(|e| format!("Failed to read postgresql.conf: {}", e))?;
+
+        // Replace the port line
+        let updated = content
+            .lines()
+            .map(|line| {
+                if line.starts_with("port = ") {
+                    format!("port = {}", port)
+                } else {
+                    line.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        std::fs::write(&conf_file, updated)
+            .map_err(|e| format!("Failed to write postgresql.conf: {}", e))?;
+
+        log::info!("Updated postgresql.conf port to {}", port);
+        Ok(())
+    }
+
+    /// Start the PostgreSQL server with port conflict detection
+    pub fn start(&self) -> Result<(), String> {
+        self.start_with_retry()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+
+    /// Start the PostgreSQL server with retry logic and port conflict handling
+    pub fn start_with_retry(&self) -> Result<u16, PostgresError> {
+        if !*self.initialized.lock().unwrap() {
+            return Err(PostgresError::NotInitialized);
+        }
+
+        let timer = StartupTimer::new();
+        let mut backoff = ExponentialBackoff::new(self.startup_config.clone());
+
+        // First, ensure port is available (may update port)
+        let port = self.ensure_port_available()?;
 
         // Check if already running
         if self.is_running() {
-            log::info!("PostgreSQL is already running on port {}", self.port);
-            return Ok(());
+            log::info!("PostgreSQL is already running on port {}", port);
+            return Ok(port);
         }
 
-        log::info!("Starting PostgreSQL on port {}...", self.port);
+        log::info!("Starting PostgreSQL on port {}...", port);
 
         let postgres_path = self.bin_dir.join("postgres");
 
         if !postgres_path.exists() {
-            return Err(format!("postgres binary not found at {:?}", postgres_path));
+            return Err(PostgresError::BinaryNotFound(
+                postgres_path.to_string_lossy().to_string(),
+            ));
         }
 
+        // Attempt to start with retries
+        loop {
+            match self.attempt_start(&postgres_path, port) {
+                Ok(()) => {
+                    // Wait for PostgreSQL to be ready with backoff
+                    match self.wait_for_ready_with_backoff() {
+                        Ok(()) => {
+                            // Create database and enable extensions
+                            self.setup_database()
+                                .map_err(|e| PostgresError::StartFailed(e))?;
+
+                            log::info!(
+                                "PostgreSQL started successfully on port {} in {}ms",
+                                port,
+                                timer.elapsed_ms()
+                            );
+                            return Ok(port);
+                        }
+                        Err(e) => {
+                            log::warn!("PostgreSQL not ready: {}", e);
+                            // Kill the process and retry
+                            self.kill_process();
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::warn!("Failed to start PostgreSQL: {}", e);
+                }
+            }
+
+            // Check if we should retry
+            if let Some(delay) = backoff.next_delay() {
+                log::info!(
+                    "Retrying PostgreSQL startup (attempt {}/{}) after {}ms...",
+                    backoff.current_attempt(),
+                    backoff.max_attempts(),
+                    delay.as_millis()
+                );
+                std::thread::sleep(delay);
+            } else {
+                return Err(PostgresError::Timeout(format!(
+                    "PostgreSQL failed to start after {} attempts",
+                    backoff.max_attempts()
+                )));
+            }
+        }
+    }
+
+    /// Single attempt to start PostgreSQL
+    fn attempt_start(
+        &self,
+        postgres_path: &std::path::Path,
+        port: u16,
+    ) -> Result<(), PostgresError> {
         // Start PostgreSQL
         // Note: We use Stdio::null() for stdout/stderr to prevent the process from
         // blocking when pipe buffers fill up. PostgreSQL logs to stderr by default,
@@ -193,11 +408,11 @@ host    all             all             ::1/128                 trust
         //
         // LC_ALL=C is required to prevent "postmaster became multithreaded during startup"
         // error on macOS when spawning threads (like the stderr reader) early in the process.
-        let mut child = Command::new(&postgres_path)
+        let mut child = Command::new(postgres_path)
             .arg("-D")
             .arg(&self.data_dir)
             .arg("-p")
-            .arg(self.port.to_string())
+            .arg(port.to_string())
             .arg("-k")
             .arg(&self.data_dir) // Socket directory
             .env("LC_ALL", "C")
@@ -205,7 +420,7 @@ host    all             all             ::1/128                 trust
             .stdout(Stdio::null())
             .stderr(Stdio::piped()) // Keep stderr to capture startup errors
             .spawn()
-            .map_err(|e| format!("Failed to start PostgreSQL: {}", e))?;
+            .map_err(|e| PostgresError::StartFailed(e.to_string()))?;
 
         // Spawn a thread to consume stderr to prevent blocking
         // This also logs any PostgreSQL errors
@@ -219,15 +434,61 @@ host    all             all             ::1/128                 trust
         }
 
         *self.process.lock().unwrap() = Some(child);
-
-        // Wait for PostgreSQL to be ready
-        self.wait_for_ready()?;
-
-        // Create database and enable extensions
-        self.setup_database()?;
-
-        log::info!("PostgreSQL started successfully on port {}", self.port);
         Ok(())
+    }
+
+    /// Kill the current PostgreSQL process
+    fn kill_process(&self) {
+        if let Some(mut child) = self.process.lock().unwrap().take() {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+
+    /// Wait for PostgreSQL to be ready with exponential backoff
+    fn wait_for_ready_with_backoff(&self) -> Result<(), PostgresError> {
+        let pg_isready = self.bin_dir.join("pg_isready");
+        let port = *self.port.lock().unwrap();
+
+        if !pg_isready.exists() {
+            // If pg_isready doesn't exist, use a simple sleep and hope for the best
+            log::warn!("pg_isready not found, waiting 5 seconds for PostgreSQL to start");
+            std::thread::sleep(Duration::from_secs(5));
+            return Ok(());
+        }
+
+        log::info!("Waiting for PostgreSQL to be ready...");
+
+        let timeout = Duration::from_secs(self.startup_config.timeout_secs);
+        let start = std::time::Instant::now();
+        let check_interval = Duration::from_millis(500);
+
+        while start.elapsed() < timeout {
+            let result = Command::new(&pg_isready)
+                .arg("-h")
+                .arg("localhost")
+                .arg("-p")
+                .arg(port.to_string())
+                .arg("-U")
+                .arg("secondbrain")
+                .output();
+
+            if let Ok(output) = result {
+                if output.status.success() {
+                    log::info!(
+                        "PostgreSQL is ready after {}ms",
+                        start.elapsed().as_millis()
+                    );
+                    return Ok(());
+                }
+            }
+
+            std::thread::sleep(check_interval);
+        }
+
+        Err(PostgresError::Timeout(
+            "PostgreSQL failed to become ready within timeout".to_string(),
+        ))
     }
 
     /// Stop the PostgreSQL server
@@ -270,6 +531,7 @@ host    all             all             ::1/128                 trust
     /// Check if PostgreSQL is running and accepting connections
     pub fn is_running(&self) -> bool {
         let pg_isready = self.bin_dir.join("pg_isready");
+        let port = *self.port.lock().unwrap();
 
         if !pg_isready.exists() {
             return false;
@@ -279,7 +541,7 @@ host    all             all             ::1/128                 trust
             .arg("-h")
             .arg("localhost")
             .arg("-p")
-            .arg(self.port.to_string())
+            .arg(port.to_string())
             .arg("-U")
             .arg("secondbrain")
             .output();
@@ -289,45 +551,10 @@ host    all             all             ::1/128                 trust
             .unwrap_or(false)
     }
 
-    /// Wait for PostgreSQL to be ready
-    fn wait_for_ready(&self) -> Result<(), String> {
-        let pg_isready = self.bin_dir.join("pg_isready");
-
-        if !pg_isready.exists() {
-            // If pg_isready doesn't exist, use a simple sleep and hope for the best
-            log::warn!("pg_isready not found, waiting 5 seconds for PostgreSQL to start");
-            std::thread::sleep(std::time::Duration::from_secs(5));
-            return Ok(());
-        }
-
-        log::info!("Waiting for PostgreSQL to be ready...");
-
-        for attempt in 1..=30 {
-            let result = Command::new(&pg_isready)
-                .arg("-h")
-                .arg("localhost")
-                .arg("-p")
-                .arg(self.port.to_string())
-                .arg("-U")
-                .arg("secondbrain")
-                .output();
-
-            if let Ok(output) = result {
-                if output.status.success() {
-                    log::info!("PostgreSQL is ready (attempt {})", attempt);
-                    return Ok(());
-                }
-            }
-
-            std::thread::sleep(std::time::Duration::from_secs(1));
-        }
-
-        Err("PostgreSQL failed to start within timeout".to_string())
-    }
-
     /// Set up the database and extensions
     fn setup_database(&self) -> Result<(), String> {
         let psql = self.bin_dir.join("psql");
+        let port = *self.port.lock().unwrap();
 
         if !psql.exists() {
             return Err(format!("psql not found at {:?}", psql));
@@ -338,7 +565,7 @@ host    all             all             ::1/128                 trust
             .arg("-h")
             .arg("localhost")
             .arg("-p")
-            .arg(self.port.to_string())
+            .arg(port.to_string())
             .arg("-U")
             .arg("secondbrain")
             .arg("-d")
@@ -359,7 +586,7 @@ host    all             all             ::1/128                 trust
                 .arg("-h")
                 .arg("localhost")
                 .arg("-p")
-                .arg(self.port.to_string())
+                .arg(port.to_string())
                 .arg("-U")
                 .arg("secondbrain")
                 .arg("-d")
@@ -381,7 +608,7 @@ host    all             all             ::1/128                 trust
             .arg("-h")
             .arg("localhost")
             .arg("-p")
-            .arg(self.port.to_string())
+            .arg(port.to_string())
             .arg("-U")
             .arg("secondbrain")
             .arg("-d")
@@ -402,15 +629,21 @@ host    all             all             ::1/128                 trust
 
     /// Get the connection string for the embedded database
     pub fn get_connection_string(&self) -> String {
+        let port = *self.port.lock().unwrap();
         format!(
             "Host=localhost;Port={};Database=secondbrain;Username=secondbrain;Trust Server Certificate=true;Client Encoding=UTF8",
-            self.port
+            port
         )
     }
 
     /// Get the PostgreSQL port
     pub fn get_port(&self) -> u16 {
-        self.port
+        *self.port.lock().unwrap()
+    }
+
+    /// Get startup metrics
+    pub fn get_startup_config(&self) -> &StartupConfig {
+        &self.startup_config
     }
 }
 
@@ -441,7 +674,7 @@ mod tests {
 
         let manager = PostgresManager::new(app_data.clone(), resource_dir, 5433);
 
-        assert_eq!(manager.port, 5433);
+        assert_eq!(*manager.port.lock().unwrap(), 5433);
         assert_eq!(manager.data_dir, app_data.join("postgresql"));
         assert!(!*manager.initialized.lock().unwrap());
     }
@@ -580,8 +813,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: temp_dir.path().join("postgresql"),
             bin_dir: fake_bin,
-            port: 5433,
+            port: Mutex::new(5433),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         let result = manager.init_database();
@@ -605,8 +839,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: data_dir.clone(),
             bin_dir: temp_dir.path().to_path_buf(),
-            port: 5433,
+            port: Mutex::new(5433),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         let result = manager.configure_postgresql();
@@ -640,8 +875,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: data_dir.clone(),
             bin_dir: temp_dir.path().to_path_buf(),
-            port: 9999,
+            port: Mutex::new(9999),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         manager.configure_postgresql().unwrap();
@@ -662,8 +898,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: temp_dir.path().to_path_buf(),
             bin_dir: temp_dir.path().join("nonexistent"),
-            port: 5433,
+            port: Mutex::new(5433),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         assert!(!manager.is_running());
@@ -681,8 +918,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: temp_dir.path().to_path_buf(),
             bin_dir: temp_dir.path().to_path_buf(),
-            port: 5433,
+            port: Mutex::new(5433),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         let result = manager.start();
@@ -699,8 +937,9 @@ mod tests {
             process: Mutex::new(None),
             data_dir: temp_dir.path().to_path_buf(),
             bin_dir: temp_dir.path().to_path_buf(),
-            port: 5433,
+            port: Mutex::new(5433),
             initialized: Mutex::new(false),
+            startup_config: StartupConfig::default(),
         };
 
         // Should not panic when no process exists
@@ -721,13 +960,47 @@ mod tests {
                 process: Mutex::new(None),
                 data_dir: temp_dir.path().to_path_buf(),
                 bin_dir: temp_dir.path().to_path_buf(),
-                port: 5433,
+                port: Mutex::new(5433),
                 initialized: Mutex::new(false),
+                startup_config: StartupConfig::default(),
             };
             // Manager will be dropped here
         }
 
         // Test passes if no panic occurs during drop
+    }
+
+    // ============================================================
+    // Port Conflict Tests
+    // ============================================================
+
+    #[test]
+    fn test_set_port() {
+        let temp_dir = TempDir::new().unwrap();
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5433,
+        );
+
+        assert_eq!(manager.get_port(), 5433);
+
+        manager.set_port(5500);
+        assert_eq!(manager.get_port(), 5500);
+    }
+
+    #[test]
+    fn test_ensure_port_available_on_free_port() {
+        let temp_dir = TempDir::new().unwrap();
+        // Use a high port unlikely to be in use
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            59990,
+        );
+
+        let result = manager.ensure_port_available();
+        assert!(result.is_ok());
     }
 
     // ============================================================
