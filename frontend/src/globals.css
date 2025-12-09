@@ -88,7 +88,11 @@
 
   /* Success colors (using brand green) */
   --color-success: var(--color-brand-400);
-  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  --color-success-light: color-mix(
+    in srgb,
+    var(--color-brand-400) 15%,
+    transparent
+  );
 
   /* Warning colors (subtle amber) */
   --color-warning: #d4a574;
@@ -192,10 +196,18 @@
   );
 
   /* Smart prompt chip colors (dark mode default) */
-  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 30%,
+    var(--surface-card-solid)
+  );
   --prompt-chip-text: var(--color-brand-400);
   --prompt-chip-border: var(--color-brand-400);
-  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+  --prompt-chip-hover-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 40%,
+    var(--surface-card-solid)
+  );
 }
 
 /* Light theme colors */
@@ -259,7 +271,11 @@
 
   /* Success colors for light theme (using brand green) */
   --color-success: var(--color-brand-600);
-  --color-success-light: color-mix(in srgb, var(--color-brand-600) 12%, transparent);
+  --color-success-light: color-mix(
+    in srgb,
+    var(--color-brand-600) 12%,
+    transparent
+  );
 
   /* Warning colors for light theme (subtle amber) */
   --color-warning: #b8956a;
@@ -385,7 +401,11 @@
 
   /* Success colors for dark/blue theme (using brand green) */
   --color-success: var(--color-brand-400);
-  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  --color-success-light: color-mix(
+    in srgb,
+    var(--color-brand-400) 15%,
+    transparent
+  );
 
   /* Warning colors for dark/blue theme (subtle amber) */
   --color-warning: #d4a574;
@@ -437,10 +457,18 @@
   );
 
   /* Smart prompt chip colors for dark theme */
-  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 30%,
+    var(--surface-card-solid)
+  );
   --prompt-chip-text: var(--color-brand-400);
   --prompt-chip-border: var(--color-brand-400);
-  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+  --prompt-chip-hover-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 40%,
+    var(--surface-card-solid)
+  );
 
   --page-background: radial-gradient(
     circle at top left,
@@ -572,10 +600,18 @@
   );
 
   /* Smart prompt chip colors for blue theme */
-  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 30%,
+    var(--surface-card-solid)
+  );
   --prompt-chip-text: var(--color-brand-400);
   --prompt-chip-border: var(--color-brand-400);
-  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+  --prompt-chip-hover-bg: color-mix(
+    in srgb,
+    var(--color-brand-600) 40%,
+    var(--surface-card-solid)
+  );
 
   /* Blue theme indicator */
   --blue-indicator: var(--color-blue-400);
@@ -1249,6 +1285,286 @@ button {
   animation: mentionDropdownFade 0.2s ease-out forwards;
 }
 
+/* =================================================
+   Dynamic Chat Input Height System
+   - Focused: max 70vh
+   - Unfocused: max 30vh
+   - Smooth 300ms transitions
+   ================================================= */
+
+/* Dynamic container sizing */
+.chat-input-dynamic {
+  transition: max-height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 300ms ease, border-color 300ms ease, transform 200ms ease;
+  will-change: max-height;
+  contain: layout;
+}
+
+.chat-input-dynamic.chat-input-focused {
+  max-height: 70vh;
+  box-shadow: var(--glass-shadow-focus),
+    0 0 30px rgba(var(--color-brand-rgb), 0.15);
+}
+
+.chat-input-dynamic.chat-input-blurred {
+  max-height: 30vh;
+}
+
+.chat-input-dynamic.chat-input-no-animation {
+  transition: none;
+}
+
+/* Scrollable state */
+.chat-input-dynamic.chat-input-scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Wrapper focus state */
+.chat-input-wrapper {
+  transition: padding 300ms ease;
+}
+
+.chat-input-wrapper-focused {
+  /* Slightly reduce padding when expanded for more space */
+  padding-bottom: 1rem;
+}
+
+/* Textarea styling */
+.chat-input-textarea {
+  transition: color 200ms ease;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  /* Enable momentum scrolling for macOS trackpad */
+  -webkit-overflow-scrolling: touch;
+  /* Ensure text is selectable */
+  user-select: text;
+  -webkit-user-select: text;
+  /* Allow all gestures for full scrolling support */
+  touch-action: auto;
+  /* Word wrap for long content */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  /* Contain scroll to prevent chaining */
+  overscroll-behavior: contain;
+  /* Ensure scrolling works */
+  overflow-y: auto !important;
+}
+
+.chat-input-textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-input-textarea::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.chat-input-textarea::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+  border: 1px solid transparent;
+}
+
+.chat-input-textarea::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary);
+}
+
+/* Active scrollbar when scrolling */
+.chat-input-textarea::-webkit-scrollbar-thumb:active {
+  background-color: var(--text-secondary);
+}
+
+.chat-input-textarea-focused {
+  /* Subtle visual feedback when focused */
+}
+
+/* Text selection styling */
+.chat-input-textarea::selection {
+  background-color: var(--color-brand-400);
+  color: white;
+}
+
+.chat-input-textarea::-moz-selection {
+  background-color: var(--color-brand-400);
+  color: white;
+}
+
+/* Textarea wrapper for scroll handling */
+.chat-input-textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 24px;
+  /* Allow content to be scrollable */
+  overflow: visible;
+  /* Position relative for absolute children */
+  position: relative;
+}
+
+/* Actions slot inside textarea (send button, etc.) */
+.chat-input-actions-slot {
+  pointer-events: auto;
+  /* Ensure button doesn't block scrollbar interaction */
+}
+
+/* When textarea is scrollable, ensure scrollbar is visible above actions */
+.chat-input-textarea-wrapper .chat-input-textarea::-webkit-scrollbar {
+  z-index: 20;
+}
+
+.chat-input-textarea-scrollable {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scroll area for container */
+.chat-input-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary);
+}
+
+/* Container scrolling styles */
+.chat-input-container {
+  /* Allow scroll events to pass through to children */
+  overflow: visible;
+}
+
+.chat-input-container.chat-input-scrollable {
+  -webkit-overflow-scrolling: touch;
+  touch-action: auto;
+  overflow-y: auto;
+}
+
+.chat-input-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-input-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 0 24px 24px 0;
+}
+
+.chat-input-container::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+.chat-input-container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-tertiary);
+}
+
+.chat-input-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-input-scroll-area::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+/* Focus overlay (subtle backdrop when expanded) */
+.chat-input-focus-overlay {
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+/* Animation keyframes for input expand/collapse */
+@keyframes inputExpand {
+  from {
+    opacity: 0.95;
+    transform: scaleY(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes inputContract {
+  from {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  to {
+    opacity: 0.95;
+    transform: scaleY(0.98);
+  }
+}
+
+/* Apply subtle scale animation on focus change */
+.chat-input-glass.chat-input-focused {
+  animation: inputExpand 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Enhanced focus glow */
+.chat-input-glass.chat-input-focused::before {
+  opacity: 0.6;
+}
+
+/* Vision indicator styling */
+.chat-input-vision-indicator {
+  transition: opacity 200ms ease;
+}
+
+/* Responsive adjustments */
+@media (max-height: 600px) {
+  .chat-input-dynamic.chat-input-focused {
+    max-height: 60vh;
+  }
+
+  .chat-input-dynamic.chat-input-blurred {
+    max-height: 25vh;
+  }
+}
+
+@media (max-height: 400px) {
+  .chat-input-dynamic.chat-input-focused {
+    max-height: 50vh;
+  }
+
+  .chat-input-dynamic.chat-input-blurred {
+    max-height: 20vh;
+  }
+}
+
+/* High contrast / reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .chat-input-dynamic {
+    transition: none;
+  }
+
+  .chat-input-glass.chat-input-focused {
+    animation: none;
+  }
+}
+
+/* End of Dynamic Chat Input Height System */
+
 /* Lightbox */
 .lightbox-overlay {
   animation: lightboxFadeIn 0.2s ease-out forwards;
@@ -1658,18 +1974,18 @@ button {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  
+
   /* Disable ambient glow effects on Tauri for performance */
   .dashboard-container [aria-hidden="true"].blur-3xl,
   .dashboard-container [aria-hidden="true"].blur-2xl {
     display: none !important;
   }
-  
+
   /* Faster transitions */
   .dashboard-container * {
     transition-duration: 250ms !important;
   }
-  
+
   /* Force GPU compositing for smoother animations */
   .dashboard-stats-grid > div {
     transform: translateZ(0);
@@ -1698,7 +2014,7 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   .dashboard-item-hidden,
   .dashboard-section-hidden {
     opacity: 1;
@@ -1832,7 +2148,7 @@ button {
     /* Force GPU layer for smoother animations */
     will-change: transform, opacity;
   }
-  
+
   /* Disable heavy effects during page transitions on WebKit */
   .page-transition-container[data-transitioning="true"] .backdrop-blur-md,
   .page-transition-container[data-transitioning="true"] .blur-3xl,
@@ -1849,16 +2165,18 @@ button {
     transition: none !important;
     animation: none !important;
   }
-  
+
   @keyframes pageEnter {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
       transform: none;
     }
   }
-  
+
   @keyframes pageExit {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
       transform: none;
     }
@@ -1871,7 +2189,8 @@ nav a {
   transform: translateZ(0);
   backface-visibility: hidden;
   /* Only transition specific properties */
-  transition-property: transform, background-color, color, border-color, box-shadow, opacity;
+  transition-property: transform, background-color, color, border-color,
+    box-shadow, opacity;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }

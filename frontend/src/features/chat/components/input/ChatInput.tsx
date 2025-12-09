@@ -45,7 +45,13 @@ export { useChatInputContext, ChatInputContext } from './ChatInputContext';
 export type { ChatInputContextValue, ImageGenerationSettings, ImageModelInfo } from './ChatInputContext';
 
 // Container components
-export { ChatInputContainer as Container, ChatInputRow as Row, ChatInputVisionIndicator as VisionIndicator } from './ChatInputContainer';
+export {
+  ChatInputContainer as Container,
+  ChatInputRow as Row,
+  ChatInputVisionIndicator as VisionIndicator,
+  ChatInputScrollArea as ScrollArea,
+  ChatInputFocusOverlay as FocusOverlay,
+} from './ChatInputContainer';
 
 // TextArea
 export { ChatInputTextArea as TextArea } from './ChatInputTextArea';
@@ -76,7 +82,7 @@ export { ChatLightbox as Lightbox } from './ChatLightbox';
 // Default export as namespace object for convenient import
 import { ChatInputRoot } from './ChatInputRoot';
 import { useChatInputContext, ChatInputContext } from './ChatInputContext';
-import { ChatInputContainer, ChatInputRow, ChatInputVisionIndicator } from './ChatInputContainer';
+import { ChatInputContainer, ChatInputRow, ChatInputVisionIndicator, ChatInputScrollArea, ChatInputFocusOverlay } from './ChatInputContainer';
 import { ChatInputTextArea } from './ChatInputTextArea';
 import { ChatInputActions, ChatInputSendButton } from './ChatInputActions';
 import {
@@ -102,6 +108,8 @@ const ChatInput = {
   Container: ChatInputContainer,
   Row: ChatInputRow,
   VisionIndicator: ChatInputVisionIndicator,
+  ScrollArea: ChatInputScrollArea,
+  FocusOverlay: ChatInputFocusOverlay,
   TextArea: ChatInputTextArea,
   Actions: ChatInputActions,
   SendButton: ChatInputSendButton,

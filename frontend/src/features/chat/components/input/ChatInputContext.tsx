@@ -40,6 +40,13 @@ export interface ChatInputContextValue {
   isStreaming: boolean;
   disabled: boolean;
 
+  // Focus and height state (for dynamic sizing)
+  isFocused: boolean;
+  maxHeight: number;
+  isScrollable: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+
   // File attachments
   attachedFiles: FileAttachment[];
   onRemoveFile: (fileId: string) => void;

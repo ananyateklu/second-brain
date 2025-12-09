@@ -209,3 +209,25 @@ export interface SummaryGenerationResult {
   error?: string;
   skipped: boolean;
 }
+
+// ============================================
+// Background Summary Generation Job Types
+// ============================================
+
+/**
+ * Response from a background summary generation job
+ */
+export interface SummaryJobResponse {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  totalNotes: number;
+  processedNotes: number;
+  successCount: number;
+  failureCount: number;
+  skippedCount: number;
+  errors: string[];
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  progressPercentage: number;
+}

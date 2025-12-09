@@ -114,6 +114,11 @@ public class GeminiSettings
     public GeminiFeaturesConfig Features { get; set; } = new();
 
     /// <summary>
+    /// Function calling configuration for agent tool execution
+    /// </summary>
+    public GeminiFunctionCallingConfig FunctionCalling { get; set; } = new();
+
+    /// <summary>
     /// Google Search grounding configuration
     /// </summary>
     public GeminiGroundingConfig Grounding { get; set; } = new();
@@ -137,6 +142,28 @@ public class GeminiSettings
     /// Context caching configuration for reducing latency and costs
     /// </summary>
     public GeminiCachingConfig Caching { get; set; } = new();
+}
+
+/// <summary>
+/// Function calling configuration for Gemini agent tool execution
+/// </summary>
+public class GeminiFunctionCallingConfig
+{
+    /// <summary>
+    /// Maximum iterations for tool call loops
+    /// </summary>
+    public int MaxIterations { get; set; } = 10;
+
+    /// <summary>
+    /// Enable parallel execution of multiple tool calls.
+    /// Default is false to avoid DbContext concurrency issues.
+    /// </summary>
+    public bool ParallelExecution { get; set; } = false;
+
+    /// <summary>
+    /// Timeout in seconds for individual tool executions
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 30;
 }
 
 /// <summary>

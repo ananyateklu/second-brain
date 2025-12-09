@@ -71,10 +71,11 @@ We will use **iOS Shortcuts** combined with dedicated REST API endpoints for not
 - Extracts hashtags from content as tags
 - Preserves original timestamps
 
-**Export Endpoints** (`GET /api/notes`, `GET /api/notes/{id}`):
+**Export Endpoints** (`GET /api/notes/for-export`, `GET /api/notes/{id}`):
 
 - Standard REST endpoints with API key authentication
-- Returns full note metadata for iOS Shortcuts to process
+- Returns full note metadata with content for iOS Shortcuts to process
+- Note: `/api/notes` returns lightweight responses (summary only) for performance. Use `/api/notes/for-export` for integrations that need full content.
 
 ### Authentication
 

@@ -9,14 +9,14 @@ namespace SecondBrain.Tests.Unit.Application.Services.Agents;
 
 public class NotesPluginTests
 {
-    private readonly Mock<INoteRepository> _mockNoteRepository;
+    private readonly Mock<IParallelNoteRepository> _mockNoteRepository;
     private readonly Mock<IRagService> _mockRagService;
     private readonly NotesPlugin _sut;
     private const string TestUserId = "user-123";
 
     public NotesPluginTests()
     {
-        _mockNoteRepository = new Mock<INoteRepository>();
+        _mockNoteRepository = new Mock<IParallelNoteRepository>();
         _mockRagService = new Mock<IRagService>();
         _sut = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
         _sut.SetCurrentUserId(TestUserId);

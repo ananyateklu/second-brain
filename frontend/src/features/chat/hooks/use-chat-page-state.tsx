@@ -1,6 +1,11 @@
 /**
  * Chat Page State Hook
  * Consolidates all chat page state management into a single hook
+ * 
+ * Features:
+ * - Draft persistence per conversation (IndexedDB with localStorage fallback)
+ * - Automatic draft saving on input changes (500ms debounce)
+ * - Draft restoration when switching conversations
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
@@ -14,17 +19,19 @@ import { useContextUsage } from './use-context-usage';
 import { chatService } from '../../../services';
 import { toast } from '../../../hooks/use-toast';
 import { useAuthStore } from '../../../store/auth-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import { useUnifiedStream, createLegacyAdapter } from '../../../hooks/use-unified-stream';
+import { NEW_CHAT_DRAFT_KEY } from '../../../store/slices/draft-slice';
 import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, GrokSearchSource, CodeExecutionResult, GeneratedImage } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../../types/rag';
 import type { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import type { ContextUsageState } from '../../../types/context-usage';
-import type { ImageGenerationStage } from '../../../core/streaming/types';
+import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming/types';
 
 export interface ImageGenerationParams {
   prompt: string;
@@ -45,6 +52,10 @@ export interface ChatPageState {
   selectedModel: string;
   availableProviders: ProviderInfo[];
   isHealthLoading: boolean;
+  /** Refresh providers by clearing cache and fetching fresh data */
+  refreshProviders: () => Promise<void>;
+  /** Whether providers are currently being refreshed */
+  isRefreshing: boolean;
 
   // Conversation State
   conversationId: string | null;
@@ -66,6 +77,8 @@ export interface ChatPageState {
   streamingMessage: string;
   streamingError: Error | null;
   retrievedNotes: RagContextNote[];
+  /** Unified process timeline - thinking and tool executions in chronological order */
+  processTimeline: ProcessEvent[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   /** Notes automatically retrieved via semantic search for agent context injection */
@@ -148,14 +161,23 @@ export interface ChatPageActions {
 export function useChatPageState(): ChatPageState & ChatPageActions {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
+  const previousConversationIdForDraftsRef = useRef<string | null>(null);
 
   // Local UI state
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValueInternal] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
 
   // Auth
   const user = useAuthStore((state) => state.user);
   const queryClient = useQueryClient();
+
+  // Draft management from store - select each individually to avoid infinite loops
+  const saveDraft = useBoundStore((state) => state.saveDraft);
+  const loadDraft = useBoundStore((state) => state.loadDraft);
+  const clearDraft = useBoundStore((state) => state.clearDraft);
+  const transferNewChatDraft = useBoundStore((state) => state.transferNewChatDraft);
+  const preloadDrafts = useBoundStore((state) => state.preloadDrafts);
+  const flushPendingSaves = useBoundStore((state) => state.flushPendingSaves);
 
   // Send message mutation
   const sendMessage = useSendMessage();
@@ -167,6 +189,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     selectedModel,
     availableProviders,
     isHealthLoading,
+    refreshProviders,
+    isRefreshing,
     handleProviderChange,
     handleModelChange,
     setProviderAndModel,
@@ -222,6 +246,63 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   // Track the previous conversation ID to detect when a new conversation is selected
   const prevConversationIdRef = useRef<string | null>(null);
 
+  // ==============================================
+  // Draft Management
+  // ==============================================
+
+  // Preload all drafts on mount
+  useEffect(() => {
+    void preloadDrafts();
+  }, [preloadDrafts]);
+
+  // Flush pending saves before unmount (e.g., tab close)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      flushPendingSaves();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also flush when component unmounts normally
+      flushPendingSaves();
+    };
+  }, [flushPendingSaves]);
+
+  // Draft-aware setInputValue that also persists the draft
+  const setInputValue = useCallback((value: string) => {
+    setInputValueInternal(value);
+    // Save draft with current conversation ID (or new chat key)
+    const draftKey = conversationId || NEW_CHAT_DRAFT_KEY;
+    saveDraft(draftKey, value);
+  }, [conversationId, saveDraft]);
+
+  // Track current input value in a ref for use in effects without causing re-runs
+  const inputValueRef = useRef(inputValue);
+  inputValueRef.current = inputValue;
+
+  // Load draft when conversation changes
+  useEffect(() => {
+    const currentKey = conversationId || NEW_CHAT_DRAFT_KEY;
+    const previousKey = previousConversationIdForDraftsRef.current;
+
+    // Only act if the conversation actually changed
+    if (currentKey !== previousKey) {
+      // Save current draft before switching (if there was a previous conversation)
+      const currentInputValue = inputValueRef.current;
+      if (previousKey && currentInputValue.trim()) {
+        saveDraft(previousKey, currentInputValue);
+      }
+
+      // Load draft for the new conversation
+      void loadDraft(currentKey).then((draftContent) => {
+        setInputValueInternal(draftContent);
+      });
+
+      previousConversationIdForDraftsRef.current = currentKey;
+    }
+  }, [conversationId, loadDraft, saveDraft]);
+
   // Sync provider/model ONLY when a different conversation is selected (not on every render)
   // This allows users to change provider/model after viewing a conversation
   useEffect(() => {
@@ -263,6 +344,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamingMessage,
     streamingError,
     retrievedNotes,
+    processTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,
@@ -405,7 +487,11 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
 
       const messageToSend = inputValue.trim();
       setPendingMessage({ content: messageToSend, images });
-      setInputValue('');
+      setInputValueInternal(''); // Use internal setter to avoid saving empty draft
+
+      // Clear the draft for current conversation since message is being sent
+      const draftKey = conversationId || NEW_CHAT_DRAFT_KEY;
+      clearDraft(draftKey);
 
       try {
         let currentConversationId = conversationId;
@@ -430,6 +516,9 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
             vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
           });
           currentConversationId = newConversation.id;
+
+          // Transfer any remaining new chat draft to the new conversation
+          transferNewChatDraft(currentConversationId);
         }
 
         // Send message via unified streaming
@@ -453,7 +542,10 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
           );
         }
 
-        setInputValue(messageToSend);
+        // Restore the message on error
+        setInputValueInternal(messageToSend);
+        // Also save it as a draft again
+        saveDraft(conversationId || NEW_CHAT_DRAFT_KEY, messageToSend);
         setPendingMessage(null);
         resetStream();
       }
@@ -473,6 +565,9 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       unifiedStream,
       resetStream,
       setPendingMessage,
+      clearDraft,
+      saveDraft,
+      transferNewChatDraft,
     ]
   );
 
@@ -563,6 +658,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       createConversation,
       unifiedStream,
       setPendingMessage,
+      setInputValue,
     ]
   );
 
@@ -612,6 +708,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     selectedModel,
     availableProviders,
     isHealthLoading,
+    refreshProviders,
+    isRefreshing,
 
     // Conversation State
     conversationId,
@@ -633,6 +731,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamingMessage,
     streamingError,
     retrievedNotes,
+    processTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,

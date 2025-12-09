@@ -3,7 +3,6 @@ import { CombinedModelSelector } from '../../../components/ui/CombinedModelSelec
 import { SelectorSkeleton } from '../../../components/ui/SelectorSkeleton';
 import { FeatureModePill } from '../../../components/ui/FeatureModePill';
 import { featureColors, FeatureIcons } from '../../../components/ui/feature-mode-constants';
-import { RagSettingsPopover } from '../../../components/ui/RagSettingsPopover';
 import { AgentSettingsPopover } from '../../../components/ui/AgentSettingsPopover';
 import { ContextUsageIndicator } from '../../../components/ui/ContextUsageIndicator';
 import { ContextUsageState } from '../../../types/context-usage';
@@ -40,16 +39,20 @@ export interface ChatHeaderProps {
   selectedModel: string;
   onProviderChange: (provider: string) => void;
   onModelChange: (model: string) => void;
-  // RAG settings
+  /** Refresh providers by clearing cache and fetching fresh data */
+  onRefreshProviders?: () => Promise<void>;
+  /** Whether providers are currently being refreshed */
+  isRefreshing?: boolean;
+  // RAG settings (onRagToggle routes to handleRagToggle or setAgentRagEnabled based on agent mode)
   ragEnabled: boolean;
   onRagToggle: (enabled: boolean) => void;
+  // Note: Vector store props kept for compatibility but no longer displayed on RAG button
   selectedVectorStore: 'PostgreSQL' | 'Pinecone';
   onVectorStoreChange: (provider: 'PostgreSQL' | 'Pinecone') => void;
   // Agent settings
   agentModeEnabled: boolean;
   onAgentModeChange: (enabled: boolean) => void;
   agentRagEnabled: boolean;
-  onAgentRagChange: (enabled: boolean) => void;
   agentCapabilities: AgentCapability[];
   // Loading state
   isLoading: boolean;
@@ -73,14 +76,13 @@ export function ChatHeader({
   selectedModel,
   onProviderChange,
   onModelChange,
+  onRefreshProviders,
+  isRefreshing = false,
   ragEnabled,
   onRagToggle,
-  selectedVectorStore,
-  onVectorStoreChange,
   agentModeEnabled,
   onAgentModeChange,
   agentRagEnabled,
-  onAgentRagChange,
   agentCapabilities,
   isLoading,
   isImageGenerationMode = false,
@@ -97,25 +99,9 @@ export function ChatHeader({
   );
 
   // Build badge items with icons and colors for enabled features (Agent)
+  // Note: Auto Context (agentRagEnabled) is now controlled via the RAG button, not shown here
   const agentBadgeItems = useMemo(() => {
     const items: { icon: ReactNode; color: string }[] = [];
-
-    // Add Auto Context icon if enabled
-    if (agentRagEnabled) {
-      items.push({
-        icon: (
-          <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-        ),
-        color: 'var(--color-accent-blue)',
-      });
-    }
 
     // Add enabled capabilities icons
     agentCapabilities
@@ -128,47 +114,12 @@ export function ChatHeader({
       });
 
     return items;
-  }, [agentCapabilities, agentRagEnabled]);
+  }, [agentCapabilities]);
 
-  // Build badge items for RAG (vector store indicator)
-  const ragBadgeItems = useMemo(() => {
-    if (!ragEnabled) return undefined;
-
-    const items: { icon: ReactNode; color: string }[] = [];
-
-    // Add vector store icon
-    if (selectedVectorStore === 'PostgreSQL') {
-      items.push({
-        icon: (
-          <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"
-            />
-          </svg>
-        ),
-        color: 'var(--color-accent-blue)',
-      });
-    } else if (selectedVectorStore === 'Pinecone') {
-      items.push({
-        icon: (
-          <svg className="w-full h-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"
-            />
-          </svg>
-        ),
-        color: 'var(--color-accent-blue)',
-      });
-    }
-
-    return items.length > 0 ? items : undefined;
-  }, [ragEnabled, selectedVectorStore]);
+  // Determine RAG active state based on mode
+  // When agent mode is ON: RAG button controls agentRagEnabled (auto-context for agents)
+  // When agent mode is OFF: RAG button controls ragEnabled (normal RAG search)
+  const isRagActive = agentModeEnabled ? agentRagEnabled : ragEnabled;
 
   return (
     <div
@@ -207,7 +158,7 @@ export function ChatHeader({
 
         {/* Combined Model Selector */}
         <div className="flex-shrink-0">
-          {isHealthLoading ? (
+          {isHealthLoading && availableProviders.length === 0 ? (
             <SelectorSkeleton text="Loading..." />
           ) : (
             <CombinedModelSelector
@@ -217,6 +168,8 @@ export function ChatHeader({
               onProviderChange={onProviderChange}
               onModelChange={onModelChange}
               disabled={isLoading || availableProviders.length === 0}
+              onRefresh={onRefreshProviders}
+              isRefreshing={isRefreshing}
             />
           )}
         </div>
@@ -229,26 +182,15 @@ export function ChatHeader({
 
         {/* Feature Mode Pills */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* RAG Mode Pill */}
+          {/* RAG Mode Pill - Direct toggle for RAG/Auto-Context */}
           <FeatureModePill
             featureId="rag"
             label="RAG"
             icon={<FeatureIcons.RAG />}
-            isActive={ragEnabled && !agentModeEnabled}
-            disabled={isLoading || agentModeEnabled || isImageGenerationMode}
+            isActive={isRagActive}
+            disabled={isLoading || isImageGenerationMode}
             activeColor={featureColors.rag}
-            popoverTitle="RAG Settings"
-            popoverWidth="280px"
-            badgeItems={ragBadgeItems}
-            popoverContent={
-              <RagSettingsPopover
-                ragEnabled={ragEnabled}
-                onRagToggle={onRagToggle}
-                selectedVectorStore={selectedVectorStore}
-                onVectorStoreChange={onVectorStoreChange}
-                disabled={isLoading}
-              />
-            }
+            onClick={() => { onRagToggle(!isRagActive); }}
           />
 
           {/* Agent Mode Pill */}
@@ -266,8 +208,6 @@ export function ChatHeader({
               <AgentSettingsPopover
                 agentEnabled={agentModeEnabled}
                 onAgentToggle={onAgentModeChange}
-                agentRagEnabled={agentRagEnabled}
-                onAgentRagToggle={onAgentRagChange}
                 capabilities={popoverCapabilities}
                 disabled={isLoading}
               />
@@ -307,7 +247,7 @@ export function ChatHeader({
           contextUsage={contextUsage}
           isStreaming={isStreaming}
         />
-        
+
         {/* Fullscreen Toggle - Only in Tauri */}
         <FullscreenToggle />
       </div>

@@ -14,10 +14,6 @@ interface AgentSettingsPopoverProps {
   agentEnabled: boolean;
   /** Called when Agent mode is toggled */
   onAgentToggle: (enabled: boolean) => void;
-  /** Whether Agent RAG (Auto Context) is enabled */
-  agentRagEnabled: boolean;
-  /** Called when Agent RAG is toggled */
-  onAgentRagToggle: (enabled: boolean) => void;
   /** Agent capabilities (e.g., Notes management) */
   capabilities: AgentCapability[];
   /** Whether the controls are disabled */
@@ -27,8 +23,6 @@ interface AgentSettingsPopoverProps {
 export function AgentSettingsPopover({
   agentEnabled,
   onAgentToggle,
-  agentRagEnabled,
-  onAgentRagToggle,
   capabilities,
   disabled = false,
 }: AgentSettingsPopoverProps) {
@@ -104,7 +98,7 @@ export function AgentSettingsPopover({
       </div>
 
       {/* Agent Capabilities - Only show when Agent is enabled */}
-      {agentEnabled && (
+      {agentEnabled && capabilities.length > 0 && (
         <div className="space-y-1.5">
           <div
             className="text-[10px] font-semibold uppercase tracking-wider px-1"
@@ -113,78 +107,7 @@ export function AgentSettingsPopover({
             Capabilities
           </div>
 
-          {/* Auto Context (Agent RAG) */}
-          <div
-            className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl border transition-all duration-200"
-            style={{
-              backgroundColor: agentRagEnabled
-                ? 'color-mix(in srgb, var(--color-accent-blue) 10%, var(--surface))'
-                : 'var(--surface)',
-              borderColor: agentRagEnabled ? 'var(--color-accent-blue-border)' : 'var(--border)',
-            }}
-          >
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div
-                className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{
-                  backgroundColor: agentRagEnabled
-                    ? 'color-mix(in srgb, var(--color-accent-blue) 20%, transparent)'
-                    : 'var(--surface-elevated)',
-                  color: agentRagEnabled
-                    ? 'var(--color-accent-blue-text)'
-                    : 'var(--text-tertiary)',
-                }}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <div className="min-w-0">
-                <div
-                  className="text-xs font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Auto Context
-                </div>
-                <div
-                  className="text-[10px]"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  Auto-fetch relevant notes
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              role="switch"
-              aria-checked={agentRagEnabled}
-              disabled={disabled}
-              onClick={() => { onAgentRagToggle(!agentRagEnabled); }}
-              className={`
-                relative inline-flex h-4.5 w-8 items-center rounded-full transition-all duration-200 flex-shrink-0
-                ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-              `}
-              style={{
-                backgroundColor: agentRagEnabled ? 'var(--color-accent-blue)' : 'var(--border)',
-                boxShadow: agentRagEnabled ? '0 0 8px -2px var(--color-accent-blue)' : 'none',
-              }}
-            >
-              <span
-                className={`
-                  inline-block h-3 w-3 transform rounded-full bg-white transition-transform duration-200 shadow-sm
-                  ${agentRagEnabled ? 'translate-x-[16px]' : 'translate-x-0.5'}
-                `}
-              />
-            </button>
-          </div>
-
-          {/* Other Capabilities */}
+          {/* Capabilities */}
           {capabilities.map((capability) => (
             <div
               key={capability.id}

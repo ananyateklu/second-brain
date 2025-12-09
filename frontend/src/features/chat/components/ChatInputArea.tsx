@@ -116,11 +116,8 @@ function ChatInputAreaInner() {
           {/* Image Generation Toggle */}
           <ChatInput.ImageGenButton />
 
-          {/* TextArea */}
-          <ChatInput.TextArea />
-
-          {/* Send/Cancel Button */}
-          <ChatInput.SendButton />
+          {/* TextArea with Send Button inside */}
+          <ChatInput.TextArea actions={<ChatInput.SendButton />} />
         </ChatInput.Row>
 
         {/* Input Metrics */}

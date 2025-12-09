@@ -61,4 +61,14 @@ public class ChatMessage
     /// Attached documents (PDFs) for document processing (Claude only)
     /// </summary>
     public List<MessageDocument>? Documents { get; set; }
+
+    /// <summary>
+    /// Function calls made by the assistant (for preserving history)
+    /// </summary>
+    public List<FunctionCallInfo>? ToolCalls { get; set; }
+
+    /// <summary>
+    /// Function results (for preserving history)
+    /// </summary>
+    public List<FunctionResultInfo>? ToolResults { get; set; }
 }

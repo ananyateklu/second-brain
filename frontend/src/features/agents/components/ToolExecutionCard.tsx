@@ -7,6 +7,60 @@ interface ToolExecutionCardProps {
   isLast?: boolean;
 }
 
+// Stats response type
+interface TagCount {
+  name: string;
+  count: number;
+}
+
+interface FolderCount {
+  name: string;
+  count: number;
+}
+
+interface NoteStatistics {
+  totalNotes: number;
+  activeNotes: number;
+  archivedNotes: number;
+  notesCreatedThisWeek: number;
+  notesCreatedThisMonth: number;
+  notesWithTags: number;
+  notesInFolders: number;
+  uniqueTagCount: number;
+  uniqueFolderCount: number;
+  topTags: TagCount[];
+  topFolders: FolderCount[];
+}
+
+interface StatsResponse {
+  type: 'stats';
+  message: string;
+  statistics: NoteStatistics;
+}
+
+// Single note response type
+interface SingleNoteResponse {
+  type: 'note';
+  message: string;
+  note: {
+    id: string;
+    title: string;
+    content: string;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+    isArchived?: boolean;
+    folder?: string;
+  };
+}
+
+// Generic success/error response
+interface GenericResponse {
+  type: string;
+  message: string;
+  [key: string]: unknown;
+}
+
 // Helper to parse note results from JSON
 const parseNotesResult = (result: string): AgentNotesResponse | null => {
   try {
@@ -26,6 +80,270 @@ const parseNotesResult = (result: string): AgentNotesResponse | null => {
   }
   return null;
 };
+
+// Helper to parse stats results from JSON
+const parseStatsResult = (result: string): StatsResponse | null => {
+  try {
+    const parsed: unknown = JSON.parse(result);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'type' in parsed &&
+      parsed.type === 'stats' &&
+      'statistics' in parsed
+    ) {
+      return parsed as StatsResponse;
+    }
+  } catch {
+    // Not JSON or not a stats response
+  }
+  return null;
+};
+
+// Helper to parse single note result from JSON
+const parseSingleNoteResult = (result: string): SingleNoteResponse | null => {
+  try {
+    const parsed: unknown = JSON.parse(result);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'type' in parsed &&
+      parsed.type === 'note' &&
+      'note' in parsed
+    ) {
+      return parsed as SingleNoteResponse;
+    }
+  } catch {
+    // Not JSON or not a single note response
+  }
+  return null;
+};
+
+// Helper to parse generic JSON response
+const parseGenericResult = (result: string): GenericResponse | null => {
+  try {
+    const parsed: unknown = JSON.parse(result);
+    if (typeof parsed === 'object' && parsed !== null && 'type' in parsed) {
+      return parsed as GenericResponse;
+    }
+  } catch {
+    // Not JSON
+  }
+  return null;
+};
+
+// SVG Icons for stats
+const StatIcons = {
+  notes: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  active: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  archived: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+    </svg>
+  ),
+  week: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  ),
+  month: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 2v4m12-4v4M4 8h16M4 8a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V10a2 2 0 00-2-2M4 8h16" />
+    </svg>
+  ),
+  tag: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  ),
+  bookmark: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+    </svg>
+  ),
+  folder: (
+    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+  ),
+  folderSmall: (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+  ),
+};
+
+// Stats display component
+function StatsDisplay({ stats }: { stats: NoteStatistics }) {
+  return (
+    <div className="space-y-3">
+      {/* Overview Stats Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <StatItem label="Total Notes" value={stats.totalNotes} icon={StatIcons.notes} />
+        <StatItem label="Active" value={stats.activeNotes} icon={StatIcons.active} />
+        <StatItem label="Archived" value={stats.archivedNotes} icon={StatIcons.archived} />
+        <StatItem label="This Week" value={stats.notesCreatedThisWeek} icon={StatIcons.week} />
+        <StatItem label="This Month" value={stats.notesCreatedThisMonth} icon={StatIcons.month} />
+        <StatItem label="With Tags" value={stats.notesWithTags} icon={StatIcons.tag} />
+      </div>
+
+      {/* Additional Stats */}
+      <div className="grid grid-cols-2 gap-2">
+        <StatItem label="Unique Tags" value={stats.uniqueTagCount} icon={StatIcons.bookmark} />
+        <StatItem label="Folders" value={stats.uniqueFolderCount} icon={StatIcons.folder} />
+      </div>
+
+      {/* Top Tags */}
+      {stats.topTags.length > 0 && (
+        <div>
+          <div
+            className="text-xs font-medium mb-1.5"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Top Tags
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {stats.topTags.map((tag) => (
+              <span
+                key={tag.name}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                style={{
+                  backgroundColor: 'var(--surface-elevated)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <span>{tag.name}</span>
+                <span
+                  className="text-[10px] font-medium px-1 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--color-brand-500)',
+                    color: 'white',
+                  }}
+                >
+                  {tag.count}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Folders */}
+      {stats.topFolders.length > 0 && (
+        <div>
+          <div
+            className="text-xs font-medium mb-1.5"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            Top Folders
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {stats.topFolders.map((folder) => (
+              <span
+                key={folder.name}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                style={{
+                  backgroundColor: 'var(--surface-elevated)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
+                  {StatIcons.folderSmall}
+                </span>
+                <span>{folder.name}</span>
+                <span
+                  className="text-[10px] font-medium px-1 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--color-brand-500)',
+                    color: 'white',
+                  }}
+                >
+                  {folder.count}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Individual stat item component
+function StatItem({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+  return (
+    <div
+      className="p-2 rounded-lg"
+      style={{
+        backgroundColor: 'var(--surface-card)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <span style={{ color: 'var(--color-brand-500)' }}>{icon}</span>
+        <span
+          className="text-sm font-semibold"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {value}
+        </span>
+      </div>
+      <div
+        className="text-[10px] mt-0.5"
+        style={{ color: 'var(--text-tertiary)' }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// Generic message display for simple responses
+function GenericResponseDisplay({ response }: { response: GenericResponse }) {
+  return (
+    <div
+      className="p-3 rounded-lg"
+      style={{
+        backgroundColor: 'var(--surface-card)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <div
+        className="text-xs font-medium mb-1"
+        style={{ color: 'var(--text-primary)' }}
+      >
+        {response.message}
+      </div>
+      {/* Show additional properties if any */}
+      {Object.keys(response).filter(k => !['type', 'message'].includes(k)).length > 0 && (
+        <div className="mt-2 text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
+          {Object.entries(response)
+            .filter(([key]) => !['type', 'message'].includes(key))
+            .map(([key, value]) => {
+              // Always stringify to handle all value types safely
+              const displayValue = JSON.stringify(value);
+              return (
+                <div key={key} className="flex gap-2">
+                  <span style={{ color: 'var(--text-tertiary)' }}>{key}:</span>
+                  <span>{displayValue}</span>
+                </div>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
   const getToolIcon = (name: string) => {
@@ -66,6 +384,24 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         );
+      case 'GetNoteStats':
+        return (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        );
+      case 'DeleteNote':
+        return (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        );
+      case 'ArchiveNote':
+        return (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+          </svg>
+        );
       default:
         return (
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,13 +419,19 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
       case 'SearchNotes':
         return 'Searching Notes';
       case 'SemanticSearch':
-        return 'Semantic search (RAG)';
+        return 'Semantic Search (RAG)';
       case 'UpdateNote':
         return 'Updating Note';
       case 'GetNote':
         return 'Reading Note';
       case 'ListRecentNotes':
         return 'Listing Notes';
+      case 'GetNoteStats':
+        return 'Getting Note Statistics';
+      case 'DeleteNote':
+        return 'Deleting Note';
+      case 'ArchiveNote':
+        return 'Archiving Note';
       default:
         return name;
     }
@@ -98,20 +440,36 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
   const isExecuting = execution.status === 'executing';
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Parse notes from result if available
-  const notesResult = useMemo(() => {
-    if (execution.result) {
-      return parseNotesResult(execution.result);
+  // Parse results from result if available
+  const { notesResult, statsResult, singleNoteResult, genericResult } = useMemo(() => {
+    if (!execution.result) {
+      return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null };
     }
-    return null;
+
+    const notes = parseNotesResult(execution.result);
+    if (notes) return { notesResult: notes, statsResult: null, singleNoteResult: null, genericResult: null };
+
+    const stats = parseStatsResult(execution.result);
+    if (stats) return { notesResult: null, statsResult: stats, singleNoteResult: null, genericResult: null };
+
+    const singleNote = parseSingleNoteResult(execution.result);
+    if (singleNote) return { notesResult: null, statsResult: null, singleNoteResult: singleNote, genericResult: null };
+
+    const generic = parseGenericResult(execution.result);
+    if (generic) return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: generic };
+
+    return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null };
   }, [execution.result]);
+
+  // Check if we have any parsed result
+  const hasParsedResult = notesResult || statsResult || singleNoteResult || genericResult;
 
   return (
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline */}
-      <div 
+      <div
         className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors ${isExecuting ? 'animate-pulse' : ''}`}
-        style={{ 
+        style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: isExecuting ? 'var(--color-brand-500)' : 'var(--border)'
         }}
@@ -127,7 +485,7 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
           onClick={() => { setIsExpanded(!isExpanded); }}
           className="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity"
         >
-          <span 
+          <span
             className="font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
@@ -136,7 +494,7 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
           <span className="text-xs opacity-50" style={{ color: 'var(--text-tertiary)' }}>
             {execution.timestamp.toLocaleTimeString()}
           </span>
-          
+
           {isExecuting ? (
             <span className="text-xs ml-1 opacity-70" style={{ color: 'var(--color-brand-500)' }}>
               Running...
@@ -160,33 +518,91 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
 
         {isExpanded && (
           <div className="mt-2 space-y-2">
-            {/* Notes result with NoteCards */}
-            {notesResult && notesResult.notes.length > 0 && (
-              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
-                {notesResult.notes.map((note, index) => (
-                  <NoteCard
-                    key={`${note.id}-${index}`}
-                    note={{
-                      id: note.id,
-                      title: note.title,
-                      content: note.content,
-                      tags: note.tags,
-                      isArchived: false,
-                      createdAt: note.createdAt,
-                      updatedAt: note.updatedAt,
-                    }}
-                    variant="micro"
-                    showDeleteButton={false}
-                  />
-                ))}
+            {/* Stats result */}
+            {statsResult && (
+              <div>
+                {statsResult.message && (
+                  <div
+                    className="text-xs font-medium mb-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {statsResult.message}
+                  </div>
+                )}
+                <StatsDisplay stats={statsResult.statistics} />
               </div>
             )}
 
-            {/* Plain text result (for non-note responses) */}
-            {execution.result && !notesResult && (
-              <div 
+            {/* Notes result with NoteCards */}
+            {notesResult && notesResult.notes.length > 0 && (
+              <div>
+                {notesResult.message && (
+                  <div
+                    className="text-xs font-medium mb-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {notesResult.message}
+                  </div>
+                )}
+                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                  {notesResult.notes.map((note, index) => (
+                    <NoteCard
+                      key={`${note.id}-${index}`}
+                      note={{
+                        id: note.id,
+                        title: note.title,
+                        content: note.content,
+                        tags: note.tags,
+                        isArchived: false,
+                        createdAt: note.createdAt,
+                        updatedAt: note.updatedAt,
+                      }}
+                      variant="micro"
+                      showDeleteButton={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Single note result */}
+            {singleNoteResult && (
+              <div>
+                {singleNoteResult.message && (
+                  <div
+                    className="text-xs font-medium mb-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {singleNoteResult.message}
+                  </div>
+                )}
+                <NoteCard
+                  note={{
+                    id: singleNoteResult.note.id,
+                    title: singleNoteResult.note.title,
+                    content: singleNoteResult.note.content,
+                    tags: singleNoteResult.note.tags,
+                    isArchived: singleNoteResult.note.isArchived ?? false,
+                    folder: singleNoteResult.note.folder,
+                    createdAt: singleNoteResult.note.createdAt,
+                    updatedAt: singleNoteResult.note.updatedAt,
+                  }}
+                  variant="micro"
+                  showDeleteButton={false}
+                />
+              </div>
+            )}
+
+            {/* Generic response with message */}
+            {genericResult && !statsResult && !notesResult && !singleNoteResult && (
+              <GenericResponseDisplay response={genericResult} />
+            )}
+
+            {/* Plain text result (for unparseable responses) */}
+            {execution.result && !hasParsedResult && (
+              <div
                 className="p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap"
-                style={{ 
+                style={{
                   backgroundColor: 'var(--surface-card)',
                   color: 'var(--text-secondary)',
                   border: '1px solid var(--border)'
@@ -195,9 +611,9 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
                 {execution.result}
               </div>
             )}
-            
+
             {!execution.result && !isExecuting && (
-               <div className="text-xs opacity-50 italic">No output</div>
+              <div className="text-xs opacity-50 italic">No output</div>
             )}
           </div>
         )}

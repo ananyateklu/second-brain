@@ -120,7 +120,7 @@ export const ScoreCorrelationCard = memo(({ stats }: ScoreCorrelationCardProps) 
 
   return (
     <div
-      className="rounded-2xl p-4 transition-all duration-200 hover:scale-[1.01] backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl p-4 transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md relative overflow-hidden group"
       style={{
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',

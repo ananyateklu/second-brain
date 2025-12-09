@@ -20,11 +20,11 @@ export interface StatCardProps {
   isAnimationReady?: boolean;
 }
 
-export const StatCard = memo(({ 
-  title, 
-  value, 
-  icon, 
-  subtitle, 
+export const StatCard = memo(({
+  title,
+  value,
+  icon,
+  subtitle,
   show = true,
   animationStyle,
   index = 0,
@@ -32,7 +32,7 @@ export const StatCard = memo(({
 }: StatCardProps) => {
   // Check platform once
   const isWebKit = useMemo(() => isTauri(), []);
-  
+
   // Calculate animation delay for staggered effect
   const staggerDelay = useMemo(() => index * 40, [index]);
 
@@ -44,8 +44,8 @@ export const StatCard = memo(({
     backgroundColor: 'var(--surface-card)',
     borderColor: 'var(--border)',
     // Reduced shadow complexity for WebKit
-    boxShadow: isWebKit 
-      ? 'var(--shadow-lg)' 
+    boxShadow: isWebKit
+      ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
     minHeight: '80px',
     // Animation properties
@@ -53,8 +53,8 @@ export const StatCard = memo(({
     transform: isAnimationReady ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
     // Use specific properties instead of 'all' for better performance
     transitionProperty: 'opacity, transform, box-shadow, border-color',
-    transitionDuration: isWebKit ? '250ms' : '300ms',
-    transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    transitionDuration: '200ms', // Match RAG card hover timing
+    transitionTimingFunction: 'ease',
     transitionDelay: `${staggerDelay}ms`,
     // GPU acceleration hints
     willChange: isAnimationReady ? 'auto' : 'transform, opacity',
@@ -64,18 +64,18 @@ export const StatCard = memo(({
   };
 
   // Glow effect styles - only show on non-WebKit platforms
-  const glowStyles: CSSProperties = isWebKit 
-    ? { display: 'none' } 
+  const glowStyles: CSSProperties = isWebKit
+    ? { display: 'none' }
     : {
-        background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        opacity: 0.15,
-      };
+      background: 'radial-gradient(circle, var(--color-primary), transparent)',
+      opacity: 0.15,
+    };
 
   return (
     <div
       className={`
         rounded-2xl border p-3 
-        hover:scale-[1.02] hover:border-[var(--color-brand-500)]
+        hover:-translate-y-0.5 hover:border-[var(--color-brand-500)]
         flex flex-col h-full relative overflow-hidden
         ${isWebKit ? '' : 'backdrop-blur-md'}
       `}
@@ -87,17 +87,17 @@ export const StatCard = memo(({
         style={glowStyles}
         aria-hidden="true"
       />
-      
+
       <div className="relative z-10 flex flex-col h-full">
         <div className="flex items-start justify-between mb-1">
-          <h3 
-            className="text-[11px] font-medium flex-1 min-w-0 pr-2" 
+          <h3
+            className="text-[11px] font-medium flex-1 min-w-0 pr-2"
             style={{ color: 'var(--text-secondary)' }}
           >
             {title}
           </h3>
-          <div 
-            className="scale-90 w-6 flex-shrink-0 flex items-center justify-center" 
+          <div
+            className="scale-90 w-6 flex-shrink-0 flex items-center justify-center"
             style={{ color: 'var(--color-brand-600)' }}
           >
             {icon}
@@ -106,8 +106,8 @@ export const StatCard = memo(({
         <div className="flex-grow" />
         {subtitle ? (
           <div className="flex items-baseline justify-between">
-            <p 
-              className="text-sm font-bold" 
+            <p
+              className="text-sm font-bold"
               style={{ color: 'var(--text-primary)' }}
             >
               {value}
@@ -115,8 +115,8 @@ export const StatCard = memo(({
             {subtitle}
           </div>
         ) : (
-          <p 
-            className="text-sm font-bold" 
+          <p
+            className="text-sm font-bold"
             style={{ color: 'var(--text-primary)' }}
           >
             {value}

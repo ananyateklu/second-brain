@@ -1122,14 +1122,88 @@ public class GeminiProvider : IAIProvider
         foreach (var msg in conversationMessages)
         {
             var role = msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) ? "model" : "user";
-            contents.Add(new Content
+            // Map tool/function roles to user for Gemini
+            if (msg.Role.Equals("tool", StringComparison.OrdinalIgnoreCase) ||
+                msg.Role.Equals("function", StringComparison.OrdinalIgnoreCase))
             {
-                Role = role,
-                Parts = new List<Part> { new Part { Text = msg.Content } }
-            });
+                role = "user";
+            }
+
+            var parts = new List<Part>();
+
+            // Add text if present
+            if (!string.IsNullOrEmpty(msg.Content))
+            {
+                parts.Add(new Part { Text = msg.Content });
+            }
+
+            // Add Function Calls (Model -> User)
+            if (msg.ToolCalls != null && msg.ToolCalls.Any())
+            {
+                foreach (var toolCall in msg.ToolCalls)
+                {
+                    parts.Add(new Part
+                    {
+                        FunctionCall = new FunctionCall
+                        {
+                            Name = toolCall.Name,
+                            Args = TryParseArgs(toolCall.Arguments)
+                        }
+                    });
+                }
+            }
+
+            // Add Function Results (User -> Model)
+            if (msg.ToolResults != null && msg.ToolResults.Any())
+            {
+                foreach (var toolResult in msg.ToolResults)
+                {
+                    var responseDict = new Dictionary<string, object>();
+                    if (toolResult.Result is Dictionary<string, object> dict)
+                    {
+                        responseDict = dict;
+                    }
+                    else if (toolResult.Result != null)
+                    {
+                        // Wrap non-dictionary results
+                        responseDict["result"] = toolResult.Result;
+                    }
+
+                    parts.Add(new Part
+                    {
+                        FunctionResponse = new FunctionResponse
+                        {
+                            Name = toolResult.Name,
+                            Response = responseDict
+                        }
+                    });
+                }
+            }
+
+            if (parts.Count > 0)
+            {
+                contents.Add(new Content
+                {
+                    Role = role,
+                    Parts = parts
+                });
+            }
         }
 
         return contents;
+    }
+
+    private static Dictionary<string, object> TryParseArgs(string json)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new Dictionary<string, object>();
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(json) ?? new Dictionary<string, object>();
+        }
+        catch
+        {
+            return new Dictionary<string, object>();
+        }
     }
 
     /// <summary>
@@ -1142,7 +1216,19 @@ public class GeminiProvider : IAIProvider
         foreach (var msg in conversationMessages)
         {
             var role = msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) ? "model" : "user";
-            var parts = new List<Part> { new Part { Text = msg.Content } };
+            // Map tool/function roles to user for Gemini
+            if (msg.Role.Equals("tool", StringComparison.OrdinalIgnoreCase) ||
+                msg.Role.Equals("function", StringComparison.OrdinalIgnoreCase))
+            {
+                role = "user";
+            }
+
+            var parts = new List<Part>();
+
+            if (!string.IsNullOrEmpty(msg.Content))
+            {
+                parts.Add(new Part { Text = msg.Content });
+            }
 
             // Add images if present
             if (msg.Images != null && msg.Images.Count > 0)
@@ -1162,11 +1248,57 @@ public class GeminiProvider : IAIProvider
                 }
             }
 
-            contents.Add(new Content
+            // Add Function Calls (Model -> User)
+            if (msg.ToolCalls != null && msg.ToolCalls.Any())
             {
-                Role = role,
-                Parts = parts
-            });
+                foreach (var toolCall in msg.ToolCalls)
+                {
+                    parts.Add(new Part
+                    {
+                        FunctionCall = new FunctionCall
+                        {
+                            Name = toolCall.Name,
+                            Args = TryParseArgs(toolCall.Arguments)
+                        }
+                    });
+                }
+            }
+
+            // Add Function Results (User -> Model)
+            if (msg.ToolResults != null && msg.ToolResults.Any())
+            {
+                foreach (var toolResult in msg.ToolResults)
+                {
+                    var responseDict = new Dictionary<string, object>();
+                    if (toolResult.Result is Dictionary<string, object> dict)
+                    {
+                        responseDict = dict;
+                    }
+                    else if (toolResult.Result != null)
+                    {
+                        // Wrap non-dictionary results
+                        responseDict["result"] = toolResult.Result;
+                    }
+
+                    parts.Add(new Part
+                    {
+                        FunctionResponse = new FunctionResponse
+                        {
+                            Name = toolResult.Name,
+                            Response = responseDict
+                        }
+                    });
+                }
+            }
+
+            if (parts.Count > 0)
+            {
+                contents.Add(new Content
+                {
+                    Role = role,
+                    Parts = parts
+                });
+            }
         }
 
         return contents;

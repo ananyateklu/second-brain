@@ -8,6 +8,7 @@ using SecondBrain.Application.Commands.Notes.DeleteNote;
 using SecondBrain.Application.Commands.Notes.UpdateNote;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Mappings;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Services.Notes;
@@ -28,6 +29,7 @@ public class NotesController : ControllerBase
     private readonly IMediator _mediator;
     private readonly INoteVersionService _versionService;
     private readonly INoteSummaryService _summaryService;
+    private readonly ISummaryGenerationBackgroundService _summaryBackgroundService;
     private readonly INoteRepository _noteRepository;
     private readonly ILogger<NotesController> _logger;
 
@@ -35,12 +37,14 @@ public class NotesController : ControllerBase
         IMediator mediator,
         INoteVersionService versionService,
         INoteSummaryService summaryService,
+        ISummaryGenerationBackgroundService summaryBackgroundService,
         INoteRepository noteRepository,
         ILogger<NotesController> logger)
     {
         _mediator = mediator;
         _versionService = versionService;
         _summaryService = summaryService;
+        _summaryBackgroundService = summaryBackgroundService;
         _noteRepository = noteRepository;
         _logger = logger;
     }
@@ -66,6 +70,30 @@ public class NotesController : ControllerBase
         var result = await _mediator.Send(query, cancellationToken);
 
         return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get all notes with full content for export/import purposes (e.g., iOS Shortcuts).
+    /// Returns full NoteResponse with content field included.
+    /// This endpoint is optimized for external integrations that need complete note data.
+    /// </summary>
+    /// <returns>List of notes with full content</returns>
+    [HttpGet("for-export")]
+    [ProducesResponseType(typeof(IEnumerable<NoteResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IEnumerable<NoteResponse>>> GetAllNotesForExport(CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var notes = await _noteRepository.GetByUserIdAsync(userId);
+        var responses = notes.Select(n => n.ToResponse());
+
+        return Ok(responses);
     }
 
     /// <summary>
@@ -340,6 +368,152 @@ public class NotesController : ControllerBase
         }
 
         return Ok(response);
+    }
+
+    // =========================================================================
+    // Background Summary Generation Job Endpoints
+    // =========================================================================
+
+    /// <summary>
+    /// Start a background job to generate AI summaries for notes.
+    /// Returns immediately with job ID for polling status.
+    /// </summary>
+    /// <param name="request">Request containing optional note IDs to generate summaries for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The created summary job</returns>
+    [HttpPost("summaries/start")]
+    [ProducesResponseType(typeof(SummaryJobResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SummaryJobResponse>> StartSummaryGeneration(
+        [FromBody] GenerateSummariesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (!_summaryService.IsEnabled)
+        {
+            return BadRequest(new { error = "Note summary generation is disabled" });
+        }
+
+        try
+        {
+            var job = await _summaryBackgroundService.StartSummaryGenerationAsync(
+                userId,
+                request.NoteIds,
+                cancellationToken);
+
+            var response = new SummaryJobResponse
+            {
+                Id = job.Id,
+                Status = job.Status,
+                TotalNotes = job.TotalNotes,
+                ProcessedNotes = job.ProcessedNotes,
+                SuccessCount = job.SuccessCount,
+                FailureCount = job.FailureCount,
+                SkippedCount = job.SkippedCount,
+                Errors = job.Errors,
+                StartedAt = job.StartedAt,
+                CompletedAt = job.CompletedAt,
+                CreatedAt = job.CreatedAt
+            };
+
+            return Ok(response);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Already running job
+            _logger.LogWarning(ex, "Failed to start summary generation. UserId: {UserId}", userId);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting summary generation. UserId: {UserId}", userId);
+            return StatusCode(500, new { error = "Failed to start summary generation" });
+        }
+    }
+
+    /// <summary>
+    /// Get the status of a summary generation job.
+    /// </summary>
+    /// <param name="jobId">The job ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The job status</returns>
+    [HttpGet("summaries/status/{jobId}")]
+    [ProducesResponseType(typeof(SummaryJobResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SummaryJobResponse>> GetSummaryJobStatus(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var job = await _summaryBackgroundService.GetJobStatusAsync(jobId, cancellationToken);
+
+            if (job == null)
+            {
+                return NotFound(new { error = $"Summary job '{jobId}' not found" });
+            }
+
+            var response = new SummaryJobResponse
+            {
+                Id = job.Id,
+                Status = job.Status,
+                TotalNotes = job.TotalNotes,
+                ProcessedNotes = job.ProcessedNotes,
+                SuccessCount = job.SuccessCount,
+                FailureCount = job.FailureCount,
+                SkippedCount = job.SkippedCount,
+                Errors = job.Errors,
+                StartedAt = job.StartedAt,
+                CompletedAt = job.CompletedAt,
+                CreatedAt = job.CreatedAt
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting summary job status. JobId: {JobId}", jobId);
+            return StatusCode(500, new { error = "Failed to get summary job status" });
+        }
+    }
+
+    /// <summary>
+    /// Cancel an active summary generation job.
+    /// </summary>
+    /// <param name="jobId">The job ID to cancel</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success or failure</returns>
+    [HttpPost("summaries/cancel/{jobId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> CancelSummaryJob(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var success = await _summaryBackgroundService.CancelJobAsync(jobId, cancellationToken);
+
+            if (!success)
+            {
+                return NotFound(new { error = $"Summary job '{jobId}' not found or already completed" });
+            }
+
+            return Ok(new { message = "Summary job cancelled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling summary job. JobId: {JobId}", jobId);
+            return StatusCode(500, new { error = "Failed to cancel summary job" });
+        }
     }
 
     // =========================================================================

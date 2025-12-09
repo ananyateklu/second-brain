@@ -16,6 +16,10 @@ export interface ProviderSelectionState {
   availableProviders: ProviderInfo[];
   availableModels: string[];
   isHealthLoading: boolean;
+  /** Refresh providers by clearing cache and fetching fresh data */
+  refreshProviders: () => Promise<void>;
+  /** Whether providers are currently being refreshed */
+  isRefreshing: boolean;
 }
 
 export interface ProviderSelectionActions {
@@ -28,7 +32,7 @@ export interface ProviderSelectionActions {
  * Manages provider and model selection with persistence to settings store.
  */
 export function useChatProviderSelection(): ProviderSelectionState & ProviderSelectionActions {
-  const { data: healthData, isLoading: isHealthLoading } = useAIHealth();
+  const { data: healthData, isLoading: isHealthLoading, isFetching, refreshProviders } = useAIHealth();
   const {
     chatProvider: savedChatProvider,
     chatModel: savedChatModel,
@@ -167,6 +171,8 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     availableProviders,
     availableModels,
     isHealthLoading,
+    refreshProviders,
+    isRefreshing: isFetching && !isHealthLoading, // Refreshing = fetching but not initial load
     // Actions
     handleProviderChange,
     handleModelChange,

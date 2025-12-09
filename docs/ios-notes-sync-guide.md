@@ -282,10 +282,12 @@ Add these actions in order:
 ##### Action 1: Get Contents of URL
 
 - Search for `Get Contents of URL`
-- URL: `https://your-domain.com/api/notes`
+- URL: `https://your-domain.com/api/notes/for-export`
 - Method: `GET`
 - Headers:
   - `Authorization`: `ApiKey YOUR_API_KEY_HERE`
+
+**Note:** This endpoint returns notes with full content. Use `/api/notes` if you only need summaries (for list views).
 
 ##### Action 2: Get Dictionary from Input
 
@@ -602,13 +604,13 @@ POST /api/import/notes
 
 ### Export Endpoints
 
-#### Get All Notes
+#### Get All Notes (Lightweight - Summary Only)
 
 ```text
 GET /api/notes
 ```
 
-Returns all notes for the authenticated user.
+Returns all notes for the authenticated user with summaries (no full content) for better performance.
 
 **Example Request (cURL):**
 
@@ -624,7 +626,43 @@ curl -X GET https://your-domain.com/api/notes \
   {
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "My First Note",
+    "summary": "AI-generated summary of the note...",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T14:45:00Z",
+    "tags": ["tags", "example"],
+    "isArchived": false,
+    "source": "web",
+    "folder": "Personal"
+  }
+]
+```
+
+**Note:** This endpoint does not include the `content` field. Use `/api/notes/for-export` if you need full content.
+
+#### Get All Notes for Export (Full Content)
+
+```text
+GET /api/notes/for-export
+```
+
+Returns all notes for the authenticated user with **full content** included. Use this endpoint for iOS Shortcuts and other integrations that need complete note data.
+
+**Example Request (cURL):**
+
+```bash
+curl -X GET https://your-domain.com/api/notes/for-export \
+  -H "Authorization: ApiKey YOUR_API_KEY"
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "My First Note",
     "content": "This is the content of my note with #tags inline",
+    "summary": "AI-generated summary of the note...",
     "createdAt": "2025-01-15T10:30:00Z",
     "updatedAt": "2025-01-15T14:45:00Z",
     "tags": ["tags", "example"],
@@ -638,6 +676,7 @@ curl -X GET https://your-domain.com/api/notes \
     "id": "550e8400-e29b-41d4-a716-446655440001",
     "title": "Work Meeting Notes",
     "content": "Meeting agenda and action items...",
+    "summary": "AI-generated summary...",
     "createdAt": "2025-01-14T09:00:00Z",
     "updatedAt": "2025-01-14T11:30:00Z",
     "tags": ["work", "meetings"],

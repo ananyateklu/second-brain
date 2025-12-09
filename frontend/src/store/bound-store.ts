@@ -20,6 +20,8 @@ import { createOllamaSlice } from './slices/ollama-slice';
 import { createNotesSlice } from './slices/notes-slice';
 import { createRagAnalyticsSlice } from './slices/rag-analytics-slice';
 import { createIndexingSlice } from './slices/indexing-slice';
+import { createSummarySlice } from './slices/summary-slice';
+import { createDraftSlice } from './slices/draft-slice';
 
 // ============================================
 // Combined Store
@@ -36,6 +38,8 @@ const _useBoundStore = create<BoundStore>()(
       ...createNotesSlice(...args),
       ...createRagAnalyticsSlice(...args),
       ...createIndexingSlice(...args),
+      ...createSummarySlice(...args),
+      ...createDraftSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility

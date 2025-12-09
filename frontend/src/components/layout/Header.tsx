@@ -6,6 +6,7 @@ import { useThemeStore } from '../../store/theme-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
+import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
@@ -406,6 +407,9 @@ export function Header() {
                 </NavLink>
               </div>
             )}
+
+            {/* Summary Generation Indicator */}
+            <SummaryIndicator />
 
             {/* Indexing Indicator */}
             <IndexingIndicator />

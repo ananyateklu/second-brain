@@ -12,7 +12,7 @@ import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/
 import { RagContextNote } from '../../../types/rag';
 import { GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
-import type { ImageGenerationStage } from '../../../core/streaming/types';
+import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming/types';
 
 export interface StreamingIndicatorProps {
   isStreaming: boolean;
@@ -25,6 +25,8 @@ export interface StreamingIndicatorProps {
   agentModeEnabled?: boolean;
   /** Whether RAG (Retrieval-Augmented Generation) is enabled for this chat */
   ragEnabled?: boolean;
+  /** Unified process timeline - thinking and tool executions in chronological order */
+  processTimeline?: ProcessEvent[];
   thinkingSteps?: ThinkingStep[];
   toolExecutions?: ToolExecution[];
   processingStatus?: string | null;
@@ -64,6 +66,7 @@ export function StreamingIndicator({
   streamDuration,
   agentModeEnabled = false,
   ragEnabled = false,
+  processTimeline = [],
   thinkingSteps = [],
   toolExecutions = [],
   processingStatus = null,
@@ -86,7 +89,10 @@ export function StreamingIndicator({
   const hasGrokSearchSources = grokSearchSources.length > 0;
   const hasCodeExecution = codeExecutionResult !== null;
   const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
-  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration;
+  // Use processTimeline if available, otherwise fall back to separate lists for backward compatibility
+  const hasProcessTimeline = processTimeline.length > 0;
+  const hasLegacySteps = thinkingSteps.length > 0 || toolExecutions.length > 0;
+  const hasSteps = hasProcessTimeline || hasLegacySteps || hasAnyRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration;
 
   return (
     <div>
@@ -103,11 +109,39 @@ export function StreamingIndicator({
           />
         )}
 
-        {agentModeEnabled && thinkingSteps.map((step, index) => (
+        {/* Render from unified processTimeline to maintain chronological order */}
+        {agentModeEnabled && hasProcessTimeline && processTimeline.map((event, index) => {
+          if (event.type === 'thinking') {
+            return (
+              <ThinkingStepCard
+                key={`timeline-thinking-${index}`}
+                step={{ content: event.content, timestamp: new Date(event.timestamp) }}
+                isStreaming={isStreaming && !event.isComplete}
+              />
+            );
+          } else if (event.type === 'tool') {
+            return (
+              <ToolExecutionCard
+                key={`timeline-tool-${index}`}
+                execution={{
+                  tool: event.execution.tool,
+                  arguments: event.execution.arguments,
+                  result: event.execution.result ?? '',
+                  status: event.execution.status,
+                  timestamp: new Date(event.execution.startedAt),
+                }}
+              />
+            );
+          }
+          return null;
+        })}
+
+        {/* Fallback: render from separate lists if processTimeline is empty (backward compatibility) */}
+        {agentModeEnabled && !hasProcessTimeline && thinkingSteps.map((step, index) => (
           <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
         ))}
 
-        {agentModeEnabled && toolExecutions.map((execution, index) => (
+        {agentModeEnabled && !hasProcessTimeline && toolExecutions.map((execution, index) => (
           <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
         ))}
 

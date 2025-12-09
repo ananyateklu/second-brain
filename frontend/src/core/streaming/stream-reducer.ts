@@ -12,6 +12,7 @@ import type {
   StreamToolExecution,
   StreamPhase,
   ImageGenerationState,
+  ProcessEvent,
 } from './types';
 import { initialStreamState } from './types';
 import { estimateTokenCount } from '../../utils/token-utils';
@@ -124,12 +125,35 @@ function processThinkingEvent(
     ? event.content
     : state.thinkingContent + event.content;
 
+  // Add thinking event to process timeline
+  const thinkingEvent: ProcessEvent = {
+    type: 'thinking',
+    content: newThinkingContent,
+    timestamp: Date.now(),
+    isComplete: event.isComplete ?? false,
+  };
+
+  // Update or add thinking event in timeline
+  // If we already have a thinking event, update it; otherwise add new
+  const existingThinkingIndex = state.processTimeline.findIndex(e => e.type === 'thinking');
+  let newTimeline: ProcessEvent[];
+
+  if (existingThinkingIndex >= 0) {
+    // Update existing thinking event in place
+    newTimeline = [...state.processTimeline];
+    newTimeline[existingThinkingIndex] = thinkingEvent;
+  } else {
+    // Add new thinking event
+    newTimeline = [...state.processTimeline, thinkingEvent];
+  }
+
   return {
     ...state,
     phase: 'streaming',
     status: 'streaming',
     thinkingContent: newThinkingContent,
     isThinkingComplete: event.isComplete ?? false,
+    processTimeline: newTimeline,
   };
 }
 
@@ -162,11 +186,18 @@ function processToolStartEvent(
 
   newActiveTools.set(event.toolId, toolExecution);
 
+  // Add tool event to process timeline
+  const toolEvent: ProcessEvent = {
+    type: 'tool',
+    execution: toolExecution,
+  };
+
   return {
     ...state,
     phase: 'tool-execution',
     status: 'streaming',
     activeTools: newActiveTools,
+    processTimeline: [...state.processTimeline, toolEvent],
   };
 }
 
@@ -210,12 +241,21 @@ function processToolEndEvent(
   // Determine new phase based on remaining active tools
   const newPhase: StreamPhase = newActiveTools.size > 0 ? 'tool-execution' : 'streaming';
 
+  // Update tool event in process timeline
+  const newTimeline = state.processTimeline.map(e => {
+    if (e.type === 'tool' && e.execution.id === toolIdToRemove) {
+      return { type: 'tool' as const, execution: completedTool };
+    }
+    return e;
+  });
+
   return {
     ...state,
     phase: newPhase,
     status: 'streaming',
     activeTools: newActiveTools,
     completedTools: [...state.completedTools, completedTool],
+    processTimeline: newTimeline,
   };
 }
 
@@ -586,6 +626,7 @@ export function hasStreamContent(state: UnifiedStreamState): boolean {
     state.thinkingContent.length > 0 ||
     state.completedTools.length > 0 ||
     state.activeTools.size > 0 ||
+    state.processTimeline.length > 0 ||
     state.ragContext.length > 0 ||
     state.groundingSources.length > 0 ||
     state.grokSearchSources.length > 0 ||

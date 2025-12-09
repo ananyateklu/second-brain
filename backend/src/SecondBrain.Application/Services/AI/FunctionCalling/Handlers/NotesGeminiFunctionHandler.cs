@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -19,9 +20,10 @@ namespace SecondBrain.Application.Services.AI.FunctionCalling.Handlers;
 /// </summary>
 public class NotesGeminiFunctionHandler : IGeminiFunctionHandler
 {
-    private readonly INoteRepository _noteRepository;
+    private readonly IParallelNoteRepository _noteRepository;
     private readonly IRagService? _ragService;
     private readonly RagSettings? _ragSettings;
+    private readonly IStructuredOutputService? _structuredOutputService;
     private readonly ILogger<NotesGeminiFunctionHandler> _logger;
     private readonly NotesPlugin _plugin;
     private readonly Dictionary<string, MethodInfo> _methods;
@@ -50,22 +52,26 @@ public class NotesGeminiFunctionHandler : IGeminiFunctionHandler
         "DuplicateNote",
         "ArchiveNote",
         "UnarchiveNote",
-        "ListArchivedNotes"
+        "ListArchivedNotes",
+        "SummarizeNote",
+        "CompareNotes"
     };
 
     public string FunctionName => "notes_management";
 
     public NotesGeminiFunctionHandler(
-        INoteRepository noteRepository,
+        IParallelNoteRepository noteRepository,
         IRagService? ragService,
         ILogger<NotesGeminiFunctionHandler> logger,
-        Microsoft.Extensions.Options.IOptions<RagSettings>? ragSettings = null)
+        Microsoft.Extensions.Options.IOptions<RagSettings>? ragSettings = null,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _noteRepository = noteRepository;
         _ragService = ragService;
         _ragSettings = ragSettings?.Value;
+        _structuredOutputService = structuredOutputService;
         _logger = logger;
-        _plugin = new NotesPlugin(noteRepository, ragService, _ragSettings);
+        _plugin = new NotesPlugin(noteRepository, ragService, _ragSettings, structuredOutputService);
         _methods = new Dictionary<string, MethodInfo>(StringComparer.OrdinalIgnoreCase);
 
         // Build method lookup from NotesPlugin

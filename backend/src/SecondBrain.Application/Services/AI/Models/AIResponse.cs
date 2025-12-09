@@ -136,3 +136,24 @@ public class FunctionCallInfo
     /// </summary>
     public string? Id { get; set; }
 }
+
+/// <summary>
+/// Information about a function execution result
+/// </summary>
+public class FunctionResultInfo
+{
+    /// <summary>
+    /// Name of the function that was called
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The result of the execution (usually a Dictionary or primitive)
+    /// </summary>
+    public object? Result { get; set; }
+
+    /// <summary>
+    /// Optional ID matching the call
+    /// </summary>
+    public string? Id { get; set; }
+}

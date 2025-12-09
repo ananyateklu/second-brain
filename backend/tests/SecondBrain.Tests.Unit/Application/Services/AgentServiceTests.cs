@@ -12,7 +12,7 @@ public class AgentServiceTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IOptions<RagSettings>> _mockRagSettings;
-    private readonly Mock<INoteRepository> _mockNoteRepository;
+    private readonly Mock<IParallelNoteRepository> _mockNoteRepository;
     private readonly Mock<IRagService> _mockRagService;
     private readonly Mock<ILogger<AgentService>> _mockLogger;
     private readonly AIProvidersSettings _settings;
@@ -21,7 +21,7 @@ public class AgentServiceTests
 
     public AgentServiceTests()
     {
-        _mockNoteRepository = new Mock<INoteRepository>();
+        _mockNoteRepository = new Mock<IParallelNoteRepository>();
         _mockRagService = new Mock<IRagService>();
         _mockLogger = new Mock<ILogger<AgentService>>();
 

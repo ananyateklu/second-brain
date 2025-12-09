@@ -38,7 +38,7 @@ const StatCard = memo(({
 
   return (
     <div
-      className="rounded-2xl border p-3 transition-all duration-200 hover:scale-[1.02] backdrop-blur-md flex flex-col h-full relative overflow-hidden"
+      className="rounded-2xl border p-3 transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md flex flex-col h-full relative overflow-hidden"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

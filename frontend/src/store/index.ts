@@ -27,6 +27,7 @@ export type {
   UISlice,
   ThemeSlice,
   OllamaSlice,
+  DraftSlice,
 } from './types';
 
 // ============================================
@@ -40,3 +41,4 @@ export * from './selectors';
 // ============================================
 
 export { formatBytes, formatSpeed, formatTimeRemaining } from './slices/ollama-slice';
+export { NEW_CHAT_DRAFT_KEY } from './slices/draft-slice';

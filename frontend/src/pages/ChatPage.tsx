@@ -56,6 +56,8 @@ export function ChatPage() {
     selectedModel,
     availableProviders,
     isHealthLoading,
+    refreshProviders,
+    isRefreshing,
 
     // Conversation State
     conversationId,
@@ -77,6 +79,7 @@ export function ChatPage() {
     streamingMessage,
     streamingError,
     retrievedNotes,
+    processTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,
@@ -265,14 +268,22 @@ export function ChatPage() {
             selectedModel={selectedModel}
             onProviderChange={handleProviderChange}
             onModelChange={handleModelChange}
+            onRefreshProviders={refreshProviders}
+            isRefreshing={isRefreshing}
             ragEnabled={ragEnabled}
-            onRagToggle={(enabled) => { void handleRagToggle(enabled); }}
+            onRagToggle={(enabled) => {
+              // Route to appropriate handler based on agent mode
+              if (agentModeEnabled) {
+                setAgentRagEnabled(enabled);
+              } else {
+                void handleRagToggle(enabled);
+              }
+            }}
             selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
             onVectorStoreChange={(provider) => { void handleVectorStoreChange(provider as VectorStoreProvider); }}
             agentModeEnabled={agentModeEnabled}
             onAgentModeChange={setAgentModeEnabled}
             agentRagEnabled={agentRagEnabled}
-            onAgentRagChange={setAgentRagEnabled}
             agentCapabilities={agentCapabilities}
             isLoading={isLoading}
             isImageGenerationMode={isImageGenerationMode}
@@ -290,6 +301,7 @@ export function ChatPage() {
             streamingMessage={streamingMessage}
             streamingError={streamingError}
             retrievedNotes={retrievedNotes}
+            processTimeline={processTimeline}
             toolExecutions={toolExecutions}
             thinkingSteps={thinkingSteps}
             agentRetrievedNotes={agentRetrievedNotes}

@@ -151,6 +151,10 @@ export const API_ENDPOINTS = {
     BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',
     GENERATE_SUMMARIES: '/notes/generate-summaries',
+    // Background Summary Generation Jobs
+    SUMMARIES_START: '/notes/summaries/start',
+    SUMMARIES_STATUS: (jobId: string) => `/notes/summaries/status/${jobId}`,
+    SUMMARIES_CANCEL: (jobId: string) => `/notes/summaries/cancel/${jobId}`,
     // Note Version History (PostgreSQL 18 Temporal Features)
     VERSIONS: (id: string) => `/notes/${id}/versions`,
     VERSION_AT: (id: string) => `/notes/${id}/versions/at`,
@@ -420,6 +424,8 @@ export const STORAGE_KEYS = {
   UI_STATE: 'second-brain-ui',
   OLLAMA_DOWNLOADS: 'ollama-downloads',
   SUGGESTED_PROMPTS: 'suggested-prompts-cache',
+  CHAT_DRAFTS: 'second-brain-drafts', // IndexedDB database name
+  CHAT_DRAFTS_FALLBACK: 'sb-draft-', // localStorage key prefix
 } as const;
 
 /**

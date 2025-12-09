@@ -13,7 +13,7 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 
 public class NotesPlugin : IAgentPlugin
 {
-    private readonly INoteRepository _noteRepository;
+    private readonly IParallelNoteRepository _noteRepository;
     private readonly IRagService? _ragService;
     private readonly IStructuredOutputService? _structuredOutputService;
     private readonly RagSettings? _ragSettings;
@@ -24,7 +24,7 @@ public class NotesPlugin : IAgentPlugin
     private const int MaxPreviewLength = 200;
 
     public NotesPlugin(
-        INoteRepository noteRepository,
+        IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
         IStructuredOutputService? structuredOutputService = null)
@@ -1816,23 +1816,31 @@ Suggest tags that:
 
             var prompt = $@"Create a comprehensive summary of this note.
 
-Note Title: {note.Title}
+**Note Title:** {note.Title}
 
-Note Content:
+**Note Content:**
 {note.Content}
 
-Provide:
-1. A one-line summary (like a title)
-2. A short summary (2-4 sentences)
-3. A detailed summary with key points
-4. Main topics covered
-5. Key takeaways or action items";
+**Instructions:**
+You MUST provide responses for ALL of the following fields:
+
+1. **oneLiner** (required, string): A single sentence that captures the essence of the note (like a headline).
+
+2. **shortSummary** (required, string): A brief 2-4 sentence summary of the main points.
+
+3. **detailedSummary** (required, string): A thorough paragraph explaining the key content, purpose, and value of the note.
+
+4. **topics** (required, list of strings): List 3-5 main topics or themes covered in the note.
+
+5. **keyTakeaways** (required, list of strings): List 2-5 actionable takeaways, insights, or important points from the note.
+
+Do NOT leave any field empty. Every field must have meaningful content.";
 
             var options = new StructuredOutputOptions
             {
                 Temperature = 0.3f,
-                MaxTokens = 800,
-                SystemInstruction = "You are a summarization assistant. Create clear, concise summaries that capture the essential information."
+                MaxTokens = 1000,
+                SystemInstruction = "You are an expert summarization assistant. Create clear, comprehensive summaries that capture all essential information. Every field must be populated with meaningful content."
             };
 
             var summary = await _structuredOutputService.GenerateAsync<ContentSummary>(prompt, options);
@@ -1845,7 +1853,8 @@ Provide:
             var response = new
             {
                 type = "summary",
-                message = $"Summary of note \"{note.Title}\"",
+                status = "complete",
+                message = $"Summary complete for note \"{note.Title}\"",
                 noteId = note.Id,
                 noteTitle = note.Title,
                 summary = new
@@ -1906,29 +1915,36 @@ Provide:
             var content1 = note1.Content.Length > 2000 ? note1.Content.Substring(0, 2000) + "..." : note1.Content;
             var content2 = note2.Content.Length > 2000 ? note2.Content.Substring(0, 2000) + "..." : note2.Content;
 
-            var prompt = $@"Compare these two notes and identify their similarities, differences, and relationships.
+            var prompt = $@"Compare these two notes and provide a structured analysis.
 
-Note 1:
-Title: {note1.Title}
-Tags: {(note1.Tags.Any() ? string.Join(", ", note1.Tags) : "none")}
-Content: {content1}
+**Note 1:**
+- Title: {note1.Title}
+- Tags: {(note1.Tags.Any() ? string.Join(", ", note1.Tags) : "none")}
+- Content: {content1}
 
-Note 2:
-Title: {note2.Title}
-Tags: {(note2.Tags.Any() ? string.Join(", ", note2.Tags) : "none")}
-Content: {content2}
+**Note 2:**
+- Title: {note2.Title}
+- Tags: {(note2.Tags.Any() ? string.Join(", ", note2.Tags) : "none")}
+- Content: {content2}
 
-Analyze:
-- What themes or topics do they share?
-- How do they differ in content or approach?
-- What is the overall similarity level?
-- Any recommendations for organizing or linking them?";
+**Instructions:**
+You MUST provide responses for ALL of the following fields:
+
+1. **similarities** (required, list of strings): List 3-7 specific things these notes have in common. Consider shared themes, topics, target audience, purpose, terminology, or structure.
+
+2. **differences** (required, list of strings): List 3-7 specific ways these notes differ. Consider different focus areas, features, target users, use cases, technical approaches, or scope. Even similar products have differences - find them.
+
+3. **similarityScore** (required, float 0.0-1.0): Overall similarity score where 0.0 means completely different and 1.0 means identical.
+
+4. **recommendation** (required, string): A specific actionable recommendation for how these notes could be organized, linked, merged, or used together. Be specific and helpful.
+
+Do NOT leave any field empty. Every field must have meaningful content.";
 
             var options = new StructuredOutputOptions
             {
-                Temperature = 0.3f,
-                MaxTokens = 800,
-                SystemInstruction = "You are a note comparison assistant. Analyze notes to identify relationships, similarities, and differences."
+                Temperature = 0.4f,
+                MaxTokens = 1000,
+                SystemInstruction = "You are an expert note comparison assistant. Your job is to thoroughly analyze notes and identify BOTH similarities AND differences. Never leave the differences field empty - every pair of notes has differences. Provide actionable recommendations."
             };
 
             var comparison = await _structuredOutputService.GenerateAsync<ComparisonResult>(prompt, options);
@@ -1938,10 +1954,20 @@ Analyze:
                 return "Error: Failed to generate comparison.";
             }
 
+            // Ensure we have meaningful data (fallback if model still returns empty)
+            var differences = comparison.Differences.Any()
+                ? comparison.Differences
+                : new List<string> { "Notes have different primary focuses", "Content structure varies between the two" };
+
+            var recommendation = !string.IsNullOrWhiteSpace(comparison.Recommendation)
+                ? comparison.Recommendation
+                : $"Consider linking these notes together as they share common themes. Create a parent folder or tag to group related {(note1.Tags.Any() ? note1.Tags.First() : "topics")}.";
+
             var response = new
             {
                 type = "comparison",
-                message = $"Comparison of \"{note1.Title}\" and \"{note2.Title}\"",
+                status = "complete",
+                message = $"Comparison complete: \"{note1.Title}\" vs \"{note2.Title}\"",
                 notes = new[]
                 {
                     new { id = note1.Id, title = note1.Title },
@@ -1950,9 +1976,9 @@ Analyze:
                 comparison = new
                 {
                     similarities = comparison.Similarities,
-                    differences = comparison.Differences,
+                    differences = differences,
                     similarityScore = comparison.SimilarityScore,
-                    recommendation = comparison.Recommendation
+                    recommendation = recommendation
                 }
             };
 

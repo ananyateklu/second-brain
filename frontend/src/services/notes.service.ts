@@ -19,6 +19,7 @@ import type {
   RestoreVersionResponse,
   GenerateSummariesRequest,
   GenerateSummariesResponse,
+  SummaryJobResponse,
 } from '../types/notes';
 
 /**
@@ -311,14 +312,47 @@ export const notesService = {
   // ============================================
 
   /**
-   * Generate AI summaries for notes
+   * Generate AI summaries for notes (synchronous, blocking)
    * @param noteIds - Optional list of note IDs. If empty, generates for all notes without summaries.
+   * @deprecated Use startSummaryGeneration for non-blocking background processing
    */
   async generateSummaries(noteIds: string[] = []): Promise<GenerateSummariesResponse> {
     return apiClient.post<GenerateSummariesResponse>(
       API_ENDPOINTS.NOTES.GENERATE_SUMMARIES,
       { noteIds } as GenerateSummariesRequest
     );
+  },
+
+  // ============================================
+  // Background Summary Generation Jobs
+  // ============================================
+
+  /**
+   * Start a background summary generation job
+   * @param noteIds - Optional list of note IDs. If empty, generates for all notes without summaries.
+   * @returns The created summary job with ID for polling
+   */
+  async startSummaryGeneration(noteIds: string[] = []): Promise<SummaryJobResponse> {
+    return apiClient.post<SummaryJobResponse>(
+      API_ENDPOINTS.NOTES.SUMMARIES_START,
+      { noteIds } as GenerateSummariesRequest
+    );
+  },
+
+  /**
+   * Get the status of a summary generation job
+   * @param jobId - The job ID to check
+   */
+  async getSummaryJobStatus(jobId: string): Promise<SummaryJobResponse> {
+    return apiClient.get<SummaryJobResponse>(API_ENDPOINTS.NOTES.SUMMARIES_STATUS(jobId));
+  },
+
+  /**
+   * Cancel an active summary generation job
+   * @param jobId - The job ID to cancel
+   */
+  async cancelSummaryJob(jobId: string): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>(API_ENDPOINTS.NOTES.SUMMARIES_CANCEL(jobId));
   },
 };
 

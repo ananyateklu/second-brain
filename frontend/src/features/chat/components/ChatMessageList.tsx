@@ -12,6 +12,7 @@ import { ProcessTimeline } from './ProcessTimeline';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { extractThinkingContent, hasThinkingTags } from '../../../utils/thinking-utils';
 import { convertToolCallToExecution } from '../utils/tool-utils';
+import type { ProcessEvent } from '../../../core/streaming/types';
 
 import { PendingMessage } from '../hooks/use-chat-conversation-manager';
 
@@ -23,6 +24,8 @@ export interface ChatMessageListProps {
   streamingMessage: string;
   streamingError: Error | null;
   retrievedNotes: RagContextNote[];
+  /** Unified process timeline - thinking and tool executions in chronological order */
+  processTimeline: ProcessEvent[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   /** Notes automatically retrieved via semantic search for agent context injection */
@@ -64,6 +67,7 @@ export function ChatMessageList({
   streamingMessage,
   streamingError,
   retrievedNotes,
+  processTimeline,
   toolExecutions,
   thinkingSteps,
   agentRetrievedNotes,
@@ -175,6 +179,7 @@ export function ChatMessageList({
                 streamDuration={streamDuration}
                 agentModeEnabled={agentModeEnabled}
                 ragEnabled={ragEnabled}
+                processTimeline={processTimeline}
                 thinkingSteps={thinkingSteps}
                 toolExecutions={toolExecutions}
                 processingStatus={processingStatus}

@@ -179,17 +179,6 @@ describe('StatCard', () => {
             expect(card).toBeInTheDocument();
         });
 
-        it('should have hover scale transition', () => {
-            // Act
-            const { container } = render(
-                <StatCard title="Test" value={100} icon={<MockIcon />} />
-            );
-
-            // Assert
-            const card = container.querySelector('.hover\\:scale-\\[1\\.02\\]');
-            expect(card).toBeInTheDocument();
-        });
-
         it('should have backdrop blur', () => {
             // Act
             const { container } = render(

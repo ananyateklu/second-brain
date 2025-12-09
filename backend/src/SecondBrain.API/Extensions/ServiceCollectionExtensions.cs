@@ -95,6 +95,9 @@ public static class ServiceCollectionExtensions
         // AI-powered note summary service for list endpoint optimization
         services.AddScoped<INoteSummaryService, NoteSummaryService>();
 
+        // Background summary generation service
+        services.AddScoped<ISummaryGenerationBackgroundService, SummaryGenerationBackgroundService>();
+
         return services;
     }
 
@@ -292,12 +295,32 @@ public static class ServiceCollectionExtensions
             });
         });
 
+        // Register DbContextFactory for parallel operations (thread-safe DbContext creation)
+        // This allows creating isolated DbContext instances for concurrent database operations
+        services.AddDbContextFactory<ApplicationDbContext>(options =>
+        {
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+            {
+                npgsqlOptions.UseVector();
+                npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                npgsqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null);
+            });
+        });
+
         // Register repositories
         services.AddScoped<INoteRepository, SqlNoteRepository>();
         services.AddScoped<IUserRepository, SqlUserRepository>();
         services.AddScoped<IChatRepository, SqlChatRepository>();
         services.AddScoped<INoteEmbeddingRepository, SqlNoteEmbeddingRepository>();
         services.AddScoped<IIndexingJobRepository, SqlIndexingJobRepository>();
+        services.AddScoped<ISummaryJobRepository, SqlSummaryJobRepository>();
+
+        // Parallel-safe repository using DbContextFactory for concurrent operations
+        // This enables safe parallel tool execution in agent mode
+        services.AddScoped<IParallelNoteRepository, ParallelNoteRepository>();
 
         // Tool call analytics repository (PostgreSQL 18 JSON_TABLE)
         services.AddScoped<IToolCallAnalyticsRepository, SqlToolCallAnalyticsRepository>();

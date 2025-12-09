@@ -15,7 +15,7 @@ interface FeedbackSummaryCardProps {
 export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
   return (
     <div
-      className="rounded-2xl p-3 transition-all duration-200 hover:scale-[1.005] backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl p-3 transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md relative overflow-hidden group"
       style={{
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',

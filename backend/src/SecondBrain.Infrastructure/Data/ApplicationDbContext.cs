@@ -20,6 +20,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RetrievedNote> RetrievedNotes { get; set; } = null!;
     public DbSet<GeneratedImageData> GeneratedImages { get; set; } = null!;
     public DbSet<IndexingJob> IndexingJobs { get; set; } = null!;
+    public DbSet<SummaryJob> SummaryJobs { get; set; } = null!;
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
     public DbSet<RagQueryLog> RagQueryLogs { get; set; } = null!;
 
@@ -191,6 +192,14 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_indexing_jobs_user_id");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_indexing_jobs_created_at");
             entity.HasIndex(e => new { e.UserId, e.CreatedAt }).HasDatabaseName("ix_indexing_jobs_user_created");
+        });
+
+        // Configure SummaryJob entity
+        modelBuilder.Entity<SummaryJob>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).HasDatabaseName("ix_summary_jobs_user_id");
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_summary_jobs_status");
+            entity.HasIndex(e => new { e.UserId, e.Status }).HasDatabaseName("ix_summary_jobs_user_status");
         });
 
         // Configure NoteEmbedding entity

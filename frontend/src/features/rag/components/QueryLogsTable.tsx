@@ -537,7 +537,7 @@ export const QueryLogsTable = memo(({
             <button
               onClick={() => { onPageChange(page - 1); }}
               disabled={page <= 1}
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
               style={{
                 backgroundColor: 'var(--surface-elevated)',
                 color: page <= 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)',
@@ -565,7 +565,7 @@ export const QueryLogsTable = memo(({
                   <button
                     key={pageNum}
                     onClick={() => { onPageChange(pageNum); }}
-                    className="w-9 h-9 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.05]"
+                    className="w-9 h-9 text-sm font-medium rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-[1px]"
                     style={{
                       backgroundColor: page === pageNum ? 'var(--color-brand-500)' : 'transparent',
                       color: page === pageNum ? 'white' : 'var(--text-secondary)',
@@ -580,7 +580,7 @@ export const QueryLogsTable = memo(({
             <button
               onClick={() => { onPageChange(page + 1); }}
               disabled={page >= totalPages}
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
               style={{
                 backgroundColor: 'var(--surface-elevated)',
                 color: page >= totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)',

@@ -17,6 +17,10 @@ interface CombinedModelSelectorProps {
   onProviderChange: (provider: string) => void;
   onModelChange: (model: string) => void;
   disabled?: boolean;
+  /** Callback to refresh providers by clearing cache and fetching fresh data */
+  onRefresh?: () => Promise<void>;
+  /** Whether providers are currently being refreshed */
+  isRefreshing?: boolean;
 }
 
 export function CombinedModelSelector({
@@ -26,6 +30,8 @@ export function CombinedModelSelector({
   onProviderChange,
   onModelChange,
   disabled = false,
+  onRefresh,
+  isRefreshing = false,
 }: CombinedModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -191,25 +197,54 @@ export function CombinedModelSelector({
     return `${selectedProvider} / ${shortModel}`;
   };
 
+  // Handle refresh click
+  const handleRefresh = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening dropdown
+    if (onRefresh && !isRefreshing) {
+      await onRefresh();
+    }
+  };
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex items-center gap-1.5">
       <button
         ref={buttonRef}
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
+        onClick={() => !disabled && !isRefreshing && setIsOpen(!isOpen)}
+        disabled={disabled || isRefreshing}
         className="group px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 max-w-[280px]"
         style={{
           backgroundColor: isOpen ? 'var(--surface-elevated)' : 'var(--surface-card)',
           color: 'var(--text-primary)',
-          border: '1px solid var(--border)',
+          border: `1px solid ${isRefreshing ? 'var(--color-primary)' : 'var(--border)'}`,
           boxShadow: isOpen ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
         }}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        {/* Provider logo */}
-        {selectedProvider && selectedProviderLogo ? (
+        {/* Loading spinner when refreshing, otherwise show provider logo */}
+        {isRefreshing ? (
+          <svg
+            className="w-4 h-4 flex-shrink-0 animate-spin"
+            style={{ color: 'var(--color-primary)' }}
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+        ) : selectedProvider && selectedProviderLogo ? (
           <img
             src={selectedProviderLogo}
             alt={selectedProvider}
@@ -234,7 +269,9 @@ export function CombinedModelSelector({
         )}
 
         <span className="truncate flex-1 text-left">
-          {selectedProvider && selectedModel ? (
+          {isRefreshing ? (
+            <span style={{ color: 'var(--color-primary)' }}>Refreshing...</span>
+          ) : selectedProvider && selectedModel ? (
             <>
               <span style={{ color: 'var(--color-brand-400)' }}>{selectedProvider}</span>
               <span className="mx-1" style={{ color: 'var(--text-secondary)' }}>/</span>
@@ -255,6 +292,36 @@ export function CombinedModelSelector({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
+
+      {/* Refresh Button */}
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={(e) => { void handleRefresh(e); }}
+          disabled={isRefreshing || disabled}
+          className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            color: isRefreshing ? 'var(--color-primary)' : 'var(--text-secondary)',
+            border: '1px solid var(--border)',
+          }}
+          title={isRefreshing ? 'Refreshing providers...' : 'Refresh providers & models'}
+        >
+          <svg
+            className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+      )}
 
       {isOpen && (
         <>

@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, ComponentPropsWithoutRef } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ThinkingStep } from '../types/agent-types';
 
 interface ThinkingStepCardProps {
@@ -7,6 +9,115 @@ interface ThinkingStepCardProps {
   /** When true, the card will be expanded by default to show streaming content */
   isStreaming?: boolean;
 }
+
+// Lightweight markdown components for thinking content
+const thinkingMarkdownComponents: Components = {
+  // Paragraphs - more compact for thinking
+  p: ({ node: _node, ...props }: ComponentPropsWithoutRef<'p'> & { node?: unknown }) => (
+    <p
+      className="leading-relaxed [&:not(:last-child)]:mb-2"
+      style={{ color: 'var(--text-secondary)' }}
+      {...props}
+    />
+  ),
+  // Strong/Bold
+  strong: ({ node: _node, ...props }: ComponentPropsWithoutRef<'strong'> & { node?: unknown }) => (
+    <strong
+      className="font-semibold"
+      style={{ color: 'var(--text-primary)' }}
+      {...props}
+    />
+  ),
+  // Emphasis/Italic
+  em: ({ node: _node, ...props }: ComponentPropsWithoutRef<'em'> & { node?: unknown }) => (
+    <em
+      className="italic"
+      style={{ color: 'var(--text-secondary)' }}
+      {...props}
+    />
+  ),
+  // Lists - ordered
+  ol: ({ node: _node, ...props }: ComponentPropsWithoutRef<'ol'> & { node?: unknown }) => (
+    <ol
+      className="list-decimal space-y-1 ml-5 [&:not(:last-child)]:mb-2"
+      style={{ color: 'var(--text-secondary)' }}
+      {...props}
+    />
+  ),
+  // Lists - unordered
+  ul: ({ node: _node, ...props }: ComponentPropsWithoutRef<'ul'> & { node?: unknown }) => (
+    <ul
+      className="list-disc space-y-1 ml-5 [&:not(:last-child)]:mb-2"
+      style={{ color: 'var(--text-secondary)' }}
+      {...props}
+    />
+  ),
+  // List items
+  li: ({ node: _node, ...props }: ComponentPropsWithoutRef<'li'> & { node?: unknown }) => (
+    <li
+      style={{ color: 'var(--text-secondary)' }}
+      {...props}
+    />
+  ),
+  // Inline code
+  code: ({ node: _node, className, ...props }: ComponentPropsWithoutRef<'code'> & { node?: unknown }) => {
+    // Check if it's a code block (has language class) vs inline code
+    const isCodeBlock = className?.includes('language-');
+    if (isCodeBlock) {
+      return (
+        <code
+          className="block p-2 rounded text-xs overflow-x-auto"
+          style={{
+            backgroundColor: 'var(--surface-elevated)',
+            color: 'var(--text-primary)',
+          }}
+          {...props}
+        />
+      );
+    }
+    return (
+      <code
+        className="px-1 py-0.5 rounded text-xs"
+        style={{
+          backgroundColor: 'var(--surface-elevated)',
+          color: 'var(--text-primary)',
+        }}
+        {...props}
+      />
+    );
+  },
+  // Pre blocks
+  pre: ({ node: _node, ...props }: ComponentPropsWithoutRef<'pre'> & { node?: unknown }) => (
+    <pre
+      className="p-2 rounded overflow-x-auto text-xs [&:not(:last-child)]:mb-2"
+      style={{
+        backgroundColor: 'var(--surface-elevated)',
+      }}
+      {...props}
+    />
+  ),
+  // Blockquotes
+  blockquote: ({ node: _node, ...props }: ComponentPropsWithoutRef<'blockquote'> & { node?: unknown }) => (
+    <blockquote
+      className="border-l-2 pl-3 italic [&:not(:first-child)]:mt-2 [&:not(:last-child)]:mb-2"
+      style={{
+        borderColor: 'var(--border)',
+        color: 'var(--text-tertiary)',
+      }}
+      {...props}
+    />
+  ),
+  // Links
+  a: ({ node: _node, ...props }: ComponentPropsWithoutRef<'a'> & { node?: unknown }) => (
+    <a
+      className="underline hover:no-underline"
+      style={{ color: 'var(--color-brand-500)' }}
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
+    />
+  ),
+};
 
 export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
   // Start expanded when streaming, collapsed otherwise
@@ -21,13 +132,10 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
     }
   }, [isStreaming]);
 
-  // Parse the thinking content into steps
-  const parseSteps = (content: string): string[] => {
-    const lines = content.split('\n').filter(line => line.trim());
-    return lines;
-  };
-
-  const steps = parseSteps(step.content);
+  // Process content - trim and prepare for markdown rendering
+  const processedContent = useMemo(() => {
+    return step.content.trim();
+  }, [step.content]);
 
   return (
     <div className="relative pl-12 py-2 group">
@@ -79,18 +187,21 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
 
         {isExpanded && (
           <div
-            className="mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto"
+            className="mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto thinking-content"
             style={{
               backgroundColor: 'var(--surface-card)',
               color: 'var(--text-secondary)',
               border: '1px solid var(--border)'
             }}
           >
-            {steps.map((stepText, index) => (
-              <div key={index} className="mb-1 last:mb-0">
-                {stepText}
-              </div>
-            ))}
+            <div className="[&>*:last-child]:!mb-0 [&>*:last-child>*:last-child]:!mb-0">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={thinkingMarkdownComponents}
+              >
+                {processedContent}
+              </ReactMarkdown>
+            </div>
             {/* Show cursor when streaming to indicate more content coming */}
             {isStreaming && (
               <span

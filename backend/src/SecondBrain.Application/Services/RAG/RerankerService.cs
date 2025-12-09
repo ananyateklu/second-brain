@@ -413,6 +413,15 @@ Respond with ONLY a single number between 0 and 10. No explanation.";
         List<HybridSearchResult> originalResults,
         List<RerankedResult> rerankedResults)
     {
+        // Handle empty results - all may have been filtered out below minimum score
+        if (rerankedResults.Count == 0)
+        {
+            _logger.LogInformation(
+                "Reranking complete. All {OriginalCount} results filtered out (below minimum score threshold)",
+                originalResults.Count);
+            return;
+        }
+
         var rankChanges = rerankedResults
             .Select(r => new { r.NoteTitle, r.OriginalRank, r.FinalRank, Change = r.OriginalRank - r.FinalRank })
             .ToList();

@@ -2,6 +2,11 @@
  * ChatInput Root Component
  * Main container for the compound ChatInput pattern
  * Provides context to all child components
+ * 
+ * Features:
+ * - Dynamic height based on focus state (70vh focused, 30vh unfocused)
+ * - Smooth 300ms transitions
+ * - Draft persistence integration
  */
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
@@ -26,6 +31,7 @@ import {
 import { useNotes } from '../../../notes/hooks/use-notes-query';
 import { chatService } from '../../../../services/chat.service';
 import { STORAGE_KEYS } from '../../../../lib/constants';
+import { useChatInputHeight } from '../../hooks/use-chat-input-height';
 import type { MessageImage, ImageGenerationResponse } from '../../types/chat';
 
 export interface ImageGenerationParams {
@@ -93,6 +99,7 @@ export function ChatInputRoot({
   // Refs
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // File attachment state
   const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
@@ -104,6 +111,22 @@ export function ChatInputRoot({
   const [showToolbar, setShowToolbar] = useState(false);
   const [showSmartPrompts, setShowSmartPrompts] = useState(false);
   const [showImageGenPanel, setShowImageGenPanel] = useState(false);
+
+  // Dynamic height management
+  const heightManager = useChatInputHeight({
+    focusedMaxHeightVh: 70,
+    unfocusedMaxHeightVh: 30,
+    minHeight: 48,
+    transitionDuration: 300,
+  });
+
+  const {
+    isFocused,
+    maxHeight,
+    isScrollable,
+    handleFocus: heightHandleFocus,
+    handleBlur: heightHandleBlur,
+  } = heightManager;
 
   // Mentions state
   const [showMentions, setShowMentions] = useState(false);
@@ -523,6 +546,23 @@ export function ChatInputRoot({
     void handleGenerateSmartPrompts();
   }, [handleGenerateSmartPrompts]);
 
+  // Focus handlers that integrate with the height manager
+  const handleFocus = useCallback(() => {
+    heightHandleFocus();
+  }, [heightHandleFocus]);
+
+  const handleBlur = useCallback(() => {
+    // Delay blur check to allow clicking buttons within the container
+    setTimeout(() => {
+      const activeElement = document.activeElement;
+      const isInsideContainer = containerRef.current?.contains(activeElement);
+
+      if (!isInsideContainer) {
+        heightHandleBlur();
+      }
+    }, 100);
+  }, [heightHandleBlur]);
+
   // Create context value
   const contextValue: ChatInputContextValue = {
     value,
@@ -532,6 +572,13 @@ export function ChatInputRoot({
     isLoading,
     isStreaming,
     disabled,
+    // Focus and height state
+    isFocused,
+    maxHeight,
+    isScrollable,
+    onFocus: handleFocus,
+    onBlur: handleBlur,
+    // File attachments
     attachedFiles,
     onRemoveFile: handleRemoveFile,
     onFileSelect: handleFileSelectWrapper,
@@ -586,10 +633,19 @@ export function ChatInputRoot({
     inputTokenCount,
   };
 
+  // Dynamic classes for the wrapper based on focus state
+  const wrapperClasses = [
+    'absolute bottom-0 left-0 w-full px-6 py-6 z-20 pointer-events-none',
+    'chat-input-wrapper',
+    isFocused ? 'chat-input-wrapper-focused' : 'chat-input-wrapper-blurred',
+    className || '',
+  ].filter(Boolean).join(' ');
+
   return (
     <ChatInputContext.Provider value={contextValue}>
       <div
-        className={`absolute bottom-0 left-0 w-full px-6 py-6 z-20 pointer-events-none ${className || ''}`}
+        ref={containerRef}
+        className={wrapperClasses}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}

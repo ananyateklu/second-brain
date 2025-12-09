@@ -51,6 +51,14 @@ export interface StreamToolExecution {
 }
 
 /**
+ * Process event for unified timeline.
+ * Tracks thinking and tool events in chronological order.
+ */
+export type ProcessEvent =
+  | { type: 'thinking'; content: string; timestamp: number; isComplete: boolean }
+  | { type: 'tool'; execution: StreamToolExecution };
+
+/**
  * Discriminated union for type-safe event handling.
  * Each event type has a specific payload structure.
  */
@@ -158,6 +166,9 @@ export interface UnifiedStreamState {
   activeTools: Map<string, StreamToolExecution>;
   completedTools: StreamToolExecution[];
 
+  // Unified process timeline (thinking + tools in chronological order)
+  processTimeline: ProcessEvent[];
+
   // Context and sources
   ragContext: RagContextNote[];
   groundingSources: GroundingSource[];
@@ -212,6 +223,7 @@ export const initialStreamState: UnifiedStreamState = {
   isThinkingComplete: false,
   activeTools: new Map(),
   completedTools: [],
+  processTimeline: [],
   ragContext: [],
   groundingSources: [],
   grokSearchSources: [],

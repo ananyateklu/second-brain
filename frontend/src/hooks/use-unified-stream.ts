@@ -509,8 +509,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
 import type { RagContextNote } from '../types/rag';
 import type { GroundingSource, CodeExecutionResult, GeneratedImage, GrokSearchSource } from '../types/chat';
 import type { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../features/agents/types/agent-types';
-import type { ImageGenerationStage } from '../core/streaming/types';
-import { extractThinkingContent } from '../utils/thinking-utils';
+import type { ImageGenerationStage, ProcessEvent } from '../core/streaming/types';
 
 /**
  * Legacy streaming state shape for backward compatibility.
@@ -530,7 +529,8 @@ export interface LegacyStreamingState {
   thinkingProcess?: string;
   // Grok-specific
   grokSearchSources?: GrokSearchSource[];
-  // Agent-specific
+  // Agent-specific - unified timeline
+  processTimeline: ProcessEvent[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   agentRetrievedNotes: RetrievedNoteContext[];
@@ -547,53 +547,33 @@ export interface LegacyStreamingState {
 }
 
 /**
- * Build thinking steps from both SSE thinking events and inline tags.
- * This replicates the old parseThinkingBlocks behavior.
- */
-function buildThinkingSteps(
-  thinkingContent: string,
-  textContent: string,
-  isStreaming: boolean
-): ThinkingStep[] {
-  const steps: ThinkingStep[] = [];
-
-  // First, add thinking content from SSE events (stored in thinkingContent)
-  if (thinkingContent) {
-    steps.push({
-      content: thinkingContent,
-      timestamp: new Date(),
-    });
-  }
-
-  // Then, extract inline <thinking> tags from the message text
-  // Include incomplete blocks during streaming
-  const inlineThinking = extractThinkingContent(textContent, isStreaming);
-  for (const content of inlineThinking) {
-    // Avoid duplicates - don't add if already captured from SSE event
-    if (content && !thinkingContent.includes(content)) {
-      steps.push({
-        content,
-        timestamp: new Date(),
-      });
-    }
-  }
-
-  return steps;
-}
-
-/**
  * Create a legacy-compatible state adapter.
  * Use this during migration to maintain backward compatibility.
  */
 export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingState {
   const isStreaming = isStreamActive(state);
 
-  // Build thinking steps from both sources
-  const thinkingSteps = buildThinkingSteps(
-    state.thinkingContent,
-    state.textContent,
-    isStreaming
-  );
+  // Derive thinkingSteps and toolExecutions from processTimeline
+  // This maintains chronological order as events occurred
+  const thinkingSteps: ThinkingStep[] = [];
+  const toolExecutions: ToolExecution[] = [];
+
+  for (const event of state.processTimeline) {
+    if (event.type === 'thinking') {
+      thinkingSteps.push({
+        content: event.content,
+        timestamp: new Date(event.timestamp),
+      });
+    } else if (event.type === 'tool') {
+      toolExecutions.push({
+        tool: event.execution.tool,
+        arguments: event.execution.arguments,
+        result: event.execution.result ?? '',
+        status: event.execution.status,
+        timestamp: new Date(event.execution.startedAt),
+      });
+    }
+  }
 
   return {
     isStreaming,
@@ -609,14 +589,9 @@ export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingS
     thinkingProcess: state.thinkingContent || undefined,
     // Grok-specific
     grokSearchSources: state.grokSearchSources,
-    // Agent-specific
-    toolExecutions: state.completedTools.map(tool => ({
-      tool: tool.tool,
-      arguments: tool.arguments,
-      result: tool.result ?? '',
-      status: tool.status,
-      timestamp: new Date(tool.startedAt),
-    })),
+    // Agent-specific - unified timeline
+    processTimeline: state.processTimeline,
+    toolExecutions,
     thinkingSteps,
     agentRetrievedNotes: state.ragContext.map(note => ({
       noteId: note.noteId,

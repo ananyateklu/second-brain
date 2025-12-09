@@ -12,7 +12,9 @@ import {
 import { useUIStore } from './store/ui-store';
 import { AboutModal } from './components/ui/AboutModal';
 import { IndexingNotification } from './components/ui/IndexingNotification';
+import { SummaryNotification } from './components/ui/SummaryNotification';
 import { useIndexingRestoration } from './hooks/use-indexing-restoration';
+import { useSummaryRestoration } from './hooks/use-summary-restoration';
 import { isTauri } from './lib/native-notifications';
 
 function App() {
@@ -21,6 +23,9 @@ function App() {
 
   // Restore any active indexing jobs on app mount
   useIndexingRestoration();
+
+  // Restore any active summary generation jobs on app mount
+  useSummaryRestoration();
 
   // Listen for macOS app menu events
   useEffect(() => {
@@ -101,6 +106,7 @@ function App() {
         }}
       />
       <IndexingNotification />
+      <SummaryNotification />
     </>
   );
 }

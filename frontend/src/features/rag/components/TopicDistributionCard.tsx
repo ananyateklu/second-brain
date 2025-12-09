@@ -45,7 +45,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
 
   return (
     <div
-      className="rounded-2xl transition-all duration-200 hover:scale-[1.005] backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md relative overflow-hidden group"
       style={{
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',
@@ -114,7 +114,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
           <button
             onClick={() => { clusterMutation.mutate(clusterCount); }}
             disabled={clusterMutation.isPending}
-            className="px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+            className="px-3 py-1 text-xs font-medium rounded-lg transition-transform duration-200 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-[1px]"
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',

@@ -252,10 +252,83 @@ export interface IndexingSliceActions {
 export type IndexingSlice = IndexingSliceState & IndexingSliceActions;
 
 // ============================================
+// Summary Types (for background summary generation)
+// ============================================
+
+export interface SummaryJobInfo {
+  jobId: string;
+  status: import('../types/notes').SummaryJobResponse | null;
+  userId: string;
+}
+
+export interface SummarySliceState {
+  // Current active job (only one at a time)
+  activeJob: SummaryJobInfo | null;
+
+  // UI state
+  isRestoring: boolean;
+  isNotificationVisible: boolean;
+}
+
+export interface SummarySliceActions {
+  // Job management
+  startSummaryJob: (job: import('../types/notes').SummaryJobResponse, userId: string) => void;
+  restoreSummaryJob: (job: import('../types/notes').SummaryJobResponse, userId: string) => void;
+  updateSummaryJobStatus: (status: import('../types/notes').SummaryJobResponse) => void;
+  clearSummaryJob: () => void;
+
+  // Restoration
+  restoreActiveSummaryJob: (userId: string) => Promise<void>;
+  setIsSummaryRestoring: (isRestoring: boolean) => void;
+
+  // Notification UI
+  showSummaryNotification: () => void;
+  hideSummaryNotification: () => void;
+}
+
+export type SummarySlice = SummarySliceState & SummarySliceActions;
+
+// ============================================
+// Draft Types (for chat input draft persistence)
+// ============================================
+
+export interface DraftSliceState {
+  /** In-memory cache of drafts: conversationId -> content */
+  drafts: Record<string, string>;
+  /** Whether a draft is currently being loaded */
+  isLoadingDraft: boolean;
+  /** Error message if draft loading failed */
+  draftLoadError: string | null;
+}
+
+export interface DraftSliceActions {
+  /** Load a draft for a conversation (from IndexedDB with fallback) */
+  loadDraft: (conversationId: string) => Promise<string>;
+  /** Save a draft for a conversation (debounced, 500ms) */
+  saveDraft: (conversationId: string, content: string) => void;
+  /** Clear a draft for a conversation */
+  clearDraft: (conversationId: string) => void;
+  /** Get a draft synchronously from in-memory cache */
+  getDraft: (conversationId: string) => string;
+  /** Check if a conversation has a non-empty draft */
+  hasDraft: (conversationId: string) => boolean;
+  /** Transfer new chat draft to a created conversation */
+  transferNewChatDraft: (newConversationId: string) => void;
+  /** Preload all drafts into memory */
+  preloadDrafts: () => Promise<void>;
+  /** Cleanup old drafts (default: 30 days) */
+  cleanupOldDrafts: (maxAgeDays?: number) => Promise<number>;
+  /** Flush all pending debounced saves immediately */
+  flushPendingSaves: () => void;
+}
+
+export type DraftSlice = DraftSliceState & DraftSliceActions;
+
+// ============================================
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice;
 
 // ============================================
 // Slice Creator Type

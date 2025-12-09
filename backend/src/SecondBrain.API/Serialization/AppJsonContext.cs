@@ -113,6 +113,10 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(IndexingJobResponse))]
 [JsonSerializable(typeof(IndexingJobResponse[]))]
 [JsonSerializable(typeof(List<IndexingJobResponse>))]
+// Summary job responses
+[JsonSerializable(typeof(SummaryJobResponse))]
+[JsonSerializable(typeof(SummaryJobResponse[]))]
+[JsonSerializable(typeof(List<SummaryJobResponse>))]
 // Error responses
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(ApiResponse<object>))]

@@ -18,6 +18,7 @@ using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Providers;
+using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -55,7 +56,7 @@ public class AgentService : IAgentService
 {
     private readonly AIProvidersSettings _settings;
     private readonly RagSettings _ragSettings;
-    private readonly INoteRepository _noteRepository;
+    private readonly IParallelNoteRepository _noteRepository;
     private readonly IRagService _ragService;
     private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, IAgentPlugin> _plugins = new();
@@ -65,18 +66,20 @@ public class AgentService : IAgentService
     private readonly OllamaProvider? _ollamaProvider;
     private readonly OpenAIProvider? _openAIProvider;
     private readonly GrokProvider? _grokProvider;
+    private readonly IStructuredOutputService? _structuredOutputService;
 
     public AgentService(
         IOptions<AIProvidersSettings> settings,
         IOptions<RagSettings> ragSettings,
-        INoteRepository noteRepository,
+        IParallelNoteRepository noteRepository,
         IRagService ragService,
         ILogger<AgentService> logger,
         IGeminiFunctionRegistry? geminiFunctionRegistry = null,
         GeminiProvider? geminiProvider = null,
         OllamaProvider? ollamaProvider = null,
         OpenAIProvider? openAIProvider = null,
-        GrokProvider? grokProvider = null)
+        GrokProvider? grokProvider = null,
+        IStructuredOutputService? structuredOutputService = null)
     {
         _settings = settings.Value;
         _ragSettings = ragSettings.Value;
@@ -88,9 +91,10 @@ public class AgentService : IAgentService
         _ollamaProvider = ollamaProvider;
         _openAIProvider = openAIProvider;
         _grokProvider = grokProvider;
+        _structuredOutputService = structuredOutputService;
 
-        // Register available plugins
-        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value));
+        // Register available plugins - uses IParallelNoteRepository for thread-safe parallel tool execution
+        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService));
         // Future plugins can be registered here:
         // RegisterPlugin(new WebSearchPlugin(...));
         // RegisterPlugin(new CalendarPlugin(...));
@@ -296,8 +300,9 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries (only when AgentRagEnabled is true)
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         var lastUserMessage = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage))
         {
             yield return new AgentStreamEvent
             {
@@ -306,7 +311,7 @@ public class AgentService : IAgentService
             };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessage, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -642,9 +647,10 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries (Anthropic path, only when AgentRagEnabled is true)
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         string? injectedContext = null;
         var lastUserMessageAnthropic = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessageAnthropic) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessageAnthropic))
         {
             yield return new AgentStreamEvent
             {
@@ -653,7 +659,7 @@ public class AgentService : IAgentService
             };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessageAnthropic, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessageAnthropic, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -1251,13 +1257,14 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         var lastUserMessage = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage))
         {
             yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessage, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -1415,27 +1422,59 @@ public class AgentService : IAgentService
                     };
                 }
 
-                // Execute ALL function calls in parallel
-                var executionTasks = pendingFunctionCalls.Select(async call =>
+                // Execute function calls based on configuration (default: sequential to avoid DbContext concurrency issues)
+                // NOTE: Do NOT use .ToList() on async Select as it starts all tasks immediately!
+                (string Name, string Result, bool Success)[] results;
+                if (_settings.Gemini.FunctionCalling.ParallelExecution)
                 {
-                    try
+                    // Parallel execution - start all tasks at once
+                    var executionTasks = pendingFunctionCalls.Select(async call =>
                     {
-                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        try
                         {
-                            var argsNode = JsonNode.Parse(call.Arguments);
-                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
-                            return (call.Name, Result: result, Success: true);
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                return (call.Name, Result: result, Success: true);
+                            }
+                            return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
                         }
-                        return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
-                    }
-                    catch (Exception ex)
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Gemini tool {ToolName}", call.Name);
+                            return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        }
+                    });
+                    results = await Task.WhenAll(executionTasks);
+                }
+                else
+                {
+                    // Sequential execution to avoid DbContext concurrency issues
+                    var resultList = new List<(string Name, string Result, bool Success)>();
+                    foreach (var call in pendingFunctionCalls)
                     {
-                        _logger.LogError(ex, "Error executing Gemini tool {ToolName}", call.Name);
-                        return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        try
+                        {
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                resultList.Add((call.Name, result, true));
+                            }
+                            else
+                            {
+                                resultList.Add((call.Name, $"Error: Unknown tool '{call.Name}'", false));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Gemini tool {ToolName}", call.Name);
+                            resultList.Add((call.Name, $"Error: {ex.Message}", false));
+                        }
                     }
-                }).ToList();
-
-                var results = await Task.WhenAll(executionTasks);
+                    results = resultList.ToArray();
+                }
 
                 // Emit end events for all tools
                 foreach (var (name, result, _) in results)
@@ -1448,21 +1487,36 @@ public class AgentService : IAgentService
                     };
                 }
 
-                // Add assistant message if there was text content before tools
-                if (iterationText.Length > 0)
+                // Add assistant message with text and tool calls
+                var assistantMsg = new Services.AI.Models.ChatMessage
                 {
-                    messages.Add(new Services.AI.Models.ChatMessage
-                    {
-                        Role = "assistant",
-                        Content = iterationText.ToString()
-                    });
+                    Role = "assistant",
+                    Content = iterationText.ToString()
+                };
+
+                if (pendingFunctionCalls.Count > 0)
+                {
+                    assistantMsg.ToolCalls = pendingFunctionCalls;
                 }
+                messages.Add(assistantMsg);
 
                 // Send ALL function results back to Gemini in one request (proper Gemini pattern)
                 var functionResults = results.Select(r => (r.Name, (object)r.Result)).ToArray();
 
                 var response = await _geminiProvider.ContinueWithFunctionResultsAsync(
                     messages, functionResults, aiSettings, featureOptions, cancellationToken);
+
+                // Add tool results to history for next iteration
+                var toolMsg = new Services.AI.Models.ChatMessage
+                {
+                    Role = "tool",
+                    ToolResults = results.Select(r => new Services.AI.Models.FunctionResultInfo
+                    {
+                        Name = r.Name,
+                        Result = r.Result
+                    }).ToList()
+                };
+                messages.Add(toolMsg);
 
                 if (!response.Success)
                 {
@@ -1598,13 +1652,14 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         var lastUserMessage = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage))
         {
             yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessage, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -1738,28 +1793,58 @@ public class AgentService : IAgentService
                 }
 
                 // Execute tools (parallel if enabled)
-                var executionTasks = pendingToolCalls.Select(async call =>
+                // NOTE: Do NOT use .ToList() on async Select as it starts all tasks immediately!
+                (string Name, string Result, bool Success)[] results;
+                if (_settings.Ollama.FunctionCalling.ParallelExecution)
                 {
-                    try
+                    // Parallel execution - start all tasks at once
+                    var executionTasks = pendingToolCalls.Select(async call =>
                     {
-                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        try
                         {
-                            var argsNode = JsonNode.Parse(call.Arguments);
-                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
-                            return (call.Name, Result: result, Success: true);
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                return (call.Name, Result: result, Success: true);
+                            }
+                            return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
                         }
-                        return (call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
-                    }
-                    catch (Exception ex)
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Ollama tool {ToolName}", call.Name);
+                            return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        }
+                    });
+                    results = await Task.WhenAll(executionTasks);
+                }
+                else
+                {
+                    // Sequential execution to avoid DbContext concurrency issues
+                    var resultList = new List<(string Name, string Result, bool Success)>();
+                    foreach (var call in pendingToolCalls)
                     {
-                        _logger.LogError(ex, "Error executing Ollama tool {ToolName}", call.Name);
-                        return (call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        try
+                        {
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                resultList.Add((call.Name, result, true));
+                            }
+                            else
+                            {
+                                resultList.Add((call.Name, $"Error: Unknown tool '{call.Name}'", false));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Ollama tool {ToolName}", call.Name);
+                            resultList.Add((call.Name, $"Error: {ex.Message}", false));
+                        }
                     }
-                }).ToList();
-
-                var results = _settings.Ollama.FunctionCalling.ParallelExecution
-                    ? await Task.WhenAll(executionTasks)
-                    : await ExecuteSequentiallyAsync(executionTasks);
+                    results = resultList.ToArray();
+                }
 
                 // Emit end events for all tools
                 foreach (var (name, result, _) in results)
@@ -1905,13 +1990,14 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         var lastUserMessage = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage))
         {
             yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessage, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -2049,28 +2135,58 @@ public class AgentService : IAgentService
                 }
 
                 // Execute tools (parallel if enabled)
-                var executionTasks = pendingToolCalls.Select(async call =>
+                // NOTE: Do NOT use .ToList() on async Select as it starts all tasks immediately!
+                (string Id, string Name, string Result, bool Success)[] results;
+                if (_settings.OpenAI.FunctionCalling.ParallelExecution)
                 {
-                    try
+                    // Parallel execution - start all tasks at once
+                    var executionTasks = pendingToolCalls.Select(async call =>
                     {
-                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                        try
                         {
-                            var argsNode = JsonNode.Parse(call.Arguments);
-                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
-                            return (call.Id, call.Name, Result: result, Success: true);
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                return (call.Id, call.Name, Result: result, Success: true);
+                            }
+                            return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
                         }
-                        return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
-                    }
-                    catch (Exception ex)
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing OpenAI tool {ToolName}", call.Name);
+                            return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        }
+                    });
+                    results = await Task.WhenAll(executionTasks);
+                }
+                else
+                {
+                    // Sequential execution to avoid DbContext concurrency issues
+                    var resultList = new List<(string Id, string Name, string Result, bool Success)>();
+                    foreach (var call in pendingToolCalls)
                     {
-                        _logger.LogError(ex, "Error executing OpenAI tool {ToolName}", call.Name);
-                        return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        try
+                        {
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                resultList.Add((call.Id, call.Name, result, true));
+                            }
+                            else
+                            {
+                                resultList.Add((call.Id, call.Name, $"Error: Unknown tool '{call.Name}'", false));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing OpenAI tool {ToolName}", call.Name);
+                            resultList.Add((call.Id, call.Name, $"Error: {ex.Message}", false));
+                        }
                     }
-                }).ToList();
-
-                var results = _settings.OpenAI.FunctionCalling.ParallelExecution
-                    ? await Task.WhenAll(executionTasks)
-                    : await ExecuteOpenAISequentiallyAsync(executionTasks);
+                    results = resultList.ToArray();
+                }
 
                 // Emit end events for all tools
                 foreach (var (_, name, result, _) in results)
@@ -2115,34 +2231,6 @@ public class AgentService : IAgentService
             Type = AgentEventType.End,
             Content = fullResponse.ToString()
         };
-    }
-
-    /// <summary>
-    /// Helper to execute OpenAI tasks sequentially when parallel execution is disabled
-    /// </summary>
-    private static async Task<(string Id, string Name, string Result, bool Success)[]> ExecuteOpenAISequentiallyAsync(
-        List<Task<(string Id, string Name, string Result, bool Success)>> tasks)
-    {
-        var results = new List<(string Id, string Name, string Result, bool Success)>();
-        foreach (var task in tasks)
-        {
-            results.Add(await task);
-        }
-        return results.ToArray();
-    }
-
-    /// <summary>
-    /// Helper to execute Grok tasks sequentially when parallel execution is disabled
-    /// </summary>
-    private static async Task<(string Id, string Name, string Result, bool Success)[]> ExecuteGrokSequentiallyAsync(
-        List<Task<(string Id, string Name, string Result, bool Success)>> tasks)
-    {
-        var results = new List<(string Id, string Name, string Result, bool Success)>();
-        foreach (var task in tasks)
-        {
-            results.Add(await task);
-        }
-        return results.ToArray();
     }
 
     /// <summary>
@@ -2241,13 +2329,14 @@ public class AgentService : IAgentService
         }
 
         // Automatic context injection for knowledge queries
+        // Note: This is independent of Notes tool capability - RAG provides read-only context
         var lastUserMessage = GetLastUserMessage(request);
-        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage))
         {
             yield return new AgentStreamEvent { Type = AgentEventType.Status, Content = "Searching your notes..." };
 
             var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
-                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+                lastUserMessage, request.UserId, cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
             {
@@ -2385,29 +2474,59 @@ public class AgentService : IAgentService
                 }
 
                 // Execute tools (parallel by default)
-                var executionTasks = pendingToolCalls.Select(async call =>
-                {
-                    try
-                    {
-                        if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
-                        {
-                            var argsNode = JsonNode.Parse(call.Arguments);
-                            var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
-                            return (call.Id, call.Name, Result: result, Success: true);
-                        }
-                        return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error executing Grok tool {ToolName}", call.Name);
-                        return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
-                    }
-                }).ToList();
-
                 // Execute tools based on configuration
-                var results = _settings.XAI.FunctionCalling.ParallelExecution
-                    ? await Task.WhenAll(executionTasks)
-                    : await ExecuteGrokSequentiallyAsync(executionTasks);
+                // NOTE: Do NOT use .ToList() on async Select as it starts all tasks immediately!
+                (string Id, string Name, string Result, bool Success)[] results;
+                if (_settings.XAI.FunctionCalling.ParallelExecution)
+                {
+                    // Parallel execution - start all tasks at once
+                    var executionTasks = pendingToolCalls.Select(async call =>
+                    {
+                        try
+                        {
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                return (call.Id, call.Name, Result: result, Success: true);
+                            }
+                            return (call.Id, call.Name, Result: $"Error: Unknown tool '{call.Name}'", Success: false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Grok tool {ToolName}", call.Name);
+                            return (call.Id, call.Name, Result: $"Error: {ex.Message}", Success: false);
+                        }
+                    });
+                    results = await Task.WhenAll(executionTasks);
+                }
+                else
+                {
+                    // Sequential execution to avoid DbContext concurrency issues
+                    var resultList = new List<(string Id, string Name, string Result, bool Success)>();
+                    foreach (var call in pendingToolCalls)
+                    {
+                        try
+                        {
+                            if (pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+                            {
+                                var argsNode = JsonNode.Parse(call.Arguments);
+                                var result = await InvokePluginMethodAsync(pluginMethod.Plugin, pluginMethod.Method, argsNode);
+                                resultList.Add((call.Id, call.Name, result, true));
+                            }
+                            else
+                            {
+                                resultList.Add((call.Id, call.Name, $"Error: Unknown tool '{call.Name}'", false));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error executing Grok tool {ToolName}", call.Name);
+                            resultList.Add((call.Id, call.Name, $"Error: {ex.Message}", false));
+                        }
+                    }
+                    results = resultList.ToArray();
+                }
 
                 // Emit end events for all tools
                 foreach (var (_, name, result, _) in results)
@@ -2452,20 +2571,6 @@ public class AgentService : IAgentService
             Type = AgentEventType.End,
             Content = fullResponse.ToString()
         };
-    }
-
-    /// <summary>
-    /// Helper to execute tasks sequentially when parallel execution is disabled
-    /// </summary>
-    private static async Task<(string Name, string Result, bool Success)[]> ExecuteSequentiallyAsync(
-        List<Task<(string Name, string Result, bool Success)>> tasks)
-    {
-        var results = new List<(string Name, string Result, bool Success)>();
-        foreach (var task in tasks)
-        {
-            results.Add(await task);
-        }
-        return results.ToArray();
     }
 
     /// <summary>
@@ -2817,16 +2922,13 @@ public class AgentService : IAgentService
     /// Returns null if no relevant context is found or if context retrieval is not applicable.
     /// Also returns the RagLogId for feedback submission when analytics are enabled.
     /// Uses the same RAG pipeline parameters as normal chat for consistent quality.
+    /// Note: This is independent of Notes tool capability - RAG provides read-only context access.
     /// </summary>
     private async Task<(string? ContextMessage, List<RetrievedNoteContext>? RetrievedNotes, Guid? RagLogId)> TryRetrieveContextAsync(
         string query,
         string userId,
-        bool hasNotesCapability,
         CancellationToken cancellationToken)
     {
-        if (!hasNotesCapability)
-            return (null, null, null);
-
         if (!_intentDetector.ShouldRetrieveContext(query))
         {
             _logger.LogDebug("Query does not require context retrieval: {Query}",
