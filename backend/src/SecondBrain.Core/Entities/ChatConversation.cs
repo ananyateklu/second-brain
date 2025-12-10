@@ -113,6 +113,60 @@ public class ChatMessage
     public double? DurationMs { get; set; }
 
     /// <summary>
+    /// Whether token counts are actual provider values (true) or estimates (false)
+    /// </summary>
+    [Column("tokens_actual")]
+    public bool? TokensActual { get; set; }
+
+    /// <summary>
+    /// Tokens used for reasoning/thinking (Claude, Gemini thinking modes)
+    /// </summary>
+    [Column("reasoning_tokens")]
+    public int? ReasoningTokens { get; set; }
+
+    /// <summary>
+    /// Tokens used to create prompt cache (Claude)
+    /// </summary>
+    [Column("cache_creation_tokens")]
+    public int? CacheCreationTokens { get; set; }
+
+    /// <summary>
+    /// Tokens read from prompt cache (Claude)
+    /// </summary>
+    [Column("cache_read_tokens")]
+    public int? CacheReadTokens { get; set; }
+
+    /// <summary>
+    /// Tokens used by RAG context
+    /// </summary>
+    [Column("rag_context_tokens")]
+    public int? RagContextTokens { get; set; }
+
+    /// <summary>
+    /// Number of RAG chunks included
+    /// </summary>
+    [Column("rag_chunks_count")]
+    public int? RagChunksCount { get; set; }
+
+    /// <summary>
+    /// Tokens used for tool definitions (agent mode)
+    /// </summary>
+    [Column("tool_definition_tokens")]
+    public int? ToolDefinitionTokens { get; set; }
+
+    /// <summary>
+    /// Tokens used for tool arguments (agent mode)
+    /// </summary>
+    [Column("tool_argument_tokens")]
+    public int? ToolArgumentTokens { get; set; }
+
+    /// <summary>
+    /// Tokens used for tool results (agent mode)
+    /// </summary>
+    [Column("tool_result_tokens")]
+    public int? ToolResultTokens { get; set; }
+
+    /// <summary>
     /// RAG query log ID for feedback association (only for assistant messages with RAG)
     /// </summary>
     [Column("rag_log_id")]

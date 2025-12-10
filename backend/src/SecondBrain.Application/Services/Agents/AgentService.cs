@@ -956,37 +956,84 @@ public class AgentService : IAgentService
                 {
                     try
                     {
-                        // Reconstruct the full message from stream outputs using SDK's Message constructor
-                        var reconstructedMessage = new Anthropic.SDK.Messaging.Message(streamOutputs);
+                        // Manually extract tool calls from stream outputs instead of using SDK reconstruction
+                        // This is more reliable as the SDK's Message constructor can fail with certain stream combinations
+                        string? currentToolId = null;
+                        string? currentToolName = null;
+                        var currentToolJson = new System.Text.StringBuilder();
 
-                        // Extract tool use content blocks
-                        foreach (var content in reconstructedMessage.Content)
+                        foreach (var output in streamOutputs)
                         {
-                            if (content is ToolUseContent toolUse)
+                            // Start of a new tool_use block
+                            if (output.ContentBlock?.Type == "tool_use")
                             {
-                                pendingToolCalls.Add((toolUse.Id ?? "", toolUse.Name ?? "", toolUse.Input));
-                                responseContentBlocks.Add(toolUse);
-
-                                _logger.LogInformation("Tool call extracted from stream: {ToolName}, Id: {ToolId}",
-                                    toolUse.Name, toolUse.Id);
-                            }
-                            else if (content is Anthropic.SDK.Messaging.TextContent textContent)
-                            {
-                                responseContentBlocks.Add(textContent);
-                            }
-                            else if (content is ThinkingContent thinkingContent)
-                            {
-                                var thinking = thinkingContent.Thinking ?? "";
-                                if (!string.IsNullOrEmpty(thinking) && !emittedThinkingBlocks.Contains(thinking))
+                                // Save previous tool if we have one
+                                if (currentToolId != null && currentToolName != null)
                                 {
-                                    emittedThinkingBlocks.Add(thinking);
+                                    var jsonStr = currentToolJson.ToString();
+                                    if (!string.IsNullOrWhiteSpace(jsonStr))
+                                    {
+                                        try
+                                        {
+                                            var inputNode = System.Text.Json.Nodes.JsonNode.Parse(jsonStr);
+                                            var toolUse = new ToolUseContent { Id = currentToolId, Name = currentToolName, Input = inputNode };
+                                            pendingToolCalls.Add((currentToolId, currentToolName, inputNode));
+                                            responseContentBlocks.Add(toolUse);
+                                            _logger.LogInformation("Tool call extracted from stream: {ToolName}, Id: {ToolId}", currentToolName, currentToolId);
+                                        }
+                                        catch (System.Text.Json.JsonException jsonEx)
+                                        {
+                                            _logger.LogWarning(jsonEx, "Failed to parse tool JSON for {ToolName}", currentToolName);
+                                        }
+                                    }
+                                }
+
+                                // Start new tool
+                                currentToolId = output.ContentBlock.Id;
+                                currentToolName = output.ContentBlock.Name;
+                                currentToolJson.Clear();
+                            }
+                            // Accumulate partial JSON for current tool
+                            else if (output.Delta?.PartialJson != null && currentToolId != null)
+                            {
+                                currentToolJson.Append(output.Delta.PartialJson);
+                            }
+                            // Handle text content
+                            else if (output.Delta?.Text != null)
+                            {
+                                // Text content is already handled during streaming
+                            }
+                        }
+
+                        // Don't forget the last tool
+                        if (currentToolId != null && currentToolName != null)
+                        {
+                            var jsonStr = currentToolJson.ToString();
+                            if (!string.IsNullOrWhiteSpace(jsonStr))
+                            {
+                                try
+                                {
+                                    var inputNode = System.Text.Json.Nodes.JsonNode.Parse(jsonStr);
+                                    var toolUse = new ToolUseContent { Id = currentToolId, Name = currentToolName, Input = inputNode };
+                                    pendingToolCalls.Add((currentToolId, currentToolName, inputNode));
+                                    responseContentBlocks.Add(toolUse);
+                                    _logger.LogInformation("Tool call extracted from stream: {ToolName}, Id: {ToolId}", currentToolName, currentToolId);
+                                }
+                                catch (System.Text.Json.JsonException jsonEx)
+                                {
+                                    _logger.LogWarning(jsonEx, "Failed to parse tool JSON for {ToolName}", currentToolName);
                                 }
                             }
+                        }
+
+                        if (pendingToolCalls.Count == 0 && hasToolUse)
+                        {
+                            _logger.LogDebug("Tool use was detected but no complete tool calls were extracted from stream");
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to reconstruct message from stream outputs for tool extraction");
+                        _logger.LogWarning(ex, "Failed to extract tool calls from stream outputs");
                     }
                 }
             }

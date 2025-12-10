@@ -393,17 +393,30 @@ public class ChatController : ControllerBase
                 }
             }
 
-            // Calculate input tokens from the FULL context sent to the AI:
-            // - All conversation messages (including enhanced RAG content for last message)
-            // - Per-message formatting overhead
-            var inputTokens = 0;
+            // Calculate estimated input tokens from the FULL context sent to the AI:
+            // These will be replaced with actual provider tokens after streaming completes
+            var estimatedInputTokens = 0;
+            var ragContextTokens = 0;
             foreach (var msg in aiMessages)
             {
-                inputTokens += TokenEstimator.EstimateTokenCount(msg.Content);
+                estimatedInputTokens += TokenEstimator.EstimateTokenCount(msg.Content);
                 // Add overhead for message role and formatting (~10 tokens per message)
-                inputTokens += 10;
+                estimatedInputTokens += 10;
             }
-            userMessage.InputTokens = inputTokens;
+
+            // Calculate RAG context tokens specifically
+            if (request.UseRag && retrievedNotes.Any())
+            {
+                foreach (var note in retrievedNotes)
+                {
+                    ragContextTokens += TokenEstimator.EstimateTokenCount(note.ChunkContent ?? note.Content ?? "");
+                }
+                ragContextTokens += 230; // RAG formatting overhead
+            }
+
+            // Store estimated values initially - will update with actual provider values
+            userMessage.InputTokens = estimatedInputTokens;
+            userMessage.TokensActual = false; // Initially estimated
 
             // Generate AI streaming response
             var aiRequest = new AIRequest
@@ -435,10 +448,17 @@ public class ChatController : ControllerBase
             await Response.WriteAsync("event: start\ndata: {\"status\":\"streaming\"}\n\n");
             await Response.Body.FlushAsync(cancellationToken);
 
-            // Stream the response
+            // Stream the response with token usage tracking
             var startTime = DateTime.UtcNow;
-            var streamTask = await aiProvider.StreamChatCompletionAsync(aiMessages, aiRequest, cancellationToken);
             var fullResponse = new System.Text.StringBuilder();
+
+            // Capture actual token usage from provider
+            StreamingTokenUsage? actualUsage = null;
+            var streamTask = await aiProvider.StreamChatCompletionWithUsageAsync(
+                aiMessages,
+                aiRequest,
+                usage => actualUsage = usage,
+                cancellationToken);
 
             await foreach (var token in streamTask.WithCancellation(cancellationToken))
             {
@@ -456,16 +476,39 @@ public class ChatController : ControllerBase
             }
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
+            // Determine token values - prefer actual from provider, fall back to estimates
+            var inputTokens = actualUsage?.InputTokens ?? estimatedInputTokens;
+            var outputTokens = actualUsage?.OutputTokens ?? TokenEstimator.EstimateTokenCount(fullResponse.ToString());
+            var tokensActual = actualUsage?.IsActual ?? false;
+
+            // Update user message with actual input tokens if available
+            userMessage.InputTokens = inputTokens;
+            userMessage.TokensActual = tokensActual;
+            userMessage.RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null;
+            userMessage.RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null;
+
+            // Add cache token tracking for Claude
+            if (actualUsage?.CacheCreationTokens.HasValue == true)
+                userMessage.CacheCreationTokens = actualUsage.CacheCreationTokens.Value;
+            if (actualUsage?.CacheReadTokens.HasValue == true)
+                userMessage.CacheReadTokens = actualUsage.CacheReadTokens.Value;
+
             // Add assistant message with retrieved notes and RAG log ID
-            var outputTokens = TokenEstimator.EstimateTokenCount(fullResponse.ToString());
             var assistantMessage = new Core.Entities.ChatMessage
             {
                 Role = "assistant",
                 Content = fullResponse.ToString(),
                 Timestamp = DateTime.UtcNow,
+                InputTokens = inputTokens,
                 OutputTokens = outputTokens,
+                TokensActual = tokensActual,
                 DurationMs = durationMs,
                 RagLogId = ragLogId?.ToString(),
+                ReasoningTokens = actualUsage?.ReasoningTokens,
+                CacheCreationTokens = actualUsage?.CacheCreationTokens,
+                CacheReadTokens = actualUsage?.CacheReadTokens,
+                RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
+                RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,
@@ -482,13 +525,20 @@ public class ChatController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event with conversation ID, token usage, and RAG log ID for feedback
+            // Send end event with conversation ID, detailed token usage, and RAG log ID for feedback
             var endData = System.Text.Json.JsonSerializer.Serialize(new
             {
                 conversationId = id,
                 messageId = conversation.Messages.Count - 1,
-                inputTokens = inputTokens,
-                outputTokens = outputTokens,
+                inputTokens,
+                outputTokens,
+                tokensActual,
+                ragContextTokens = ragContextTokens > 0 ? ragContextTokens : (int?)null,
+                ragChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : (int?)null,
+                cacheCreationTokens = actualUsage?.CacheCreationTokens,
+                cacheReadTokens = actualUsage?.CacheReadTokens,
+                reasoningTokens = actualUsage?.ReasoningTokens,
+                durationMs,
                 ragLogId = ragLogId?.ToString()
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");
@@ -717,15 +767,35 @@ public class ChatController : ControllerBase
             var aiResponse = await aiProvider.GenerateChatCompletionAsync(aiMessages, aiRequest, cancellationToken);
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
+            // Calculate RAG context tokens if RAG was used
+            var ragContextTokens = 0;
+            if (retrievedNotes.Count > 0)
+            {
+                foreach (var note in retrievedNotes)
+                {
+                    ragContextTokens += TokenEstimator.EstimateTokenCount(note.ChunkContent ?? note.Title ?? "");
+                }
+            }
+
+            // Get token usage from AIResponse (providers return actual counts for non-streaming)
+            var inputTokens = aiResponse.Usage?.InputTokens ?? TokenEstimator.EstimateTokenCount(
+                string.Join(" ", aiMessages.Select(m => m.Content)));
+            var outputTokens = aiResponse.Usage?.OutputTokens ?? aiResponse.TokensUsed;
+            var tokensActual = aiResponse.Usage != null;
+
             // Add assistant message with retrieved notes and RAG log ID if RAG was used
             var assistantMessage = new Core.Entities.ChatMessage
             {
                 Role = "assistant",
                 Content = aiResponse.Content,
                 Timestamp = DateTime.UtcNow,
-                OutputTokens = aiResponse.TokensUsed,
+                InputTokens = inputTokens,
+                OutputTokens = outputTokens,
+                TokensActual = tokensActual,
                 DurationMs = durationMs,
                 RagLogId = ragLogId?.ToString(),
+                RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
+                RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,

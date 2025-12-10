@@ -147,6 +147,11 @@ describe('auth-store', () => {
                 noteSummaryEnabled: false,
                 noteSummaryProvider: null,
                 noteSummaryModel: null,
+                ragEnableHyde: true,
+                ragEnableQueryExpansion: true,
+                ragEnableHybridSearch: true,
+                ragEnableReranking: true,
+                ragEnableAnalytics: true,
             });
 
             // Act
@@ -189,6 +194,11 @@ describe('auth-store', () => {
                 noteSummaryEnabled: false,
                 noteSummaryProvider: null,
                 noteSummaryModel: null,
+                ragEnableHyde: true,
+                ragEnableQueryExpansion: true,
+                ragEnableHybridSearch: true,
+                ragEnableReranking: true,
+                ragEnableAnalytics: true,
             });
 
             // Act
@@ -267,6 +277,11 @@ describe('auth-store', () => {
                 noteSummaryEnabled: false,
                 noteSummaryProvider: null,
                 noteSummaryModel: null,
+                ragEnableHyde: true,
+                ragEnableQueryExpansion: true,
+                ragEnableHybridSearch: true,
+                ragEnableReranking: true,
+                ragEnableAnalytics: true,
             });
 
             // Act

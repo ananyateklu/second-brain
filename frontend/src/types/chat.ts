@@ -219,8 +219,29 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   retrievedNotes?: RagContextNote[];
+  /** Input tokens for this message (user messages store full context tokens) */
   inputTokens?: number;
+  /** Output tokens for this message (assistant messages) */
   outputTokens?: number;
+  /** Whether token counts are actual provider values (true) or estimates (false) */
+  tokensActual?: boolean;
+  /** Tokens used for reasoning/thinking (Claude extended thinking, Gemini thinking mode) */
+  reasoningTokens?: number;
+  /** Tokens used to create prompt cache (Claude) */
+  cacheCreationTokens?: number;
+  /** Tokens read from prompt cache (Claude) */
+  cacheReadTokens?: number;
+  /** Tokens used by RAG context */
+  ragContextTokens?: number;
+  /** Number of RAG chunks included in context */
+  ragChunksCount?: number;
+  /** Tokens used for tool definitions (agent mode) */
+  toolDefinitionTokens?: number;
+  /** Tokens used for tool arguments (agent mode) */
+  toolArgumentTokens?: number;
+  /** Tokens used for tool results (agent mode) */
+  toolResultTokens?: number;
+  /** Duration in milliseconds */
   durationMs?: number;
   toolCalls?: ToolCall[];
   /** Attached images for multimodal messages */
@@ -441,6 +462,18 @@ export interface StreamingCallbacks {
 export interface StreamEndData {
   inputTokens?: number;
   outputTokens?: number;
+  /** Whether token counts are actual provider values (true) or estimates (false) */
+  tokensActual?: boolean;
+  /** Tokens used by RAG context */
+  ragContextTokens?: number;
+  /** Number of RAG chunks included in context */
+  ragChunksCount?: number;
+  /** Tokens used to create prompt cache (Claude) */
+  cacheCreationTokens?: number;
+  /** Tokens read from prompt cache (Claude) */
+  cacheReadTokens?: number;
+  /** Tokens used for reasoning/thinking */
+  reasoningTokens?: number;
   durationMs?: number;
   /** RAG query log ID for feedback submission */
   ragLogId?: string;

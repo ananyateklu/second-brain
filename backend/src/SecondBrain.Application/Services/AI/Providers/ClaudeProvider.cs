@@ -169,6 +169,9 @@ public class ClaudeProvider : IAIProvider
         {
             var claudeMessages = messageList
                 .Where(m => m.Role.ToLower() != "system")
+                .Where(m => !string.IsNullOrWhiteSpace(m.Content) ||
+                           (m.Images != null && m.Images.Count > 0) ||
+                           (m.Documents != null && m.Documents.Count > 0))
                 .Select(m => ConvertToClaudeMessage(m))
                 .ToList();
 
@@ -427,6 +430,9 @@ public class ClaudeProvider : IAIProvider
 
         var claudeMessages = messageList
             .Where(m => m.Role.ToLower() != "system")
+            .Where(m => !string.IsNullOrWhiteSpace(m.Content) ||
+                       (m.Images != null && m.Images.Count > 0) ||
+                       (m.Documents != null && m.Documents.Count > 0))
             .Select(m => ConvertToClaudeMessage(m))
             .ToList();
 
@@ -534,6 +540,198 @@ public class ClaudeProvider : IAIProvider
     }
 
     /// <summary>
+    /// Stream chat completion with token usage callback.
+    /// Claude's streaming API provides usage info in message_delta events.
+    /// </summary>
+    public Task<IAsyncEnumerable<string>> StreamChatCompletionWithUsageAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+        {
+            return Task.FromResult(EmptyAsyncEnumerable());
+        }
+
+        return Task.FromResult(StreamChatCompletionWithUsageInternalAsync(messages, settings, onUsageAvailable, cancellationToken));
+    }
+
+    private async IAsyncEnumerable<string> StreamChatCompletionWithUsageInternalAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (_client == null)
+            yield break;
+
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Claude.StreamChatCompletionWithUsage", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.usage_tracking", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var claudeMessages = messageList
+            .Where(m => m.Role.ToLower() != "system")
+            .Where(m => !string.IsNullOrWhiteSpace(m.Content) ||
+                       (m.Images != null && m.Images.Count > 0) ||
+                       (m.Documents != null && m.Documents.Count > 0))
+            .Select(m => ConvertToClaudeMessage(m))
+            .ToList();
+
+        var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
+
+        var parameters = new MessageParameters
+        {
+            Messages = claudeMessages,
+            Model = model,
+            MaxTokens = settings?.MaxTokens ?? _settings.MaxTokens,
+            Temperature = (decimal?)(settings?.Temperature ?? _settings.Temperature),
+            Stream = true
+        };
+
+        if (systemMessage != null)
+        {
+            parameters.System = new List<SystemMessage>
+            {
+                new SystemMessage(systemMessage.Content)
+            };
+        }
+
+        // Add prompt caching for large system prompts
+        var enableCaching = settings?.EnablePromptCaching ?? _settings.Caching.Enabled;
+        if (enableCaching && (systemMessage?.Content.Length ?? 0) >= _settings.Caching.MinContentTokens * 4)
+        {
+            parameters.PromptCaching = PromptCacheType.AutomaticToolsAndSystem;
+            activity?.SetTag("ai.cache.enabled", true);
+        }
+
+        // Add extended thinking support if enabled
+        var enableThinking = settings?.EnableThinking ?? _settings.Features.EnableExtendedThinking;
+        if (enableThinking && IsThinkingCapableModel(model))
+        {
+            var thinkingBudget = settings?.ThinkingBudget ?? _settings.Thinking.DefaultBudget;
+            thinkingBudget = Math.Min(thinkingBudget, _settings.Thinking.MaxBudget);
+
+            parameters.Thinking = new ThinkingParameters
+            {
+                BudgetTokens = thinkingBudget
+            };
+
+            activity?.SetTag("ai.thinking.enabled", true);
+            activity?.SetTag("ai.thinking.budget", thinkingBudget);
+        }
+
+        var tokenCount = 0;
+        var isInThinkingBlock = false;
+
+        // Token usage tracking from Claude's streaming response
+        int? inputTokens = null;
+        int? outputTokens = null;
+        int? cacheCreationTokens = null;
+        int? cacheReadTokens = null;
+
+        await foreach (var messageChunk in _client.Messages.StreamClaudeMessageAsync(
+            parameters,
+            cancellationToken))
+        {
+            // Capture usage information from message_start or message_delta events
+            if (messageChunk.Usage != null)
+            {
+                inputTokens = messageChunk.Usage.InputTokens;
+                outputTokens = messageChunk.Usage.OutputTokens;
+
+                // Claude includes cache usage in the usage object
+                if (messageChunk.Usage.CacheCreationInputTokens > 0)
+                    cacheCreationTokens = messageChunk.Usage.CacheCreationInputTokens;
+                if (messageChunk.Usage.CacheReadInputTokens > 0)
+                    cacheReadTokens = messageChunk.Usage.CacheReadInputTokens;
+
+                activity?.SetTag("ai.tokens.input", inputTokens);
+                activity?.SetTag("ai.tokens.output", outputTokens);
+            }
+
+            // Handle thinking block start
+            if (messageChunk.ContentBlock?.Type == "thinking")
+            {
+                isInThinkingBlock = true;
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return "<thinking>";
+                }
+                continue;
+            }
+
+            // Handle thinking content delta
+            if (messageChunk.Delta?.Thinking != null)
+            {
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return messageChunk.Delta.Thinking;
+                }
+                continue;
+            }
+
+            // Handle content block start (text block after thinking)
+            if (messageChunk.ContentBlock?.Type == "text" && isInThinkingBlock)
+            {
+                isInThinkingBlock = false;
+                if (_settings.Thinking.IncludeThinkingInResponse)
+                {
+                    yield return "</thinking>\n\n";
+                }
+            }
+
+            // Handle text delta
+            if (messageChunk.Delta?.Text != null)
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
+                yield return messageChunk.Delta.Text;
+            }
+        }
+
+        stopwatch.Stop();
+
+        // Create usage info - Claude provides accurate token counts in streaming
+        StreamingTokenUsage usage;
+        if (inputTokens.HasValue && outputTokens.HasValue)
+        {
+            usage = StreamingTokenUsage.CreateActual(inputTokens.Value, outputTokens.Value, ProviderName, model);
+            if (cacheCreationTokens.HasValue)
+                usage.CacheCreationTokens = cacheCreationTokens.Value;
+            if (cacheReadTokens.HasValue)
+                usage.CacheReadTokens = cacheReadTokens.Value;
+        }
+        else
+        {
+            // Fallback to estimation if provider didn't return usage
+            var estimatedInput = messageList.Sum(m => TokenEstimator.EstimateTokenCount(m.Content)) + (messageList.Count * 10);
+            usage = StreamingTokenUsage.CreateEstimated(estimatedInput, tokenCount, ProviderName, model);
+        }
+
+        // Invoke callback with usage info
+        onUsageAvailable?.Invoke(usage);
+
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.usage.is_actual", usage.IsActual);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, usage.TotalTokens);
+    }
+
+    /// <summary>
     /// Convert a ChatMessage to Claude format, handling multimodal content (images and PDFs)
     /// </summary>
     private static Message ConvertToClaudeMessage(Models.ChatMessage message)
@@ -599,8 +797,10 @@ public class ClaudeProvider : IAIProvider
             };
         }
 
-        // Simple text message
-        return new Message(role, message.Content);
+        // Simple text message - Claude API requires non-empty text content blocks
+        // Use a placeholder for empty messages to prevent API error
+        var content = string.IsNullOrWhiteSpace(message.Content) ? " " : message.Content;
+        return new Message(role, content);
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

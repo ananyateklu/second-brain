@@ -8,6 +8,7 @@ using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Telemetry;
 using System.ClientModel;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
@@ -466,6 +467,136 @@ public class OpenAIProvider : IAIProvider
         activity?.SetTag("ai.tokens.output", tokenCount);
         activity?.SetStatus(ActivityStatusCode.Ok);
         ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+    }
+
+    /// <summary>
+    /// Stream chat completion with token usage callback.
+    /// OpenAI supports include_usage in streaming since the newer API versions.
+    /// </summary>
+    public Task<IAsyncEnumerable<string>> StreamChatCompletionWithUsageAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+        {
+            return Task.FromResult(EmptyAsyncEnumerable());
+        }
+
+        return Task.FromResult(StreamChatCompletionWithUsageInternalAsync(messages, settings, onUsageAvailable, cancellationToken));
+    }
+
+    private async IAsyncEnumerable<string> StreamChatCompletionWithUsageInternalAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (_client == null)
+            yield break;
+
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.StreamChatCompletionWithUsage", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.usage_tracking", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var chatMessages = messageList.Select(m => ConvertToOpenAIMessage(m)).ToList();
+
+        var chatOptions = new ChatCompletionOptions
+        {
+            MaxOutputTokenCount = settings?.MaxTokens ?? _settings.MaxTokens,
+            IncludeLogProbabilities = false
+        };
+
+        // Enable streaming usage via reflection (StreamOptions is internal in OpenAI SDK 2.7.0)
+        // This sets stream_options: { include_usage: true } so we get actual token counts
+        try
+        {
+            var streamOptionsProperty = typeof(ChatCompletionOptions).GetProperty("StreamOptions",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (streamOptionsProperty != null)
+            {
+                // Create InternalChatCompletionStreamOptions instance
+                var streamOptionsType = streamOptionsProperty.PropertyType;
+                var streamOptionsInstance = Activator.CreateInstance(streamOptionsType);
+                if (streamOptionsInstance != null)
+                {
+                    // Set IncludeUsage property to true
+                    var includeUsageProperty = streamOptionsType.GetProperty("IncludeUsage",
+                        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                    includeUsageProperty?.SetValue(streamOptionsInstance, true);
+                    streamOptionsProperty.SetValue(chatOptions, streamOptionsInstance);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Could not enable streaming usage via reflection: {Error}. Will use estimation.", ex.Message);
+        }
+
+        var stream = _client.CompleteChatStreamingAsync(
+            chatMessages,
+            chatOptions,
+            cancellationToken);
+
+        var outputTokenCount = 0;
+        int? promptTokens = null;
+        int? completionTokens = null;
+
+        await foreach (var update in stream)
+        {
+            // Capture usage information if available (OpenAI sends it in final chunk)
+            if (update.Usage != null)
+            {
+                promptTokens = update.Usage.InputTokenCount;
+                completionTokens = update.Usage.OutputTokenCount;
+                activity?.SetTag("ai.tokens.input", promptTokens);
+                activity?.SetTag("ai.tokens.output", completionTokens);
+            }
+
+            foreach (var contentPart in update.ContentUpdate)
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                outputTokenCount++;
+                yield return contentPart.Text;
+            }
+        }
+
+        stopwatch.Stop();
+
+        // Create usage info - use actual if available, otherwise estimate
+        StreamingTokenUsage usage;
+        if (promptTokens.HasValue && completionTokens.HasValue)
+        {
+            usage = StreamingTokenUsage.CreateActual(promptTokens.Value, completionTokens.Value, ProviderName, model);
+        }
+        else
+        {
+            // Fallback to estimation if provider didn't return usage
+            var estimatedInput = messageList.Sum(m => TokenEstimator.EstimateTokenCount(m.Content)) + (messageList.Count * 10);
+            usage = StreamingTokenUsage.CreateEstimated(estimatedInput, outputTokenCount, ProviderName, model);
+        }
+
+        // Invoke callback with usage info
+        onUsageAvailable?.Invoke(usage);
+
+        activity?.SetTag("ai.tokens.output", outputTokenCount);
+        activity?.SetTag("ai.usage.is_actual", usage.IsActual);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, usage.TotalTokens);
     }
 
     /// <summary>

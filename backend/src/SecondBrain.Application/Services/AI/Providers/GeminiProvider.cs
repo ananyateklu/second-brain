@@ -1133,6 +1133,164 @@ public class GeminiProvider : IAIProvider
     }
 
     /// <summary>
+    /// Stream chat completion with token usage callback.
+    /// Gemini provides UsageMetadata in streaming responses.
+    /// </summary>
+    public Task<IAsyncEnumerable<string>> StreamChatCompletionWithUsageAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+        {
+            return Task.FromResult(EmptyAsyncEnumerable());
+        }
+
+        return Task.FromResult(StreamChatCompletionWithUsageInternalAsync(messages, settings, onUsageAvailable, cancellationToken));
+    }
+
+    private async IAsyncEnumerable<string> StreamChatCompletionWithUsageInternalAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (_client == null)
+            yield break;
+
+        var modelName = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Gemini.StreamChatCompletionWithUsage", ProviderName, modelName);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.usage_tracking", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var config = BuildGenerationConfig(settings?.MaxTokens, settings?.Temperature);
+
+        // Separate system messages from conversation
+        var systemMessage = messageList.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+        var conversationMessages = messageList.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        if (conversationMessages.Count == 0)
+            yield break;
+
+        // Add system instruction to config if present
+        if (systemMessage != null)
+        {
+            config.SystemInstruction = new Content
+            {
+                Parts = new List<Part> { new Part { Text = systemMessage.Content } }
+            };
+        }
+
+        var tokenCount = 0;
+
+        // Token usage tracking from Gemini's UsageMetadata
+        int? inputTokens = null;
+        int? outputTokens = null;
+
+        // Check if the last message has images (multimodal)
+        var lastMessage = conversationMessages.LastOrDefault();
+        IAsyncEnumerable<GenerateContentResponse> streamResponse;
+
+        if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
+        {
+            activity?.SetTag("ai.multimodal", true);
+            activity?.SetTag("ai.images.count", lastMessage.Images.Count);
+            var contents = BuildMultimodalContents(conversationMessages);
+            streamResponse = _client.Models.GenerateContentStreamAsync(
+                model: modelName,
+                contents: contents,
+                config: config);
+        }
+        else
+        {
+            var contents = BuildTextContents(conversationMessages);
+            streamResponse = _client.Models.GenerateContentStreamAsync(
+                model: modelName,
+                contents: contents,
+                config: config);
+        }
+
+        // Track emitted thinking blocks to avoid duplicates
+        var emittedThinkingBlocks = new HashSet<string>();
+
+        await foreach (var chunk in streamResponse)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                yield break;
+
+            // Capture usage metadata from Gemini responses
+            if (chunk.UsageMetadata != null)
+            {
+                inputTokens = chunk.UsageMetadata.PromptTokenCount;
+                outputTokens = chunk.UsageMetadata.CandidatesTokenCount ?? chunk.UsageMetadata.TotalTokenCount - (inputTokens ?? 0);
+                activity?.SetTag("ai.tokens.input", inputTokens);
+                activity?.SetTag("ai.tokens.output", outputTokens);
+            }
+
+            // Extract and emit thinking content first (wrapped in <thinking> tags for frontend extraction)
+            var thinking = ExtractThinkingProcess(chunk);
+            if (!string.IsNullOrEmpty(thinking) && !emittedThinkingBlocks.Contains(thinking))
+            {
+                emittedThinkingBlocks.Add(thinking);
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", modelName));
+                }
+                tokenCount++;
+                yield return $"<thinking>{thinking}</thinking>";
+            }
+
+            var text = ExtractText(chunk);
+            if (!string.IsNullOrEmpty(text))
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", modelName));
+                }
+                tokenCount++;
+                yield return text;
+            }
+        }
+
+        stopwatch.Stop();
+
+        // Create usage info - Gemini provides token counts in UsageMetadata
+        StreamingTokenUsage usage;
+        if (inputTokens.HasValue && outputTokens.HasValue)
+        {
+            usage = StreamingTokenUsage.CreateActual(inputTokens.Value, outputTokens.Value, ProviderName, modelName);
+        }
+        else
+        {
+            // Fallback to estimation if provider didn't return usage
+            var estimatedInput = messageList.Sum(m => TokenEstimator.EstimateTokenCount(m.Content)) + (messageList.Count * 10);
+            usage = StreamingTokenUsage.CreateEstimated(estimatedInput, tokenCount, ProviderName, modelName);
+        }
+
+        // Invoke callback with usage info
+        onUsageAvailable?.Invoke(usage);
+
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.usage.is_actual", usage.IsActual);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, true, usage.TotalTokens);
+    }
+
+    /// <summary>
     /// Build text-only contents from conversation messages
     /// </summary>
     private static List<Content> BuildTextContents(List<Models.ChatMessage> conversationMessages)

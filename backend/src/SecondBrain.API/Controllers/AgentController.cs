@@ -376,17 +376,32 @@ public class AgentController : ControllerBase
             // Estimate output token usage for the response
             var outputTokens = TokenEstimator.EstimateTokenCount(fullResponse.ToString());
 
+            // Calculate tool usage tokens
+            var toolDefinitionTokens = toolCalls.Count > 0 ? toolCalls.Count * 50 : (int?)null; // Rough estimate per tool definition
+            var toolArgumentTokens = toolCalls.Sum(t => TokenEstimator.EstimateTokenCount(t.Arguments ?? ""));
+            var toolResultTokens = toolCalls.Sum(t => TokenEstimator.EstimateTokenCount(t.Result ?? ""));
+
+            // Calculate RAG context tokens if RAG was used
+            var ragContextTokens = retrievedNotes.Sum(n => TokenEstimator.EstimateTokenCount(n.ChunkContent ?? n.Title ?? ""));
+
             // Add assistant message to conversation with tool calls, retrieved notes, and RAG log ID
             var assistantMessage = new ChatMessage
             {
                 Role = "assistant",
                 Content = fullResponse.ToString(),
                 Timestamp = DateTime.UtcNow,
+                InputTokens = inputTokens,
                 OutputTokens = outputTokens,
+                TokensActual = false, // Agent mode currently uses estimates
                 DurationMs = durationMs,
                 ToolCalls = toolCalls,
                 RetrievedNotes = retrievedNotes,
-                RagLogId = ragLogId
+                RagLogId = ragLogId,
+                ToolDefinitionTokens = toolDefinitionTokens,
+                ToolArgumentTokens = toolArgumentTokens > 0 ? toolArgumentTokens : null,
+                ToolResultTokens = toolResultTokens > 0 ? toolResultTokens : null,
+                RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
+                RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -402,9 +417,14 @@ public class AgentController : ControllerBase
                 messageId = conversation.Messages.Count - 1,
                 inputTokens = inputTokens,
                 outputTokens = outputTokens,
+                tokensActual = false,
                 durationMs = durationMs,
                 toolCallsCount = toolCalls.Count,
+                toolDefinitionTokens,
+                toolArgumentTokens = toolArgumentTokens > 0 ? toolArgumentTokens : (int?)null,
+                toolResultTokens = toolResultTokens > 0 ? toolResultTokens : (int?)null,
                 retrievedNotesCount = retrievedNotes.Count,
+                ragContextTokens = ragContextTokens > 0 ? ragContextTokens : (int?)null,
                 ragLogId = ragLogId
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");

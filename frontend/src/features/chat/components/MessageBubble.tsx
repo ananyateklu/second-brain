@@ -439,6 +439,15 @@ export function MessageBubble({
               role="user"
               userName={userName}
               provider={provider}
+              tokensActual={message.tokensActual}
+              cacheReadTokens={message.cacheReadTokens}
+              cacheCreationTokens={message.cacheCreationTokens}
+              ragContextTokens={message.ragContextTokens}
+              ragChunksCount={message.ragChunksCount}
+              reasoningTokens={message.reasoningTokens}
+              toolDefinitionTokens={message.toolDefinitionTokens}
+              toolArgumentTokens={message.toolArgumentTokens}
+              toolResultTokens={message.toolResultTokens}
             />
           </>
         ) : (
@@ -505,6 +514,15 @@ export function MessageBubble({
                 message.durationMs ??
                 (isLastMessage && agentModeEnabled ? streamingDuration : undefined)
               }
+              tokensActual={message.tokensActual}
+              cacheReadTokens={message.cacheReadTokens}
+              cacheCreationTokens={message.cacheCreationTokens}
+              ragContextTokens={message.ragContextTokens}
+              ragChunksCount={message.ragChunksCount}
+              reasoningTokens={message.reasoningTokens}
+              toolDefinitionTokens={message.toolDefinitionTokens}
+              toolArgumentTokens={message.toolArgumentTokens}
+              toolResultTokens={message.toolResultTokens}
             />
 
             {/* RAG Feedback buttons */}

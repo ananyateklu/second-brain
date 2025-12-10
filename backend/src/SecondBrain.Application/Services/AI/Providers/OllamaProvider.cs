@@ -532,6 +532,161 @@ public class OllamaProvider : IAIProvider
     }
 
     /// <summary>
+    /// Stream chat completion with token usage callback.
+    /// Ollama provides eval_count and prompt_eval_count in responses.
+    /// </summary>
+    public Task<IAsyncEnumerable<string>> StreamChatCompletionWithUsageAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(settings?.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null || !_settings.StreamingEnabled)
+        {
+            return Task.FromResult(EmptyAsyncEnumerable());
+        }
+
+        return Task.FromResult(WrapStreamWithErrorHandling(
+            StreamChatCompletionWithUsageInternalAsync(messages, settings, client, onUsageAvailable, cancellationToken),
+            "Ollama chat streaming with usage"));
+    }
+
+    private async IAsyncEnumerable<string> StreamChatCompletionWithUsageInternalAsync(
+        IEnumerable<Models.ChatMessage> messages,
+        AIRequest? settings,
+        OllamaApiClient client,
+        Action<StreamingTokenUsage>? onUsageAvailable,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.StreamChatCompletionWithUsage", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+        activity?.SetTag("ai.usage_tracking", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var chatMessages = messageList.Select(m => ConvertToOllamaMessage(m)).ToList();
+
+        var chatRequest = new ChatRequest
+        {
+            Model = model,
+            Messages = chatMessages,
+            Stream = true,
+            Options = new RequestOptions
+            {
+                Temperature = settings?.Temperature ?? _settings.Temperature,
+                NumPredict = settings?.MaxTokens
+            }
+        };
+
+        IAsyncEnumerable<ChatResponseStream?>? stream = null;
+        try
+        {
+            stream = client.ChatAsync(chatRequest, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama chat streaming failed - service unreachable (connection refused)");
+            yield break;
+        }
+        catch (HttpRequestException ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama chat streaming failed - service unreachable");
+            yield break;
+        }
+        catch (SocketException ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogWarning(ex, "Ollama chat streaming failed - socket connection refused");
+            yield break;
+        }
+        catch (Exception ex)
+        {
+            activity?.RecordException(ex);
+            _logger.LogError(ex, "Ollama chat streaming failed with unexpected error");
+            yield break;
+        }
+
+        if (stream == null)
+            yield break;
+
+        var tokenCount = 0;
+
+        // Token usage tracking from OllamaSharp's ChatDoneResponseStream
+        int? promptEvalCount = null;
+        int? evalCount = null;
+        long? totalDuration = null;
+        long? loadDuration = null;
+        long? promptEvalDuration = null;
+        long? evalDuration = null;
+
+        await foreach (var chunk in stream)
+        {
+            // Check if this is the final chunk with token metrics (ChatDoneResponseStream)
+            if (chunk is ChatDoneResponseStream doneStream)
+            {
+                promptEvalCount = doneStream.PromptEvalCount;
+                evalCount = doneStream.EvalCount;
+                totalDuration = doneStream.TotalDuration;
+                loadDuration = doneStream.LoadDuration;
+                promptEvalDuration = doneStream.PromptEvalDuration;
+                evalDuration = doneStream.EvalDuration;
+
+                activity?.SetTag("ai.tokens.input", promptEvalCount);
+                activity?.SetTag("ai.tokens.output", evalCount);
+                activity?.SetTag("ai.duration.total_ns", totalDuration);
+                activity?.SetTag("ai.duration.load_ns", loadDuration);
+                activity?.SetTag("ai.duration.prompt_eval_ns", promptEvalDuration);
+                activity?.SetTag("ai.duration.eval_ns", evalDuration);
+            }
+
+            if (!string.IsNullOrEmpty(chunk?.Message?.Content))
+            {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
+                yield return chunk.Message.Content;
+            }
+        }
+
+        stopwatch.Stop();
+
+        // Create usage info - OllamaSharp provides actual token counts via ChatDoneResponseStream
+        StreamingTokenUsage usage;
+        if (promptEvalCount.HasValue && evalCount.HasValue)
+        {
+            usage = StreamingTokenUsage.CreateActual(promptEvalCount.Value, evalCount.Value, ProviderName, model);
+        }
+        else
+        {
+            // Fallback to estimation if Ollama didn't return counts
+            var estimatedInput = messageList.Sum(m => TokenEstimator.EstimateTokenCount(m.Content)) + (messageList.Count * 10);
+            usage = StreamingTokenUsage.CreateEstimated(estimatedInput, tokenCount, ProviderName, model);
+        }
+
+        // Invoke callback with usage info
+        onUsageAvailable?.Invoke(usage);
+
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.usage.is_actual", usage.IsActual);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, usage.TotalTokens);
+    }
+
+    /// <summary>
     /// Convert a ChatMessage to Ollama format, handling multimodal content
     /// </summary>
     private static Message ConvertToOllamaMessage(Models.ChatMessage message)

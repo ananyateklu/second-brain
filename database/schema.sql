@@ -177,9 +177,51 @@
 \echo ''
 
 -- Step 27: Reranking provider preference
-\echo 'Step 27/27: Adding reranking provider to user preferences...'
+\echo 'Step 27/34: Adding reranking provider to user preferences...'
 \i 26_reranking_provider.sql
 \echo 'Reranking provider column added successfully.'
+\echo ''
+
+-- Step 28: Note summaries
+\echo 'Step 28/34: Adding note summaries...'
+\i 27_note_summaries.sql
+\echo 'Note summaries added successfully.'
+\echo ''
+
+-- Step 29: Note summary preferences
+\echo 'Step 29/34: Adding note summary preferences...'
+\i 28_note_summary_preferences.sql
+\echo 'Note summary preferences added successfully.'
+\echo ''
+
+-- Step 30: Note embeddings summary
+\echo 'Step 30/34: Adding note embeddings summary...'
+\i 29_note_embeddings_summary.sql
+\echo 'Note embeddings summary added successfully.'
+\echo ''
+
+-- Step 31: Summary jobs
+\echo 'Step 31/34: Adding summary jobs...'
+\i 30_summary_jobs.sql
+\echo 'Summary jobs added successfully.'
+\echo ''
+
+-- Step 32: Pre-tool text
+\echo 'Step 32/34: Adding pre-tool text...'
+\i 31_pre_tool_text.sql
+\echo 'Pre-tool text added successfully.'
+\echo ''
+
+-- Step 33: RAG feature toggles
+\echo 'Step 33/34: Adding RAG feature toggles...'
+\i 32_rag_feature_toggles.sql
+\echo 'RAG feature toggles added successfully.'
+\echo ''
+
+-- Step 34: Token usage tracking
+\echo 'Step 34/34: Adding token usage tracking columns...'
+\i 33_token_usage_tracking.sql
+\echo 'Token usage tracking columns added successfully.'
 \echo ''
 
 \echo '============================================'
