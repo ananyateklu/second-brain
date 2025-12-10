@@ -24,6 +24,9 @@ const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => (
 const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
 const IndexingSettings = lazy(() => import('../pages/settings/IndexingSettings').then(m => ({ default: m.IndexingSettings })));
 
+// Lazy load Git page
+const GitPage = lazy(() => import('../pages/GitPage').then(m => ({ default: m.GitPage })));
+
 export const router = createBrowserRouter([
   {
     path: '/login',
@@ -134,6 +137,20 @@ export const router = createBrowserRouter([
           <AppLayout>
             <Suspense fallback={<PageLoader />}>
               <RagAnalyticsPage />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/git',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<PageLoader />}>
+              <GitPage />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>

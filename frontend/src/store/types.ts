@@ -130,7 +130,10 @@ export interface UISliceState {
   searchMode: SearchMode;
   sidebarState: SidebarState;
   previousSidebarState: SidebarState | null;
+  /** View mode for the main Notes page */
   notesViewMode: NotesViewMode;
+  /** View mode for the Notes Directory page (independent from notesViewMode) */
+  directoryViewMode: NotesViewMode;
   isFullscreenChat: boolean;
   isFullscreenDirectory: boolean;
 }
@@ -152,6 +155,7 @@ export interface UISliceActions {
   toggleSidebar: () => void;
   closeSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
+  setDirectoryViewMode: (mode: NotesViewMode) => void;
   toggleFullscreenChat: () => void;
   toggleFullscreenDirectory: () => void;
   setFullscreenChat: (isFullscreen: boolean) => void;
@@ -331,10 +335,44 @@ export interface DraftSliceActions {
 export type DraftSlice = DraftSliceState & DraftSliceActions;
 
 // ============================================
+// Git Types
+// ============================================
+
+export interface GitSliceState {
+  /** The configured repository path */
+  repositoryPath: string | null;
+  /** Selected files for staging/unstaging operations */
+  selectedFiles: string[];
+  /** The currently selected file for diff viewing */
+  selectedDiffFile: string | null;
+  /** Whether viewing staged or unstaged diff */
+  viewingStagedDiff: boolean;
+}
+
+export interface GitSliceActions {
+  /** Set the repository path */
+  setRepositoryPath: (path: string | null) => void;
+  /** Toggle file selection */
+  toggleFileSelection: (filePath: string) => void;
+  /** Select multiple files */
+  selectFiles: (filePaths: string[]) => void;
+  /** Select all provided files */
+  selectAllFiles: (filePaths: string[]) => void;
+  /** Clear all file selections */
+  clearSelection: () => void;
+  /** Set the file to view diff for */
+  setSelectedDiffFile: (filePath: string | null, staged?: boolean) => void;
+  /** Clear the diff view */
+  clearDiffView: () => void;
+}
+
+export type GitSlice = GitSliceState & GitSliceActions;
+
+// ============================================
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice;
 
 // ============================================
 // Slice Creator Type

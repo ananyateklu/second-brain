@@ -11,4 +11,5 @@ export { ragService } from './rag.service';
 export { statsService } from './stats.service';
 export { agentService } from './agent.service';
 export { userPreferencesService, DEFAULT_PREFERENCES } from './user-preferences.service';
+export { gitService } from './git.service';
 

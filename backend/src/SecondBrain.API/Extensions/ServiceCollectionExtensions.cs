@@ -38,6 +38,9 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.Agents;
+using SecondBrain.Application.Services.Agents.Helpers;
+using SecondBrain.Application.Services.Agents.Strategies;
+using SecondBrain.Application.Services.Git;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Providers;
 using SecondBrain.Application.Services.RAG;
@@ -97,6 +100,9 @@ public static class ServiceCollectionExtensions
 
         // Background summary generation service
         services.AddScoped<ISummaryGenerationBackgroundService, SummaryGenerationBackgroundService>();
+
+        // Git integration service
+        services.AddScoped<IGitService, GitService>();
 
         return services;
     }
@@ -238,6 +244,24 @@ public static class ServiceCollectionExtensions
 
         // Register Gemini Context Cache service for reducing latency/costs with large contexts
         services.AddScoped<IGeminiCacheService, GeminiCacheService>();
+
+        // Register Agent service helpers
+        services.AddScoped<IToolExecutor, ToolExecutor>();
+        services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
+        services.AddScoped<IRagContextInjector, RagContextInjector>();
+        services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();
+        services.AddSingleton<IAgentRetryPolicy, AgentRetryPolicy>(); // Unified retry policy with exponential backoff
+
+        // Register Agent streaming strategies
+        services.AddScoped<IAgentStreamingStrategy, AnthropicStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, GeminiStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, OpenAIStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, OllamaStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, GrokStreamingStrategy>();
+        services.AddScoped<SemanticKernelStreamingStrategy>(); // Explicit fallback registration
+
+        // Register Agent strategy factory
+        services.AddScoped<IAgentStreamingStrategyFactory, AgentStreamingStrategyFactory>();
 
         // Register Agent service for agent mode functionality
         services.AddScoped<IAgentService, AgentService>();

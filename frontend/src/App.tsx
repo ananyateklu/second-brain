@@ -15,6 +15,7 @@ import { IndexingNotification } from './components/ui/IndexingNotification';
 import { SummaryNotification } from './components/ui/SummaryNotification';
 import { useIndexingRestoration } from './hooks/use-indexing-restoration';
 import { useSummaryRestoration } from './hooks/use-summary-restoration';
+import { useUserSettingsEffect } from './hooks/use-user-settings-effect';
 import { isTauri } from './lib/native-notifications';
 
 function App() {
@@ -26,6 +27,9 @@ function App() {
 
   // Restore any active summary generation jobs on app mount
   useSummaryRestoration();
+
+  // Apply user settings (fontSize, defaultNoteView, etc.) to the document
+  useUserSettingsEffect();
 
   // Listen for macOS app menu events
   useEffect(() => {

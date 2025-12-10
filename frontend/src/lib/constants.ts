@@ -247,6 +247,20 @@ export const API_ENDPOINTS = {
     READY: '/health/ready',
     LIVE: '/health/live',
   },
+
+  // Git Integration
+  GIT: {
+    VALIDATE: '/git/validate',
+    STATUS: '/git/status',
+    DIFF: '/git/diff',
+    STAGE: '/git/stage',
+    UNSTAGE: '/git/unstage',
+    COMMIT: '/git/commit',
+    PUSH: '/git/push',
+    PULL: '/git/pull',
+    LOG: '/git/log',
+    DISCARD: '/git/discard',
+  },
 } as const;
 
 // ============================================

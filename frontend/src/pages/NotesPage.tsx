@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useDeferredValue } from 'react';
+import { useMemo, useState, useCallback, useDeferredValue, useEffect } from 'react';
 import { useNotes, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -10,6 +10,7 @@ import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
 import { NoteListItem } from '../types/notes';
 import { toast } from '../hooks/use-toast';
+import { Pagination } from '../components/ui/Pagination';
 import {
   startOfDay,
   subDays,
@@ -90,6 +91,10 @@ export function NotesPage() {
   const notesViewMode = useBoundStore((state) => state.notesViewMode);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const setBulkMode = useBoundStore((state) => state.setBulkMode);
+  const itemsPerPage = useBoundStore((state) => state.itemsPerPage);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Defer search query updates to keep typing responsive
   // This prevents expensive filtering from blocking user input
@@ -230,6 +235,26 @@ export function NotesPage() {
     return filtered;
   }, [notes, deferredSearchQuery, searchMode, filterState, dateBoundaries]);
 
+  // Calculate paginated notes
+  const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
+  const paginatedNotes = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredNotes.slice(startIndex, endIndex);
+  }, [filteredNotes, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters/search change or when current page exceeds total pages
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
+
+  // Reset to page 1 when search or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [deferredSearchQuery, filterState, itemsPerPage]);
+
   // Select/Deselect all handlers - operates on filtered notes
   const handleSelectAll = useCallback(() => {
     setSelectedNoteIds(new Set(filteredNotes.map((note) => note.id)));
@@ -356,11 +381,19 @@ export function NotesPage() {
         style={{ opacity: isSearchStale ? 0.7 : 1 }}
       >
         <NoteList
-          notes={filteredNotes}
+          notes={paginatedNotes}
           viewMode={notesViewMode}
           isBulkMode={isBulkMode}
           selectedNoteIds={selectedNoteIds}
           onNoteSelect={handleNoteSelect}
+        />
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredNotes.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
         />
       </div>
       {isBulkMode && (

@@ -482,6 +482,71 @@ export function Sidebar() {
               </span>
             )}
           </NavLink>
+          <NavLink
+            to="/git"
+            end
+            className={({ isActive }) =>
+              `group relative flex items-center gap-3 rounded-xl px-3 py-3.5 transition-all duration-300 overflow-hidden ${isCollapsed ? 'justify-center' : ''
+              } ${isActive
+                ? 'font-semibold shadow-lg'
+                : 'font-medium hover:scale-[1.02] active:scale-[0.98]'
+              }`
+            }
+            style={({ isActive }) => {
+              const baseStyle: React.CSSProperties = {
+                backgroundColor: isActive ? 'var(--surface-elevated)' : 'transparent',
+                border: isActive ? '1px solid var(--border)' : '1px solid transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                boxShadow: isActive ? '0 4px 12px -2px var(--color-primary-alpha), inset 0 1px 0 0 rgba(255,255,255,0.1)' : 'none',
+              };
+              return baseStyle;
+            }}
+            onMouseEnter={(e) => {
+              const link = e.currentTarget;
+              const isActive = link.getAttribute('aria-current') === 'page';
+              setHoveredLink('git');
+              if (!isActive) {
+                link.style.backgroundColor = 'var(--surface-elevated)';
+                link.style.color = 'var(--text-primary)';
+                link.style.borderColor = 'var(--border)';
+                link.style.boxShadow = '0 4px 12px -4px var(--color-primary-alpha)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              const link = e.currentTarget;
+              const isActive = link.getAttribute('aria-current') === 'page';
+              setHoveredLink(null);
+              if (!isActive) {
+                link.style.backgroundColor = 'transparent';
+                link.style.color = 'var(--text-secondary)';
+                link.style.borderColor = 'transparent';
+                link.style.boxShadow = 'none';
+              }
+            }}
+            title={isCollapsed ? 'Source Control' : undefined}
+          >
+            {/* Hover shimmer effect */}
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full transition-transform duration-700"
+              style={{
+                transform: hoveredLink === 'git' ? 'translateX(100%)' : 'translateX(-100%)',
+              }}
+            />
+
+            <svg
+              className={`flex-shrink-0 transition-all duration-300 relative z-10 ${isCollapsed ? 'h-5 w-5' : 'h-5 w-5'} group-hover:scale-110 group-hover:rotate-3`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {!isCollapsed && (
+              <span className="whitespace-nowrap transition-all duration-300 ease-out relative z-10">
+                Source Control
+              </span>
+            )}
+          </NavLink>
         </nav>
 
         {/* Create Button */}

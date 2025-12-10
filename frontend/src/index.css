@@ -76,6 +76,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* User font size setting - multiplier applied via CSS variable */
+  /* Default is 1 (16px base), small=0.875 (14px), large=1.125 (18px) */
+  font-size: calc(16px * var(--user-font-multiplier, 1));
 }
 
 body {

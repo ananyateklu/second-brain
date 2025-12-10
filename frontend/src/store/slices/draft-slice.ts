@@ -1,9 +1,9 @@
 /**
  * Draft Slice
  * Manages chat input drafts with IndexedDB persistence
- * 
+ *
  * Features:
- * - Debounced saves (500ms) to prevent excessive writes
+ * - Debounced saves using user's autoSaveInterval setting
  * - Per-conversation draft storage
  * - Automatic cleanup of old drafts
  * - IndexedDB with localStorage fallback
@@ -15,8 +15,8 @@ import { draftStorage, type DraftEntry } from '../../hooks/use-indexed-db';
 // Special key for new/unsaved conversations
 export const NEW_CHAT_DRAFT_KEY = '__new-chat__';
 
-// Debounce timeout for draft saves (ms)
-const SAVE_DEBOUNCE_MS = 500;
+// Default debounce timeout (used if autoSaveInterval not available)
+const DEFAULT_SAVE_DEBOUNCE_MS = 500;
 
 // Track debounce timeouts per conversation
 const debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
@@ -69,6 +69,7 @@ export const createDraftSlice: SliceCreator<DraftSlice> = (set, get) => ({
 
   /**
    * Save a draft for a specific conversation (debounced)
+   * Uses autoSaveInterval from settings for debounce timing
    */
   saveDraft: (conversationId: string, content: string): void => {
     const key = conversationId || NEW_CHAT_DRAFT_KEY;
@@ -83,6 +84,11 @@ export const createDraftSlice: SliceCreator<DraftSlice> = (set, get) => ({
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
+
+    // Get the auto-save interval from settings (or use default)
+    // Note: We access state directly here since this is a synchronous action
+    const state = get();
+    const debounceMs = state.autoSaveInterval ?? DEFAULT_SAVE_DEBOUNCE_MS;
 
     // Set new debounce timer for persistence
     const timer = setTimeout(() => {
@@ -101,7 +107,7 @@ export const createDraftSlice: SliceCreator<DraftSlice> = (set, get) => ({
       };
 
       void draftStorage.save(draftEntry);
-    }, SAVE_DEBOUNCE_MS);
+    }, debounceMs);
 
     debounceTimers.set(key, timer);
   },

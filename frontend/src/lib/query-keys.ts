@@ -299,6 +299,27 @@ export const agentKeys = {
   providers: () => [...agentKeys.all, 'providers'] as const,
 } as const;
 
+/**
+ * Query keys for Git integration
+ */
+export const gitKeys = {
+  /** Root key for all git queries */
+  all: ['git'] as const,
+
+  /** Key for repository status */
+  status: (repoPath: string) => [...gitKeys.all, 'status', repoPath] as const,
+
+  /** Key for file diff */
+  diff: (repoPath: string, filePath: string, staged: boolean) =>
+    [...gitKeys.all, 'diff', repoPath, filePath, staged] as const,
+
+  /** Key for commit log */
+  log: (repoPath: string, count?: number) => [...gitKeys.all, 'log', repoPath, count] as const,
+
+  /** Key for repository validation */
+  validate: (repoPath: string) => [...gitKeys.all, 'validate', repoPath] as const,
+} as const;
+
 // ============================================
 // PostgreSQL 18 Temporal Feature Query Keys
 // ============================================
@@ -370,6 +391,7 @@ export const queryKeys = {
   userPreferences: userPreferencesKeys,
   imageGeneration: imageGenerationKeys,
   agent: agentKeys,
+  git: gitKeys,
   // PostgreSQL 18 Temporal Features
   noteVersions: noteVersionKeys,
   chatSessions: chatSessionKeys,
