@@ -197,7 +197,7 @@ export function extractAllThinkingContent(content: string, includeIncomplete = f
 export function extractPreThinkingText(content: string): string {
   // Match text before the first <thinking> or <think> tag
   const match = content.match(/^([\s\S]*?)(?=<think(?:ing)?>)/i);
-  if (match && match[1]) {
+  if (match?.[1]) {
     return match[1].trim();
   }
   return '';
@@ -207,11 +207,11 @@ export function extractPreThinkingText(content: string): string {
  * Extract text that appears BETWEEN thinking tags and tool calls.
  * This handles cases where there's text after thinking ends but before tools start.
  *
- * @param content - The message content (should have thinking tags stripped already)
- * @param preToolTexts - Pre-tool texts that are already captured
+ * @param _content - The message content (should have thinking tags stripped already)
+ * @param _preToolTexts - Pre-tool texts that are already captured
  * @returns Text between thinking end and first tool, or empty string
  */
-export function extractPostThinkingText(content: string, preToolTexts: string[]): string {
+export function extractPostThinkingText(_content: string, _preToolTexts: string[]): string {
   // This is already handled by preToolText - the first preToolText contains
   // any text between thinking and the first tool call
   // We return empty here as the logic is handled elsewhere
@@ -235,7 +235,7 @@ export function stripPreToolText(content: string, preToolTexts: string[]): strin
   let result = content;
 
   for (const preToolText of preToolTexts) {
-    if (preToolText && preToolText.trim()) {
+    if (preToolText?.trim()) {
       // Remove the pre-tool text from the content
       // We need to handle it carefully - the text might appear with slight variations
       const trimmedPreTool = preToolText.trim();
@@ -290,7 +290,7 @@ export function stripAllTimelineText(
   // Note: preToolTexts may also contain thinking tags (since they were captured from
   // fullResponse which includes thinking tags), so we need to strip those too
   for (const preToolText of preToolTexts) {
-    if (preToolText && preToolText.trim()) {
+    if (preToolText?.trim()) {
       // Strip thinking tags from preToolText before matching
       // This handles the case where preToolText was captured with thinking tags
       const cleanedPreToolText = stripAllThinkingTags(preToolText).trim();

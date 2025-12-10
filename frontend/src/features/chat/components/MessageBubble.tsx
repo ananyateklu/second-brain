@@ -360,7 +360,7 @@ export function MessageBubble({
   const preToolTexts = useMemo(() => {
     if (!hasToolCalls || !message.toolCalls) return [];
     return message.toolCalls
-      .filter(tc => tc.preToolText && tc.preToolText.trim())
+      .filter(tc => tc.preToolText?.trim())
       .map(tc => tc.preToolText as string);
   }, [hasToolCalls, message.toolCalls]);
 

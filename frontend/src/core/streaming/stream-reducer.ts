@@ -135,7 +135,7 @@ function processThinkingEvent(
   event: Extract<StreamEvent, { type: 'content:thinking' }>
 ): UnifiedStreamState {
   const now = Date.now();
-  let newTimeline = [...state.processTimeline];
+  const newTimeline = [...state.processTimeline];
   let newTextContentInTimeline = state.textContentInTimeline;
 
   // Check if there's uncaptured text that should come before this thinking block
@@ -257,7 +257,7 @@ function processToolStartEvent(
 
   // Check if there's text content that hasn't been captured in the timeline yet
   const uncapturedText = state.textContent.substring(state.textContentInTimeline);
-  let newTimeline = [...state.processTimeline];
+  const newTimeline = [...state.processTimeline];
   let newTextContentInTimeline = state.textContentInTimeline;
 
   if (uncapturedText.trim().length > 0) {

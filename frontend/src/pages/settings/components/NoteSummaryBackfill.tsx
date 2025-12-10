@@ -1,14 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNotes } from '../../../features/notes/hooks/use-notes-query';
 import { useStartSummaryGeneration } from '../../../features/notes/hooks/use-summary-generation';
 import { useBoundStore } from '../../../store/bound-store';
 import { toast } from '../../../hooks/use-toast';
-import { noteKeys } from '../../../lib/query-keys';
 import type { NoteListItem } from '../../../types/notes';
 
 export function NoteSummaryBackfill() {
-    const queryClient = useQueryClient();
     const { data: notes, isLoading: isLoadingNotes, refetch: refetchNotes } = useNotes();
     const startSummaryGeneration = useStartSummaryGeneration();
     const {

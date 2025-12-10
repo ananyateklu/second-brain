@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { MarkdownMessage } from './MarkdownMessage';
 import { InlineNoteReference } from '../features/chat/components/InlineNoteReference';
 import { splitTextWithNoteReferences } from '../utils/note-reference-utils';
