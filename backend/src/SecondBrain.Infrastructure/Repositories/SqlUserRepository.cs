@@ -210,6 +210,13 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.NoteSummaryEnabled = user.Preferences.NoteSummaryEnabled;
                     existingUser.Preferences.NoteSummaryProvider = user.Preferences.NoteSummaryProvider;
                     existingUser.Preferences.NoteSummaryModel = user.Preferences.NoteSummaryModel;
+
+                    // RAG Feature Toggles
+                    existingUser.Preferences.RagEnableHyde = user.Preferences.RagEnableHyde;
+                    existingUser.Preferences.RagEnableQueryExpansion = user.Preferences.RagEnableQueryExpansion;
+                    existingUser.Preferences.RagEnableHybridSearch = user.Preferences.RagEnableHybridSearch;
+                    existingUser.Preferences.RagEnableReranking = user.Preferences.RagEnableReranking;
+                    existingUser.Preferences.RagEnableAnalytics = user.Preferences.RagEnableAnalytics;
                 }
             }
 

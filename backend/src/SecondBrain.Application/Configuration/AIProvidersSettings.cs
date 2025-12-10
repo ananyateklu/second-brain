@@ -189,7 +189,7 @@ public class GeminiFeaturesConfig
     /// <summary>
     /// Enable thinking mode for complex reasoning (Gemini 2.0+)
     /// </summary>
-    public bool EnableThinking { get; set; } = false;
+    public bool EnableThinking { get; set; } = true;
 
     /// <summary>
     /// Enable context caching for reducing latency and costs with large contexts

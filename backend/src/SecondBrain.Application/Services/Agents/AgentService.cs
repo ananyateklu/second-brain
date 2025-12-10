@@ -20,6 +20,7 @@ using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Interfaces;
 
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
@@ -58,6 +59,7 @@ public class AgentService : IAgentService
     private readonly RagSettings _ragSettings;
     private readonly IParallelNoteRepository _noteRepository;
     private readonly IRagService _ragService;
+    private readonly IUserPreferencesService _userPreferencesService;
     private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, IAgentPlugin> _plugins = new();
     private readonly QueryIntentDetector _intentDetector = new();
@@ -73,6 +75,7 @@ public class AgentService : IAgentService
         IOptions<RagSettings> ragSettings,
         IParallelNoteRepository noteRepository,
         IRagService ragService,
+        IUserPreferencesService userPreferencesService,
         ILogger<AgentService> logger,
         IGeminiFunctionRegistry? geminiFunctionRegistry = null,
         GeminiProvider? geminiProvider = null,
@@ -85,6 +88,7 @@ public class AgentService : IAgentService
         _ragSettings = ragSettings.Value;
         _noteRepository = noteRepository;
         _ragService = ragService;
+        _userPreferencesService = userPreferencesService;
         _logger = logger;
         _geminiFunctionRegistry = geminiFunctionRegistry;
         _geminiProvider = geminiProvider;
@@ -382,12 +386,14 @@ public class AgentService : IAgentService
                 if (!emittedToolCalls.Contains(toolKey))
                 {
                     emittedToolCalls.Add(toolKey);
+                    var streamToolId = $"toolu_{GenerateToolId(toolResult.Name, toolResult.Arguments)}";
 
                     // Emit start event
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = toolResult.Name,
+                        ToolId = streamToolId,
                         ToolArguments = toolResult.Arguments
                     };
 
@@ -396,6 +402,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = toolResult.Name,
+                        ToolId = streamToolId,
                         ToolResult = toolResult.Result
                     };
                 }
@@ -452,11 +459,13 @@ public class AgentService : IAgentService
             if (!emittedToolCalls.Contains(toolKey))
             {
                 emittedToolCalls.Add(toolKey);
+                var remainingToolId = $"toolu_{GenerateToolId(toolResult.Name, toolResult.Arguments)}";
 
                 yield return new AgentStreamEvent
                 {
                     Type = AgentEventType.ToolCallStart,
                     ToolName = toolResult.Name,
+                    ToolId = remainingToolId,
                     ToolArguments = toolResult.Arguments
                 };
 
@@ -464,6 +473,7 @@ public class AgentService : IAgentService
                 {
                     Type = AgentEventType.ToolCallEnd,
                     ToolName = toolResult.Name,
+                    ToolId = remainingToolId,
                     ToolResult = toolResult.Result
                 };
             }
@@ -611,39 +621,128 @@ public class AgentService : IAgentService
             Content = "Building conversation context..."
         };
 
-        // Build message history
+        // Build message history using proper Anthropic tool_use/tool_result format
+        // We need to handle tool results carefully to avoid consecutive user messages
         var messages = new List<Anthropic.SDK.Messaging.Message>();
+        List<ContentBase>? pendingToolResults = null; // Tool results waiting to be merged with next user message
 
-        foreach (var msg in request.Messages)
+        for (int i = 0; i < request.Messages.Count; i++)
         {
+            var msg = request.Messages[i];
+
             if (msg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
             {
-                messages.Add(new Anthropic.SDK.Messaging.Message(RoleType.User, msg.Content));
-            }
-            else if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
-            {
-                // Include tool call context if present
-                if (msg.ToolCalls != null && msg.ToolCalls.Any())
+                // If we have pending tool results, merge them with this user message
+                if (pendingToolResults != null && pendingToolResults.Count > 0)
                 {
-                    var contextBuilder = new StringBuilder();
-                    if (!string.IsNullOrWhiteSpace(msg.Content))
+                    var combinedContent = new List<ContentBase>(pendingToolResults);
+                    combinedContent.Add(new Anthropic.SDK.Messaging.TextContent { Text = msg.Content });
+                    messages.Add(new Anthropic.SDK.Messaging.Message
                     {
-                        contextBuilder.AppendLine(msg.Content);
-                    }
-                    contextBuilder.AppendLine();
-                    contextBuilder.AppendLine("---SYSTEM CONTEXT (DO NOT REPRODUCE THIS FORMAT)---");
-                    foreach (var tc in msg.ToolCalls)
-                    {
-                        contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
-                    }
-                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
-                    messages.Add(new Anthropic.SDK.Messaging.Message(RoleType.Assistant, contextBuilder.ToString()));
+                        Role = RoleType.User,
+                        Content = combinedContent
+                    });
+                    pendingToolResults = null;
                 }
                 else
                 {
-                    messages.Add(new Anthropic.SDK.Messaging.Message(RoleType.Assistant, msg.Content));
+                    messages.Add(new Anthropic.SDK.Messaging.Message(RoleType.User, msg.Content));
                 }
             }
+            else if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+            {
+                // Use proper tool_use content blocks for assistant messages with tool calls
+                if (msg.ToolCalls != null && msg.ToolCalls.Any())
+                {
+                    var contentBlocks = new List<ContentBase>();
+
+                    // Add any text content first, but strip out legacy SYSTEM CONTEXT markers
+                    var cleanedContent = StripLegacySystemContextMarkers(msg.Content);
+                    if (!string.IsNullOrWhiteSpace(cleanedContent))
+                    {
+                        contentBlocks.Add(new Anthropic.SDK.Messaging.TextContent { Text = cleanedContent });
+                    }
+
+                    // Add tool_use blocks for each tool call
+                    var toolResultBlocks = new List<ContentBase>();
+                    foreach (var tc in msg.ToolCalls)
+                    {
+                        // Generate a deterministic ID based on tool name and arguments hash
+                        var toolId = $"toolu_{GenerateToolId(tc.ToolName, tc.Arguments)}";
+
+                        // Parse arguments as JsonNode for the tool_use block
+                        JsonNode? inputNode = null;
+                        if (!string.IsNullOrEmpty(tc.Arguments))
+                        {
+                            try
+                            {
+                                inputNode = JsonNode.Parse(tc.Arguments);
+                            }
+                            catch
+                            {
+                                inputNode = new JsonObject { ["raw"] = tc.Arguments };
+                            }
+                        }
+
+                        contentBlocks.Add(new ToolUseContent
+                        {
+                            Id = toolId,
+                            Name = tc.ToolName,
+                            Input = inputNode
+                        });
+
+                        // Prepare corresponding tool_result for the user message
+                        toolResultBlocks.Add(new ToolResultContent
+                        {
+                            ToolUseId = toolId,
+                            Content = new List<ContentBase>
+                            {
+                                new Anthropic.SDK.Messaging.TextContent { Text = tc.Result }
+                            }
+                        });
+                    }
+
+                    // Add assistant message with tool_use blocks
+                    messages.Add(new Anthropic.SDK.Messaging.Message
+                    {
+                        Role = RoleType.Assistant,
+                        Content = contentBlocks
+                    });
+
+                    // Check if next message is a user message - if so, we'll merge tool results with it
+                    var nextMsg = i + 1 < request.Messages.Count ? request.Messages[i + 1] : null;
+                    if (nextMsg != null && nextMsg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Store tool results to merge with next user message
+                        pendingToolResults = toolResultBlocks;
+                    }
+                    else
+                    {
+                        // No next user message, add tool results as separate user message
+                        messages.Add(new Anthropic.SDK.Messaging.Message
+                        {
+                            Role = RoleType.User,
+                            Content = toolResultBlocks
+                        });
+                    }
+                }
+                else
+                {
+                    // Strip out any legacy SYSTEM CONTEXT markers from stored content
+                    var cleanedContent = StripLegacySystemContextMarkers(msg.Content);
+                    messages.Add(new Anthropic.SDK.Messaging.Message(RoleType.Assistant, cleanedContent));
+                }
+            }
+        }
+
+        // If we have pending tool results at the end (shouldn't happen normally), add them
+        if (pendingToolResults != null && pendingToolResults.Count > 0)
+        {
+            messages.Add(new Anthropic.SDK.Messaging.Message
+            {
+                Role = RoleType.User,
+                Content = pendingToolResults
+            });
         }
 
         // Automatic context injection for knowledge queries (Anthropic path, only when AgentRagEnabled is true)
@@ -1095,6 +1194,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = toolName,
+                        ToolId = toolId,
                         ToolArguments = effectiveInput?.ToJsonString() ?? "{}"
                     };
 
@@ -1127,6 +1227,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = toolName,
+                        ToolId = toolId,
                         ToolResult = result
                     };
 
@@ -1298,13 +1399,17 @@ public class AgentService : IAgentService
         var mightNeedCalculation = queryLower.Contains("calculate") || queryLower.Contains("compute") ||
                                    queryLower.Contains("math") || queryLower.Contains("equation");
 
+        // Enable thinking if requested or if configured in settings
+        var enableThinking = request.EnableThinking ?? _settings.Gemini.Features.EnableThinking;
+
         var featureOptions = new GeminiFeatureOptions
         {
             FunctionDeclarations = functionDeclarations.Count > 0 ? functionDeclarations : null,
             // Enable Gemini-specific features based on query analysis
             EnableGrounding = mightNeedRealTimeInfo && _settings.Gemini.Features.EnableGrounding,
             EnableCodeExecution = mightNeedCalculation && _settings.Gemini.Features.EnableCodeExecution,
-            EnableThinking = _settings.Gemini.Features.EnableThinking
+            EnableThinking = enableThinking,
+            ThinkingBudget = enableThinking ? (request.ThinkingBudget ?? _settings.Gemini.Thinking.DefaultBudget) : null
         };
 
         if (featureOptions.EnableGrounding)
@@ -1314,6 +1419,10 @@ public class AgentService : IAgentService
         if (featureOptions.EnableCodeExecution)
         {
             _logger.LogInformation("Enabling code execution for this query");
+        }
+        if (featureOptions.EnableThinking)
+        {
+            _logger.LogInformation("Enabling Gemini thinking mode with budget: {Budget}", featureOptions.ThinkingBudget);
         }
 
         for (int iteration = 0; iteration < maxIterations; iteration++)
@@ -1411,6 +1520,14 @@ public class AgentService : IAgentService
                     Content = $"Executing {pendingFunctionCalls.Count} tool(s) in parallel..."
                 };
 
+                // Create tool ID mapping for matching start/end events
+                var geminiToolIds = new Dictionary<string, string>();
+                foreach (var call in pendingFunctionCalls)
+                {
+                    var geminiToolId = $"toolu_{GenerateToolId(call.Name, call.Arguments)}";
+                    geminiToolIds[call.Name] = geminiToolId;
+                }
+
                 // Emit start events for all tools
                 foreach (var call in pendingFunctionCalls)
                 {
@@ -1418,6 +1535,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = call.Name,
+                        ToolId = geminiToolIds[call.Name],
                         ToolArguments = call.Arguments
                     };
                 }
@@ -1483,6 +1601,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = name,
+                        ToolId = geminiToolIds.GetValueOrDefault(name, $"toolu_{name}"),
                         ToolResult = result
                     };
                 }
@@ -1781,6 +1900,14 @@ public class AgentService : IAgentService
                     Content = $"Executing {pendingToolCalls.Count} tool(s)..."
                 };
 
+                // Create tool ID mapping for matching start/end events
+                var ollamaToolIds = new Dictionary<string, string>();
+                foreach (var call in pendingToolCalls)
+                {
+                    var ollamaToolId = $"toolu_{GenerateToolId(call.Name, call.Arguments)}";
+                    ollamaToolIds[call.Name] = ollamaToolId;
+                }
+
                 // Emit start events for all tools
                 foreach (var call in pendingToolCalls)
                 {
@@ -1788,6 +1915,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = call.Name,
+                        ToolId = ollamaToolIds[call.Name],
                         ToolArguments = call.Arguments
                     };
                 }
@@ -1853,6 +1981,7 @@ public class AgentService : IAgentService
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = name,
+                        ToolId = ollamaToolIds.GetValueOrDefault(name, $"toolu_{name}"),
                         ToolResult = result
                     };
                 }
@@ -2123,13 +2252,14 @@ public class AgentService : IAgentService
                     Content = $"Executing {pendingToolCalls.Count} tool(s)..."
                 };
 
-                // Emit start events for all tools
+                // Emit start events for all tools (OpenAI provides tool IDs via call.Id)
                 foreach (var call in pendingToolCalls)
                 {
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = call.Name,
+                        ToolId = call.Id ?? $"toolu_{GenerateToolId(call.Name, call.Arguments)}",
                         ToolArguments = call.Arguments
                     };
                 }
@@ -2189,12 +2319,13 @@ public class AgentService : IAgentService
                 }
 
                 // Emit end events for all tools
-                foreach (var (_, name, result, _) in results)
+                foreach (var (id, name, result, _) in results)
                 {
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = name,
+                        ToolId = id,
                         ToolResult = result
                     };
                 }
@@ -2462,13 +2593,14 @@ public class AgentService : IAgentService
                     Content = $"Executing {pendingToolCalls.Count} tool(s)..."
                 };
 
-                // Emit start events for all tools
+                // Emit start events for all tools (Grok provides tool IDs via call.Id)
                 foreach (var call in pendingToolCalls)
                 {
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.ToolCallStart,
                         ToolName = call.Name,
+                        ToolId = call.Id ?? $"toolu_{GenerateToolId(call.Name, call.Arguments)}",
                         ToolArguments = call.Arguments
                     };
                 }
@@ -2529,12 +2661,13 @@ public class AgentService : IAgentService
                 }
 
                 // Emit end events for all tools
-                foreach (var (_, name, result, _) in results)
+                foreach (var (id, name, result, _) in results)
                 {
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.ToolCallEnd,
                         ToolName = name,
+                        ToolId = id,
                         ToolResult = result
                     };
                 }
@@ -2942,12 +3075,30 @@ public class AgentService : IAgentService
                 _ragSettings.TopK, _ragSettings.SimilarityThreshold,
                 query.Substring(0, Math.Min(50, query.Length)));
 
+            // Get user's RAG preferences to respect their feature toggle settings
+            RagOptions? ragOptions = null;
+            try
+            {
+                var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                ragOptions = RagOptions.FromUserPreferences(
+                    enableHyde: userPrefs.RagEnableHyde,
+                    enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                    enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                    enableReranking: userPrefs.RagEnableReranking,
+                    enableAnalytics: userPrefs.RagEnableAnalytics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user RAG preferences, using defaults");
+            }
+
             // Use configuration-based parameters (same as normal chat) for consistent quality
             var ragContext = await _ragService.RetrieveContextAsync(
                 query,
                 userId,
                 topK: _ragSettings.TopK,
                 similarityThreshold: _ragSettings.SimilarityThreshold,
+                options: ragOptions,
                 cancellationToken: cancellationToken);
 
             if (!ragContext.RetrievedNotes.Any())
@@ -3093,6 +3244,58 @@ public class AgentService : IAgentService
         return request.Messages
             .LastOrDefault(m => m.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
             ?.Content;
+    }
+
+    /// <summary>
+    /// Generates a deterministic tool ID for reconstructing Anthropic tool_use/tool_result pairs.
+    /// The ID format matches Anthropic's expected format: toolu_XXXX
+    /// </summary>
+    private static string GenerateToolId(string toolName, string arguments)
+    {
+        // Create a deterministic hash from tool name and arguments
+        var input = $"{toolName}:{arguments}";
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(input));
+        // Take first 12 bytes and convert to base64-like string (alphanumeric)
+        var idPart = Convert.ToBase64String(hashBytes, 0, 12)
+            .Replace("+", "0")
+            .Replace("/", "1")
+            .Replace("=", "");
+        return idPart;
+    }
+
+    /// <summary>
+    /// Strips out legacy "---SYSTEM CONTEXT---" markers that were previously embedded in message content.
+    /// This ensures old conversations don't pollute the context with internal formatting.
+    /// </summary>
+    private static string StripLegacySystemContextMarkers(string? content)
+    {
+        if (string.IsNullOrEmpty(content))
+            return string.Empty;
+
+        // Pattern matches various forms of the legacy markers
+        // ---SYSTEM CONTEXT (DO NOT REPRODUCE THIS FORMAT)---
+        // ---SYSTEM CONTEXT (DO NOT REPRODUCE THIS FORMAT IN YOUR RESPONSE)---
+        // ---SYSTEM CONTEXT (DO NOT REPRODUCE)---
+        // ---END SYSTEM CONTEXT---
+        var patterns = new[]
+        {
+            @"---SYSTEM CONTEXT[^-]*---[\s\S]*?---END SYSTEM CONTEXT---",
+            @"\n?---SYSTEM CONTEXT[^-]*---",
+            @"---END SYSTEM CONTEXT---\n?"
+        };
+
+        var result = content;
+        foreach (var pattern in patterns)
+        {
+            result = System.Text.RegularExpressions.Regex.Replace(
+                result,
+                pattern,
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+
+        return result.Trim();
     }
 
     /// <summary>

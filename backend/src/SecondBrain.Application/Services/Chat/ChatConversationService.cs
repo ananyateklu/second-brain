@@ -22,7 +22,15 @@ public class ChatConversationService : IChatConversationService
     public async Task<IEnumerable<ChatConversation>> GetAllConversationsAsync(string userId, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Retrieving all conversations for user. UserId: {UserId}", userId);
-        return await _chatRepository.GetAllAsync(userId);
+        var conversations = await _chatRepository.GetAllAsync(userId);
+
+        // Sort tool calls by execution time to ensure correct display order
+        foreach (var conversation in conversations)
+        {
+            SortToolCallsByExecutedAt(conversation);
+        }
+
+        return conversations;
     }
 
     public async Task<ChatConversation?> GetConversationByIdAsync(string conversationId, string userId, CancellationToken cancellationToken = default)
@@ -43,6 +51,9 @@ public class ChatConversationService : IChatConversationService
                 userId, conversationId, conversation.UserId);
             throw new UnauthorizedException("Access denied to this conversation");
         }
+
+        // Sort tool calls by execution time to ensure correct display order
+        SortToolCallsByExecutedAt(conversation);
 
         return conversation;
     }
@@ -224,6 +235,24 @@ public class ChatConversationService : IChatConversationService
     {
         var conversation = await _chatRepository.GetByIdAsync(conversationId);
         return conversation != null && conversation.UserId == userId;
+    }
+
+    /// <summary>
+    /// Sorts tool calls within each message by their ExecutedAt timestamp.
+    /// This ensures tool calls are displayed in the order they were executed,
+    /// regardless of database retrieval order.
+    /// </summary>
+    private static void SortToolCallsByExecutedAt(ChatConversation conversation)
+    {
+        foreach (var message in conversation.Messages)
+        {
+            if (message.ToolCalls?.Count > 1)
+            {
+                message.ToolCalls = message.ToolCalls
+                    .OrderBy(tc => tc.ExecutedAt)
+                    .ToList();
+            }
+        }
     }
 }
 

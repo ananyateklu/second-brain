@@ -6,12 +6,11 @@ import { useOllamaDownloadStore, formatBytes, formatSpeed, formatTimeRemaining }
 import { Modal } from '../../components/ui/Modal';
 import { TauriProviderApiKeyInput } from '../../components/ui/TauriApiKeysManager';
 import { useTauriSecrets } from '../../components/ui/use-tauri-secrets';
-import { TauriPineconeSetupModal } from '../../components/ui/TauriPineconeSetupModal';
-import { usePineconeConfigured } from '../../components/ui/use-pinecone-configured';
 import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
 import { formatModelName } from '../../utils/model-name-formatter';
 import { toast } from '../../hooks/use-toast';
 import { isTauri } from '../../lib/native-notifications';
+import { NoteSummarySettings } from './components/NoteSummarySettings';
 import anthropicLight from '../../assets/anthropic-light.svg';
 import anthropicDark from '../../assets/anthropic-dark.svg';
 import googleLogo from '../../assets/google.svg';
@@ -29,12 +28,6 @@ const AI_PROVIDERS = [
     { id: 'xai', name: 'xAI' },
 ] as const;
 
-const RERANKING_PROVIDER_OPTIONS = [
-    { id: 'OpenAI', name: 'OpenAI', description: 'Fast and reliable reranking with GPT models' },
-    { id: 'Anthropic', name: 'Anthropic', description: 'High-quality reranking with Claude models' },
-    { id: 'Gemini', name: 'Gemini', description: 'Cost-effective reranking with Gemini models' },
-    { id: 'Grok', name: 'Grok (xAI)', description: 'Reranking with xAI Grok models' },
-] as const;
 
 const PROVIDER_DETAILS: Record<string, {
     tagline: string;
@@ -80,30 +73,6 @@ const PROVIDER_DETAILS: Record<string, {
     },
 };
 
-type VectorProvider = 'PostgreSQL' | 'Pinecone';
-
-const VECTOR_STORE_OPTIONS: {
-    id: VectorProvider;
-    label: string;
-    badge?: string;
-    description: string;
-    features: string[];
-}[] = [
-        {
-            id: 'PostgreSQL',
-            label: 'PostgreSQL',
-            badge: 'Default',
-            description: 'Local PostgreSQL database with pgvector extension for fast, efficient vector similarity search.',
-            features: ['Local storage', 'Fast queries', 'Full control'],
-        },
-        {
-            id: 'Pinecone',
-            label: 'Pinecone',
-            badge: 'Scalable',
-            description: 'Vector database tuned for high-volume and multi-tenant knowledge bases.',
-            features: ['Billions of vectors', 'Metadata filters', 'Hybrid search ready'],
-        },
-    ];
 
 // Curated list of popular Ollama models
 const POPULAR_OLLAMA_MODELS: {
@@ -152,11 +121,6 @@ const MODEL_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
 export function AISettings() {
     const { theme } = useThemeStore();
     const {
-        vectorStoreProvider,
-        setVectorStoreProvider,
-        rerankingProvider,
-        setRerankingProvider,
-        syncPreferencesToBackend,
         ollamaRemoteUrl,
         useRemoteOllama,
         setOllamaRemoteUrl,
@@ -165,11 +129,7 @@ export function AISettings() {
     const user = useAuthStore((state) => state.user);
     const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth } = useAIHealth();
     const { isProviderConfigured, refetch: refetchSecrets } = useTauriSecrets();
-    const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
-    const [showPineconeSetup, setShowPineconeSetup] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
-    const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
-    const [isSavingRerankingProvider, setIsSavingRerankingProvider] = useState(false);
     const [isSavingOllama, setIsSavingOllama] = useState(false);
     const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaRemoteUrl || '');
     const [modelToDownload, setModelToDownload] = useState('');
@@ -265,7 +225,7 @@ export function AISettings() {
                         }}
                     >
                         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-3">
                                 <div
                                     className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
                                     style={{
@@ -277,14 +237,17 @@ export function AISettings() {
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.638-1.638l-1.183-.394 1.183-.394a2.25 2.25 0 001.638-1.638l.394-1.183.394 1.183a2.25 2.25 0 001.638 1.638l1.183.394-1.183.394a2.25 2.25 0 00-1.638 1.638z" />
                                     </svg>
                                 </div>
-                                <div>
-                                    <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                                        Provider Grid
-                                    </span>
-                                    <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
-                                        Connected AI services
-                                    </h3>
-                                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                                            Provider Grid
+                                        </span>
+                                        <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
+                                        <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                            Connected AI services
+                                        </h3>
+                                    </div>
+                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                         Click a provider to view configuration steps, health, and troubleshooting notes.
                                     </p>
                                 </div>
@@ -395,7 +358,7 @@ export function AISettings() {
                                                             </p>
                                                         ) : (
                                                             <span
-                                                                className="mt-1 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                                                                className="mt-1 flex items-center w-fit rounded-full border py-0.5 pl-2.5 pr-2.5 text-[8px] font-semibold uppercase tracking-wide"
                                                                 style={{
                                                                     backgroundColor: 'color-mix(in srgb, var(--surface-card) 65%, transparent)',
                                                                     borderColor: 'color-mix(in srgb, var(--border) 60%, transparent)',
@@ -489,388 +452,6 @@ export function AISettings() {
                         </div>
                     </section>
 
-                    {/* Vector Store Provider and Reranking Provider - Inline */}
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <section
-                            className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
-                            style={{
-                                backgroundColor: 'var(--surface-card)',
-                                borderColor: 'var(--border)',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-                                <div className="flex items-start gap-2">
-                                    <div
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
-                                        style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                        }}
-                                    >
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                                            Chat Preference
-                                        </span>
-                                        <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
-                                            Vector store provider
-                                        </h3>
-                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                            Choose which store powers Retrieval-Augmented responses in chat. Manual indexing can still target multiple stores.
-                                        </p>
-                                    </div>
-                                </div>
-                                <span
-                                    className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
-                                    style={{
-                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                        color: 'var(--color-brand-600)',
-                                    }}
-                                >
-                                    {isSavingVectorStore ? (
-                                        <>
-                                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                            </svg>
-                                            Used in live conversations
-                                        </>
-                                    )}
-                                </span>
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2 mt-4">
-                                {VECTOR_STORE_OPTIONS.map((option) => {
-                                    const isActive = vectorStoreProvider === option.id;
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={option.id}
-                                            onClick={() => {
-                                                void (async () => {
-                                                    if (!user?.userId) {
-                                                        console.error('User not authenticated');
-                                                        return;
-                                                    }
-
-                                                    setIsSavingVectorStore(true);
-                                                    try {
-                                                        // Update local state first
-                                                        await setVectorStoreProvider(option.id, false);
-
-                                                        // Then sync to backend explicitly with userId
-                                                        await syncPreferencesToBackend(user.userId);
-                                                    } catch (error) {
-                                                        console.error('Failed to update vector store provider:', { error });
-                                                        toast.error('Failed to save vector store preference', 'Please try again.');
-                                                    } finally {
-                                                        setIsSavingVectorStore(false);
-                                                    }
-                                                })();
-                                            }}
-                                            disabled={isSavingVectorStore}
-                                            className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                            style={{
-                                                backgroundColor: isActive
-                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
-                                                    : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                                color: 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
-                                                    : 'none',
-                                                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
-                                                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
-                                                    e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                                                    e.currentTarget.style.borderColor = 'var(--border)';
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                }
-                                            }}
-                                        >
-                                            <div className="flex items-start justify-between gap-2 mb-3">
-                                                <div className="flex items-start gap-2 flex-1">
-                                                    <div
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
-                                                        style={{
-                                                            backgroundColor: isActive
-                                                                ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                                : 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-                                                            borderColor: isActive
-                                                                ? 'var(--color-brand-600)'
-                                                                : 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                                        }}
-                                                    >
-                                                        {option.id === 'PostgreSQL' ? (
-                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-                                                            </svg>
-                                                        ) : (
-                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                            </svg>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <p className="text-xs font-semibold">{option.label}</p>
-                                                            {option.badge && (
-                                                                <span
-                                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                                                                    style={{
-                                                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                                                        color: 'var(--color-brand-600)',
-                                                                    }}
-                                                                >
-                                                                    {option.badge}
-                                                                </span>
-                                                            )}
-                                                            {/* Show "Not Configured" badge for Pinecone in Tauri mode */}
-                                                            {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
-                                                                <span
-                                                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                                                                    style={{
-                                                                        border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)',
-                                                                        backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
-                                                                        color: '#f59e0b',
-                                                                    }}
-                                                                >
-                                                                    Not Configured
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                                            {option.description}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                {/* Setup Pinecone button */}
-                                                {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setShowPineconeSetup(true);
-                                                        }}
-                                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5"
-                                                        style={{
-                                                            backgroundColor: 'var(--color-brand-600)',
-                                                            color: 'white',
-                                                        }}
-                                                    >
-                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
-                                                        </svg>
-                                                        Setup Pinecone
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {option.features.map((feature) => (
-                                                    <span
-                                                        key={feature}
-                                                        className="text-[11px] font-medium px-2.5 py-1 rounded-md flex items-center gap-1"
-                                                        style={{
-                                                            backgroundColor: isActive
-                                                                ? (isDarkMode
-                                                                    ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                                    : 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)')
-                                                                : (isDarkMode
-                                                                    ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                                                                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)'),
-                                                            color: isActive
-                                                                ? 'var(--color-brand-600)'
-                                                                : (isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)'),
-                                                            opacity: isActive ? 1 : (isDarkMode ? 1 : 0.7),
-                                                        }}
-                                                    >
-                                                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                        {feature}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </section>
-
-                        <section
-                            className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
-                            style={{
-                                backgroundColor: 'var(--surface-card)',
-                                borderColor: 'var(--border)',
-                                boxShadow: 'var(--shadow-lg)',
-                            }}
-                        >
-                            <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-                                <div className="flex items-start gap-2">
-                                    <div
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
-                                        style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                        }}
-                                    >
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
-                                            RAG Enhancement
-                                        </span>
-                                        <h3 className="text-lg font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>
-                                            Reranking provider
-                                        </h3>
-                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                            Choose which AI provider reranks search results for more relevant RAG responses.
-                                        </p>
-                                    </div>
-                                </div>
-                                <span
-                                    className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
-                                    style={{
-                                        border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                        color: 'var(--color-brand-600)',
-                                    }}
-                                >
-                                    {isSavingRerankingProvider ? (
-                                        <>
-                                            <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                                            </svg>
-                                            Improves relevance
-                                        </>
-                                    )}
-                                </span>
-                            </div>
-
-                            <div className="grid gap-4 md:grid-cols-2 mt-4">
-                                {RERANKING_PROVIDER_OPTIONS.map((option) => {
-                                    const isActive = rerankingProvider === option.id;
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={option.id}
-                                            onClick={() => {
-                                                void (async () => {
-                                                    if (!user?.userId) {
-                                                        console.error('User not authenticated');
-                                                        return;
-                                                    }
-
-                                                    setIsSavingRerankingProvider(true);
-                                                    try {
-                                                        await setRerankingProvider(option.id, false);
-                                                        await syncPreferencesToBackend(user.userId);
-                                                    } catch (error) {
-                                                        console.error('Failed to update reranking provider:', { error });
-                                                        toast.error('Failed to save reranking provider', 'Please try again.');
-                                                    } finally {
-                                                        setIsSavingRerankingProvider(false);
-                                                    }
-                                                })();
-                                            }}
-                                            disabled={isSavingRerankingProvider}
-                                            className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                                            style={{
-                                                backgroundColor: isActive
-                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
-                                                    : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                                color: 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 18px 35px color-mix(in srgb, var(--color-brand-900) 30%, transparent)'
-                                                    : 'none',
-                                                transform: isActive ? 'translateY(-4px)' : 'translateY(0)',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
-                                                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 50%, var(--border))';
-                                                    e.currentTarget.style.boxShadow = '0 8px 16px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!isActive) {
-                                                    e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                                                    e.currentTarget.style.borderColor = 'var(--border)';
-                                                    e.currentTarget.style.boxShadow = 'none';
-                                                }
-                                            }}
-                                        >
-                                            <div className="flex items-start gap-2">
-                                                <div
-                                                    className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
-                                                    style={{
-                                                        backgroundColor: isActive
-                                                            ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                            : 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-                                                        borderColor: isActive
-                                                            ? 'var(--color-brand-600)'
-                                                            : 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                                    }}
-                                                >
-                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                                    </svg>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-xs font-semibold">{option.name}</p>
-                                                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                                        {option.description}
-                                                    </p>
-                                                </div>
-                                                {isActive && (
-                                                    <div
-                                                        className="flex h-4 w-4 items-center justify-center rounded-full flex-shrink-0"
-                                                        style={{ backgroundColor: 'var(--color-brand-600)' }}
-                                                    >
-                                                        <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </section>
-                    </div>
                 </div>
             </div>
 
@@ -908,7 +489,7 @@ export function AISettings() {
                                             }}
                                         >
                                             <div className="flex flex-wrap items-start justify-between gap-2">
-                                                <div className="flex items-start gap-2">
+                                                <div className="flex items-center gap-2">
                                                     {(() => {
                                                         const logo = getProviderLogo(selectedProvider.id);
                                                         return logo ? (
@@ -1726,14 +1307,10 @@ export function AISettings() {
                 </Modal>
             )}
 
+            {/* Note Summary Settings (Combined: Settings + Backfill) */}
+            <NoteSummarySettings />
+
             {/* Pinecone Setup Modal */}
-            <TauriPineconeSetupModal
-                isOpen={showPineconeSetup}
-                onClose={() => { setShowPineconeSetup(false); }}
-                onSaveSuccess={() => {
-                    void refetchPineconeConfig();
-                }}
-            />
         </div>
     );
 }

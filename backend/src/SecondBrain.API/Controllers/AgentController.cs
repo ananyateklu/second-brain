@@ -188,6 +188,10 @@ public class AgentController : ControllerBase
             // Track pending tool calls to capture arguments from ToolCallStart
             // since ToolCallEnd events don't include arguments
             var pendingToolArguments = new Dictionary<string, string>();
+            // Track pre-tool text for interleaved timeline persistence
+            // This captures text streamed before each tool call starts
+            var pendingPreToolText = new Dictionary<string, string>();
+            var lastToolEndPosition = 0;
 
             await foreach (var evt in _agentService.ProcessStreamAsync(agentRequest, cancellationToken))
             {
@@ -206,10 +210,23 @@ public class AgentController : ControllerBase
                         if (!string.IsNullOrEmpty(toolName))
                         {
                             pendingToolArguments[toolName] = evt.ToolArguments ?? "";
+
+                            // Capture text streamed since last tool ended (or start of response)
+                            // This is the "pre-tool text" that should appear before this tool in the timeline
+                            var currentText = fullResponse.ToString();
+                            if (lastToolEndPosition < currentText.Length)
+                            {
+                                var capturedPreToolText = currentText.Substring(lastToolEndPosition).Trim();
+                                if (!string.IsNullOrEmpty(capturedPreToolText))
+                                {
+                                    pendingPreToolText[toolName] = capturedPreToolText;
+                                }
+                            }
                         }
 
                         var toolStartJson = JsonSerializer.Serialize(new
                         {
+                            id = evt.ToolId,
                             tool = evt.ToolName,
                             arguments = evt.ToolArguments,
                             status = "executing"
@@ -222,9 +239,12 @@ public class AgentController : ControllerBase
                         var endToolName = evt.ToolName ?? "";
                         // Retrieve the arguments that were captured during ToolCallStart
                         var toolArguments = pendingToolArguments.TryGetValue(endToolName, out var args) ? args : "";
+                        // Retrieve the pre-tool text that was captured during ToolCallStart
+                        var preToolText = pendingPreToolText.TryGetValue(endToolName, out var preText) ? preText : null;
 
                         var toolEndJson = JsonSerializer.Serialize(new
                         {
+                            id = evt.ToolId,
                             tool = evt.ToolName,
                             result = evt.ToolResult,
                             status = "completed"
@@ -238,11 +258,16 @@ public class AgentController : ControllerBase
                             Arguments = toolArguments,
                             Result = evt.ToolResult ?? "",
                             ExecutedAt = DateTime.UtcNow,
-                            Success = true
+                            Success = true,
+                            PreToolText = preToolText
                         });
+
+                        // Update the position tracker for the next tool's pre-text calculation
+                        lastToolEndPosition = fullResponse.Length;
 
                         // Remove from pending after processing
                         pendingToolArguments.Remove(endToolName);
+                        pendingPreToolText.Remove(endToolName);
                         break;
 
                     case AgentEventType.Thinking:

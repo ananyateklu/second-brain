@@ -108,7 +108,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex sticky ml-4 z-30 flex-col pb-6 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
+      className={`hidden md:flex sticky ml-4 z-30 flex-col pb-6 rounded-2xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
         }`}
       style={{
         top: topPosition,

@@ -46,6 +46,7 @@ interface ToolEndData {
 
 interface ThinkingData {
   content: string;
+  isComplete?: boolean;
 }
 
 interface StatusData {
@@ -137,6 +138,13 @@ function parseToolEndEvent(data: string, _activeToolName?: string): StreamEvent 
 
 /**
  * Parse thinking event data
+ *
+ * IMPORTANT: The backend only emits thinking events when it has a COMPLETE
+ * thinking block (i.e., both <thinking> and </thinking> tags were found).
+ * Therefore, thinking events from the backend are complete by default.
+ *
+ * The isComplete flag can be explicitly set to false for streaming partial
+ * thinking content, but this is not currently used by the backend.
  */
 function parseThinkingEvent(data: string): StreamEvent | null {
   try {
@@ -145,21 +153,23 @@ function parseThinkingEvent(data: string): StreamEvent | null {
       return {
         type: 'content:thinking',
         content: parsed.content,
-        isComplete: true,
+        // Backend sends complete thinking blocks, so default to true
+        // Can be overridden if backend explicitly sends isComplete: false
+        isComplete: parsed.isComplete ?? true,
       };
     }
-    // Fallback: treat raw data as thinking content
+    // Fallback: treat raw data as thinking content (also complete)
     return {
       type: 'content:thinking',
       content: unescapeSSE(data),
-      isComplete: false,
+      isComplete: true,
     };
   } catch {
-    // Not JSON, treat as raw thinking content
+    // Not JSON, treat as raw thinking content (also complete)
     return {
       type: 'content:thinking',
       content: unescapeSSE(data),
-      isComplete: false,
+      isComplete: true,
     };
   }
 }

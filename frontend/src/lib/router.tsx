@@ -22,6 +22,7 @@ const RagAnalyticsPage = lazy(() => import('../pages/RagAnalyticsPage').then(m =
 const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').then(m => ({ default: m.GeneralSettings })));
 const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => ({ default: m.AISettings })));
 const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
+const IndexingSettings = lazy(() => import('../pages/settings/IndexingSettings').then(m => ({ default: m.IndexingSettings })));
 
 export const router = createBrowserRouter([
   {
@@ -179,6 +180,20 @@ export const router = createBrowserRouter([
           <AppLayout>
             <Suspense fallback={<PageLoader />}>
               <RAGSettings />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/settings/indexing',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<PageLoader />}>
+              <IndexingSettings />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>

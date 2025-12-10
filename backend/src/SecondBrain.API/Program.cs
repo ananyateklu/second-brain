@@ -445,6 +445,7 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     // 8. AddEmbeddingFieldsToIndexingJobs - adds embedding_provider and embedding_model to indexing_jobs
     // 9. AddRerankingProviderToUserPreferences - adds reranking_provider to user_preferences
     // 10. AddNoteSummarySettings - adds summary to notes, note_summary_* columns to user_preferences
+    // 11. AddRagFeatureToggles - adds rag_enable_* columns to user_preferences
 
     var commands = new[]
     {
@@ -565,7 +566,19 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         
         // === AddNoteSummaryToEmbeddings ===
         // Add note_summary column to note_embeddings for improved RAG context
-        "ALTER TABLE note_embeddings ADD COLUMN IF NOT EXISTS note_summary text"
+        "ALTER TABLE note_embeddings ADD COLUMN IF NOT EXISTS note_summary text",
+        
+        // === AddPreToolTextToToolCalls ===
+        // Add pre_tool_text column to tool_calls for interleaved timeline persistence
+        "ALTER TABLE tool_calls ADD COLUMN IF NOT EXISTS pre_tool_text text",
+
+        // === AddRagFeatureToggles ===
+        // Add RAG feature toggle columns to user_preferences
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_hyde boolean NOT NULL DEFAULT TRUE",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_query_expansion boolean NOT NULL DEFAULT TRUE",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_hybrid_search boolean NOT NULL DEFAULT TRUE",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_reranking boolean NOT NULL DEFAULT TRUE",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_analytics boolean NOT NULL DEFAULT TRUE"
     };
 
     var allSucceeded = true;

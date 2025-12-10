@@ -531,6 +531,8 @@ export interface LegacyStreamingState {
   grokSearchSources?: GrokSearchSource[];
   // Agent-specific - unified timeline
   processTimeline: ProcessEvent[];
+  /** Length of text content captured in timeline events (for avoiding duplication in main bubble) */
+  textContentInTimeline: number;
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   agentRetrievedNotes: RetrievedNoteContext[];
@@ -591,6 +593,7 @@ export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingS
     grokSearchSources: state.grokSearchSources,
     // Agent-specific - unified timeline
     processTimeline: state.processTimeline,
+    textContentInTimeline: state.textContentInTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes: state.ragContext.map(note => ({

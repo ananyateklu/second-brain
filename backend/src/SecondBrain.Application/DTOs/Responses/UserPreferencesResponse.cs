@@ -17,5 +17,12 @@ public class UserPreferencesResponse
     public bool NoteSummaryEnabled { get; set; } = true;
     public string? NoteSummaryProvider { get; set; } = "OpenAI";
     public string? NoteSummaryModel { get; set; } = "gpt-4o-mini";
+
+    // RAG Feature Toggles
+    public bool RagEnableHyde { get; set; } = true;
+    public bool RagEnableQueryExpansion { get; set; } = true;
+    public bool RagEnableHybridSearch { get; set; } = true;
+    public bool RagEnableReranking { get; set; } = true;
+    public bool RagEnableAnalytics { get; set; } = true;
 }
 

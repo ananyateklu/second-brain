@@ -28,6 +28,12 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   noteSummaryEnabled: true,
   noteSummaryProvider: 'OpenAI',
   noteSummaryModel: 'gpt-4o-mini',
+  // RAG Feature Toggles
+  ragEnableHyde: true,
+  ragEnableQueryExpansion: true,
+  ragEnableHybridSearch: true,
+  ragEnableReranking: true,
+  ragEnableAnalytics: true,
 };
 
 /**
@@ -137,6 +143,27 @@ export const userPreferencesService = {
           : currentPreferences.noteSummaryEnabled,
       noteSummaryProvider: preferences.noteSummaryProvider ?? currentPreferences.noteSummaryProvider,
       noteSummaryModel: preferences.noteSummaryModel ?? currentPreferences.noteSummaryModel,
+      // RAG Feature Toggles
+      ragEnableHyde:
+        typeof preferences.ragEnableHyde === 'boolean'
+          ? preferences.ragEnableHyde
+          : currentPreferences.ragEnableHyde,
+      ragEnableQueryExpansion:
+        typeof preferences.ragEnableQueryExpansion === 'boolean'
+          ? preferences.ragEnableQueryExpansion
+          : currentPreferences.ragEnableQueryExpansion,
+      ragEnableHybridSearch:
+        typeof preferences.ragEnableHybridSearch === 'boolean'
+          ? preferences.ragEnableHybridSearch
+          : currentPreferences.ragEnableHybridSearch,
+      ragEnableReranking:
+        typeof preferences.ragEnableReranking === 'boolean'
+          ? preferences.ragEnableReranking
+          : currentPreferences.ragEnableReranking,
+      ragEnableAnalytics:
+        typeof preferences.ragEnableAnalytics === 'boolean'
+          ? preferences.ragEnableAnalytics
+          : currentPreferences.ragEnableAnalytics,
     };
   },
 

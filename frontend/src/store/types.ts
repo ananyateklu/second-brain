@@ -104,6 +104,12 @@ export interface SettingsSliceActions {
   setNoteSummaryEnabled: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setNoteSummaryProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
   setNoteSummaryModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
+  // RAG Feature Toggles
+  setRagEnableHyde: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  setRagEnableQueryExpansion: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  setRagEnableHybridSearch: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  setRagEnableReranking: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  setRagEnableAnalytics: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;

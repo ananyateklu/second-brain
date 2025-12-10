@@ -80,6 +80,7 @@ export function ChatPage() {
     streamingError,
     retrievedNotes,
     processTimeline,
+    textContentInTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,
@@ -302,6 +303,7 @@ export function ChatPage() {
             streamingError={streamingError}
             retrievedNotes={retrievedNotes}
             processTimeline={processTimeline}
+            textContentInTimeline={textContentInTimeline}
             toolExecutions={toolExecutions}
             thinkingSteps={thinkingSteps}
             agentRetrievedNotes={agentRetrievedNotes}

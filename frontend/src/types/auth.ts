@@ -77,6 +77,12 @@ export interface UserPreferences {
   noteSummaryEnabled: boolean;
   noteSummaryProvider: string | null;
   noteSummaryModel: string | null;
+  // RAG Feature Toggles
+  ragEnableHyde: boolean;
+  ragEnableQueryExpansion: boolean;
+  ragEnableHybridSearch: boolean;
+  ragEnableReranking: boolean;
+  ragEnableAnalytics: boolean;
 }
 
 /**
@@ -97,5 +103,11 @@ export interface UpdateUserPreferencesRequest {
   noteSummaryEnabled?: boolean;
   noteSummaryProvider?: string | null;
   noteSummaryModel?: string | null;
+  // RAG Feature Toggles
+  ragEnableHyde?: boolean;
+  ragEnableQueryExpansion?: boolean;
+  ragEnableHybridSearch?: boolean;
+  ragEnableReranking?: boolean;
+  ragEnableAnalytics?: boolean;
 }
 

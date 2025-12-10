@@ -103,6 +103,22 @@ public class UserPreferences
     [MaxLength(100)]
     public string? NoteSummaryModel { get; set; } = "gpt-4o-mini";
 
+    // RAG Feature Toggles
+    [Column("rag_enable_hyde")]
+    public bool RagEnableHyde { get; set; } = true;
+
+    [Column("rag_enable_query_expansion")]
+    public bool RagEnableQueryExpansion { get; set; } = true;
+
+    [Column("rag_enable_hybrid_search")]
+    public bool RagEnableHybridSearch { get; set; } = true;
+
+    [Column("rag_enable_reranking")]
+    public bool RagEnableReranking { get; set; } = true;
+
+    [Column("rag_enable_analytics")]
+    public bool RagEnableAnalytics { get; set; } = true;
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

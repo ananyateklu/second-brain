@@ -427,14 +427,29 @@ describe('streamReducer', () => {
       expect(newState.isThinkingComplete).toBe(true);
     });
 
-    it('should append thinking content when isComplete=false', () => {
-      const stateWithThinking = createMockState({ thinkingContent: 'Part 1 ' });
+    it('should append thinking content when isComplete=false and timeline has incomplete thinking', () => {
+      // State with an incomplete thinking entry in timeline
+      const stateWithThinking = createMockState({
+        thinkingContent: 'Part 1 ',
+        isThinkingComplete: false,
+        processTimeline: [
+          {
+            type: 'thinking',
+            id: 'thinking_1',
+            content: 'Part 1 ',
+            timestamp: Date.now(),
+            isComplete: false,
+          },
+        ],
+      });
       const event = createThinkingEvent('Part 2', false);
       const action: StreamAction = { type: 'EVENT', event };
       const newState = streamReducer(stateWithThinking, action);
 
       expect(newState.thinkingContent).toBe('Part 1 Part 2');
       expect(newState.isThinkingComplete).toBe(false);
+      expect(newState.processTimeline).toHaveLength(1);
+      expect((newState.processTimeline[0] as { type: 'thinking'; content: string }).content).toBe('Part 1 Part 2');
     });
 
     it('should transition to streaming phase', () => {
@@ -444,6 +459,63 @@ describe('streamReducer', () => {
 
       expect(newState.phase).toBe('streaming');
       expect(newState.status).toBe('streaming');
+    });
+
+    it('should create separate thinking entries when previous thinking is complete (multiple thinking blocks)', () => {
+      // Start with a completed thinking event in the timeline
+      const stateWithCompletedThinking = createMockState({
+        thinkingContent: 'First thinking block',
+        isThinkingComplete: true,
+        processTimeline: [
+          {
+            type: 'thinking',
+            id: 'thinking_1',
+            content: 'First thinking block',
+            timestamp: Date.now(),
+            isComplete: true,
+          },
+        ],
+      });
+
+      // Send a new thinking event (starts a second thinking block)
+      const event = createThinkingEvent('Second thinking block', false);
+      const action: StreamAction = { type: 'EVENT', event };
+      const newState = streamReducer(stateWithCompletedThinking, action);
+
+      // Should create a NEW thinking entry, not update the existing one
+      expect(newState.processTimeline).toHaveLength(2);
+      expect(newState.processTimeline[0].type).toBe('thinking');
+      expect((newState.processTimeline[0] as { type: 'thinking'; content: string }).content).toBe('First thinking block');
+      expect(newState.processTimeline[1].type).toBe('thinking');
+      expect((newState.processTimeline[1] as { type: 'thinking'; content: string }).content).toBe('Second thinking block');
+    });
+
+    it('should append to same entry when previous thinking is incomplete (streaming within same block)', () => {
+      // Start with an incomplete thinking event in the timeline
+      const stateWithIncompleteThinking = createMockState({
+        thinkingContent: 'First part ',
+        isThinkingComplete: false,
+        processTimeline: [
+          {
+            type: 'thinking',
+            id: 'thinking_1',
+            content: 'First part ',
+            timestamp: Date.now(),
+            isComplete: false,
+          },
+        ],
+      });
+
+      // Send more content for the same thinking block
+      const event = createThinkingEvent('second part', false);
+      const action: StreamAction = { type: 'EVENT', event };
+      const newState = streamReducer(stateWithIncompleteThinking, action);
+
+      // Should update the SAME thinking entry, not create a new one
+      expect(newState.processTimeline).toHaveLength(1);
+      expect(newState.processTimeline[0].type).toBe('thinking');
+      expect((newState.processTimeline[0] as { type: 'thinking'; content: string }).content).toBe('First part second part');
+      expect(newState.thinkingContent).toBe('First part second part');
     });
   });
 

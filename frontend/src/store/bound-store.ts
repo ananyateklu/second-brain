@@ -63,6 +63,12 @@ const _useBoundStore = create<BoundStore>()(
         noteSummaryEnabled: state.noteSummaryEnabled,
         noteSummaryProvider: state.noteSummaryProvider,
         noteSummaryModel: state.noteSummaryModel,
+        // RAG Feature Toggles
+        ragEnableHyde: state.ragEnableHyde,
+        ragEnableQueryExpansion: state.ragEnableQueryExpansion,
+        ragEnableHybridSearch: state.ragEnableHybridSearch,
+        ragEnableReranking: state.ragEnableReranking,
+        ragEnableAnalytics: state.ragEnableAnalytics,
         // Theme state
         theme: state.theme,
         // Notes state
@@ -121,6 +127,12 @@ const _useBoundStore = create<BoundStore>()(
           noteSummaryEnabled: typeof parsed.noteSummaryEnabled === 'boolean' ? parsed.noteSummaryEnabled : currentState.noteSummaryEnabled,
           noteSummaryProvider: parsed.noteSummaryProvider ?? currentState.noteSummaryProvider,
           noteSummaryModel: parsed.noteSummaryModel ?? currentState.noteSummaryModel,
+          // RAG Feature Toggles
+          ragEnableHyde: typeof parsed.ragEnableHyde === 'boolean' ? parsed.ragEnableHyde : currentState.ragEnableHyde,
+          ragEnableQueryExpansion: typeof parsed.ragEnableQueryExpansion === 'boolean' ? parsed.ragEnableQueryExpansion : currentState.ragEnableQueryExpansion,
+          ragEnableHybridSearch: typeof parsed.ragEnableHybridSearch === 'boolean' ? parsed.ragEnableHybridSearch : currentState.ragEnableHybridSearch,
+          ragEnableReranking: typeof parsed.ragEnableReranking === 'boolean' ? parsed.ragEnableReranking : currentState.ragEnableReranking,
+          ragEnableAnalytics: typeof parsed.ragEnableAnalytics === 'boolean' ? parsed.ragEnableAnalytics : currentState.ragEnableAnalytics,
           // Merge theme
           theme,
           // Merge notes state

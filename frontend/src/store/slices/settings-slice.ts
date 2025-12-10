@@ -204,6 +204,100 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // RAG Feature Toggles
+  // ============================================
+
+  setRagEnableHyde: async (enabled: boolean, syncToBackend = true) => {
+    set({ ragEnableHyde: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            ragEnableHyde: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync RAG HyDE setting to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setRagEnableQueryExpansion: async (enabled: boolean, syncToBackend = true) => {
+    set({ ragEnableQueryExpansion: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            ragEnableQueryExpansion: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync RAG query expansion setting to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setRagEnableHybridSearch: async (enabled: boolean, syncToBackend = true) => {
+    set({ ragEnableHybridSearch: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            ragEnableHybridSearch: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync RAG hybrid search setting to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setRagEnableReranking: async (enabled: boolean, syncToBackend = true) => {
+    set({ ragEnableReranking: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            ragEnableReranking: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync RAG reranking setting to backend:', { error });
+        }
+      }
+    }
+  },
+
+  setRagEnableAnalytics: async (enabled: boolean, syncToBackend = true) => {
+    set({ ragEnableAnalytics: enabled });
+
+    if (syncToBackend) {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          await userPreferencesService.syncToBackend(userId, {
+            ...extractPreferences(get()),
+            ragEnableAnalytics: enabled,
+          });
+        } catch (error) {
+          console.error('Failed to sync RAG analytics setting to backend:', { error });
+        }
+      }
+    }
+  },
+
+  // ============================================
   // Sync Actions
   // ============================================
 
@@ -225,6 +319,12 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         noteSummaryEnabled: preferences.noteSummaryEnabled,
         noteSummaryProvider: preferences.noteSummaryProvider,
         noteSummaryModel: preferences.noteSummaryModel,
+        // RAG Feature Toggles
+        ragEnableHyde: preferences.ragEnableHyde,
+        ragEnableQueryExpansion: preferences.ragEnableQueryExpansion,
+        ragEnableHybridSearch: preferences.ragEnableHybridSearch,
+        ragEnableReranking: preferences.ragEnableReranking,
+        ragEnableAnalytics: preferences.ragEnableAnalytics,
       });
     } catch (error) {
       console.error('Failed to load preferences from backend:', { error });
@@ -272,5 +372,11 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     noteSummaryEnabled: state.noteSummaryEnabled,
     noteSummaryProvider: state.noteSummaryProvider,
     noteSummaryModel: state.noteSummaryModel,
+    // RAG Feature Toggles
+    ragEnableHyde: state.ragEnableHyde,
+    ragEnableQueryExpansion: state.ragEnableQueryExpansion,
+    ragEnableHybridSearch: state.ragEnableHybridSearch,
+    ragEnableReranking: state.ragEnableReranking,
+    ragEnableAnalytics: state.ragEnableAnalytics,
   };
 }

@@ -401,9 +401,43 @@ export function Header() {
                   }}
                 >
                   <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                   </svg>
                   <span>RAG</span>
+                </NavLink>
+                <NavLink
+                  to="/settings/indexing"
+                  className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
+                  style={({ isActive }) => ({
+                    backgroundColor: isActive
+                      ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
+                      : 'transparent',
+                    color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
+                    boxShadow: isActive
+                      ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
+                      : 'none',
+                  })}
+                  onMouseEnter={(e) => {
+                    const link = e.currentTarget;
+                    const isActive = link.getAttribute('aria-current') === 'page';
+                    if (!isActive) {
+                      link.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)';
+                      link.style.color = 'var(--text-primary)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const link = e.currentTarget;
+                    const isActive = link.getAttribute('aria-current') === 'page';
+                    if (!isActive) {
+                      link.style.backgroundColor = 'transparent';
+                      link.style.color = 'var(--text-secondary)';
+                    }
+                  }}
+                >
+                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Indexing</span>
                 </NavLink>
               </div>
             )}

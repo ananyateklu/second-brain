@@ -53,20 +53,28 @@ public class RagService : IRagService
         float? similarityThreshold = null,
         string? vectorStoreProvider = null,
         string? conversationId = null,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         var context = new RagContext();
         var metrics = new RagQueryMetrics { Query = query, UserId = userId, ConversationId = conversationId };
         var totalStopwatch = Stopwatch.StartNew();
 
+        // Resolve effective settings: user options override defaults from config
+        var enableHybridSearch = options?.EnableHybridSearch ?? _settings.EnableHybridSearch;
+        var enableHyDE = options?.EnableHyDE ?? _settings.EnableHyDE;
+        var enableQueryExpansion = options?.EnableQueryExpansion ?? _settings.EnableQueryExpansion;
+        var enableReranking = options?.EnableReranking ?? _settings.EnableReranking;
+        var enableAnalytics = options?.EnableAnalytics ?? _settings.EnableAnalytics;
+
         // Start RAG pipeline activity for distributed tracing
         using var activity = ApplicationTelemetry.StartRAGActivity("RAG.RetrieveContext", userId);
         activity?.SetTag("rag.query.length", query.Length);
         activity?.SetTag("rag.conversation_id", conversationId);
-        activity?.SetTag("rag.hybrid_search", _settings.EnableHybridSearch);
-        activity?.SetTag("rag.hyde", _settings.EnableHyDE);
-        activity?.SetTag("rag.query_expansion", _settings.EnableQueryExpansion);
-        activity?.SetTag("rag.reranking", _settings.EnableReranking);
+        activity?.SetTag("rag.hybrid_search", enableHybridSearch);
+        activity?.SetTag("rag.hyde", enableHyDE);
+        activity?.SetTag("rag.query_expansion", enableQueryExpansion);
+        activity?.SetTag("rag.reranking", enableReranking);
 
         try
         {
@@ -80,8 +88,8 @@ public class RagService : IRagService
                 "Starting enhanced RAG pipeline. UserId: {UserId}, Query: {Query}, TopK: {TopK}, " +
                 "HybridSearch: {Hybrid}, QueryExpansion: {QE}, HyDE: {HyDE}, Reranking: {Rerank}",
                 userId, query.Substring(0, Math.Min(50, query.Length)), effectiveTopK,
-                _settings.EnableHybridSearch, _settings.EnableQueryExpansion,
-                _settings.EnableHyDE, _settings.EnableReranking);
+                enableHybridSearch, enableQueryExpansion,
+                enableHyDE, enableReranking);
 
             // Set vector store provider override if specified
             if (!string.IsNullOrWhiteSpace(vectorStoreProvider) && _vectorStore is CompositeVectorStore compositeStore)
@@ -95,7 +103,7 @@ public class RagService : IRagService
             ExpandedQueryEmbeddings expandedEmbeddings;
             using (var embeddingActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.QueryExpansion"))
             {
-                expandedEmbeddings = await GetQueryEmbeddingsAsync(query, cancellationToken);
+                expandedEmbeddings = await GetQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, cancellationToken);
                 embeddingActivity?.SetTag("rag.expansion.hyde_used", expandedEmbeddings.HyDEEmbedding?.Any() == true);
                 embeddingActivity?.SetTag("rag.expansion.multi_query_count", expandedEmbeddings.MultiQueryEmbeddings.Count);
             }
@@ -118,7 +126,7 @@ public class RagService : IRagService
             using (var searchActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.HybridSearch"))
             {
                 hybridResults = await ExecuteHybridSearchAsync(
-                    query, expandedEmbeddings, userId, effectiveThreshold, cancellationToken);
+                    query, expandedEmbeddings, userId, effectiveThreshold, enableReranking, enableHybridSearch, cancellationToken);
                 searchActivity?.SetTag("rag.search.results", hybridResults.Count);
             }
             searchStopwatch.Stop();
@@ -131,17 +139,48 @@ public class RagService : IRagService
             {
                 _logger.LogInformation("No results from hybrid search. UserId: {UserId}", userId);
                 activity?.SetTag("rag.results", 0);
-                await LogAnalyticsAsync(metrics, context, cancellationToken);
+                await LogAnalyticsAsync(metrics, context, enableAnalytics, cancellationToken);
                 return context;
             }
 
-            // Step 3: Reranking
+            // Step 3: Reranking (conditional based on user settings)
             var rerankStopwatch = Stopwatch.StartNew();
             List<RerankedResult> rerankedResults;
             using (var rerankActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.Reranking"))
             {
-                rerankedResults = await _rerankerService.RerankAsync(
-                    query, hybridResults, effectiveTopK, cancellationToken);
+                if (enableReranking)
+                {
+                    rerankedResults = await _rerankerService.RerankAsync(
+                        query, hybridResults, effectiveTopK, cancellationToken);
+                    rerankActivity?.SetTag("rag.rerank.enabled", true);
+                }
+                else
+                {
+                    // Skip reranking - convert hybrid results directly to reranked format
+                    rerankedResults = hybridResults
+                        .OrderByDescending(r => r.RRFScore)
+                        .Take(effectiveTopK)
+                        .Select((r, index) => new RerankedResult
+                        {
+                            Id = r.Id,
+                            NoteId = r.NoteId,
+                            Content = r.Content,
+                            NoteTitle = r.NoteTitle,
+                            NoteTags = r.NoteTags,
+                            NoteSummary = r.NoteSummary,
+                            ChunkIndex = r.ChunkIndex,
+                            VectorScore = r.VectorScore,
+                            BM25Score = r.BM25Score,
+                            RRFScore = r.RRFScore,
+                            RelevanceScore = r.VectorScore * 10, // Scale to 0-10 for consistency
+                            OriginalRank = index + 1,
+                            FinalRank = index + 1,
+                            FinalScore = r.RRFScore,
+                            WasReranked = false
+                        })
+                        .ToList();
+                    rerankActivity?.SetTag("rag.rerank.enabled", false);
+                }
                 rerankActivity?.SetTag("rag.rerank.input_count", hybridResults.Count);
                 rerankActivity?.SetTag("rag.rerank.output_count", rerankedResults.Count);
             }
@@ -198,10 +237,10 @@ public class RagService : IRagService
             // Log analytics
             totalStopwatch.Stop();
             metrics.TotalTimeMs = (int)totalStopwatch.ElapsedMilliseconds;
-            metrics.HybridSearchEnabled = _settings.EnableHybridSearch;
-            metrics.HyDEEnabled = _settings.EnableHyDE;
-            metrics.MultiQueryEnabled = _settings.EnableQueryExpansion;
-            metrics.RerankingEnabled = _settings.EnableReranking;
+            metrics.HybridSearchEnabled = enableHybridSearch;
+            metrics.HyDEEnabled = enableHyDE;
+            metrics.MultiQueryEnabled = enableQueryExpansion;
+            metrics.RerankingEnabled = enableReranking;
 
             // Set activity tags for final results
             activity?.SetTag("rag.results", finalResults.Count);
@@ -217,12 +256,12 @@ public class RagService : IRagService
                 bm25SearchMs: metrics.BM25SearchTimeMs,
                 rerankMs: metrics.RerankTimeMs,
                 avgRelevanceScore: metrics.AvgRerankScore,
-                hybridEnabled: metrics.HybridSearchEnabled,
-                hydeEnabled: metrics.HyDEEnabled,
-                rerankEnabled: metrics.RerankingEnabled);
+                hybridEnabled: enableHybridSearch,
+                hydeEnabled: enableHyDE,
+                rerankEnabled: enableReranking);
 
-            // Log analytics and capture the log ID for feedback
-            context.RagLogId = await LogAnalyticsAsync(metrics, context, cancellationToken);
+            // Log analytics and capture the log ID for feedback (only if analytics enabled)
+            context.RagLogId = await LogAnalyticsAsync(metrics, context, enableAnalytics, cancellationToken);
 
             return context;
         }
@@ -235,11 +274,11 @@ public class RagService : IRagService
     }
 
     private async Task<ExpandedQueryEmbeddings> GetQueryEmbeddingsAsync(
-        string query, CancellationToken cancellationToken)
+        string query, bool enableQueryExpansion, bool enableHyDE, CancellationToken cancellationToken)
     {
-        if (_settings.EnableQueryExpansion || _settings.EnableHyDE)
+        if (enableQueryExpansion || enableHyDE)
         {
-            return await _queryExpansionService.GetExpandedQueryEmbeddingsAsync(query, cancellationToken);
+            return await _queryExpansionService.GetExpandedQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, cancellationToken);
         }
 
         // Fall back to simple embedding generation
@@ -259,15 +298,17 @@ public class RagService : IRagService
         ExpandedQueryEmbeddings embeddings,
         string userId,
         float similarityThreshold,
+        bool enableReranking,
+        bool enableHybridSearch,
         CancellationToken cancellationToken)
     {
         var allResults = new List<HybridSearchResult>();
-        var retrievalCount = _settings.EnableReranking
+        var retrievalCount = enableReranking
             ? _settings.InitialRetrievalCount
             : _settings.TopK;
 
         // Use native hybrid search if enabled and available (PostgreSQL 18 optimized)
-        var useNativeHybrid = _settings.EnableNativeHybridSearch && _nativeHybridSearchService != null;
+        var useNativeHybrid = enableHybridSearch && _settings.EnableNativeHybridSearch && _nativeHybridSearchService != null;
 
         if (useNativeHybrid)
         {
@@ -371,9 +412,10 @@ public class RagService : IRagService
     private async Task<Guid?> LogAnalyticsAsync(
         RagQueryMetrics metrics,
         RagContext context,
+        bool enableAnalytics,
         CancellationToken cancellationToken)
     {
-        if (!_settings.EnableAnalytics || _analyticsService == null)
+        if (!enableAnalytics || _analyticsService == null)
             return null;
 
         try

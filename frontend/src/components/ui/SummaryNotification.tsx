@@ -126,7 +126,11 @@ export function SummaryNotification() {
         completionHandledRef.current = statusKey;
 
         // Invalidate notes list to show new summaries
-        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        // IMPORTANT: Use noteKeys.all because useNotes() uses noteKeys.all, not noteKeys.lists()
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+
+        // Force refetch to ensure UI updates immediately
+        void queryClient.refetchQueries({ queryKey: noteKeys.all });
 
         // Show completion toast
         if (isCompleted) {

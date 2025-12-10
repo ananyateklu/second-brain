@@ -72,6 +72,7 @@ public class AgentStreamEvent
     public AgentEventType Type { get; set; }
     public string? Content { get; set; }
     public string? ToolName { get; set; }
+    public string? ToolId { get; set; }
     public string? ToolArguments { get; set; }
     public string? ToolResult { get; set; }
 

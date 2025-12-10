@@ -50,6 +50,16 @@ public class UserPreferencesService : IUserPreferencesService
             user.Preferences.ChatProvider,
             user.Preferences.ChatModel);
 
+        // Log RAG toggle values for debugging
+        _logger.LogInformation(
+            "RAG toggles for user {UserId} - HyDE: {HyDE}, QueryExpansion: {QueryExpansion}, HybridSearch: {HybridSearch}, Reranking: {Reranking}, Analytics: {Analytics}",
+            userId,
+            user.Preferences.RagEnableHyde,
+            user.Preferences.RagEnableQueryExpansion,
+            user.Preferences.RagEnableHybridSearch,
+            user.Preferences.RagEnableReranking,
+            user.Preferences.RagEnableAnalytics);
+
         return MapToResponse(user.Preferences);
     }
 
@@ -60,6 +70,16 @@ public class UserPreferencesService : IUserPreferencesService
         {
             throw new NotFoundException($"User with ID {userId} not found");
         }
+
+        // Log incoming RAG toggle values for debugging
+        _logger.LogInformation(
+            "Updating preferences for user {UserId}. RAG toggles received - HyDE: {HyDE}, QueryExpansion: {QueryExpansion}, HybridSearch: {HybridSearch}, Reranking: {Reranking}, Analytics: {Analytics}",
+            userId,
+            request.RagEnableHyde,
+            request.RagEnableQueryExpansion,
+            request.RagEnableHybridSearch,
+            request.RagEnableReranking,
+            request.RagEnableAnalytics);
 
         // Initialize preferences if null
         user.Preferences ??= new UserPreferences();
@@ -105,6 +125,22 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.NoteSummaryModel != null)
             user.Preferences.NoteSummaryModel = request.NoteSummaryModel;
 
+        // RAG Feature Toggles
+        if (request.RagEnableHyde.HasValue)
+            user.Preferences.RagEnableHyde = request.RagEnableHyde.Value;
+
+        if (request.RagEnableQueryExpansion.HasValue)
+            user.Preferences.RagEnableQueryExpansion = request.RagEnableQueryExpansion.Value;
+
+        if (request.RagEnableHybridSearch.HasValue)
+            user.Preferences.RagEnableHybridSearch = request.RagEnableHybridSearch.Value;
+
+        if (request.RagEnableReranking.HasValue)
+            user.Preferences.RagEnableReranking = request.RagEnableReranking.Value;
+
+        if (request.RagEnableAnalytics.HasValue)
+            user.Preferences.RagEnableAnalytics = request.RagEnableAnalytics.Value;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -119,6 +155,16 @@ public class UserPreferencesService : IUserPreferencesService
             updatedUser.Preferences?.VectorStoreProvider,
             updatedUser.Preferences?.ChatProvider,
             updatedUser.Preferences?.ChatModel);
+
+        // Log the RAG toggle values in the response
+        _logger.LogInformation(
+            "RAG toggles after update for user {UserId} - HyDE: {HyDE}, QueryExpansion: {QueryExpansion}, HybridSearch: {HybridSearch}, Reranking: {Reranking}, Analytics: {Analytics}",
+            userId,
+            updatedUser.Preferences?.RagEnableHyde,
+            updatedUser.Preferences?.RagEnableQueryExpansion,
+            updatedUser.Preferences?.RagEnableHybridSearch,
+            updatedUser.Preferences?.RagEnableReranking,
+            updatedUser.Preferences?.RagEnableAnalytics);
 
         return MapToResponse(updatedUser.Preferences);
     }
@@ -142,7 +188,13 @@ public class UserPreferencesService : IUserPreferencesService
             RerankingProvider = preferences.RerankingProvider,
             NoteSummaryEnabled = preferences.NoteSummaryEnabled,
             NoteSummaryProvider = preferences.NoteSummaryProvider,
-            NoteSummaryModel = preferences.NoteSummaryModel
+            NoteSummaryModel = preferences.NoteSummaryModel,
+            // RAG Feature Toggles
+            RagEnableHyde = preferences.RagEnableHyde,
+            RagEnableQueryExpansion = preferences.RagEnableQueryExpansion,
+            RagEnableHybridSearch = preferences.RagEnableHybridSearch,
+            RagEnableReranking = preferences.RagEnableReranking,
+            RagEnableAnalytics = preferences.RagEnableAnalytics
         };
     }
 }

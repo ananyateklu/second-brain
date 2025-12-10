@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ChatMessage, GeneratedImage, GroundingSource } from '../../../types/chat';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
+import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownMessageWithNoteReferences';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
-import { stripThinkingTags } from '../../../utils/thinking-utils';
+import { stripAllTimelineText } from '../../../utils/thinking-utils';
 import { downloadGeneratedImage, getImageDataUrl } from '../../../utils/image-generation-models';
 import { MessageFeedback } from './MessageFeedback';
 
@@ -354,6 +355,29 @@ export function MessageBubble({
   const effectiveRagLogId = ragLogId || message.ragLogId;
   const shouldShowFeedback = !isUser && effectiveRagLogId && showFeedback;
 
+  // Extract pre-tool texts from tool calls to strip from main content
+  // Pre-tool text is shown in the process timeline, not the main bubble
+  const preToolTexts = useMemo(() => {
+    if (!hasToolCalls || !message.toolCalls) return [];
+    return message.toolCalls
+      .filter(tc => tc.preToolText && tc.preToolText.trim())
+      .map(tc => tc.preToolText as string);
+  }, [hasToolCalls, message.toolCalls]);
+
+  // Compute the content to display in the main bubble
+  // Strip ALL timeline text: thinking tags, pre-tool text, and pre-thinking text
+  // This ensures only the "final response" appears in the main bubble
+  const mainBubbleContent = useMemo(() => {
+    if (!message.content) return '';
+
+    // Use the unified function to strip all timeline-related text
+    return stripAllTimelineText(
+      message.content,
+      preToolTexts,
+      hasThinkingContent
+    );
+  }, [message.content, preToolTexts, hasThinkingContent]);
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -429,10 +453,12 @@ export function MessageBubble({
             )}
 
             {/* Regular message content (may be empty for pure image generation) */}
-            {message.content && !message.content.startsWith('[Generated Image]') && (
-              <MarkdownMessage
-                content={(hasToolCalls || hasThinkingContent) ? stripThinkingTags(message.content) : message.content}
-              />
+            {mainBubbleContent && !message.content.startsWith('[Generated Image]') && (
+              agentModeEnabled ? (
+                <MarkdownMessageWithNoteReferences content={mainBubbleContent} />
+              ) : (
+                <MarkdownMessage content={mainBubbleContent} />
+              )
             )}
 
             {/* Show "Image Generated" label if only image content */}

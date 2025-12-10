@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNotes } from '../../../features/notes/hooks/use-notes-query';
 import { useStartSummaryGeneration } from '../../../features/notes/hooks/use-summary-generation';
 import { useBoundStore } from '../../../store/bound-store';
 import { toast } from '../../../hooks/use-toast';
+import { noteKeys } from '../../../lib/query-keys';
 import type { NoteListItem } from '../../../types/notes';
 
 export function NoteSummaryBackfill() {
-    const { data: notes, isLoading: isLoadingNotes } = useNotes();
+    const queryClient = useQueryClient();
+    const { data: notes, isLoading: isLoadingNotes, refetch: refetchNotes } = useNotes();
     const startSummaryGeneration = useStartSummaryGeneration();
     const {
         activeJob: activeSummaryJob,
@@ -19,9 +22,26 @@ export function NoteSummaryBackfill() {
     const userId = user?.userId ?? 'default-user';
 
     const [selectedNotes, setSelectedNotes] = useState<Set<string>>(new Set());
+    const previousJobStatusRef = useRef<string | undefined>(undefined);
 
     // Job is generating if there's an active job running or pending
     const isGenerating = activeSummaryJob?.status?.status === 'running' || activeSummaryJob?.status?.status === 'pending';
+    const jobStatus = activeSummaryJob?.status?.status;
+
+    // Refetch notes when job completes, fails, or is cancelled
+    useEffect(() => {
+        const previousStatus = previousJobStatusRef.current;
+        const wasGenerating = previousStatus === 'running' || previousStatus === 'pending';
+        const isNowComplete = jobStatus === 'completed' || jobStatus === 'failed' || jobStatus === 'cancelled';
+
+        if (wasGenerating && isNowComplete) {
+            // Job just finished - refetch notes to show updated summaries
+            void refetchNotes();
+        }
+
+        // Update ref for next comparison
+        previousJobStatusRef.current = jobStatus;
+    }, [jobStatus, refetchNotes]);
 
     // Filter notes without summaries
     const notesWithoutSummaries = useMemo(() => {
@@ -125,7 +145,7 @@ export function NoteSummaryBackfill() {
             }}
         >
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                <div className="flex items-start gap-2">
+                <div className="flex items-center gap-2">
                     <div
                         className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
                         style={{
@@ -138,7 +158,7 @@ export function NoteSummaryBackfill() {
                         </svg>
                     </div>
                     <div>
-                        <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="text-[10px] uppercase tracking-wider leading-none block" style={{ color: 'var(--text-secondary)' }}>
                             Backfill
                         </span>
                         <div className="flex items-center gap-1.5 mt-1">

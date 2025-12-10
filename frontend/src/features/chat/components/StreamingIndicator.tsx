@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
+import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownMessageWithNoteReferences';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
@@ -8,53 +10,100 @@ import { CodeExecutionCard } from '../../agents/components/CodeExecutionCard';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ImageGenerationProgress } from './ImageGenerationProgress';
-import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
+import { RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
-import { stripThinkingTags } from '../../../utils/thinking-utils';
+import { stripAllThinkingTags, extractAllThinkingContent } from '../../../utils/thinking-utils';
 import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming/types';
+
+/**
+ * Renders text content within the process timeline.
+ * Used for interleaved text that appears between thinking/tool events.
+ */
+function TimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+  const strippedContent = stripAllThinkingTags(content);
+  if (!strippedContent) return null;
+
+  return (
+    <div className="relative pl-10 py-2">
+      <div
+        className="absolute left-[15px] top-7 w-2.5 h-2.5 rounded-full"
+        style={{ backgroundColor: 'var(--color-brand-500)' }}
+      />
+      <div
+        className="rounded-xl px-4 py-3 text-sm"
+        style={{
+          backgroundColor: 'var(--surface-card)',
+        }}
+      >
+        {agentModeEnabled ? (
+          <MarkdownMessageWithNoteReferences content={strippedContent} />
+        ) : (
+          <MarkdownMessage content={strippedContent} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Loading spinner component
+ */
+function LoadingSpinner({ message }: { message: string }) {
+  return (
+    <div className="flex justify-start">
+      <div
+        className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
+        style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative w-5 h-5 flex-shrink-0">
+            <div
+              className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+              style={{ borderTopColor: 'var(--color-brand-500)', borderRightColor: 'var(--color-brand-500)' }}
+            />
+            <div className="absolute inset-1 rounded-full" style={{ backgroundColor: 'var(--surface-card)' }} />
+          </div>
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{message}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export interface StreamingIndicatorProps {
   isStreaming: boolean;
   streamingMessage: string;
   streamingError: Error | null;
   modelName?: string;
-  provider?: string; // Provider name (e.g., 'OpenAI', 'Anthropic')
+  provider?: string;
   outputTokens?: number;
   streamDuration?: number;
   agentModeEnabled?: boolean;
-  /** Whether RAG (Retrieval-Augmented Generation) is enabled for this chat */
   ragEnabled?: boolean;
   /** Unified process timeline - thinking and tool executions in chronological order */
   processTimeline?: ProcessEvent[];
-  thinkingSteps?: ThinkingStep[];
-  toolExecutions?: ToolExecution[];
+  /** Length of text content captured in timeline (for avoiding duplication) */
+  textContentInTimeline?: number;
   processingStatus?: string | null;
   retrievedNotes?: RagContextNote[];
-  /** Notes automatically retrieved via semantic search for agent context injection */
   agentRetrievedNotes?: RetrievedNoteContext[];
-  /** Grounding sources from Google Search (Gemini only) */
   groundingSources?: GroundingSource[];
-  /** Search sources from Grok Live Search/DeepSearch (Grok only) */
   grokSearchSources?: GrokSearchSource[];
-  /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
-  /** Whether image generation is in progress */
   isGeneratingImage?: boolean;
-  /** Current image generation stage */
   imageGenerationStage?: ImageGenerationStage;
-  /** Provider used for image generation */
   imageGenerationProvider?: string | null;
-  /** Model used for image generation */
   imageGenerationModel?: string | null;
-  /** Prompt used for image generation */
   imageGenerationPrompt?: string | null;
-  /** Progress percentage (0-100) */
   imageGenerationProgress?: number | null;
 }
 
 /**
  * Displays streaming message content, thinking steps, tool executions, and loading states.
+ *
+ * Simplified architecture: Timeline is the single source of truth for all process events.
+ * No client-side tag extraction - events are rendered directly from processTimeline.
  */
 export function StreamingIndicator({
   isStreaming,
@@ -67,8 +116,7 @@ export function StreamingIndicator({
   agentModeEnabled = false,
   ragEnabled = false,
   processTimeline = [],
-  thinkingSteps = [],
-  toolExecutions = [],
+  textContentInTimeline = 0,
   processingStatus = null,
   retrievedNotes = [],
   agentRetrievedNotes = [],
@@ -82,47 +130,86 @@ export function StreamingIndicator({
   imageGenerationPrompt = null,
   imageGenerationProgress = null,
 }: StreamingIndicatorProps) {
-  const hasAgentRetrievedNotes = agentRetrievedNotes.length > 0;
-  const hasRegularRagNotes = retrievedNotes.length > 0;
-  const hasAnyRetrievedNotes = hasAgentRetrievedNotes || hasRegularRagNotes;
+  const hasRetrievedNotes = agentRetrievedNotes.length > 0 || retrievedNotes.length > 0;
   const hasGroundingSources = groundingSources.length > 0;
   const hasGrokSearchSources = grokSearchSources.length > 0;
   const hasCodeExecution = codeExecutionResult !== null;
   const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
-  // Use processTimeline if available, otherwise fall back to separate lists for backward compatibility
-  const hasProcessTimeline = processTimeline.length > 0;
-  const hasLegacySteps = thinkingSteps.length > 0 || toolExecutions.length > 0;
-  const hasSteps = hasProcessTimeline || hasLegacySteps || hasAnyRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration;
+  const hasTimeline = processTimeline.length > 0;
+
+  // Extract thinking content from streamingMessage that may not be in timeline yet
+  // This handles the race condition where thinking tags appear in the stream before
+  // the backend emits the thinking event
+  const extractedThinking = useMemo(() => {
+    if (!agentModeEnabled || !streamingMessage) {
+      return { complete: [] as string[], incomplete: null as string | null };
+    }
+    // Get complete thinking blocks (without including incomplete)
+    const completeBlocks = extractAllThinkingContent(streamingMessage, false);
+    // Get all blocks including incomplete (the last one might be incomplete)
+    const allBlocks = extractAllThinkingContent(streamingMessage, true);
+    // If there are more blocks when including incomplete, the extra one is incomplete
+    const incompleteBlock = allBlocks.length > completeBlocks.length
+      ? allBlocks[allBlocks.length - 1]
+      : null;
+    return { complete: completeBlocks, incomplete: incompleteBlock };
+  }, [agentModeEnabled, streamingMessage]);
+
+  // Count thinking events already in timeline
+  const timelineThinkingCount = useMemo(() => {
+    return processTimeline.filter(e => e.type === 'thinking').length;
+  }, [processTimeline]);
+
+  // Find complete thinking blocks from message that aren't yet in timeline
+  // This shows them until the timeline catches up
+  const completeBlocksNotInTimeline = useMemo(() => {
+    return extractedThinking.complete.slice(timelineThinkingCount);
+  }, [extractedThinking.complete, timelineThinkingCount]);
+
+  // Check if there's an incomplete (currently streaming) thinking block
+  const hasIncompleteThinking = extractedThinking.incomplete !== null;
+
+  const hasSteps = hasTimeline || hasRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration || completeBlocksNotInTimeline.length > 0 || hasIncompleteThinking;
+
+  // Calculate final response content (text not already in timeline)
+  const finalResponseContent = agentModeEnabled && textContentInTimeline > 0
+    ? streamingMessage.substring(textContentInTimeline)
+    : streamingMessage;
+
+  // Strip thinking tags for display
+  const displayContent = agentModeEnabled ? stripAllThinkingTags(finalResponseContent) : finalResponseContent;
+  const hasDisplayContent = displayContent.trim().length > 0;
+
+  // Show loading spinner when streaming but no content yet
+  const showLoadingSpinner = isStreaming && !streamingMessage && !hasSteps;
 
   return (
     <div>
-      {/* Show thinking steps, context retrieval, and tool executions in timeline */}
-      <ProcessTimeline
-        isStreaming={isStreaming}
-        hasContent={hasSteps}
-      >
-        {/* Show retrieved notes context first (from agent auto-context or regular RAG) */}
-        {hasAnyRetrievedNotes && (
+      {/* Process Timeline */}
+      <ProcessTimeline isStreaming={isStreaming} hasContent={hasSteps}>
+        {/* Retrieved notes context */}
+        {hasRetrievedNotes && (
           <RetrievedNotesCard
-            notes={hasAgentRetrievedNotes ? agentRetrievedNotes : retrievedNotes}
+            notes={agentRetrievedNotes.length > 0 ? agentRetrievedNotes : retrievedNotes}
             isStreaming={isStreaming && !streamingMessage}
           />
         )}
 
-        {/* Render from unified processTimeline to maintain chronological order */}
-        {agentModeEnabled && hasProcessTimeline && processTimeline.map((event, index) => {
+        {/* Render timeline events in chronological order */}
+        {agentModeEnabled && processTimeline.map((event) => {
           if (event.type === 'thinking') {
             return (
               <ThinkingStepCard
-                key={`timeline-thinking-${index}`}
+                key={event.id}
                 step={{ content: event.content, timestamp: new Date(event.timestamp) }}
                 isStreaming={isStreaming && !event.isComplete}
               />
             );
-          } else if (event.type === 'tool') {
+          }
+          if (event.type === 'tool') {
             return (
               <ToolExecutionCard
-                key={`timeline-tool-${index}`}
+                key={event.id}
                 execution={{
                   tool: event.execution.tool,
                   arguments: event.execution.arguments,
@@ -133,31 +220,38 @@ export function StreamingIndicator({
               />
             );
           }
+          if (event.type === 'text') {
+            return <TimelineTextCard key={event.id} content={event.content} agentModeEnabled={agentModeEnabled} />;
+          }
           return null;
         })}
 
-        {/* Fallback: render from separate lists if processTimeline is empty (backward compatibility) */}
-        {agentModeEnabled && !hasProcessTimeline && thinkingSteps.map((step, index) => (
-          <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
+        {/* Complete thinking blocks extracted from message but not yet in timeline */}
+        {agentModeEnabled && completeBlocksNotInTimeline.map((content, index) => (
+          <ThinkingStepCard
+            key={`extracted-complete-${timelineThinkingCount + index}`}
+            step={{ content, timestamp: new Date() }}
+            isStreaming={false}
+          />
         ))}
 
-        {agentModeEnabled && !hasProcessTimeline && toolExecutions.map((execution, index) => (
-          <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
-        ))}
-
-        {/* Gemini-specific features */}
-        {hasGroundingSources && (
-          <GroundingSourcesCard sources={groundingSources} isStreaming={isStreaming} />
+        {/* Currently streaming incomplete thinking block */}
+        {agentModeEnabled && hasIncompleteThinking && extractedThinking.incomplete && (
+          <ThinkingStepCard
+            key="extracted-incomplete"
+            step={{ content: extractedThinking.incomplete, timestamp: new Date() }}
+            isStreaming={true}
+          />
         )}
 
-        {/* Grok-specific features */}
-        {hasGrokSearchSources && (
-          <GrokSearchSourcesCard sources={grokSearchSources} isStreaming={isStreaming} />
-        )}
+        {/* Gemini grounding sources */}
+        {hasGroundingSources && <GroundingSourcesCard sources={groundingSources} isStreaming={isStreaming} />}
 
-        {hasCodeExecution && codeExecutionResult && (
-          <CodeExecutionCard result={codeExecutionResult} isStreaming={isStreaming} />
-        )}
+        {/* Grok search sources */}
+        {hasGrokSearchSources && <GrokSearchSourcesCard sources={grokSearchSources} isStreaming={isStreaming} />}
+
+        {/* Code execution result */}
+        {hasCodeExecution && codeExecutionResult && <CodeExecutionCard result={codeExecutionResult} isStreaming={isStreaming} />}
 
         {/* Image generation progress */}
         {hasImageGeneration && (
@@ -172,137 +266,40 @@ export function StreamingIndicator({
         )}
       </ProcessTimeline>
 
-      {/* Show processing status indicator when streaming (agent mode only) */}
-      {agentModeEnabled && isStreaming && processingStatus && !streamingMessage && !hasSteps && (
-        <div className="flex justify-start">
-          <div
-            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              {/* Animated spinner */}
-              <div className="relative w-5 h-5 flex-shrink-0">
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                  style={{
-                    borderTopColor: 'var(--color-brand-500)',
-                    borderRightColor: 'var(--color-brand-500)',
-                  }}
-                />
-                <div
-                  className="absolute inset-1 rounded-full"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {processingStatus}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Fallback loading indicator when streaming but no status yet */}
-      {agentModeEnabled && isStreaming && !processingStatus && !streamingMessage && !hasSteps && (
-        <div className="flex justify-start">
-          <div
-            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative w-5 h-5 flex-shrink-0">
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                  style={{
-                    borderTopColor: 'var(--color-brand-500)',
-                    borderRightColor: 'var(--color-brand-500)',
-                  }}
-                />
-                <div
-                  className="absolute inset-1 rounded-full"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                Agent thinking...
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Loading indicator for normal/RAG chat when streaming but no content yet */}
-      {!agentModeEnabled && isStreaming && !streamingMessage && !hasSteps && (
-        <div className="flex justify-start">
-          <div
-            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative w-5 h-5 flex-shrink-0">
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                  style={{
-                    borderTopColor: 'var(--color-brand-500)',
-                    borderRightColor: 'var(--color-brand-500)',
-                  }}
-                />
-                <div
-                  className="absolute inset-1 rounded-full"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {ragEnabled ? 'Searching notes...' : 'Generating response...'}
-              </span>
-            </div>
-          </div>
-        </div>
+      {/* Loading spinner */}
+      {showLoadingSpinner && (
+        <LoadingSpinner
+          message={
+            processingStatus ||
+            (agentModeEnabled ? 'Agent thinking...' : ragEnabled ? 'Searching notes...' : 'Generating response...')
+          }
+        />
       )}
 
       {/* Main response message */}
-      {streamingMessage && (
+      {hasDisplayContent && (
         <div className="flex justify-start">
           <div
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              color: 'var(--text-primary)',
-            }}
+            style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
           >
-            {/* Show inline status bar when there's content AND a processing status (e.g., after tool execution) */}
+            {/* Processing status bar */}
             {agentModeEnabled && isStreaming && processingStatus && processingStatus !== 'Generating response...' && (
-              <div
-                className="flex items-center gap-2 mb-2 pb-2"
-                style={{ borderBottom: '1px solid var(--border)' }}
-              >
+              <div className="flex items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
                 <div className="relative w-4 h-4 flex-shrink-0">
                   <div
                     className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                    style={{
-                      borderTopColor: 'var(--color-brand-500)',
-                      borderRightColor: 'var(--color-brand-500)',
-                    }}
+                    style={{ borderTopColor: 'var(--color-brand-500)', borderRightColor: 'var(--color-brand-500)' }}
                   />
                 </div>
-                <span className="text-xs font-medium" style={{ color: 'var(--color-brand-500)' }}>
-                  {processingStatus}
-                </span>
+                <span className="text-xs font-medium" style={{ color: 'var(--color-brand-500)' }}>{processingStatus}</span>
               </div>
             )}
-            <MarkdownMessage
-              content={agentModeEnabled ? stripThinkingTags(streamingMessage) : streamingMessage}
-              showCursor={isStreaming}
-            />
+            {agentModeEnabled ? (
+              <MarkdownMessageWithNoteReferences content={displayContent} showCursor={isStreaming} />
+            ) : (
+              <MarkdownMessage content={displayContent} showCursor={isStreaming} />
+            )}
             <TokenUsageDisplay
               inputTokens={undefined}
               outputTokens={outputTokens}
@@ -315,7 +312,7 @@ export function StreamingIndicator({
         </div>
       )}
 
-      {/* Show streaming error */}
+      {/* Error display */}
       {streamingError && (
         <div className="flex justify-start">
           <div
@@ -334,24 +331,13 @@ export function StreamingIndicator({
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium" style={{ color: 'rgb(239, 68, 68)' }}>
-                  Streaming Error
-                </p>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                  {streamingError.message}
-                </p>
+                <p className="font-medium" style={{ color: 'rgb(239, 68, 68)' }}>Streaming Error</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{streamingError.message}</p>
                 {streamingMessage && (
-                  <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>
-                    Partial response received before error.
-                  </p>
+                  <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>Partial response received before error.</p>
                 )}
               </div>
             </div>
@@ -377,7 +363,6 @@ export function LoadingMessageSkeleton() {
         }}
       >
         <div className="flex flex-col gap-3">
-          {/* Animated dots indicator */}
           <div className="flex items-center gap-1.5">
             {[0, 1, 2].map((i) => (
               <div
@@ -386,31 +371,24 @@ export function LoadingMessageSkeleton() {
                 style={{
                   backgroundColor: 'var(--btn-primary-bg)',
                   opacity: 0.4,
-                  animation: `pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+                  animation: 'pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                   animationDelay: `${i * 0.2}s`,
                 }}
               />
             ))}
           </div>
-
-          {/* Shimmer effect lines */}
           <div className="space-y-2">
             {[100, 85, 95].map((width, i) => (
               <div
                 key={i}
                 className="h-3 rounded-md relative overflow-hidden"
-                style={{
-                  width: `${width}%`,
-                  backgroundColor: 'var(--border)',
-                  opacity: 0.3,
-                }}
+                style={{ width: `${width}%`, backgroundColor: 'var(--border)', opacity: 0.3 }}
               >
                 <div
                   className="absolute inset-0 -translate-x-full"
                   style={{
-                    background:
-                      'linear-gradient(90deg, transparent, rgba(var(--btn-primary-bg-rgb, 59, 130, 246), 0.3), transparent)',
-                    animation: `shimmer 2s infinite`,
+                    background: 'linear-gradient(90deg, transparent, rgba(var(--btn-primary-bg-rgb, 59, 130, 246), 0.3), transparent)',
+                    animation: 'shimmer 2s infinite',
                     animationDelay: `${i * 0.15}s`,
                   }}
                 />
@@ -424,96 +402,55 @@ export function LoadingMessageSkeleton() {
 }
 
 /**
- * Loading skeleton shown when generating an image, with image-specific UI.
+ * Loading skeleton for image generation.
  */
 export function ImageGenerationLoadingSkeleton({ isGeneratingImage }: { isGeneratingImage?: boolean }) {
-  if (isGeneratingImage) {
-    return (
-      <div className="flex justify-start">
-        <div
-          className="w-full rounded-2xl rounded-bl-md px-4 py-3"
-          style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-          }}
-        >
-          <div className="flex flex-col gap-4">
-            {/* Image generation indicator */}
-            <div className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{
-                  backgroundColor: 'var(--color-brand-alpha)',
-                  border: '1px solid var(--color-brand-border)',
-                }}
-              >
-                <svg
-                  className="w-4 h-4 animate-pulse"
-                  style={{ color: 'var(--color-brand-text)' }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  Generating image...
-                </p>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                  This may take a few moments
-                </p>
-              </div>
-            </div>
+  if (!isGeneratingImage) return <LoadingMessageSkeleton />;
 
-            {/* Image placeholder with shimmer */}
+  return (
+    <div className="flex justify-start">
+      <div
+        className="w-full rounded-2xl rounded-bl-md px-4 py-3"
+        style={{
+          backgroundColor: 'var(--surface-card)',
+          border: '1px solid var(--border)',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
             <div
-              className="relative w-full aspect-square max-w-[320px] rounded-xl overflow-hidden"
-              style={{
-                backgroundColor: 'var(--border)',
-                opacity: 0.3,
-              }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'var(--color-brand-alpha)', border: '1px solid var(--color-brand-border)' }}
             >
-              {/* Shimmer animation */}
-              <div
-                className="absolute inset-0 -translate-x-full"
-                style={{
-                  background:
-                    'linear-gradient(90deg, transparent, rgba(var(--btn-primary-bg-rgb, 59, 130, 246), 0.2), transparent)',
-                  animation: `shimmer 2s infinite`,
-                }}
-              />
-              {/* Centered image icon */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg
-                  className="w-12 h-12 opacity-30"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
+              <svg className="w-4 h-4 animate-pulse" style={{ color: 'var(--color-brand-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Generating image...</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>This may take a few moments</p>
+            </div>
+          </div>
+          <div
+            className="relative w-full aspect-square max-w-[320px] rounded-xl overflow-hidden"
+            style={{ backgroundColor: 'var(--border)', opacity: 0.3 }}
+          >
+            <div
+              className="absolute inset-0 -translate-x-full"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(var(--btn-primary-bg-rgb, 59, 130, 246), 0.2), transparent)',
+                animation: 'shimmer 2s infinite',
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-12 h-12 opacity-30" style={{ color: 'var(--text-tertiary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
           </div>
         </div>
       </div>
-    );
-  }
-
-  // Fall back to regular loading skeleton for non-image generation
-  return <LoadingMessageSkeleton />;
+    </div>
+  );
 }

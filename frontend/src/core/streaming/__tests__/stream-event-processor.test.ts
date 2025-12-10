@@ -194,7 +194,7 @@ describe('StreamEventProcessor', () => {
   // Thinking Event Parsing Tests
   // ============================================
   describe('thinking event parsing', () => {
-    it('should parse thinking events with JSON content', () => {
+    it('should parse thinking events with JSON content as complete (backend sends complete blocks)', () => {
       const message = buildThinkingMessage('Let me analyze this...');
       const events = processor.processChunk(stringToChunk(message));
 
@@ -202,10 +202,35 @@ describe('StreamEventProcessor', () => {
       expect(events[0].type).toBe('content:thinking');
       const thinkingEvent = events[0] as { type: 'content:thinking'; content: string; isComplete?: boolean };
       expect(thinkingEvent.content).toBe('Let me analyze this...');
+      // Backend only sends complete thinking blocks (after finding </thinking> tag)
+      // So default is isComplete=true
       expect(thinkingEvent.isComplete).toBe(true);
     });
 
-    it('should parse raw thinking content as incomplete', () => {
+    it('should respect explicit isComplete=false flag from backend for streaming', () => {
+      // Backend could explicitly set isComplete: false for streaming partial content
+      const message = buildSSEMessage('thinking', JSON.stringify({ content: 'Partial thinking', isComplete: false }));
+      const events = processor.processChunk(stringToChunk(message));
+
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe('content:thinking');
+      const thinkingEvent = events[0] as { type: 'content:thinking'; content: string; isComplete?: boolean };
+      expect(thinkingEvent.content).toBe('Partial thinking');
+      expect(thinkingEvent.isComplete).toBe(false);
+    });
+
+    it('should respect explicit isComplete=true flag from backend', () => {
+      const message = buildSSEMessage('thinking', JSON.stringify({ content: 'Final thinking', isComplete: true }));
+      const events = processor.processChunk(stringToChunk(message));
+
+      expect(events).toHaveLength(1);
+      expect(events[0].type).toBe('content:thinking');
+      const thinkingEvent = events[0] as { type: 'content:thinking'; content: string; isComplete?: boolean };
+      expect(thinkingEvent.content).toBe('Final thinking');
+      expect(thinkingEvent.isComplete).toBe(true);
+    });
+
+    it('should parse raw thinking content as complete (backend sends complete blocks)', () => {
       const message = buildSSEMessage('thinking', 'Raw thinking content');
       const events = processor.processChunk(stringToChunk(message));
 
@@ -213,7 +238,8 @@ describe('StreamEventProcessor', () => {
       expect(events[0].type).toBe('content:thinking');
       const thinkingEvent = events[0] as { type: 'content:thinking'; content: string; isComplete?: boolean };
       expect(thinkingEvent.content).toBe('Raw thinking content');
-      expect(thinkingEvent.isComplete).toBe(false);
+      // Raw content from backend is also from complete thinking blocks
+      expect(thinkingEvent.isComplete).toBe(true);
     });
   });
 

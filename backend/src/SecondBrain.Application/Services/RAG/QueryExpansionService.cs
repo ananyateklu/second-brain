@@ -35,8 +35,14 @@ public interface IQueryExpansionService
     /// <summary>
     /// Full query expansion pipeline - returns embeddings for original query, HyDE, and multi-query
     /// </summary>
+    /// <param name="query">The user's search query</param>
+    /// <param name="enableQueryExpansion">Whether to generate multi-query variations (null uses default setting)</param>
+    /// <param name="enableHyDE">Whether to use HyDE (Hypothetical Document Embeddings) (null uses default setting)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<ExpandedQueryEmbeddings> GetExpandedQueryEmbeddingsAsync(
         string query,
+        bool? enableQueryExpansion = null,
+        bool? enableHyDE = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -381,11 +387,17 @@ Alternative queries:";
 
     public async Task<ExpandedQueryEmbeddings> GetExpandedQueryEmbeddingsAsync(
         string query,
+        bool? enableQueryExpansion = null,
+        bool? enableHyDE = null,
         CancellationToken cancellationToken = default)
     {
         var result = new ExpandedQueryEmbeddings { OriginalQuery = query };
         var embeddingProvider = _embeddingProviderFactory.GetDefaultProvider();
         var totalTokens = 0;
+
+        // Resolve effective settings: passed parameters override defaults from config
+        var effectiveEnableHyDE = enableHyDE ?? _settings.EnableHyDE;
+        var effectiveEnableQueryExpansion = enableQueryExpansion ?? _settings.EnableQueryExpansion;
 
         try
         {
@@ -406,7 +418,7 @@ Alternative queries:";
             }
 
             // 2. Generate HyDE embedding if enabled
-            if (_settings.EnableHyDE)
+            if (effectiveEnableHyDE)
             {
                 var hydeResult = await ExpandQueryWithHyDEAsync(query, cancellationToken);
                 if (hydeResult.Success && !string.IsNullOrWhiteSpace(hydeResult.HypotheticalDocument))
@@ -425,7 +437,7 @@ Alternative queries:";
             }
 
             // 3. Generate multi-query embeddings if enabled
-            if (_settings.EnableQueryExpansion && _settings.MultiQueryCount > 1)
+            if (effectiveEnableQueryExpansion && _settings.MultiQueryCount > 1)
             {
                 var queryVariations = await GenerateMultiQueryAsync(
                     query, _settings.MultiQueryCount, cancellationToken);

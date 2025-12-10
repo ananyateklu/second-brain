@@ -70,6 +70,10 @@ services:
       - ./database/26_reranking_provider.sql:/docker-entrypoint-initdb.d/26_reranking_provider.sql:ro
       - ./database/27_note_summaries.sql:/docker-entrypoint-initdb.d/27_note_summaries.sql:ro
       - ./database/28_note_summary_preferences.sql:/docker-entrypoint-initdb.d/28_note_summary_preferences.sql:ro
+      - ./database/29_note_embeddings_summary.sql:/docker-entrypoint-initdb.d/29_note_embeddings_summary.sql:ro
+      - ./database/30_summary_jobs.sql:/docker-entrypoint-initdb.d/30_summary_jobs.sql:ro
+      - ./database/31_pre_tool_text.sql:/docker-entrypoint-initdb.d/31_pre_tool_text.sql:ro
+      - ./database/32_rag_feature_toggles.sql:/docker-entrypoint-initdb.d/32_rag_feature_toggles.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

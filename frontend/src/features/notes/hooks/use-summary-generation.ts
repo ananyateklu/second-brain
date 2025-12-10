@@ -1,5 +1,9 @@
 /**
  * Hooks for background summary generation
+ * 
+ * IMPORTANT: All invalidations use noteKeys.all (not noteKeys.lists()) because
+ * the useNotes() hook uses noteKeys.all as its query key. Using noteKeys.lists()
+ * would not invalidate the correct queries and the UI wouldn't update.
  */
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,7 +34,7 @@ export const useStartSummaryGeneration = () => {
     {
       onSuccess: () => {
         // Invalidate notes to pick up new summaries as they're generated
-        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
       },
     }
   );
@@ -77,7 +81,7 @@ export const useCancelSummaryJob = () => {
         // Invalidate the job query to get updated status
         void queryClient.invalidateQueries({ queryKey: summaryJobKeys.job(jobId) });
         // Invalidate notes to show any completed summaries
-        void queryClient.invalidateQueries({ queryKey: noteKeys.lists() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
       },
     }
   );

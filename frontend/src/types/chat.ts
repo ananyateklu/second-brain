@@ -14,6 +14,8 @@ export interface ToolCall {
   result: string;
   executedAt: string;
   success: boolean;
+  /** Text content streamed before this tool was invoked. Used for interleaved timeline display. */
+  preToolText?: string;
 }
 
 /**

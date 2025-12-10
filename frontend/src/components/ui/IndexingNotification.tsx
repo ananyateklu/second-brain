@@ -385,7 +385,7 @@ export function IndexingNotification() {
 
   const handleGoToSettings = useCallback(() => {
     hideNotification();
-    void router.navigate('/settings/rag');
+    void router.navigate('/settings/indexing');
   }, [hideNotification]);
 
   // Don't render if no active jobs or notification is hidden
@@ -464,7 +464,7 @@ export function IndexingNotification() {
             <button
               onClick={handleGoToSettings}
               className="p-1 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
-              title="Go to RAG Settings"
+              title="Go to Indexing Settings"
             >
               <SettingsIcon className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             </button>

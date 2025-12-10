@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { ToolExecution, AgentNotesResponse } from '../types/agent-types';
 import { NoteCard } from '../../notes/components/NoteCard';
+import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
+import { splitTextWithNoteReferences } from '../../../utils/note-reference-utils';
 
 interface ToolExecutionCardProps {
   execution: ToolExecution;
@@ -310,6 +312,9 @@ function StatItem({ label, value, icon }: { label: string; value: number; icon: 
 
 // Generic message display for simple responses
 function GenericResponseDisplay({ response }: { response: GenericResponse }) {
+  const segments = splitTextWithNoteReferences(response.message);
+  const hasNoteReferences = segments.length > 1 || segments[0]?.type === 'note-reference';
+
   return (
     <div
       className="p-3 rounded-lg"
@@ -322,7 +327,26 @@ function GenericResponseDisplay({ response }: { response: GenericResponse }) {
         className="text-xs font-medium mb-1"
         style={{ color: 'var(--text-primary)' }}
       >
-        {response.message}
+        {hasNoteReferences ? (
+          <div className="space-y-1">
+            {segments.map((segment, index) => {
+              if (segment.type === 'note-reference' && segment.noteId) {
+                return (
+                  <div key={`${segment.noteId}-${index}`} className="inline-block">
+                    <InlineNoteReference
+                      noteId={segment.noteId}
+                      noteTitle={segment.noteTitle}
+                      variant="subtle"
+                    />
+                  </div>
+                );
+              }
+              return <Fragment key={`text-${index}`}>{segment.content}</Fragment>;
+            })}
+          </div>
+        ) : (
+          response.message
+        )}
       </div>
       {/* Show additional properties if any */}
       {Object.keys(response).filter(k => !['type', 'message'].includes(k)).length > 0 && (
@@ -599,18 +623,42 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
             )}
 
             {/* Plain text result (for unparseable responses) */}
-            {execution.result && !hasParsedResult && (
-              <div
-                className="p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap"
-                style={{
-                  backgroundColor: 'var(--surface-card)',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border)'
-                }}
-              >
-                {execution.result}
-              </div>
-            )}
+            {execution.result && !hasParsedResult && (() => {
+              const segments = splitTextWithNoteReferences(execution.result);
+              const hasNoteReferences = segments.length > 1 || segments[0]?.type === 'note-reference';
+
+              return (
+                <div
+                  className="p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap"
+                  style={{
+                    backgroundColor: 'var(--surface-card)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--border)'
+                  }}
+                >
+                  {hasNoteReferences ? (
+                    <div className="space-y-1">
+                      {segments.map((segment, index) => {
+                        if (segment.type === 'note-reference' && segment.noteId) {
+                          return (
+                            <div key={`${segment.noteId}-${index}`} className="inline-block">
+                              <InlineNoteReference
+                                noteId={segment.noteId}
+                                noteTitle={segment.noteTitle}
+                                variant="subtle"
+                              />
+                            </div>
+                          );
+                        }
+                        return <Fragment key={`text-${index}`}>{segment.content}</Fragment>;
+                      })}
+                    </div>
+                  ) : (
+                    execution.result
+                  )}
+                </div>
+              );
+            })()}
 
             {!execution.result && !isExecuting && (
               <div className="text-xs opacity-50 italic">No output</div>

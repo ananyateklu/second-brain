@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.RAG;
@@ -14,6 +16,7 @@ public class AgentServiceTests
     private readonly Mock<IOptions<RagSettings>> _mockRagSettings;
     private readonly Mock<IParallelNoteRepository> _mockNoteRepository;
     private readonly Mock<IRagService> _mockRagService;
+    private readonly Mock<IUserPreferencesService> _mockUserPreferencesService;
     private readonly Mock<ILogger<AgentService>> _mockLogger;
     private readonly AIProvidersSettings _settings;
     private readonly RagSettings _ragSettings;
@@ -23,6 +26,7 @@ public class AgentServiceTests
     {
         _mockNoteRepository = new Mock<IParallelNoteRepository>();
         _mockRagService = new Mock<IRagService>();
+        _mockUserPreferencesService = new Mock<IUserPreferencesService>();
         _mockLogger = new Mock<ILogger<AgentService>>();
 
         _settings = new AIProvidersSettings
@@ -50,11 +54,23 @@ public class AgentServiceTests
         _mockRagSettings = new Mock<IOptions<RagSettings>>();
         _mockRagSettings.Setup(s => s.Value).Returns(_ragSettings);
 
+        // Setup default user preferences mock
+        _mockUserPreferencesService.Setup(s => s.GetPreferencesAsync(It.IsAny<string>()))
+            .ReturnsAsync(new UserPreferencesResponse
+            {
+                RagEnableHyde = true,
+                RagEnableQueryExpansion = true,
+                RagEnableHybridSearch = true,
+                RagEnableReranking = true,
+                RagEnableAnalytics = true
+            });
+
         _sut = new AgentService(
             _mockSettings.Object,
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
     }
@@ -145,6 +161,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -201,6 +218,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -550,6 +568,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -598,6 +617,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -641,6 +661,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -673,6 +694,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -747,6 +769,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -789,6 +812,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -854,6 +878,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -897,6 +922,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -956,6 +982,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1000,6 +1027,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1044,6 +1072,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1088,6 +1117,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1130,6 +1160,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1172,6 +1203,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1214,6 +1246,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1265,6 +1298,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1312,6 +1346,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1359,6 +1394,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1408,6 +1444,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1493,6 +1530,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1536,6 +1574,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1580,6 +1619,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1624,6 +1664,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1667,6 +1708,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1751,6 +1793,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -1797,6 +1840,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2234,6 +2278,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2264,6 +2309,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2293,6 +2339,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2323,6 +2370,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2353,6 +2401,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2383,6 +2432,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2413,6 +2463,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2565,6 +2616,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2610,6 +2662,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2671,6 +2724,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2715,6 +2769,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -2953,6 +3008,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3009,6 +3065,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3060,6 +3117,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3090,6 +3148,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3120,6 +3179,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3150,6 +3210,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3179,6 +3240,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 
@@ -3208,6 +3270,7 @@ public class AgentServiceTests
             _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
+            _mockUserPreferencesService.Object,
             _mockLogger.Object
         );
 

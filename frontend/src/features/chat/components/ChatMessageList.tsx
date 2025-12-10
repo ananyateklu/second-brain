@@ -10,9 +10,49 @@ import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
-import { extractThinkingContent, hasThinkingTags } from '../../../utils/thinking-utils';
+import { MarkdownMessage } from '../../../components/MarkdownMessage';
+import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownMessageWithNoteReferences';
+import { extractThinkingContent, hasThinkingTags, stripAllThinkingTags } from '../../../utils/thinking-utils';
 import { convertToolCallToExecution } from '../utils/tool-utils';
 import type { ProcessEvent } from '../../../core/streaming/types';
+
+/**
+ * Renders pre-tool text content within the process timeline for persisted messages.
+ * This shows text that was streamed before a tool execution.
+ * Strips thinking tags to prevent duplicate display (thinking is shown in ThinkingStepCard).
+ * Returns null if content is empty after stripping.
+ */
+function PersistedTimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+  const strippedContent = stripAllThinkingTags(content);
+
+  // Don't render if content is empty after stripping thinking tags
+  if (!strippedContent) {
+    return null;
+  }
+
+  return (
+    <div className="relative pl-10 py-2">
+      {/* Timeline dot */}
+      <div
+        className="absolute left-[15px] top-7 w-2.5 h-2.5 rounded-full"
+        style={{ backgroundColor: 'var(--color-brand-500)' }}
+      />
+      {/* Text content card */}
+      <div
+        className="rounded-xl px-4 py-3 text-sm"
+        style={{
+          backgroundColor: 'var(--surface-card)',
+        }}
+      >
+        {agentModeEnabled ? (
+          <MarkdownMessageWithNoteReferences content={strippedContent} />
+        ) : (
+          <MarkdownMessage content={strippedContent} />
+        )}
+      </div>
+    </div>
+  );
+}
 
 import { PendingMessage } from '../hooks/use-chat-conversation-manager';
 
@@ -26,6 +66,8 @@ export interface ChatMessageListProps {
   retrievedNotes: RagContextNote[];
   /** Unified process timeline - thinking and tool executions in chronological order */
   processTimeline: ProcessEvent[];
+  /** Length of text content captured in timeline events (for avoiding duplication in main bubble) */
+  textContentInTimeline: number;
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   /** Notes automatically retrieved via semantic search for agent context injection */
@@ -68,8 +110,7 @@ export function ChatMessageList({
   streamingError,
   retrievedNotes,
   processTimeline,
-  toolExecutions,
-  thinkingSteps,
+  textContentInTimeline,
   agentRetrievedNotes,
   processingStatus,
   inputTokens,
@@ -180,8 +221,7 @@ export function ChatMessageList({
                 agentModeEnabled={agentModeEnabled}
                 ragEnabled={ragEnabled}
                 processTimeline={processTimeline}
-                thinkingSteps={thinkingSteps}
-                toolExecutions={toolExecutions}
+                textContentInTimeline={textContentInTimeline}
                 processingStatus={processingStatus}
                 retrievedNotes={retrievedNotes}
                 agentRetrievedNotes={agentRetrievedNotes}
@@ -239,21 +279,34 @@ function MessageWithContext({
   const isAssistantMessage = message.role === 'assistant';
   const isLastMessage = index === totalMessages - 1;
 
-  // Hide the last assistant message only while actively streaming.
+  // Hide the last assistant message only while actively streaming AND there's no pending user message.
   // This prevents showing both the streaming indicator AND the persisted message
   // during streaming. Once streaming ends (isStreaming=false), we immediately show
   // the persisted message to ensure a seamless handoff with no visual gap/blink.
-  // The hasMatchingPersistedMessage check in StreamingIndicator handles hiding the
-  // streaming content when the persisted message appears.
+  // 
+  // Key insight: If there's a pending user message, we're streaming a NEW response,
+  // so we should NOT hide any previous assistant messages. We only hide when we're
+  // completing/updating the current last message (no pending user message).
   const isStreamingDuplicate = useMemo(() => {
     if (!isAssistantMessage || !isLastMessage) {
       return false;
     }
 
-    // Only hide during active streaming with content
-    // When streaming ends, always show the persisted message immediately
-    return isStreaming && streamingMessage.length > 0;
-  }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage]);
+    // Don't hide previous messages when streaming a new response (indicated by pending user message)
+    // Only hide if we're updating the current last message
+    const isStreamingNewResponse = isStreaming && streamingMessage.length > 0;
+
+    // Check if this message is actually the one being streamed by comparing content
+    // We need to be lenient because of formatting differences
+    const contentMatches =
+      message.content === streamingMessage ||
+      message.content.trim() === streamingMessage.trim() ||
+      (streamingMessage.length > 20 &&
+        message.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))));
+
+    // Only hide if streaming AND this message matches the streaming content
+    return isStreamingNewResponse && contentMatches;
+  }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage, message.content]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
 
@@ -305,11 +358,16 @@ function MessageWithContext({
         ))}
 
         {shouldShowPersistedToolExecutions && message.toolCalls?.map((toolCall: ToolCall, toolIndex: number) => (
-          <ToolExecutionCard
-            key={`${index}-tool-${toolIndex}`}
-            execution={convertToolCallToExecution(toolCall)}
-            isLast={toolIndex === (message.toolCalls?.length ?? 0) - 1}
-          />
+          <div key={`${index}-tool-group-${toolIndex}`}>
+            {/* Show pre-tool text if available (text streamed before this tool was invoked) */}
+            {toolCall.preToolText && (
+              <PersistedTimelineTextCard content={toolCall.preToolText} agentModeEnabled={agentModeEnabled} />
+            )}
+            <ToolExecutionCard
+              execution={convertToolCallToExecution(toolCall)}
+              isLast={toolIndex === (message.toolCalls?.length ?? 0) - 1}
+            />
+          </div>
         ))}
       </ProcessTimeline>
 

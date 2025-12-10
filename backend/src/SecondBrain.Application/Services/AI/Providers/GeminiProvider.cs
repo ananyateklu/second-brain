@@ -1085,10 +1085,30 @@ public class GeminiProvider : IAIProvider
                 config: config);
         }
 
+        // Track emitted thinking blocks to avoid duplicates
+        var emittedThinkingBlocks = new HashSet<string>();
+
         await foreach (var chunk in streamResponse)
         {
             if (cancellationToken.IsCancellationRequested)
                 yield break;
+
+            // Extract and emit thinking content first (wrapped in <thinking> tags for frontend extraction)
+            var thinking = ExtractThinkingProcess(chunk);
+            if (!string.IsNullOrEmpty(thinking) && !emittedThinkingBlocks.Contains(thinking))
+            {
+                emittedThinkingBlocks.Add(thinking);
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", modelName));
+                }
+                tokenCount++;
+                yield return $"<thinking>{thinking}</thinking>";
+            }
 
             var text = ExtractText(chunk);
             if (!string.IsNullOrEmpty(text))

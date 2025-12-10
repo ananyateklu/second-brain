@@ -17,5 +17,12 @@ public class UpdateUserPreferencesRequest
     public bool? NoteSummaryEnabled { get; set; }
     public string? NoteSummaryProvider { get; set; }
     public string? NoteSummaryModel { get; set; }
+
+    // RAG Feature Toggles
+    public bool? RagEnableHyde { get; set; }
+    public bool? RagEnableQueryExpansion { get; set; }
+    public bool? RagEnableHybridSearch { get; set; }
+    public bool? RagEnableReranking { get; set; }
+    public bool? RagEnableAnalytics { get; set; }
 }
 

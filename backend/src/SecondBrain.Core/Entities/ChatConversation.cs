@@ -193,6 +193,13 @@ public class ToolCall
     [Column("success")]
     public bool Success { get; set; } = true;
 
+    /// <summary>
+    /// Text content that was streamed before this tool was invoked.
+    /// Used to reconstruct the chronological order of text and tool calls in the UI.
+    /// </summary>
+    [Column("pre_tool_text")]
+    public string? PreToolText { get; set; }
+
     // Navigation property back to message (ignored to prevent circular serialization)
     [ForeignKey("MessageId")]
     [JsonIgnore]

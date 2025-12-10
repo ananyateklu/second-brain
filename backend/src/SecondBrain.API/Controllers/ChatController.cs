@@ -10,6 +10,7 @@ using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Application.Utilities;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
@@ -248,11 +249,29 @@ public class ChatController : ControllerBase
                 _logger.LogInformation("RAG enabled for streaming message. ConversationId: {ConversationId}, UserId: {UserId}",
                     id, userId);
 
+                // Get user's RAG preferences
+                RagOptions? ragOptions = null;
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    ragOptions = RagOptions.FromUserPreferences(
+                        enableHyde: userPrefs.RagEnableHyde,
+                        enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                        enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                        enableReranking: userPrefs.RagEnableReranking,
+                        enableAnalytics: userPrefs.RagEnableAnalytics);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get user RAG preferences, using defaults");
+                }
+
                 var ragContext = await _ragService.RetrieveContextAsync(
                     request.Content,
                     userId,
                     vectorStoreProvider: request.VectorStoreProvider,
                     conversationId: id,
+                    options: ragOptions,
                     cancellationToken: cancellationToken);
 
                 // Capture RAG log ID for feedback association
@@ -545,11 +564,29 @@ public class ChatController : ControllerBase
                     "RAG enabled for message. ConversationId: {ConversationId}, UserId: {UserId}, VectorStore: {VectorStore}",
                     id, userId, request.VectorStoreProvider ?? "default");
 
+                // Get user's RAG preferences
+                RagOptions? ragOptions = null;
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    ragOptions = RagOptions.FromUserPreferences(
+                        enableHyde: userPrefs.RagEnableHyde,
+                        enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                        enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                        enableReranking: userPrefs.RagEnableReranking,
+                        enableAnalytics: userPrefs.RagEnableAnalytics);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get user RAG preferences, using defaults");
+                }
+
                 var ragContext = await _ragService.RetrieveContextAsync(
                     request.Content,
                     userId,
                     vectorStoreProvider: request.VectorStoreProvider,
                     conversationId: id,
+                    options: ragOptions,
                     cancellationToken: cancellationToken);
 
                 // Capture RAG log ID for feedback association

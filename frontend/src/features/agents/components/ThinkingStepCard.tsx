@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo, ComponentPropsWithoutRef } from 'react';
+import { useState, useEffect, useMemo, ComponentPropsWithoutRef, Fragment } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ThinkingStep } from '../types/agent-types';
+import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
+import { splitTextWithNoteReferences } from '../../../utils/note-reference-utils';
 
 interface ThinkingStepCardProps {
   step: ThinkingStep;
@@ -119,6 +121,57 @@ const thinkingMarkdownComponents: Components = {
   ),
 };
 
+/**
+ * Renders content with note references parsed out and displayed as interactive components.
+ * Falls back to plain markdown if no note references are found.
+ */
+function ThinkingContentWithNoteReferences({ content }: { content: string }) {
+  const segments = splitTextWithNoteReferences(content);
+
+  // If no note references, just render regular markdown
+  if (segments.length === 1 && segments[0].type === 'text') {
+    return (
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={thinkingMarkdownComponents}
+      >
+        {content}
+      </ReactMarkdown>
+    );
+  }
+
+  // Render mixed content with note references
+  return (
+    <div className="space-y-1">
+      {segments.map((segment, index) => {
+        if (segment.type === 'note-reference' && segment.noteId) {
+          return (
+            <div key={`${segment.noteId}-${index}`} className="inline-block">
+              <InlineNoteReference
+                noteId={segment.noteId}
+                noteTitle={segment.noteTitle}
+                variant="subtle"
+              />
+            </div>
+          );
+        }
+
+        // For text segments, render markdown
+        return (
+          <Fragment key={`text-${index}`}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={thinkingMarkdownComponents}
+            >
+              {segment.content}
+            </ReactMarkdown>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
   // Start expanded when streaming, collapsed otherwise
   // Use functional update to auto-expand when streaming starts
@@ -195,12 +248,7 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
             }}
           >
             <div className="[&>*:last-child]:!mb-0 [&>*:last-child>*:last-child]:!mb-0">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={thinkingMarkdownComponents}
-              >
-                {processedContent}
-              </ReactMarkdown>
+              <ThinkingContentWithNoteReferences content={processedContent} />
             </div>
             {/* Show cursor when streaming to indicate more content coming */}
             {isStreaming && (

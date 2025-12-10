@@ -52,11 +52,14 @@ export interface StreamToolExecution {
 
 /**
  * Process event for unified timeline.
- * Tracks thinking and tool events in chronological order.
+ * Tracks thinking, tool, and text events in chronological order.
+ * Text events capture content streamed between other events (e.g., before tool calls).
+ * Each event has a unique ID for stable React keys.
  */
 export type ProcessEvent =
-  | { type: 'thinking'; content: string; timestamp: number; isComplete: boolean }
-  | { type: 'tool'; execution: StreamToolExecution };
+  | { type: 'thinking'; id: string; content: string; timestamp: number; isComplete: boolean }
+  | { type: 'tool'; id: string; execution: StreamToolExecution }
+  | { type: 'text'; id: string; content: string; timestamp: number };
 
 /**
  * Discriminated union for type-safe event handling.
@@ -159,7 +162,16 @@ export interface UnifiedStreamState {
 
   // Content accumulation
   textContent: string;
+  /**
+   * Length of textContent that has been captured in the timeline as text events.
+   * Used to track which text has already been shown in timeline entries
+   * so it won't be duplicated in the main response bubble.
+   * @deprecated Timeline is now the source of truth - this is kept for backward compatibility
+   */
+  textContentInTimeline: number;
+  /** Current thinking content - kept for backward compatibility with legacy code paths */
   thinkingContent: string;
+  /** Whether current thinking block is complete - kept for backward compatibility */
   isThinkingComplete: boolean;
 
   // Tool executions
@@ -219,6 +231,7 @@ export const initialStreamState: UnifiedStreamState = {
   phase: 'idle',
   status: 'idle',
   textContent: '',
+  textContentInTimeline: 0,
   thinkingContent: '',
   isThinkingComplete: false,
   activeTools: new Map(),

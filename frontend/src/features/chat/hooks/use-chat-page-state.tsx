@@ -79,6 +79,8 @@ export interface ChatPageState {
   retrievedNotes: RagContextNote[];
   /** Unified process timeline - thinking and tool executions in chronological order */
   processTimeline: ProcessEvent[];
+  /** Length of text content captured in timeline events (for avoiding duplication in main bubble) */
+  textContentInTimeline: number;
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
   /** Notes automatically retrieved via semantic search for agent context injection */
@@ -345,6 +347,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamingError,
     retrievedNotes,
     processTimeline,
+    textContentInTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,
@@ -522,7 +525,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
         }
 
         // Send message via unified streaming
-        resetStream();
+        // Note: Don't call resetStream() here - it would clear the previous streaming message
+        // before it's persisted. The send() function handles resetting internally.
         await unifiedStream.send({
           content: messageToSend,
           conversationId: currentConversationId,
@@ -732,6 +736,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamingError,
     retrievedNotes,
     processTimeline,
+    textContentInTimeline,
     toolExecutions,
     thinkingSteps,
     agentRetrievedNotes,

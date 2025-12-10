@@ -1,0 +1,59 @@
+namespace SecondBrain.Application.Services.RAG.Models;
+
+/// <summary>
+/// User-configurable RAG pipeline options that override default settings.
+/// Pass these to RetrieveContextAsync to customize RAG behavior per-user.
+/// </summary>
+public class RagOptions
+{
+    /// <summary>
+    /// Enable HyDE (Hypothetical Document Embeddings) for query expansion.
+    /// When enabled, generates a hypothetical document that would answer the query
+    /// and uses its embedding for better semantic search.
+    /// </summary>
+    public bool? EnableHyDE { get; set; }
+
+    /// <summary>
+    /// Enable query expansion with multiple query variations.
+    /// When enabled, generates alternative phrasings of the query to improve recall.
+    /// </summary>
+    public bool? EnableQueryExpansion { get; set; }
+
+    /// <summary>
+    /// Enable hybrid search combining vector (semantic) and BM25 (keyword) search.
+    /// Results are merged using Reciprocal Rank Fusion (RRF).
+    /// </summary>
+    public bool? EnableHybridSearch { get; set; }
+
+    /// <summary>
+    /// Enable LLM-based reranking of search results.
+    /// When enabled, uses an LLM to score relevance and reorder results.
+    /// </summary>
+    public bool? EnableReranking { get; set; }
+
+    /// <summary>
+    /// Enable RAG analytics logging.
+    /// When enabled, logs query metrics for analysis and feedback.
+    /// </summary>
+    public bool? EnableAnalytics { get; set; }
+
+    /// <summary>
+    /// Creates RagOptions from user preferences.
+    /// </summary>
+    public static RagOptions FromUserPreferences(
+        bool? enableHyde = null,
+        bool? enableQueryExpansion = null,
+        bool? enableHybridSearch = null,
+        bool? enableReranking = null,
+        bool? enableAnalytics = null)
+    {
+        return new RagOptions
+        {
+            EnableHyDE = enableHyde,
+            EnableQueryExpansion = enableQueryExpansion,
+            EnableHybridSearch = enableHybridSearch,
+            EnableReranking = enableReranking,
+            EnableAnalytics = enableAnalytics
+        };
+    }
+}

@@ -114,37 +114,92 @@ function processTextEvent(
 }
 
 /**
+ * Generate a unique ID for timeline events
+ */
+let eventIdCounter = 0;
+function generateEventId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${++eventIdCounter}`;
+}
+
+/**
  * Process content:thinking event
+ *
+ * Simplified timeline-first approach:
+ * - Backend sends COMPLETE thinking blocks (after finding </thinking> tag)
+ * - Each complete thinking event creates a NEW timeline entry
+ * - Incomplete thinking events (isComplete=false) update the last incomplete entry or create new
+ * - Text captured before thinking is added as a separate text event
  */
 function processThinkingEvent(
   state: UnifiedStreamState,
   event: Extract<StreamEvent, { type: 'content:thinking' }>
 ): UnifiedStreamState {
-  // Append or replace thinking content based on isComplete flag
-  const newThinkingContent = event.isComplete
-    ? event.content
-    : state.thinkingContent + event.content;
+  const now = Date.now();
+  let newTimeline = [...state.processTimeline];
+  let newTextContentInTimeline = state.textContentInTimeline;
 
-  // Add thinking event to process timeline
-  const thinkingEvent: ProcessEvent = {
-    type: 'thinking',
-    content: newThinkingContent,
-    timestamp: Date.now(),
-    isComplete: event.isComplete ?? false,
-  };
+  // Check if there's uncaptured text that should come before this thinking block
+  const uncapturedText = state.textContent.substring(state.textContentInTimeline);
+  if (uncapturedText.trim().length > 0) {
+    newTimeline.push({
+      type: 'text',
+      id: generateEventId('text'),
+      content: uncapturedText,
+      timestamp: now,
+    });
+    newTextContentInTimeline = state.textContent.length;
+  }
 
-  // Update or add thinking event in timeline
-  // If we already have a thinking event, update it; otherwise add new
-  const existingThinkingIndex = state.processTimeline.findIndex(e => e.type === 'thinking');
-  let newTimeline: ProcessEvent[];
+  // Find the last thinking event in the timeline
+  let lastThinkingIndex = -1;
+  for (let i = newTimeline.length - 1; i >= 0; i--) {
+    if (newTimeline[i].type === 'thinking') {
+      lastThinkingIndex = i;
+      break;
+    }
+  }
 
-  if (existingThinkingIndex >= 0) {
-    // Update existing thinking event in place
-    newTimeline = [...state.processTimeline];
-    newTimeline[existingThinkingIndex] = thinkingEvent;
+  const lastThinkingEvent = lastThinkingIndex >= 0
+    ? newTimeline[lastThinkingIndex] as Extract<ProcessEvent, { type: 'thinking' }>
+    : null;
+
+  // Determine if we should create new entry or update existing
+  // Create new if: no existing OR last is complete (new thinking block)
+  // Update existing if: last is incomplete (streaming within same block)
+  const shouldCreateNew = !lastThinkingEvent || lastThinkingEvent.isComplete;
+
+  if (shouldCreateNew) {
+    // Create new thinking entry
+    newTimeline.push({
+      type: 'thinking',
+      id: generateEventId('thinking'),
+      content: event.content,
+      timestamp: now,
+      isComplete: event.isComplete ?? false,
+    });
   } else {
-    // Add new thinking event
-    newTimeline = [...state.processTimeline, thinkingEvent];
+    // Update existing incomplete thinking entry
+    const newContent = event.isComplete
+      ? event.content  // Backend sends full content when complete
+      : state.thinkingContent + event.content;  // Append for streaming
+
+    newTimeline[lastThinkingIndex] = {
+      type: 'thinking',
+      id: lastThinkingEvent.id,  // Preserve ID
+      content: newContent,
+      timestamp: lastThinkingEvent.timestamp,  // Preserve original timestamp
+      isComplete: event.isComplete ?? false,
+    };
+  }
+
+  // Update thinkingContent for backward compatibility
+  const newThinkingContent = shouldCreateNew
+    ? event.content
+    : (event.isComplete ? event.content : state.thinkingContent + event.content);
+
+  // If thinking is complete, mark all text up to this point as captured
+  if (event.isComplete) {
+    newTextContentInTimeline = state.textContent.length;
   }
 
   return {
@@ -154,26 +209,40 @@ function processThinkingEvent(
     thinkingContent: newThinkingContent,
     isThinkingComplete: event.isComplete ?? false,
     processTimeline: newTimeline,
+    textContentInTimeline: newTextContentInTimeline,
   };
 }
 
 /**
  * Process content:thinking:end event
+ *
+ * When thinking ends, we need to update textContentInTimeline to account for
+ * all text up to this point (including any text that was part of thinking tags).
+ * This ensures that only text AFTER thinking appears in the main response bubble.
  */
 function processThinkingEndEvent(state: UnifiedStreamState): UnifiedStreamState {
+  // Update textContentInTimeline to current textContent length
+  // This marks all accumulated text as "captured" by the timeline
+  // so only new text after this point will appear in the main bubble
   return {
     ...state,
     isThinkingComplete: true,
+    textContentInTimeline: state.textContent.length,
   };
 }
 
 /**
  * Process tool:start event
+ *
+ * Before adding the tool to the timeline, captures any accumulated text content
+ * that hasn't been added to the timeline yet. This preserves the chronological
+ * order of: text -> tool -> more text -> another tool -> final text.
  */
 function processToolStartEvent(
   state: UnifiedStreamState,
   event: Extract<StreamEvent, { type: 'tool:start' }>
 ): UnifiedStreamState {
+  const now = Date.now();
   const newActiveTools = cloneMap(state.activeTools);
 
   const toolExecution: StreamToolExecution = {
@@ -181,23 +250,41 @@ function processToolStartEvent(
     tool: event.tool,
     arguments: event.args,
     status: 'executing',
-    startedAt: Date.now(),
+    startedAt: now,
   };
 
   newActiveTools.set(event.toolId, toolExecution);
 
+  // Check if there's text content that hasn't been captured in the timeline yet
+  const uncapturedText = state.textContent.substring(state.textContentInTimeline);
+  let newTimeline = [...state.processTimeline];
+  let newTextContentInTimeline = state.textContentInTimeline;
+
+  if (uncapturedText.trim().length > 0) {
+    // Add a text event for the uncaptured content before the tool
+    newTimeline.push({
+      type: 'text',
+      id: generateEventId('text'),
+      content: uncapturedText,
+      timestamp: now,
+    });
+    newTextContentInTimeline = state.textContent.length;
+  }
+
   // Add tool event to process timeline
-  const toolEvent: ProcessEvent = {
+  newTimeline.push({
     type: 'tool',
+    id: event.toolId,
     execution: toolExecution,
-  };
+  });
 
   return {
     ...state,
     phase: 'tool-execution',
     status: 'streaming',
     activeTools: newActiveTools,
-    processTimeline: [...state.processTimeline, toolEvent],
+    processTimeline: newTimeline,
+    textContentInTimeline: newTextContentInTimeline,
   };
 }
 
@@ -241,10 +328,10 @@ function processToolEndEvent(
   // Determine new phase based on remaining active tools
   const newPhase: StreamPhase = newActiveTools.size > 0 ? 'tool-execution' : 'streaming';
 
-  // Update tool event in process timeline
+  // Update tool event in process timeline (preserve the ID)
   const newTimeline = state.processTimeline.map(e => {
     if (e.type === 'tool' && e.execution.id === toolIdToRemove) {
-      return { type: 'tool' as const, execution: completedTool };
+      return { type: 'tool' as const, id: e.id, execution: completedTool };
     }
     return e;
   });
