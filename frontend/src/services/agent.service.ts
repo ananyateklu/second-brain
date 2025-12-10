@@ -245,8 +245,14 @@ export const agentService = {
             callbacks.onEnd?.({
               inputTokens: endData.inputTokens,
               outputTokens: endData.outputTokens,
+              tokensActual: endData.tokensActual,
               durationMs: endData.durationMs,
               toolExecutions: endData.toolExecutions,
+              cacheCreationTokens: endData.cacheCreationTokens,
+              cacheReadTokens: endData.cacheReadTokens,
+              reasoningTokens: endData.reasoningTokens,
+              ragContextTokens: endData.ragContextTokens,
+              ragChunksCount: endData.ragChunksCount,
             });
           } catch {
             callbacks.onEnd?.({});

@@ -277,7 +277,7 @@ export function ConversationListItem({
                   backgroundColor: isDarkMode
                     ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
                     : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                  color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                  color: isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)',
                   opacity: isDarkMode ? 1 : 0.7,
                 }}
               >

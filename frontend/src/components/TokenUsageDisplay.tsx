@@ -34,19 +34,6 @@ const TokenIcon = () => {
   );
 };
 
-// Theme-aware speed icon
-const SpeedIcon = () => {
-  const { theme } = useThemeStore();
-  const isDarkMode = theme === 'dark' || theme === 'blue';
-  const strokeColor = isDarkMode ? 'white' : 'black';
-
-  return (
-    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke={strokeColor} strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-    </svg>
-  );
-};
-
 // Accuracy indicator icons
 const CheckIcon = () => (
   <svg className="w-2.5 h-2.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -55,7 +42,7 @@ const CheckIcon = () => (
 );
 
 const EstimateIcon = () => (
-  <svg className="w-2.5 h-2.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg className="w-2.5 h-2.5 text-amber-500/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
@@ -162,29 +149,20 @@ export function TokenUsageDisplay({
         <span className="opacity-30 select-none">•</span>
       )}
 
-      {/* Token count with accuracy indicator */}
+      {/* Token count with tokens/s combined */}
       {tokenCount !== undefined && (
         <div className="flex items-center gap-1">
           <TokenIcon />
-          <span>{tokenCount.toLocaleString()}</span>
-          <span className="opacity-60 font-normal">tokens</span>
+          <span>
+            {tokenCount.toLocaleString()} tokens
+            {tokensPerSecond && ` (${tokensPerSecond} tok/s)`}
+          </span>
           {tokensActual !== undefined && (
-            <span title={tokensActual ? 'Actual provider tokens' : 'Estimated tokens'}>
+            <span>
               {tokensActual ? <CheckIcon /> : <EstimateIcon />}
             </span>
           )}
         </div>
-      )}
-
-      {tokensPerSecond && (
-        <>
-          <span className="opacity-30 select-none">•</span>
-          <div className="flex items-center gap-1">
-            <SpeedIcon />
-            <span>{tokensPerSecond}</span>
-            <span className="opacity-60 font-normal">tok/s</span>
-          </div>
-        </>
       )}
 
       {/* Extra metrics grouped together with subtle separator */}
@@ -213,14 +191,14 @@ export function TokenUsageDisplay({
               <span
                 className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
                 style={{
-                  backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(99, 102, 241, 0.1)',
-                  color: isDarkMode ? 'rgb(165, 180, 252)' : 'rgb(79, 70, 229)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
+                  color: 'var(--color-accent-blue-text)',
                 }}
               >
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
-                <span>RAG {ragContextTokens.toLocaleString()}{ragChunksCount ? ` · ${ragChunksCount} chunks` : ''}</span>
+                <span>RAG {ragContextTokens.toLocaleString()} {ragChunksCount ? ` · ${ragChunksCount} chunks` : ''}</span>
               </span>
             )}
 
@@ -245,8 +223,8 @@ export function TokenUsageDisplay({
               <span
                 className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
                 style={{
-                  backgroundColor: isDarkMode ? 'rgba(251, 146, 60, 0.15)' : 'rgba(251, 146, 60, 0.1)',
-                  color: isDarkMode ? 'rgb(253, 186, 116)' : 'rgb(234, 88, 12)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                  color: 'var(--color-brand-500)',
                 }}
               >
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

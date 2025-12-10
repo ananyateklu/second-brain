@@ -59,7 +59,8 @@ function processEndEvent(
   state: UnifiedStreamState,
   event: Extract<StreamEvent, { type: 'stream:end' }>
 ): UnifiedStreamState {
-  const duration = calculateDuration(state);
+  // Use durationMs from event if available, otherwise calculate
+  const duration = event.durationMs ?? calculateDuration(state);
 
   return {
     ...state,
@@ -69,6 +70,12 @@ function processEndEvent(
     ragLogId: event.ragLogId ?? state.ragLogId,
     inputTokens: event.inputTokens ?? state.inputTokens,
     outputTokens: event.outputTokens ?? state.outputTokens,
+    tokensActual: event.tokensActual ?? state.tokensActual,
+    cacheCreationTokens: event.cacheCreationTokens ?? state.cacheCreationTokens,
+    cacheReadTokens: event.cacheReadTokens ?? state.cacheReadTokens,
+    reasoningTokens: event.reasoningTokens ?? state.reasoningTokens,
+    ragContextTokens: event.ragContextTokens ?? state.ragContextTokens,
+    ragChunksCount: event.ragChunksCount ?? state.ragChunksCount,
     processingStatus: null,
   };
 }

@@ -172,9 +172,12 @@ export function ChatInputTextArea({
         style={{
           backgroundColor: 'transparent',
           color: 'var(--text-primary)',
-          minHeight: '24px',
+          minHeight: '40px',
           // Add padding for the action button on the right
           paddingRight: actions ? '48px' : undefined,
+          // Add vertical padding to center text with the send button
+          paddingTop: '8px',
+          paddingBottom: '8px',
           // Stable scrollbar gutter to prevent layout shift
           scrollbarGutter: 'stable',
           // Enable momentum scrolling on macOS/iOS
@@ -200,8 +203,9 @@ export function ChatInputTextArea({
           className="chat-input-actions-slot"
           style={{
             position: 'absolute',
-            right: '8px', // Position left of scrollbar (scrollbar is ~6px + gutter)
-            bottom: '4px',
+            right: '0px', // Position close to the edge, left of scrollbar
+            top: '50%',
+            transform: 'translateY(-50%)',
             zIndex: 10,
             display: 'flex',
             alignItems: 'center',

@@ -67,7 +67,7 @@ export type ProcessEvent =
  */
 export type StreamEvent =
   | { type: 'stream:start'; timestamp: number }
-  | { type: 'stream:end'; ragLogId?: string; inputTokens?: number; outputTokens?: number }
+  | { type: 'stream:end'; ragLogId?: string; inputTokens?: number; outputTokens?: number; tokensActual?: boolean; cacheCreationTokens?: number; cacheReadTokens?: number; reasoningTokens?: number; ragContextTokens?: number; ragChunksCount?: number; durationMs?: number }
   | { type: 'stream:error'; error: string; recoverable: boolean }
   | { type: 'content:text'; delta: string }
   | { type: 'content:thinking'; content: string; isComplete?: boolean }
@@ -197,6 +197,18 @@ export interface UnifiedStreamState {
   // Token metrics
   inputTokens: number;
   outputTokens: number;
+  /** Whether token counts are actual provider values (true) or estimates (false) */
+  tokensActual: boolean;
+  /** Tokens used to create prompt cache (Claude) */
+  cacheCreationTokens?: number;
+  /** Tokens read from prompt cache (Claude) */
+  cacheReadTokens?: number;
+  /** Tokens used for reasoning/thinking */
+  reasoningTokens?: number;
+  /** Tokens used by RAG context */
+  ragContextTokens?: number;
+  /** Number of RAG chunks included in context */
+  ragChunksCount?: number;
 
   // Timing
   startTime: number | null;
@@ -246,6 +258,12 @@ export const initialStreamState: UnifiedStreamState = {
   processingStatus: null,
   inputTokens: 0,
   outputTokens: 0,
+  tokensActual: false,
+  cacheCreationTokens: undefined,
+  cacheReadTokens: undefined,
+  reasoningTokens: undefined,
+  ragContextTokens: undefined,
+  ragChunksCount: undefined,
   startTime: null,
   duration: null,
   ragLogId: null,

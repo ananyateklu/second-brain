@@ -273,9 +273,9 @@ export function CombinedModelSelector({
             <span style={{ color: 'var(--color-primary)' }}>Refreshing...</span>
           ) : selectedProvider && selectedModel ? (
             <>
-              <span style={{ color: 'var(--color-brand-400)' }}>{selectedProvider}</span>
+              <span style={{ color: isOpen ? 'var(--color-brand-400)' : (isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)') }}>{selectedProvider}</span>
               <span className="mx-1" style={{ color: 'var(--text-secondary)' }}>/</span>
-              <span style={{ color: 'var(--color-brand-400)' }}>{formatModelName(selectedModel)}</span>
+              <span style={{ color: isOpen ? 'var(--color-brand-400)' : (isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)') }}>{formatModelName(selectedModel)}</span>
             </>
           ) : (
             getDisplayText()

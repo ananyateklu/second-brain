@@ -74,6 +74,13 @@ interface EndData {
   ragLogId?: string;
   inputTokens?: number;
   outputTokens?: number;
+  tokensActual?: boolean;
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
+  reasoningTokens?: number;
+  ragContextTokens?: number;
+  ragChunksCount?: number;
+  durationMs?: number;
 }
 
 interface ErrorData {
@@ -269,6 +276,13 @@ function parseEndEvent(data: string): StreamEvent {
       ragLogId: parsed.ragLogId,
       inputTokens: parsed.inputTokens,
       outputTokens: parsed.outputTokens,
+      tokensActual: parsed.tokensActual,
+      cacheCreationTokens: parsed.cacheCreationTokens,
+      cacheReadTokens: parsed.cacheReadTokens,
+      reasoningTokens: parsed.reasoningTokens,
+      ragContextTokens: parsed.ragContextTokens,
+      ragChunksCount: parsed.ragChunksCount,
+      durationMs: parsed.durationMs,
     };
   } catch {
     return { type: 'stream:end' };

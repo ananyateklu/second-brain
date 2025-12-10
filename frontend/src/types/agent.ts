@@ -162,7 +162,13 @@ export interface AgentStreamingCallbacks {
 export interface AgentEndData {
   inputTokens?: number;
   outputTokens?: number;
+  tokensActual?: boolean;
   durationMs?: number;
   toolExecutions?: ToolExecution[];
+  cacheCreationTokens?: number;
+  cacheReadTokens?: number;
+  reasoningTokens?: number;
+  ragContextTokens?: number;
+  ragChunksCount?: number;
 }
 

@@ -522,11 +522,23 @@ export interface LegacyStreamingState {
   retrievedNotes: RagContextNote[];
   inputTokens?: number;
   outputTokens?: number;
+  /** Whether token counts are actual provider values (true) or estimates (false) */
+  tokensActual?: boolean;
   streamDuration?: number;
   ragLogId?: string;
   groundingSources?: GroundingSource[];
   codeExecutionResult?: CodeExecutionResult | null;
   thinkingProcess?: string;
+  /** Tokens used to create prompt cache (Claude) */
+  cacheCreationTokens?: number;
+  /** Tokens read from prompt cache (Claude) */
+  cacheReadTokens?: number;
+  /** Tokens used for reasoning/thinking */
+  reasoningTokens?: number;
+  /** Tokens used by RAG context */
+  ragContextTokens?: number;
+  /** Number of RAG chunks included in context */
+  ragChunksCount?: number;
   // Grok-specific
   grokSearchSources?: GrokSearchSource[];
   // Agent-specific - unified timeline
@@ -584,11 +596,17 @@ export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingS
     retrievedNotes: state.ragContext,
     inputTokens: state.inputTokens,
     outputTokens: state.outputTokens,
+    tokensActual: state.tokensActual,
     streamDuration: state.duration ?? undefined,
     ragLogId: state.ragLogId ?? undefined,
     groundingSources: state.groundingSources,
     codeExecutionResult: state.codeExecution,
     thinkingProcess: state.thinkingContent || undefined,
+    cacheCreationTokens: state.cacheCreationTokens,
+    cacheReadTokens: state.cacheReadTokens,
+    reasoningTokens: state.reasoningTokens,
+    ragContextTokens: state.ragContextTokens,
+    ragChunksCount: state.ragChunksCount,
     // Grok-specific
     grokSearchSources: state.grokSearchSources,
     // Agent-specific - unified timeline
