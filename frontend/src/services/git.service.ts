@@ -16,6 +16,12 @@ import type {
   GitOperationResult,
   GitLogEntry,
   GitDiffRequest,
+  GitBranch,
+  GitSwitchBranchRequest,
+  GitCreateBranchRequest,
+  GitDeleteBranchRequest,
+  GitMergeBranchRequest,
+  GitPublishBranchRequest,
 } from '../types/git';
 
 /**
@@ -119,6 +125,49 @@ export const gitService = {
    */
   discardChanges: async (request: GitDiffRequest): Promise<{ success: boolean }> => {
     return apiClient.post<{ success: boolean }>(API_ENDPOINTS.GIT.DISCARD, request);
+  },
+
+  /**
+   * Gets all branches in the repository
+   */
+  getBranches: async (repoPath: string, includeRemote = true): Promise<GitBranch[]> => {
+    const url = buildUrl(API_ENDPOINTS.GIT.BRANCHES, { repoPath, includeRemote });
+    return apiClient.get<GitBranch[]>(url);
+  },
+
+  /**
+   * Switches to a different branch
+   */
+  switchBranch: async (request: GitSwitchBranchRequest): Promise<{ success: boolean }> => {
+    return apiClient.post<{ success: boolean }>(API_ENDPOINTS.GIT.BRANCH_SWITCH, request);
+  },
+
+  /**
+   * Creates a new branch
+   */
+  createBranch: async (request: GitCreateBranchRequest): Promise<{ success: boolean }> => {
+    return apiClient.post<{ success: boolean }>(API_ENDPOINTS.GIT.BRANCH_CREATE, request);
+  },
+
+  /**
+   * Deletes a branch
+   */
+  deleteBranch: async (request: GitDeleteBranchRequest): Promise<{ success: boolean }> => {
+    return apiClient.post<{ success: boolean }>(API_ENDPOINTS.GIT.BRANCH_DELETE, request);
+  },
+
+  /**
+   * Merges a branch into the current branch
+   */
+  mergeBranch: async (request: GitMergeBranchRequest): Promise<GitOperationResult> => {
+    return apiClient.post<GitOperationResult>(API_ENDPOINTS.GIT.BRANCH_MERGE, request);
+  },
+
+  /**
+   * Publishes a local branch to the remote
+   */
+  publishBranch: async (request: GitPublishBranchRequest): Promise<GitOperationResult> => {
+    return apiClient.post<GitOperationResult>(API_ENDPOINTS.GIT.BRANCH_PUBLISH, request);
   },
 };
 

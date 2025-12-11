@@ -3,19 +3,20 @@
  * Displays current branch, ahead/behind status, and push/pull actions
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useMemo } from 'react';
 import {
-  GitBranch,
   ArrowUp,
   ArrowDown,
   RefreshCw,
   Settings,
   Loader2,
-  Cloud,
   CloudOff,
+  Upload,
+  Check,
 } from 'lucide-react';
-import { usePush, usePull, useGitStatus } from '../hooks';
+import { usePush, usePull, useGitStatus, useGitBranches, usePublishBranch } from '../hooks';
 import { useBoundStore } from '../../../store/bound-store';
+import { GitBranchSelector } from './GitBranchSelector';
 import type { GitStatus } from '../../../types/git';
 
 interface GitBranchBarProps {
@@ -29,11 +30,21 @@ export const GitBranchBar = memo(function GitBranchBar({
 }: GitBranchBarProps) {
   const repositoryPath = useBoundStore((state) => state.repositoryPath);
   const { refetch, isFetching } = useGitStatus();
+  const { data: branches } = useGitBranches();
   const push = usePush();
   const pull = usePull();
+  const publishBranch = usePublishBranch();
 
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
+
+  // Find current branch info to check if it has upstream
+  const currentBranchInfo = useMemo(() => {
+    if (!branches || !status?.branch) return null;
+    return branches.find((b) => b.isCurrent && !b.isRemote);
+  }, [branches, status?.branch]);
+
+  const isUnpublished = currentBranchInfo && !currentBranchInfo.upstream;
 
   const handleRefresh = useCallback(() => {
     void refetch();
@@ -61,6 +72,11 @@ export const GitBranchBar = memo(function GitBranchBar({
     );
   }, [repositoryPath, pull]);
 
+  const handlePublish = useCallback(() => {
+    if (!status?.branch) return;
+    publishBranch.mutate({ branchName: status.branch });
+  }, [status?.branch, publishBranch]);
+
   const canPush = status?.hasRemote && status.ahead > 0;
   const canPull = status?.hasRemote && status.behind > 0;
 
@@ -76,107 +92,100 @@ export const GitBranchBar = memo(function GitBranchBar({
     >
       {/* Left: Branch info */}
       <div className="flex items-center gap-5">
-        {/* Branch indicator */}
-        <div
-          className="flex items-center gap-3 px-4 py-2 rounded-xl"
-          style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          <div
-            className="flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{
-              background: 'linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600))',
-              boxShadow: '0 2px 8px var(--color-primary-alpha)',
-            }}
-          >
-            <GitBranch className="w-4 h-4 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span
-              className="text-xs font-medium uppercase tracking-wide"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Branch
-            </span>
-            <span
-              className="text-sm font-semibold"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {status?.branch ?? 'No branch'}
-            </span>
-          </div>
-        </div>
+        {/* Branch selector */}
+        <GitBranchSelector currentBranch={status?.branch ?? ''} />
 
         {/* Remote status */}
         <div
-          className="flex items-center gap-3 px-4 py-2 rounded-xl"
+          className="flex items-center gap-2 px-3 h-10 rounded-xl"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             border: '1px solid var(--border)',
           }}
         >
-          {status?.hasRemote ? (
+          {/* Case 1: No remote configured */}
+          {!status?.hasRemote && (
             <>
-              <div
-                className="flex items-center justify-center w-8 h-8 rounded-lg"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-                }}
-              >
-                <Cloud className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />
-              </div>
-              <div className="flex items-center gap-3">
-                {status.ahead > 0 && (
-                  <div
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
-                    style={{
-                      backgroundColor: 'var(--color-git-add-line-bg)',
-                    }}
-                    title={`${status.ahead} commit(s) ahead`}
-                  >
-                    <ArrowUp className="w-3.5 h-3.5" style={{ color: 'var(--color-git-add)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--color-git-add)' }}>
-                      {status.ahead}
-                    </span>
-                  </div>
-                )}
-                {status.behind > 0 && (
-                  <div
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
-                    style={{
-                      backgroundColor: 'var(--color-git-modified-bg)',
-                    }}
-                    title={`${status.behind} commit(s) behind`}
-                  >
-                    <ArrowDown className="w-3.5 h-3.5" style={{ color: 'var(--color-git-modified)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--color-git-modified)' }}>
-                      {status.behind}
-                    </span>
-                  </div>
-                )}
-                {status.ahead === 0 && status.behind === 0 && (
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    Up to date
-                  </span>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div
-                className="flex items-center justify-center w-8 h-8 rounded-lg"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--text-tertiary) 15%, transparent)',
-                }}
-              >
-                <CloudOff className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
-              </div>
+              <CloudOff className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
               <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
                 No remote
               </span>
             </>
+          )}
+
+          {/* Case 2: Has remote but branch is unpublished */}
+          {status?.hasRemote && isUnpublished && (
+            <button
+              onClick={handlePublish}
+              disabled={publishBranch.isPending}
+              className="flex items-center gap-2 text-xs font-medium hover:opacity-80 disabled:opacity-50 transition-opacity"
+              style={{ color: 'var(--color-brand-500)' }}
+              title="Publish branch to remote"
+            >
+              {publishBranch.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              <span>Publish branch</span>
+            </button>
+          )}
+
+          {/* Case 3: Has remote and branch is published */}
+          {status?.hasRemote && !isUnpublished && (
+            <div className="flex items-center gap-2">
+              {/* Sync/Refresh button */}
+              <button
+                onClick={handleRefresh}
+                disabled={isFetching}
+                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+                title="Sync with remote"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`}
+                  style={{ color: 'var(--text-secondary)' }}
+                />
+              </button>
+
+              {/* Behind count (pull) */}
+              <div
+                className="flex items-center gap-1"
+                title={status.behind > 0 ? `${status.behind} commit(s) to pull` : 'No commits to pull'}
+              >
+                <ArrowDown
+                  className="w-4 h-4"
+                  style={{ color: status.behind > 0 ? 'var(--color-git-modified)' : 'var(--text-tertiary)' }}
+                />
+                <span
+                  className="text-sm font-semibold min-w-[1ch]"
+                  style={{ color: status.behind > 0 ? 'var(--color-git-modified)' : 'var(--text-tertiary)' }}
+                >
+                  {status.behind}
+                </span>
+              </div>
+
+              {/* Ahead count (push) */}
+              <div
+                className="flex items-center gap-1"
+                title={status.ahead > 0 ? `${status.ahead} commit(s) to push` : 'No commits to push'}
+              >
+                <ArrowUp
+                  className="w-4 h-4"
+                  style={{ color: status.ahead > 0 ? 'var(--color-git-add)' : 'var(--text-tertiary)' }}
+                />
+                <span
+                  className="text-sm font-semibold min-w-[1ch]"
+                  style={{ color: status.ahead > 0 ? 'var(--color-git-add)' : 'var(--text-tertiary)' }}
+                >
+                  {status.ahead}
+                </span>
+              </div>
+
+              {/* Up to date indicator */}
+              {status.ahead === 0 && status.behind === 0 && (
+                <Check className="w-3.5 h-3.5 ml-1" style={{ color: '#22c55e' }} />
+              )}
+            </div>
           )}
         </div>
       </div>

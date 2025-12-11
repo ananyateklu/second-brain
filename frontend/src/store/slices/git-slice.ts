@@ -18,6 +18,10 @@ export interface GitSliceState {
   selectedDiffFile: string | null;
   /** Whether viewing staged or unstaged diff */
   viewingStagedDiff: boolean;
+  /** Files currently being staged (for optimistic UI loading states) */
+  pendingStagingFiles: Set<string>;
+  /** Files currently being unstaged (for optimistic UI loading states) */
+  pendingUnstagingFiles: Set<string>;
 }
 
 export interface GitSliceActions {
@@ -35,6 +39,12 @@ export interface GitSliceActions {
   setSelectedDiffFile: (filePath: string | null, staged?: boolean) => void;
   /** Clear the diff view */
   clearDiffView: () => void;
+  /** Mark files as pending staging operation */
+  setPendingStagingFiles: (files: string[]) => void;
+  /** Mark files as pending unstaging operation */
+  setPendingUnstagingFiles: (files: string[]) => void;
+  /** Clear pending file operations */
+  clearPendingFiles: () => void;
 }
 
 export type GitSlice = GitSliceState & GitSliceActions;
@@ -48,6 +58,8 @@ const defaultGitState: GitSliceState = {
   selectedFiles: [],
   selectedDiffFile: null,
   viewingStagedDiff: false,
+  pendingStagingFiles: new Set(),
+  pendingUnstagingFiles: new Set(),
 };
 
 // ============================================
@@ -63,6 +75,8 @@ export const createGitSlice: SliceCreator<GitSlice> = (set) => ({
       // Clear selection when changing repos
       selectedFiles: [],
       selectedDiffFile: null,
+      pendingStagingFiles: new Set(),
+      pendingUnstagingFiles: new Set(),
     });
   },
 
@@ -100,6 +114,21 @@ export const createGitSlice: SliceCreator<GitSlice> = (set) => ({
     set({
       selectedDiffFile: null,
       viewingStagedDiff: false,
+    });
+  },
+
+  setPendingStagingFiles: (files) => {
+    set({ pendingStagingFiles: new Set(files) });
+  },
+
+  setPendingUnstagingFiles: (files) => {
+    set({ pendingUnstagingFiles: new Set(files) });
+  },
+
+  clearPendingFiles: () => {
+    set({
+      pendingStagingFiles: new Set(),
+      pendingUnstagingFiles: new Set(),
     });
   },
 });

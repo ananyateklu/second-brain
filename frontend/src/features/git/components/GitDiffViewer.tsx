@@ -4,7 +4,8 @@
  */
 
 import { memo, useMemo } from 'react';
-import { X, FileCode, Plus, Minus, Code2, FileSearch } from 'lucide-react';
+import { X, FileCode, Plus, Minus, FileSearch } from 'lucide-react';
+import { getIcon } from 'material-file-icons';
 import type { GitDiffResult } from '../../../types/git';
 
 interface GitDiffViewerProps {
@@ -76,6 +77,18 @@ const parseDiff = (diffText: string): DiffLine[] => {
 
   return result;
 };
+
+// Material file icon component using material-file-icons library
+const MaterialFileIcon = memo(function MaterialFileIcon({ fileName }: { fileName: string }) {
+  const icon = useMemo(() => getIcon(fileName), [fileName]);
+
+  return (
+    <div
+      className="w-5 h-5 flex items-center justify-center"
+      dangerouslySetInnerHTML={{ __html: icon.svg }}
+    />
+  );
+});
 
 const DiffLineComponent = memo(function DiffLineComponent({ line }: { line: DiffLine }) {
   const styles = {
@@ -310,7 +323,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
               border: '1px solid var(--border)',
             }}
           >
-            <Code2 className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+            <MaterialFileIcon fileName={fileName} />
           </div>
 
           {/* File info */}

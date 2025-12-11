@@ -318,6 +318,10 @@ export const gitKeys = {
 
   /** Key for repository validation */
   validate: (repoPath: string) => [...gitKeys.all, 'validate', repoPath] as const,
+
+  /** Key for branches list */
+  branches: (repoPath: string, includeRemote?: boolean) =>
+    [...gitKeys.all, 'branches', repoPath, includeRemote] as const,
 } as const;
 
 // ============================================

@@ -9,6 +9,7 @@ export {
   useGitDiff,
   useGitLog,
   useSelectedDiff,
+  useGitBranches,
 } from './use-git-status';
 
 export {
@@ -20,4 +21,9 @@ export {
   usePush,
   usePull,
   useDiscardChanges,
+  useSwitchBranch,
+  useCreateBranch,
+  useDeleteBranch,
+  useMergeBranch,
+  usePublishBranch,
 } from './use-git-mutations';

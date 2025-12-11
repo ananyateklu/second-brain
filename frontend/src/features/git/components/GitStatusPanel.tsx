@@ -3,7 +3,7 @@
  * Displays staged, unstaged, and untracked files with actions
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useRef, useEffect } from 'react';
 import {
   ChevronRight,
   GitCommit,
@@ -183,6 +183,22 @@ export const GitStatusPanel = memo(function GitStatusPanel({
 
   // Commit message state
   const [commitMessage, setCommitMessage] = useState('');
+  const commitTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const textarea = commitTextareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set height to scrollHeight, with a max height constraint
+      const maxHeight = 200; // Maximum height in pixels (about 8-9 lines)
+      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = `${newHeight}px`;
+      // Enable scrolling if content exceeds max height
+      textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+    }
+  }, [commitMessage]);
 
   // Section expansion state
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -274,6 +290,7 @@ export const GitStatusPanel = memo(function GitStatusPanel({
       <div className="px-4 pt-4 pb-3">
         {/* Commit message input */}
         <textarea
+          ref={commitTextareaRef}
           value={commitMessage}
           onChange={(e) => setCommitMessage(e.target.value)}
           onKeyDown={handleCommitKeyDown}
@@ -284,6 +301,9 @@ export const GitStatusPanel = memo(function GitStatusPanel({
             backgroundColor: 'var(--background-primary)',
             border: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
             color: 'var(--text-primary)',
+            minHeight: '38px', // Minimum height to match single row
+            maxHeight: '200px', // Maximum height before scrolling
+            overflowY: 'hidden', // Will be set to 'auto' if content exceeds maxHeight
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = 'var(--color-brand-500)';

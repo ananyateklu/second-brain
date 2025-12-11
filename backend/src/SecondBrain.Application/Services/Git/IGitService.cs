@@ -89,4 +89,57 @@ public interface IGitService
     /// <param name="filePath">The file path to discard.</param>
     /// <returns>True if successful.</returns>
     Task<Result<bool>> DiscardChangesAsync(string repoPath, string filePath);
+
+    /// <summary>
+    /// Gets all branches in the repository.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="includeRemote">Whether to include remote branches.</param>
+    /// <returns>List of branches.</returns>
+    Task<Result<List<GitBranch>>> GetBranchesAsync(string repoPath, bool includeRemote = true);
+
+    /// <summary>
+    /// Switches to a different branch.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="branchName">The branch to switch to.</param>
+    /// <returns>True if successful.</returns>
+    Task<Result<bool>> SwitchBranchAsync(string repoPath, string branchName);
+
+    /// <summary>
+    /// Creates a new branch.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="branchName">The name for the new branch.</param>
+    /// <param name="switchToNewBranch">Whether to switch to the new branch after creation.</param>
+    /// <param name="baseBranch">Optional base branch or commit. Defaults to current HEAD.</param>
+    /// <returns>True if successful.</returns>
+    Task<Result<bool>> CreateBranchAsync(string repoPath, string branchName, bool switchToNewBranch = true, string? baseBranch = null);
+
+    /// <summary>
+    /// Deletes a branch.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="branchName">The branch to delete.</param>
+    /// <param name="force">Force delete even if not fully merged.</param>
+    /// <returns>True if successful.</returns>
+    Task<Result<bool>> DeleteBranchAsync(string repoPath, string branchName, bool force = false);
+
+    /// <summary>
+    /// Merges a branch into the current branch.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="branchName">The branch to merge.</param>
+    /// <param name="message">Optional merge commit message.</param>
+    /// <returns>The operation result.</returns>
+    Task<Result<GitOperationResult>> MergeBranchAsync(string repoPath, string branchName, string? message = null);
+
+    /// <summary>
+    /// Publishes a local branch to the remote repository.
+    /// </summary>
+    /// <param name="repoPath">The path to the Git repository.</param>
+    /// <param name="branchName">The branch to publish.</param>
+    /// <param name="remote">The remote name (defaults to "origin").</param>
+    /// <returns>The operation result.</returns>
+    Task<Result<GitOperationResult>> PublishBranchAsync(string repoPath, string branchName, string? remote = null);
 }

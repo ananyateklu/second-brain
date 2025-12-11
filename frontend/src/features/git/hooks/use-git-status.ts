@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useBoundStore } from '../../../store/bound-store';
 import { gitService } from '../../../services';
 import { gitKeys } from '../../../lib/query-keys';
-import type { GitStatus, GitDiffResult } from '../../../types/git';
+import type { GitStatus, GitDiffResult, GitBranch } from '../../../types/git';
 
 /**
  * Hook to fetch Git repository status
@@ -88,4 +88,21 @@ export const useSelectedDiff = () => {
   const viewingStagedDiff = useBoundStore((state) => state.viewingStagedDiff);
 
   return useGitDiff(selectedDiffFile, viewingStagedDiff);
+};
+
+/**
+ * Hook to fetch all branches in the repository
+ */
+export const useGitBranches = (includeRemote = true) => {
+  const repositoryPath = useBoundStore((state) => state.repositoryPath);
+
+  return useQuery<GitBranch[]>({
+    queryKey: gitKeys.branches(repositoryPath ?? '', includeRemote),
+    queryFn: () => {
+      if (!repositoryPath) throw new Error('Repository path is required');
+      return gitService.getBranches(repositoryPath, includeRemote);
+    },
+    enabled: !!repositoryPath,
+    staleTime: 10000, // Branches don't change as often
+  });
 };

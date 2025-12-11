@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useState, useMemo } from 'react';
-import { ArrowRight, Undo2, Plus, Minus } from 'lucide-react';
+import { ArrowRight, Undo2, Plus, Minus, Loader2 } from 'lucide-react';
 import { getIcon } from 'material-file-icons';
 import type { GitFileChange, GitFileStatus } from '../../../types/git';
 
@@ -15,6 +15,10 @@ interface GitFileItemProps {
   onStage?: (file: GitFileChange) => void;
   onUnstage?: (file: GitFileChange) => void;
   onDiscard?: (file: GitFileChange) => void;
+  /** Whether this file is currently being staged (optimistic UI) */
+  isPendingStage?: boolean;
+  /** Whether this file is currently being unstaged (optimistic UI) */
+  isPendingUnstage?: boolean;
 }
 
 // Get status-specific styling using theme colors
@@ -103,9 +107,12 @@ export const GitFileItem = memo(function GitFileItem({
   onStage,
   onUnstage,
   onDiscard,
+  isPendingStage = false,
+  isPendingUnstage = false,
 }: GitFileItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const statusStyles = getStatusStyles(file.status);
+  const isPending = isPendingStage || isPendingUnstage;
 
   const handleClick = useCallback(() => {
     onViewDiff(file.filePath);
@@ -198,37 +205,46 @@ export const GitFileItem = memo(function GitFileItem({
 
       {/* Actions and Status */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        {/* Discard button (show on hover or when selected for unstaged/untracked files) */}
-        {onDiscard && (isHovered || isActive) && (
-          <button
-            onClick={handleDiscardClick}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            title="Discard changes"
-          >
-            <Undo2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-          </button>
-        )}
+        {/* Show loading spinner when operation is pending */}
+        {isPending ? (
+          <div className="flex items-center justify-center w-7 h-7">
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--text-secondary)' }} />
+          </div>
+        ) : (
+          <>
+            {/* Discard button (show on hover or when selected for unstaged/untracked files) */}
+            {onDiscard && (isHovered || isActive) && (
+              <button
+                onClick={handleDiscardClick}
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Discard changes"
+              >
+                <Undo2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              </button>
+            )}
 
-        {/* Stage button (show on hover or when selected for unstaged/untracked files) */}
-        {onStage && (isHovered || isActive) && (
-          <button
-            onClick={handleStageClick}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            title="Stage file"
-          >
-            <Plus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-          </button>
-        )}
+            {/* Stage button (show on hover or when selected for unstaged/untracked files) */}
+            {onStage && (isHovered || isActive) && (
+              <button
+                onClick={handleStageClick}
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Stage file"
+              >
+                <Plus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              </button>
+            )}
 
-        {/* Unstage button (show on hover or when selected for staged files) */}
-        {onUnstage && (isHovered || isActive) && (
-          <button
-            onClick={handleUnstageClick}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            title="Unstage file"
-          >
-            <Minus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-          </button>
+            {/* Unstage button (show on hover or when selected for staged files) */}
+            {onUnstage && (isHovered || isActive) && (
+              <button
+                onClick={handleUnstageClick}
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Unstage file"
+              >
+                <Minus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              </button>
+            )}
+          </>
         )}
 
         {/* Status badge */}
@@ -236,6 +252,7 @@ export const GitFileItem = memo(function GitFileItem({
           className="flex items-center justify-center px-1.5 py-1 transition-all duration-200"
           style={{
             transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+            opacity: isPending ? 0.5 : 1,
           }}
           title={statusStyles.label}
         >

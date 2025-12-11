@@ -291,3 +291,149 @@ public class GitLogRequest
     /// </summary>
     public int Count { get; set; } = 20;
 }
+
+/// <summary>
+/// Represents a Git branch.
+/// </summary>
+public class GitBranch
+{
+    /// <summary>
+    /// The branch name.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether this is the current branch.
+    /// </summary>
+    public bool IsCurrent { get; set; }
+
+    /// <summary>
+    /// Whether this is a remote tracking branch.
+    /// </summary>
+    public bool IsRemote { get; set; }
+
+    /// <summary>
+    /// The remote name for remote branches (e.g., "origin").
+    /// </summary>
+    public string? RemoteName { get; set; }
+
+    /// <summary>
+    /// The upstream branch this local branch tracks.
+    /// </summary>
+    public string? Upstream { get; set; }
+
+    /// <summary>
+    /// The last commit hash on this branch.
+    /// </summary>
+    public string? LastCommitHash { get; set; }
+
+    /// <summary>
+    /// The last commit message on this branch.
+    /// </summary>
+    public string? LastCommitMessage { get; set; }
+}
+
+/// <summary>
+/// Request to switch to a branch.
+/// </summary>
+public class GitSwitchBranchRequest
+{
+    /// <summary>
+    /// The repository path.
+    /// </summary>
+    public string RepoPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The branch name to switch to.
+    /// </summary>
+    public string BranchName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request to create a new branch.
+/// </summary>
+public class GitCreateBranchRequest
+{
+    /// <summary>
+    /// The repository path.
+    /// </summary>
+    public string RepoPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The name for the new branch.
+    /// </summary>
+    public string BranchName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether to switch to the new branch after creation.
+    /// </summary>
+    public bool SwitchToNewBranch { get; set; } = true;
+
+    /// <summary>
+    /// Optional base branch or commit to create from. Defaults to current HEAD.
+    /// </summary>
+    public string? BaseBranch { get; set; }
+}
+
+/// <summary>
+/// Request to delete a branch.
+/// </summary>
+public class GitDeleteBranchRequest
+{
+    /// <summary>
+    /// The repository path.
+    /// </summary>
+    public string RepoPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The branch name to delete.
+    /// </summary>
+    public string BranchName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Force delete even if not fully merged.
+    /// </summary>
+    public bool Force { get; set; }
+}
+
+/// <summary>
+/// Request to merge a branch.
+/// </summary>
+public class GitMergeBranchRequest
+{
+    /// <summary>
+    /// The repository path.
+    /// </summary>
+    public string RepoPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The branch to merge into the current branch.
+    /// </summary>
+    public string BranchName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Optional commit message for merge commits.
+    /// </summary>
+    public string? Message { get; set; }
+}
+
+/// <summary>
+/// Request to publish a branch to remote.
+/// </summary>
+public class GitPublishBranchRequest
+{
+    /// <summary>
+    /// The repository path.
+    /// </summary>
+    public string RepoPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The branch name to publish.
+    /// </summary>
+    public string BranchName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The remote to publish to (defaults to "origin").
+    /// </summary>
+    public string? Remote { get; set; }
+}

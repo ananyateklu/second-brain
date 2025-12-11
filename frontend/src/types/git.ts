@@ -223,3 +223,83 @@ export const getDisplayStatus = (status: GitFileStatus): string => {
   if (status === '?') return 'U'; // Untracked files show as U in VS Code
   return status;
 };
+
+/**
+ * Represents a Git branch.
+ */
+export interface GitBranch {
+  /** The branch name */
+  name: string;
+  /** Whether this is the current branch */
+  isCurrent: boolean;
+  /** Whether this is a remote tracking branch */
+  isRemote: boolean;
+  /** The remote name for remote branches (e.g., "origin") */
+  remoteName?: string;
+  /** The upstream branch this local branch tracks */
+  upstream?: string;
+  /** The last commit hash on this branch */
+  lastCommitHash?: string;
+  /** The last commit message on this branch */
+  lastCommitMessage?: string;
+}
+
+/**
+ * Request to switch to a branch.
+ */
+export interface GitSwitchBranchRequest {
+  /** The repository path */
+  repoPath: string;
+  /** The branch name to switch to */
+  branchName: string;
+}
+
+/**
+ * Request to create a new branch.
+ */
+export interface GitCreateBranchRequest {
+  /** The repository path */
+  repoPath: string;
+  /** The name for the new branch */
+  branchName: string;
+  /** Whether to switch to the new branch after creation */
+  switchToNewBranch?: boolean;
+  /** Optional base branch or commit to create from */
+  baseBranch?: string;
+}
+
+/**
+ * Request to delete a branch.
+ */
+export interface GitDeleteBranchRequest {
+  /** The repository path */
+  repoPath: string;
+  /** The branch name to delete */
+  branchName: string;
+  /** Force delete even if not fully merged */
+  force?: boolean;
+}
+
+/**
+ * Request to merge a branch.
+ */
+export interface GitMergeBranchRequest {
+  /** The repository path */
+  repoPath: string;
+  /** The branch to merge into the current branch */
+  branchName: string;
+  /** Optional commit message for merge commits */
+  message?: string;
+}
+
+/**
+ * Request to publish a branch to remote.
+ */
+export interface GitPublishBranchRequest {
+  /** The repository path */
+  repoPath: string;
+  /** The branch name to publish */
+  branchName: string;
+  /** The remote to publish to (defaults to "origin") */
+  remote?: string;
+}

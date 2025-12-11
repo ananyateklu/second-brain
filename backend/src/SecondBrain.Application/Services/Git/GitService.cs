@@ -20,7 +20,7 @@ public partial class GitService : IGitService
     // Whitelist of allowed git subcommands
     private static readonly HashSet<string> AllowedCommands = new(StringComparer.OrdinalIgnoreCase)
     {
-        "status", "diff", "add", "reset", "commit", "push", "pull", "log", "branch", "rev-parse", "remote", "restore", "rev-list"
+        "status", "diff", "add", "reset", "commit", "push", "pull", "log", "branch", "rev-parse", "remote", "restore", "rev-list", "switch", "checkout", "merge", "for-each-ref"
     };
 
     public GitService(ILogger<GitService> logger)
@@ -68,19 +68,27 @@ public partial class GitService : IGitService
 
             var status = new GitStatus();
 
-            // Get current branch
-            var (branchExitCode, branchOutput, _) = await ExecuteGitCommandAsync(repoPath, ["branch", "--show-current"]);
+            // Run independent git commands in parallel for better performance
+            var branchTask = ExecuteGitCommandAsync(repoPath, ["branch", "--show-current"]);
+            var remoteTask = ExecuteGitCommandAsync(repoPath, ["remote"]);
+            var statusTask = ExecuteGitCommandAsync(repoPath, ["status", "--porcelain=v1", "-z", "-uall"]);
+
+            // Wait for all to complete
+            await Task.WhenAll(branchTask, remoteTask, statusTask);
+
+            // Process branch result
+            var (branchExitCode, branchOutput, _) = branchTask.Result;
             status.Branch = branchExitCode == 0 ? branchOutput.Trim() : "HEAD (detached)";
 
-            // Check for remote
-            var (remoteExitCode, remoteOutput, _) = await ExecuteGitCommandAsync(repoPath, ["remote"]);
+            // Process remote result
+            var (remoteExitCode, remoteOutput, _) = remoteTask.Result;
             status.HasRemote = remoteExitCode == 0 && !string.IsNullOrWhiteSpace(remoteOutput);
             if (status.HasRemote)
             {
                 status.RemoteName = remoteOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? "origin";
             }
 
-            // Get ahead/behind counts
+            // Get ahead/behind counts (requires branch and remote info first)
             if (status.HasRemote && !string.IsNullOrEmpty(status.Branch))
             {
                 var (countExitCode, countOutput, _) = await ExecuteGitCommandAsync(repoPath,
@@ -99,9 +107,8 @@ public partial class GitService : IGitService
                 }
             }
 
-            // Get porcelain status for staged/unstaged/untracked
-            // Use -uall to show individual files in untracked directories (not just directory names)
-            var (statusExitCode, statusOutput, _) = await ExecuteGitCommandAsync(repoPath, ["status", "--porcelain=v1", "-z", "-uall"]);
+            // Process porcelain status for staged/unstaged/untracked
+            var (statusExitCode, statusOutput, _) = statusTask.Result;
             if (statusExitCode == 0 && !string.IsNullOrEmpty(statusOutput))
             {
                 ParsePorcelainStatus(statusOutput, status);
@@ -230,9 +237,11 @@ public partial class GitService : IGitService
     {
         try
         {
-            var validationResult = await ValidateRepositoryAsync(repoPath);
-            if (validationResult.IsFailure)
-                return Result<bool>.Failure(validationResult.Error!);
+            // Fast path validation - skip full validation for performance
+            // Git command will fail if repo is invalid anyway
+            var pathValidation = ValidateRepoPath(repoPath);
+            if (pathValidation.IsFailure)
+                return Result<bool>.Failure(pathValidation.Error!);
 
             if (files.Length == 0)
                 return Result<bool>.Failure("NoFiles", "No files specified to stage");
@@ -264,9 +273,10 @@ public partial class GitService : IGitService
     {
         try
         {
-            var validationResult = await ValidateRepositoryAsync(repoPath);
-            if (validationResult.IsFailure)
-                return Result<bool>.Failure(validationResult.Error!);
+            // Fast path validation - skip full validation for performance
+            var pathValidation = ValidateRepoPath(repoPath);
+            if (pathValidation.IsFailure)
+                return Result<bool>.Failure(pathValidation.Error!);
 
             if (files.Length == 0)
                 return Result<bool>.Failure("NoFiles", "No files specified to unstage");
@@ -486,6 +496,303 @@ public partial class GitService : IGitService
         {
             _logger.LogError(ex, "Error discarding changes for {FilePath} in {RepoPath}", filePath, repoPath);
             return Result<bool>.Failure("DiscardError", $"Failed to discard changes: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<List<GitBranch>>> GetBranchesAsync(string repoPath, bool includeRemote = true)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<List<GitBranch>>.Failure(validationResult.Error!);
+
+            var branches = new List<GitBranch>();
+
+            // Get local branches with details using for-each-ref
+            // Format: refname:short, objectname:short, subject, upstream:short
+            var (localExitCode, localOutput, _) = await ExecuteGitCommandAsync(repoPath,
+                ["for-each-ref", "--format=%(refname:short)|%(objectname:short)|%(subject)|%(upstream:short)", "refs/heads"]);
+
+            if (localExitCode == 0 && !string.IsNullOrWhiteSpace(localOutput))
+            {
+                // Get current branch to mark it
+                var (_, currentBranch, _) = await ExecuteGitCommandAsync(repoPath, ["branch", "--show-current"]);
+                var currentBranchName = currentBranch.Trim();
+
+                foreach (var line in localOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var parts = line.Split('|');
+                    if (parts.Length >= 1)
+                    {
+                        var branchName = parts[0].Trim();
+                        branches.Add(new GitBranch
+                        {
+                            Name = branchName,
+                            IsCurrent = branchName == currentBranchName,
+                            IsRemote = false,
+                            LastCommitHash = parts.Length > 1 ? parts[1].Trim() : null,
+                            LastCommitMessage = parts.Length > 2 ? parts[2].Trim() : null,
+                            Upstream = parts.Length > 3 && !string.IsNullOrWhiteSpace(parts[3]) ? parts[3].Trim() : null
+                        });
+                    }
+                }
+            }
+
+            // Get remote branches if requested
+            if (includeRemote)
+            {
+                var (remoteExitCode, remoteOutput, _) = await ExecuteGitCommandAsync(repoPath,
+                    ["for-each-ref", "--format=%(refname:short)|%(objectname:short)|%(subject)", "refs/remotes"]);
+
+                if (remoteExitCode == 0 && !string.IsNullOrWhiteSpace(remoteOutput))
+                {
+                    foreach (var line in remoteOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var parts = line.Split('|');
+                        if (parts.Length >= 1)
+                        {
+                            var fullName = parts[0].Trim();
+                            // Skip HEAD references
+                            if (fullName.EndsWith("/HEAD")) continue;
+
+                            // Extract remote name (e.g., "origin" from "origin/main")
+                            var slashIndex = fullName.IndexOf('/');
+                            var remoteName = slashIndex > 0 ? fullName[..slashIndex] : null;
+                            var branchName = slashIndex > 0 ? fullName[(slashIndex + 1)..] : fullName;
+
+                            branches.Add(new GitBranch
+                            {
+                                Name = fullName,
+                                IsCurrent = false,
+                                IsRemote = true,
+                                RemoteName = remoteName,
+                                LastCommitHash = parts.Length > 1 ? parts[1].Trim() : null,
+                                LastCommitMessage = parts.Length > 2 ? parts[2].Trim() : null
+                            });
+                        }
+                    }
+                }
+            }
+
+            return Result<List<GitBranch>>.Success(branches);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting branches for {RepoPath}", repoPath);
+            return Result<List<GitBranch>>.Failure("BranchError", $"Failed to get branches: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<bool>> SwitchBranchAsync(string repoPath, string branchName)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<bool>.Failure(validationResult.Error!);
+
+            if (!IsValidBranchName(branchName))
+                return Result<bool>.Failure("InvalidBranchName", "Invalid branch name");
+
+            // Use 'git switch' for modern git, with fallback behavior
+            var (exitCode, _, error) = await ExecuteGitCommandAsync(repoPath,
+                ["switch", branchName]);
+
+            if (exitCode != 0)
+            {
+                // If the branch is remote, try to create a tracking branch
+                if (branchName.Contains('/'))
+                {
+                    // Extract the local branch name from remote (e.g., "origin/feature" -> "feature")
+                    var localName = branchName[(branchName.LastIndexOf('/') + 1)..];
+                    var (trackExitCode, _, trackError) = await ExecuteGitCommandAsync(repoPath,
+                        ["switch", "-c", localName, "--track", branchName]);
+
+                    if (trackExitCode != 0)
+                    {
+                        return Result<bool>.Failure("SwitchError", $"Failed to switch branch: {trackError}");
+                    }
+                }
+                else
+                {
+                    return Result<bool>.Failure("SwitchError", $"Failed to switch branch: {error}");
+                }
+            }
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error switching to branch {BranchName} in {RepoPath}", branchName, repoPath);
+            return Result<bool>.Failure("SwitchError", $"Failed to switch branch: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<bool>> CreateBranchAsync(string repoPath, string branchName, bool switchToNewBranch = true, string? baseBranch = null)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<bool>.Failure(validationResult.Error!);
+
+            if (!IsValidBranchName(branchName))
+                return Result<bool>.Failure("InvalidBranchName", "Invalid branch name");
+
+            if (baseBranch != null && !IsValidBranchName(baseBranch))
+                return Result<bool>.Failure("InvalidBaseBranch", "Invalid base branch name");
+
+            // Build command arguments
+            var args = new List<string>();
+            if (switchToNewBranch)
+            {
+                // Create and switch in one command
+                args.AddRange(["switch", "-c", branchName]);
+                if (!string.IsNullOrEmpty(baseBranch))
+                {
+                    args.Add(baseBranch);
+                }
+            }
+            else
+            {
+                // Just create the branch without switching
+                args.AddRange(["branch", branchName]);
+                if (!string.IsNullOrEmpty(baseBranch))
+                {
+                    args.Add(baseBranch);
+                }
+            }
+
+            var (exitCode, _, error) = await ExecuteGitCommandAsync(repoPath, args.ToArray());
+
+            if (exitCode != 0)
+            {
+                return Result<bool>.Failure("CreateBranchError", $"Failed to create branch: {error}");
+            }
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating branch {BranchName} in {RepoPath}", branchName, repoPath);
+            return Result<bool>.Failure("CreateBranchError", $"Failed to create branch: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<bool>> DeleteBranchAsync(string repoPath, string branchName, bool force = false)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<bool>.Failure(validationResult.Error!);
+
+            if (!IsValidBranchName(branchName))
+                return Result<bool>.Failure("InvalidBranchName", "Invalid branch name");
+
+            // Prevent deleting the current branch
+            var (_, currentBranch, _) = await ExecuteGitCommandAsync(repoPath, ["branch", "--show-current"]);
+            if (currentBranch.Trim() == branchName)
+            {
+                return Result<bool>.Failure("CannotDeleteCurrent", "Cannot delete the current branch");
+            }
+
+            var args = force
+                ? new[] { "branch", "-D", branchName }
+                : new[] { "branch", "-d", branchName };
+
+            var (exitCode, _, error) = await ExecuteGitCommandAsync(repoPath, args);
+
+            if (exitCode != 0)
+            {
+                return Result<bool>.Failure("DeleteBranchError", $"Failed to delete branch: {error}");
+            }
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting branch {BranchName} in {RepoPath}", branchName, repoPath);
+            return Result<bool>.Failure("DeleteBranchError", $"Failed to delete branch: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<GitOperationResult>> MergeBranchAsync(string repoPath, string branchName, string? message = null)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<GitOperationResult>.Failure(validationResult.Error!);
+
+            if (!IsValidBranchName(branchName))
+                return Result<GitOperationResult>.Failure("InvalidBranchName", "Invalid branch name");
+
+            var args = new List<string> { "merge", branchName };
+            if (!string.IsNullOrEmpty(message))
+            {
+                args.AddRange(["-m", message]);
+            }
+
+            var (exitCode, output, error) = await ExecuteGitCommandAsync(repoPath, args.ToArray());
+
+            var result = new GitOperationResult
+            {
+                Success = exitCode == 0,
+                Message = output.Trim(),
+                Error = exitCode != 0 ? error.Trim() : null
+            };
+
+            // Check for merge conflicts
+            if (exitCode != 0 && (error.Contains("CONFLICT") || output.Contains("CONFLICT")))
+            {
+                result.Error = "Merge conflicts detected. Please resolve conflicts manually.";
+            }
+
+            return Result<GitOperationResult>.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error merging branch {BranchName} in {RepoPath}", branchName, repoPath);
+            return Result<GitOperationResult>.Failure("MergeError", $"Failed to merge branch: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<GitOperationResult>> PublishBranchAsync(string repoPath, string branchName, string? remote = null)
+    {
+        try
+        {
+            var validationResult = await ValidateRepositoryAsync(repoPath);
+            if (validationResult.IsFailure)
+                return Result<GitOperationResult>.Failure(validationResult.Error!);
+
+            if (!IsValidBranchName(branchName))
+                return Result<GitOperationResult>.Failure("InvalidBranchName", "Invalid branch name");
+
+            var remoteName = remote ?? "origin";
+            if (!IsValidRemoteName(remoteName))
+                return Result<GitOperationResult>.Failure("InvalidRemote", "Invalid remote name");
+
+            // Push branch to remote with -u to set upstream tracking
+            var (exitCode, output, error) = await ExecuteGitCommandAsync(repoPath,
+                ["push", "-u", remoteName, branchName], LongTimeout);
+
+            var result = new GitOperationResult
+            {
+                Success = exitCode == 0,
+                Message = exitCode == 0
+                    ? $"Branch '{branchName}' published to {remoteName}"
+                    : output.Trim(),
+                Error = exitCode != 0 ? error.Trim() : null
+            };
+
+            return Result<GitOperationResult>.Success(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error publishing branch {BranchName} in {RepoPath}", branchName, repoPath);
+            return Result<GitOperationResult>.Failure("PublishError", $"Failed to publish branch: {ex.Message}");
         }
     }
 

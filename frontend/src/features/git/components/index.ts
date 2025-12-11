@@ -9,5 +9,6 @@ export { GitDiffViewer } from './GitDiffViewer';
 export { GitCommitDialog } from './GitCommitDialog';
 export { GitDiscardDialog } from './GitDiscardDialog';
 export { GitBranchBar } from './GitBranchBar';
+export { GitBranchSelector } from './GitBranchSelector';
 export { GitSettingsPanel } from './GitSettingsPanel';
 export { GitEmptyState } from './GitEmptyState';

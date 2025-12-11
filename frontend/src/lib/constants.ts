@@ -260,6 +260,12 @@ export const API_ENDPOINTS = {
     PULL: '/git/pull',
     LOG: '/git/log',
     DISCARD: '/git/discard',
+    BRANCHES: '/git/branches',
+    BRANCH_SWITCH: '/git/branches/switch',
+    BRANCH_CREATE: '/git/branches/create',
+    BRANCH_DELETE: '/git/branches/delete',
+    BRANCH_MERGE: '/git/branches/merge',
+    BRANCH_PUBLISH: '/git/branches/publish',
   },
 } as const;
 
