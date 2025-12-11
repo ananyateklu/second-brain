@@ -1563,26 +1563,27 @@ public class GeminiProvider : IAIProvider
         }
         else
         {
-            // Add file parts to existing user content
+            // Add file parts to existing user content (prepended, preserving order)
             var userContent = contents[userContentIndex];
-            var parts = userContent.Parts?.ToList() ?? new List<Part>();
+            var existingParts = userContent.Parts?.ToList() ?? new List<Part>();
 
-            foreach (var fileRef in fileReferences)
+            // Create file parts in original order
+            var fileParts = fileReferences.Select(f => new Part
             {
-                parts.Insert(0, new Part
+                FileData = new FileData
                 {
-                    FileData = new FileData
-                    {
-                        FileUri = fileRef.FileUri,
-                        MimeType = fileRef.MimeType
-                    }
-                });
-            }
+                    FileUri = f.FileUri,
+                    MimeType = f.MimeType
+                }
+            }).ToList();
+
+            // Prepend file parts to existing content (files first, then original content)
+            fileParts.AddRange(existingParts);
 
             contents[userContentIndex] = new Content
             {
                 Role = userContent.Role,
-                Parts = parts
+                Parts = fileParts
             };
         }
 

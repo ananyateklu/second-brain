@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SecondBrain.Application.Services.Git;
@@ -18,11 +19,16 @@ namespace SecondBrain.API.Controllers;
 public class GitController : ControllerBase
 {
     private readonly IGitService _gitService;
+    private readonly IGitAuthorizationService _gitAuthorization;
     private readonly ILogger<GitController> _logger;
 
-    public GitController(IGitService gitService, ILogger<GitController> logger)
+    public GitController(
+        IGitService gitService,
+        IGitAuthorizationService gitAuthorization,
+        ILogger<GitController> logger)
     {
         _gitService = gitService;
+        _gitAuthorization = gitAuthorization;
         _logger = logger;
     }
 
@@ -36,9 +42,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogDebug("User {UserId} validating repository at {RepoPath}", userId, repoPath);
 
-        var result = await _gitService.ValidateRepositoryAsync(repoPath);
+        var result = await _gitService.ValidateRepositoryAsync(authorizedPath.Value!);
         return result.Match<ActionResult<bool>>(
             onSuccess: valid => Ok(valid),
             onFailure: error => error.Code switch
@@ -61,9 +71,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogDebug("User {UserId} getting status for {RepoPath}", userId, repoPath);
 
-        var result = await _gitService.GetStatusAsync(repoPath);
+        var result = await _gitService.GetStatusAsync(authorizedPath.Value!);
         return result.Match<ActionResult<GitStatus>>(
             onSuccess: status => Ok(status),
             onFailure: error => error.Code switch
@@ -89,10 +103,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogDebug("User {UserId} getting diff for {FilePath} (staged: {Staged}) in {RepoPath}",
             userId, filePath, staged, repoPath);
 
-        var result = await _gitService.GetDiffAsync(repoPath, filePath, staged);
+        var result = await _gitService.GetDiffAsync(authorizedPath.Value!, filePath, staged);
         return result.Match<ActionResult<GitDiffResult>>(
             onSuccess: diff => Ok(diff),
             onFailure: error => error.Code switch
@@ -115,10 +133,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} staging {FileCount} files in {RepoPath}",
             userId, request.Files.Length, request.RepoPath);
 
-        var result = await _gitService.StageFilesAsync(request.RepoPath, request.Files);
+        var result = await _gitService.StageFilesAsync(authorizedPath.Value!, request.Files);
         return result.Match<ActionResult>(
             onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
@@ -142,10 +164,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} unstaging {FileCount} files in {RepoPath}",
             userId, request.Files.Length, request.RepoPath);
 
-        var result = await _gitService.UnstageFilesAsync(request.RepoPath, request.Files);
+        var result = await _gitService.UnstageFilesAsync(authorizedPath.Value!, request.Files);
         return result.Match<ActionResult>(
             onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
@@ -169,9 +195,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} creating commit in {RepoPath}", userId, request.RepoPath);
 
-        var result = await _gitService.CommitAsync(request.RepoPath, request.Message);
+        var result = await _gitService.CommitAsync(authorizedPath.Value!, request.Message);
         return result.Match<ActionResult<object>>(
             onSuccess: hash => Ok(new { success = true, commitHash = hash }),
             onFailure: error => error.Code switch
@@ -195,9 +225,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} pushing in {RepoPath}", userId, request.RepoPath);
 
-        var result = await _gitService.PushAsync(request.RepoPath, request.Remote, request.Branch);
+        var result = await _gitService.PushAsync(authorizedPath.Value!, request.Remote, request.Branch);
         return result.Match<ActionResult<GitOperationResult>>(
             onSuccess: opResult => opResult.Success
                 ? Ok(opResult)
@@ -223,9 +257,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} pulling in {RepoPath}", userId, request.RepoPath);
 
-        var result = await _gitService.PullAsync(request.RepoPath, request.Remote, request.Branch);
+        var result = await _gitService.PullAsync(authorizedPath.Value!, request.Remote, request.Branch);
         return result.Match<ActionResult<GitOperationResult>>(
             onSuccess: opResult => opResult.Success
                 ? Ok(opResult)
@@ -252,9 +290,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogDebug("User {UserId} getting log for {RepoPath}", userId, repoPath);
 
-        var result = await _gitService.GetLogAsync(repoPath, count);
+        var result = await _gitService.GetLogAsync(authorizedPath.Value!, count);
         return result.Match<ActionResult<List<GitLogEntry>>>(
             onSuccess: log => Ok(log),
             onFailure: error => error.Code switch
@@ -277,10 +319,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} discarding changes to {FilePath} in {RepoPath}",
             userId, request.FilePath, request.RepoPath);
 
-        var result = await _gitService.DiscardChangesAsync(request.RepoPath, request.FilePath);
+        var result = await _gitService.DiscardChangesAsync(authorizedPath.Value!, request.FilePath);
         return result.Match<ActionResult>(
             onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
@@ -303,9 +349,13 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogDebug("User {UserId} getting branches for {RepoPath}", userId, repoPath);
 
-        var result = await _gitService.GetBranchesAsync(repoPath, includeRemote);
+        var result = await _gitService.GetBranchesAsync(authorizedPath.Value!, includeRemote);
         return result.Match<ActionResult<List<GitBranch>>>(
             onSuccess: branches => Ok(branches),
             onFailure: error => error.Code switch
@@ -328,10 +378,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} switching to branch {BranchName} in {RepoPath}",
             userId, request.BranchName, request.RepoPath);
 
-        var result = await _gitService.SwitchBranchAsync(request.RepoPath, request.BranchName);
+        var result = await _gitService.SwitchBranchAsync(authorizedPath.Value!, request.BranchName);
         return result.Match<ActionResult>(
             onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
@@ -355,11 +409,15 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} creating branch {BranchName} in {RepoPath}",
             userId, request.BranchName, request.RepoPath);
 
         var result = await _gitService.CreateBranchAsync(
-            request.RepoPath,
+            authorizedPath.Value!,
             request.BranchName,
             request.SwitchToNewBranch,
             request.BaseBranch);
@@ -388,10 +446,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} deleting branch {BranchName} in {RepoPath}",
             userId, request.BranchName, request.RepoPath);
 
-        var result = await _gitService.DeleteBranchAsync(request.RepoPath, request.BranchName, request.Force);
+        var result = await _gitService.DeleteBranchAsync(authorizedPath.Value!, request.BranchName, request.Force);
         return result.Match<ActionResult>(
             onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
@@ -416,10 +478,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} merging branch {BranchName} in {RepoPath}",
             userId, request.BranchName, request.RepoPath);
 
-        var result = await _gitService.MergeBranchAsync(request.RepoPath, request.BranchName, request.Message);
+        var result = await _gitService.MergeBranchAsync(authorizedPath.Value!, request.BranchName, request.Message);
         return result.Match<ActionResult<GitOperationResult>>(
             onSuccess: opResult => opResult.Success
                 ? Ok(opResult)
@@ -445,10 +511,14 @@ public class GitController : ControllerBase
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
+        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
+        if (authorizedPath.Result is not null)
+            return authorizedPath.Result;
+
         _logger.LogInformation("User {UserId} publishing branch {BranchName} in {RepoPath}",
             userId, request.BranchName, request.RepoPath);
 
-        var result = await _gitService.PublishBranchAsync(request.RepoPath, request.BranchName, request.Remote);
+        var result = await _gitService.PublishBranchAsync(authorizedPath.Value!, request.BranchName, request.Remote);
         return result.Match<ActionResult<GitOperationResult>>(
             onSuccess: opResult => opResult.Success
                 ? Ok(opResult)
@@ -467,5 +537,17 @@ public class GitController : ControllerBase
     private string? GetUserId()
     {
         return HttpContext.Items["UserId"]?.ToString();
+    }
+
+    private ActionResult<string> AuthorizeRepoPath(string repoPath, string userId)
+    {
+        var authResult = _gitAuthorization.AuthorizeRepository(repoPath, userId);
+        if (authResult.IsFailure)
+        {
+            var error = authResult.Error!;
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message, code = error.Code });
+        }
+
+        return authResult.Value!;
     }
 }

@@ -101,6 +101,8 @@ public static class ServiceCollectionExtensions
         // Background summary generation service
         services.AddScoped<ISummaryGenerationBackgroundService, SummaryGenerationBackgroundService>();
 
+        // Git authorization + integration services
+        services.AddScoped<IGitAuthorizationService, GitAuthorizationService>();
         // Git integration service
         services.AddScoped<IGitService, GitService>();
 
@@ -589,6 +591,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
         services.Configure<PineconeSettings>(configuration.GetSection(PineconeSettings.SectionName));
         services.Configure<NoteSummarySettings>(configuration.GetSection(NoteSummarySettings.SectionName));
+        services.Configure<GitSettings>(configuration.GetSection(GitSettings.SectionName));
 
         return services;
     }

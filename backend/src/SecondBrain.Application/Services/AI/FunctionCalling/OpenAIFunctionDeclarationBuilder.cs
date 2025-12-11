@@ -83,26 +83,33 @@ public static class OpenAIFunctionDeclarationBuilder
             }
             else if (!param.HasDefaultValue)
             {
-                // Non-nullable value types without defaults are required
-                if (paramType.IsValueType)
+                // Parameters without defaults
+                if (useStrictMode)
                 {
+                    // In strict mode, ALL parameters must be in required array
                     required.Add(param.Name!);
                 }
-                // String types - check description for required hint OR strict mode
+                else if (paramType.IsValueType)
+                {
+                    // Non-nullable value types without defaults are always required
+                    required.Add(param.Name!);
+                }
                 else if (paramType == typeof(string))
                 {
+                    // String types - check description for required hint
                     var desc = paramDesc?.Description ?? "";
-                    if (useStrictMode ||
-                        (desc.Contains("required", StringComparison.OrdinalIgnoreCase) &&
-                         !desc.Contains("optional", StringComparison.OrdinalIgnoreCase)))
+                    if (desc.Contains("required", StringComparison.OrdinalIgnoreCase) &&
+                        !desc.Contains("optional", StringComparison.OrdinalIgnoreCase))
                     {
                         required.Add(param.Name!);
                     }
                 }
+                // Note: Other reference types (List<T>, arrays, objects) without defaults
+                // are not marked required in non-strict mode (they can be null)
             }
             else if (useStrictMode)
             {
-                // In strict mode, all parameters must be in required array
+                // In strict mode, parameters WITH defaults must also be in required array
                 required.Add(param.Name!);
             }
 

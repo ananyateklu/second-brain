@@ -24,6 +24,10 @@ public class GeminiFilesController : ControllerBase
     // Maximum file size: 2GB (Gemini's limit)
     private const long MaxFileSize = 2L * 1024 * 1024 * 1024;
 
+    // Maximum base64 request size: ~2.67GB (base64 encoding increases size by ~33%)
+    // Formula: ceil(MaxFileSize * 4 / 3) + JSON overhead (~1KB)
+    private const long MaxBase64RequestSize = (MaxFileSize * 4 / 3) + (1024 * 1024);
+
     // Supported MIME types for code execution
     private static readonly HashSet<string> SupportedMimeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -102,20 +106,50 @@ public class GeminiFilesController : ControllerBase
             // Allow upload anyway - Gemini will reject if truly unsupported
         }
 
+        // Use streaming to avoid loading large files into memory
+        // For files under 10MB, use in-memory upload for efficiency
+        // For larger files, stream to temp file to avoid OOM
+        const long InMemoryThreshold = 10L * 1024 * 1024; // 10MB
+
+        string? tempFilePath = null;
         try
         {
-            // Read file into memory
-            using var memoryStream = new MemoryStream();
-            await file.CopyToAsync(memoryStream, cancellationToken);
-            var fileBytes = memoryStream.ToArray();
+            GeminiFileUploadRequest request;
 
-            var request = new GeminiFileUploadRequest
+            if (file.Length <= InMemoryThreshold)
             {
-                Bytes = fileBytes,
-                FileName = file.FileName,
-                DisplayName = displayName ?? file.FileName,
-                MimeType = contentType
-            };
+                // Small file: read into memory (efficient for small files)
+                using var memoryStream = new MemoryStream((int)file.Length);
+                await file.CopyToAsync(memoryStream, cancellationToken);
+
+                request = new GeminiFileUploadRequest
+                {
+                    Bytes = memoryStream.ToArray(),
+                    FileName = file.FileName,
+                    DisplayName = displayName ?? file.FileName,
+                    MimeType = contentType
+                };
+            }
+            else
+            {
+                // Large file: stream to temp file to avoid OOM
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"gemini-upload-{Guid.NewGuid()}{Path.GetExtension(file.FileName)}");
+
+                _logger.LogDebug("Streaming large file ({Size} bytes) to temp path: {TempPath}",
+                    file.Length, tempFilePath);
+
+                await using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+                {
+                    await file.CopyToAsync(fileStream, cancellationToken);
+                }
+
+                request = new GeminiFileUploadRequest
+                {
+                    FilePath = tempFilePath,
+                    DisplayName = displayName ?? file.FileName,
+                    MimeType = contentType
+                };
+            }
 
             _logger.LogInformation(
                 "Uploading file {FileName} ({Size} bytes, {ContentType}) to Gemini",
@@ -148,6 +182,22 @@ public class GeminiFilesController : ControllerBase
             _logger.LogError(ex, "Error uploading file to Gemini");
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new { error = "An error occurred while uploading the file" });
+        }
+        finally
+        {
+            // Clean up temp file if created
+            if (tempFilePath != null)
+            {
+                try
+                {
+                    System.IO.File.Delete(tempFilePath);
+                    _logger.LogDebug("Cleaned up temp file: {TempPath}", tempFilePath);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx, "Failed to clean up temp file: {TempPath}", tempFilePath);
+                }
+            }
         }
     }
 
@@ -232,6 +282,7 @@ public class GeminiFilesController : ControllerBase
     /// <param name="request">The upload request with base64 content</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpPost("upload/base64")]
+    [RequestSizeLimit(MaxBase64RequestSize)]
     [ProducesResponseType(typeof(GeminiUploadedFile), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<GeminiUploadedFile>> UploadBase64(
