@@ -305,3 +305,127 @@ public class ToolTokenUsage
     /// </summary>
     public int CallCount { get; set; }
 }
+
+#region Gemini File Upload Models
+
+/// <summary>
+/// Represents an uploaded file in Gemini's file storage
+/// </summary>
+public class GeminiUploadedFile
+{
+    /// <summary>
+    /// The resource name of the file (e.g., "files/abc123")
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The display name of the file
+    /// </summary>
+    public string DisplayName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The MIME type of the file
+    /// </summary>
+    public string MimeType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The size of the file in bytes
+    /// </summary>
+    public long SizeBytes { get; set; }
+
+    /// <summary>
+    /// The URI to access the file
+    /// </summary>
+    public string Uri { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The state of the file (PROCESSING, ACTIVE, FAILED)
+    /// </summary>
+    public string State { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When the file was created
+    /// </summary>
+    public DateTime? CreateTime { get; set; }
+
+    /// <summary>
+    /// When the file will expire
+    /// </summary>
+    public DateTime? ExpirationTime { get; set; }
+
+    /// <summary>
+    /// Error message if the file processing failed
+    /// </summary>
+    public string? Error { get; set; }
+
+    /// <summary>
+    /// Whether the file is ready to be used
+    /// </summary>
+    public bool IsReady => State == "ACTIVE";
+}
+
+/// <summary>
+/// Request to upload a file to Gemini
+/// </summary>
+public class GeminiFileUploadRequest
+{
+    /// <summary>
+    /// The file bytes to upload
+    /// </summary>
+    public byte[]? Bytes { get; set; }
+
+    /// <summary>
+    /// The local file path to upload from
+    /// </summary>
+    public string? FilePath { get; set; }
+
+    /// <summary>
+    /// The file stream to upload from (avoids loading entire file into memory)
+    /// </summary>
+    public Stream? FileStream { get; set; }
+
+    /// <summary>
+    /// The name to give the file (required when uploading bytes or stream)
+    /// </summary>
+    public string? FileName { get; set; }
+
+    /// <summary>
+    /// Optional display name for the file
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>
+    /// Optional MIME type (will be auto-detected if not provided)
+    /// </summary>
+    public string? MimeType { get; set; }
+}
+
+/// <summary>
+/// File reference for including in Gemini requests
+/// </summary>
+public class GeminiFileReference
+{
+    /// <summary>
+    /// The file URI (from uploaded file)
+    /// </summary>
+    public string FileUri { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The MIME type of the file
+    /// </summary>
+    public string MimeType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Create a file reference from an uploaded file
+    /// </summary>
+    public static GeminiFileReference FromUploadedFile(GeminiUploadedFile file)
+    {
+        return new GeminiFileReference
+        {
+            FileUri = file.Uri,
+            MimeType = file.MimeType
+        };
+    }
+}
+
+#endregion

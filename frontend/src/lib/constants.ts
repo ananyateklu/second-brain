@@ -247,6 +247,40 @@ export const API_ENDPOINTS = {
     READY: '/health/ready',
     LIVE: '/health/live',
   },
+
+  // Git Integration
+  GIT: {
+    VALIDATE: '/git/validate',
+    STATUS: '/git/status',
+    DIFF: '/git/diff',
+    STAGE: '/git/stage',
+    UNSTAGE: '/git/unstage',
+    COMMIT: '/git/commit',
+    PUSH: '/git/push',
+    PULL: '/git/pull',
+    LOG: '/git/log',
+    DISCARD: '/git/discard',
+    BRANCHES: '/git/branches',
+    BRANCH_SWITCH: '/git/branches/switch',
+    BRANCH_CREATE: '/git/branches/create',
+    BRANCH_DELETE: '/git/branches/delete',
+    BRANCH_MERGE: '/git/branches/merge',
+    BRANCH_PUBLISH: '/git/branches/publish',
+  },
+
+  // GitHub Integration
+  GITHUB: {
+    REPOSITORY: '/github/repository',
+    PULLS: '/github/pulls',
+    PULL_BY_NUMBER: (number: number) => `/github/pulls/${number}`,
+    PULL_REVIEWS: (number: number) => `/github/pulls/${number}/reviews`,
+    ACTIONS_RUNS: '/github/actions/runs',
+    ACTIONS_RUN_BY_ID: (id: number) => `/github/actions/runs/${id}`,
+    ACTIONS_WORKFLOWS: '/github/actions/workflows',
+    CHECKS: (sha: string) => `/github/checks/${sha}`,
+    RERUN_WORKFLOW: (id: number) => `/github/actions/runs/${id}/rerun`,
+    CANCEL_WORKFLOW: (id: number) => `/github/actions/runs/${id}/cancel`,
+  },
 } as const;
 
 // ============================================

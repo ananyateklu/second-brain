@@ -144,29 +144,42 @@ class GrokToolStreamEvent {
 }
 ```
 
-#### AgentService Provider Routing
+#### AgentService Provider Routing (Strategy Pattern)
 
-The `AgentService` (`Services/Agents/AgentService.cs`) routes to provider-specific implementations:
+The `AgentService` (`Services/Agents/AgentService.cs`) has been refactored to use the Strategy Pattern, delegating provider-specific streaming to dedicated strategy classes:
 
 ```csharp
-
 public async IAsyncEnumerable<AgentStreamEvent> ProcessStreamAsync(AgentRequest request, ...)
 {
-    // Route to native provider implementations
-    if (isAnthropic)
-        await foreach (var evt in ProcessAnthropicStreamAsync(request, ...)) yield return evt;
-    else if (useNativeGeminiFunctionCalling)
-        await foreach (var evt in ProcessGeminiStreamAsync(request, ...)) yield return evt;
-    else if (useNativeOllamaFunctionCalling)
-        await foreach (var evt in ProcessOllamaStreamAsync(request, ...)) yield return evt;
-    else if (useNativeOpenAIFunctionCalling)
-        await foreach (var evt in ProcessOpenAIStreamAsync(request, ...)) yield return evt;
-    else if (useNativeGrokFunctionCalling)
-        await foreach (var evt in ProcessGrokStreamAsync(request, ...)) yield return evt;
-    else
-        // Fallback to Semantic Kernel for other providers
+    // Create streaming context with request, settings, plugins, etc.
+    var context = new AgentStreamingContext { Request = request, Settings = _settings, ... };
+
+    // Strategy factory selects appropriate provider-specific strategy
+    var strategy = _strategyFactory.GetStrategy(request, _settings);
+
+    // Delegate to strategy (AnthropicStreamingStrategy, GeminiStreamingStrategy, etc.)
+    await foreach (var evt in strategy.ProcessAsync(context, cancellationToken))
+    {
+        yield return evt;
+    }
 }
 ```
+
+**Strategy Classes** (`Services/Agents/Strategies/`):
+
+- `AnthropicStreamingStrategy` - Claude native tool_use/tool_result
+- `GeminiStreamingStrategy` - Google GenAI with grounding, code execution
+- `OpenAIStreamingStrategy` - OpenAI native function calling
+- `OllamaStreamingStrategy` - Local model support via OllamaSharp
+- `GrokStreamingStrategy` - X.AI OpenAI-compatible
+- `SemanticKernelStreamingStrategy` - Fallback for other providers
+
+**Helper Classes** (`Services/Agents/Helpers/`):
+
+- `IToolExecutor` / `ToolExecutor` - Parallel/sequential tool execution
+- `IThinkingExtractor` / `ThinkingExtractor` - XML thinking block extraction
+- `IRagContextInjector` / `RagContextInjector` - RAG context retrieval
+- `IPluginToolBuilder` / `PluginToolBuilder` - Provider-specific tool building
 
 ---
 
@@ -480,40 +493,44 @@ States:
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-### Backend Provider Flow (Completed)
+### Backend Provider Flow (Strategy Pattern - Refactored)
 
 ```text
 AgentService.ProcessStreamAsync()
        │
-       ├── isAnthropic? ─────────► ProcessAnthropicStreamAsync()
-       │                                    │
-       │                                    └── Anthropic SDK streaming
-       │                                        └── Tool execution via reflection
-       │
-       ├── useNativeGemini? ────► ProcessGeminiStreamAsync()
-       │                                    │
-       │                                    └── GeminiProvider.StreamWithFeaturesAsync()
-       │                                        └── GeminiStreamEvent (Text, Thinking, FunctionCalls, etc.)
-       │
-       ├── useNativeOllama? ────► ProcessOllamaStreamAsync()
-       │                                    │
-       │                                    └── OllamaProvider.StreamWithToolsAsync()
-       │                                        └── OllamaToolStreamEvent
-       │
-       ├── useNativeOpenAI? ────► ProcessOpenAIStreamAsync()
-       │                                    │
-       │                                    └── OpenAIProvider.StreamWithToolsAsync()
-       │                                        └── OpenAIToolStreamEvent
-       │
-       ├── useNativeGrok? ──────► ProcessGrokStreamAsync()
-       │                                    │
-       │                                    └── GrokProvider.StreamWithToolsAsync()
-       │                                        └── GrokToolStreamEvent
-       │
-       └── fallback ────────────► Semantic Kernel (IChatCompletionService)
-                                            │
-                                            └── FunctionInvocationFilter for tool tracking
+       └── IAgentStreamingStrategyFactory.GetStrategy(request, settings)
+                │
+                ├── AnthropicStreamingStrategy ────► ClaudeProvider
+                │                                           └── Native tool_use/tool_result
+                │                                           └── Extended thinking support
+                │
+                ├── GeminiStreamingStrategy ───────► GeminiProvider.StreamWithFeaturesAsync()
+                │                                           └── GeminiStreamEvent (Text, Thinking, FunctionCalls)
+                │                                           └── Grounding, Code Execution
+                │
+                ├── OpenAIStreamingStrategy ───────► OpenAIProvider.StreamWithToolsAsync()
+                │                                           └── OpenAIToolStreamEvent
+                │                                           └── Native function calling
+                │
+                ├── OllamaStreamingStrategy ───────► OllamaProvider.StreamWithToolsAsync()
+                │                                           └── OllamaToolStreamEvent
+                │                                           └── Local model support
+                │
+                ├── GrokStreamingStrategy ─────────► GrokProvider.StreamWithToolsAsync()
+                │                                           └── GrokToolStreamEvent
+                │                                           └── Think Mode, Live Search
+                │
+                └── SemanticKernelStreamingStrategy (fallback)
+                                                            └── Semantic Kernel IChatCompletionService
+                                                            └── FunctionInvocationFilter for tool tracking
 ```
+
+**Shared Helper Services** (injected into all strategies):
+
+- `IToolExecutor` - Execute plugin methods with parallel/sequential support
+- `IThinkingExtractor` - Extract `<thinking>` blocks from AI responses
+- `IRagContextInjector` - Retrieve and inject RAG context
+- `IPluginToolBuilder` - Build provider-specific tool definitions from plugins
 
 ### Unified Event Protocol
 
@@ -1386,13 +1403,41 @@ describe('UnifiedStreamDisplay', () => {
 | `backend/src/SecondBrain.Application/Services/AI/Models/GrokToolStreamEvent.cs` | `GrokToolStreamEvent` enum and classes (includes search, thinking) |
 | `backend/src/SecondBrain.Application/Services/AI/Models/GrokThinkModeModels.cs` | Grok Think Mode response/options models |
 
-#### Agent Service
+#### Agent Service (Strategy Pattern Architecture)
 
 | File | Purpose |
 |------|---------|
-| `backend/src/SecondBrain.Application/Services/Agents/AgentService.cs` | Main agent orchestration with provider-specific streaming methods |
+| `backend/src/SecondBrain.Application/Services/Agents/AgentService.cs` | Thin orchestrator (~233 lines) - delegates to strategy factory |
 | `backend/src/SecondBrain.Application/Services/Agents/Models/AgentStreamEvent.cs` | `AgentStreamEvent` and `AgentEventType` enum |
 | `backend/src/SecondBrain.Application/Services/Agents/Plugins/NotesPlugin.cs` | Notes tool plugin for agent mode |
+
+#### Agent Streaming Strategies
+
+| File | Purpose |
+|------|---------|
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/IAgentStreamingStrategy.cs` | Strategy interface |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/AgentStreamingContext.cs` | Shared context container |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/BaseAgentStreamingStrategy.cs` | Abstract base with event helpers |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/AgentStreamingStrategyFactory.cs` | Factory for strategy selection |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/AnthropicStreamingStrategy.cs` | Claude native streaming |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/GeminiStreamingStrategy.cs` | Gemini with grounding/code execution |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/OpenAIStreamingStrategy.cs` | OpenAI native function calling |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/OllamaStreamingStrategy.cs` | Local model support |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/GrokStreamingStrategy.cs` | X.AI/Grok support |
+| `backend/src/SecondBrain.Application/Services/Agents/Strategies/SemanticKernelStreamingStrategy.cs` | Fallback strategy |
+
+#### Agent Helper Services
+
+| File | Purpose |
+|------|---------|
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/IToolExecutor.cs` | Tool execution interface |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/ToolExecutor.cs` | Parallel/sequential tool execution |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/IThinkingExtractor.cs` | Thinking extraction interface |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/ThinkingExtractor.cs` | XML thinking block extraction |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/IRagContextInjector.cs` | RAG injection interface |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/RagContextInjector.cs` | RAG context retrieval and injection |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/IPluginToolBuilder.cs` | Tool builder interface |
+| `backend/src/SecondBrain.Application/Services/Agents/Helpers/PluginToolBuilder.cs` | Provider-specific tool definitions |
 
 #### Controllers (SSE Emission)
 

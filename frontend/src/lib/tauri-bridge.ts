@@ -8,14 +8,14 @@ import { isTauri } from './native-notifications';
  */
 export async function waitForTauriReady(maxWaitMs = 2000): Promise<boolean> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < maxWaitMs) {
     if (isTauri()) {
       return true;
     }
     await new Promise(resolve => setTimeout(resolve, 50));
   }
-  
+
   return isTauri();
 }
 
@@ -44,7 +44,8 @@ export async function isBackendReady(): Promise<boolean> {
   }
 
   try {
-    return await invoke<boolean>('is_backend_ready');
+    const result = await invoke<boolean>('is_backend_ready');
+    return result;
   } catch {
     return false;
   }

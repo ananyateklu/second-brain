@@ -1,4 +1,5 @@
 import { memo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from '../../../hooks/use-toast';
 
 interface BulkActionsBarProps {
@@ -45,7 +46,7 @@ export const BulkActionsBar = memo(({
 
   const isProcessing = isDeleting || isConfirmingDelete;
 
-  return (
+  const content = (
     <div
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-2xl"
       style={{
@@ -168,5 +169,9 @@ export const BulkActionsBar = memo(({
       `}</style>
     </div>
   );
+
+  // Use portal to render outside of any scrolling containers
+  // This ensures fixed positioning works relative to viewport, not a parent container
+  return typeof document !== 'undefined' ? createPortal(content, document.body) : content;
 });
 

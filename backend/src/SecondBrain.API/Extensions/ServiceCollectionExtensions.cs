@@ -38,6 +38,10 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.Agents;
+using SecondBrain.Application.Services.Agents.Helpers;
+using SecondBrain.Application.Services.Agents.Strategies;
+using SecondBrain.Application.Services.Git;
+using SecondBrain.Application.Services.GitHub;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Providers;
 using SecondBrain.Application.Services.RAG;
@@ -97,6 +101,14 @@ public static class ServiceCollectionExtensions
 
         // Background summary generation service
         services.AddScoped<ISummaryGenerationBackgroundService, SummaryGenerationBackgroundService>();
+
+        // Git authorization + integration services
+        services.AddScoped<IGitAuthorizationService, GitAuthorizationService>();
+        // Git integration service
+        services.AddScoped<IGitService, GitService>();
+
+        // GitHub API integration service
+        services.AddScoped<IGitHubService, GitHubService>();
 
         return services;
     }
@@ -239,6 +251,24 @@ public static class ServiceCollectionExtensions
         // Register Gemini Context Cache service for reducing latency/costs with large contexts
         services.AddScoped<IGeminiCacheService, GeminiCacheService>();
 
+        // Register Agent service helpers
+        services.AddScoped<IToolExecutor, ToolExecutor>();
+        services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
+        services.AddScoped<IRagContextInjector, RagContextInjector>();
+        services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();
+        services.AddSingleton<IAgentRetryPolicy, AgentRetryPolicy>(); // Unified retry policy with exponential backoff
+
+        // Register Agent streaming strategies
+        services.AddScoped<IAgentStreamingStrategy, AnthropicStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, GeminiStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, OpenAIStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, OllamaStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, GrokStreamingStrategy>();
+        services.AddScoped<SemanticKernelStreamingStrategy>(); // Explicit fallback registration
+
+        // Register Agent strategy factory
+        services.AddScoped<IAgentStreamingStrategyFactory, AgentStreamingStrategyFactory>();
+
         // Register Agent service for agent mode functionality
         services.AddScoped<IAgentService, AgentService>();
 
@@ -293,6 +323,12 @@ public static class ServiceCollectionExtensions
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null);
             });
+
+            // Suppress PendingModelChangesWarning for desktop app (Tauri) scenarios
+            // The desktop app uses ApplyAllMigrationSchemaIfMissing() for manual schema management
+            // and may have model changes that haven't been captured in a formal migration yet
+            options.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         // Register DbContextFactory for parallel operations (thread-safe DbContext creation)
@@ -308,6 +344,10 @@ public static class ServiceCollectionExtensions
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null);
             });
+
+            // Suppress PendingModelChangesWarning (same as AddDbContext above)
+            options.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         // Register repositories
@@ -565,6 +605,8 @@ public static class ServiceCollectionExtensions
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
         services.Configure<PineconeSettings>(configuration.GetSection(PineconeSettings.SectionName));
         services.Configure<NoteSummarySettings>(configuration.GetSection(NoteSummarySettings.SectionName));
+        services.Configure<GitSettings>(configuration.GetSection(GitSettings.SectionName));
+        services.Configure<GitHubSettings>(configuration.GetSection(GitHubSettings.SectionName));
 
         return services;
     }

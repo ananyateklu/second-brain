@@ -16,7 +16,9 @@ public static class OpenAIFunctionDeclarationBuilder
     /// <summary>
     /// Builds ChatTool objects from all [KernelFunction] methods in the given object.
     /// </summary>
-    public static List<ChatTool> BuildFromPlugin(object plugin)
+    /// <param name="plugin">The plugin instance to extract functions from.</param>
+    /// <param name="useStrictMode">When true, enables strict mode with additionalProperties: false and all parameters required.</param>
+    public static List<ChatTool> BuildFromPlugin(object plugin, bool useStrictMode = false)
     {
         var tools = new List<ChatTool>();
 
@@ -25,7 +27,7 @@ public static class OpenAIFunctionDeclarationBuilder
             var funcAttr = method.GetCustomAttribute<KernelFunctionAttribute>();
             if (funcAttr == null) continue;
 
-            var tool = BuildFromMethod(method, funcAttr);
+            var tool = BuildFromMethod(method, funcAttr, useStrictMode);
             if (tool != null)
             {
                 tools.Add(tool);
@@ -38,7 +40,10 @@ public static class OpenAIFunctionDeclarationBuilder
     /// <summary>
     /// Builds a ChatTool from a method with [KernelFunction] attribute.
     /// </summary>
-    public static ChatTool? BuildFromMethod(MethodInfo method, KernelFunctionAttribute? funcAttr = null)
+    /// <param name="method">The method to build a tool from.</param>
+    /// <param name="funcAttr">Optional function attribute (will be retrieved if not provided).</param>
+    /// <param name="useStrictMode">When true, enables strict mode with additionalProperties: false and all parameters required.</param>
+    public static ChatTool? BuildFromMethod(MethodInfo method, KernelFunctionAttribute? funcAttr = null, bool useStrictMode = false)
     {
         funcAttr ??= method.GetCustomAttribute<KernelFunctionAttribute>();
         if (funcAttr == null) return null;
@@ -70,18 +75,28 @@ public static class OpenAIFunctionDeclarationBuilder
             var underlyingType = Nullable.GetUnderlyingType(paramType);
             if (underlyingType != null)
             {
-                // For nullable types, we don't add to required
-            }
-            else if (!param.HasDefaultValue)
-            {
-                // Non-nullable value types without defaults are required
-                if (paramType.IsValueType)
+                // For nullable types in strict mode, add to required anyway (strict mode requires all params)
+                if (useStrictMode)
                 {
                     required.Add(param.Name!);
                 }
-                // String types - check description for required hint
+            }
+            else if (!param.HasDefaultValue)
+            {
+                // Parameters without defaults
+                if (useStrictMode)
+                {
+                    // In strict mode, ALL parameters must be in required array
+                    required.Add(param.Name!);
+                }
+                else if (paramType.IsValueType)
+                {
+                    // Non-nullable value types without defaults are always required
+                    required.Add(param.Name!);
+                }
                 else if (paramType == typeof(string))
                 {
+                    // String types - check description for required hint
                     var desc = paramDesc?.Description ?? "";
                     if (desc.Contains("required", StringComparison.OrdinalIgnoreCase) &&
                         !desc.Contains("optional", StringComparison.OrdinalIgnoreCase))
@@ -89,6 +104,13 @@ public static class OpenAIFunctionDeclarationBuilder
                         required.Add(param.Name!);
                     }
                 }
+                // Note: Other reference types (List<T>, arrays, objects) without defaults
+                // are not marked required in non-strict mode (they can be null)
+            }
+            else if (useStrictMode)
+            {
+                // In strict mode, parameters WITH defaults must also be in required array
+                required.Add(param.Name!);
             }
 
             properties[param.Name!] = paramSchema;
@@ -104,6 +126,12 @@ public static class OpenAIFunctionDeclarationBuilder
         if (required.Count > 0)
         {
             parametersSchema["required"] = required;
+        }
+
+        // For strict mode, add additionalProperties: false (required by OpenAI)
+        if (useStrictMode)
+        {
+            parametersSchema["additionalProperties"] = false;
         }
 
         // Serialize to BinaryData for OpenAI SDK

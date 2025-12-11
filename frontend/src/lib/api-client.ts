@@ -184,7 +184,9 @@ function handleUnauthorized(): void {
   if (authStore.isAuthenticated) {
     authStore.signOut();
   }
-  window.location.href = '/login';
+  // Use hash-based URL for Tauri production, regular URL otherwise
+  const isTauriProduction = '__TAURI_INTERNALS__' in window && import.meta.env.PROD;
+  window.location.href = isTauriProduction ? '/#/login' : '/login';
 }
 
 /**

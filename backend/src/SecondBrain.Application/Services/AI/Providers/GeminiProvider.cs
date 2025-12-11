@@ -48,6 +48,12 @@ public class GeminiFeatureOptions
     /// When set, the cached context is prepended to the conversation, reducing latency and costs.
     /// </summary>
     public string? CachedContentName { get; set; }
+
+    /// <summary>
+    /// File references to include in the request (uploaded via UploadFileAsync).
+    /// Files can be used for code execution data analysis, multimodal prompts, etc.
+    /// </summary>
+    public List<Models.GeminiFileReference>? FileReferences { get; set; }
 }
 
 /// <summary>
@@ -93,6 +99,22 @@ public class GeminiStreamEvent
 
     /// <summary>Code execution result (for CodeExecution type)</summary>
     public Models.CodeExecutionResult? CodeExecutionResult { get; set; }
+
+    #region Token Usage (for Complete events)
+
+    /// <summary>Input/prompt token count from UsageMetadata</summary>
+    public int? InputTokens { get; set; }
+
+    /// <summary>Output/candidates token count from UsageMetadata</summary>
+    public int? OutputTokens { get; set; }
+
+    /// <summary>Total token count from UsageMetadata</summary>
+    public int? TotalTokens { get; set; }
+
+    /// <summary>Cached content token count (if using context caching)</summary>
+    public int? CachedTokens { get; set; }
+
+    #endregion
 }
 
 public class GeminiProvider : IAIProvider
@@ -865,8 +887,21 @@ public class GeminiProvider : IAIProvider
             contents = BuildTextContents(conversationMessages);
         }
 
+        // Add file references to the first content if provided
+        if (features?.FileReferences != null && features.FileReferences.Count > 0)
+        {
+            contents = AddFileReferencesToContents(contents, features.FileReferences);
+            _logger.LogInformation("Added {Count} file references to request", features.FileReferences.Count);
+        }
+
         var functionCalls = new List<FunctionCallInfo>();
         var textContent = new StringBuilder();
+
+        // Token usage tracking from UsageMetadata
+        int? inputTokens = null;
+        int? outputTokens = null;
+        int? totalTokens = null;
+        int? cachedTokens = null;
 
         await foreach (var chunk in _client.Models.GenerateContentStreamAsync(
             model: modelName,
@@ -875,6 +910,15 @@ public class GeminiProvider : IAIProvider
         {
             if (cancellationToken.IsCancellationRequested)
                 yield break;
+
+            // Capture token usage from UsageMetadata (available on final chunk)
+            if (chunk.UsageMetadata != null)
+            {
+                inputTokens = chunk.UsageMetadata.PromptTokenCount;
+                outputTokens = chunk.UsageMetadata.CandidatesTokenCount;
+                totalTokens = chunk.UsageMetadata.TotalTokenCount;
+                cachedTokens = chunk.UsageMetadata.CachedContentTokenCount;
+            }
 
             // Extract function calls from the response
             var extractedCalls = ExtractFunctionCalls(chunk);
@@ -939,11 +983,15 @@ public class GeminiProvider : IAIProvider
             };
         }
 
-        // Yield completion event
+        // Yield completion event with token usage
         yield return new GeminiStreamEvent
         {
             Type = GeminiStreamEventType.Complete,
-            Text = textContent.ToString()
+            Text = textContent.ToString(),
+            InputTokens = inputTokens,
+            OutputTokens = outputTokens,
+            TotalTokens = totalTokens,
+            CachedTokens = cachedTokens
         };
     }
 
@@ -1482,6 +1530,66 @@ public class GeminiProvider : IAIProvider
         return contents;
     }
 
+    /// <summary>
+    /// Add file references to the contents for use with code execution or multimodal analysis.
+    /// Files are added to the first user message's parts.
+    /// </summary>
+    private List<Content> AddFileReferencesToContents(
+        List<Content> contents,
+        List<Models.GeminiFileReference> fileReferences)
+    {
+        if (contents.Count == 0 || fileReferences.Count == 0)
+            return contents;
+
+        // Find the first user content to add files to
+        var userContentIndex = contents.FindIndex(c => c.Role == "user");
+        if (userContentIndex < 0)
+        {
+            // No user content found, create one with just the files
+            var fileParts = fileReferences.Select(f => new Part
+            {
+                FileData = new FileData
+                {
+                    FileUri = f.FileUri,
+                    MimeType = f.MimeType
+                }
+            }).ToList();
+
+            contents.Insert(0, new Content
+            {
+                Role = "user",
+                Parts = fileParts
+            });
+        }
+        else
+        {
+            // Add file parts to existing user content (prepended, preserving order)
+            var userContent = contents[userContentIndex];
+            var existingParts = userContent.Parts?.ToList() ?? new List<Part>();
+
+            // Create file parts in original order
+            var fileParts = fileReferences.Select(f => new Part
+            {
+                FileData = new FileData
+                {
+                    FileUri = f.FileUri,
+                    MimeType = f.MimeType
+                }
+            }).ToList();
+
+            // Prepend file parts to existing content (files first, then original content)
+            fileParts.AddRange(existingParts);
+
+            contents[userContentIndex] = new Content
+            {
+                Role = userContent.Role,
+                Parts = fileParts
+            };
+        }
+
+        return contents;
+    }
+
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
         if (!IsEnabled || _client == null)
@@ -1614,4 +1722,270 @@ public class GeminiProvider : IAIProvider
         await Task.CompletedTask;
         yield break;
     }
+
+    #region File Upload Operations
+
+    /// <summary>
+    /// Upload a file to Gemini for use with code execution or multimodal prompts.
+    /// Files are stored for 48 hours and can be referenced in subsequent requests.
+    /// </summary>
+    public async Task<Models.GeminiUploadedFile?> UploadFileAsync(
+        Models.GeminiFileUploadRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+        {
+            _logger.LogWarning("Gemini file upload called but provider is not enabled");
+            return null;
+        }
+
+        try
+        {
+            Google.GenAI.Types.File? response = null;
+
+            if (request.Bytes != null && !string.IsNullOrEmpty(request.FileName))
+            {
+                // Upload from bytes
+                _logger.LogInformation("Uploading file {FileName} ({Size} bytes) to Gemini",
+                    request.FileName, request.Bytes.Length);
+
+                response = await _client.Files.UploadAsync(
+                    bytes: request.Bytes,
+                    fileName: request.FileName);
+            }
+            else if (request.FileStream != null && !string.IsNullOrEmpty(request.FileName))
+            {
+                // Upload from stream (avoids loading entire file into memory upfront)
+                _logger.LogInformation("Uploading file {FileName} from stream to Gemini",
+                    request.FileName);
+
+                // Copy stream to memory stream for Gemini API (the API requires bytes)
+                // Using CopyToAsync with a buffer size improves performance for large files
+                using (var memoryStream = new MemoryStream())
+                {
+                    await request.FileStream.CopyToAsync(memoryStream, 81920); // 80KB buffer
+                    var fileBytes = memoryStream.ToArray();
+
+                    _logger.LogDebug("Stream read complete, uploading {BytesCount} bytes for {FileName}",
+                        fileBytes.Length, request.FileName);
+
+                    response = await _client.Files.UploadAsync(
+                        bytes: fileBytes,
+                        fileName: request.FileName);
+                }
+            }
+            else if (!string.IsNullOrEmpty(request.FilePath))
+            {
+                // Upload from file path
+                _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
+
+                if (!string.IsNullOrEmpty(request.FileName))
+                {
+                    _logger.LogInformation("Using custom filename {FileName} for temp file upload", request.FileName);
+                }
+
+                response = await _client.Files.UploadAsync(filePath: request.FilePath);
+            }
+            else
+            {
+                _logger.LogError("File upload request must include either Bytes+FileName, FileStream+FileName, or FilePath");
+                return null;
+            }
+
+            if (response == null)
+            {
+                _logger.LogError("Gemini file upload returned null response");
+                return null;
+            }
+
+            var uploadedFile = MapToUploadedFile(response);
+            _logger.LogInformation("File uploaded successfully: {Name} (state: {State})",
+                uploadedFile.Name, uploadedFile.State);
+
+            return uploadedFile;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload file to Gemini");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Wait for a file to finish processing and become active.
+    /// </summary>
+    public async Task<Models.GeminiUploadedFile?> WaitForFileProcessingAsync(
+        string fileName,
+        int maxWaitSeconds = 60,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+            return null;
+
+        var startTime = DateTime.UtcNow;
+        var pollInterval = TimeSpan.FromSeconds(2);
+
+        while ((DateTime.UtcNow - startTime).TotalSeconds < maxWaitSeconds)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                var file = await _client.Files.GetAsync(name: fileName);
+                if (file == null)
+                {
+                    _logger.LogWarning("File {FileName} not found", fileName);
+                    return null;
+                }
+
+                var uploadedFile = MapToUploadedFile(file);
+
+                if (uploadedFile.State == "ACTIVE")
+                {
+                    _logger.LogInformation("File {FileName} is now active", fileName);
+                    return uploadedFile;
+                }
+
+                if (uploadedFile.State == "FAILED")
+                {
+                    _logger.LogError("File {FileName} processing failed: {Error}",
+                        fileName, uploadedFile.Error);
+                    return uploadedFile;
+                }
+
+                _logger.LogDebug("File {FileName} still processing (state: {State}), waiting...",
+                    fileName, uploadedFile.State);
+
+                await Task.Delay(pollInterval, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking file status for {FileName}", fileName);
+                return null;
+            }
+        }
+
+        _logger.LogWarning("Timed out waiting for file {FileName} to process", fileName);
+        return null;
+    }
+
+    /// <summary>
+    /// Get metadata for an uploaded file.
+    /// </summary>
+    public async Task<Models.GeminiUploadedFile?> GetFileAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+            return null;
+
+        try
+        {
+            var file = await _client.Files.GetAsync(name: fileName);
+            return file != null ? MapToUploadedFile(file) : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get file metadata for {FileName}", fileName);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Delete an uploaded file.
+    /// </summary>
+    public async Task<bool> DeleteFileAsync(
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+            return false;
+
+        try
+        {
+            await _client.Files.DeleteAsync(name: fileName);
+            _logger.LogInformation("File {FileName} deleted successfully", fileName);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete file {FileName}", fileName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// List all uploaded files.
+    /// </summary>
+    public async Task<List<Models.GeminiUploadedFile>> ListFilesAsync(
+        int maxResults = 100,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsEnabled || _client == null)
+            return new List<Models.GeminiUploadedFile>();
+
+        try
+        {
+            var result = new List<Models.GeminiUploadedFile>();
+            var config = new Google.GenAI.Types.ListFilesConfig { PageSize = maxResults };
+            var pager = await _client.Files.ListAsync(config);
+
+            // Iterate through pages
+            await foreach (var file in pager)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                result.Add(MapToUploadedFile(file));
+                if (result.Count >= maxResults)
+                    break;
+            }
+
+            _logger.LogInformation("Listed {Count} files from Gemini", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list files from Gemini");
+            return new List<Models.GeminiUploadedFile>();
+        }
+    }
+
+    /// <summary>
+    /// Upload a file and wait for it to become active.
+    /// This is a convenience method that combines upload and wait.
+    /// </summary>
+    public async Task<Models.GeminiUploadedFile?> UploadAndWaitAsync(
+        Models.GeminiFileUploadRequest request,
+        int maxWaitSeconds = 60,
+        CancellationToken cancellationToken = default)
+    {
+        var uploadedFile = await UploadFileAsync(request, cancellationToken);
+        if (uploadedFile == null)
+            return null;
+
+        if (uploadedFile.IsReady)
+            return uploadedFile;
+
+        return await WaitForFileProcessingAsync(uploadedFile.Name, maxWaitSeconds, cancellationToken);
+    }
+
+    /// <summary>
+    /// Maps the SDK File type to our GeminiUploadedFile model.
+    /// </summary>
+    private static Models.GeminiUploadedFile MapToUploadedFile(Google.GenAI.Types.File file)
+    {
+        return new Models.GeminiUploadedFile
+        {
+            Name = file.Name ?? string.Empty,
+            DisplayName = file.DisplayName ?? string.Empty,
+            MimeType = file.MimeType ?? string.Empty,
+            SizeBytes = file.SizeBytes ?? 0,
+            Uri = file.Uri ?? string.Empty,
+            State = file.State?.ToString() ?? "UNKNOWN",
+            CreateTime = file.CreateTime,
+            ExpirationTime = file.ExpirationTime,
+            Error = file.Error?.Message
+        };
+    }
+
+    #endregion
 }

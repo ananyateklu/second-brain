@@ -6,6 +6,7 @@
 
 import { getToastContextRef, ToastType, ToastOptions as BaseToastOptions } from '../components/ui/Toast';
 import { ApiError, ApiErrorCode, isApiError } from '../types/api';
+import { getStore } from '../store/store-registry';
 
 // ============================================
 // Types
@@ -32,14 +33,40 @@ const DEFAULT_DURATION = 4000;
 const ERROR_DURATION = 5000;
 
 // ============================================
+// Notification Settings Helper
+// ============================================
+
+/**
+ * Check if notifications are enabled in user settings.
+ * Returns true if setting not yet loaded (default enabled).
+ */
+function areNotificationsEnabled(): boolean {
+  try {
+    const store = getStore();
+    const state = store.getState();
+    return state.enableNotifications ?? true;
+  } catch {
+    // Store not initialized yet, default to enabled
+    return true;
+  }
+}
+
+// ============================================
 // Toast Helper
 // ============================================
 
 function showToast(
   type: ToastType,
   title: string,
-  options?: BaseToastOptions
+  options?: BaseToastOptions & { bypassNotificationSetting?: boolean }
 ): string | null {
+  // Check if notifications are enabled (unless bypassed for critical messages)
+  // Always show errors and loading states regardless of setting
+  const isCritical = type === 'error' || type === 'loading' || options?.bypassNotificationSetting;
+  if (!isCritical && !areNotificationsEnabled()) {
+    return null;
+  }
+
   const context = getToastContextRef();
   if (!context) {
     console.error('Toast context not available. Make sure ToastProvider is mounted.');

@@ -299,6 +299,157 @@ export const agentKeys = {
   providers: () => [...agentKeys.all, 'providers'] as const,
 } as const;
 
+/**
+ * Query keys for Git integration
+ */
+export const gitKeys = {
+  /** Root key for all git queries */
+  all: ['git'] as const,
+
+  /** Key for repository status */
+  status: (repoPath: string) => [...gitKeys.all, 'status', repoPath] as const,
+
+  /** Key for file diff */
+  diff: (repoPath: string, filePath: string, staged: boolean) =>
+    [...gitKeys.all, 'diff', repoPath, filePath, staged] as const,
+
+  /** Key for commit log */
+  log: (repoPath: string, count?: number) => [...gitKeys.all, 'log', repoPath, count] as const,
+
+  /** Key for repository validation */
+  validate: (repoPath: string) => [...gitKeys.all, 'validate', repoPath] as const,
+
+  /** Key for branches list */
+  branches: (repoPath: string, includeRemote?: boolean) =>
+    [...gitKeys.all, 'branches', repoPath, includeRemote] as const,
+} as const;
+
+/**
+ * Filters for GitHub pull requests queries
+ */
+export interface GitHubPullRequestFilters {
+  /** Owner of the repository */
+  owner?: string;
+  /** Repository name */
+  repo?: string;
+  /** PR state filter */
+  state?: 'open' | 'closed' | 'all';
+  /** Page number */
+  page?: number;
+  /** Items per page */
+  perPage?: number;
+}
+
+/**
+ * Filters for GitHub Actions workflow runs queries
+ */
+export interface GitHubWorkflowRunFilters {
+  /** Owner of the repository */
+  owner?: string;
+  /** Repository name */
+  repo?: string;
+  /** Branch name filter */
+  branch?: string;
+  /** Workflow status filter */
+  status?: 'queued' | 'in_progress' | 'completed' | '';
+  /** Page number */
+  page?: number;
+  /** Items per page */
+  perPage?: number;
+}
+
+/**
+ * Filters for GitHub issues queries
+ */
+export interface GitHubIssueFilters {
+  /** Owner of the repository */
+  owner?: string;
+  /** Repository name */
+  repo?: string;
+  /** Issue state filter */
+  state?: 'open' | 'closed' | 'all';
+  /** Page number */
+  page?: number;
+  /** Items per page */
+  perPage?: number;
+}
+
+/**
+ * Filters for GitHub commits queries
+ */
+export interface GitHubCommitFilters {
+  /** Owner of the repository */
+  owner?: string;
+  /** Repository name */
+  repo?: string;
+  /** Branch name filter */
+  branch?: string;
+  /** Page number */
+  page?: number;
+  /** Items per page */
+  perPage?: number;
+}
+
+/**
+ * Query keys for GitHub integration (PRs and Actions)
+ */
+export const githubKeys = {
+  /** Root key for all github queries */
+  all: ['github'] as const,
+
+  /** Key for repository info */
+  repository: (owner?: string, repo?: string) =>
+    [...githubKeys.all, 'repository', { owner, repo }] as const,
+
+  /** Key for pull requests list */
+  pullRequests: (filters?: GitHubPullRequestFilters) =>
+    [...githubKeys.all, 'pullRequests', filters] as const,
+
+  /** Key for a specific pull request */
+  pullRequest: (number: number, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'pullRequest', number, { owner, repo }] as const,
+
+  /** Key for pull request reviews */
+  pullRequestReviews: (number: number, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'pullRequestReviews', number, { owner, repo }] as const,
+
+  /** Key for workflow runs list */
+  workflowRuns: (filters?: GitHubWorkflowRunFilters) =>
+    [...githubKeys.all, 'workflowRuns', filters] as const,
+
+  /** Key for a specific workflow run */
+  workflowRun: (id: number, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'workflowRun', id, { owner, repo }] as const,
+
+  /** Key for workflows list */
+  workflows: (owner?: string, repo?: string) =>
+    [...githubKeys.all, 'workflows', { owner, repo }] as const,
+
+  /** Key for check runs */
+  checkRuns: (sha: string, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'checkRuns', sha, { owner, repo }] as const,
+
+  /** Key for pull request files */
+  pullRequestFiles: (pullNumber: number, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'pullRequestFiles', pullNumber, { owner, repo }] as const,
+
+  /** Key for branches */
+  branches: (owner?: string, repo?: string) =>
+    [...githubKeys.all, 'branches', { owner, repo }] as const,
+
+  /** Key for issues list */
+  issues: (filters?: GitHubIssueFilters) =>
+    [...githubKeys.all, 'issues', filters] as const,
+
+  /** Key for commits list */
+  commits: (filters?: GitHubCommitFilters) =>
+    [...githubKeys.all, 'commits', filters] as const,
+
+  /** Key for issue/PR comments */
+  issueComments: (issueNumber: number, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'issueComments', issueNumber, { owner, repo }] as const,
+} as const;
+
 // ============================================
 // PostgreSQL 18 Temporal Feature Query Keys
 // ============================================
@@ -370,6 +521,8 @@ export const queryKeys = {
   userPreferences: userPreferencesKeys,
   imageGeneration: imageGenerationKeys,
   agent: agentKeys,
+  git: gitKeys,
+  github: githubKeys,
   // PostgreSQL 18 Temporal Features
   noteVersions: noteVersionKeys,
   chatSessions: chatSessionKeys,

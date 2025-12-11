@@ -1,9 +1,205 @@
+
 import { toast } from '../../hooks/use-toast';
+import { useSettingsStore } from '../../store/settings-store';
+import type { FontSize, NoteView } from '../../store/types';
 
 export function GeneralSettings() {
+    const {
+        fontSize,
+        setFontSize,
+        defaultNoteView,
+        setDefaultNoteView,
+        itemsPerPage,
+        setItemsPerPage,
+        autoSaveInterval,
+        setAutoSaveInterval,
+    } = useSettingsStore();
+
+    const handleFontSizeChange = (size: FontSize) => {
+        setFontSize(size);
+        toast.success('Font Size Updated', `Font size set to ${size}.`);
+    };
+
+    const handleNoteViewChange = (view: NoteView) => {
+        setDefaultNoteView(view);
+        toast.success('Default View Updated', `Default note view set to ${view}.`);
+    };
+
+    const handleItemsPerPageChange = (value: number) => {
+        setItemsPerPage(value);
+    };
+
+    const handleAutoSaveChange = (value: number) => {
+        setAutoSaveInterval(value);
+    };
+
+    const formatAutoSaveInterval = (ms: number) => {
+        if (ms < 1000) return `${ms}ms`;
+        return `${ms / 1000}s`;
+    };
+
     return (
         <div className="space-y-4">
-            {/* Developer and Display Options - Inline */}
+            {/* Display Settings Section */}
+            <section
+                className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+                style={{
+                    backgroundColor: 'var(--surface-card)',
+                    borderColor: 'var(--border)',
+                    boxShadow: 'var(--shadow-lg)',
+                }}
+            >
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-start gap-3">
+                        <div
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                            style={{
+                                backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                            }}
+                        >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                                    Appearance
+                                </span>
+                                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
+                                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                    Display Settings
+                                </h3>
+                            </div>
+                            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                Customize how content is displayed throughout the app
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Font Size Selection */}
+                        <div>
+                            <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+                                </svg>
+                                Font Size
+                            </label>
+                            <div className="flex gap-2">
+                                {(['small', 'medium', 'large'] as FontSize[]).map((size) => {
+                                    const isActive = fontSize === size;
+                                    const sizeLabels = { small: 'Small', medium: 'Medium', large: 'Large' };
+                                    return (
+                                        <button
+                                            key={size}
+                                            type="button"
+                                            onClick={() => handleFontSizeChange(size)}
+                                            className="px-4 py-2 rounded-xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    : 'var(--surface-elevated)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                boxShadow: isActive
+                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    : 'none',
+                                                transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+                                            }}
+                                        >
+                                            {sizeLabels[size]}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Default Note View */}
+                        <div>
+                            <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                </svg>
+                                Default Note View
+                            </label>
+                            <div className="flex gap-2">
+                                {(['list', 'grid'] as NoteView[]).map((view) => {
+                                    const isActive = defaultNoteView === view;
+                                    return (
+                                        <button
+                                            key={view}
+                                            type="button"
+                                            onClick={() => handleNoteViewChange(view)}
+                                            className="px-4 py-2 rounded-xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    : 'var(--surface-elevated)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                boxShadow: isActive
+                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    : 'none',
+                                                transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+                                            }}
+                                        >
+                                            {view === 'list' ? (
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                                </svg>
+                                            )}
+                                            {view === 'list' ? 'List' : 'Grid'}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Items Per Page Slider */}
+                        <div>
+                            <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                Items Per Page
+                                <span
+                                    className="ml-2 px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
+                                        color: 'var(--color-brand-600)',
+                                    }}
+                                >
+                                    {itemsPerPage}
+                                </span>
+                            </label>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>5</span>
+                                <input
+                                    type="range"
+                                    min={5}
+                                    max={100}
+                                    step={5}
+                                    value={itemsPerPage}
+                                    onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value, 10))}
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                                    style={{
+                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) 100%)`,
+                                    }}
+                                />
+                                <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Notifications Testing & Auto-save Section */}
             <div className="grid gap-4 lg:grid-cols-2">
                 {/* Developer Section - Notification Testing */}
                 <section
@@ -211,6 +407,84 @@ export function GeneralSettings() {
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+                {/* Auto-save Interval */}
+                <section
+                    className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+                    style={{
+                        backgroundColor: 'var(--surface-card)',
+                        borderColor: 'var(--border)',
+                        boxShadow: 'var(--shadow-lg)',
+                    }}
+                >
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-start gap-3">
+                            <div
+                                className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                    borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                }}
+                            >
+                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                                        Editor
+                                    </span>
+                                    <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
+                                    <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                        Auto-save Interval
+                                    </h3>
+                                </div>
+                                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                    How often to auto-save your drafts
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg p-3" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Interval
+                                </label>
+                                <span
+                                    className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
+                                        color: 'var(--color-brand-600)',
+                                    }}
+                                >
+                                    {formatAutoSaveInterval(autoSaveInterval)}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>0.5s</span>
+                                <input
+                                    type="range"
+                                    min={500}
+                                    max={10000}
+                                    step={500}
+                                    value={autoSaveInterval}
+                                    onChange={(e) => handleAutoSaveChange(parseInt(e.target.value, 10))}
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer transition-all duration-200"
+                                    style={{
+                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--border) 50%, transparent) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--border) 50%, transparent) 100%)`,
+                                    }}
+                                />
+                                <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>10s</span>
+                            </div>
+                            <p className="text-[10px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+                                Lower values save more frequently but may use more resources
+                            </p>
                         </div>
                     </div>
                 </section>

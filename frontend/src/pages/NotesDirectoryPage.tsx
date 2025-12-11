@@ -5,14 +5,16 @@
 
 import { useState, useMemo, useRef } from 'react';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
-import { NoteListItem } from '../features/notes/components/NoteListItem';
+import { NoteList } from '../features/notes/components/NoteList';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ViewModeToggle } from '../components/ui/ViewModeToggle';
 import { useThemeStore } from '../store/theme-store';
-import { useUIStore } from '../store/ui-store';
+import { useBoundStore } from '../store/bound-store';
 import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import { isTauri } from '../lib/native-notifications';
+import type { NotesViewMode } from '../store/types';
 
 type FolderFilter = string | null;
 type ArchiveFilter = 'all' | 'not-archived' | 'archived';
@@ -25,15 +27,24 @@ export function NotesDirectoryPage() {
   const titleBarHeight = useTitleBarHeight();
 
   // Fullscreen state for Tauri
-  const isFullscreen = useUIStore((state) => state.isFullscreenDirectory);
-  const toggleFullscreen = useUIStore((state) => state.toggleFullscreenDirectory);
+  const isFullscreen = useBoundStore((state) => state.isFullscreenDirectory);
+  const toggleFullscreen = useBoundStore((state) => state.toggleFullscreenDirectory);
   const isInTauri = isTauri();
   const isPageFullscreen = isInTauri && isFullscreen;
+
+  // View mode state - uses separate state for Directory page (independent from Notes page)
+  const directoryViewMode = useBoundStore((state) => state.directoryViewMode);
+  const setDirectoryViewMode = useBoundStore((state) => state.setDirectoryViewMode);
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<FolderFilter>(null);
   const [archiveFilter, setArchiveFilter] = useState<ArchiveFilter>('all');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // Handle view mode change
+  const handleViewModeChange = (mode: NotesViewMode) => {
+    setDirectoryViewMode(mode);
+  };
 
   // Calculate folder stats
   const folderStats = useMemo(() => {
@@ -459,6 +470,13 @@ export function NotesDirectoryPage() {
               {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
             </span>
 
+            {/* View Mode Toggle */}
+            <ViewModeToggle
+              viewMode={directoryViewMode}
+              onViewModeChange={handleViewModeChange}
+              size="sm"
+            />
+
             {/* Fullscreen Toggle - Only in Tauri */}
             {isInTauri && (
               <button
@@ -531,13 +549,10 @@ export function NotesDirectoryPage() {
               }
             />
           ) : (
-            <div className="space-y-2">
-              {filteredNotes
-                .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                .map((note) => (
-                  <NoteListItem key={note.id} note={note} showDeleteButton={true} />
-                ))}
-            </div>
+            <NoteList
+              notes={filteredNotes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())}
+              viewMode={directoryViewMode}
+            />
           )}
         </div>
       </div>

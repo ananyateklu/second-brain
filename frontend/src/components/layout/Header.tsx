@@ -21,6 +21,7 @@ const getPageTitle = (pathname: string): string => {
     '/notes': 'Notes',
     '/chat': 'Chat',
     '/analytics': 'RAG Analytics',
+    '/git': 'Source Control',
   };
   return titleMap[pathname] || 'Page';
 };

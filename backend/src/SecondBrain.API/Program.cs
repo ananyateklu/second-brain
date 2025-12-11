@@ -100,6 +100,31 @@ if (File.Exists(envPath))
 
     var allowLocal = Environment.GetEnvironmentVariable("CORS_ALLOW_LOCAL_NETWORK");
     if (!string.IsNullOrEmpty(allowLocal)) Environment.SetEnvironmentVariable("Cors__AllowLocalNetworkIps", allowLocal);
+
+    // Git Integration
+    var gitAllowedRoots = Environment.GetEnvironmentVariable("GIT_ALLOWED_REPOSITORY_ROOTS");
+    if (!string.IsNullOrEmpty(gitAllowedRoots))
+    {
+        // Support comma-separated list of paths
+        var roots = gitAllowedRoots.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        for (var i = 0; i < roots.Length; i++)
+        {
+            Environment.SetEnvironmentVariable($"Git__AllowedRepositoryRoots__{i}", roots[i]);
+        }
+    }
+
+    var gitRequireUserScoped = Environment.GetEnvironmentVariable("GIT_REQUIRE_USER_SCOPED_ROOT");
+    if (!string.IsNullOrEmpty(gitRequireUserScoped)) Environment.SetEnvironmentVariable("Git__RequireUserScopedRoot", gitRequireUserScoped);
+
+    // GitHub Integration
+    var githubToken = Environment.GetEnvironmentVariable("GITHUB_PERSONAL_ACCESS_TOKEN");
+    if (!string.IsNullOrEmpty(githubToken)) Environment.SetEnvironmentVariable("GitHub__PersonalAccessToken", githubToken);
+
+    var githubOwner = Environment.GetEnvironmentVariable("GITHUB_DEFAULT_OWNER");
+    if (!string.IsNullOrEmpty(githubOwner)) Environment.SetEnvironmentVariable("GitHub__DefaultOwner", githubOwner);
+
+    var githubRepo = Environment.GetEnvironmentVariable("GITHUB_DEFAULT_REPO");
+    if (!string.IsNullOrEmpty(githubRepo)) Environment.SetEnvironmentVariable("GitHub__DefaultRepo", githubRepo);
 }
 
 Console.WriteLine();

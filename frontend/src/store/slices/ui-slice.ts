@@ -8,6 +8,7 @@ import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode } f
 
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';
 const NOTES_VIEW_MODE_STORAGE_KEY = 'second-brain-notes-view-mode';
+const DIRECTORY_VIEW_MODE_STORAGE_KEY = 'second-brain-directory-view-mode';
 
 /**
  * Load sidebar state from localStorage
@@ -54,9 +55,30 @@ const saveNotesViewMode = (mode: NotesViewMode) => {
   localStorage.setItem(NOTES_VIEW_MODE_STORAGE_KEY, mode);
 };
 
+/**
+ * Load directory view mode from localStorage
+ */
+const loadDirectoryViewMode = (): NotesViewMode => {
+  if (typeof window === 'undefined') return 'card';
+  const stored = localStorage.getItem(DIRECTORY_VIEW_MODE_STORAGE_KEY);
+  if (stored === 'card' || stored === 'list') {
+    return stored;
+  }
+  return 'card';
+};
+
+/**
+ * Save directory view mode to localStorage
+ */
+const saveDirectoryViewMode = (mode: NotesViewMode) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(DIRECTORY_VIEW_MODE_STORAGE_KEY, mode);
+};
+
 // Initialize from storage
 const initialSidebarState = loadSidebarState();
 const initialNotesViewMode = loadNotesViewMode();
+const initialDirectoryViewMode = loadDirectoryViewMode();
 
 export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Initial state
@@ -71,6 +93,7 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   sidebarState: initialSidebarState,
   previousSidebarState: null,
   notesViewMode: initialNotesViewMode,
+  directoryViewMode: initialDirectoryViewMode,
   isFullscreenChat: false,
   isFullscreenDirectory: false,
 
@@ -154,6 +177,11 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   setNotesViewMode: (mode: NotesViewMode) => {
     saveNotesViewMode(mode);
     set({ notesViewMode: mode });
+  },
+
+  setDirectoryViewMode: (mode: NotesViewMode) => {
+    saveDirectoryViewMode(mode);
+    set({ directoryViewMode: mode });
   },
 
   // ============================================
