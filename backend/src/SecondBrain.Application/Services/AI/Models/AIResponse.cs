@@ -380,7 +380,12 @@ public class GeminiFileUploadRequest
     public string? FilePath { get; set; }
 
     /// <summary>
-    /// The name to give the file (required when uploading bytes)
+    /// The file stream to upload from (avoids loading entire file into memory)
+    /// </summary>
+    public Stream? FileStream { get; set; }
+
+    /// <summary>
+    /// The name to give the file (required when uploading bytes or stream)
     /// </summary>
     public string? FileName { get; set; }
 

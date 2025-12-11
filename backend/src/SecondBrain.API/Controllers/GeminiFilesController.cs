@@ -112,6 +112,7 @@ public class GeminiFilesController : ControllerBase
         const long InMemoryThreshold = 10L * 1024 * 1024; // 10MB
 
         string? tempFilePath = null;
+        FileStream? fileReadStream = null;
         try
         {
             GeminiFileUploadRequest request;
@@ -138,14 +139,17 @@ public class GeminiFilesController : ControllerBase
                 _logger.LogDebug("Streaming large file ({Size} bytes) to temp path: {TempPath}",
                     file.Length, tempFilePath);
 
-                await using (var fileStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+                await using (var writeStream = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
                 {
-                    await file.CopyToAsync(fileStream, cancellationToken);
+                    await file.CopyToAsync(writeStream, cancellationToken);
                 }
+
+                // Create a fresh stream for reading the temp file (not loading into memory)
+                fileReadStream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.SequentialScan | FileOptions.Asynchronous);
 
                 request = new GeminiFileUploadRequest
                 {
-                    FilePath = tempFilePath,
+                    FileStream = fileReadStream, // Use stream instead of FilePath+FileName to avoid loading entire file into memory
                     FileName = file.FileName, // Preserve original filename for Gemini registration
                     DisplayName = displayName ?? file.FileName,
                     MimeType = contentType
@@ -186,6 +190,19 @@ public class GeminiFilesController : ControllerBase
         }
         finally
         {
+            // Dispose of the file read stream if created
+            if (fileReadStream != null)
+            {
+                try
+                {
+                    await fileReadStream.DisposeAsync();
+                }
+                catch (Exception disposeEx)
+                {
+                    _logger.LogWarning(disposeEx, "Failed to dispose file read stream");
+                }
+            }
+
             // Clean up temp file if created
             if (tempFilePath != null)
             {

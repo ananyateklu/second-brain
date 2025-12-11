@@ -1753,31 +1753,42 @@ public class GeminiProvider : IAIProvider
                     bytes: request.Bytes,
                     fileName: request.FileName);
             }
-            else if (!string.IsNullOrEmpty(request.FilePath))
+            else if (request.FileStream != null && !string.IsNullOrEmpty(request.FileName))
             {
-                // Upload from file path
-                // If a FileName is provided, use it instead of the temp file path's name
-                // This preserves the original filename when uploading large files via temp files
-                if (!string.IsNullOrEmpty(request.FileName))
-                {
-                    _logger.LogInformation("Uploading file {FileName} from path {FilePath} to Gemini",
-                        request.FileName, request.FilePath);
+                // Upload from stream (avoids loading entire file into memory upfront)
+                _logger.LogInformation("Uploading file {FileName} from stream to Gemini",
+                    request.FileName);
 
-                    // Read file bytes and upload with the correct filename
-                    var fileBytes = await System.IO.File.ReadAllBytesAsync(request.FilePath);
+                // Copy stream to memory stream for Gemini API (the API requires bytes)
+                // Using CopyToAsync with a buffer size improves performance for large files
+                using (var memoryStream = new MemoryStream())
+                {
+                    await request.FileStream.CopyToAsync(memoryStream, 81920); // 80KB buffer
+                    var fileBytes = memoryStream.ToArray();
+
+                    _logger.LogDebug("Stream read complete, uploading {BytesCount} bytes for {FileName}",
+                        fileBytes.Length, request.FileName);
+
                     response = await _client.Files.UploadAsync(
                         bytes: fileBytes,
                         fileName: request.FileName);
                 }
-                else
+            }
+            else if (!string.IsNullOrEmpty(request.FilePath))
+            {
+                // Upload from file path
+                _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
+
+                if (!string.IsNullOrEmpty(request.FileName))
                 {
-                    _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
-                    response = await _client.Files.UploadAsync(filePath: request.FilePath);
+                    _logger.LogInformation("Using custom filename {FileName} for temp file upload", request.FileName);
                 }
+
+                response = await _client.Files.UploadAsync(filePath: request.FilePath);
             }
             else
             {
-                _logger.LogError("File upload request must include either Bytes+FileName or FilePath");
+                _logger.LogError("File upload request must include either Bytes+FileName, FileStream+FileName, or FilePath");
                 return null;
             }
 
