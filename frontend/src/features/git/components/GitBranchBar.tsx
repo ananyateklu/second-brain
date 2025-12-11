@@ -75,7 +75,7 @@ export const GitBranchBar = memo(function GitBranchBar({
   const handlePublish = useCallback(() => {
     if (!status?.branch) return;
     publishBranch.mutate({ branchName: status.branch });
-  }, [status?.branch, publishBranch]);
+  }, [status, publishBranch]);
 
   const canPush = status?.hasRemote && status.ahead > 0;
   const canPull = status?.hasRemote && status.behind > 0;
