@@ -146,6 +146,7 @@ public class GeminiFilesController : ControllerBase
                 request = new GeminiFileUploadRequest
                 {
                     FilePath = tempFilePath,
+                    FileName = file.FileName, // Preserve original filename for Gemini registration
                     DisplayName = displayName ?? file.FileName,
                     MimeType = contentType
                 };

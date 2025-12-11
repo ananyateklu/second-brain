@@ -267,6 +267,20 @@ export const API_ENDPOINTS = {
     BRANCH_MERGE: '/git/branches/merge',
     BRANCH_PUBLISH: '/git/branches/publish',
   },
+
+  // GitHub Integration
+  GITHUB: {
+    REPOSITORY: '/github/repository',
+    PULLS: '/github/pulls',
+    PULL_BY_NUMBER: (number: number) => `/github/pulls/${number}`,
+    PULL_REVIEWS: (number: number) => `/github/pulls/${number}/reviews`,
+    ACTIONS_RUNS: '/github/actions/runs',
+    ACTIONS_RUN_BY_ID: (id: number) => `/github/actions/runs/${id}`,
+    ACTIONS_WORKFLOWS: '/github/actions/workflows',
+    CHECKS: (sha: string) => `/github/checks/${sha}`,
+    RERUN_WORKFLOW: (id: number) => `/github/actions/runs/${id}/rerun`,
+    CANCEL_WORKFLOW: (id: number) => `/github/actions/runs/${id}/cancel`,
+  },
 } as const;
 
 // ============================================

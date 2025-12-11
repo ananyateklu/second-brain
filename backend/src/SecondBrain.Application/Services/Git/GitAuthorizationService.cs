@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
@@ -128,8 +130,17 @@ public class GitAuthorizationService : IGitAuthorizationService
             .Where(c => char.IsLetterOrDigit(c) || c is '-' or '_' or '.')
             .ToArray());
 
-        return string.IsNullOrWhiteSpace(cleaned)
-            ? "user-" + Math.Abs(userId.GetHashCode())
-            : cleaned;
+        if (!string.IsNullOrWhiteSpace(cleaned))
+        {
+            return cleaned;
+        }
+
+        // Use SHA256 for deterministic hash instead of GetHashCode()
+        // GetHashCode() is randomized per process in .NET Core and would cause
+        // inconsistent user paths across application restarts
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(userId));
+        // Take first 8 bytes (64 bits) and convert to hex for a reasonably short but unique identifier
+        var hashHex = Convert.ToHexString(hashBytes, 0, 8).ToLowerInvariant();
+        return "user-" + hashHex;
     }
 }

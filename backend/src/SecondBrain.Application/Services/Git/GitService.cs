@@ -433,8 +433,10 @@ public partial class GitService : IGitService
 
             count = Math.Clamp(count, 1, 100);
 
-            // Format: hash|short_hash|author_name|author_email|date|subject
-            var format = "%H|%h|%an|%ae|%aI|%s";
+            // Format: hash, short_hash, author_name, author_email, date, subject
+            // Use null character (%x00) as delimiter since commit messages cannot contain null bytes
+            // This prevents parsing issues when commit messages contain pipe (|) characters
+            var format = "%H%x00%h%x00%an%x00%ae%x00%aI%x00%s";
             var (exitCode, output, error) = await ExecuteGitCommandAsync(repoPath,
                 ["log", $"-{count}", $"--format={format}"]);
 
@@ -446,7 +448,7 @@ public partial class GitService : IGitService
             var entries = new List<GitLogEntry>();
             foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                var parts = line.Split('|');
+                var parts = line.Split('\0');
                 if (parts.Length >= 6)
                 {
                     entries.Add(new GitLogEntry
@@ -456,7 +458,8 @@ public partial class GitService : IGitService
                         Author = parts[2],
                         AuthorEmail = parts[3],
                         Date = parts[4],
-                        Message = parts[5]
+                        // Join remaining parts in case the subject itself was split (shouldn't happen with \0, but defensive)
+                        Message = parts.Length > 6 ? string.Join("\0", parts[5..]) : parts[5]
                     });
                 }
             }

@@ -1756,9 +1756,24 @@ public class GeminiProvider : IAIProvider
             else if (!string.IsNullOrEmpty(request.FilePath))
             {
                 // Upload from file path
-                _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
+                // If a FileName is provided, use it instead of the temp file path's name
+                // This preserves the original filename when uploading large files via temp files
+                if (!string.IsNullOrEmpty(request.FileName))
+                {
+                    _logger.LogInformation("Uploading file {FileName} from path {FilePath} to Gemini",
+                        request.FileName, request.FilePath);
 
-                response = await _client.Files.UploadAsync(filePath: request.FilePath);
+                    // Read file bytes and upload with the correct filename
+                    var fileBytes = await System.IO.File.ReadAllBytesAsync(request.FilePath);
+                    response = await _client.Files.UploadAsync(
+                        bytes: fileBytes,
+                        fileName: request.FileName);
+                }
+                else
+                {
+                    _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
+                    response = await _client.Files.UploadAsync(filePath: request.FilePath);
+                }
             }
             else
             {
