@@ -46,6 +46,7 @@ docker-compose up -d  # Access at http://localhost:3000
 - [API Endpoints](#api-endpoints)
 - [Configuration](#configuration)
 - [Development](#development)
+- [Git & GitHub Integration](#git--github-integration)
 - [iOS Sync](#ios-sync)
 - [Troubleshooting](#troubleshooting)
 - [Architecture](#architecture)
@@ -89,6 +90,8 @@ docker-compose up -d  # Access at http://localhost:3000
 - **AI Chat**: Multi-provider AI chat (OpenAI, Claude, Gemini, Ollama, Grok) with streaming responses
 - **AI Agents**: Agent mode with tool execution for automated note management
 - **AI Provider Health**: Real-time monitoring of AI provider status
+- **Git Integration**: Local Git repository management with branch operations and commit history
+- **GitHub Integration**: Connect to GitHub for pull requests, issues, and workflow management
 - **macOS Desktop App**: Native desktop application built with Tauri 2.0 featuring bundled backend, embedded database, and offline capability
 - **iOS Sync**: Bidirectional sync with iPhone/iPad via iOS Shortcuts
 - **Analytics Dashboard**: Track your notes, AI usage, and token consumption
@@ -383,6 +386,8 @@ The API follows RESTful conventions with JWT authentication. Key endpoint groups
 | Chat | `/api/chat` | Conversations, streaming messages (SSE), image generation |
 | Agents | `/api/agent` | Agent mode with tool execution |
 | AI | `/api/ai` | Provider health, completions |
+| Git | `/api/git` | Repository management, branch operations, commit history |
+| GitHub | `/api/github` | Pull requests, issues, workflow runs, repository management |
 | Indexing | `/api/indexing` | RAG indexing jobs and stats |
 | RAG Analytics | `/api/rag/analytics` | Query logs, feedback, topic clustering |
 | Stats | `/api/stats` | AI usage statistics |
@@ -435,6 +440,85 @@ pnpm test
 ```
 
 See [Quick Start](#quick-start) for development server commands.
+
+## Git & GitHub Integration
+
+### Git Repository Management
+
+Connect and manage local Git repositories directly within Second Brain:
+
+**Features:**
+
+- **Repository Operations** - Clone, fetch, and configure local repositories
+- **Branch Management** - Create, switch, and publish branches
+- **Commit History** - View and analyze commit logs
+- **SSH Authentication** - Secure Git operations with SSH keys
+
+**API Reference:**
+
+```bash
+# Get branches for a repository
+GET /api/git/repositories/{repoId}/branches
+
+# Create a new branch
+POST /api/git/repositories/{repoId}/branches
+{ "branchName": "feature/new-feature", "fromBranch": "main" }
+
+# Switch to a branch
+POST /api/git/repositories/{repoId}/checkout
+{ "branchName": "feature/new-feature" }
+
+# Publish branch to remote
+POST /api/git/repositories/{repoId}/publish
+{ "branchName": "feature/new-feature", "remoteName": "origin" }
+
+# Get commit history
+GET /api/git/repositories/{repoId}/commits?branch=main
+```
+
+### GitHub API Integration
+
+Access GitHub data directly from Second Brain for pull requests, issues, and workflows:
+
+**Features:**
+
+- **Pull Requests** - View, filter, and manage PRs across repositories
+- **Issues** - Browse and track GitHub issues
+- **Workflow Runs** - Monitor CI/CD pipeline execution
+- **Repository Management** - Access your GitHub repositories
+
+**API Reference:**
+
+```bash
+# Get user's repositories
+GET /api/github/repositories
+
+# Get pull requests
+GET /api/github/repositories/{owner}/{repo}/pulls?state=open
+
+# Get issues
+GET /api/github/repositories/{owner}/{repo}/issues
+
+# Get workflow runs
+GET /api/github/repositories/{owner}/{repo}/actions/runs
+```
+
+**Configuration:**
+
+Add GitHub settings to `appsettings.json`:
+
+```json
+{
+  "GitHub": {
+    "ApiBaseUrl": "https://api.github.com",
+    "ApiVersion": "2022-11-28"
+  }
+}
+```
+
+For authentication, store your GitHub personal access token in the user preferences or environment variables.
+
+---
 
 ## iOS Sync
 

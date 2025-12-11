@@ -26,10 +26,3 @@ namespace SecondBrain.Infrastructure.Migrations
         }
     }
 }
-
-
-
-
-
-
-
