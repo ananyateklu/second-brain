@@ -63,6 +63,7 @@ What is the change that we're proposing and/or doing?
 | [010](010-hybridcache-distributed-caching.md) | HybridCache for Distributed Caching | Accepted | 2025-12 |
 | [011](011-backend-performance-optimizations.md) | Backend Performance Optimizations | Accepted | 2025-12 |
 | [012](012-postgresql-18-temporal-features.md) | PostgreSQL 18 Temporal Features | Accepted | 2025-12 |
+| [014](014-agent-streaming-strategy-pattern.md) | Agent Streaming Strategy Pattern | Accepted | 2025-12-11 |
 
 ## Creating a New ADR
 
