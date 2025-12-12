@@ -108,7 +108,7 @@ describe('GitHubPullRequestList', () => {
       render(<GitHubPullRequestList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(document.querySelector('[style*="animation: shimmer"]')).toBeInTheDocument();
       });
     });
   });
@@ -358,7 +358,9 @@ describe('GitHubPullRequestList', () => {
         expect(screen.getByText('Test PR')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Test PR').closest('button')!);
+      const buttonElement = screen.getByText('Test PR').closest('button');
+      expect(buttonElement).toBeTruthy();
+      fireEvent.click(buttonElement as HTMLElement);
 
       expect(onSelectPR).toHaveBeenCalledWith(pr);
     });
@@ -371,44 +373,53 @@ describe('GitHubPullRequestList', () => {
 
       await waitFor(() => {
         const prButton = screen.getByText('#42').closest('button');
-        expect(prButton).toHaveClass('ring-2');
+        expect(prButton).toHaveClass('ring-1');
       });
     });
   });
 
   describe('Pagination', () => {
     it('should show pagination when hasMore is true', async () => {
-      vi.mocked(githubService.getPullRequests).mockResolvedValue(mockPRsResponse([mockPR()], true));
+      vi.mocked(githubService.getPullRequests).mockResolvedValue({
+        ...mockPRsResponse([mockPR()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubPullRequestList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Next')).toBeInTheDocument();
-        expect(screen.getByText('Previous')).toBeInTheDocument();
+        expect(screen.getByLabelText('Next page')).toBeInTheDocument();
+        expect(screen.getByLabelText('Previous page')).toBeInTheDocument();
       });
     });
 
     it('should disable Previous button on first page', async () => {
-      vi.mocked(githubService.getPullRequests).mockResolvedValue(mockPRsResponse([mockPR()], true));
+      vi.mocked(githubService.getPullRequests).mockResolvedValue({
+        ...mockPRsResponse([mockPR()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubPullRequestList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const prevButton = screen.getByText('Previous');
+        const prevButton = screen.getByLabelText('Previous page');
         expect(prevButton).toBeDisabled();
       });
     });
 
     it('should load next page when clicking Next', async () => {
-      vi.mocked(githubService.getPullRequests).mockResolvedValue(mockPRsResponse([mockPR()], true));
+      vi.mocked(githubService.getPullRequests).mockResolvedValue({
+        ...mockPRsResponse([mockPR()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubPullRequestList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Page 1')).toBeInTheDocument();
+        expect(screen.getByLabelText('Page 1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByLabelText('Next page'));
 
       await waitFor(() => {
         expect(githubService.getPullRequests).toHaveBeenCalledWith(

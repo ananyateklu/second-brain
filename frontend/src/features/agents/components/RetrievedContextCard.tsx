@@ -91,7 +91,7 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
           
           {isStreaming ? (
             <span className="text-[10px] opacity-70" style={{ color: 'var(--color-brand-500)' }}>
-              Loading...
+              Retrieving...
             </span>
           ) : (
             <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>

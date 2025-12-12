@@ -172,7 +172,7 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
                 border: '1px solid var(--border)',
               }}
             >
-              <div className="max-h-32 overflow-y-auto">
+              <div className="max-h-32 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
                 {files.map((file) => (
                   <div
                     key={file.filePath}

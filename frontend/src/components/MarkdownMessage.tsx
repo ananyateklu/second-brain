@@ -22,9 +22,8 @@ import csharp from 'react-syntax-highlighter/dist/esm/languages/prism/csharp';
 import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
 import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
 import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
-import { useThemeStore } from '../store/theme-store';
+import { useBoundStore } from '../store/bound-store';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
-import { useUIStore } from '../store/ui-store';
 
 // Register languages
 SyntaxHighlighter.registerLanguage('javascript', javascript);
@@ -62,10 +61,10 @@ interface MarkdownMessageProps {
 }
 
 export function MarkdownMessage({ content, showCursor = false }: MarkdownMessageProps) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDark = theme === 'dark' || theme === 'blue';
   const { data: notes } = useNotes();
-  const openEditModal = useUIStore((state) => state.openEditModal);
+  const openEditModal = useBoundStore((state) => state.openEditModal);
 
   const processedContent = useMemo(() => {
     // Decode Unicode escape sequences (e.g., \uD83D\uDC4B -> 👋)

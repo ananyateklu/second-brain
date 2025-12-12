@@ -1,4 +1,4 @@
-import { RefObject, useMemo } from 'react';
+import { RefObject, useMemo, memo } from 'react';
 import { ChatConversation, ChatMessage, ToolCall, GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
@@ -21,8 +21,9 @@ import type { ProcessEvent } from '../../../core/streaming/types';
  * This shows text that was streamed before a tool execution.
  * Strips thinking tags to prevent duplicate display (thinking is shown in ThinkingStepCard).
  * Returns null if content is empty after stripping.
+ * Memoized to prevent unnecessary re-renders.
  */
-function PersistedTimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
   const strippedContent = stripAllThinkingTags(content);
 
   // Don't render if content is empty after stripping thinking tags
@@ -52,7 +53,7 @@ function PersistedTimelineTextCard({ content, agentModeEnabled = false }: { cont
       </div>
     </div>
   );
-}
+});
 
 import { PendingMessage } from '../hooks/use-chat-conversation-manager';
 
@@ -174,7 +175,7 @@ export function ChatMessageList({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]"
+      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]"
     >
       <div className="max-w-4xl mx-auto space-y-4 pb-34">
         {hasNoMessages ? (
@@ -261,8 +262,9 @@ interface MessageWithContextProps {
 
 /**
  * Renders a single message with its context (thinking steps, tool executions, retrieved notes).
+ * Memoized to prevent unnecessary re-renders during streaming.
  */
-function MessageWithContext({
+const MessageWithContext = memo(function MessageWithContext({
   message,
   index,
   totalMessages,
@@ -390,7 +392,7 @@ function MessageWithContext({
       )}
     </div>
   );
-}
+});
 
 /**
  * Helper to check if content is an image generation request
@@ -413,9 +415,10 @@ interface PendingUserMessageProps {
 }
 
 /**
- * Renders the pending user message with special styling for image generation requests
+ * Renders the pending user message with special styling for image generation requests.
+ * Memoized to prevent unnecessary re-renders.
  */
-function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUserMessageProps) {
+const PendingUserMessage = memo(function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUserMessageProps) {
   const isImageRequest = isImageGenerationRequest(pendingMessage.content);
   const prompt = isImageRequest ? extractImagePrompt(pendingMessage.content) : pendingMessage.content;
 
@@ -503,4 +506,4 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
       </div>
     </div>
   );
-}
+});

@@ -1,4 +1,5 @@
 import { useGitHubIssueComments } from '../hooks';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import type { CommentSummary } from '../../../types/github';
 import { formatRelativeTime } from '../../../types/github';
 
@@ -20,16 +21,7 @@ export const GitHubCommentsView = ({
   );
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Loading comments...
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner size="sm" message="Loading comments..." className="py-8" />;
   }
 
   if (error) {

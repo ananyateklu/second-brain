@@ -56,7 +56,7 @@ describe('GitHubCommentsView', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading spinner while fetching comments', async () => {
+    it('should show loading spinner while fetching comments', () => {
       vi.mocked(githubService.getIssueComments).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockCommentsResponse()), 1000))
       );

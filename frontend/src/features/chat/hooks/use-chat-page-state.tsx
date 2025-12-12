@@ -18,7 +18,6 @@ import { useChatScroll } from './use-chat-scroll';
 import { useContextUsage } from './use-context-usage';
 import { chatService } from '../../../services';
 import { toast } from '../../../hooks/use-toast';
-import { useAuthStore } from '../../../store/auth-store';
 import { useBoundStore } from '../../../store/bound-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { conversationKeys } from '../../../lib/query-keys';
@@ -170,7 +169,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   const [showSidebar, setShowSidebar] = useState(true);
 
   // Auth
-  const user = useAuthStore((state) => state.user);
+  const user = useBoundStore((state) => state.user);
   const queryClient = useQueryClient();
 
   // Draft management from store - select each individually to avoid infinite loops

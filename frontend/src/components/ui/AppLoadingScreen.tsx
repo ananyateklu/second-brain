@@ -18,7 +18,7 @@ interface AppLoadingScreenProps {
  * Used for backend initialization, page loading, and authentication checks.
  */
 export function AppLoadingScreen({
-  message = 'Loading...',
+  message = 'Initializing app...',
   subMessage,
   error,
   onRetry,

@@ -221,8 +221,8 @@
   /* Page background gradient */
   --page-background: radial-gradient(
     circle at top left,
-    var(--color-brand-900),
-    #050805 40%
+    color-mix(in srgb, var(--color-brand-900) 18%, #050505),
+    #050505 45%
   );
 
   /* Smart prompt chip colors (dark mode default) */
@@ -554,8 +554,8 @@
 
   --page-background: radial-gradient(
     circle at top left,
-    var(--color-brand-900),
-    #050805 40%
+    color-mix(in srgb, var(--color-brand-900) 18%, #050505),
+    #050505 45%
   );
 
   color-scheme: dark;
@@ -1999,6 +1999,19 @@ input[type="range"]:focus-visible::-moz-range-thumb {
 
 .toggle-rotate-out {
   animation: toggleRotateOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Ghost button - subtle hover state without inline JS handlers */
+.btn-ghost-secondary {
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost-secondary:hover {
+  color: var(--text-primary);
+  background-color: var(--surface-elevated);
 }
 
 /* Override font-weight for conversation titles */

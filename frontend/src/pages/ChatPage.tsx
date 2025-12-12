@@ -13,8 +13,7 @@ import { ChatHeader } from '../features/chat/components/ChatHeader';
 import { ChatMessageList } from '../features/chat/components/ChatMessageList';
 import { ChatInputArea } from '../features/chat/components/ChatInputArea';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
-import { useAuthStore } from '../store/auth-store';
-import { useUIStore } from '../store/ui-store';
+import { useBoundStore } from '../store/bound-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
 import { getDirectBackendUrl, API_ENDPOINTS } from '../lib/constants';
@@ -28,12 +27,12 @@ import {
 } from '../components/skeletons';
 
 export function ChatPage() {
-  const user = useAuthStore((state) => state.user);
+  const user = useBoundStore((state) => state.user);
   const sendMessage = useSendMessage();
   const titleBarHeight = useTitleBarHeight();
 
   // Fullscreen state for Tauri
-  const isFullscreen = useUIStore((state) => state.isFullscreenChat);
+  const isFullscreen = useBoundStore((state) => state.isFullscreenChat);
   const isInTauri = isTauri();
 
   // Session tracking hooks (PostgreSQL 18 Temporal Features)

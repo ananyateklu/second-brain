@@ -132,21 +132,11 @@ export function SummaryNotification() {
         // Force refetch to ensure UI updates immediately
         void queryClient.refetchQueries({ queryKey: noteKeys.all });
 
-        // Show completion toast
-        if (isCompleted) {
-          toast.success(
-            'Summaries Complete',
-            `Generated ${status.successCount} summaries`
-          );
-        } else if (isFailed) {
+        // Only show toast for failures (progress bar handles success/cancel states visually)
+        if (isFailed) {
           toast.error(
             'Summary Generation Failed',
             status.errors[0] || 'An error occurred'
-          );
-        } else if (isCancelled) {
-          toast.info(
-            'Summary Generation Stopped',
-            `Processed ${status.processedNotes} of ${status.totalNotes} notes`
           );
         }
 

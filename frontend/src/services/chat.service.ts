@@ -6,6 +6,7 @@
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, DEFAULT_USER_ID, getApiBaseUrl } from '../lib/constants';
 import { useAuthStore } from '../store/auth-store';
+import { loggers } from '../utils/logger';
 import type {
   ChatConversation,
   ChatResponseWithRag,
@@ -200,7 +201,7 @@ export const chatService = {
             const ragData = JSON.parse(data);
             callbacks.onRag?.(ragData.retrievedNotes || []);
           } catch (e) {
-            console.error('Failed to parse RAG data:', { data, error: e });
+            loggers.stream.error('Failed to parse RAG data:', { data, error: e });
           }
         }
         break;
@@ -211,7 +212,7 @@ export const chatService = {
             const groundingData = JSON.parse(data);
             callbacks.onGroundingSources?.(groundingData.sources || []);
           } catch (e) {
-            console.error('Failed to parse grounding data:', { data, error: e });
+            loggers.stream.error('Failed to parse grounding data:', { data, error: e });
           }
         }
         break;
@@ -228,7 +229,7 @@ export const chatService = {
               errorMessage: codeExecData.errorMessage,
             });
           } catch (e) {
-            console.error('Failed to parse code execution data:', { data, error: e });
+            loggers.stream.error('Failed to parse code execution data:', { data, error: e });
           }
         }
         break;
@@ -250,7 +251,7 @@ export const chatService = {
             const endData = JSON.parse(data);
             callbacks.onEnd?.(endData);
           } catch (e) {
-            console.error('Failed to parse end data:', { data, error: e });
+            loggers.stream.error('Failed to parse end data:', { data, error: e });
             callbacks.onEnd?.({});
           }
         } else {

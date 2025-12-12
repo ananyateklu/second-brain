@@ -3,9 +3,24 @@ import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-do
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { PageLoader } from './PageLoader';
+
+// Lazy load login page - users only see it once per session
+const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
+
+// Lazy load skeleton components - they're only needed during route transitions
+const DashboardSkeleton = lazy(() => import('../features/dashboard/components/DashboardSkeleton').then(m => ({ default: m.DashboardSkeleton })));
+const NotesSkeleton = lazy(() => import('../features/notes/components/NotesSkeleton').then(m => ({ default: m.NotesSkeleton })));
+const DirectorySkeleton = lazy(() => import('../features/notes/components/DirectorySkeleton').then(m => ({ default: m.DirectorySkeleton })));
+const ChatSkeleton = lazy(() => import('../components/skeletons').then(m => ({ default: m.ChatSkeleton })));
+const RagAnalyticsSkeleton = lazy(() => import('../features/rag/components/RagAnalyticsSkeleton').then(m => ({ default: m.RagAnalyticsSkeleton })));
+const GitPageSkeleton = lazy(() => import('../features/git/components/GitPageSkeleton').then(m => ({ default: m.GitPageSkeleton })));
+const GitHubPageSkeleton = lazy(() => import('../features/github/components/GitHubPageSkeleton').then(m => ({ default: m.GitHubPageSkeleton })));
+const GeneralSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.GeneralSettingsSkeleton })));
+const AISettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.AISettingsSkeleton })));
+const RAGSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.RAGSettingsSkeleton })));
+const IndexingSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.IndexingSettingsSkeleton })));
 import { queryClient } from './query-client';
 import { noteKeys, conversationKeys, statsKeys } from './query-keys';
 import { notesService, chatService, statsService } from '../services';
@@ -41,7 +56,9 @@ const routes = [
     path: '/login',
     element: (
       <ErrorBoundary>
-        <LoginPage />
+        <Suspense fallback={<PageLoader />}>
+          <LoginPage />
+        </Suspense>
       </ErrorBoundary>
     ),
   },
@@ -68,7 +85,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<DashboardSkeleton />}>
               <DashboardPage />
             </Suspense>
           </AppLayout>
@@ -92,7 +109,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<NotesSkeleton />}>
               <NotesPage />
             </Suspense>
           </AppLayout>
@@ -102,11 +119,21 @@ const routes = [
   },
   {
     path: '/directory',
+    loader: async () => {
+      // Prefetch notes while route loads for instant display
+      await queryClient.prefetchQuery({
+        queryKey: noteKeys.all,
+        queryFn: () => notesService.getAll(),
+        staleTime: CACHE.STALE_TIME,
+      });
+      return null;
+    },
+    hydrateFallbackElement: <PageLoader />,
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<DirectorySkeleton />}>
               <NotesDirectoryPage />
             </Suspense>
           </AppLayout>
@@ -130,7 +157,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<ChatSkeleton />}>
               <ChatPage />
             </Suspense>
           </AppLayout>
@@ -144,7 +171,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<RagAnalyticsSkeleton />}>
               <RagAnalyticsPage />
             </Suspense>
           </AppLayout>
@@ -158,7 +185,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<GitPageSkeleton />}>
               <GitPage />
             </Suspense>
           </AppLayout>
@@ -172,7 +199,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<GitHubPageSkeleton />}>
               <GitHubPage />
             </Suspense>
           </AppLayout>
@@ -190,7 +217,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<GeneralSettingsSkeleton />}>
               <GeneralSettings />
             </Suspense>
           </AppLayout>
@@ -204,7 +231,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<AISettingsSkeleton />}>
               <AISettings />
             </Suspense>
           </AppLayout>
@@ -218,7 +245,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<RAGSettingsSkeleton />}>
               <RAGSettings />
             </Suspense>
           </AppLayout>
@@ -232,7 +259,7 @@ const routes = [
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<IndexingSettingsSkeleton />}>
               <IndexingSettings />
             </Suspense>
           </AppLayout>

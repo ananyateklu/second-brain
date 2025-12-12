@@ -5,8 +5,8 @@
  */
 
 import { useMemo, useEffect, useState, startTransition } from 'react';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { RagAnalyticsSkeleton } from '../features/rag/components/RagAnalyticsSkeleton';
 import { useBoundStore } from '../store/bound-store';
 import {
   useRagPerformanceStats,
@@ -108,14 +108,7 @@ export function RagAnalyticsPage() {
   }
 
   if (statsLoading && !stats) {
-    return (
-      <div
-        className="h-full flex items-center justify-center"
-        style={{ backgroundColor: 'var(--background)' }}
-      >
-        <LoadingSpinner message="Loading RAG analytics..." />
-      </div>
-    );
+    return <RagAnalyticsSkeleton />;
   }
 
   if (!stats || stats.totalQueries === 0) {

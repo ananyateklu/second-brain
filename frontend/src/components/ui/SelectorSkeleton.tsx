@@ -2,7 +2,7 @@ interface SelectorSkeletonProps {
   text?: string;
 }
 
-export function SelectorSkeleton({ text = 'Loading...' }: SelectorSkeletonProps) {
+export function SelectorSkeleton({ text = 'Loading options...' }: SelectorSkeletonProps) {
   return (
     <div className="relative">
       <div

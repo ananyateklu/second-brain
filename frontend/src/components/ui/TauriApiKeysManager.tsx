@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { isTauri } from '../../lib/native-notifications';
+import { LoadingSpinner } from './LoadingSpinner';
 import { getSecrets, saveSecrets, getSecretsPath, type Secrets } from '../../lib/tauri-bridge';
 import { toast } from '../../hooks/use-toast';
 
@@ -130,11 +131,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
     : (hasValue ? maskValue(currentValue) : '');
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: 'var(--color-brand-600)' }} />
-      </div>
-    );
+    return <LoadingSpinner size="xs" inline />;
   }
 
   return (
@@ -343,11 +340,7 @@ export function TauriApiKeysManager() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-brand-600)' }} />
-      </div>
-    );
+    return <LoadingSpinner message="Loading API keys..." className="p-8" />;
   }
 
   const aiProviderFields = API_KEY_FIELDS.filter(f => f.group === 'ai');

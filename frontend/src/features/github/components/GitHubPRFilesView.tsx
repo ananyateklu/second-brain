@@ -1,4 +1,5 @@
 import { useGitHubPullRequestFiles } from '../hooks';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import type { PullRequestFileSummary } from '../../../types/github';
 import {
   getFileChangeStatusColor,
@@ -24,16 +25,7 @@ export const GitHubPRFilesView = ({
   );
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Loading files...
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner size="sm" message="Loading files..." className="py-8" />;
   }
 
   if (error) {

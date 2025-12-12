@@ -5,6 +5,7 @@
 
 import { useNoteVersionDiff } from '../hooks/use-note-versions';
 import { Modal } from '../../../components/ui/Modal';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 
 interface NoteVersionDiffViewerProps {
   noteId: string;
@@ -34,9 +35,7 @@ export function NoteVersionDiffViewer({
       }
     >
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-600)]" />
-        </div>
+        <LoadingSpinner message="Loading diff..." className="h-64" />
       ) : diff ? (
         <div className="space-y-4">
           {/* Change summary */}

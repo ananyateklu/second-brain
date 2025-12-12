@@ -12,3 +12,6 @@ export { GitBranchBar } from './GitBranchBar';
 export { GitBranchSelector } from './GitBranchSelector';
 export { GitSettingsPanel } from './GitSettingsPanel';
 export { GitEmptyState } from './GitEmptyState';
+
+// Skeleton Components
+export { GitPageSkeleton } from './GitPageSkeleton';

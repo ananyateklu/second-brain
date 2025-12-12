@@ -1,8 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useUIStore } from '../../store/ui-store';
-import { useThemeStore } from '../../store/theme-store';
+import { useBoundStore } from '../../store/bound-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { noteKeys, conversationKeys, statsKeys } from '../../lib/query-keys';
 import { notesService, chatService, statsService } from '../../services';
@@ -14,11 +13,11 @@ import brainTopTab from '../../assets/brain-top-tab.png';
 
 export function Sidebar() {
   const queryClient = useQueryClient();
-  const openCreateModal = useUIStore((state) => state.openCreateModal);
-  const sidebarState = useUIStore((state) => state.sidebarState);
-  const previousSidebarState = useUIStore((state) => state.previousSidebarState);
-  const toggleSidebar = useUIStore((state) => state.toggleSidebar);
-  const { theme } = useThemeStore();
+  const openCreateModal = useBoundStore((state) => state.openCreateModal);
+  const sidebarState = useBoundStore((state) => state.sidebarState);
+  const previousSidebarState = useBoundStore((state) => state.previousSidebarState);
+  const toggleSidebar = useBoundStore((state) => state.toggleSidebar);
+  const theme = useBoundStore((state) => state.theme);
   const titleBarHeight = useTitleBarHeight();
   const logo = theme === 'light' ? logoLight : logoDark;
 
@@ -108,7 +107,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex sticky ml-4 z-30 flex-col pb-6 rounded-2xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
+      className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
         }`}
       style={{
         top: topPosition,
@@ -615,7 +614,7 @@ export function Sidebar() {
 
         {/* Create Button */}
         <div
-          className="pt-6 pb-6 px-4 transition-all duration-500"
+          className="pt-3 pb-3 px-4 transition-all duration-500"
         >
           <button
             onClick={openCreateModal}
@@ -669,7 +668,7 @@ export function Sidebar() {
       </div>
 
       {/* Settings Link */}
-      <div className="pb-6 px-4 border-b transition-all duration-500" style={{ borderColor: 'var(--border)' }}>
+      <div className="pb-3 px-4 border-b transition-all duration-500" style={{ borderColor: 'var(--border)' }}>
         <NavLink
           to="/settings"
           className={({ isActive }) =>
@@ -739,7 +738,7 @@ export function Sidebar() {
 
       {/* Toggle Button and Theme Toggle */}
       <div
-        className={`pt-6 transition-all duration-500 relative z-10 ${isCollapsed ? 'pt-4' : ''}`}
+        className={`transition-all duration-500 relative z-10 ${isCollapsed ? 'pt-4' : ''}`}
       >
         <div className={`flex items-center transition-all duration-500 ${isCollapsed ? 'flex-col gap-3 justify-center' : 'gap-3 justify-end'}`}>
           <button

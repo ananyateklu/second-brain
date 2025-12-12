@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, ComponentPropsWithoutRef, Fragment } from 'react';
+import { useState, useEffect, useMemo, memo, ComponentPropsWithoutRef, Fragment } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ThinkingStep } from '../types/agent-types';
@@ -172,7 +172,7 @@ function ThinkingContentWithNoteReferences({ content }: { content: string }) {
   );
 }
 
-export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
+export const ThinkingStepCard = memo(function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
   // Start expanded when streaming, collapsed otherwise
   // Use functional update to auto-expand when streaming starts
   const [isExpanded, setIsExpanded] = useState(isStreaming);
@@ -265,4 +265,4 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
       </div>
     </div>
   );
-}
+});

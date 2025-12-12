@@ -231,7 +231,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
             >
               <div className="flex items-center gap-3 px-4 py-3">
                 <div
-                  className="flex items-center justify-center w-8 h-8 rounded-lg"
+                  className="flex items-center justify-center w-8 h-8 rounded-xl"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--color-success) 20%, transparent)',
                   }}

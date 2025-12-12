@@ -57,7 +57,7 @@ describe('GitHubPRFilesView', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading spinner while fetching files', async () => {
+    it('should show loading spinner while fetching files', () => {
       vi.mocked(githubService.getPullRequestFiles).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockFilesResponse()), 1000))
       );

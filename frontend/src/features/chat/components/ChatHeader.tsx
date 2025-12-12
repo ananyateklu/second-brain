@@ -6,7 +6,7 @@ import { featureColors, FeatureIcons } from '../../../components/ui/feature-mode
 import { AgentSettingsPopover } from '../../../components/ui/AgentSettingsPopover';
 import { ContextUsageIndicator } from '../../../components/ui/ContextUsageIndicator';
 import { ContextUsageState } from '../../../types/context-usage';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { isTauri } from '../../../lib/native-notifications';
 
 export interface ProviderInfo {
@@ -159,7 +159,7 @@ export function ChatHeader({
         {/* Combined Model Selector */}
         <div className="flex-shrink-0">
           {isHealthLoading && availableProviders.length === 0 ? (
-            <SelectorSkeleton text="Loading..." />
+            <SelectorSkeleton text="Loading providers..." />
           ) : (
             <CombinedModelSelector
               providers={availableProviders}
@@ -260,8 +260,8 @@ export function ChatHeader({
  */
 function FullscreenToggle() {
   const isInTauri = isTauri();
-  const isFullscreen = useUIStore((state) => state.isFullscreenChat);
-  const toggleFullscreen = useUIStore((state) => state.toggleFullscreenChat);
+  const isFullscreen = useBoundStore((state) => state.isFullscreenChat);
+  const toggleFullscreen = useBoundStore((state) => state.toggleFullscreenChat);
 
   if (!isInTauri) return null;
 

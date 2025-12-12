@@ -48,11 +48,11 @@ export const GitHubRepoSelector = ({
   // Update recent repos when current repo changes
   useEffect(() => {
     const currentFullName = currentOwner && currentRepo ? `${currentOwner}/${currentRepo}` : undefined;
-    if (currentFullName && currentFullName !== prevRepoRef.current) {
+    if (currentFullName && currentFullName !== prevRepoRef.current && currentOwner && currentRepo) {
       prevRepoRef.current = currentFullName;
       const newRepo: RepoConfig = {
-        owner: currentOwner!,
-        repo: currentRepo!,
+        owner: currentOwner,
+        repo: currentRepo,
         fullName: currentFullName,
       };
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -104,7 +104,7 @@ export const GitHubRepoSelector = ({
             setTimeout(() => inputRef.current?.focus(), 100);
           }
         }}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80 min-w-0 max-w-[20rem]"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           color: 'var(--text-primary)',
@@ -113,9 +113,11 @@ export const GitHubRepoSelector = ({
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
           <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z" />
         </svg>
-        <span className="font-medium">{fullName || 'Select repository'}</span>
+        <span className="font-medium truncate min-w-0" title={fullName || 'Select repository'}>
+          {fullName || 'Select repository'}
+        </span>
         <svg
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -127,7 +129,7 @@ export const GitHubRepoSelector = ({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 w-80 rounded-xl border shadow-lg z-50"
+          className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-x-hidden"
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
@@ -208,11 +210,11 @@ export const GitHubRepoSelector = ({
                     color: 'var(--text-primary)',
                   }}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z" />
                     </svg>
-                    <span>{repo.fullName}</span>
+                    <span className="truncate min-w-0" title={repo.fullName}>{repo.fullName}</span>
                     {repo.fullName === fullName && (
                       <svg
                         className="w-4 h-4 ml-auto text-primary"

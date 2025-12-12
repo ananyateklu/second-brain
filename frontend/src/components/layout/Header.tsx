@@ -1,8 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useUIStore } from '../../store/ui-store';
 import { useBoundStore } from '../../store/bound-store';
-import { useThemeStore } from '../../store/theme-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
@@ -10,6 +8,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
+import { SettingsNavTabs, NotesPageControls, NotesPageControlsMobile, TimeRangeSelector } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -26,27 +25,17 @@ const getPageTitle = (pathname: string): string => {
   return titleMap[pathname] || 'Page';
 };
 
-// Time range options for RAG Analytics
-const TIME_RANGES = [
-  { label: '7 days', days: 7 },
-  { label: '30 days', days: 30 },
-  { label: '90 days', days: 90 },
-  { label: 'All time', days: null },
-];
 
 export function Header() {
   const location = useLocation();
-  const openCreateModal = useUIStore((state) => state.openCreateModal);
-  const isMobileMenuOpen = useUIStore((state) => state.isMobileMenuOpen);
-  const toggleMobileMenu = useUIStore((state) => state.toggleMobileMenu);
-  const closeMobileMenu = useUIStore((state) => state.closeMobileMenu);
-  const searchQuery = useUIStore((state) => state.searchQuery);
-  const searchMode = useUIStore((state) => state.searchMode);
-  const setSearchQuery = useUIStore((state) => state.setSearchQuery);
-  const toggleSearchMode = useUIStore((state) => state.toggleSearchMode);
-  const { theme } = useThemeStore();
+  // UI state - unified store access
+  const openCreateModal = useBoundStore((state) => state.openCreateModal);
+  const isMobileMenuOpen = useBoundStore((state) => state.isMobileMenuOpen);
+  const toggleMobileMenu = useBoundStore((state) => state.toggleMobileMenu);
+  const closeMobileMenu = useBoundStore((state) => state.closeMobileMenu);
+  // Theme state
+  const theme = useBoundStore((state) => state.theme);
   const logo = theme === 'light' ? logoLight : logoDark;
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Notes specific state
   const { data: notes } = useNotes();
@@ -64,16 +53,7 @@ export function Header() {
 
   // RAG Analytics state
   const activeTab = useBoundStore((state) => state.activeTab);
-  const selectedTimeRange = useBoundStore((state) => state.selectedTimeRange);
   const setActiveTab = useBoundStore((state) => state.setActiveTab);
-  const setSelectedTimeRange = useBoundStore((state) => state.setSelectedTimeRange);
-
-  // Focus search input on mount if on notes page
-  useEffect(() => {
-    if (isNotesPage && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isNotesPage]);
 
   // Close mobile menu when clicking outside or on escape
   useEffect(() => {
@@ -99,10 +79,6 @@ export function Header() {
   const handleCreateClick = () => {
     openCreateModal();
     closeMobileMenu();
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
   };
 
   return (
@@ -200,7 +176,7 @@ export function Header() {
         style={{
           backgroundColor: 'transparent',
           paddingTop: '1.8rem',
-          paddingBottom: '1rem',
+          paddingBottom: '0.2rem'
         }}
       >
         <div className="flex justify-between w-full pb-2">
@@ -222,226 +198,10 @@ export function Header() {
             )}
 
             {/* Search Input - Only on Notes page */}
-            {isNotesPage && (
-              <div className="flex items-center gap-2">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search notes..."
-                  className="px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
-                  style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    width: '300px',
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-                    e.currentTarget.style.boxShadow = '0 0 0 2px var(--input-focus-ring)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                />
-                <button
-                  onClick={toggleSearchMode}
-                  onMouseDown={(e) => {
-                    // Prevent input blur when clicking toggle button
-                    e.preventDefault();
-                  }}
-                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    backgroundColor: 'var(--color-brand-600)',
-                    borderColor: 'var(--color-brand-600)',
-                    color: '#ffffff',
-                    boxShadow: 'none',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-brand-700)';
-                    e.currentTarget.style.borderColor = 'var(--color-brand-700)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--color-brand-600)';
-                    e.currentTarget.style.borderColor = 'var(--color-brand-600)';
-                  }}
-                  title={`Search mode: ${searchMode === 'both' ? 'Title & Content' : searchMode === 'title' ? 'Title only' : 'Content only'}`}
-                  aria-label={`Search mode: ${searchMode === 'both' ? 'Title & Content' : searchMode === 'title' ? 'Title only' : 'Content only'}`}
-                >
-                  <svg
-                    className="h-4 w-4"
-                    style={{ color: '#ffffff' }}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    {searchMode === 'both' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    ) : searchMode === 'title' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    )}
-                  </svg>
-                  <span className="hidden sm:inline" style={{ color: '#ffffff' }}>
-                    {searchMode === 'both' ? 'Both' : searchMode === 'title' ? 'Title' : 'Content'}
-                  </span>
-                </button>
-              </div>
-            )}
+            {isNotesPage && <NotesPageControls />}
 
             {/* Settings Navigation - Only on Settings pages */}
-            {isSettingsPage && (
-              <div
-                className="flex items-center p-1 rounded-xl border transition-all duration-200"
-                style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              >
-                <NavLink
-                  to="/settings/general"
-                  className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
-                      : 'transparent',
-                    color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                    boxShadow: isActive
-                      ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
-                      : 'none',
-                  })}
-                  onMouseEnter={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)';
-                      link.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'transparent';
-                      link.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>General</span>
-                </NavLink>
-                <NavLink
-                  to="/settings/ai"
-                  className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
-                      : 'transparent',
-                    color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                    boxShadow: isActive
-                      ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
-                      : 'none',
-                  })}
-                  onMouseEnter={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)';
-                      link.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'transparent';
-                      link.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.638-1.638l-1.183-.394 1.183-.394a2.25 2.25 0 001.638-1.638l.394-1.183.394 1.183a2.25 2.25 0 001.638 1.638l1.183.394-1.183.394a2.25 2.25 0 00-1.638 1.638z" />
-                  </svg>
-                  <span>AI Integration</span>
-                </NavLink>
-                <NavLink
-                  to="/settings/rag"
-                  className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
-                      : 'transparent',
-                    color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                    boxShadow: isActive
-                      ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
-                      : 'none',
-                  })}
-                  onMouseEnter={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)';
-                      link.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'transparent';
-                      link.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                  </svg>
-                  <span>RAG</span>
-                </NavLink>
-                <NavLink
-                  to="/settings/indexing"
-                  className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive
-                      ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
-                      : 'transparent',
-                    color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                    boxShadow: isActive
-                      ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
-                      : 'none',
-                  })}
-                  onMouseEnter={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)';
-                      link.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const link = e.currentTarget;
-                    const isActive = link.getAttribute('aria-current') === 'page';
-                    if (!isActive) {
-                      link.style.backgroundColor = 'transparent';
-                      link.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Indexing</span>
-                </NavLink>
-              </div>
-            )}
+            {isSettingsPage && <SettingsNavTabs />}
 
             {/* Summary Generation Indicator */}
             <SummaryIndicator />
@@ -471,39 +231,7 @@ export function Header() {
         )}
 
         {/* RAG Analytics Time Range Selector - Only on Analytics page */}
-        {isRagAnalyticsPage && (
-          <div className="w-full">
-            <div
-              className="flex items-center p-1 rounded-xl backdrop-blur-md w-fit"
-              style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              {TIME_RANGES.map((range) => (
-                <button
-                  key={range.label}
-                  onClick={() => { setSelectedTimeRange(range.days); }}
-                  className="px-4 py-2 text-sm rounded-lg transition-all duration-200"
-                  style={{
-                    backgroundColor: selectedTimeRange === range.days
-                      ? 'var(--surface-card)'
-                      : 'transparent',
-                    color: selectedTimeRange === range.days
-                      ? 'var(--text-primary)'
-                      : 'var(--text-tertiary)',
-                    fontWeight: selectedTimeRange === range.days ? 600 : 400,
-                    boxShadow: selectedTimeRange === range.days
-                      ? 'var(--shadow-sm)'
-                      : 'none',
-                  }}
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {isRagAnalyticsPage && <TimeRangeSelector />}
       </header>
 
       {/* Mobile Menu Overlay */}
@@ -559,65 +287,7 @@ export function Header() {
           </div>
 
           {/* Mobile Search - Only on Notes page */}
-          {isNotesPage && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search notes..."
-                  className="flex-1 px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
-                  style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-primary)',
-                    boxShadow: 'none',
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-                    e.currentTarget.style.boxShadow = '0 0 0 2px var(--input-focus-ring)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                />
-              </div>
-              <button
-                onClick={toggleSearchMode}
-                onMouseDown={(e) => {
-                  // Prevent input blur when clicking toggle button
-                  e.preventDefault();
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
-                style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                <svg
-                  className="h-4 w-4"
-                  style={{ color: 'var(--text-primary)' }}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  {searchMode === 'both' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  ) : searchMode === 'title' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  )}
-                </svg>
-                <span>
-                  Search: {searchMode === 'both' ? 'Title & Content' : searchMode === 'title' ? 'Title only' : 'Content only'}
-                </span>
-              </button>
-            </div>
-          )}
+          {isNotesPage && <NotesPageControlsMobile />}
 
           {/* Navigation Links */}
           <nav className="space-y-2 mb-6">

@@ -1,53 +1,47 @@
 /**
  * ChatHeaderSkeleton
  * Skeleton placeholder for the chat header with provider/model selectors
+ * Matches ChatHeader: px-8 (2rem), pt-4.5 pb-4.5 (~18px)
  */
+
+import { ShimmerBlock } from '../ui/Shimmer';
 
 export function ChatHeaderSkeleton() {
   return (
     <div
-      className="flex items-center justify-between px-4 py-3 border-b"
+      className="flex-shrink-0 flex items-center gap-3 border-b z-10"
       style={{
-        backgroundColor: 'var(--surface-secondary)',
         borderColor: 'var(--border)',
+        backgroundColor: 'var(--surface-card)',
+        paddingLeft: '2rem',
+        paddingRight: '2rem',
+        paddingTop: '1.125rem',
+        paddingBottom: '1.125rem',
       }}
     >
-      {/* Left side - Toggle and title */}
-      <div className="flex items-center gap-3">
-        {/* Sidebar toggle */}
+      {/* Left side - Model Selector and Feature Pills */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Combined Model Selector */}
+        <ShimmerBlock className="h-9 w-48 rounded-xl" />
+
+        {/* Separator */}
         <div
-          className="h-8 w-8 rounded animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)' }}
+          className="h-6 w-px flex-shrink-0"
+          style={{ backgroundColor: 'var(--border)' }}
         />
-        {/* Provider selector */}
-        <div
-          className="h-9 w-36 rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)' }}
-        />
-        {/* Model selector */}
-        <div
-          className="h-9 w-44 rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)', animationDelay: '100ms' }}
-        />
+
+        {/* RAG pill */}
+        <ShimmerBlock className="h-8 w-16 rounded-full" />
+        {/* Agent pill */}
+        <ShimmerBlock className="h-8 w-20 rounded-full" />
       </div>
 
-      {/* Right side - Feature toggles */}
-      <div className="flex items-center gap-2">
-        {/* RAG toggle */}
-        <div
-          className="h-8 w-20 rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)', animationDelay: '200ms' }}
-        />
-        {/* Agent toggle */}
-        <div
-          className="h-8 w-20 rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)', animationDelay: '300ms' }}
-        />
-        {/* Context usage */}
-        <div
-          className="h-8 w-32 rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)', animationDelay: '400ms' }}
-        />
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Right side - Context usage */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <ShimmerBlock className="h-7 w-28 rounded-lg" />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { formatModelName } from '../../utils/model-name-formatter';
 import { groupModelsByCategory } from '../../utils/model-categorizer';
-import { useThemeStore } from '../../store/theme-store';
+import { useBoundStore } from '../../store/bound-store';
 import { useProviderLogo, getProviderLogo } from '../../utils/provider-logos';
 
 interface Provider {
@@ -39,7 +39,7 @@ export function CombinedModelSelector({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const selectedModelRef = useRef<HTMLButtonElement>(null);
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isBlueTheme = theme === 'blue';
   const isDarkMode = theme === 'dark' || theme === 'blue';
 

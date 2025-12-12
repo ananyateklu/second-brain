@@ -27,14 +27,11 @@ export const StatCard = memo(({
   subtitle,
   show = true,
   animationStyle,
-  index = 0,
+  index: _index = 0,
   isAnimationReady = true,
 }: StatCardProps) => {
   // Check platform once
   const isWebKit = useMemo(() => isTauri(), []);
-
-  // Calculate animation delay for staggered effect
-  const staggerDelay = useMemo(() => index * 40, [index]);
 
   if (!show) return null;
 
@@ -48,16 +45,17 @@ export const StatCard = memo(({
       ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
     minHeight: '80px',
-    // Animation properties
+    // Smooth opacity-only transition for seamless skeleton blending
+    // No translateY/scale since skeleton already matches exact layout
+    // No stagger delay - all cards load simultaneously
     opacity: isAnimationReady ? 1 : 0,
-    transform: isAnimationReady ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
-    // Use specific properties instead of 'all' for better performance
-    transitionProperty: 'opacity, transform, box-shadow, border-color',
-    transitionDuration: '200ms', // Match RAG card hover timing
-    transitionTimingFunction: 'ease',
-    transitionDelay: `${staggerDelay}ms`,
+    // Only opacity transition - no movement since skeleton is in place
+    transitionProperty: 'opacity, box-shadow, border-color',
+    transitionDuration: '200ms',
+    transitionTimingFunction: 'ease-out',
+    transitionDelay: '0ms',
     // GPU acceleration hints
-    willChange: isAnimationReady ? 'auto' : 'transform, opacity',
+    willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
     // Override with custom animation style if provided
     ...animationStyle,
@@ -74,7 +72,7 @@ export const StatCard = memo(({
   return (
     <div
       className={`
-        rounded-2xl border p-3 
+        rounded-2xl border p-4 
         hover:-translate-y-0.5 hover:border-[var(--color-brand-500)]
         flex flex-col h-full relative overflow-hidden
         ${isWebKit ? '' : 'backdrop-blur-md'}

@@ -80,10 +80,6 @@ export function NoteSummaryBackfill() {
         try {
             const job = await startSummaryGeneration.mutateAsync(noteIds);
             startSummaryJob(job, userId);
-            toast.info(
-                'Summary Generation Started',
-                `Generating summaries for ${noteIds.length} note${noteIds.length !== 1 ? 's' : ''}. You can navigate away - progress will continue in the background.`
-            );
             // Clear selection after starting the job
             setSelectedNotes(new Set());
         } catch (error) {
@@ -108,10 +104,6 @@ export function NoteSummaryBackfill() {
             const noteIds = notesWithoutSummaries.map((n) => n.id);
             const job = await startSummaryGeneration.mutateAsync(noteIds);
             startSummaryJob(job, userId);
-            toast.info(
-                'Summary Generation Started',
-                `Generating summaries for ${noteIds.length} note${noteIds.length !== 1 ? 's' : ''}. You can navigate away - progress will continue in the background.`
-            );
             setSelectedNotes(new Set());
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to start summary generation';
@@ -134,7 +126,7 @@ export function NoteSummaryBackfill() {
 
     return (
         <section
-            className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl lg:col-span-2"
+            className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl lg:col-span-2"
             style={{
                 backgroundColor: 'var(--surface-card)',
                 borderColor: 'var(--border)',
@@ -144,7 +136,7 @@ export function NoteSummaryBackfill() {
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                 <div className="flex items-center gap-2">
                     <div
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
                         style={{
                             backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                             borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
@@ -177,7 +169,7 @@ export function NoteSummaryBackfill() {
                                     </svg>
                                 </button>
                                 <div
-                                    className="absolute left-0 top-full mt-2 w-64 p-3 rounded-xl border text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10"
+                                    className="absolute left-0 top-full mt-2 w-64 p-3 rounded-2xl border text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10"
                                     style={{
                                         backgroundColor: 'var(--surface-elevated)',
                                         borderColor: 'var(--color-success)',
@@ -215,7 +207,7 @@ export function NoteSummaryBackfill() {
                             <button
                                 type="button"
                                 onClick={() => showSummaryNotification()}
-                                className="px-3 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5"
+                                className="px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5"
                                 style={{
                                     backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))',
                                     borderColor: 'var(--color-brand-600)',
@@ -238,7 +230,7 @@ export function NoteSummaryBackfill() {
                                     type="button"
                                     onClick={() => void handleGenerateSummaries()}
                                     disabled={selectedNotes.size === 0}
-                                    className="px-3 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                                    className="px-3 py-1.5 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                                     style={{
                                         backgroundColor: selectedNotes.size > 0
                                             ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
@@ -256,7 +248,7 @@ export function NoteSummaryBackfill() {
                                 <button
                                     type="button"
                                     onClick={() => void handleGenerateAll()}
-                                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:-translate-y-0.5"
+                                    className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:-translate-y-0.5"
                                     style={{
                                         backgroundColor: 'var(--color-brand-600)',
                                         color: 'white',
@@ -280,7 +272,7 @@ export function NoteSummaryBackfill() {
                 </div>
             ) : notesWithoutSummaries.length === 0 ? (
                 <div
-                    className="flex flex-col items-center justify-center py-6 rounded-lg"
+                    className="flex flex-col items-center justify-center py-6 rounded-xl"
                     style={{ backgroundColor: 'var(--surface-elevated)' }}
                 >
                     <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{ color: 'var(--color-brand-600)' }}>
@@ -297,7 +289,7 @@ export function NoteSummaryBackfill() {
                 <div className="space-y-1.5">
                     {/* Select All Header */}
                     <div
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
                         style={{ backgroundColor: 'var(--surface-elevated)' }}
                     >
                         <button
@@ -307,7 +299,7 @@ export function NoteSummaryBackfill() {
                             style={{ color: 'var(--text-primary)' }}
                         >
                             <div
-                                className="w-4 h-4 rounded border-2 flex items-center justify-center transition-all"
+                                        className="w-4 h-4 rounded-xl border-2 flex items-center justify-center transition-all"
                                 style={{
                                     borderColor: selectedNotes.size === notesWithoutSummaries.length
                                         ? 'var(--color-brand-600)'
@@ -332,7 +324,7 @@ export function NoteSummaryBackfill() {
 
                     {/* Notes List */}
                     <div
-                        className="max-h-[20.7rem] overflow-y-auto rounded-lg border"
+                        className="max-h-[20.7rem] overflow-y-auto rounded-xl border"
                         style={{ borderColor: 'var(--border)' }}
                     >
                         {notesWithoutSummaries.map((note: NoteListItem) => (
@@ -343,7 +335,7 @@ export function NoteSummaryBackfill() {
                                 onClick={() => handleSelectNote(note.id)}
                             >
                                 <div
-                                    className="w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all"
+                                        className="w-4 h-4 rounded-xl border-2 flex-shrink-0 flex items-center justify-center transition-all"
                                     style={{
                                         borderColor: selectedNotes.has(note.id)
                                             ? 'var(--color-brand-600)'

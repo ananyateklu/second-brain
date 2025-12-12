@@ -1,10 +1,10 @@
 import { formatModelName } from '../utils/model-name-formatter';
 import { useProviderLogo } from '../utils/provider-logos';
-import { useThemeStore } from '../store/theme-store';
+import { useBoundStore } from '../store/bound-store';
 
 // Theme-aware user icon
 const UserIcon = () => {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const strokeColor = isDarkMode ? 'white' : 'black';
 
@@ -23,7 +23,7 @@ const ModelIcon = () => (
 
 // Theme-aware token icon
 const TokenIcon = () => {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const strokeColor = isDarkMode ? 'white' : 'black';
 
@@ -83,7 +83,7 @@ export function TokenUsageDisplay({
   toolArgumentTokens,
   toolResultTokens,
 }: TokenUsageDisplayProps) {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const providerLogo = useProviderLogo(provider || '');
 

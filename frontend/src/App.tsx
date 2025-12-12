@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './lib/router';
 import {
@@ -10,13 +10,15 @@ import {
   onOpenReportIssue
 } from './lib/tauri-bridge';
 import { useUIStore } from './store/ui-store';
-import { AboutModal } from './components/ui/AboutModal';
-import { IndexingNotification } from './components/ui/IndexingNotification';
-import { SummaryNotification } from './components/ui/SummaryNotification';
 import { useIndexingRestoration } from './hooks/use-indexing-restoration';
 import { useSummaryRestoration } from './hooks/use-summary-restoration';
 import { useUserSettingsEffect } from './hooks/use-user-settings-effect';
 import { isTauri } from './lib/native-notifications';
+
+// Lazy load notification components - they're not needed immediately
+const AboutModal = lazy(() => import('./components/ui/AboutModal').then(m => ({ default: m.AboutModal })));
+const IndexingNotification = lazy(() => import('./components/ui/IndexingNotification').then(m => ({ default: m.IndexingNotification })));
+const SummaryNotification = lazy(() => import('./components/ui/SummaryNotification').then(m => ({ default: m.SummaryNotification })));
 
 function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -103,14 +105,16 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
-      <AboutModal
-        isOpen={showAboutModal}
-        onClose={() => {
-          setShowAboutModal(false);
-        }}
-      />
-      <IndexingNotification />
-      <SummaryNotification />
+      <Suspense fallback={null}>
+        <AboutModal
+          isOpen={showAboutModal}
+          onClose={() => {
+            setShowAboutModal(false);
+          }}
+        />
+        <IndexingNotification />
+        <SummaryNotification />
+      </Suspense>
     </>
   );
 }

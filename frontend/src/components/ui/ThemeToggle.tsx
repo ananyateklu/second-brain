@@ -1,7 +1,8 @@
-import { useThemeStore } from '../../store/theme-store';
+import { useBoundStore } from '../../store/bound-store';
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
+  const toggleTheme = useBoundStore((state) => state.toggleTheme);
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
   const isBlue = theme === 'blue';

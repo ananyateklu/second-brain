@@ -397,7 +397,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
 
       {/* Diff content */}
       <div
-        className="flex-1 overflow-auto"
+        className="flex-1 overflow-auto [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]"
         style={{
           backgroundColor: 'var(--surface-elevated)',
         }}

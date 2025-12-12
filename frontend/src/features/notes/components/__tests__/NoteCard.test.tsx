@@ -139,7 +139,7 @@ describe('NoteCard', () => {
 
       // Assert
       const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
-      expect(card).toHaveClass('p-5');
+      expect(card).toHaveClass('p-[22px]');
     });
 
     it('should render compact variant', () => {
@@ -150,7 +150,7 @@ describe('NoteCard', () => {
 
       // Assert
       const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
-      expect(card).toHaveClass('p-4');
+      expect(card).toHaveClass('p-4.5');
     });
 
     it('should render micro variant', () => {

@@ -7,10 +7,9 @@ import { useState, useMemo, useRef } from 'react';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { DirectoryContentSkeleton } from '../features/notes/components/DirectorySkeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ViewModeToggle } from '../components/ui/ViewModeToggle';
-import { useThemeStore } from '../store/theme-store';
 import { useBoundStore } from '../store/bound-store';
 import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import { isTauri } from '../lib/native-notifications';
@@ -22,7 +21,7 @@ type ArchiveFilter = 'all' | 'not-archived' | 'archived';
 export function NotesDirectoryPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { data: notes, isLoading, error } = useNotes();
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const titleBarHeight = useTitleBarHeight();
 
@@ -227,7 +226,7 @@ export function NotesDirectoryPage() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto py-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent]">
+          <div className="flex-1 overflow-y-auto py-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
             {/* All Notes */}
             <button
               onClick={() => {
@@ -516,11 +515,9 @@ export function NotesDirectoryPage() {
         </div>
 
         {/* Notes Content */}
-        <div className="flex-1 overflow-y-auto p-6 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent]">
+        <div className="flex-1 overflow-y-auto p-6 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <LoadingSpinner message="Loading notes..." />
-            </div>
+            <DirectoryContentSkeleton />
           ) : filteredNotes.length === 0 ? (
             <EmptyState
               icon={

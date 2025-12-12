@@ -5,4 +5,5 @@ export { ChatUsageChart } from './ChatUsageChart';
 export { ModelUsageSection } from './ModelUsageSection';
 export { PieChartTooltip } from './PieChartTooltip';
 export { SessionStatsSection } from './SessionStatsSection';
+export { DashboardSkeleton } from './DashboardSkeleton';
 

@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useDashboardData } from '../features/dashboard/hooks/use-dashboard-data';
 import { useDashboardAnimations } from '../features/dashboard/hooks/use-dashboard-animations';
@@ -8,6 +7,7 @@ import {
   NotesChart,
   ChatUsageChart,
   ModelUsageSection,
+  DashboardSkeleton,
 } from '../features/dashboard/components';
 
 export function DashboardPage() {
@@ -77,11 +77,7 @@ export function DashboardPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <LoadingSpinner message="Loading dashboard..." />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!notes || notes.length === 0) {
@@ -99,7 +95,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 dashboard-container">
+    <div className="space-y-3 dashboard-container">
       {/* Aggregated Stats Cards */}
       <StatCardsGrid
         stats={stats}
@@ -109,7 +105,7 @@ export function DashboardPage() {
       />
 
       {/* Charts Section - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <NotesChart
           chartData={chartData}
           selectedTimeRange={selectedTimeRange}

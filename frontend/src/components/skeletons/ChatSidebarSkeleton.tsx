@@ -1,9 +1,11 @@
 /**
  * ChatSidebarSkeleton
  * Skeleton placeholder for the chat sidebar conversation list
+ * Matches ChatSidebar: w-72 md:w-[23rem], py-4.5 header padding
  */
 
 import { useMemo } from 'react';
+import { ShimmerBlock } from '../ui/Shimmer';
 
 // Deterministic pseudo-random based on index (stable across renders)
 function getStableWidth(index: number, min: number, range: number): number {
@@ -23,67 +25,63 @@ export function ChatSidebarSkeleton() {
 
   return (
     <div
-      className="w-80 border-r flex flex-col"
+      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
       style={{
-        backgroundColor: 'var(--surface-secondary)',
-        borderColor: 'var(--border)',
+        borderRightWidth: '0.5px',
+        borderRightStyle: 'solid',
+        borderRightColor: 'var(--border)',
       }}
     >
-      {/* Header skeleton */}
-      <div className="p-4 border-b" style={{ borderColor: 'var(--border)' }}>
-        <div className="flex items-center justify-between">
-          <div
-            className="h-6 w-32 rounded animate-pulse"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
-          />
-          <div
-            className="h-8 w-8 rounded animate-pulse"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
-          />
+      {/* Header skeleton - matches ChatSidebar: px-4 py-4.5 */}
+      <div
+        className="flex-shrink-0 px-4 flex items-center justify-between"
+        style={{
+          paddingTop: '1.125rem',
+          paddingBottom: '1.125rem',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderBottomColor: 'var(--border)',
+        }}
+      >
+        {/* "Conversations" title */}
+        <ShimmerBlock className="h-6 w-32" />
+        {/* Right side buttons */}
+        <div className="flex items-center gap-2">
+          {/* Selection mode toggle */}
+          <ShimmerBlock className="h-9 w-9 rounded-xl" />
+          {/* Sidebar toggle */}
+          <ShimmerBlock className="h-9 w-9 rounded-xl" />
         </div>
       </div>
 
       {/* New chat button skeleton */}
-      <div className="p-3">
-        <div
-          className="h-10 w-full rounded-lg animate-pulse"
-          style={{ backgroundColor: 'var(--surface-hover)' }}
-        />
+      <div className="p-3 flex-shrink-0">
+        <ShimmerBlock className="h-10 w-full rounded-xl" />
       </div>
 
       {/* Conversation list skeleton */}
-      <div className="flex-1 overflow-hidden p-2 space-y-2">
+      <div className="flex-1 overflow-hidden px-2 py-1 space-y-1">
         {skeletonItems.map((item, i) => (
           <div
             key={i}
-            className="p-3 rounded-lg animate-pulse"
+            className="p-3 rounded-xl"
             style={{
               backgroundColor: 'var(--surface-hover)',
-              animationDelay: `${i * 100}ms`,
             }}
           >
             <div className="flex items-start gap-3">
-              {/* Avatar */}
-              <div
-                className="h-8 w-8 rounded-full flex-shrink-0"
-                style={{ backgroundColor: 'var(--surface-tertiary)' }}
-              />
+              {/* Provider icon */}
+              <ShimmerBlock className="h-8 w-8 rounded-lg flex-shrink-0" />
               <div className="flex-1 min-w-0 space-y-2">
                 {/* Title */}
-                <div
+                <ShimmerBlock
                   className="h-4 rounded"
-                  style={{
-                    backgroundColor: 'var(--surface-tertiary)',
-                    width: `${item.titleWidth}%`,
-                  }}
+                  style={{ width: `${item.titleWidth}%` }}
                 />
                 {/* Preview text */}
-                <div
+                <ShimmerBlock
                   className="h-3 rounded"
-                  style={{
-                    backgroundColor: 'var(--surface-tertiary)',
-                    width: `${item.previewWidth}%`,
-                  }}
+                  style={{ width: `${item.previewWidth}%` }}
                 />
               </div>
             </div>

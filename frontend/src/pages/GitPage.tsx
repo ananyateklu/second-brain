@@ -14,6 +14,7 @@ import {
   GitSettingsPanel,
   GitEmptyState,
 } from '../features/git/components';
+import { GitPageSkeleton } from '../features/git/components/GitPageSkeleton';
 
 export function GitPage() {
   const repositoryPath = useBoundStore((state) => state.repositoryPath);
@@ -180,48 +181,13 @@ export function GitPage() {
 
   // Show loading state
   if (isStatusLoading && !status) {
-    return (
-      <div
-        className="h-full pt-4 pb-3 px-4"
-        style={{ backgroundColor: 'var(--background-primary)' }}
-      >
-        <div
-          className="h-full rounded-2xl flex items-center justify-center relative overflow-hidden"
-          style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-            backdropFilter: 'blur(20px)',
-          }}
-        >
-          {/* Ambient glow effect */}
-          <div
-            className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle, var(--color-primary), transparent)',
-            }}
-          />
-          <div className="flex flex-col items-center gap-4 relative z-10">
-            <div
-              className="w-12 h-12 rounded-full border-2 animate-spin"
-              style={{
-                borderColor: 'var(--border)',
-                borderTopColor: 'var(--color-brand-500)',
-              }}
-            />
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Loading repository...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <GitPageSkeleton />;
   }
 
   return (
     <>
       <div
-        className="h-full flex flex-col overflow-hidden pt-4 pb-3 px-4"
+        className="h-full flex flex-col overflow-hidden pt-4 pb-4"
         style={{ backgroundColor: 'var(--background-primary)' }}
       >
         {/* Branch bar */}

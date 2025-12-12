@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { IndexingButton } from '../../components/ui/IndexingButton';
 import { IndexingStats } from '../../components/ui/IndexingStats';
-import { useAuthStore } from '../../store/auth-store';
+import { useBoundStore } from '../../store/bound-store';
 import { indexingKeys } from '../../lib/query-keys';
 
 export function IndexingSettings() {
   const queryClient = useQueryClient();
-  const user = useAuthStore((state) => state.user);
+  const user = useBoundStore((state) => state.user);
 
   if (!user) {
     return (
@@ -22,7 +22,7 @@ export function IndexingSettings() {
     <div className="space-y-4">
       {/* Manual indexing */}
       <section
-        className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+        className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
@@ -32,7 +32,7 @@ export function IndexingSettings() {
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                 borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
@@ -77,7 +77,7 @@ export function IndexingSettings() {
 
       {/* Stats */}
       <section
-        className="rounded-2xl border p-4 transition-all duration-200 hover:shadow-xl"
+        className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
@@ -87,7 +87,7 @@ export function IndexingSettings() {
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                 borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
@@ -119,7 +119,7 @@ export function IndexingSettings() {
               void queryClient.invalidateQueries({ queryKey: statsQueryKey });
               void queryClient.refetchQueries({ queryKey: statsQueryKey });
             }}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
+            className="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
             style={{
               borderColor: 'var(--color-brand-600)',
               color: 'var(--color-brand-600)',

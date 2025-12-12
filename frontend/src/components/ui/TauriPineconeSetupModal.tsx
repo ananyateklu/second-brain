@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Modal } from './Modal';
+import { LoadingSpinner } from './LoadingSpinner';
 import { isTauri } from '../../lib/native-notifications';
 import { getSecrets, saveSecrets, type Secrets } from '../../lib/tauri-bridge';
 import { toast } from '../../hooks/use-toast';
@@ -102,9 +103,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
       }
     >
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-brand-600)' }} />
-        </div>
+        <LoadingSpinner message="Loading Pinecone settings..." />
       ) : (
         <div className="space-y-5">
           {/* Info Banner */}

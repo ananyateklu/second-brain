@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { formatModelName } from '../utils/model-name-formatter';
 import { useProviderLogo } from '../utils/provider-logos';
-import { useThemeStore } from '../store/theme-store';
+import { useBoundStore } from '../store/bound-store';
 import type { ChatMessage } from '../types/chat';
 
 // Theme-aware icons
 const ChevronIcon = ({ expanded }: { expanded: boolean }) => {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const strokeColor = isDarkMode ? 'white' : 'black';
 
@@ -24,7 +24,7 @@ const ChevronIcon = ({ expanded }: { expanded: boolean }) => {
 };
 
 const TokenIcon = () => {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const strokeColor = isDarkMode ? 'white' : 'black';
 
@@ -48,7 +48,7 @@ const EstimateIcon = () => (
 );
 
 const SpeedIcon = () => {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const strokeColor = isDarkMode ? 'white' : 'black';
 
@@ -108,7 +108,7 @@ export function DetailedTokenUsage({
   compact = false,
 }: DetailedTokenUsageProps) {
   const [expanded, setExpanded] = useState(false);
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const providerLogo = useProviderLogo(provider || '');
 

@@ -60,18 +60,18 @@ const prefersReducedMotion = (): boolean => {
 };
 
 const DEFAULT_CONFIG: AnimationConfig = {
-  baseDelay: 50,
-  staggerDelay: 40,
-  duration: 400,
+  baseDelay: 0, // No delay since skeleton is already in place
+  staggerDelay: 0, // No stagger - all components load simultaneously
+  duration: 200, // Faster fade-in for seamless skeleton transition
   reduceMotion: false,
   isTauri: false,
 };
 
 // Tauri-optimized config with faster animations and reduced effects
 const TAURI_CONFIG: AnimationConfig = {
-  baseDelay: 30,
-  staggerDelay: 25,
-  duration: 300,
+  baseDelay: 0, // No delay since skeleton is already in place
+  staggerDelay: 0, // No stagger - all components load simultaneously
+  duration: 150, // Faster fade-in for seamless skeleton transition
   reduceMotion: false,
   isTauri: true,
 };
@@ -89,9 +89,9 @@ export function useDashboardAnimations(
   const config = useMemo<AnimationConfig>(() => {
     const isTauri = detectTauri();
     const reduceMotion = prefersReducedMotion();
-    
+
     const baseConfig = isTauri ? TAURI_CONFIG : DEFAULT_CONFIG;
-    
+
     return {
       ...baseConfig,
       reduceMotion,
@@ -151,26 +151,28 @@ export function useDashboardAnimations(
 
   // Get animation state for a specific item
   const getItemAnimation = useCallback(
-    (index: number, _total: number = itemCount): AnimatedItemState => {
-      const delay = config.baseDelay + index * config.staggerDelay;
-      
+    (_index: number, _total: number = itemCount): AnimatedItemState => {
+      // All items load simultaneously - no stagger
+      const delay = config.baseDelay;
+
       // Calculate animation completion time for this item
       const isVisible = isReady;
 
-      // Use transform for GPU acceleration instead of margin/opacity transitions
+      // Smooth opacity-only transition for seamless skeleton blending
+      // No translateY/scale since skeleton already matches exact layout
       const style: React.CSSProperties = config.reduceMotion
         ? { opacity: isVisible ? 1 : 0 }
         : {
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.98)',
-            transitionProperty: 'opacity, transform',
-            transitionDuration: `${config.duration}ms`,
-            transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-            transitionDelay: `${delay}ms`,
-            // GPU acceleration hints
-            willChange: isVisible ? 'auto' : 'transform, opacity',
-            backfaceVisibility: 'hidden' as const,
-          };
+          opacity: isVisible ? 1 : 0,
+          // Only opacity transition - no movement since skeleton is in place
+          transitionProperty: 'opacity',
+          transitionDuration: `${config.duration}ms`,
+          transitionTimingFunction: 'ease-out',
+          transitionDelay: `${delay}ms`,
+          // GPU acceleration hints
+          willChange: isVisible ? 'auto' : 'opacity',
+          backfaceVisibility: 'hidden' as const,
+        };
 
       // Animation class based on state
       const className = isVisible
@@ -189,25 +191,26 @@ export function useDashboardAnimations(
 
   // Get animation state for sections (charts, model usage, etc.)
   const getSectionAnimation = useCallback(
-    (sectionIndex: number): AnimatedItemState => {
-      // Sections animate after all stat cards
-      const sectionBaseDelay = config.baseDelay + itemCount * config.staggerDelay;
-      const delay = sectionBaseDelay + sectionIndex * (config.staggerDelay * 2);
-      
+    (_sectionIndex: number): AnimatedItemState => {
+      // All sections load simultaneously with stat cards
+      const delay = config.baseDelay;
+
       const isVisible = isReady;
 
+      // Smooth opacity-only transition for seamless skeleton blending
+      // No translateY since skeleton already matches exact layout
       const style: React.CSSProperties = config.reduceMotion
         ? { opacity: isVisible ? 1 : 0 }
         : {
-            opacity: isVisible ? 1 : 0,
-            transform: isVisible ? 'translateY(0)' : 'translateY(16px)',
-            transitionProperty: 'opacity, transform',
-            transitionDuration: `${config.duration + 100}ms`,
-            transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            transitionDelay: `${delay}ms`,
-            willChange: isVisible ? 'auto' : 'transform, opacity',
-            backfaceVisibility: 'hidden' as const,
-          };
+          opacity: isVisible ? 1 : 0,
+          // Only opacity transition - no movement since skeleton is in place
+          transitionProperty: 'opacity',
+          transitionDuration: `${config.duration}ms`,
+          transitionTimingFunction: 'ease-out',
+          transitionDelay: `${delay}ms`,
+          willChange: isVisible ? 'auto' : 'opacity',
+          backfaceVisibility: 'hidden' as const,
+        };
 
       const className = isVisible
         ? 'dashboard-section-visible'
@@ -220,7 +223,7 @@ export function useDashboardAnimations(
         className,
       };
     },
-    [isReady, config, itemCount]
+    [isReady, config]
   );
 
   return {

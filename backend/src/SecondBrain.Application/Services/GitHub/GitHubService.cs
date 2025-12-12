@@ -170,7 +170,7 @@ public sealed class GitHubService : IGitHubService, IDisposable
             var reviewsResult = await GetPullRequestReviewsAsync(pullNumber, resolvedOwner, resolvedRepo, cancellationToken);
             if (reviewsResult.IsSuccess)
             {
-                summary = summary with { Reviews = reviewsResult.Value };
+                summary = summary with { Reviews = reviewsResult.Value! };
             }
 
             // Fetch check runs for the PR head
@@ -179,7 +179,7 @@ public sealed class GitHubService : IGitHubService, IDisposable
                 var checksResult = await GetCheckRunsAsync(pr.Head.Sha, resolvedOwner, resolvedRepo, cancellationToken);
                 if (checksResult.IsSuccess)
                 {
-                    summary = summary with { CheckRuns = checksResult.Value };
+                    summary = summary with { CheckRuns = checksResult.Value! };
                 }
             }
 

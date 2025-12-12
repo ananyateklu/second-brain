@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useGitHubWorkflowRuns, useGitHubWorkflowRun } from '../hooks';
 import { useRerunWorkflow, useCancelWorkflowRun } from '../hooks';
+import { GitHubListSkeleton } from './GitHubListSkeleton';
+import { Pagination } from '../../../components/ui/Pagination';
 import type {
   WorkflowRunSummary,
   WorkflowStatus,
@@ -30,6 +32,7 @@ export const GitHubActionsPanel = ({
   const [branchFilter, setBranchFilter] = useState('');
   const [page, setPage] = useState(1);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const perPage = 15;
 
   const { data, isLoading, error, refetch, isFetching } = useGitHubWorkflowRuns(
     {
@@ -38,7 +41,7 @@ export const GitHubActionsPanel = ({
       status: statusFilter || undefined,
       branch: branchFilter || undefined,
       page,
-      perPage: 15,
+      perPage,
     },
     { autoRefresh }
   );
@@ -137,11 +140,7 @@ export const GitHubActionsPanel = ({
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <GitHubListSkeleton count={5} showHeader={false} showFilters={true} variant="actions" />;
   }
 
   if (error) {
@@ -171,10 +170,14 @@ export const GitHubActionsPanel = ({
     );
   }
 
+  const totalItems = data?.totalCount ?? 0;
+  const itemsPerPage = data?.perPage ?? perPage;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex items-center gap-4">
+    <div className="flex flex-col h-full">
+      {/* Filters - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center gap-4 mb-4">
         <select
           value={statusFilter}
           onChange={(e) => {
@@ -215,9 +218,8 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             void refetch();
           }}
-          className={`p-2 rounded-lg hover:bg-surface-elevated transition-colors ${
-            isFetching ? 'animate-spin' : ''
-          }`}
+          className={`p-2 rounded-lg hover:bg-surface-elevated transition-colors ${isFetching ? 'animate-spin' : ''
+            }`}
           title="Refresh"
           disabled={isFetching}
         >
@@ -243,9 +245,8 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             setAutoRefresh(!autoRefresh);
           }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-            autoRefresh ? 'bg-green-500/10' : ''
-          }`}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${autoRefresh ? 'bg-green-500/10' : ''
+            }`}
           style={{
             backgroundColor: autoRefresh ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
             color: autoRefresh ? 'var(--color-primary)' : 'var(--text-secondary)',
@@ -253,9 +254,8 @@ export const GitHubActionsPanel = ({
           title={autoRefresh ? 'Auto-refresh is ON' : 'Auto-refresh is OFF'}
         >
           <div
-            className={`w-2 h-2 rounded-full ${
-              autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-            }`}
+            className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+              }`}
           />
           <span>Auto</span>
           {autoRefresh && inProgressCount > 0 && (
@@ -272,8 +272,8 @@ export const GitHubActionsPanel = ({
         </button>
       </div>
 
-      {/* Workflow Runs List */}
-      <div className="space-y-2">
+      {/* Workflow Runs List - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 space-y-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
         {!data?.workflowRuns || data.workflowRuns.length === 0 ? (
           <div
             className="text-center py-12 rounded-xl border"
@@ -313,9 +313,8 @@ export const GitHubActionsPanel = ({
                   onSelectRun?.(run);
                 }
               }}
-              className={`w-full text-left p-4 rounded-xl border transition-all hover:scale-[1.01] cursor-pointer ${
-                selectedRunId === run.id ? 'ring-2 ring-primary' : ''
-              }`}
+              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-sm cursor-pointer ${selectedRunId === run.id ? 'ring-1 ring-inset ring-primary' : ''
+                }`}
               style={{
                 backgroundColor:
                   selectedRunId === run.id
@@ -324,10 +323,10 @@ export const GitHubActionsPanel = ({
                 borderColor: 'var(--border)',
               }}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-2">
                 {/* Status Icon */}
                 <div
-                  className={`p-2 rounded-lg ${getWorkflowStatusBgColor(
+                  className={`p-1.5 rounded-md ${getWorkflowStatusBgColor(
                     run.status,
                     run.conclusion as WorkflowConclusion
                   )}`}
@@ -342,157 +341,119 @@ export const GitHubActionsPanel = ({
                   </span>
                 </div>
 
-                {/* Run Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="font-semibold truncate"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {run.displayTitle || run.name}
-                    </span>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: 'var(--surface-elevated)',
-                        color: 'var(--text-secondary)',
-                      }}
-                    >
-                      {getWorkflowEventIcon(run.event)} {run.event}
-                    </span>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-2 mt-1 text-sm"
-                    style={{ color: 'var(--text-secondary)' }}
+                {/* Run Info - Compact single line */}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <span
+                    className="font-medium text-sm truncate"
+                    style={{ color: 'var(--text-primary)' }}
                   >
-                    <span>{run.name}</span>
-                    <span>•</span>
-                    <span>#{run.runNumber}</span>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-3 mt-2 text-xs"
-                    style={{ color: 'var(--text-tertiary)' }}
+                    {run.displayTitle || run.name}
+                  </span>
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      color: 'var(--text-tertiary)',
+                    }}
                   >
-                    <span className="flex items-center gap-1">
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
-                        />
-                      </svg>
-                      {run.headBranch}
-                    </span>
-                    <span>•</span>
-                    <code className="text-xs">{run.headSha.slice(0, 7)}</code>
-                    <span>•</span>
-                    <span>{formatRelativeTime(run.createdAt)}</span>
-                  </div>
+                    #{run.runNumber}
+                  </span>
                 </div>
 
-                {/* Actor and Actions */}
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={run.actorAvatarUrl}
-                      alt={run.actor}
-                      className="w-6 h-6 rounded-full"
-                    />
-                    <span
-                      className="text-sm"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {run.actor}
-                    </span>
-                  </div>
+                {/* Meta info - inline */}
+                <div
+                  className="flex items-center gap-2 text-xs shrink-0"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <span className="hidden sm:inline-flex items-center gap-1 max-w-64" title={`Triggered by: ${run.event}`}>
+                    <span className="shrink-0">{getWorkflowEventIcon(run.event)}</span>
+                    <span className="sr-only">{run.event}</span>
+                    <span className="truncate">{run.headBranch}</span>
+                  </span>
+                  <code className="hidden md:inline">{run.headSha.slice(0, 7)}</code>
+                  <span>{formatRelativeTime(run.createdAt)}</span>
+                  <span className="hidden sm:inline">{run.actor}</span>
+                </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    {run.status === 'in_progress' && (
+                {/* Actor */}
+                <img
+                  src={run.actorAvatarUrl}
+                  alt={run.actor}
+                  className="w-5 h-5 rounded-full shrink-0"
+                />
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {run.status === 'in_progress' && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        cancelMutation.mutate(run.id);
+                      }}
+                      disabled={cancelMutation.isPending}
+                      className="px-2 py-0.5 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: 'var(--error-bg)',
+                        color: 'var(--error-text)',
+                      }}
+                      title="Cancel workflow"
+                    >
+                      {cancelMutation.isPending ? '...' : 'Cancel'}
+                    </button>
+                  )}
+                  {run.status === 'completed' &&
+                    run.conclusion !== 'success' && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          cancelMutation.mutate(run.id);
+                          rerunMutation.mutate(run.id);
                         }}
-                        disabled={cancelMutation.isPending}
-                        className="px-2 py-1 rounded text-xs font-medium"
+                        disabled={rerunMutation.isPending}
+                        className="px-2 py-0.5 rounded text-xs font-medium"
                         style={{
-                          backgroundColor: 'var(--error-bg)',
-                          color: 'var(--error-text)',
+                          backgroundColor: 'var(--color-primary-alpha)',
+                          color: 'var(--color-primary)',
                         }}
-                        title="Cancel workflow"
+                        title="Re-run workflow"
                       >
-                        {cancelMutation.isPending ? '...' : 'Cancel'}
+                        {rerunMutation.isPending ? '...' : 'Re-run'}
                       </button>
                     )}
-                    {run.status === 'completed' &&
-                      run.conclusion !== 'success' && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            rerunMutation.mutate(run.id);
-                          }}
-                          disabled={rerunMutation.isPending}
-                          className="px-2 py-1 rounded text-xs font-medium"
-                          style={{
-                            backgroundColor: 'var(--color-primary-alpha)',
-                            color: 'var(--color-primary)',
-                          }}
-                          title="Re-run workflow"
-                        >
-                          {rerunMutation.isPending ? '...' : 'Re-run'}
-                        </button>
-                      )}
-                    <a
-                      href={run.htmlUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1 rounded hover:bg-surface-elevated"
-                      title="View on GitHub"
+                  <a
+                    href={run.htmlUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1 rounded hover:bg-surface-elevated"
+                    title="View on GitHub"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      style={{ color: 'var(--text-tertiary)' }}
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        style={{ color: 'var(--text-tertiary)' }}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                    </a>
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
                 </div>
               </div>
 
               {/* Jobs (when selected) */}
               {selectedRunId === run.id && selectedRun?.jobs && selectedRun.jobs.length > 0 && (
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-                  <p
-                    className="text-xs font-medium mb-2"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Jobs
-                  </p>
-                  <div className="space-y-2">
+                <div className="mt-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex flex-wrap gap-2">
                     {selectedRun.jobs.map((job) => (
                       <div
                         key={job.id}
-                        className="flex items-center gap-2 text-sm p-2 rounded-lg"
-                        style={{ backgroundColor: 'var(--surface-card)' }}
+                        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md"
+                        style={{ backgroundColor: 'var(--surface-elevated)' }}
                       >
                         <span
                           className={getWorkflowStatusColor(
@@ -502,18 +463,14 @@ export const GitHubActionsPanel = ({
                         >
                           {getStatusIcon(job.status, job.conclusion as WorkflowConclusion)}
                         </span>
-                        <span style={{ color: 'var(--text-primary)' }}>{job.name}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{job.name}</span>
                         {job.startedAt && job.completedAt && (
-                          <span
-                            className="text-xs ml-auto"
-                            style={{ color: 'var(--text-tertiary)' }}
-                          >
+                          <span style={{ color: 'var(--text-tertiary)' }}>
                             {Math.round(
                               (new Date(job.completedAt).getTime() -
                                 new Date(job.startedAt).getTime()) /
-                                1000
-                            )}
-                            s
+                              1000
+                            )}s
                           </span>
                         )}
                       </div>
@@ -526,34 +483,16 @@ export const GitHubActionsPanel = ({
         )}
       </div>
 
-      {/* Pagination */}
-      {data && (data.hasMore || page > 1) && (
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Previous
-          </button>
-          <span style={{ color: 'var(--text-secondary)' }}>Page {page}</span>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={!data.hasMore}
-            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* Pagination - Fixed at bottom */}
+      <div className="flex-shrink-0">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(nextPage) => setPage(Math.min(totalPages, Math.max(1, nextPage)))}
+        />
+      </div>
     </div>
   );
 };
