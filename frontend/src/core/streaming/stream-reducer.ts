@@ -16,6 +16,7 @@ import type {
 } from './types';
 import { initialStreamState } from './types';
 import { estimateTokenCount } from '../../utils/token-utils';
+import { loggers } from '../../utils/logger';
 
 // ============================================
 // Helper Functions
@@ -617,7 +618,7 @@ function processEvent(state: UnifiedStreamState, event: StreamEvent): UnifiedStr
     default: {
       // Type exhaustiveness check
       const _exhaustiveCheck: never = event;
-      console.warn('Unhandled event type:', _exhaustiveCheck);
+      loggers.stream.warn('Unhandled event type:', _exhaustiveCheck);
       return state;
     }
   }
@@ -685,7 +686,7 @@ export function streamReducer(
     default: {
       // Type exhaustiveness check
       const _exhaustiveCheck: never = action;
-      console.warn('Unhandled action type:', _exhaustiveCheck);
+      loggers.stream.warn('Unhandled action type:', _exhaustiveCheck);
       return state;
     }
   }

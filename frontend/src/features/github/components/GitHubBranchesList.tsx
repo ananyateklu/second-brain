@@ -1,4 +1,5 @@
 import { useGitHubBranches } from '../hooks';
+import { GitHubListSkeleton } from './GitHubListSkeleton';
 import type { BranchSummary } from '../../../types/github';
 
 interface GitHubBranchesListProps {
@@ -17,16 +18,7 @@ export const GitHubBranchesList = ({
   const { data, isLoading, error, refetch } = useGitHubBranches(owner, repo);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Loading branches...
-          </p>
-        </div>
-      </div>
-    );
+    return <GitHubListSkeleton count={5} showHeader={true} variant="compact" />;
   }
 
   if (error) {
@@ -65,9 +57,9 @@ export const GitHubBranchesList = ({
   });
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full">
+      {/* Header - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center gap-2 mb-4">
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Branches
         </h2>
@@ -82,7 +74,8 @@ export const GitHubBranchesList = ({
         </span>
       </div>
 
-      {/* Branches List */}
+      {/* Branches List - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
       {sortedBranches.length === 0 ? (
         <div className="text-center py-12">
           <svg
@@ -113,6 +106,7 @@ export const GitHubBranchesList = ({
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };
@@ -127,8 +121,8 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
   return (
     <div
       onClick={onClick}
-      className={`p-4 rounded-xl cursor-pointer transition-all border ${
-        isSelected ? 'ring-2 ring-primary/50' : ''
+      className={`px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+        isSelected ? 'ring-1 ring-inset ring-primary/50' : ''
       }`}
       style={{
         backgroundColor: isSelected
@@ -137,10 +131,10 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
         borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {/* Branch Icon */}
         <div
-          className="p-1.5 rounded-full"
+          className="p-1 rounded-md"
           style={{
             backgroundColor: branch.isDefault
               ? 'var(--status-success-bg)'
@@ -148,7 +142,7 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
           }}
         >
           <svg
-            className="w-4 h-4"
+            className="w-3.5 h-3.5"
             fill="currentColor"
             viewBox="0 0 16 16"
             style={{
@@ -161,57 +155,58 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
           </svg>
         </div>
 
-        {/* Branch Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3
-              className="font-medium text-sm hover:underline cursor-pointer"
-              style={{ color: 'var(--text-primary)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(branch.htmlUrl, '_blank');
+        {/* Branch Info - Compact */}
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span
+            className="font-medium text-sm truncate hover:underline cursor-pointer"
+            style={{ color: 'var(--text-primary)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(branch.htmlUrl, '_blank');
+            }}
+          >
+            {branch.name}
+          </span>
+          {branch.isDefault && (
+            <span
+              className="px-1.5 py-0.5 rounded-full text-xs shrink-0"
+              style={{
+                backgroundColor: 'var(--status-success-bg)',
+                color: 'var(--status-success)',
               }}
             >
-              {branch.name}
-            </h3>
-            {branch.isDefault && (
-              <span
-                className="px-2 py-0.5 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--status-success-bg)',
-                  color: 'var(--status-success)',
-                }}
-              >
-                default
-              </span>
-            )}
-            {branch.isProtected && (
-              <span
-                className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
-                style={{
-                  backgroundColor: 'var(--status-warning-bg)',
-                  color: 'var(--status-warning)',
-                }}
-              >
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 0c-.69 0-1.34.13-1.918.38L4.618.903a.75.75 0 00.764 1.294l1.464-.863C7.2.167 7.587.075 8 .075s.8.092 1.154.259l1.464.863a.75.75 0 00.764-1.294L9.918.38A5.002 5.002 0 008 0z" />
-                  <path fillRule="evenodd" d="M4.5 6.25A3.5 3.5 0 018 2.75a3.5 3.5 0 013.5 3.5v1.5a.75.75 0 01-1.5 0v-1.5a2 2 0 10-4 0v1.5a.75.75 0 01-1.5 0v-1.5zm-2 5v1.5c0 1.657 1.343 3 3 3h5c1.657 0 3-1.343 3-3v-1.5a1 1 0 00-1-1h-9a1 1 0 00-1 1zm6.5 2a1 1 0 11-2 0 1 1 0 012 0z" />
-                </svg>
-                protected
-              </span>
-            )}
-          </div>
-
-          {/* SHA */}
-          {branch.sha && (
-            <div
-              className="flex items-center gap-2 mt-1 text-xs"
-              style={{ color: 'var(--text-tertiary)' }}
+              default
+            </span>
+          )}
+          {branch.isProtected && (
+            <span
+              className="px-1.5 py-0.5 rounded-full text-xs shrink-0 flex items-center gap-0.5"
+              style={{
+                backgroundColor: 'var(--status-warning-bg)',
+                color: 'var(--status-warning)',
+              }}
             >
-              <span className="font-mono">{branch.sha.substring(0, 7)}</span>
-            </div>
+              <span className="sr-only">protected</span>
+              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8 0c-.69 0-1.34.13-1.918.38L4.618.903a.75.75 0 00.764 1.294l1.464-.863C7.2.167 7.587.075 8 .075s.8.092 1.154.259l1.464.863a.75.75 0 00.764-1.294L9.918.38A5.002 5.002 0 008 0z" />
+                <path fillRule="evenodd" d="M4.5 6.25A3.5 3.5 0 018 2.75a3.5 3.5 0 013.5 3.5v1.5a.75.75 0 01-1.5 0v-1.5a2 2 0 10-4 0v1.5a.75.75 0 01-1.5 0v-1.5zm-2 5v1.5c0 1.657 1.343 3 3 3h5c1.657 0 3-1.343 3-3v-1.5a1 1 0 00-1-1h-9a1 1 0 00-1 1zm6.5 2a1 1 0 11-2 0 1 1 0 012 0z" />
+              </svg>
+            </span>
           )}
         </div>
+
+        {/* SHA */}
+        {branch.sha && (
+          <code
+            className="text-xs px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            {branch.sha.substring(0, 7)}
+          </code>
+        )}
 
         {/* External Link */}
         <button
@@ -219,10 +214,10 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
             e.stopPropagation();
             window.open(branch.htmlUrl, '_blank');
           }}
-          className="p-2 rounded-lg transition-all hover:bg-white/5"
+          className="p-1 rounded-md transition-all hover:bg-white/5 shrink-0"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"

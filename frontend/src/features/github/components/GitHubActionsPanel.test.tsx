@@ -86,7 +86,7 @@ describe('GitHubActionsPanel', () => {
       render(<GitHubActionsPanel />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+        expect(document.querySelector('[style*="animation: shimmer"]')).toBeInTheDocument();
       });
     });
   });
@@ -154,7 +154,7 @@ describe('GitHubActionsPanel', () => {
     });
 
     it('should display workflow name', async () => {
-      const run = mockWorkflowRun({ name: 'Build and Test' });
+      const run = mockWorkflowRun({ name: 'Build and Test', displayTitle: '' });
       vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
 
       render(<GitHubActionsPanel />, { wrapper: createWrapper() });
@@ -358,7 +358,9 @@ describe('GitHubActionsPanel', () => {
         expect(screen.getByText('Test Run')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Test Run').closest('div[role="button"]')!);
+      const buttonElement = screen.getByText('Test Run').closest('div[role="button"]');
+      expect(buttonElement).toBeTruthy();
+      fireEvent.click(buttonElement as HTMLElement);
 
       expect(onSelectRun).toHaveBeenCalledWith(run);
     });
@@ -371,50 +373,56 @@ describe('GitHubActionsPanel', () => {
 
       await waitFor(() => {
         const runElement = screen.getByText('Test workflow').closest('div[role="button"]');
-        expect(runElement).toHaveClass('ring-2');
+        expect(runElement).toHaveClass('ring-1');
       });
     });
   });
 
   describe('Pagination', () => {
     it('should show pagination when hasMore is true', async () => {
-      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(
-        mockWorkflowRunsResponse([mockWorkflowRun()], true)
-      );
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue({
+        ...mockWorkflowRunsResponse([mockWorkflowRun()], true),
+        totalCount: 30,
+        perPage: 15,
+      });
 
       render(<GitHubActionsPanel />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Next')).toBeInTheDocument();
-        expect(screen.getByText('Previous')).toBeInTheDocument();
+        expect(screen.getByLabelText('Next page')).toBeInTheDocument();
+        expect(screen.getByLabelText('Previous page')).toBeInTheDocument();
       });
     });
 
     it('should disable Previous button on first page', async () => {
-      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(
-        mockWorkflowRunsResponse([mockWorkflowRun()], true)
-      );
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue({
+        ...mockWorkflowRunsResponse([mockWorkflowRun()], true),
+        totalCount: 30,
+        perPage: 15,
+      });
 
       render(<GitHubActionsPanel />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const prevButton = screen.getByText('Previous');
+        const prevButton = screen.getByLabelText('Previous page');
         expect(prevButton).toBeDisabled();
       });
     });
 
     it('should load next page when clicking Next', async () => {
-      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(
-        mockWorkflowRunsResponse([mockWorkflowRun()], true)
-      );
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue({
+        ...mockWorkflowRunsResponse([mockWorkflowRun()], true),
+        totalCount: 30,
+        perPage: 15,
+      });
 
       render(<GitHubActionsPanel />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Page 1')).toBeInTheDocument();
+        expect(screen.getByLabelText('Page 1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByLabelText('Next page'));
 
       await waitFor(() => {
         expect(githubService.getWorkflowRuns).toHaveBeenCalledWith(

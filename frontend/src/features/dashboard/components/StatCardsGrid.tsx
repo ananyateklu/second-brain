@@ -222,7 +222,7 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
 
   return (
     <div
-      className="flex gap-2 dashboard-stats-grid"
+      className="flex gap-3 dashboard-stats-grid"
       style={{
         flexWrap: 'wrap',
       }}

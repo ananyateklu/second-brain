@@ -2,18 +2,17 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotes, useNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-form';
 import { formatRelativeDate } from '../../../utils/date-utils';
-import { useThemeStore } from '../../../store/theme-store';
 import { NOTES_FOLDERS } from '../../../lib/constants';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
 
 export function EditNoteModal() {
-  const isOpen = useUIStore((state) => state.isEditModalOpen);
-  const editingNoteId = useUIStore((state) => state.editingNoteId);
-  const closeModal = useUIStore((state) => state.closeEditModal);
+  const isOpen = useBoundStore((state) => state.isEditModalOpen);
+  const editingNoteId = useBoundStore((state) => state.editingNoteId);
+  const closeModal = useBoundStore((state) => state.closeEditModal);
 
   // Fetch the full note with content when modal is open and we have an ID
   const { data: fetchedNote, isLoading: isLoadingNote, error: noteError } = useNote(editingNoteId ?? '');
@@ -27,7 +26,7 @@ export function EditNoteModal() {
   const moveToFolderMutation = useMoveToFolder();
   const { data: allNotes } = useNotes();
   const formRef = useRef<HTMLFormElement>(null);
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const [isArchived, setIsArchived] = useState(editingNote?.isArchived ?? false);
   const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);

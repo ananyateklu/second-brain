@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNoteVersionHistory, useRestoreNoteVersion } from '../hooks/use-note-versions';
 import { NoteVersionTimeline } from './NoteVersionTimeline';
 import { NoteVersionDiffViewer } from './NoteVersionDiffViewer';
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 
 interface NoteVersionHistoryPanelProps {
   noteId: string;
@@ -84,9 +85,7 @@ export function NoteVersionHistoryPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-brand-600)]" />
-            </div>
+            <LoadingSpinner message="Loading version history..." className="h-32" />
           ) : !history || history.versions.length === 0 ? (
             <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
               <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">

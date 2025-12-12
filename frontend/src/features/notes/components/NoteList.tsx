@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { NoteCard } from './NoteCard';
 import { NoteListItem } from './NoteListItem';
 import { NoteListItem as NoteListItemType } from '../../../types/notes';
-import { NotesViewMode } from '../../../store/ui-store';
+import type { NotesViewMode } from '../../../store/types';
 
 // Re-export the virtualized version for performance-critical use cases
 export { VirtualizedNoteList } from './VirtualizedNoteList';

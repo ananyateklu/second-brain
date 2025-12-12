@@ -32,7 +32,7 @@ export function RagSettingsPopover({
       >
         <div className="flex items-center gap-2.5 flex-1">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               backgroundColor: ragEnabled
                 ? 'color-mix(in srgb, var(--color-accent-blue) 20%, transparent)'

@@ -1,10 +1,9 @@
 import { useMemo, useState, useCallback, useDeferredValue, useEffect } from 'react';
 import { useNotes, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { NotesSkeleton } from '../features/notes/components/NotesSkeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
-import { useUIStore } from '../store/ui-store';
 import { useBoundStore } from '../store/bound-store';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
@@ -82,9 +81,9 @@ const applyDateFilter = (
 export function NotesPage() {
   const { data: notes, isLoading, error } = useNotes();
   const bulkDeleteMutation = useBulkDeleteNotes();
-  const openCreateModal = useUIStore((state) => state.openCreateModal);
-  const searchQuery = useUIStore((state) => state.searchQuery);
-  const searchMode = useUIStore((state) => state.searchMode);
+  const openCreateModal = useBoundStore((state) => state.openCreateModal);
+  const searchQuery = useBoundStore((state) => state.searchQuery);
+  const searchMode = useBoundStore((state) => state.searchMode);
 
   // Use filter state from global store
   const filterState = useBoundStore((state) => state.filterState);
@@ -314,11 +313,7 @@ export function NotesPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--background)' }}>
-        <LoadingSpinner message="Loading your notes..." />
-      </div>
-    );
+    return <NotesSkeleton />;
   }
 
   if (!notes || notes.length === 0) {

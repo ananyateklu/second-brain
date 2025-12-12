@@ -1,10 +1,9 @@
 import { NoteListItem as NoteListItemType } from '../../../types/notes';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { useDeleteNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { useState, memo, useMemo } from 'react';
-import { useThemeStore } from '../../../store/theme-store';
 
 interface NoteListItemProps {
   note: NoteListItemType;
@@ -22,10 +21,10 @@ export const NoteListItem = memo(({
   isSelected = false,
   onSelect,
 }: NoteListItemProps) => {
-  const openEditModal = useUIStore((state) => state.openEditModal);
+  const openEditModal = useBoundStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const [isHovered, setIsHovered] = useState(false);
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
   const handleItemClick = () => {

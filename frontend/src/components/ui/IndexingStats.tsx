@@ -79,7 +79,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
   if (!stats) {
     return (
       <div
-        className="relative p-3 rounded-xl border overflow-hidden group transition-all duration-300"
+        className="relative p-3 rounded-2xl border overflow-hidden group transition-all duration-300"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           borderColor: 'var(--border)',
@@ -109,7 +109,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
               />
             </div>
             <div
-              className="px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1"
+              className="px-1.5 py-0.5 rounded-xl text-[10px] font-medium flex items-center gap-1"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)',
                 color: 'var(--text-secondary)',
@@ -132,7 +132,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 
   return (
     <div
-      className={`relative p-3 rounded-xl border overflow-hidden group transition-all duration-300 ${isDeleting ? '' : 'hover:shadow-md hover:-translate-y-0.5'} ${isIndexing ? 'animate-pulse' : ''}`}
+      className={`relative p-3 rounded-2xl border overflow-hidden group transition-all duration-300 ${isDeleting ? '' : 'hover:shadow-md hover:-translate-y-0.5'} ${isIndexing ? 'animate-pulse' : ''}`}
       style={{
         backgroundColor: 'var(--surface-elevated)',
         borderColor: isDeleting ? 'color-mix(in srgb, var(--color-error) 40%, var(--border))' : isIndexing ? 'color-mix(in srgb, var(--color-brand-600) 40%, var(--border))' : 'var(--border)',
@@ -232,7 +232,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
           </div>
           <div className="flex items-center gap-2">
             <span
-              className="text-xs px-2 py-0.5 rounded-md font-medium border"
+              className="text-xs px-2 py-0.5 rounded-xl font-medium border"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)',
                 borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
@@ -246,7 +246,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
                 type="button"
                 onClick={(e) => { void handleDelete(e); }}
                 disabled={deleteIndexedNotesMutation.isPending}
-                className="flex items-center justify-center w-6 h-6 rounded-md transition-all duration-200 hover:bg-opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
+                className="flex items-center justify-center w-6 h-6 rounded-xl transition-all duration-200 hover:bg-opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                 style={{
                   backgroundColor: deleteIndexedNotesMutation.isPending
                     ? 'color-mix(in srgb, var(--color-error) 20%, transparent)'
@@ -288,7 +288,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
         <div className="grid grid-cols-4 gap-2 mb-2.5">
           {/* Total Notes */}
           <div
-            className="p-2 rounded-md"
+            className="p-2 rounded-xl"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
             }}
@@ -308,7 +308,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 
           {/* Indexed Notes */}
           <div
-            className="p-2 rounded-md"
+            className="p-2 rounded-xl"
             style={{
               backgroundColor: stats.uniqueNotes === stats.totalNotesInSystem && stats.totalNotesInSystem > 0
                 ? 'color-mix(in srgb, var(--color-success) 8%, transparent)'
@@ -330,7 +330,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 
           {/* Not Indexed */}
           <div
-            className="p-2 rounded-md"
+            className="p-2 rounded-xl"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
             }}
@@ -355,7 +355,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 
           {/* Needs Update */}
           <div
-            className="p-2 rounded-md"
+            className="p-2 rounded-xl"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
             }}
@@ -381,7 +381,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 
         {/* Embeddings Info Row */}
         <div
-          className="flex items-center justify-between p-2 rounded-md mb-2.5"
+          className="flex items-center justify-between p-2 rounded-xl mb-2.5"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
           }}
@@ -402,7 +402,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
         {/* Status Indicator */}
         {stats.totalNotesInSystem > 0 && (
           <div
-            className="flex items-center gap-1.5 p-1.5 rounded-md mb-2.5"
+            className="flex items-center gap-1.5 p-1.5 rounded-xl mb-2.5"
             style={{
               backgroundColor: isHealthy
                 ? 'color-mix(in srgb, var(--color-success) 8%, transparent)'
@@ -491,7 +491,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
         {[1, 2].map((i) => (
           <div
             key={i}
-            className="p-3 rounded-xl border animate-pulse"
+            className="p-3 rounded-2xl border animate-pulse"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               borderColor: 'var(--border)',
@@ -509,7 +509,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
             </div>
             <div className="grid grid-cols-4 gap-2 mb-2">
               {[1, 2, 3, 4].map((j) => (
-                <div key={j} className="p-2 rounded-md" style={{ backgroundColor: 'var(--surface-card)', opacity: 0.3 }}>
+                <div key={j} className="p-2 rounded-xl" style={{ backgroundColor: 'var(--surface-card)', opacity: 0.3 }}>
                   <div className="h-2.5 rounded w-2/3 mb-1" style={{ backgroundColor: 'var(--surface-elevated)' }} />
                   <div className="h-4 rounded w-1/2" style={{ backgroundColor: 'var(--surface-elevated)' }} />
                 </div>
@@ -535,7 +535,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   if (!stats) {
     return (
       <div
-        className="p-4 rounded-xl border text-center"
+        className="p-4 rounded-2xl border text-center"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           borderColor: 'var(--border)',
@@ -543,7 +543,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
       >
         <div className="flex justify-center mb-2">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg border"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
               borderColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
@@ -577,7 +577,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
         {/* Pinecone Card - Show setup button if not configured in Tauri mode */}
         {isTauri() && !isPineconeConfigured ? (
           <div
-            className="relative p-3 rounded-xl border overflow-hidden group transition-all duration-300"
+            className="relative p-3 rounded-2xl border overflow-hidden group transition-all duration-300"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               borderColor: 'var(--border)',
@@ -607,7 +607,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
                   />
                 </div>
                 <span
-                  className="text-xs px-2 py-0.5 rounded-md font-medium border"
+                  className="text-xs px-2 py-0.5 rounded-xl font-medium border"
                   style={{
                     backgroundColor: 'color-mix(in srgb, #f59e0b 10%, transparent)',
                     borderColor: 'color-mix(in srgb, #f59e0b 30%, transparent)',

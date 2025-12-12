@@ -255,7 +255,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                       onClick={() => { if (!storeDisabled) setVectorStore(store); }}
                       disabled={storeDisabled}
                       title={showPineconeWarning ? `${currentModelInfo?.displayName ?? effectiveSelectedModel} (${currentModelInfo?.dimensions ?? '?'} dims) doesn't support Pinecone (requires ${PINECONE_REQUIRED_DIMENSIONS} dimensions)` : undefined}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : showPineconeWarning ? 'var(--surface-base)' : 'var(--surface-elevated)',
                         borderColor: isActive ? 'var(--color-brand-600)' : showPineconeWarning ? 'var(--border)' : 'var(--border)',
@@ -320,7 +320,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                     onClick={() => { if (!isDisabled) handleProviderChange(provider.name); }}
                     disabled={isDisabled}
                     title={`${provider.name}: ${provider.availableModels.length} model(s) available`}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
                       backgroundColor: isActive ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
                       borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
@@ -351,7 +351,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                       {provider.name}
                       {hasCompatibleModels ? (
                         <span
-                          className="text-[9px] px-1 py-0.5 rounded"
+                          className="text-[9px] px-1 py-0.5 rounded-lg"
                           style={{
                             backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'color-mix(in srgb, var(--color-success) 15%, transparent)',
                             color: isActive ? 'var(--color-brand-50)' : 'var(--color-success)',
@@ -362,7 +362,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                         </span>
                       ) : (
                         <span
-                          className="text-[9px] px-1 py-0.5 rounded"
+                          className="text-[9px] px-1 py-0.5 rounded-lg"
                           style={{
                             backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'color-mix(in srgb, var(--text-warning) 15%, transparent)',
                             color: isActive ? 'var(--color-brand-50)' : 'var(--text-warning)',
@@ -401,7 +401,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                     onClick={() => { if (!modelDisabled) handleModelChange(model.modelId); }}
                     disabled={modelDisabled}
                     title={model.description || `${model.displayName}: ${model.dimensions} dimensions`}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: isActive ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
                       borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
@@ -490,7 +490,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
       <button
         onClick={() => { void handleStartIndexing(); }}
         disabled={isDisabled}
-        className="w-full px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full px-4 py-2 rounded-xl transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
         style={{
           backgroundColor: isDisabled ? 'var(--border)' : 'var(--btn-primary-bg)',
           color: isDisabled ? 'var(--text-secondary)' : 'var(--btn-primary-text)',

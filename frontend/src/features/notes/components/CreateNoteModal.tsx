@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { useCreateNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote } from '../hooks/use-note-form';
 
 export function CreateNoteModal() {
-  const isOpen = useUIStore((state) => state.isCreateModalOpen);
-  const closeModal = useUIStore((state) => state.closeCreateModal);
+  const isOpen = useBoundStore((state) => state.isCreateModalOpen);
+  const closeModal = useBoundStore((state) => state.closeCreateModal);
   const createNoteMutation = useCreateNote();
   const formRef = useRef<HTMLFormElement>(null);
 

@@ -151,7 +151,7 @@ export function ModelUsageSection({
   // Check platform once for performance optimizations
   const isWebKit = useMemo(() => isTauri(), []);
 
-  // Container animation styles - GPU accelerated
+  // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
     backgroundColor: 'var(--surface-card)',
     borderColor: 'var(--border)',
@@ -159,14 +159,13 @@ export function ModelUsageSection({
     boxShadow: isWebKit
       ? 'var(--shadow-lg)'
       : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
-    // Animation properties
+    // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
-    transform: isAnimationReady ? 'translateY(0)' : 'translateY(16px)',
-    transitionProperty: 'opacity, transform',
-    transitionDuration: isWebKit ? '300ms' : '400ms',
-    transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    transitionProperty: 'opacity',
+    transitionDuration: isWebKit ? '150ms' : '200ms',
+    transitionTimingFunction: 'ease-out',
     transitionDelay: `${animationDelay}ms`,
-    willChange: isAnimationReady ? 'auto' : 'transform, opacity',
+    willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
   }), [isWebKit, isAnimationReady, animationDelay]);
 
@@ -315,7 +314,7 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-3xl border p-5 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        className={`rounded-3xl border p-[19px] relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
         style={containerStyles}
       >
         {/* Ambient glow effect - hidden on WebKit for performance */}

@@ -40,7 +40,7 @@ export function AgentSettingsPopover({
       >
         <div className="flex items-center gap-2.5 flex-1">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               backgroundColor: agentEnabled
                 ? 'color-mix(in srgb, var(--color-brand-500) 20%, transparent)'
@@ -121,7 +121,7 @@ export function AgentSettingsPopover({
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div
-                  className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                  className="w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{
                     backgroundColor: capability.enabled
                       ? 'color-mix(in srgb, var(--color-notes) 20%, transparent)'

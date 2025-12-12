@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Note } from '../types/note';
-import { useThemeStore } from '../../../store/theme-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { FolderFilter, ArchiveFilter } from './NotesFilter';
 
 interface FolderSidebarProps {
@@ -22,7 +22,7 @@ export function FolderSidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: FolderSidebarProps) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 

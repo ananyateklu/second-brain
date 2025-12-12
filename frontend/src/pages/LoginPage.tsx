@@ -1,11 +1,16 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import brainLogo from '../assets/brain-top-tab.png';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, register, isLoading, isAuthenticated, error, clearError } = useAuthStore();
+  const login = useBoundStore((state) => state.login);
+  const register = useBoundStore((state) => state.register);
+  const isLoading = useBoundStore((state) => state.isLoading);
+  const isAuthenticated = useBoundStore((state) => state.isAuthenticated);
+  const error = useBoundStore((state) => state.error);
+  const clearError = useBoundStore((state) => state.clearError);
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [identifier, setIdentifier] = useState('');

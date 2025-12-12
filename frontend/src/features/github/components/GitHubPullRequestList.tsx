@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGitHubPullRequests } from '../hooks';
+import { GitHubListSkeleton } from './GitHubListSkeleton';
+import { Pagination } from '../../../components/ui/Pagination';
 import type { PullRequestFilter, PullRequestSummary } from '../../../types/github';
 import {
   getPullRequestStateColor,
   getPullRequestStateBgColor,
   formatRelativeTime,
-  getReviewStateColor,
 } from '../../../types/github';
 
 interface GitHubPullRequestListProps {
@@ -23,13 +24,14 @@ export const GitHubPullRequestList = ({
 }: GitHubPullRequestListProps) => {
   const [stateFilter, setStateFilter] = useState<PullRequestFilter>('open');
   const [page, setPage] = useState(1);
+  const perPage = 20;
 
   const { data, isLoading, error, refetch } = useGitHubPullRequests({
     owner,
     repo,
     state: stateFilter,
     page,
-    perPage: 20,
+    perPage,
   });
 
   const getCheckStatus = (pr: PullRequestSummary) => {
@@ -50,11 +52,7 @@ export const GitHubPullRequestList = ({
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <GitHubListSkeleton count={5} showHeader={false} variant="default" />;
   }
 
   if (error) {
@@ -84,10 +82,14 @@ export const GitHubPullRequestList = ({
     );
   }
 
+  const totalItems = data?.totalCount ?? 0;
+  const itemsPerPage = data?.perPage ?? perPage;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
   return (
-    <div className="space-y-4">
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full">
+      {/* Filter Tabs - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center gap-2 mb-4">
         {(['open', 'closed', 'all'] as PullRequestFilter[]).map((filter) => (
           <button
             key={filter}
@@ -95,11 +97,10 @@ export const GitHubPullRequestList = ({
               setStateFilter(filter);
               setPage(1);
             }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              stateFilter === filter
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${stateFilter === filter
                 ? 'bg-primary/10 text-primary'
                 : 'hover:bg-surface-elevated'
-            }`}
+              }`}
             style={{
               backgroundColor:
                 stateFilter === filter ? 'var(--color-primary-alpha)' : undefined,
@@ -138,8 +139,8 @@ export const GitHubPullRequestList = ({
         </button>
       </div>
 
-      {/* Pull Requests List */}
-      <div className="space-y-2">
+      {/* Pull Requests List - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 space-y-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
         {!data?.pullRequests || data.pullRequests.length === 0 ? (
           <div
             className="text-center py-12 rounded-xl border"
@@ -171,9 +172,8 @@ export const GitHubPullRequestList = ({
             <button
               key={pr.number}
               onClick={() => onSelectPR?.(pr)}
-              className={`w-full text-left p-4 rounded-xl border transition-all hover:scale-[1.01] ${
-                selectedPRNumber === pr.number ? 'ring-2 ring-primary' : ''
-              }`}
+              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-sm ${selectedPRNumber === pr.number ? 'ring-1 ring-inset ring-primary' : ''
+                }`}
               style={{
                 backgroundColor:
                   selectedPRNumber === pr.number
@@ -182,14 +182,14 @@ export const GitHubPullRequestList = ({
                 borderColor: 'var(--border)',
               }}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-2">
                 {/* PR State Icon */}
                 <div
-                  className={`p-2 rounded-lg ${getPullRequestStateBgColor(pr.state)}`}
+                  className={`p-1.5 rounded-md ${getPullRequestStateBgColor(pr.state)}`}
                 >
                   {pr.state === 'merged' ? (
                     <svg
-                      className={`w-5 h-5 ${getPullRequestStateColor(pr.state)}`}
+                      className={`w-4 h-4 ${getPullRequestStateColor(pr.state)}`}
                       fill="currentColor"
                       viewBox="0 0 16 16"
                     >
@@ -197,7 +197,7 @@ export const GitHubPullRequestList = ({
                     </svg>
                   ) : pr.state === 'open' ? (
                     <svg
-                      className={`w-5 h-5 ${getPullRequestStateColor(pr.state)}`}
+                      className={`w-4 h-4 ${getPullRequestStateColor(pr.state)}`}
                       fill="currentColor"
                       viewBox="0 0 16 16"
                     >
@@ -205,7 +205,7 @@ export const GitHubPullRequestList = ({
                     </svg>
                   ) : (
                     <svg
-                      className={`w-5 h-5 ${getPullRequestStateColor(pr.state)}`}
+                      className={`w-4 h-4 ${getPullRequestStateColor(pr.state)}`}
                       fill="currentColor"
                       viewBox="0 0 16 16"
                     >
@@ -214,208 +214,129 @@ export const GitHubPullRequestList = ({
                   )}
                 </div>
 
-                {/* PR Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                {/* PR Info - Compact */}
+                <div className="flex-1 min-w-0 flex items-center gap-2">
+                  <span
+                    className="font-medium text-sm truncate"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {pr.title}
+                  </span>
+                  {pr.isDraft && (
                     <span
-                      className="font-semibold truncate"
-                      style={{ color: 'var(--text-primary)' }}
+                      className="px-1.5 py-0.5 text-xs rounded-full shrink-0"
+                      style={{
+                        backgroundColor: 'var(--surface-elevated)',
+                        color: 'var(--text-tertiary)',
+                      }}
                     >
-                      {pr.title}
+                      Draft
                     </span>
-                    {pr.isDraft && (
+                  )}
+                  <span
+                    className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      color: 'var(--text-tertiary)',
+                    }}
+                  >
+                    #{pr.number}
+                  </span>
+                </div>
+
+                {/* Meta info - inline */}
+                <div
+                  className="flex items-center gap-2 text-xs shrink-0"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <span
+                    className="hidden sm:inline-flex items-center gap-1 max-w-64"
+                    title={`${pr.headBranch} → ${pr.baseBranch}`}
+                  >
+                    <span className="truncate">{pr.headBranch}</span>
+                    <span className="shrink-0">→</span>
+                    <span className="truncate">{pr.baseBranch}</span>
+                  </span>
+                  <span>{formatRelativeTime(pr.updatedAt)}</span>
+                  {pr.commentsCount > 0 && (
+                    <span className="flex items-center gap-0.5">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                      {pr.commentsCount}
+                    </span>
+                  )}
+                </div>
+
+                {/* Check Status - compact */}
+                {(() => {
+                  const status = getCheckStatus(pr);
+                  if (!status) return null;
+                  const statusConfig = {
+                    success: { icon: '✓', color: 'text-green-500' },
+                    failure: { icon: '✗', color: 'text-red-500' },
+                    pending: { icon: '○', color: 'text-yellow-500' },
+                    neutral: { icon: '−', color: 'text-gray-500' },
+                  }[status];
+                  return (
+                    <span className={`text-xs ${statusConfig.color}`} title="Checks">
+                      <span className="sr-only">Checks</span>
+                      {statusConfig.icon}
+                    </span>
+                  );
+                })()}
+
+                {/* Labels - compact */}
+                {pr.labels.length > 0 && (
+                  <div className="hidden md:flex items-center gap-1 shrink-0">
+                    {pr.labels.slice(0, 4).map((label) => (
                       <span
-                        className="px-2 py-0.5 text-xs rounded-full"
+                        key={label.id}
+                        className="px-1.5 py-0.5 rounded-full text-xs"
                         style={{
-                          backgroundColor: 'var(--surface-elevated)',
-                          color: 'var(--text-secondary)',
+                          backgroundColor: `#${label.color}20`,
+                          color: `#${label.color}`,
                         }}
                       >
-                        Draft
+                        {label.name}
+                      </span>
+                    ))}
+                    {pr.labels.length > 4 && (
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                        +{pr.labels.length - 4}
                       </span>
                     )}
                   </div>
+                )}
 
-                  <div
-                    className="flex items-center gap-2 mt-1 text-sm"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    <span>#{pr.number}</span>
-                    <span>•</span>
-                    <span>{pr.headBranch}</span>
-                    <span>→</span>
-                    <span>{pr.baseBranch}</span>
-                  </div>
-
-                  <div
-                    className="flex items-center gap-3 mt-2 text-xs"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <img
-                      src={pr.authorAvatarUrl}
-                      alt={pr.author}
-                      className="w-4 h-4 rounded-full"
-                    />
-                    <span>{pr.author}</span>
-                    <span>•</span>
-                    <span>{formatRelativeTime(pr.updatedAt)}</span>
-                    {pr.commentsCount > 0 && (
-                      <>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                            />
-                          </svg>
-                          {pr.commentsCount}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Labels */}
-                  {pr.labels.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {pr.labels.slice(0, 4).map((label) => (
-                        <span
-                          key={label.id}
-                          className="px-2 py-0.5 text-xs rounded-full"
-                          style={{
-                            backgroundColor: `#${label.color}20`,
-                            color: `#${label.color}`,
-                          }}
-                        >
-                          {label.name}
-                        </span>
-                      ))}
-                      {pr.labels.length > 4 && (
-                        <span
-                          className="px-2 py-0.5 text-xs rounded-full"
-                          style={{
-                            backgroundColor: 'var(--surface-elevated)',
-                            color: 'var(--text-tertiary)',
-                          }}
-                        >
-                          +{pr.labels.length - 4}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                {/* File Changes */}
+                <div className="flex items-center gap-1 text-xs shrink-0">
+                  <span className="text-green-500">+{pr.additions}</span>
+                  <span className="text-red-500">-{pr.deletions}</span>
                 </div>
 
-                {/* Status Indicators */}
-                <div className="flex flex-col items-end gap-2">
-                  {/* Check Status */}
-                  {(() => {
-                    const status = getCheckStatus(pr);
-                    if (!status) return null;
-
-                    const statusConfig = {
-                      success: {
-                        icon: '✓',
-                        color: 'text-green-500',
-                        bg: 'bg-green-500/10',
-                      },
-                      failure: {
-                        icon: '✗',
-                        color: 'text-red-500',
-                        bg: 'bg-red-500/10',
-                      },
-                      pending: {
-                        icon: '○',
-                        color: 'text-yellow-500',
-                        bg: 'bg-yellow-500/10',
-                      },
-                      neutral: {
-                        icon: '−',
-                        color: 'text-gray-500',
-                        bg: 'bg-gray-500/10',
-                      },
-                    }[status];
-
-                    return (
-                      <span
-                        className={`px-2 py-1 rounded-lg text-xs font-medium ${statusConfig.color} ${statusConfig.bg}`}
-                      >
-                        {statusConfig.icon} Checks
-                      </span>
-                    );
-                  })()}
-
-                  {/* Reviews */}
-                  {pr.reviews && pr.reviews.length > 0 && (
-                    <div className="flex -space-x-1">
-                      {pr.reviews.slice(0, 3).map((review, idx) => (
-                        <div
-                          key={idx}
-                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${getReviewStateColor(
-                            review.state
-                          )}`}
-                          style={{ borderColor: 'var(--surface-card)' }}
-                          title={`${review.author}: ${review.state}`}
-                        >
-                          <img
-                            src={review.authorAvatarUrl}
-                            alt={review.author}
-                            className="w-full h-full rounded-full"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* File Changes */}
-                  <div
-                    className="flex items-center gap-2 text-xs"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    <span className="text-green-500">+{pr.additions}</span>
-                    <span className="text-red-500">-{pr.deletions}</span>
-                  </div>
-                </div>
+                {/* Author */}
+                <img
+                  src={pr.authorAvatarUrl}
+                  alt={pr.author}
+                  className="w-5 h-5 rounded-full shrink-0"
+                />
               </div>
             </button>
           ))
         )}
       </div>
 
-      {/* Pagination */}
-      {data && (data.hasMore || page > 1) && (
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Previous
-          </button>
-          <span style={{ color: 'var(--text-secondary)' }}>Page {page}</span>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={!data.hasMore}
-            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* Pagination - Fixed at bottom */}
+      <div className="flex-shrink-0">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(nextPage) => setPage(Math.min(totalPages, Math.max(1, nextPage)))}
+        />
+      </div>
     </div>
   );
 };

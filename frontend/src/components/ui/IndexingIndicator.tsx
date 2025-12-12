@@ -56,7 +56,7 @@ export function IndexingIndicator() {
   return (
     <button
       onClick={handleClick}
-      className="relative flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 group"
+      className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 group"
       style={{
         backgroundColor: isCompleted
           ? 'color-mix(in srgb, var(--color-success) 15%, var(--surface-elevated))'
@@ -201,7 +201,7 @@ export function IndexingIndicator() {
       {/* Tooltip on hover if notification is hidden */}
       {!isNotificationVisible && (
         <span
-          className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           style={{
             backgroundColor: 'var(--surface-card)',
             color: 'var(--text-secondary)',

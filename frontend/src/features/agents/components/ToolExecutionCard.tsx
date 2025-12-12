@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, memo, Fragment } from 'react';
 import { ToolExecution, AgentNotesResponse } from '../types/agent-types';
 import { NoteCard } from '../../notes/components/NoteCard';
 import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
@@ -369,7 +369,7 @@ function GenericResponseDisplay({ response }: { response: GenericResponse }) {
   );
 }
 
-export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
+export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
   const getToolIcon = (name: string) => {
     switch (name) {
       case 'CreateNote':
@@ -668,4 +668,4 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { isTauri } from './native-notifications';
+import { loggers } from '../utils/logger';
 
 /**
  * Wait for Tauri to be available (it may take a moment for Tauri to inject internals)
@@ -56,7 +57,7 @@ export async function isBackendReady(): Promise<boolean> {
  */
 export async function restartBackend(): Promise<void> {
   if (!isTauri()) {
-    console.warn('restartBackend is only available in Tauri');
+    loggers.tauri.warn('restartBackend is only available in Tauri');
     return;
   }
 
@@ -68,7 +69,7 @@ export async function restartBackend(): Promise<void> {
  */
 export async function openDataDirectory(): Promise<void> {
   if (!isTauri()) {
-    console.warn('openDataDirectory is only available in Tauri');
+    loggers.tauri.warn('openDataDirectory is only available in Tauri');
     return;
   }
 
@@ -80,7 +81,7 @@ export async function openDataDirectory(): Promise<void> {
  */
 export async function openLogDirectory(): Promise<void> {
   if (!isTauri()) {
-    console.warn('openLogDirectory is only available in Tauri');
+    loggers.tauri.warn('openLogDirectory is only available in Tauri');
     return;
   }
 
@@ -155,14 +156,14 @@ export interface Secrets {
  */
 export async function getSecrets(): Promise<Secrets> {
   if (!isTauri()) {
-    console.warn('getSecrets is only available in Tauri');
+    loggers.tauri.warn('getSecrets is only available in Tauri');
     return {};
   }
 
   try {
     return await invoke<Secrets>('get_secrets');
   } catch (e) {
-    console.error('Failed to get secrets:', e);
+    loggers.tauri.error('Failed to get secrets:', e);
     return {};
   }
 }
@@ -172,7 +173,7 @@ export async function getSecrets(): Promise<Secrets> {
  */
 export async function saveSecrets(secrets: Secrets, restart = true): Promise<void> {
   if (!isTauri()) {
-    console.warn('saveSecrets is only available in Tauri');
+    loggers.tauri.warn('saveSecrets is only available in Tauri');
     return;
   }
 

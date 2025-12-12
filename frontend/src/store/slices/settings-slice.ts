@@ -5,6 +5,7 @@
 
 // Import directly to avoid circular deps through services barrel export
 import { userPreferencesService, DEFAULT_PREFERENCES } from '../../services/user-preferences.service';
+import { loggers } from '../../utils/logger';
 import type { UserPreferences } from '../../types/auth';
 import type { VectorStoreProvider } from '../../types/rag';
 import type { SettingsSlice, SliceCreator, FontSize, NoteView } from '../types';
@@ -21,6 +22,44 @@ const getUserId = (): string | null => {
  */
 const debouncedSync = userPreferencesService.createDebouncedSync(1000);
 
+/**
+ * Helper to sync a setting with debouncing (for non-critical settings)
+ * Reduces boilerplate for simple preference updates
+ */
+const syncSettingDebounced = <K extends keyof UserPreferences>(
+  getState: () => SettingsSlice,
+  key: K,
+  value: UserPreferences[K]
+): void => {
+  const userId = getUserId();
+  if (userId) {
+    debouncedSync(userId, { ...extractPreferences(getState()), [key]: value });
+  }
+};
+
+/**
+ * Helper to sync a setting immediately (for critical settings)
+ * Returns a promise for async error handling
+ */
+const syncSettingImmediate = async <K extends keyof UserPreferences>(
+  getState: () => SettingsSlice,
+  key: K,
+  value: UserPreferences[K],
+  settingName: string
+): Promise<void> => {
+  const userId = getUserId();
+  if (userId) {
+    try {
+      await userPreferencesService.syncToBackend(userId, {
+        ...extractPreferences(getState()),
+        [key]: value,
+      });
+    } catch (error) {
+      loggers.store.error(`Failed to sync ${settingName} to backend:`, { error });
+    }
+  }
+};
+
 export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   // Initial state from defaults
   ...DEFAULT_PREFERENCES,
@@ -32,19 +71,13 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
 
   setDefaultNoteView: (view: NoteView) => {
     set({ defaultNoteView: view });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), defaultNoteView: view });
-    }
+    syncSettingDebounced(get, 'defaultNoteView', view);
   },
 
   setItemsPerPage: (count: number) => {
     const validCount = userPreferencesService.validateItemsPerPage(count);
     set({ itemsPerPage: validCount });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), itemsPerPage: validCount });
-    }
+    syncSettingDebounced(get, 'itemsPerPage', validCount);
   },
 
   setAutoSaveInterval: (interval: number) => {
@@ -53,19 +86,13 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
 
   setEnableNotifications: (enabled: boolean) => {
     set({ enableNotifications: enabled });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), enableNotifications: enabled });
-    }
+    syncSettingDebounced(get, 'enableNotifications', enabled);
   },
 
   setFontSize: (size: FontSize) => {
     const validSize = userPreferencesService.validateFontSize(size);
     set({ fontSize: validSize });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), fontSize: validSize });
-    }
+    syncSettingDebounced(get, 'fontSize', validSize);
   },
 
   // ============================================
@@ -77,17 +104,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ vectorStoreProvider: validProvider });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            vectorStoreProvider: validProvider,
-          });
-        } catch (error) {
-          console.error('Failed to sync vector store provider to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'vectorStoreProvider', validProvider, 'vector store provider');
     }
   },
 
@@ -109,18 +126,12 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
 
   setOllamaRemoteUrl: (url: string | null) => {
     set({ ollamaRemoteUrl: url });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), ollamaRemoteUrl: url });
-    }
+    syncSettingDebounced(get, 'ollamaRemoteUrl', url);
   },
 
   setUseRemoteOllama: (enabled: boolean) => {
     set({ useRemoteOllama: enabled });
-    const userId = getUserId();
-    if (userId) {
-      debouncedSync(userId, { ...extractPreferences(get()), useRemoteOllama: enabled });
-    }
+    syncSettingDebounced(get, 'useRemoteOllama', enabled);
   },
 
   // ============================================
@@ -131,17 +142,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ rerankingProvider: provider });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            rerankingProvider: provider,
-          });
-        } catch (error) {
-          console.error('Failed to sync reranking provider to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'rerankingProvider', provider, 'reranking provider');
     }
   },
 
@@ -153,17 +154,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ noteSummaryEnabled: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            noteSummaryEnabled: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync note summary enabled to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'noteSummaryEnabled', enabled, 'note summary enabled');
     }
   },
 
@@ -171,17 +162,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ noteSummaryProvider: provider });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            noteSummaryProvider: provider,
-          });
-        } catch (error) {
-          console.error('Failed to sync note summary provider to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'noteSummaryProvider', provider, 'note summary provider');
     }
   },
 
@@ -189,17 +170,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ noteSummaryModel: model });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            noteSummaryModel: model,
-          });
-        } catch (error) {
-          console.error('Failed to sync note summary model to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'noteSummaryModel', model, 'note summary model');
     }
   },
 
@@ -211,17 +182,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ ragEnableHyde: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            ragEnableHyde: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync RAG HyDE setting to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'ragEnableHyde', enabled, 'RAG HyDE setting');
     }
   },
 
@@ -229,17 +190,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ ragEnableQueryExpansion: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            ragEnableQueryExpansion: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync RAG query expansion setting to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'ragEnableQueryExpansion', enabled, 'RAG query expansion setting');
     }
   },
 
@@ -247,17 +198,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ ragEnableHybridSearch: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            ragEnableHybridSearch: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync RAG hybrid search setting to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'ragEnableHybridSearch', enabled, 'RAG hybrid search setting');
     }
   },
 
@@ -265,17 +206,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ ragEnableReranking: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            ragEnableReranking: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync RAG reranking setting to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'ragEnableReranking', enabled, 'RAG reranking setting');
     }
   },
 
@@ -283,17 +214,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     set({ ragEnableAnalytics: enabled });
 
     if (syncToBackend) {
-      const userId = getUserId();
-      if (userId) {
-        try {
-          await userPreferencesService.syncToBackend(userId, {
-            ...extractPreferences(get()),
-            ragEnableAnalytics: enabled,
-          });
-        } catch (error) {
-          console.error('Failed to sync RAG analytics setting to backend:', { error });
-        }
-      }
+      await syncSettingImmediate(get, 'ragEnableAnalytics', enabled, 'RAG analytics setting');
     }
   },
 
@@ -327,7 +248,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ragEnableAnalytics: preferences.ragEnableAnalytics,
       });
     } catch (error) {
-      console.error('Failed to load preferences from backend:', { error });
+      loggers.store.error('Failed to load preferences from backend:', { error });
     }
   },
 
@@ -337,7 +258,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     try {
       await userPreferencesService.syncToBackend(userId, preferences);
     } catch (error) {
-      console.error('Failed to sync preferences to backend:', { error });
+      loggers.store.error('Failed to sync preferences to backend:', { error });
       throw error;
     }
   },

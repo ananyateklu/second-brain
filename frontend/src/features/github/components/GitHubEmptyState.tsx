@@ -156,7 +156,7 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
       {onConfigure && (
         <button
           onClick={onConfigure}
-          className="px-6 py-3 rounded-xl font-medium transition-all hover:scale-105"
+          className="px-6 py-3 rounded-xl font-medium transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-md active:translate-y-0 active:shadow-sm"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',

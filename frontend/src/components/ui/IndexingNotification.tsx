@@ -171,7 +171,7 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
 
   return (
     <div
-      className="rounded-lg overflow-hidden"
+      className="rounded-xl overflow-hidden"
       style={{
         backgroundColor: 'var(--surface-elevated)',
         border: '1px solid var(--border)',
@@ -217,7 +217,7 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
             {job.vectorStore}
           </span>
           <span
-            className="text-xs px-1.5 py-0.5 rounded"
+            className="text-xs px-1.5 py-0.5 rounded-lg"
             style={{
               backgroundColor: 'var(--surface-hover)',
               color: 'var(--text-secondary)',
@@ -278,7 +278,7 @@ function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
             <button
               onClick={handleStopIndexing}
               disabled={isCancelling}
-              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-error) 12%, transparent)',
                 color: 'var(--color-error)',
@@ -463,14 +463,14 @@ export function IndexingNotification() {
           <div className="flex items-center gap-1">
             <button
               onClick={handleGoToSettings}
-              className="p-1 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+              className="p-1 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
               title="Go to Indexing Settings"
             >
               <SettingsIcon className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             </button>
             <button
               onClick={handleDismiss}
-              className="p-1 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+              className="p-1 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
               title={anyIndexing ? 'Hide (continues in background)' : 'Dismiss'}
             >
               <XIcon className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />

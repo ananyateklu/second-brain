@@ -63,14 +63,14 @@ describe('GitHubIssuesList', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading spinner while fetching issues', async () => {
+    it('should show loading spinner while fetching issues', () => {
       vi.mocked(githubService.getIssues).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockIssuesResponse()), 1000))
       );
 
       render(<GitHubIssuesList />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Loading issues...')).toBeInTheDocument();
+      expect(document.querySelector('[style*="animation: shimmer"]')).toBeInTheDocument();
     });
   });
 
@@ -230,7 +230,9 @@ describe('GitHubIssuesList', () => {
         expect(screen.getByText('Test Issue')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Test Issue').closest('div[class*="rounded-xl"]')!);
+      const issueElement = screen.getByText('Test Issue').closest('div[class*="rounded-lg"]');
+      expect(issueElement).toBeTruthy();
+      fireEvent.click(issueElement as HTMLElement);
 
       expect(onSelectIssue).toHaveBeenCalledWith(issue);
     });
@@ -242,45 +244,54 @@ describe('GitHubIssuesList', () => {
       render(<GitHubIssuesList selectedIssueNumber={42} />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const issueRow = screen.getByText('#42').closest('div[class*="rounded-xl"]');
-        expect(issueRow).toHaveClass('ring-2');
+        const issueRow = screen.getByText('#42').closest('div[class*="rounded-lg"]');
+        expect(issueRow).toHaveClass('ring-1');
       });
     });
   });
 
   describe('Pagination', () => {
     it('should show pagination when hasMore is true', async () => {
-      vi.mocked(githubService.getIssues).mockResolvedValue(mockIssuesResponse([mockIssue()], true));
+      vi.mocked(githubService.getIssues).mockResolvedValue({
+        ...mockIssuesResponse([mockIssue()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubIssuesList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Next')).toBeInTheDocument();
-        expect(screen.getByText('Previous')).toBeInTheDocument();
+        expect(screen.getByLabelText('Next page')).toBeInTheDocument();
+        expect(screen.getByLabelText('Previous page')).toBeInTheDocument();
       });
     });
 
     it('should disable Previous button on first page', async () => {
-      vi.mocked(githubService.getIssues).mockResolvedValue(mockIssuesResponse([mockIssue()], true));
+      vi.mocked(githubService.getIssues).mockResolvedValue({
+        ...mockIssuesResponse([mockIssue()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubIssuesList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const prevButton = screen.getByText('Previous');
+        const prevButton = screen.getByLabelText('Previous page');
         expect(prevButton).toBeDisabled();
       });
     });
 
     it('should load next page when clicking Next', async () => {
-      vi.mocked(githubService.getIssues).mockResolvedValue(mockIssuesResponse([mockIssue()], true));
+      vi.mocked(githubService.getIssues).mockResolvedValue({
+        ...mockIssuesResponse([mockIssue()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubIssuesList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Page 1')).toBeInTheDocument();
+        expect(screen.getByLabelText('Page 1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByLabelText('Next page'));
 
       await waitFor(() => {
         expect(githubService.getIssues).toHaveBeenCalledWith(

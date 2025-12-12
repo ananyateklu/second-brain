@@ -8,6 +8,7 @@
 import type { RagContextNote } from '../../types/rag';
 import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep } from '../../types/chat';
 import type { StreamEvent } from './types';
+import { loggers } from '../../utils/logger';
 
 // ============================================
 // SSE Parsing Utilities
@@ -105,7 +106,7 @@ function parseToolStartEvent(data: string): StreamEvent | null {
   try {
     const parsed = JSON.parse(data) as ToolStartData;
     if (typeof parsed.tool !== 'string' || typeof parsed.arguments !== 'string') {
-      console.error('Invalid tool_start data:', data);
+      loggers.stream.error('Invalid tool_start data:', data);
       return null;
     }
     return {
@@ -115,7 +116,7 @@ function parseToolStartEvent(data: string): StreamEvent | null {
       args: parsed.arguments,
     };
   } catch (e) {
-    console.error('Failed to parse tool_start data:', e);
+    loggers.stream.error('Failed to parse tool_start data:', e);
     return null;
   }
 }
@@ -127,7 +128,7 @@ function parseToolEndEvent(data: string, _activeToolName?: string): StreamEvent 
   try {
     const parsed = JSON.parse(data) as ToolEndData;
     if (typeof parsed.tool !== 'string' || typeof parsed.result !== 'string') {
-      console.error('Invalid tool_end data:', data);
+      loggers.stream.error('Invalid tool_end data:', data);
       return null;
     }
     return {
@@ -138,7 +139,7 @@ function parseToolEndEvent(data: string, _activeToolName?: string): StreamEvent 
       success: parsed.success !== false,
     };
   } catch (e) {
-    console.error('Failed to parse tool_end data:', e);
+    loggers.stream.error('Failed to parse tool_end data:', e);
     return null;
   }
 }
@@ -195,7 +196,7 @@ function parseStatusEvent(data: string): StreamEvent | null {
     }
     return null;
   } catch (e) {
-    console.error('Failed to parse status data:', e);
+    loggers.stream.error('Failed to parse status data:', e);
     return null;
   }
 }
@@ -213,7 +214,7 @@ function parseRagEvent(data: string): StreamEvent | null {
       ragLogId: parsed.ragLogId,
     };
   } catch (e) {
-    console.error('Failed to parse RAG data:', e);
+    loggers.stream.error('Failed to parse RAG data:', e);
     return null;
   }
 }
@@ -234,7 +235,7 @@ function parseGroundingEvent(data: string): StreamEvent | null {
       sources,
     };
   } catch (e) {
-    console.error('Failed to parse grounding data:', e);
+    loggers.stream.error('Failed to parse grounding data:', e);
     return null;
   }
 }
@@ -257,7 +258,7 @@ function parseCodeExecutionEvent(data: string): StreamEvent | null {
       result,
     };
   } catch (e) {
-    console.error('Failed to parse code_execution data:', e);
+    loggers.stream.error('Failed to parse code_execution data:', e);
     return null;
   }
 }
@@ -323,7 +324,7 @@ function parseGrokSearchEvent(data: string): StreamEvent | null {
       sources: parsed.sources || [],
     };
   } catch (e) {
-    console.error('Failed to parse Grok search data:', e);
+    loggers.stream.error('Failed to parse Grok search data:', e);
     return null;
   }
 }
@@ -344,7 +345,7 @@ function parseGrokThinkingEvent(data: string): StreamEvent | null {
       step,
     };
   } catch (e) {
-    console.error('Failed to parse Grok thinking data:', e);
+    loggers.stream.error('Failed to parse Grok thinking data:', e);
     return null;
   }
 }
@@ -437,7 +438,7 @@ export class StreamEventProcessor {
           this.options.onEvent?.(event);
         }
       } catch (error) {
-        console.error('Failed to parse SSE message:', error, message);
+        loggers.stream.error('Failed to parse SSE message:', error, message);
         this.options.onParseError?.(error as Error, message);
       }
     }
@@ -537,7 +538,7 @@ export class StreamEventProcessor {
         if (data && eventType === 'message') {
           return { type: 'content:text', delta: unescapeSSE(data) };
         }
-        console.warn('Unknown SSE event type:', eventType, data);
+        loggers.stream.warn('Unknown SSE event type:', eventType, data);
         return null;
     }
   }

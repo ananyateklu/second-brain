@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
-import { useThemeStore } from '../../../store/theme-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { getProviderLogo } from '../../../utils/provider-logos';
 
 /**
@@ -109,8 +109,9 @@ export interface ConversationListItemProps {
 
 /**
  * Renders a single conversation item in the sidebar.
+ * Memoized to prevent unnecessary re-renders in virtualized lists.
  */
-export function ConversationListItem({
+export const ConversationListItem = memo(function ConversationListItem({
   conversation,
   isSelected,
   isSelectionMode = false,
@@ -119,7 +120,7 @@ export function ConversationListItem({
   onDelete,
   staggerIndex = 0,
 }: ConversationListItemProps) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const isPlaceholder = conversation.id === 'placeholder-new-chat';
   const showCheckbox = isSelectionMode && !isPlaceholder;
@@ -310,5 +311,5 @@ export function ConversationListItem({
       </div>
     </>
   );
-}
+});
 

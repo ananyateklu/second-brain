@@ -235,7 +235,7 @@ describe('GitHub Query Hooks', () => {
       expect(githubService.getPullRequest).toHaveBeenCalledWith(123, undefined, undefined);
     });
 
-    it('should not fetch when pullNumber is 0', async () => {
+    it('should not fetch when pullNumber is 0', () => {
       const { result } = renderHook(() => useGitHubPullRequest(0), {
         wrapper: createWrapper(),
       });
@@ -244,7 +244,7 @@ describe('GitHub Query Hooks', () => {
       expect(githubService.getPullRequest).not.toHaveBeenCalled();
     });
 
-    it('should not fetch when disabled', async () => {
+    it('should not fetch when disabled', () => {
       const { result } = renderHook(() => useGitHubPullRequest(123, undefined, undefined, false), {
         wrapper: createWrapper(),
       });
@@ -380,7 +380,7 @@ describe('GitHub Query Hooks', () => {
       expect(result.current.data).toEqual(mockRun);
     });
 
-    it('should not fetch when runId is 0', async () => {
+    it('should not fetch when runId is 0', () => {
       const { result } = renderHook(() => useGitHubWorkflowRun(0), {
         wrapper: createWrapper(),
       });
@@ -427,7 +427,7 @@ describe('GitHub Query Hooks', () => {
       expect(result.current.data).toEqual(mockChecks);
     });
 
-    it('should not fetch when SHA is empty', async () => {
+    it('should not fetch when SHA is empty', () => {
       const { result } = renderHook(() => useGitHubCheckRuns(''), {
         wrapper: createWrapper(),
       });
@@ -457,7 +457,7 @@ describe('GitHub Query Hooks', () => {
       expect(result.current.data).toEqual(mockFiles);
     });
 
-    it('should not fetch when pullNumber is 0', async () => {
+    it('should not fetch when pullNumber is 0', () => {
       const { result } = renderHook(() => useGitHubPullRequestFiles(0), {
         wrapper: createWrapper(),
       });
@@ -627,7 +627,7 @@ describe('GitHub Query Hooks', () => {
       expect(result.current.data).toEqual(mockComments);
     });
 
-    it('should not fetch when issueNumber is 0', async () => {
+    it('should not fetch when issueNumber is 0', () => {
       const { result } = renderHook(() => useGitHubIssueComments(0), {
         wrapper: createWrapper(),
       });

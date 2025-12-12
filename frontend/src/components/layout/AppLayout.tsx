@@ -6,7 +6,7 @@ import { TitleBar } from './TitleBar';
 import { useTitleBarHeight } from './use-title-bar-height';
 import { PageTransition } from '../PageTransition';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
-import { useUIStore } from '../../store/ui-store';
+import { useBoundStore } from '../../store/bound-store';
 import { isTauri } from '../../lib/native-notifications';
 
 interface AppLayoutProps {
@@ -19,11 +19,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isChatPage = location.pathname === '/chat';
   const isDirectoryPage = location.pathname === '/directory';
   const isGitPage = location.pathname === '/git';
+  const isGitHubPage = location.pathname === '/github';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
   // Fullscreen state for Tauri
-  const isFullscreenChat = useUIStore((state) => state.isFullscreenChat);
-  const isFullscreenDirectory = useUIStore((state) => state.isFullscreenDirectory);
+  const isFullscreenChat = useBoundStore((state) => state.isFullscreenChat);
+  const isFullscreenDirectory = useBoundStore((state) => state.isFullscreenDirectory);
 
   // Determine if current page is in fullscreen mode
   const isInTauri = isTauri();
@@ -43,13 +44,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       classes.push('px-4', 'md:px-6');
     }
 
-    // Top padding for chat/directory
-    if ((isChatPage || isDirectoryPage) && !isPageFullscreen) {
+    // Top padding for chat/directory/github
+    if ((isChatPage || isDirectoryPage || isGitHubPage) && !isPageFullscreen) {
       classes.push('md:pt-4');
     }
 
-    // Padding for other pages (Git handles its own padding)
-    if (!isChatPage && !isDirectoryPage && !isGitPage) {
+    // Padding for other pages (Git and GitHub handle their own padding)
+    if (!isChatPage && !isDirectoryPage && !isGitPage && !isGitHubPage) {
       classes.push('py-4', 'sm:py-1');
     }
 
@@ -66,14 +67,14 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     // Overflow handling
-    if (!isChatPage && !isGitPage) {
-      classes.push('overflow-y-auto', 'scrollbar-thin');
+    if (!isChatPage && !isGitPage && !isGitHubPage) {
+      classes.push('overflow-y-auto', '[scrollbar-width:thin]', '[scrollbar-color:var(--color-brand-600)_transparent]', '[&::-webkit-scrollbar]:w-1', '[&::-webkit-scrollbar-track]:bg-transparent', '[&::-webkit-scrollbar-thumb]:rounded-full', '[&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)]', '[&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]');
     } else {
       classes.push('overflow-hidden');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isDirectoryPage, isGitPage, isSettingsPage, isPageFullscreen]);
+  }, [isChatPage, isDirectoryPage, isGitPage, isGitHubPage, isSettingsPage, isPageFullscreen]);
 
   return (
     <div
@@ -101,7 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           ...(isPageFullscreen ? { marginLeft: 0 } : {}),
         }}
       >
-        {!isChatPage && !isDirectoryPage && !isGitPage && <Header />}
+        {!isChatPage && !isDirectoryPage && !isGitPage && !isGitHubPage && <Header />}
 
         <main className={mainClasses}>
           <PageTransition>

@@ -6,6 +6,7 @@
 // Import directly to avoid circular deps through services barrel export
 import { authService } from '../../services/auth.service';
 import { userPreferencesService } from '../../services/user-preferences.service';
+import { loggers } from '../../utils/logger';
 import type { AuthSlice, SliceCreator } from '../types';
 
 // Note: userPreferencesService is still needed for clearLocalPreferences in signOut
@@ -48,11 +49,11 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
       try {
         await get().loadPreferencesFromBackend(response.userId);
       } catch (prefError) {
-        console.error('Error loading user preferences:', { error: prefError });
+        loggers.auth.error('Error loading user preferences:', { error: prefError });
         // Don't fail auth if preferences fail to load
       }
     } catch (error) {
-      console.error('Login error:', { error });
+      loggers.auth.error('Login error:', { error });
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to login',
@@ -81,11 +82,11 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
       try {
         await get().loadPreferencesFromBackend(response.userId);
       } catch (prefError) {
-        console.error('Error loading user preferences:', { error: prefError });
+        loggers.auth.error('Error loading user preferences:', { error: prefError });
         // Don't fail auth if preferences fail to load
       }
     } catch (error) {
-      console.error('Registration error:', { error });
+      loggers.auth.error('Registration error:', { error });
       set({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to register',

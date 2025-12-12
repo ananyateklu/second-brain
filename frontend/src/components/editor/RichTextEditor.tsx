@@ -18,7 +18,7 @@ import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import tippy from 'tippy.js';
 import { forwardRef, useEffect, useImperativeHandle, useState, useMemo, useCallback } from 'react';
 import { marked } from 'marked';
-import { useThemeStore } from '../../store/theme-store';
+import { useBoundStore } from '../../store/bound-store';
 import 'tippy.js/dist/tippy.css';
 
 interface RichTextEditorProps {
@@ -191,7 +191,7 @@ export function RichTextEditor({
   placeholder = "Write your note here... Type '#' to add tags, '/' for commands.",
   editable = true
 }: RichTextEditorProps) {
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const [tags, setTags] = useState<string[]>([]);
 

@@ -1,12 +1,11 @@
 import { Note, NoteListItem } from '../types/note';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { useDeleteNote, useArchiveNote, useUnarchiveNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useState, memo, useMemo } from 'react';
-import { useThemeStore } from '../../../store/theme-store';
 
 interface NoteCardProps {
   /** Note data - can be NoteListItem (summary only) or full Note (with content) */
@@ -90,7 +89,7 @@ export const NoteCard = memo(({
   isSelected = false,
   onSelect,
 }: NoteCardProps) => {
-  const openEditModal = useUIStore((state) => state.openEditModal);
+  const openEditModal = useBoundStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const archiveNoteMutation = useArchiveNote();
   const unarchiveNoteMutation = useUnarchiveNote();
@@ -99,7 +98,7 @@ export const NoteCard = memo(({
   const isSmall = isCompact || isMicro;
 
   const [isHovered, setIsHovered] = useState(false);
-  const theme = useThemeStore((state) => state.theme);
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
   const handleCardClick = () => {
@@ -145,7 +144,7 @@ export const NoteCard = memo(({
   const displayCreatedOn = createdOn || note.createdAt;
 
   // Adjust line clamp based on variant
-  const contentLineClamp = isMicro ? 'line-clamp-2' : (isCompact ? 'line-clamp-3' : 'line-clamp-4');
+  const contentLineClamp = isMicro ? 'line-clamp-2' : (isCompact ? 'line-clamp-3' : 'line-clamp-3');
 
   // Check if content is HTML - more robust check that looks for actual HTML tags
   // This avoids false positives from text like "a < b" or "AT&T"
@@ -184,11 +183,11 @@ export const NoteCard = memo(({
   }, [note.tags, displayContent]);
 
   // Styles based on variant
-  const containerPadding = isMicro ? 'p-2 rounded-xl' : (isCompact ? 'p-4 rounded-3xl' : 'p-5 rounded-3xl');
+  const containerPadding = isMicro ? 'p-2 rounded-xl' : (isCompact ? 'p-4.5 rounded-3xl' : 'p-[22px] rounded-3xl');
   const titleSize = isMicro ? 'text-[11px]' : (isCompact ? 'text-sm' : 'text-lg');
   const contentFontSize = isMicro ? '10px' : (isCompact ? '0.75rem' : '0.875rem'); // Inline style for font size
-  const headerMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-2' : 'mb-3');
-  const contentMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-3' : 'mb-4');
+  const headerMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-2' : 'mb-3.5');
+  const contentMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-3.5' : 'mb-4');
 
   // Determine border and background based on selection state
   const getBorderColor = () => {
@@ -428,7 +427,7 @@ export const NoteCard = memo(({
         <div className="flex-grow" />
 
         {/* Footer Info */}
-        <div className={`flex items-end justify-between ${!isSmall ? 'mt-2' : 'mt-auto'}`}>
+        <div className={`flex items-end justify-between ${!isSmall ? 'mt-2.5' : 'mt-auto'}`}>
           {/* Left side: Archived badge + Tags */}
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Archived Badge */}

@@ -54,14 +54,14 @@ describe('GitHubBranchesList', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading spinner while fetching branches', async () => {
+    it('should show loading spinner while fetching branches', () => {
       vi.mocked(githubService.getBranches).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockBranchesResponse()), 1000))
       );
 
       render(<GitHubBranchesList />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Loading branches...')).toBeInTheDocument();
+      expect(document.querySelector('[style*="animation: shimmer"]')).toBeInTheDocument();
     });
   });
 
@@ -199,10 +199,12 @@ describe('GitHubBranchesList', () => {
       ];
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse(branches));
 
-      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+      const { container } = render(<GitHubBranchesList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const branchNames = screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent);
+        const branchNames = Array.from(container.querySelectorAll('span.cursor-pointer')).map(
+          (el) => el.textContent
+        );
         expect(branchNames[0]).toBe('main');
       });
     });
@@ -215,10 +217,12 @@ describe('GitHubBranchesList', () => {
       ];
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse(branches));
 
-      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+      const { container } = render(<GitHubBranchesList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const branchNames = screen.getAllByRole('heading', { level: 3 }).map((el) => el.textContent);
+        const branchNames = Array.from(container.querySelectorAll('span.cursor-pointer')).map(
+          (el) => el.textContent
+        );
         expect(branchNames[0]).toBe('main');
         expect(branchNames[1]).toBe('develop');
         expect(branchNames[2]).toBe('feature');
@@ -238,7 +242,7 @@ describe('GitHubBranchesList', () => {
         expect(screen.getByText('main')).toBeInTheDocument();
       });
 
-      const branchRow = screen.getByText('main').closest('div[class*="rounded-xl cursor-pointer"]');
+      const branchRow = screen.getByText('main').closest('div[class*="rounded-lg cursor-pointer"]');
       if (branchRow) {
         fireEvent.click(branchRow);
       }
@@ -253,8 +257,8 @@ describe('GitHubBranchesList', () => {
       render(<GitHubBranchesList selectedBranchName="main" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const branchRow = screen.getByText('main').closest('div[class*="rounded-xl cursor-pointer"]');
-        expect(branchRow).toHaveClass('ring-2');
+        const branchRow = screen.getByText('main').closest('div[class*="rounded-lg cursor-pointer"]');
+        expect(branchRow).toHaveClass('ring-1');
       });
     });
   });

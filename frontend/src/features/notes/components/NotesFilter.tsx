@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { NoteListItem } from '../../../types/notes';
-import { useThemeStore } from '../../../store/theme-store';
-import { NotesViewMode } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
+import type { NotesViewMode } from '../../../store/types';
 
 // DropdownButton component defined outside the main component to avoid recreation during render
 interface DropdownButtonProps {
@@ -91,7 +91,7 @@ export function NotesFilter({
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const [topPosition, setTopPosition] = useState('80px'); // Default for mobile
   const filterRef = useRef<HTMLDivElement>(null);
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isBlueTheme = theme === 'blue';
 
   const dateDropdownRef = useRef<HTMLDivElement>(null);

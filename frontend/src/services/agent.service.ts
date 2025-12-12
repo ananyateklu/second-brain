@@ -5,6 +5,7 @@
 
 import { API_ENDPOINTS, getApiBaseUrl } from '../lib/constants';
 import { useAuthStore } from '../store/auth-store';
+import { loggers } from '../utils/logger';
 import type {
   AgentMessageRequest,
   AgentStreamingCallbacks,
@@ -161,7 +162,7 @@ export const agentService = {
             };
             callbacks.onToolExecution?.(execution);
           } catch (e) {
-            console.error('Failed to parse tool start data:', { data, error: e });
+            loggers.stream.error('Failed to parse tool start data:', { data, error: e });
           }
         }
         break;
@@ -180,7 +181,7 @@ export const agentService = {
             };
             callbacks.onToolExecution?.(execution);
           } catch (e) {
-            console.error('Failed to parse tool result data:', { data, error: e });
+            loggers.stream.error('Failed to parse tool result data:', { data, error: e });
           }
         }
         break;
@@ -194,7 +195,7 @@ export const agentService = {
             const ragLogId: string | undefined = contextData.ragLogId;
             callbacks.onContextRetrieval?.({ notes, ragLogId });
           } catch (e) {
-            console.error('Failed to parse context retrieval data:', { data, error: e });
+            loggers.stream.error('Failed to parse context retrieval data:', { data, error: e });
           }
         }
         break;
@@ -206,7 +207,7 @@ export const agentService = {
             const sources: GroundingSource[] = groundingData.sources || [];
             callbacks.onGrounding?.(sources);
           } catch (e) {
-            console.error('Failed to parse grounding data:', { data, error: e });
+            loggers.stream.error('Failed to parse grounding data:', { data, error: e });
           }
         }
         break;
@@ -224,7 +225,7 @@ export const agentService = {
             };
             callbacks.onCodeExecution?.(result);
           } catch (e) {
-            console.error('Failed to parse code execution data:', { data, error: e });
+            loggers.stream.error('Failed to parse code execution data:', { data, error: e });
           }
         }
         break;

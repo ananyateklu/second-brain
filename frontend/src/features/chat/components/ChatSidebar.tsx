@@ -258,20 +258,7 @@ export function ChatSidebar({
           {/* Cancel button */}
           <button
             onClick={handleExitSelectionMode}
-            className="flex items-center justify-center h-8 px-3 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
-            style={{
-              color: 'var(--text-secondary)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--border)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-              e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            className="btn-ghost-secondary flex items-center justify-center h-8 px-3 rounded-lg text-xs font-medium hover:scale-105 active:scale-95"
           >
             Cancel
           </button>
@@ -279,7 +266,7 @@ export function ChatSidebar({
       )}
 
       {/* Conversations List - Scrollable with Virtual Scrolling */}
-      <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-0.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]">
+      <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
         {conversations.length === 0 ? (
           <div className="text-center py-8 px-4" style={{ color: 'var(--text-secondary)' }}>
             <p className="text-sm">No conversations yet</p>

@@ -1,5 +1,5 @@
 import { useNotes } from '../../notes/hooks/use-notes-query';
-import { useUIStore } from '../../../store/ui-store';
+import { useBoundStore } from '../../../store/bound-store';
 
 interface InlineNoteReferenceProps {
     noteId: string;
@@ -14,7 +14,7 @@ interface InlineNoteReferenceProps {
  */
 export function InlineNoteReference({ noteId, noteTitle, variant = 'default' }: InlineNoteReferenceProps) {
     const { data: allNotes, isLoading } = useNotes();
-    const openEditModal = useUIStore((state) => state.openEditModal);
+    const openEditModal = useBoundStore((state) => state.openEditModal);
 
     const note = allNotes?.find((n) => n.id === noteId);
 
@@ -33,7 +33,7 @@ export function InlineNoteReference({ noteId, noteTitle, variant = 'default' }: 
         );
     }
 
-    const displayTitle = noteTitle || note?.title || 'Loading...';
+    const displayTitle = noteTitle || note?.title || 'Loading note...';
 
     const handleClick = () => {
         if (note) {

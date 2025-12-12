@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { NoteCard } from './NoteCard';
 import { NoteListItem } from './NoteListItem';
 import { Note } from '../types/note';
-import { NotesViewMode } from '../../../store/ui-store';
+import type { NotesViewMode } from '../../../store/types';
 
 interface VirtualizedNoteListProps {
   notes: Note[];

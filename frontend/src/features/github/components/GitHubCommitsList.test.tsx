@@ -84,14 +84,14 @@ describe('GitHubCommitsList', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading spinner while fetching commits', async () => {
+    it('should show loading spinner while fetching commits', () => {
       vi.mocked(githubService.getCommits).mockImplementation(
         () => new Promise((resolve) => setTimeout(() => resolve(mockCommitsResponse()), 1000))
       );
 
       render(<GitHubCommitsList />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Loading commits...')).toBeInTheDocument();
+      expect(document.querySelector('[style*="animation: shimmer"]')).toBeInTheDocument();
     });
   });
 
@@ -256,7 +256,9 @@ describe('GitHubCommitsList', () => {
         expect(screen.getByText('Test Commit')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Test Commit').closest('div[class*="rounded-xl"]')!);
+      const commitElement = screen.getByText('Test Commit').closest('div[class*="rounded-lg"]');
+      expect(commitElement).toBeTruthy();
+      fireEvent.click(commitElement as HTMLElement);
 
       expect(onSelectCommit).toHaveBeenCalledWith(commit);
     });
@@ -268,45 +270,54 @@ describe('GitHubCommitsList', () => {
       render(<GitHubCommitsList selectedSha="abc123def456" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const commitRow = screen.getByText('abc123d').closest('div[class*="rounded-xl"]');
-        expect(commitRow).toHaveClass('ring-2');
+        const commitRow = screen.getByText('abc123d').closest('div[class*="rounded-lg"]');
+        expect(commitRow).toHaveClass('ring-1');
       });
     });
   });
 
   describe('Pagination', () => {
     it('should show pagination when hasMore is true', async () => {
-      vi.mocked(githubService.getCommits).mockResolvedValue(mockCommitsResponse([mockCommit()], true));
+      vi.mocked(githubService.getCommits).mockResolvedValue({
+        ...mockCommitsResponse([mockCommit()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubCommitsList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Next')).toBeInTheDocument();
-        expect(screen.getByText('Previous')).toBeInTheDocument();
+        expect(screen.getByLabelText('Next page')).toBeInTheDocument();
+        expect(screen.getByLabelText('Previous page')).toBeInTheDocument();
       });
     });
 
     it('should disable Previous button on first page', async () => {
-      vi.mocked(githubService.getCommits).mockResolvedValue(mockCommitsResponse([mockCommit()], true));
+      vi.mocked(githubService.getCommits).mockResolvedValue({
+        ...mockCommitsResponse([mockCommit()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubCommitsList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        const prevButton = screen.getByText('Previous');
+        const prevButton = screen.getByLabelText('Previous page');
         expect(prevButton).toBeDisabled();
       });
     });
 
     it('should load next page when clicking Next', async () => {
-      vi.mocked(githubService.getCommits).mockResolvedValue(mockCommitsResponse([mockCommit()], true));
+      vi.mocked(githubService.getCommits).mockResolvedValue({
+        ...mockCommitsResponse([mockCommit()], true),
+        totalCount: 40,
+      });
 
       render(<GitHubCommitsList />, { wrapper: createWrapper() });
 
       await waitFor(() => {
-        expect(screen.getByText('Page 1')).toBeInTheDocument();
+        expect(screen.getByLabelText('Page 1')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(screen.getByLabelText('Next page'));
 
       await waitFor(() => {
         expect(githubService.getCommits).toHaveBeenCalledWith(

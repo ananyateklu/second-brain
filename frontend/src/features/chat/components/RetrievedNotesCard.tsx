@@ -179,7 +179,7 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
           
           {isStreaming ? (
             <span className="text-[10px] opacity-70" style={{ color: 'var(--color-brand-500)' }}>
-              Loading...
+              Retrieving notes...
             </span>
           ) : (
             <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>

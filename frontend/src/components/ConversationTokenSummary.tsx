@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useThemeStore } from '../store/theme-store';
+import { useBoundStore } from '../store/bound-store';
 import type { ChatMessage, ChatConversation } from '../types/chat';
 
 interface TokenSummary {
@@ -148,7 +148,7 @@ export function ConversationTokenSummary({
   variant = 'full',
   className = '',
 }: ConversationTokenSummaryProps) {
-  const { theme } = useThemeStore();
+  const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
   const summary = useMemo(

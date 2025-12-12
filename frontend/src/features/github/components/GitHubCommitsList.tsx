@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useGitHubCommits, useGitHubBranches } from '../hooks';
+import { GitHubListSkeleton } from './GitHubListSkeleton';
+import { Pagination } from '../../../components/ui/Pagination';
 import type { CommitSummary } from '../../../types/github';
 import { formatRelativeTime } from '../../../types/github';
 
@@ -33,16 +35,7 @@ export const GitHubCommitsList = ({
   const defaultBranch = branches.find((b) => b.isDefault)?.name;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Loading commits...
-          </p>
-        </div>
-      </div>
-    );
+    return <GitHubListSkeleton count={5} showHeader={true} variant="compact" />;
   }
 
   if (error) {
@@ -70,12 +63,13 @@ export const GitHubCommitsList = ({
 
   const commits = data?.commits || [];
   const totalCount = data?.totalCount || 0;
-  const hasMore = data?.hasMore || false;
+  const itemsPerPage = data?.perPage ?? perPage;
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
 
   return (
-    <div className="space-y-4">
-      {/* Header with Branch Selector */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      {/* Header with Branch Selector - Fixed at top */}
+      <div className="flex-shrink-0 flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Commits
@@ -115,7 +109,8 @@ export const GitHubCommitsList = ({
         )}
       </div>
 
-      {/* Commits List */}
+      {/* Commits List - Scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
       {commits.length === 0 ? (
         <div className="text-center py-12">
           <svg
@@ -146,37 +141,18 @@ export const GitHubCommitsList = ({
           ))}
         </div>
       )}
+      </div>
 
-      {/* Pagination */}
-      {(hasMore || page > 1) && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Previous
-          </button>
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Page {page}
-          </span>
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={!hasMore}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Next
-          </button>
-        </div>
-      )}
+      {/* Pagination - Fixed at bottom */}
+      <div className="flex-shrink-0">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          totalItems={totalCount}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(nextPage) => setPage(Math.min(totalPages, Math.max(1, nextPage)))}
+        />
+      </div>
     </div>
   );
 };
@@ -188,15 +164,15 @@ interface CommitRowProps {
 }
 
 const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
-  // Split message into title and description
-  const [title, ...descLines] = commit.message.split('\n');
-  const hasDescription = descLines.some((line) => line.trim());
+  // Split message into title only
+  const [title] = commit.message.split('\n');
+  const hasMoreLines = commit.message.includes('\n');
 
   return (
     <div
       onClick={onClick}
-      className={`p-4 rounded-xl cursor-pointer transition-all border ${
-        isSelected ? 'ring-2 ring-primary/50' : ''
+      className={`px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+        isSelected ? 'ring-1 ring-inset ring-primary/50' : ''
       }`}
       style={{
         backgroundColor: isSelected
@@ -205,14 +181,14 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
         borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-2">
         {/* Commit Icon */}
         <div
-          className="mt-0.5 p-1.5 rounded-full"
+          className="p-1 rounded-md"
           style={{ backgroundColor: 'var(--surface-elevated)' }}
         >
           <svg
-            className="w-4 h-4"
+            className="w-3.5 h-3.5"
             fill="currentColor"
             viewBox="0 0 16 16"
             style={{ color: 'var(--text-secondary)' }}
@@ -221,54 +197,66 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
           </svg>
         </div>
 
-        {/* Commit Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-2">
-            <h3
-              className="font-medium text-sm hover:underline cursor-pointer line-clamp-1"
-              style={{ color: 'var(--text-primary)' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                window.open(commit.htmlUrl, '_blank');
-              }}
-            >
-              {title}
-            </h3>
-            {hasDescription && (
-              <span style={{ color: 'var(--text-tertiary)' }}>...</span>
-            )}
-          </div>
-
-          {/* Meta Info */}
-          <div
-            className="flex items-center gap-3 mt-1.5 text-xs"
-            style={{ color: 'var(--text-tertiary)' }}
+        {/* Commit Content - Compact */}
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span
+            className="font-medium text-sm truncate hover:underline cursor-pointer"
+            style={{ color: 'var(--text-primary)' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(commit.htmlUrl, '_blank');
+            }}
           >
-            <span className="font-mono">{commit.shortSha}</span>
-            <span>{commit.author}</span>
-            <span>{formatRelativeTime(commit.authoredAt)}</span>
-            {(commit.additions > 0 || commit.deletions > 0) && (
-              <span className="flex items-center gap-1.5">
-                <span className="text-green-500">+{commit.additions}</span>
-                <span className="text-red-500">-{commit.deletions}</span>
-              </span>
-            )}
-            {commit.filesChanged > 0 && (
-              <span className="flex items-center gap-1">
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M3.75 1.5a.25.25 0 00-.25.25v11.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V6H9.75A1.75 1.75 0 018 4.25V1.5H3.75zm5.75.56v2.19c0 .138.112.25.25.25h2.19L9.5 2.06z" />
-                </svg>
-                {commit.filesChanged}
-              </span>
-            )}
-          </div>
+            {title}
+          </span>
+          {hasMoreLines && (
+            <span className="text-xs shrink-0" style={{ color: 'var(--text-tertiary)' }}>
+              ...
+            </span>
+          )}
+          <code
+            className="text-xs px-1.5 py-0.5 rounded shrink-0"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              color: 'var(--text-tertiary)',
+            }}
+          >
+            {commit.shortSha}
+          </code>
+        </div>
+
+        {/* Meta Info - inline */}
+        <div
+          className="flex items-center gap-2 text-xs shrink-0"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          <span>{formatRelativeTime(commit.authoredAt)}</span>
+          <span className="hidden sm:inline">{commit.author}</span>
+          {commit.filesChanged > 0 && (
+            <span
+              className="text-xs px-1.5 py-0.5 rounded shrink-0"
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--text-tertiary)',
+              }}
+              title="Files changed"
+            >
+              {commit.filesChanged}
+            </span>
+          )}
+          {(commit.additions > 0 || commit.deletions > 0) && (
+            <span className="flex items-center gap-1">
+              <span className="text-green-500">+{commit.additions}</span>
+              <span className="text-red-500">-{commit.deletions}</span>
+            </span>
+          )}
         </div>
 
         {/* Author Avatar */}
         <img
           src={commit.authorAvatarUrl}
           alt={commit.author}
-          className="w-8 h-8 rounded-full"
+          className="w-5 h-5 rounded-full shrink-0"
         />
       </div>
     </div>

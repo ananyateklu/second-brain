@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store/auth-store';
-import { useThemeStore } from '../../store/theme-store';
+import { useBoundStore } from '../../store/bound-store';
 import { apiClient } from '../../lib/api-client';
 import { toast } from '../../hooks/use-toast';
 
@@ -13,8 +12,9 @@ export function UserMenu() {
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { user, signOut } = useAuthStore();
-  const { theme } = useThemeStore();
+  const user = useBoundStore((state) => state.user);
+  const signOut = useBoundStore((state) => state.signOut);
+  const theme = useBoundStore((state) => state.theme);
   const isBlueTheme = theme === 'blue';
 
   useEffect(() => {
