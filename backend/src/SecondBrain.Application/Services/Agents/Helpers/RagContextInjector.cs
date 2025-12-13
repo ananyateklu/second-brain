@@ -59,7 +59,8 @@ public class RagContextInjector : IRagContextInjector
                     enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
                     enableHybridSearch: userPrefs.RagEnableHybridSearch,
                     enableReranking: userPrefs.RagEnableReranking,
-                    enableAnalytics: userPrefs.RagEnableAnalytics);
+                    enableAnalytics: userPrefs.RagEnableAnalytics,
+                    rerankingProvider: userPrefs.RerankingProvider);
             }
             catch (Exception ex)
             {

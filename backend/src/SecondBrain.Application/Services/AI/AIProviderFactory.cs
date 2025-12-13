@@ -19,7 +19,8 @@ public class AIProviderFactory : IAIProviderFactory
             { "claude", typeof(Providers.ClaudeProvider) },
             { "ollama", typeof(Providers.OllamaProvider) },
             { "grok", typeof(Providers.GrokProvider) },
-            { "xai", typeof(Providers.GrokProvider) } // Alias for Grok
+            { "xai", typeof(Providers.GrokProvider) }, // Alias for Grok
+            { "cohere", typeof(Providers.CohereProvider) }
         };
     }
 

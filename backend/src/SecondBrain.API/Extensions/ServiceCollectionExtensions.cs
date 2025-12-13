@@ -205,6 +205,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<GeminiProvider>();
         services.AddSingleton<OllamaProvider>();
         services.AddSingleton<GrokProvider>();
+        services.AddSingleton<CohereProvider>();
 
         // Register the base AI provider factory
         services.AddSingleton<AIProviderFactory>();
@@ -996,8 +997,11 @@ public static class ServiceCollectionExtensions
         // Register query expansion service (HyDE + multi-query)
         services.AddScoped<IQueryExpansionService, QueryExpansionService>();
 
-        // Register reranking service (LLM-based relevance scoring)
+        // Register reranking services
+        // LLM-based reranking (legacy, for providers like OpenAI, Claude, etc.)
         services.AddScoped<IRerankerService, RerankerService>();
+        // Cohere-specific reranking using native rerank API (faster and more accurate)
+        services.AddScoped<ICohereRerankerService, CohereRerankerService>();
 
         // Register RAG query log repository
         services.AddScoped<IRagQueryLogRepository, SqlRagQueryLogRepository>();
