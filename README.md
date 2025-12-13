@@ -245,8 +245,8 @@ VITE_API_URL=http://localhost:5001/api
 ### 3. Generate SSL Certificates (for HTTPS)
 
 ```bash
-chmod +x generate_certs.sh
-./generate_certs.sh
+chmod +x scripts/generate_certs.sh
+./scripts/generate_certs.sh
 ```
 
 This creates self-signed certificates in `frontend/certs/` for local HTTPS development.
@@ -545,7 +545,7 @@ Before running, verify:
 - [ ] pnpm installed (`pnpm --version`)
 - [ ] Docker installed (if using Docker)
 - [ ] All `.env` files created with required values
-- [ ] SSL certificates generated (`./generate_certs.sh`) for HTTPS
+- [ ] SSL certificates generated (`./scripts/generate_certs.sh`) for HTTPS
 - [ ] At least one AI provider API key configured
 
 ### PostgreSQL Connection Issues

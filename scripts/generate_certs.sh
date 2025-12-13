@@ -1,10 +1,15 @@
 #!/bin/bash
 
 # Generate self-signed certificate
+# Can be run from anywhere - uses script location to find project root
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout frontend/certs/nginx-selfsigned.key \
-  -out frontend/certs/nginx-selfsigned.crt \
-  -config frontend/certs/openssl.cnf
+  -keyout "$PROJECT_DIR/frontend/certs/nginx-selfsigned.key" \
+  -out "$PROJECT_DIR/frontend/certs/nginx-selfsigned.crt" \
+  -config "$PROJECT_DIR/frontend/certs/openssl.cnf"
 
 echo "Certificates generated in frontend/certs/"
 echo ""

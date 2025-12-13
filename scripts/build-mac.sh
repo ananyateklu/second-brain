@@ -18,7 +18,8 @@ echo "🧠 Building Second Brain for macOS..."
 echo "📍 Using Node.js $(node --version)"
 echo ""
 
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Step 1: Build backend
 echo "📦 Step 1: Building backend..."
@@ -49,4 +50,4 @@ echo "✅ Build complete!"
 echo "📁 Output: frontend/src-tauri/target/release/bundle/"
 echo ""
 echo "To build a universal binary (Intel + Apple Silicon), run:"
-echo "  ./build-mac.sh universal"
+echo "  ./scripts/build-mac.sh universal"
