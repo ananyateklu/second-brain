@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using SecondBrain.API.Services;
+using SecondBrain.Application.Services.Auth;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Middleware;

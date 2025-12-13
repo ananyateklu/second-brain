@@ -1,13 +1,6 @@
-namespace SecondBrain.API.Services;
+using SecondBrain.Application.Services.Auth;
 
-/// <summary>
-/// Service for password hashing and verification using BCrypt
-/// </summary>
-public interface IPasswordService
-{
-    string HashPassword(string password);
-    bool VerifyPassword(string password, string passwordHash);
-}
+namespace SecondBrain.API.Services;
 
 public class PasswordService : IPasswordService
 {
@@ -51,4 +44,3 @@ public class PasswordService : IPasswordService
         }
     }
 }
-

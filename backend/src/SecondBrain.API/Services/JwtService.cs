@@ -4,19 +4,11 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SecondBrain.API.Configuration;
+using SecondBrain.Application.Services.Auth;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 
 namespace SecondBrain.API.Services;
-
-/// <summary>
-/// Service for JWT token generation and validation
-/// </summary>
-public interface IJwtService
-{
-    string GenerateToken(User user);
-    ClaimsPrincipal? ValidateToken(string token);
-}
 
 public class JwtService : IJwtService
 {
@@ -101,4 +93,3 @@ public class JwtService : IJwtService
         }
     }
 }
-

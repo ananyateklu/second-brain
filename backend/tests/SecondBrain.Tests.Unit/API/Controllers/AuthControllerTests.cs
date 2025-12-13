@@ -1,34 +1,26 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
-using SecondBrain.API.Services;
-using SecondBrain.Core.Entities;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Application.Commands.Auth.GenerateApiKey;
+using SecondBrain.Application.Commands.Auth.Login;
+using SecondBrain.Application.Commands.Auth.Register;
+using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Queries.Auth.GetCurrentUser;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class AuthControllerTests
 {
-    private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<IJwtService> _mockJwtService;
-    private readonly Mock<IPasswordService> _mockPasswordService;
-    private readonly Mock<ILogger<AuthController>> _mockLogger;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly AuthController _sut;
 
     public AuthControllerTests()
     {
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockJwtService = new Mock<IJwtService>();
-        _mockPasswordService = new Mock<IPasswordService>();
-        _mockLogger = new Mock<ILogger<AuthController>>();
+        _mockMediator = new Mock<IMediator>();
 
-        _sut = new AuthController(
-            _mockUserRepository.Object,
-            _mockJwtService.Object,
-            _mockPasswordService.Object,
-            _mockLogger.Object
-        );
+        _sut = new AuthController(_mockMediator.Object);
 
         // Setup default HttpContext
         _sut.ControllerContext = new ControllerContext
@@ -50,21 +42,18 @@ public class AuthControllerTests
             DisplayName = "Test User"
         };
 
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync((User?)null);
+        var expectedResponse = new AuthResponse
+        {
+            UserId = "new-user-id",
+            Email = "test@example.com",
+            DisplayName = "Test User",
+            Token = "jwt_token",
+            IsNewUser = true
+        };
 
-        _mockPasswordService.Setup(p => p.HashPassword("password123"))
-            .Returns("hashed_password");
-
-        _mockUserRepository.Setup(r => r.CreateAsync(It.IsAny<User>()))
-            .ReturnsAsync((User u) =>
-            {
-                u.Id = "new-user-id";
-                return u;
-            });
-
-        _mockJwtService.Setup(j => j.GenerateToken(It.IsAny<User>()))
-            .Returns("jwt_token");
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Success(expectedResponse));
 
         // Act
         var result = await _sut.Register(request);
@@ -86,6 +75,10 @@ public class AuthControllerTests
         // Arrange
         var request = new RegisterRequest { Email = "", Password = "password123" };
 
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Email and password are required")));
+
         // Act
         var result = await _sut.Register(request);
 
@@ -98,6 +91,10 @@ public class AuthControllerTests
     {
         // Arrange
         var request = new RegisterRequest { Email = "test@example.com", Password = "" };
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Email and password are required")));
 
         // Act
         var result = await _sut.Register(request);
@@ -112,6 +109,10 @@ public class AuthControllerTests
         // Arrange
         var request = new RegisterRequest { Email = "invalid-email", Password = "password123" };
 
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Invalid email format")));
+
         // Act
         var result = await _sut.Register(request);
 
@@ -124,6 +125,10 @@ public class AuthControllerTests
     {
         // Arrange
         var request = new RegisterRequest { Email = "test@example.com", Password = "12345" };
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Password must be at least 6 characters")));
 
         // Act
         var result = await _sut.Register(request);
@@ -143,8 +148,9 @@ public class AuthControllerTests
             Password = "password123"
         };
 
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("existing@example.com"))
-            .ReturnsAsync(new User { Id = "existing-user", Email = "existing@example.com" });
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Custom("Conflict", "An account with this email already exists")));
 
         // Act
         var result = await _sut.Register(request);
@@ -155,88 +161,32 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Register_NormalizesEmailToLowercase()
+    public async Task Register_PassesCorrectCommandToMediator()
     {
         // Arrange
         var request = new RegisterRequest
         {
             Email = "TEST@EXAMPLE.COM",
-            Password = "password123"
+            Password = "password123",
+            Username = "testuser",
+            DisplayName = "Test User"
         };
 
-        User? capturedUser = null;
-        _mockUserRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-            .ReturnsAsync((User?)null);
-        _mockPasswordService.Setup(p => p.HashPassword(It.IsAny<string>()))
-            .Returns("hash");
-        _mockUserRepository.Setup(r => r.CreateAsync(It.IsAny<User>()))
-            .Callback<User>(u => capturedUser = u)
-            .ReturnsAsync((User u) => u);
-        _mockJwtService.Setup(j => j.GenerateToken(It.IsAny<User>()))
-            .Returns("token");
+        RegisterCommand? capturedCommand = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<RegisterCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<AuthResponse>>, CancellationToken>((cmd, _) => capturedCommand = (RegisterCommand)cmd)
+            .ReturnsAsync(Result<AuthResponse>.Success(new AuthResponse()));
 
         // Act
         await _sut.Register(request);
 
         // Assert
-        capturedUser.Should().NotBeNull();
-        capturedUser!.Email.Should().Be("test@example.com");
-    }
-
-    [Fact]
-    public async Task Register_WhenNoDisplayName_UsesEmailPrefix()
-    {
-        // Arrange
-        var request = new RegisterRequest
-        {
-            Email = "john.doe@example.com",
-            Password = "password123"
-        };
-
-        User? capturedUser = null;
-        _mockUserRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-            .ReturnsAsync((User?)null);
-        _mockPasswordService.Setup(p => p.HashPassword(It.IsAny<string>()))
-            .Returns("hash");
-        _mockUserRepository.Setup(r => r.CreateAsync(It.IsAny<User>()))
-            .Callback<User>(u => capturedUser = u)
-            .ReturnsAsync((User u) => u);
-        _mockJwtService.Setup(j => j.GenerateToken(It.IsAny<User>()))
-            .Returns("token");
-
-        // Act
-        await _sut.Register(request);
-
-        // Assert
-        capturedUser!.DisplayName.Should().Be("john.doe");
-    }
-
-    [Fact]
-    public async Task Register_SetsUserAsActive()
-    {
-        // Arrange
-        var request = new RegisterRequest
-        {
-            Email = "test@example.com",
-            Password = "password123"
-        };
-
-        User? capturedUser = null;
-        _mockUserRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-            .ReturnsAsync((User?)null);
-        _mockPasswordService.Setup(p => p.HashPassword(It.IsAny<string>()))
-            .Returns("hash");
-        _mockUserRepository.Setup(r => r.CreateAsync(It.IsAny<User>()))
-            .Callback<User>(u => capturedUser = u)
-            .ReturnsAsync((User u) => u);
-        _mockJwtService.Setup(j => j.GenerateToken(It.IsAny<User>()))
-            .Returns("token");
-
-        // Act
-        await _sut.Register(request);
-
-        // Assert
-        capturedUser!.IsActive.Should().BeTrue();
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.Email.Should().Be("TEST@EXAMPLE.COM");
+        capturedCommand.Password.Should().Be("password123");
+        capturedCommand.Username.Should().Be("testuser");
+        capturedCommand.DisplayName.Should().Be("Test User");
     }
 
     #endregion
@@ -253,22 +203,19 @@ public class AuthControllerTests
             Password = "password123"
         };
 
-        var user = new User
+        var expectedResponse = new AuthResponse
         {
-            Id = "user-123",
+            UserId = "user-123",
             Email = "test@example.com",
-            PasswordHash = "hashed_password",
             DisplayName = "Test User",
-            IsActive = true,
-            ApiKey = "api-key-123"
+            ApiKey = "api-key-123",
+            Token = "jwt_token",
+            IsNewUser = false
         };
 
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync(user);
-        _mockPasswordService.Setup(p => p.VerifyPassword("password123", "hashed_password"))
-            .Returns(true);
-        _mockJwtService.Setup(j => j.GenerateToken(user))
-            .Returns("jwt_token");
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Success(expectedResponse));
 
         // Act
         var result = await _sut.Login(request);
@@ -290,6 +237,10 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest { Identifier = "", Password = "password123" };
 
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Email/Username and password are required")));
+
         // Act
         var result = await _sut.Login(request);
 
@@ -302,6 +253,10 @@ public class AuthControllerTests
     {
         // Arrange
         var request = new LoginRequest { Identifier = "test@example.com", Password = "" };
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Validation("Email/Username and password are required")));
 
         // Act
         var result = await _sut.Login(request);
@@ -320,8 +275,9 @@ public class AuthControllerTests
             Password = "password123"
         };
 
-        _mockUserRepository.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
-            .ReturnsAsync((User?)null);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Custom("Unauthorized", "Invalid credentials")));
 
         // Act
         var result = await _sut.Login(request);
@@ -341,18 +297,9 @@ public class AuthControllerTests
             Password = "wrong_password"
         };
 
-        var user = new User
-        {
-            Id = "user-123",
-            Email = "test@example.com",
-            PasswordHash = "hashed_password",
-            IsActive = true
-        };
-
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync(user);
-        _mockPasswordService.Setup(p => p.VerifyPassword("wrong_password", "hashed_password"))
-            .Returns(false);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Custom("Unauthorized", "Invalid credentials")));
 
         // Act
         var result = await _sut.Login(request);
@@ -360,34 +307,6 @@ public class AuthControllerTests
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
         unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "Invalid credentials" });
-    }
-
-    [Fact]
-    public async Task Login_WhenUserHasNoPasswordHash_ReturnsUnauthorized()
-    {
-        // Arrange
-        var request = new LoginRequest
-        {
-            Identifier = "test@example.com",
-            Password = "password123"
-        };
-
-        var user = new User
-        {
-            Id = "user-123",
-            Email = "test@example.com",
-            PasswordHash = null,
-            IsActive = true
-        };
-
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync(user);
-
-        // Act
-        var result = await _sut.Login(request);
-
-        // Assert
-        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
     }
 
     [Fact]
@@ -400,18 +319,9 @@ public class AuthControllerTests
             Password = "password123"
         };
 
-        var user = new User
-        {
-            Id = "user-123",
-            Email = "test@example.com",
-            PasswordHash = "hashed_password",
-            IsActive = false
-        };
-
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync(user);
-        _mockPasswordService.Setup(p => p.VerifyPassword("password123", "hashed_password"))
-            .Returns(true);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.Custom("Unauthorized", "User account is inactive")));
 
         // Act
         var result = await _sut.Login(request);
@@ -422,7 +332,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Login_NormalizesEmailToLowercase()
+    public async Task Login_PassesCorrectCommandToMediator()
     {
         // Arrange
         var request = new LoginRequest
@@ -431,26 +341,19 @@ public class AuthControllerTests
             Password = "password123"
         };
 
-        var user = new User
-        {
-            Id = "user-123",
-            Email = "test@example.com",
-            PasswordHash = "hash",
-            IsActive = true
-        };
-
-        _mockUserRepository.Setup(r => r.GetByEmailAsync("test@example.com"))
-            .ReturnsAsync(user);
-        _mockPasswordService.Setup(p => p.VerifyPassword(It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(true);
-        _mockJwtService.Setup(j => j.GenerateToken(It.IsAny<User>()))
-            .Returns("token");
+        LoginCommand? capturedCommand = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<LoginCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<AuthResponse>>, CancellationToken>((cmd, _) => capturedCommand = (LoginCommand)cmd)
+            .ReturnsAsync(Result<AuthResponse>.Success(new AuthResponse()));
 
         // Act
         await _sut.Login(request);
 
         // Assert
-        _mockUserRepository.Verify(r => r.GetByEmailAsync("test@example.com"), Times.Once);
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.Identifier.Should().Be("TEST@EXAMPLE.COM");
+        capturedCommand.Password.Should().Be("password123");
     }
 
     #endregion
@@ -464,16 +367,17 @@ public class AuthControllerTests
         var userId = "user-123";
         SetupAuthenticatedUser(userId);
 
-        var user = new User
+        var expectedResponse = new AuthResponse
         {
-            Id = userId,
+            UserId = userId,
             Email = "test@example.com",
             DisplayName = "Test User",
             ApiKey = "api-key"
         };
 
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync(user);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetCurrentUserQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Success(expectedResponse));
 
         // Act
         var result = await _sut.GetCurrentUser();
@@ -511,8 +415,9 @@ public class AuthControllerTests
         var userId = "non-existent";
         SetupAuthenticatedUser(userId);
 
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync((User?)null);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetCurrentUserQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AuthResponse>.Failure(Error.NotFound("User not found")));
 
         // Act
         var result = await _sut.GetCurrentUser();
@@ -520,6 +425,27 @@ public class AuthControllerTests
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
         unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "User not found" });
+    }
+
+    [Fact]
+    public async Task GetCurrentUser_PassesCorrectQueryToMediator()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        GetCurrentUserQuery? capturedQuery = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetCurrentUserQuery>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<AuthResponse>>, CancellationToken>((q, _) => capturedQuery = (GetCurrentUserQuery)q)
+            .ReturnsAsync(Result<AuthResponse>.Success(new AuthResponse()));
+
+        // Act
+        await _sut.GetCurrentUser();
+
+        // Assert
+        capturedQuery.Should().NotBeNull();
+        capturedQuery!.UserId.Should().Be(userId);
     }
 
     #endregion
@@ -533,16 +459,15 @@ public class AuthControllerTests
         var userId = "user-123";
         SetupAuthenticatedUser(userId);
 
-        var user = new User
+        var expectedResponse = new ApiKeyResponse
         {
-            Id = userId,
-            Email = "test@example.com"
+            ApiKey = "abcdef12345678901234567890123456",
+            GeneratedAt = DateTime.UtcNow
         };
 
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync(user);
-        _mockUserRepository.Setup(r => r.UpdateAsync(userId, It.IsAny<User>()))
-            .ReturnsAsync((string id, User u) => u);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GenerateApiKeyCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ApiKeyResponse>.Success(expectedResponse));
 
         // Act
         var result = await _sut.GenerateApiKey();
@@ -552,7 +477,7 @@ public class AuthControllerTests
         var response = okResult.Value.Should().BeOfType<ApiKeyResponse>().Subject;
 
         response.ApiKey.Should().NotBeNullOrEmpty();
-        response.ApiKey.Should().HaveLength(32); // GUID without hyphens
+        response.ApiKey.Should().HaveLength(32);
     }
 
     [Fact]
@@ -578,8 +503,9 @@ public class AuthControllerTests
         var userId = "non-existent";
         SetupAuthenticatedUser(userId);
 
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync((User?)null);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GenerateApiKeyCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ApiKeyResponse>.Failure(Error.NotFound("User not found")));
 
         // Act
         var result = await _sut.GenerateApiKey();
@@ -589,32 +515,24 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task GenerateApiKey_UpdatesUserUpdatedAt()
+    public async Task GenerateApiKey_PassesCorrectCommandToMediator()
     {
         // Arrange
         var userId = "user-123";
         SetupAuthenticatedUser(userId);
 
-        var originalTime = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var user = new User
-        {
-            Id = userId,
-            Email = "test@example.com",
-            UpdatedAt = originalTime
-        };
-
-        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
-            .ReturnsAsync(user);
-        _mockUserRepository.Setup(r => r.UpdateAsync(userId, It.IsAny<User>()))
-            .ReturnsAsync((string id, User u) => u);
-
-        var beforeGenerate = DateTime.UtcNow;
+        GenerateApiKeyCommand? capturedCommand = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GenerateApiKeyCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<ApiKeyResponse>>, CancellationToken>((cmd, _) => capturedCommand = (GenerateApiKeyCommand)cmd)
+            .ReturnsAsync(Result<ApiKeyResponse>.Success(new ApiKeyResponse { ApiKey = "test" }));
 
         // Act
         await _sut.GenerateApiKey();
 
         // Assert
-        user.UpdatedAt.Should().BeOnOrAfter(beforeGenerate);
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.UserId.Should().Be(userId);
     }
 
     #endregion
@@ -633,4 +551,3 @@ public class AuthControllerTests
 
     #endregion
 }
-

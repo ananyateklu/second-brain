@@ -1,9 +1,17 @@
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using SecondBrain.Application.Commands.Chat.BulkDeleteConversations;
+using SecondBrain.Application.Commands.Chat.CreateConversation;
+using SecondBrain.Application.Commands.Chat.DeleteConversation;
+using SecondBrain.Application.Commands.Chat.UpdateConversationSettings;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
+using SecondBrain.Application.Queries.Chat.GetAllConversations;
+using SecondBrain.Application.Queries.Chat.GetConversationById;
+using SecondBrain.Application.Queries.Chat.GetConversationsPaged;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
@@ -25,6 +33,12 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class ChatController : ControllerBase
 {
+    /// <summary>
+    /// Maximum allowed response size in characters (512KB) to prevent memory exhaustion
+    /// </summary>
+    private const int MaxResponseSizeChars = 512 * 1024;
+
+    private readonly IMediator _mediator;
     private readonly IChatConversationService _chatService;
     private readonly IChatSessionService _sessionService;
     private readonly IChatRepository _chatRepository;
@@ -36,6 +50,7 @@ public class ChatController : ControllerBase
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
+        IMediator mediator,
         IChatConversationService chatService,
         IChatSessionService sessionService,
         IChatRepository chatRepository,
@@ -46,6 +61,7 @@ public class ChatController : ControllerBase
         IUserPreferencesService userPreferencesService,
         ILogger<ChatController> logger)
     {
+        _mediator = mediator;
         _chatService = chatService;
         _sessionService = sessionService;
         _chatRepository = chatRepository;
@@ -58,7 +74,7 @@ public class ChatController : ControllerBase
     }
 
     /// <summary>
-    /// Get all conversations for authenticated user
+    /// Get all conversations for authenticated user (deprecated - use paginated endpoint)
     /// </summary>
     [HttpGet("conversations")]
     [ProducesResponseType(typeof(IEnumerable<ChatConversation>), StatusCodes.Status200OK)]
@@ -73,16 +89,42 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
+        var result = await _mediator.Send(new GetAllConversationsQuery(userId), cancellationToken);
+
+        return result.Match(
+            onSuccess: conversations => Ok(conversations),
+            onFailure: error => StatusCode(500, new { error = error.Message })
+        );
+    }
+
+    /// <summary>
+    /// Get paginated conversation headers for authenticated user (without messages for performance)
+    /// </summary>
+    /// <param name="page">Page number (1-based, default: 1)</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of conversation headers</returns>
+    [HttpGet("conversations/paged")]
+    [ProducesResponseType(typeof(Application.DTOs.Common.PaginatedResult<ChatConversation>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<Application.DTOs.Common.PaginatedResult<ChatConversation>>> GetConversationsPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
         {
-            var conversations = await _chatService.GetAllConversationsAsync(userId, cancellationToken);
-            return Ok(conversations);
+            return Unauthorized(new { error = "Not authenticated" });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving conversations. UserId: {UserId}", userId);
-            return StatusCode(500, new { error = "Failed to retrieve conversations" });
-        }
+
+        var result = await _mediator.Send(new GetConversationsPagedQuery(userId, page, pageSize), cancellationToken);
+
+        return result.Match(
+            onSuccess: paged => Ok(paged),
+            onFailure: error => StatusCode(500, new { error = error.Message })
+        );
     }
 
     /// <summary>
@@ -104,25 +146,16 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var conversation = await _chatService.GetConversationByIdAsync(id, userId, cancellationToken);
-            if (conversation == null)
-            {
-                return NotFound(new { error = $"Conversation '{id}' not found" });
-            }
+        var result = await _mediator.Send(new GetConversationByIdQuery(id, userId), cancellationToken);
 
-            return Ok(conversation);
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving conversation. ConversationId: {ConversationId}, UserId: {UserId}", id, userId);
-            return StatusCode(500, new { error = "Failed to retrieve conversation" });
-        }
+        return result.Match(
+            onSuccess: conversation => Ok(conversation),
+            onFailure: error => error.Code switch
+            {
+                "Conversation.NotFound" => NotFound(new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
+            }
+        );
     }
 
     /// <summary>
@@ -153,28 +186,25 @@ public class ChatController : ControllerBase
             return BadRequest(new { error = "Model is required" });
         }
 
-        try
-        {
-            var conversation = await _chatService.CreateConversationAsync(
-                request.Title ?? "New Conversation",
-                request.Provider,
-                request.Model,
-                userId,
-                request.RagEnabled,
-                request.AgentEnabled,
-                request.AgentRagEnabled,
-                request.ImageGenerationEnabled,
-                request.AgentCapabilities,
-                request.VectorStoreProvider,
-                cancellationToken);
+        var command = new CreateConversationCommand(
+            request.Title ?? "New Conversation",
+            request.Provider,
+            request.Model,
+            userId,
+            request.RagEnabled,
+            request.AgentEnabled,
+            request.AgentRagEnabled,
+            request.ImageGenerationEnabled,
+            request.AgentCapabilities,
+            request.VectorStoreProvider
+        );
 
-            return CreatedAtAction(nameof(GetConversation), new { id = conversation.Id }, conversation);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating conversation. Provider: {Provider}, UserId: {UserId}", request.Provider, userId);
-            return StatusCode(500, new { error = "Failed to create conversation" });
-        }
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.Match(
+            onSuccess: conversation => CreatedAtAction(nameof(GetConversation), new { id = conversation.Id }, conversation),
+            onFailure: error => StatusCode(500, new { error = error.Message })
+        );
     }
 
     /// <summary>
@@ -460,10 +490,23 @@ public class ChatController : ControllerBase
                 usage => actualUsage = usage,
                 cancellationToken);
 
+            var responseTruncated = false;
             await foreach (var token in streamTask.WithCancellation(cancellationToken))
             {
                 if (!string.IsNullOrEmpty(token))
                 {
+                    // Check max response size to prevent memory exhaustion
+                    if (fullResponse.Length + token.Length > MaxResponseSizeChars)
+                    {
+                        responseTruncated = true;
+                        _logger.LogWarning("Response truncated due to size limit. CurrentSize: {Size}, Limit: {Limit}",
+                            fullResponse.Length, MaxResponseSizeChars);
+                        fullResponse.Append("\n\n[Response truncated due to size limits]");
+                        await Response.WriteAsync("data: \\n\\n[Response truncated due to size limits]\n\n");
+                        await Response.Body.FlushAsync(cancellationToken);
+                        break;
+                    }
+
                     fullResponse.Append(token);
                     // Send token as SSE data event
                     // Use JSON serialization to properly escape all special characters
@@ -857,34 +900,27 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var updated = await _chatService.UpdateConversationSettingsAsync(
-                id,
-                userId,
-                request.RagEnabled,
-                request.VectorStoreProvider,
-                request.AgentEnabled,
-                request.AgentRagEnabled,
-                request.AgentCapabilities,
-                cancellationToken);
+        var command = new UpdateConversationSettingsCommand(
+            id,
+            userId,
+            request.RagEnabled,
+            request.VectorStoreProvider,
+            request.AgentEnabled,
+            request.AgentRagEnabled,
+            request.AgentCapabilities
+        );
 
-            if (updated == null)
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.Match(
+            onSuccess: conversation => Ok(conversation),
+            onFailure: error => error.Code switch
             {
-                return NotFound(new { error = $"Conversation '{id}' not found" });
+                "Conversation.NotFound" => NotFound(new { error = error.Message }),
+                "Conversation.AccessDenied" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
             }
-
-            return Ok(updated);
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating conversation settings. ConversationId: {ConversationId}, UserId: {UserId}", id, userId);
-            return StatusCode(500, new { error = "Failed to update conversation settings" });
-        }
+        );
     }
 
     /// <summary>
@@ -906,25 +942,18 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var deleted = await _chatService.DeleteConversationAsync(id, userId, cancellationToken);
-            if (!deleted)
-            {
-                return NotFound(new { error = $"Conversation '{id}' not found" });
-            }
+        var command = new DeleteConversationCommand(id, userId);
+        var result = await _mediator.Send(command, cancellationToken);
 
-            return NoContent();
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting conversation. ConversationId: {ConversationId}, UserId: {UserId}", id, userId);
-            return StatusCode(500, new { error = "Failed to delete conversation" });
-        }
+        return result.Match<ActionResult>(
+            onSuccess: _ => NoContent(),
+            onFailure: error => error.Code switch
+            {
+                "Conversation.NotFound" => NotFound(new { error = error.Message }),
+                "Conversation.AccessDenied" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
+            }
+        );
     }
 
     /// <summary>
@@ -945,27 +974,21 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        if (request.ConversationIds == null || request.ConversationIds.Count == 0)
-        {
-            return BadRequest(new { error = "At least one conversation ID is required" });
-        }
+        var command = new BulkDeleteConversationsCommand(
+            request.ConversationIds ?? new List<string>(),
+            userId
+        );
 
-        try
-        {
-            _logger.LogInformation("Bulk deleting {Count} conversations for user {UserId}",
-                request.ConversationIds.Count, userId);
+        var result = await _mediator.Send(command, cancellationToken);
 
-            var deletedCount = await _chatService.BulkDeleteConversationsAsync(
-                request.ConversationIds, userId, cancellationToken);
-
-            return Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} conversation(s)" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error bulk deleting conversations. Count: {Count}, UserId: {UserId}",
-                request.ConversationIds.Count, userId);
-            return StatusCode(500, new { error = "Failed to delete conversations" });
-        }
+        return result.Match(
+            onSuccess: deletedCount => Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} conversation(s)" }),
+            onFailure: error => error.Code switch
+            {
+                "BulkDelete.NoIds" => BadRequest(new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
+            }
+        );
     }
 
     /// <summary>

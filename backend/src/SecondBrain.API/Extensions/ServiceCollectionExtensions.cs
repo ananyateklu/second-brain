@@ -27,6 +27,7 @@ using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.Stats;
+using SecondBrain.Application.Services.Auth;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.CircuitBreaker;
@@ -55,6 +56,15 @@ using SecondBrain.API.Caching;
 using SecondBrain.API.Controllers;
 
 namespace SecondBrain.API.Extensions;
+
+/// <summary>
+/// Service key constants for vector stores
+/// </summary>
+public static class VectorStoreKeys
+{
+    public const string PostgreSQL = "PostgreSQL";
+    public const string Pinecone = "Pinecone";
+}
 
 /// <summary>
 /// Extension methods for configuring services in the DI container
@@ -763,10 +773,12 @@ public static class ServiceCollectionExtensions
                        .SetVaryByRouteValue("provider")
                        .Tag("ai-health"));
 
-            // Stats caching - moderate duration
+            // Stats caching - short duration for frequently polled endpoints
+            // Varies by X-User-Id header (set by auth middleware from HttpContext.Items["UserId"])
             options.AddPolicy("Stats", builder =>
-                builder.Expire(TimeSpan.FromMinutes(5))
-                       .SetVaryByQuery("userId")
+                builder.Expire(TimeSpan.FromMinutes(2))
+                       .SetVaryByHeader("X-User-Id")
+                       .SetVaryByQuery("daysBack", "startDate", "endDate", "toolName", "topN")
                        .Tag("stats"));
 
             // User notes caching - varies by query parameters

@@ -4,8 +4,8 @@
  */
 
 export { authService } from './auth.service';
-export { notesService } from './notes.service';
-export { chatService } from './chat.service';
+export { notesService, type GetNotesPagedParams } from './notes.service';
+export { chatService, type GetConversationsPagedParams } from './chat.service';
 export { aiService } from './ai.service';
 export { ragService } from './rag.service';
 export { statsService } from './stats.service';

@@ -1,12 +1,11 @@
 using System.Text.Json;
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.API.Utilities;
-using SecondBrain.Application.DTOs.Requests;
+using SecondBrain.Application.Commands.Import.ImportNotes;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
-using SecondBrain.Application.Services;
-using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Controllers;
 
@@ -20,17 +19,14 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class ImportController : ControllerBase
 {
-    private readonly INotesImportService _notesImportService;
-    private readonly IUserRepository _userRepository;
+    private readonly IMediator _mediator;
     private readonly ILogger<ImportController> _logger;
 
     public ImportController(
-        INotesImportService notesImportService,
-        IUserRepository userRepository,
+        IMediator mediator,
         ILogger<ImportController> logger)
     {
-        _notesImportService = notesImportService;
-        _userRepository = userRepository;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -82,14 +78,24 @@ public class ImportController : ControllerBase
                     i + 1, note.Title ?? "(empty)", note.ExternalId ?? "(none)", note.Content?.Length ?? 0, note.Folder ?? "(none)", note.Tags?.Count ?? 0, note.CreatedAt, note.UpdatedAt);
             }
 
-            // 3. Import notes
+            // 3. Import notes via CQRS
             _logger.LogInformation("Step 3: Starting import. NoteCount: {NoteCount}, UserId: {UserId}", notes.Count, userId);
-            var response = await _notesImportService.ImportAsync(userId, notes, cancellationToken);
-            _logger.LogInformation("Step 3 completed: Import finished. Imported: {ImportedCount}, Updated: {UpdatedCount}, Skipped: {SkippedCount}",
-                response.ImportedCount, response.UpdatedCount, response.SkippedCount);
+            var command = new ImportNotesCommand(userId, notes);
+            var result = await _mediator.Send(command, cancellationToken);
 
-            _logger.LogInformation("Import notes endpoint completed successfully");
-            return Ok(response);
+            return result.Match<ActionResult<ImportNotesResponse>>(
+                onSuccess: response =>
+                {
+                    _logger.LogInformation("Step 3 completed: Import finished. Imported: {ImportedCount}, Updated: {UpdatedCount}, Skipped: {SkippedCount}",
+                        response.ImportedCount, response.UpdatedCount, response.SkippedCount);
+                    return Ok(response);
+                },
+                onFailure: error => error.Code switch
+                {
+                    "Validation" => BadRequest(new { error = error.Message }),
+                    _ => StatusCode(500, new { error = error.Message })
+                }
+            );
         }
         catch (ValidationException)
         {
@@ -102,4 +108,3 @@ public class ImportController : ControllerBase
         }
     }
 }
-

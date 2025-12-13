@@ -421,6 +421,23 @@ public class TestChatRepository : IChatRepository
             .ToListAsync();
     }
 
+    public async Task<(IEnumerable<ChatConversation> Items, int TotalCount)> GetConversationHeadersPagedAsync(
+        string userId, int page, int pageSize)
+    {
+        var query = _context.ChatConversations
+            .AsNoTracking()
+            .Where(c => c.UserId == userId);
+
+        var totalCount = await query.CountAsync();
+        var conversations = await query
+            .OrderByDescending(c => c.UpdatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (conversations, totalCount);
+    }
+
     public async Task<bool> ExistsForUserAsync(string conversationId, string userId)
     {
         return await _context.ChatConversations

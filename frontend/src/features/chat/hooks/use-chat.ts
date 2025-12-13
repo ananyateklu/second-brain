@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { chatService } from '../../../services';
+import { chatService, type GetConversationsPagedParams } from '../../../services';
 import { ChatConversation, ChatResponseWithRag, CreateConversationRequest, SendMessageRequest, UpdateConversationSettingsRequest } from '../../../types/chat';
+import type { PaginatedResult } from '../../../types/api';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
-import { conversationKeys } from '../../../lib/query-keys';
+import { conversationKeys, type ConversationPaginationParams } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
@@ -10,6 +11,34 @@ export function useChatConversations(userId: string = DEFAULT_USER_ID) {
   return useApiQuery<ChatConversation[]>(
     conversationKeys.list({ userId }),
     () => chatService.getConversations(userId)
+  );
+}
+
+/**
+ * Query: Get paginated conversation headers (without messages) for better performance
+ * Use this instead of useChatConversations() when dealing with many conversations.
+ *
+ * @param params - Pagination parameters
+ * @param enabled - Whether the query should be enabled (default: true)
+ * @returns Paginated result with conversation headers and pagination metadata
+ */
+export function useChatConversationsPaged(
+  params: GetConversationsPagedParams,
+  enabled = true
+) {
+  const queryParams: ConversationPaginationParams = {
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+  };
+
+  return useApiQuery<PaginatedResult<ChatConversation>>(
+    conversationKeys.paged(queryParams),
+    () => chatService.getConversationsPaged(params),
+    {
+      enabled,
+      // Keep previous data while fetching new page for smoother UX
+      placeholderData: (previousData) => previousData,
+    }
   );
 }
 

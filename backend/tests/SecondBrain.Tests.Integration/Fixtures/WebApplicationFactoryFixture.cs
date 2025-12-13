@@ -133,7 +133,7 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
 
         // Generate a test JWT token
         using var scope = Services.CreateScope();
-        var jwtService = scope.ServiceProvider.GetRequiredService<SecondBrain.API.Services.IJwtService>();
+        var jwtService = scope.ServiceProvider.GetRequiredService<SecondBrain.Application.Services.Auth.IJwtService>();
 
         // Create a test user entity for token generation
         var testUser = new SecondBrain.Core.Entities.User

@@ -14,7 +14,7 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Paginated response wrapper
+ * Paginated response wrapper (legacy - kept for backward compatibility)
  */
 export interface PaginatedResponse<T> {
   data: T[];
@@ -22,6 +22,41 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+/**
+ * Paginated result from backend - matches PaginatedResult<T> in .NET
+ * Used for server-side pagination endpoints
+ */
+export interface PaginatedResult<T> {
+  /** The items in the current page */
+  items: T[];
+  /** Total number of items across all pages (may be null for performance) */
+  totalCount: number | null;
+  /** Current page number (1-based) */
+  page: number;
+  /** Number of items per page */
+  pageSize: number;
+  /** Whether there are more items after this page */
+  hasNextPage: boolean;
+  /** Whether there are items before this page */
+  hasPreviousPage: boolean;
+  /** Total number of pages (calculated if totalCount is available) */
+  totalPages: number | null;
+  /** Cursor for the next page (for cursor-based pagination) */
+  nextCursor?: string | null;
+}
+
+/**
+ * Common pagination parameters for API requests
+ */
+export interface PaginationParams {
+  /** Page number (1-based, default: 1) */
+  page?: number;
+  /** Number of items per page (default: 20, max: 100) */
+  pageSize?: number;
+  /** Optional cursor for cursor-based pagination */
+  cursor?: string;
 }
 
 /**

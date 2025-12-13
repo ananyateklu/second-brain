@@ -20,6 +20,17 @@ public interface IChatRepository
     Task<IEnumerable<ChatConversation>> GetConversationHeadersAsync(string userId);
 
     /// <summary>
+    /// Gets paginated conversation headers for list/sidebar display.
+    /// Returns conversations without messages for optimal performance.
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="page">Page number (1-based)</param>
+    /// <param name="pageSize">Number of items per page</param>
+    /// <returns>Tuple of (conversations, totalCount)</returns>
+    Task<(IEnumerable<ChatConversation> Items, int TotalCount)> GetConversationHeadersPagedAsync(
+        string userId, int page, int pageSize);
+
+    /// <summary>
     /// Checks if a conversation exists and belongs to the specified user.
     /// Uses compiled query for optimal performance.
     /// </summary>

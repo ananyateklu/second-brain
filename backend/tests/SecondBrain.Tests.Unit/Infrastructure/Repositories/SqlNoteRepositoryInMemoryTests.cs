@@ -120,6 +120,27 @@ public class TestNoteRepository : INoteRepository
             .ToListAsync();
     }
 
+    public async Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
+        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null)
+    {
+        var query = _context.Notes.AsNoTracking().Where(n => n.UserId == userId);
+
+        if (!string.IsNullOrEmpty(folder))
+            query = query.Where(n => n.Folder == folder);
+        if (!includeArchived)
+            query = query.Where(n => !n.IsArchived);
+        if (!string.IsNullOrEmpty(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(n => n.Title.ToLower().Contains(searchLower) || n.Content.ToLower().Contains(searchLower));
+        }
+
+        var totalCount = await query.CountAsync();
+        var notes = await query.OrderByDescending(n => n.UpdatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        return (notes, totalCount);
+    }
+
     public async Task<Note?> GetByUserIdAndExternalIdAsync(string userId, string externalId)
     {
         return await _context.Notes.AsNoTracking()

@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Middleware;
-using SecondBrain.API.Services;
+using SecondBrain.Application.Services.Auth;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
