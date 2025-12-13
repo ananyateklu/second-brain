@@ -14,15 +14,27 @@ namespace SecondBrain.Tests.Integration.Fixtures;
 /// <summary>
 /// Custom WebApplicationFactory for integration testing.
 /// Configures test database and mocks external services.
+///
+/// Supports two modes:
+/// 1. Local development: Uses Testcontainers to spin up PostgreSQL
+/// 2. CI environment: Uses pre-configured PostgreSQL service (via ConnectionStrings__DefaultConnection env var)
 /// </summary>
 public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private PostgreSqlContainer _container = null!;
+    private PostgreSqlContainer? _container;
+    private string? _ciConnectionString;
 
     /// <summary>
     /// The connection string to the test database.
+    /// Uses CI-provided connection string if available, otherwise Testcontainers.
     /// </summary>
-    public string ConnectionString => _container.GetConnectionString();
+    public string ConnectionString => _ciConnectionString ?? _container?.GetConnectionString()
+        ?? throw new InvalidOperationException("Database not initialized");
+
+    /// <summary>
+    /// Whether we're running in CI mode (using pre-configured database).
+    /// </summary>
+    public bool IsCiMode => _ciConnectionString != null;
 
     /// <summary>
     /// JWT token for authenticated requests in tests.
@@ -42,22 +54,54 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
 
     public async Task InitializeAsync()
     {
-        // Start PostgreSQL 18 container with pgvector
-        // Required for PostgreSQL 18 features: uuidv7(), JSON_TABLE, etc.
-        _container = new PostgreSqlBuilder()
-            .WithImage("pgvector/pgvector:pg18")
-            .WithDatabase("secondbrain_integration_test")
-            .WithUsername("testuser")
-            .WithPassword("testpassword")
-            .Build();
+        // Check if we're in CI mode with a pre-configured database
+        _ciConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-        await _container.StartAsync();
+        if (_ciConnectionString != null)
+        {
+            // CI mode: Use the pre-configured PostgreSQL service
+            // Wait for database to be ready
+            await WaitForDatabaseAsync(_ciConnectionString);
+        }
+        else
+        {
+            // Local development: Use Testcontainers
+            _container = new PostgreSqlBuilder()
+                .WithImage("pgvector/pgvector:pg18")
+                .WithDatabase("secondbrain_integration_test")
+                .WithUsername("testuser")
+                .WithPassword("testpassword")
+                .Build();
+
+            await _container.StartAsync();
+        }
+    }
+
+    private static async Task WaitForDatabaseAsync(string connectionString, int maxRetries = 30)
+    {
+        using var connection = new Npgsql.NpgsqlConnection(connectionString);
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                await connection.OpenAsync();
+                return;
+            }
+            catch
+            {
+                await Task.Delay(1000);
+            }
+        }
+        throw new InvalidOperationException($"Could not connect to database after {maxRetries} retries");
     }
 
     public new async Task DisposeAsync()
     {
         await base.DisposeAsync();
-        await _container.DisposeAsync();
+        if (_container != null)
+        {
+            await _container.DisposeAsync();
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

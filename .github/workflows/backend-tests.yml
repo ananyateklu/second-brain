@@ -146,6 +146,12 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Initialize pgvector extension
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U testuser -d secondbrain_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       - name: Run integration tests
         env:
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_test;Username=testuser;Password=testpassword"
