@@ -102,7 +102,7 @@ public class IndexingServiceTests
             CreateTestNote("note-2", userId, "Note 2")
         };
 
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+        _mockNoteRepository.Setup(r => r.GetByUserIdWithImagesAsync(userId))
             .ReturnsAsync(notes);
 
         _mockIndexingJobRepository.Setup(r => r.CreateAsync(It.IsAny<IndexingJob>()))
@@ -118,7 +118,7 @@ public class IndexingServiceTests
         result.TotalNotes.Should().Be(2);
         result.EmbeddingProvider.Should().Be("openai");
 
-        _mockNoteRepository.Verify(r => r.GetByUserIdAsync(userId), Times.Once);
+        _mockNoteRepository.Verify(r => r.GetByUserIdWithImagesAsync(userId), Times.Once);
         _mockIndexingJobRepository.Verify(r => r.CreateAsync(It.Is<IndexingJob>(j =>
             j.UserId == userId &&
             j.Status == IndexingStatus.Pending &&
@@ -134,7 +134,7 @@ public class IndexingServiceTests
         var customProvider = "gemini";
         var notes = new List<Note> { CreateTestNote("note-1", userId, "Note 1") };
 
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+        _mockNoteRepository.Setup(r => r.GetByUserIdWithImagesAsync(userId))
             .ReturnsAsync(notes);
 
         _mockIndexingJobRepository.Setup(r => r.CreateAsync(It.IsAny<IndexingJob>()))
@@ -152,7 +152,7 @@ public class IndexingServiceTests
     {
         // Arrange
         var userId = "user-123";
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+        _mockNoteRepository.Setup(r => r.GetByUserIdWithImagesAsync(userId))
             .ReturnsAsync(new List<Note>());
 
         _mockIndexingJobRepository.Setup(r => r.CreateAsync(It.IsAny<IndexingJob>()))

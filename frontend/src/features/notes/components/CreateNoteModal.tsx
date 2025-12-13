@@ -5,7 +5,7 @@ import { Button } from '../../../components/ui/Button';
 import { useBoundStore } from '../../../store/bound-store';
 import { useCreateNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote } from '../hooks/use-note-form';
-import { fileAttachmentsToNoteImages } from './NoteImageAttachment';
+import { fileAttachmentsToNoteImages } from '../utils/note-image-utils';
 import type { FileAttachment } from '../../../utils/multimodal-models';
 
 export function CreateNoteModal() {
@@ -59,22 +59,21 @@ export function CreateNoteModal() {
     };
   }, [isOpen, isDirty, isSubmitting]);
 
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      reset({
-        title: '',
-        content: '',
-        tags: '',
-      });
-      setNewImages([]);
-    }
-  }, [isOpen, reset]);
+  // Handle modal close with form reset
+  const handleClose = useCallback(() => {
+    closeModal();
+    reset({
+      title: '',
+      content: '',
+      tags: '',
+    });
+    setNewImages([]);
+  }, [closeModal, reset]);
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={closeModal}
+      onClose={handleClose}
       title="Create New Note"
       maxWidth="max-w-[80vw]"
       className="h-[85vh] flex flex-col"

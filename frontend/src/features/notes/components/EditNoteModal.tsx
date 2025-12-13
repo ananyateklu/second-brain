@@ -8,7 +8,7 @@ import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-f
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { NOTES_FOLDERS } from '../../../lib/constants';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
-import { fileAttachmentsToNoteImages } from './NoteImageAttachment';
+import { fileAttachmentsToNoteImages } from '../utils/note-image-utils';
 import type { FileAttachment } from '../../../utils/multimodal-models';
 
 export function EditNoteModal() {
@@ -156,18 +156,17 @@ export function EditNoteModal() {
     };
   }, [isOpen, isDirty, isSubmitting]);
 
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      reset({
-        title: '',
-        content: '',
-        tags: '',
-      });
-      setNewImages([]);
-      setDeletedImageIds([]);
-    }
-  }, [isOpen, reset]);
+  // Handle modal close with form reset
+  const handleClose = useCallback(() => {
+    closeModal();
+    reset({
+      title: '',
+      content: '',
+      tags: '',
+    });
+    setNewImages([]);
+    setDeletedImageIds([]);
+  }, [closeModal, reset]);
 
   // Don't render if modal is not open or no note ID
   if (!isOpen || !editingNoteId) return null;
@@ -177,7 +176,7 @@ export function EditNoteModal() {
     return (
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={handleClose}
         title="Edit Note"
         maxWidth="max-w-[80vw]"
         className="h-[85vh] flex flex-col"
@@ -208,7 +207,7 @@ export function EditNoteModal() {
     return (
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={handleClose}
         title="Edit Note"
         maxWidth="max-w-[80vw]"
         className="h-[85vh] flex flex-col"
@@ -227,7 +226,7 @@ export function EditNoteModal() {
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               {noteError instanceof Error ? noteError.message : 'The note could not be found'}
             </p>
-            <Button variant="secondary" onClick={closeModal}>Close</Button>
+            <Button variant="secondary" onClick={handleClose}>Close</Button>
           </div>
         </div>
       </Modal>

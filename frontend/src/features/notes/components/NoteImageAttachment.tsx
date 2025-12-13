@@ -10,9 +10,8 @@ import {
   validateFileForAttachment,
   formatFileSize,
   isImageFile,
-  parseDataUrl,
 } from '../../../utils/multimodal-models';
-import type { NoteImage, NoteImageInput } from '../../../types/notes';
+import type { NoteImage } from '../../../types/notes';
 
 export interface NoteImageAttachmentProps {
   /** New images being added (not yet saved) */
@@ -393,16 +392,3 @@ export function NoteImageAttachment({
   );
 }
 
-/**
- * Convert FileAttachment array to NoteImageInput array for API submission
- */
-export function fileAttachmentsToNoteImages(attachments: FileAttachment[]): NoteImageInput[] {
-  return attachments.map(attachment => {
-    const parsed = parseDataUrl(attachment.dataUrl);
-    return {
-      base64Data: parsed?.base64Data || attachment.dataUrl,
-      mediaType: parsed?.mediaType || attachment.type,
-      fileName: attachment.name,
-    };
-  });
-}
