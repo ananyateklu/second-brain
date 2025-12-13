@@ -321,6 +321,20 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("PostgreSQL connection string 'DefaultConnection' is missing");
 
+        // Enhance connection string with optimized pool settings for RAG workloads
+        // These settings improve throughput for concurrent vector searches and queries
+        connectionString = EnhanceConnectionStringWithPoolSettings(connectionString);
+
+        // Register RAG session interceptor for PostgreSQL 18 + pgvector 0.8 optimizations
+        // This configures hnsw.ef_search, iterative_scan, work_mem, and JIT at connection open
+        var ragInterceptor = new RagSessionInterceptor(
+            logger: null, // Logger will be null during startup, settings logged at debug level
+            efSearch: 100,
+            enableIterativeScan: true,
+            maxScanTuples: 20000,
+            workMem: "128MB",
+            enableJit: true);
+
         // Register ApplicationDbContext with PostgreSQL
         services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -332,7 +346,12 @@ public static class ServiceCollectionExtensions
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null);
+                // Command timeout for long-running RAG queries (vector search + reranking)
+                npgsqlOptions.CommandTimeout(60);
             });
+
+            // Add RAG session interceptor for PostgreSQL 18 optimizations
+            options.AddInterceptors(ragInterceptor);
 
             // Suppress PendingModelChangesWarning for desktop app (Tauri) scenarios
             // The desktop app uses ApplyAllMigrationSchemaIfMissing() for manual schema management
@@ -353,7 +372,11 @@ public static class ServiceCollectionExtensions
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null);
+                npgsqlOptions.CommandTimeout(60);
             });
+
+            // Add RAG session interceptor (same as AddDbContext above)
+            options.AddInterceptors(ragInterceptor);
 
             // Suppress PendingModelChangesWarning (same as AddDbContext above)
             options.ConfigureWarnings(warnings =>
@@ -392,6 +415,63 @@ public static class ServiceCollectionExtensions
     {
         services.AddValidatorsFromAssemblyContaining<CreateNoteRequestValidator>();
         return services;
+    }
+
+    /// <summary>
+    /// Enhances the connection string with optimized Npgsql pool settings for RAG workloads.
+    /// These settings improve throughput for concurrent vector searches and hybrid queries.
+    /// </summary>
+    /// <remarks>
+    /// Pool settings explanation:
+    /// - Maximum Pool Size: 50 connections for concurrent RAG searches (default: 100)
+    /// - Minimum Pool Size: 10 warm connections ready for immediate use (default: 0)
+    /// - Connection Idle Lifetime: 5 minutes before releasing idle connections (default: 300s)
+    /// - Connection Pruning Interval: Check for idle connections every 10 seconds
+    /// - Multiplexing: Disabled for EF Core compatibility
+    /// - Include Error Detail: Enabled for debugging
+    /// </remarks>
+    private static string EnhanceConnectionStringWithPoolSettings(string connectionString)
+    {
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+
+        // Connection pool sizing for concurrent RAG workloads
+        // 50 max connections balances throughput with PostgreSQL resource usage
+        if (!builder.ConnectionString.Contains("Maximum Pool Size", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.MaxPoolSize = 50;
+        }
+
+        // Keep warm connections ready for immediate use
+        if (!builder.ConnectionString.Contains("Minimum Pool Size", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.MinPoolSize = 10;
+        }
+
+        // Close idle connections after 5 minutes to free resources
+        if (!builder.ConnectionString.Contains("Connection Idle Lifetime", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.ConnectionIdleLifetime = 300;
+        }
+
+        // Check for prunable connections every 10 seconds
+        if (!builder.ConnectionString.Contains("Connection Pruning Interval", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.ConnectionPruningInterval = 10;
+        }
+
+        // Include detailed error info for debugging
+        if (!builder.ConnectionString.Contains("Include Error Detail", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.IncludeErrorDetail = true;
+        }
+
+        // Application name for pg_stat_activity monitoring
+        if (!builder.ConnectionString.Contains("Application Name", StringComparison.OrdinalIgnoreCase))
+        {
+            builder.ApplicationName = "SecondBrain.API";
+        }
+
+        return builder.ConnectionString;
     }
 
     /// <summary>

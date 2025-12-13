@@ -51,8 +51,8 @@ public class ChatApiTests : IAsyncLifetime
         var request = new
         {
             title = "Test Conversation",
-            provider = "MockProvider",
-            model = "mock-model",
+            provider = "openai",
+            model = "gpt-4o-mini",
             ragEnabled = false
         };
 
@@ -64,8 +64,8 @@ public class ChatApiTests : IAsyncLifetime
         var conversation = await response.Content.ReadFromJsonAsync<ConversationDto>();
         conversation.Should().NotBeNull();
         conversation!.Title.Should().Be("Test Conversation");
-        conversation.Provider.Should().Be("MockProvider");
-        conversation.Model.Should().Be("mock-model");
+        conversation.Provider.Should().Be("openai");
+        conversation.Model.Should().Be("gpt-4o-mini");
         conversation.Id.Should().NotBeNullOrEmpty();
     }
 
@@ -76,7 +76,7 @@ public class ChatApiTests : IAsyncLifetime
         var request = new
         {
             title = "Test Conversation",
-            model = "mock-model"
+            model = "gpt-4o-mini"
         };
 
         // Act
@@ -93,8 +93,8 @@ public class ChatApiTests : IAsyncLifetime
         var createRequest = new
         {
             title = "Conversation to retrieve",
-            provider = "MockProvider",
-            model = "mock-model"
+            provider = "openai",
+            model = "gpt-4o-mini"
         };
         var createResponse = await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
         var created = await createResponse.Content.ReadFromJsonAsync<ConversationDto>();
@@ -127,8 +127,8 @@ public class ChatApiTests : IAsyncLifetime
         var createRequest = new
         {
             title = "Conversation to delete",
-            provider = "MockProvider",
-            model = "mock-model"
+            provider = "openai",
+            model = "gpt-4o-mini"
         };
         var createResponse = await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
         var created = await createResponse.Content.ReadFromJsonAsync<ConversationDto>();
@@ -151,8 +151,8 @@ public class ChatApiTests : IAsyncLifetime
         var createRequest = new
         {
             title = "Test Chat",
-            provider = "MockProvider",
-            model = "mock-model"
+            provider = "openai",
+            model = "gpt-4o-mini"
         };
         var createResponse = await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
         var conversation = await createResponse.Content.ReadFromJsonAsync<ConversationDto>();
@@ -183,8 +183,8 @@ public class ChatApiTests : IAsyncLifetime
         var createRequest = new
         {
             title = "Settings Test",
-            provider = "MockProvider",
-            model = "mock-model",
+            provider = "openai",
+            model = "gpt-4o-mini",
             ragEnabled = false
         };
         var createResponse = await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
@@ -215,8 +215,8 @@ public class ChatApiTests : IAsyncLifetime
         var createRequest = new
         {
             title = "Versioned Conversation",
-            provider = "MockProvider",
-            model = "mock-model"
+            provider = "openai",
+            model = "gpt-4o-mini"
         };
         await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
 
@@ -253,8 +253,8 @@ public class ChatApiTests : IAsyncLifetime
             var createRequest = new
             {
                 title = $"Bulk Delete Test {i}",
-                provider = "MockProvider",
-                model = "mock-model"
+                provider = "openai",
+                model = "gpt-4o-mini"
             };
             var createResponse = await _client.PostAsJsonAsync("/api/chat/conversations", createRequest);
             var conversation = await createResponse.Content.ReadFromJsonAsync<ConversationDto>();

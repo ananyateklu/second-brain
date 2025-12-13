@@ -10,7 +10,16 @@ using SecondBrain.Core.Models;
 namespace SecondBrain.Application.Services.RAG;
 
 /// <summary>
-/// Service that combines vector search and BM25 search using Reciprocal Rank Fusion (RRF)
+/// Service that combines vector search and BM25 search using Reciprocal Rank Fusion (RRF).
+///
+/// NOTE: For optimal performance, prefer INativeHybridSearchService which executes
+/// the entire hybrid search in a single database query, leveraging PostgreSQL 18's
+/// CTEs and parallel execution. This fallback service runs searches sequentially
+/// due to DbContext thread-safety constraints.
+///
+/// Performance comparison:
+/// - NativeHybridSearchService: 1 database round-trip, SQL-level RRF fusion
+/// - HybridSearchService: 2 sequential database round-trips, application-level fusion
 /// </summary>
 public interface IHybridSearchService
 {

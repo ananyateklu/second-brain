@@ -34,8 +34,8 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
 
         return {
           note: noteToDisplay,
-          relevanceScore: retrievedNote.similarityScore,
-          chunkContent: retrievedNote.preview,
+          relevanceScore: retrievedNote.relevanceScore,
+          chunkContent: retrievedNote.chunkContent ?? retrievedNote.preview,
           content: retrievedNote.preview,
         };
       })
@@ -89,15 +89,10 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
             {retrievedNotes.length} note{retrievedNotes.length !== 1 ? 's' : ''} for context
           </span>
           
-          {isStreaming ? (
-            <span className="text-[10px] opacity-70" style={{ color: 'var(--color-brand-500)' }}>
-              Retrieving...
-            </span>
-          ) : (
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-              · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
-            </span>
-          )}
+          {/* Show percentage when we have scores, even during streaming */}
+          <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+            · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
+          </span>
 
           <svg
             className={`w-2.5 h-2.5 ml-0.5 transition-transform opacity-50 ${isExpanded ? 'rotate-180' : ''}`}

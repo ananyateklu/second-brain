@@ -12,12 +12,14 @@ PostgreSQL database schema for the Second Brain application with pgvector suppor
 |---------|---------|--------|
 | **UUIDv7** | Time-ordered primary keys | 4x faster index performance |
 | **Async I/O** | Concurrent I/O operations | 2-3x faster scans |
-| **pgvector 0.8** | Iterative index scans | Better filtered queries |
+| **pgvector 0.8** | Iterative index scans, halfvec quantization | Better filtered queries, 50% memory savings |
 | **JSON_TABLE** | SQL/JSON standard | Cleaner JSON querying |
 | **MERGE with RETURNING** | Atomic upserts | Single-operation updates |
 | **Virtual Generated Columns** | Computed columns | Reduced trigger overhead |
 | **Parallel GIN Builds** | Multi-threaded indexing | 50-70% faster builds |
 | **Temporal Constraints** | Non-overlapping ranges | Audit trail support |
+| **FILLFACTOR Tuning** | HOT update optimization | Reduced table bloat |
+| **Index Deduplication** | Compressed B-tree indexes | Smaller index size |
 
 The guide includes step-by-step migration scripts, code examples, and a phased implementation roadmap.
 
@@ -356,8 +358,15 @@ USING hnsw (embedding vector_cosine_ops);
 | `12_agent_rag_enabled.sql` | agent_rag_enabled column for chat_conversations |
 | `13_postgresql_18_features.sql` | **PostgreSQL 18 features: UUIDv7, JSONB, optimized indexes** |
 | `13_postgresql_18_features_rollback.sql` | Rollback script for PG18 features |
+| `14_tool_call_analytics.sql` | Tool call analytics functions |
+| `15_temporal_features.sql` | Temporal tables (note_versions, chat_sessions) |
+| `16_add_username_to_users.sql` - `32_rag_feature_toggles.sql` | Various feature additions |
+| `33_token_usage_tracking.sql` | Detailed token usage tracking columns |
+| `34_database_optimizations.sql` | **Advanced optimizations: BRIN indexes, covering indexes, materialized views** |
+| `35_table_partitioning.sql` | **Table partitioning for chat_messages and rag_query_logs** |
+| `36_advanced_optimizations.sql` | **pgvector 0.8 optimizations: halfvec quantization, iterative scan, FILLFACTOR, RRF fusion** |
 | `migrate.sh` | **Migration script for Docker + Desktop databases** |
-| `schema.sql` | Master script (runs all 14 scripts) |
+| `schema.sql` | Master script (runs all 38 steps) |
 | `POSTGRESQL_18_FEATURES.md` | **PostgreSQL 18 features guide and migration instructions** |
 
 ## Notes
@@ -368,8 +377,88 @@ USING hnsw (embedding vector_cosine_ops);
 - The schema matches Entity Framework Core entity definitions in `backend/src/SecondBrain.Core/Entities/`
 - Hybrid search uses Reciprocal Rank Fusion (RRF) to combine vector and BM25 results
 - Soft delete is supported on `notes` and `chat_conversations` tables via `is_deleted`, `deleted_at`, `deleted_by` columns
-- Total indexes: 53 (including primary keys and partial indexes)
+- Total indexes: 55+ (including primary keys, partial indexes, and quantized HNSW)
 - The desktop app (Tauri) uses Homebrew PostgreSQL on port 5433, Docker uses port 5432
+
+## pgvector 0.8 Optimizations (36_advanced_optimizations.sql)
+
+The `36_advanced_optimizations.sql` script implements cutting-edge pgvector 0.8 features for maximum RAG performance:
+
+### Vector Quantization (halfvec)
+
+Reduces HNSW index memory by 50% while maintaining >99% recall:
+
+```sql
+-- Quantized HNSW index (half-precision vectors)
+CREATE INDEX ix_embeddings_hnsw_quantized
+ON note_embeddings USING hnsw ((embedding::halfvec(1536)) halfvec_cosine_ops)
+WITH (m = 24, ef_construction = 128);
+```
+
+**Benefits:**
+- 50% memory savings on vector indexes
+- Faster index scans (smaller data)
+- Full-precision vectors remain in table (re-indexable)
+
+### Iterative Scan for Filtered Queries
+
+Prevents "overfiltering" when combining vector search with WHERE clauses:
+
+```sql
+-- Configure via docker-compose.yml or at session level
+SET hnsw.iterative_scan = 'relaxed_order';
+SET hnsw.max_scan_tuples = 20000;
+```
+
+**What it solves:** Traditional HNSW returns top-K candidates, THEN filters. If most candidates fail the filter, you get few results. Iterative scan keeps scanning until enough filtered results are found.
+
+### Optimized Hybrid Search Function
+
+Single-query RRF fusion for vector + BM25 search:
+
+```sql
+-- Native hybrid search (single database round-trip)
+SELECT * FROM hybrid_search_optimized(
+    p_query_embedding := '[0.1, 0.2, ...]'::vector,
+    p_query_text := 'machine learning algorithms',
+    p_user_id := 'user-123',
+    p_limit := 5,
+    p_vector_weight := 0.7,
+    p_bm25_weight := 0.3
+);
+```
+
+### FILLFACTOR Tuning
+
+Reserves space for HOT (Heap-Only Tuple) updates:
+
+| Table | FILLFACTOR | Rationale |
+|-------|------------|-----------|
+| `tool_calls` | 80 | Frequent status updates |
+| `chat_messages` | 85 | Moderate updates |
+| `notes` | 90 | Less frequent updates |
+| `note_embeddings` | 100 | Append-only (default) |
+
+### Index Deduplication
+
+Reduces index size for repeated values:
+
+```sql
+ALTER INDEX ix_notes_user_id SET (deduplicate_items = on);
+ALTER INDEX ix_note_embeddings_user_id SET (deduplicate_items = on);
+```
+
+### RAG Session Initialization
+
+Pre-configures session for optimal RAG workload:
+
+```sql
+-- Call at connection start for RAG-heavy sessions
+SELECT init_rag_session();
+-- Sets: work_mem=256MB, jit=off (faster for small queries), vector search params
+```
+
+---
 
 ## PostgreSQL 18 Optimization
 

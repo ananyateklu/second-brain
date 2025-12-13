@@ -105,20 +105,37 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
 
     private async Task SeedTestData(ApplicationDbContext dbContext)
     {
-        // Create test user
-        var testUser = new SecondBrain.Core.Entities.User
-        {
-            Id = TestUserId,
-            Email = "test@example.com",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!"),
-            DisplayName = "Test User",
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
         // Only add if not exists
         if (!await dbContext.Users.AnyAsync(u => u.Id == TestUserId))
         {
+            // Create test user with preferences
+            var testUser = new SecondBrain.Core.Entities.User
+            {
+                Id = TestUserId,
+                Email = "test@example.com",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!"),
+                DisplayName = "Test User",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Preferences = new SecondBrain.Core.Entities.UserPreferences
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    UserId = TestUserId,
+                    ChatProvider = "openai",
+                    ChatModel = "gpt-4o-mini",
+                    VectorStoreProvider = "PostgreSQL",
+                    DefaultNoteView = "list",
+                    ItemsPerPage = 20,
+                    FontSize = "medium",
+                    EnableNotifications = true,
+                    RagEnableHyde = true,
+                    RagEnableQueryExpansion = true,
+                    RagEnableHybridSearch = true,
+                    RagEnableReranking = true,
+                    RagEnableAnalytics = true
+                }
+            };
+
             dbContext.Users.Add(testUser);
             await dbContext.SaveChangesAsync();
         }

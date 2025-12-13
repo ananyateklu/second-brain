@@ -8,7 +8,9 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-secondbrain}
     command:
       - "postgres"
-      # Memory Settings
+      # ===========================================
+      # Memory Settings (tuned for 4GB container)
+      # ===========================================
       - "-c"
       - "shared_buffers=1GB"
       - "-c"
@@ -17,28 +19,133 @@ services:
       - "work_mem=64MB"
       - "-c"
       - "maintenance_work_mem=512MB"
-      # Async I/O (PostgreSQL 18)
       - "-c"
-      - "io_method=worker"
+      - "huge_pages=try"
+      # ===========================================
+      # Async I/O (PostgreSQL 18 Feature)
+      # ===========================================
+      # io_method options:
+      #   - 'sync': Legacy synchronous I/O (PostgreSQL 17 behavior)
+      #   - 'worker': Background workers for async I/O (cross-platform)
+      #   - 'io_uring': Linux io_uring (kernel 5.1+, fastest)
+      # Use IO_METHOD env var to switch: IO_METHOD=io_uring for Linux
+      - "-c"
+      - "io_method=${IO_METHOD:-worker}"
       - "-c"
       - "io_workers=4"
       - "-c"
       - "effective_io_concurrency=200"
       - "-c"
       - "maintenance_io_concurrency=10"
-      # Parallel Query
+      # ===========================================
+      # Parallel Query (PostgreSQL 18 Enhanced)
+      # ===========================================
       - "-c"
       - "max_parallel_workers_per_gather=2"
       - "-c"
       - "max_parallel_workers=4"
       - "-c"
-      - "max_parallel_maintenance_workers=2"
+      - "max_parallel_maintenance_workers=4"
+      # ===========================================
+      # JIT Compilation (PostgreSQL 18 Improved)
+      # ===========================================
+      - "-c"
+      - "jit=on"
+      - "-c"
+      - "jit_above_cost=100000"
+      - "-c"
+      - "jit_inline_above_cost=500000"
+      - "-c"
+      - "jit_optimize_above_cost=500000"
+      # ===========================================
       # SSD Optimization
+      # ===========================================
       - "-c"
       - "random_page_cost=1.1"
-      # Monitoring
+      - "-c"
+      - "seq_page_cost=1.0"
+      # ===========================================
+      # Connection & Session Management
+      # ===========================================
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "idle_in_transaction_session_timeout=300000"
+      - "-c"
+      - "statement_timeout=60000"
+      # ===========================================
+      # Write-Ahead Log (WAL) Optimization
+      # ===========================================
+      - "-c"
+      - "wal_buffers=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "checkpoint_timeout=15min"
+      - "-c"
+      - "max_wal_size=4GB"
+      - "-c"
+      - "min_wal_size=1GB"
+      # ===========================================
+      # Auto-Vacuum Tuning
+      # ===========================================
+      - "-c"
+      - "autovacuum_max_workers=4"
+      - "-c"
+      - "autovacuum_naptime=30s"
+      - "-c"
+      - "autovacuum_vacuum_cost_delay=2ms"
+      - "-c"
+      - "autovacuum_vacuum_cost_limit=1000"
+      # ===========================================
+      # Query Planner
+      # ===========================================
+      - "-c"
+      - "default_statistics_target=200"
+      - "-c"
+      - "enable_partitionwise_join=on"
+      - "-c"
+      - "enable_partitionwise_aggregate=on"
+      # ===========================================
+      # Monitoring & Statistics
+      # ===========================================
       - "-c"
       - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "pg_stat_statements.max=10000"
+      - "-c"
+      - "pg_stat_statements.track=all"
+      - "-c"
+      - "track_io_timing=on"
+      - "-c"
+      - "track_functions=all"
+      # ===========================================
+      # Logging (for debugging/monitoring)
+      # ===========================================
+      - "-c"
+      - "log_min_duration_statement=500"
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_lock_waits=on"
+      - "-c"
+      - "log_temp_files=0"
+      # ===========================================
+      # pgvector 0.8 Optimizations
+      # ===========================================
+      # HNSW search-time parameter (higher = better recall, slower)
+      - "-c"
+      - "hnsw.ef_search=100"
+      # Iterative scan for filtered queries (prevents overfiltering)
+      - "-c"
+      - "hnsw.iterative_scan=relaxed_order"
+      - "-c"
+      - "hnsw.max_scan_tuples=20000"
+      # IVFFlat iterative scan
+      - "-c"
+      - "ivfflat.iterative_scan=on"
+      - "-c"
+      - "ivfflat.max_probes=20"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./database/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
@@ -74,6 +181,10 @@ services:
       - ./database/30_summary_jobs.sql:/docker-entrypoint-initdb.d/30_summary_jobs.sql:ro
       - ./database/31_pre_tool_text.sql:/docker-entrypoint-initdb.d/31_pre_tool_text.sql:ro
       - ./database/32_rag_feature_toggles.sql:/docker-entrypoint-initdb.d/32_rag_feature_toggles.sql:ro
+      - ./database/33_token_usage_tracking.sql:/docker-entrypoint-initdb.d/33_token_usage_tracking.sql:ro
+      - ./database/34_database_optimizations.sql:/docker-entrypoint-initdb.d/34_database_optimizations.sql:ro
+      - ./database/35_table_partitioning.sql:/docker-entrypoint-initdb.d/35_table_partitioning.sql:ro
+      - ./database/36_advanced_optimizations.sql:/docker-entrypoint-initdb.d/36_advanced_optimizations.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

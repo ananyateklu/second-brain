@@ -582,6 +582,7 @@ public class ChatController : ControllerBase
                 cacheReadTokens = actualUsage?.CacheReadTokens,
                 reasoningTokens = actualUsage?.ReasoningTokens,
                 durationMs,
+                responseTruncated,
                 ragLogId = ragLogId?.ToString()
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");

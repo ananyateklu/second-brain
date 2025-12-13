@@ -142,20 +142,22 @@ public class SqlNoteEmbeddingRepository : INoteEmbeddingRepository
         try
         {
             _logger.LogDebug("Deleting embeddings for note. NoteId: {NoteId}", noteId);
-            var embeddings = await _context.NoteEmbeddings
-                .Where(e => e.NoteId == noteId)
-                .ToListAsync();
 
-            if (embeddings.Count == 0)
+            // Use ExecuteDeleteAsync for efficient bulk delete without loading entities into memory
+            // This generates: DELETE FROM note_embeddings WHERE note_id = @noteId
+            var deletedCount = await _context.NoteEmbeddings
+                .Where(e => e.NoteId == noteId)
+                .ExecuteDeleteAsync();
+
+            if (deletedCount == 0)
             {
                 _logger.LogDebug("No embeddings found for note. NoteId: {NoteId}", noteId);
-                return true;
+            }
+            else
+            {
+                _logger.LogInformation("Embeddings deleted for note. NoteId: {NoteId}, Count: {Count}", noteId, deletedCount);
             }
 
-            _context.NoteEmbeddings.RemoveRange(embeddings);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Embeddings deleted for note. NoteId: {NoteId}, Count: {Count}", noteId, embeddings.Count);
             return true;
         }
         catch (Exception ex)
@@ -170,20 +172,23 @@ public class SqlNoteEmbeddingRepository : INoteEmbeddingRepository
         try
         {
             _logger.LogDebug("Deleting embeddings for user. UserId: {UserId}", userId);
-            var embeddings = await _context.NoteEmbeddings
-                .Where(e => e.UserId == userId)
-                .ToListAsync();
 
-            if (embeddings.Count == 0)
+            // Use ExecuteDeleteAsync for efficient bulk delete without loading entities into memory
+            // This generates: DELETE FROM note_embeddings WHERE user_id = @userId
+            // For large datasets, this is 10-100x faster than loading + RemoveRange
+            var deletedCount = await _context.NoteEmbeddings
+                .Where(e => e.UserId == userId)
+                .ExecuteDeleteAsync();
+
+            if (deletedCount == 0)
             {
                 _logger.LogDebug("No embeddings found for user. UserId: {UserId}", userId);
-                return true;
+            }
+            else
+            {
+                _logger.LogInformation("Embeddings deleted for user. UserId: {UserId}, Count: {Count}", userId, deletedCount);
             }
 
-            _context.NoteEmbeddings.RemoveRange(embeddings);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Embeddings deleted for user. UserId: {UserId}, Count: {Count}", userId, embeddings.Count);
             return true;
         }
         catch (Exception ex)

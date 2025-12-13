@@ -217,9 +217,10 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
 
             // Native hybrid search SQL using CTEs and RRF
             // This executes both searches and fuses results in a single query
+            // Uses halfvec quantization (pgvector 0.7+) for 50% memory savings on vector index
             var sql = @"
                 WITH vector_results AS (
-                    SELECT 
+                    SELECT
                         id,
                         note_id,
                         content,
@@ -227,12 +228,12 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         note_tags,
                         note_summary,
                         chunk_index,
-                        1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
-                        ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
+                        1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_score,
+                        ROW_NUMBER() OVER (ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_rank
                     FROM note_embeddings
                     WHERE user_id = @userId
                       AND embedding IS NOT NULL
-                    ORDER BY embedding <=> @queryEmbedding::vector
+                    ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)
                     LIMIT @initialK
                 ),
                 bm25_results AS (
@@ -348,6 +349,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
 
     /// <summary>
     /// Fallback to vector-only search when BM25 query is empty
+    /// Uses halfvec quantization for memory efficiency
     /// </summary>
     private async Task<List<NativeHybridSearchResult>> VectorOnlySearchAsync(
         List<double> queryEmbedding,
@@ -359,8 +361,9 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
         {
             var embeddingString = "[" + string.Join(",", queryEmbedding) + "]";
 
+            // Uses halfvec quantization (pgvector 0.7+) for 50% memory savings
             var sql = @"
-                SELECT 
+                SELECT
                     id,
                     note_id,
                     content,
@@ -368,12 +371,12 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     note_tags,
                     note_summary,
                     chunk_index,
-                    1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
-                    ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
+                    1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_score,
+                    ROW_NUMBER() OVER (ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_rank
                 FROM note_embeddings
                 WHERE user_id = @userId
                   AND embedding IS NOT NULL
-                ORDER BY embedding <=> @queryEmbedding::vector
+                ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)
                 LIMIT @topK";
 
             var connection = _context.Database.GetDbConnection();

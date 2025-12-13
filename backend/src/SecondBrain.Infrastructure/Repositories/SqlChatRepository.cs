@@ -387,23 +387,23 @@ public class SqlChatRepository : IChatRepository
             var idList = ids.ToList();
             _logger.LogDebug("Deleting multiple conversations. Count: {Count}, UserId: {UserId}", idList.Count, userId);
 
-            // Get all conversations that match the IDs and belong to the user
-            var conversations = await _context.ChatConversations
-                .Include(c => c.Messages)
+            // Use ExecuteDeleteAsync for efficient bulk delete without loading entities into memory
+            // CASCADE delete handles related messages, tool_calls, retrieved_notes automatically
+            // This is 10-100x faster than loading + RemoveRange for large datasets
+            var deletedCount = await _context.ChatConversations
                 .Where(c => idList.Contains(c.Id) && c.UserId == userId)
-                .ToListAsync();
+                .ExecuteDeleteAsync();
 
-            if (conversations.Count == 0)
+            if (deletedCount == 0)
             {
                 _logger.LogDebug("No conversations found for bulk deletion. UserId: {UserId}", userId);
-                return 0;
+            }
+            else
+            {
+                _logger.LogInformation("Bulk deleted conversations successfully. Count: {Count}, UserId: {UserId}", deletedCount, userId);
             }
 
-            _context.ChatConversations.RemoveRange(conversations);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Bulk deleted conversations successfully. Count: {Count}, UserId: {UserId}", conversations.Count, userId);
-            return conversations.Count;
+            return deletedCount;
         }
         catch (Exception ex)
         {

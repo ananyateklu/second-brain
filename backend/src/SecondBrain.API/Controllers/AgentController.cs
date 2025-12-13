@@ -335,6 +335,7 @@ public class AgentController : ControllerBase
                             ragLogId = evt.RagLogId;
                         }
 
+                        // Use consistent property naming with ChatController (relevanceScore, not similarityScore)
                         var contextRetrievalJson = JsonSerializer.Serialize(new
                         {
                             message = evt.Content,
@@ -344,7 +345,9 @@ public class AgentController : ControllerBase
                                 title = n.Title,
                                 preview = n.Preview,
                                 tags = n.Tags,
-                                similarityScore = n.SimilarityScore
+                                relevanceScore = n.SimilarityScore,
+                                chunkContent = n.ChunkContent ?? n.Preview,
+                                chunkIndex = 0
                             }).ToList(),
                             ragLogId = evt.RagLogId
                         });
