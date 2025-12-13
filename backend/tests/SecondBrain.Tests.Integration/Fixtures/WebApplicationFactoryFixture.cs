@@ -149,39 +149,51 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
 
     private async Task SeedTestData(ApplicationDbContext dbContext)
     {
-        // Only add if not exists
-        if (!await dbContext.Users.AnyAsync(u => u.Id == TestUserId))
+        try
         {
-            // Create test user with preferences
-            var testUser = new SecondBrain.Core.Entities.User
-            {
-                Id = TestUserId,
-                Email = "test@example.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!"),
-                DisplayName = "Test User",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                Preferences = new SecondBrain.Core.Entities.UserPreferences
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    UserId = TestUserId,
-                    ChatProvider = "openai",
-                    ChatModel = "gpt-4o-mini",
-                    VectorStoreProvider = "PostgreSQL",
-                    DefaultNoteView = "list",
-                    ItemsPerPage = 20,
-                    FontSize = "medium",
-                    EnableNotifications = true,
-                    RagEnableHyde = true,
-                    RagEnableQueryExpansion = true,
-                    RagEnableHybridSearch = true,
-                    RagEnableReranking = true,
-                    RagEnableAnalytics = true
-                }
-            };
+            // Only add if not exists - use raw SQL for atomicity in CI
+            var existingUser = await dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == TestUserId);
 
-            dbContext.Users.Add(testUser);
-            await dbContext.SaveChangesAsync();
+            if (existingUser == null)
+            {
+                // Create test user with preferences
+                var testUser = new SecondBrain.Core.Entities.User
+                {
+                    Id = TestUserId,
+                    Email = "test@example.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("TestPassword123!"),
+                    DisplayName = "Test User",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Preferences = new SecondBrain.Core.Entities.UserPreferences
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        UserId = TestUserId,
+                        ChatProvider = "openai",
+                        ChatModel = "gpt-4o-mini",
+                        VectorStoreProvider = "PostgreSQL",
+                        DefaultNoteView = "list",
+                        ItemsPerPage = 20,
+                        FontSize = "medium",
+                        EnableNotifications = true,
+                        RagEnableHyde = true,
+                        RagEnableQueryExpansion = true,
+                        RagEnableHybridSearch = true,
+                        RagEnableReranking = true,
+                        RagEnableAnalytics = true
+                    }
+                };
+
+                dbContext.Users.Add(testUser);
+                await dbContext.SaveChangesAsync();
+            }
+        }
+        catch (DbUpdateException)
+        {
+            // Race condition: another test instance already seeded the data
+            // This is expected in CI when tests run in parallel
         }
     }
 

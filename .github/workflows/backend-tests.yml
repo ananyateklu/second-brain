@@ -146,11 +146,17 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Initialize pgvector extension
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Initialize database extensions
         env:
           PGPASSWORD: testpassword
         run: |
           psql -h localhost -U testuser -d secondbrain_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          psql -h localhost -U testuser -d secondbrain_test -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
 
       - name: Run integration tests
         env:
