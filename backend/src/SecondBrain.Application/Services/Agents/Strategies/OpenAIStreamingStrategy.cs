@@ -155,6 +155,9 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             await foreach (var evt in _openAIProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
+
                 switch (evt.Type)
                 {
                     case Services.AI.Models.OpenAIToolStreamEventType.Text:

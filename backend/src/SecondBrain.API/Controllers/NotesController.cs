@@ -14,6 +14,7 @@ using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Queries.Notes.GetNotesPaged;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Controllers;
@@ -33,6 +34,8 @@ public class NotesController : ControllerBase
     private readonly INoteSummaryService _summaryService;
     private readonly ISummaryGenerationBackgroundService _summaryBackgroundService;
     private readonly INoteRepository _noteRepository;
+    private readonly INoteImageRepository _noteImageRepository;
+    private readonly IImageDescriptionService _imageDescriptionService;
     private readonly ILogger<NotesController> _logger;
 
     public NotesController(
@@ -41,6 +44,8 @@ public class NotesController : ControllerBase
         INoteSummaryService summaryService,
         ISummaryGenerationBackgroundService summaryBackgroundService,
         INoteRepository noteRepository,
+        INoteImageRepository noteImageRepository,
+        IImageDescriptionService imageDescriptionService,
         ILogger<NotesController> logger)
     {
         _mediator = mediator;
@@ -48,6 +53,8 @@ public class NotesController : ControllerBase
         _summaryService = summaryService;
         _summaryBackgroundService = summaryBackgroundService;
         _noteRepository = noteRepository;
+        _noteImageRepository = noteImageRepository;
+        _imageDescriptionService = imageDescriptionService;
         _logger = logger;
     }
 
@@ -193,7 +200,8 @@ public class NotesController : ControllerBase
             request.Tags,
             request.IsArchived,
             request.Folder,
-            userId);
+            userId,
+            request.Images);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -232,7 +240,9 @@ public class NotesController : ControllerBase
             request.IsArchived,
             request.Folder,
             request.UpdateFolder,
-            userId);
+            userId,
+            request.Images,
+            request.DeletedImageIds);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -760,5 +770,121 @@ public class NotesController : ControllerBase
         {
             return NotFound(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Extract AI descriptions for images attached to a note.
+    /// This endpoint can be used to generate descriptions for images that don't have them yet.
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Results of description extraction</returns>
+    [HttpPost("{id}/images/extract-descriptions")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExtractImageDescriptions(string id, CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify note exists and belongs to user
+        var note = await _noteRepository.GetByIdAsync(id);
+        if (note == null)
+        {
+            return NotFound(new { error = $"Note with ID '{id}' was not found" });
+        }
+
+        if (note.UserId != userId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied to this note" });
+        }
+
+        // Get images for the note
+        var images = await _noteImageRepository.GetByNoteIdAsync(id, cancellationToken);
+        if (images.Count == 0)
+        {
+            return Ok(new
+            {
+                message = "No images found for this note",
+                totalImages = 0,
+                processedCount = 0,
+                successCount = 0
+            });
+        }
+
+        // Filter images without descriptions
+        var imagesToProcess = images
+            .Where(img => string.IsNullOrEmpty(img.Description))
+            .ToList();
+
+        if (imagesToProcess.Count == 0)
+        {
+            return Ok(new
+            {
+                message = "All images already have descriptions",
+                totalImages = images.Count,
+                processedCount = 0,
+                successCount = 0
+            });
+        }
+
+        if (!_imageDescriptionService.IsAvailable)
+        {
+            return BadRequest(new { error = "Image description service is not available. Please configure a vision-capable AI provider (Gemini, OpenAI, or Claude)." });
+        }
+
+        _logger.LogInformation("Extracting descriptions for {Count} images in note {NoteId}", imagesToProcess.Count, id);
+
+        // Extract descriptions
+        var inputs = imagesToProcess.Select(img => new ImageInput
+        {
+            Id = img.Id,
+            Base64Data = img.Base64Data,
+            MediaType = img.MediaType,
+            AltText = img.AltText
+        });
+
+        var results = await _imageDescriptionService.ExtractDescriptionsBatchAsync(inputs, note.Title, cancellationToken);
+
+        // Update images with descriptions
+        var successCount = 0;
+        foreach (var result in results.Where(r => r.Success && !string.IsNullOrEmpty(r.Description)))
+        {
+            var updated = await _noteImageRepository.UpdateDescriptionAsync(
+                result.ImageId!,
+                result.Description!,
+                result.Provider ?? "unknown",
+                result.Model ?? "unknown",
+                cancellationToken);
+
+            if (updated)
+            {
+                successCount++;
+            }
+        }
+
+        _logger.LogInformation("Extracted descriptions for {Success}/{Total} images in note {NoteId}",
+            successCount, imagesToProcess.Count, id);
+
+        return Ok(new
+        {
+            message = $"Extracted descriptions for {successCount} of {imagesToProcess.Count} images",
+            totalImages = images.Count,
+            processedCount = imagesToProcess.Count,
+            successCount,
+            results = results.Select(r => new
+            {
+                imageId = r.ImageId,
+                success = r.Success,
+                error = r.Error,
+                provider = r.Provider,
+                model = r.Model
+            })
+        });
     }
 }

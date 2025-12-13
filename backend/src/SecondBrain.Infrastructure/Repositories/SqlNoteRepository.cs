@@ -50,17 +50,12 @@ public class SqlNoteRepository : INoteRepository
         {
             _logger.LogDebug("Retrieving note by ID. NoteId: {NoteId}", id);
 
-            Note? note;
-            try
-            {
-                // Use compiled query for better performance in production
-                note = await GetByIdCompiledQuery(_context, id);
-            }
-            catch (InvalidOperationException)
-            {
-                // Fallback to regular query when compiled query model doesn't match (e.g., in tests)
-                note = await _context.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id);
-            }
+            // Include Images for full note retrieval
+            // Note: Can't use compiled query with Include, so using regular query
+            var note = await _context.Notes
+                .AsNoTracking()
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
+                .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note == null)
             {
@@ -68,7 +63,7 @@ public class SqlNoteRepository : INoteRepository
                 return null;
             }
 
-            _logger.LogDebug("Note retrieved successfully. NoteId: {NoteId}", id);
+            _logger.LogDebug("Note retrieved successfully. NoteId: {NoteId}, ImageCount: {ImageCount}", id, note.Images.Count);
             return note;
         }
         catch (Exception ex)
@@ -282,6 +277,32 @@ public class SqlNoteRepository : INoteRepository
         {
             _logger.LogError(ex, "Error retrieving notes by userId. UserId: {UserId}", userId);
             throw new RepositoryException($"Failed to retrieve notes for user '{userId}'", ex);
+        }
+    }
+
+    public async Task<IEnumerable<Note>> GetByUserIdWithImagesAsync(string userId)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving notes with images by userId for RAG indexing. UserId: {UserId}", userId);
+
+            // Include images for RAG indexing (to embed image descriptions)
+            var notes = await _context.Notes
+                .AsNoTracking()
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
+                .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.UpdatedAt)
+                .ToListAsync();
+
+            var totalImages = notes.Sum(n => n.Images.Count);
+            _logger.LogDebug("Retrieved notes with images for user. UserId: {UserId}, NoteCount: {NoteCount}, TotalImages: {TotalImages}",
+                userId, notes.Count, totalImages);
+            return notes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving notes with images by userId. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to retrieve notes with images for user '{userId}'", ex);
         }
     }
 

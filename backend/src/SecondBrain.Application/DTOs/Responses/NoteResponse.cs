@@ -22,5 +22,57 @@ public sealed class NoteResponse
     public string Source { get; set; } = "web";
     public string? ExternalId { get; set; }
     public string? Folder { get; set; }
+
+    /// <summary>
+    /// Images attached to this note (for multi-modal RAG support).
+    /// </summary>
+    public List<NoteImageResponse> Images { get; set; } = new();
+}
+
+/// <summary>
+/// Response model for note images.
+/// </summary>
+public sealed class NoteImageResponse
+{
+    public string Id { get; set; } = string.Empty;
+    public string NoteId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Base64-encoded image data.
+    /// </summary>
+    public string Base64Data { get; set; } = string.Empty;
+
+    /// <summary>
+    /// MIME type of the image.
+    /// </summary>
+    public string MediaType { get; set; } = "image/jpeg";
+
+    /// <summary>
+    /// Original filename.
+    /// </summary>
+    public string? FileName { get; set; }
+
+    /// <summary>
+    /// Position/order of the image within the note.
+    /// </summary>
+    public int ImageIndex { get; set; }
+
+    /// <summary>
+    /// AI-generated description of the image content.
+    /// </summary>
+    public string? Description { get; set; }
+
+    /// <summary>
+    /// User-provided alternative text.
+    /// </summary>
+    public string? AltText { get; set; }
+
+    /// <summary>
+    /// Provider used to generate the description.
+    /// </summary>
+    public string? DescriptionProvider { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 

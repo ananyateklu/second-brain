@@ -194,6 +194,9 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             await foreach (var evt in _grokProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
+
                 switch (evt.Type)
                 {
                     case Services.AI.Models.GrokToolStreamEventType.Text:

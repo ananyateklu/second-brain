@@ -275,11 +275,14 @@ export const notesService = {
    * Create an optimistic note for UI updates
    */
   createOptimisticNote(input: CreateNoteRequest): Note {
+    // Exclude images from spread - they will be populated from server response
+    const { images: _images, ...noteFields } = input;
     return {
       id: `temp-${Date.now()}`,
-      ...input,
+      ...noteFields,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      images: [], // Will be populated from server response
     };
   },
 
@@ -287,9 +290,11 @@ export const notesService = {
    * Apply optimistic update to note
    */
   applyOptimisticUpdate(note: Note, update: UpdateNoteRequest): Note {
+    // Exclude images and deletedImageIds from spread - they will be populated from server response
+    const { images: _images, deletedImageIds: _deletedImageIds, ...updateFields } = update;
     return {
       ...note,
-      ...update,
+      ...updateFields,
       updatedAt: new Date().toISOString(),
     };
   },

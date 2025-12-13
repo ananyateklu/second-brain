@@ -16,6 +16,7 @@ using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -58,7 +59,9 @@ public class CqrsBenchmarks
     private GetAllConversationsQueryHandler _getAllConversationsHandler = null!;
     private GetConversationByIdQueryHandler _getConversationByIdHandler = null!;
     private Mock<INoteRepository> _noteRepositoryMock = null!;
+    private Mock<INoteImageRepository> _noteImageRepositoryMock = null!;
     private Mock<INoteSummaryService> _summaryServiceMock = null!;
+    private Mock<IServiceScopeFactory> _serviceScopeFactoryMock = null!;
     private Mock<IChatConversationService> _chatServiceMock = null!;
 
     // MediatR pipeline (with license)
@@ -142,6 +145,13 @@ public class CqrsBenchmarks
         _summaryServiceMock = new Mock<INoteSummaryService>();
         _summaryServiceMock.Setup(s => s.IsEnabled).Returns(false);
 
+        _noteImageRepositoryMock = new Mock<INoteImageRepository>();
+        _noteImageRepositoryMock
+            .Setup(r => r.CreateManyAsync(It.IsAny<IEnumerable<NoteImage>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IEnumerable<NoteImage> images, CancellationToken _) => images.ToList());
+
+        _serviceScopeFactoryMock = new Mock<IServiceScopeFactory>();
+
         _chatServiceMock = new Mock<IChatConversationService>();
         _chatServiceMock
             .Setup(s => s.GetAllConversationsAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -161,7 +171,9 @@ public class CqrsBenchmarks
 
         _createNoteHandler = new CreateNoteCommandHandler(
             _noteRepositoryMock.Object,
+            _noteImageRepositoryMock.Object,
             _summaryServiceMock.Object,
+            _serviceScopeFactoryMock.Object,
             NullLogger<CreateNoteCommandHandler>.Instance);
 
         _getAllConversationsHandler = new GetAllConversationsQueryHandler(

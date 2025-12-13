@@ -96,11 +96,54 @@ public class ChunkingService : IChunkingService
             contentParts.Add($"\nContent:\n{note.Content}");
         }
 
+        // Add image descriptions for multi-modal RAG search
+        // This enables searching for content within note images
+        if (note.Images != null && note.Images.Count > 0)
+        {
+            var imagesWithDescriptions = note.Images
+                .Where(img => !string.IsNullOrWhiteSpace(img.Description) || !string.IsNullOrWhiteSpace(img.AltText))
+                .OrderBy(img => img.ImageIndex)
+                .ToList();
+
+            if (imagesWithDescriptions.Count > 0)
+            {
+                contentParts.Add("\nImages:");
+                foreach (var image in imagesWithDescriptions)
+                {
+                    var imageInfo = new List<string>();
+
+                    // Use AI-generated description if available, otherwise use alt text
+                    if (!string.IsNullOrWhiteSpace(image.Description))
+                    {
+                        imageInfo.Add($"Description: {image.Description}");
+                    }
+
+                    // Include alt text if different from description (user-provided context)
+                    if (!string.IsNullOrWhiteSpace(image.AltText) &&
+                        !string.Equals(image.AltText, image.Description, StringComparison.OrdinalIgnoreCase))
+                    {
+                        imageInfo.Add($"Alt Text: {image.AltText}");
+                    }
+
+                    if (imageInfo.Count > 0)
+                    {
+                        var imageName = !string.IsNullOrWhiteSpace(image.FileName) ? image.FileName : $"Image {image.ImageIndex + 1}";
+                        contentParts.Add($"[{imageName}]");
+                        contentParts.AddRange(imageInfo);
+                    }
+                }
+
+                _logger.LogDebug(
+                    "Added {ImageCount} image descriptions to enriched content for note. NoteId: {NoteId}",
+                    imagesWithDescriptions.Count, note.Id);
+            }
+        }
+
         var enrichedContent = string.Join("\n", contentParts);
 
         _logger.LogDebug(
-            "Built enriched content for note. NoteId: {NoteId}, Title: {Title}, TagCount: {TagCount}, HasSummary: {HasSummary}, HasDates: {HasDates}, TotalLength: {Length}",
-            note.Id, note.Title, note.Tags?.Count ?? 0, !string.IsNullOrWhiteSpace(note.Summary), note.CreatedAt != default, enrichedContent.Length);
+            "Built enriched content for note. NoteId: {NoteId}, Title: {Title}, TagCount: {TagCount}, HasSummary: {HasSummary}, HasDates: {HasDates}, ImageCount: {ImageCount}, TotalLength: {Length}",
+            note.Id, note.Title, note.Tags?.Count ?? 0, !string.IsNullOrWhiteSpace(note.Summary), note.CreatedAt != default, note.Images?.Count ?? 0, enrichedContent.Length);
 
         return enrichedContent;
     }

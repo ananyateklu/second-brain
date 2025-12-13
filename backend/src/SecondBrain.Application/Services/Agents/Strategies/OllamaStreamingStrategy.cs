@@ -137,6 +137,9 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
             await foreach (var evt in _ollamaProvider.StreamWithToolsAsync(
                 messages, tools, aiSettings, cancellationToken))
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
+
                 switch (evt.Type)
                 {
                     case Services.AI.Models.OllamaToolStreamEventType.Text:

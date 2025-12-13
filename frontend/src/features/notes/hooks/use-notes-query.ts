@@ -123,23 +123,25 @@ export function useUpdateNote() {
         const previousNotes = queryClient.getQueryData<NoteListItem[]>(noteKeys.all);
         const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
-        // Optimistically update notes list
+        // Optimistically update notes list (exclude images/deletedImageIds from spread)
         if (previousNotes) {
+          const { images: _imgs, deletedImageIds: _delIds, ...listUpdateFields } = data;
           queryClient.setQueryData<NoteListItem[]>(
             noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
-                ? { ...note, ...data, updatedAt: new Date().toISOString() }
+                ? { ...note, ...listUpdateFields, updatedAt: new Date().toISOString() }
                 : note
             )
           );
         }
 
-        // Optimistically update single note
+        // Optimistically update single note (exclude images/deletedImageIds from spread)
         if (previousNote) {
+          const { images: _images, deletedImageIds: _deletedImageIds, ...updateFields } = data;
           queryClient.setQueryData<Note>(noteKeys.detail(id), {
             ...previousNote,
-            ...data,
+            ...updateFields,
             updatedAt: new Date().toISOString(),
           });
         }

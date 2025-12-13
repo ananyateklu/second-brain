@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
@@ -8,6 +8,8 @@ import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-f
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { NOTES_FOLDERS } from '../../../lib/constants';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
+import { fileAttachmentsToNoteImages } from '../utils/note-image-utils';
+import type { FileAttachment } from '../../../utils/multimodal-models';
 
 export function EditNoteModal() {
   const isOpen = useBoundStore((state) => state.isEditModalOpen);
@@ -32,6 +34,10 @@ export function EditNoteModal() {
   const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Image attachment state
+  const [newImages, setNewImages] = useState<FileAttachment[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
@@ -85,13 +91,35 @@ export function EditNoteModal() {
       if (!editingNote) return;
 
       const noteData = formDataToNote(data);
+      const images = fileAttachmentsToNoteImages(newImages);
       await updateNoteMutation.mutateAsync({
         id: editingNote.id,
-        data: noteData,
+        data: {
+          ...noteData,
+          images: images.length > 0 ? images : undefined,
+          deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
+        },
       });
       closeModal();
     },
   });
+
+  // Image handlers
+  const handleAddImages = useCallback((images: FileAttachment[]) => {
+    setNewImages(prev => [...prev, ...images]);
+  }, []);
+
+  const handleRemoveNewImage = useCallback((imageId: string) => {
+    setNewImages(prev => prev.filter(img => img.id !== imageId));
+  }, []);
+
+  const handleDeleteExistingImage = useCallback((imageId: string) => {
+    setDeletedImageIds(prev => [...prev, imageId]);
+  }, []);
+
+  const handleUndoDeleteExistingImage = useCallback((imageId: string) => {
+    setDeletedImageIds(prev => prev.filter(id => id !== imageId));
+  }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,16 +156,17 @@ export function EditNoteModal() {
     };
   }, [isOpen, isDirty, isSubmitting]);
 
-  // Reset form when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      reset({
-        title: '',
-        content: '',
-        tags: '',
-      });
-    }
-  }, [isOpen, reset]);
+  // Handle modal close with form reset
+  const handleClose = useCallback(() => {
+    closeModal();
+    reset({
+      title: '',
+      content: '',
+      tags: '',
+    });
+    setNewImages([]);
+    setDeletedImageIds([]);
+  }, [closeModal, reset]);
 
   // Don't render if modal is not open or no note ID
   if (!isOpen || !editingNoteId) return null;
@@ -147,7 +176,7 @@ export function EditNoteModal() {
     return (
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={handleClose}
         title="Edit Note"
         maxWidth="max-w-[80vw]"
         className="h-[85vh] flex flex-col"
@@ -178,7 +207,7 @@ export function EditNoteModal() {
     return (
       <Modal
         isOpen={isOpen}
-        onClose={closeModal}
+        onClose={handleClose}
         title="Edit Note"
         maxWidth="max-w-[80vw]"
         className="h-[85vh] flex flex-col"
@@ -197,7 +226,7 @@ export function EditNoteModal() {
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               {noteError instanceof Error ? noteError.message : 'The note could not be found'}
             </p>
-            <Button variant="secondary" onClick={closeModal}>Close</Button>
+            <Button variant="secondary" onClick={handleClose}>Close</Button>
           </div>
         </div>
       </Modal>
@@ -418,6 +447,13 @@ export function EditNoteModal() {
           setValue={setValue}
           errors={errors}
           isSubmitting={isSubmitting}
+          newImages={newImages}
+          existingImages={editingNote?.images}
+          deletedImageIds={deletedImageIds}
+          onAddImages={handleAddImages}
+          onRemoveNewImage={handleRemoveNewImage}
+          onDeleteExistingImage={handleDeleteExistingImage}
+          onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
         />
       </form>
 
