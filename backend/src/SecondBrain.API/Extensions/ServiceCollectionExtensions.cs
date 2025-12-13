@@ -47,6 +47,7 @@ using SecondBrain.Application.Services.GitHub;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Providers;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Application.Services.VectorStore;
 using SecondBrain.Application.Validators;
 using SecondBrain.Core.Interfaces;
@@ -403,6 +404,7 @@ public static class ServiceCollectionExtensions
 
         // Register repositories
         services.AddScoped<INoteRepository, SqlNoteRepository>();
+        services.AddScoped<INoteImageRepository, SqlNoteImageRepository>();
         services.AddScoped<IUserRepository, SqlUserRepository>();
         services.AddScoped<IChatRepository, SqlChatRepository>();
         services.AddScoped<INoteEmbeddingRepository, SqlNoteEmbeddingRepository>();
@@ -1014,6 +1016,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IChunkingService, ChunkingService>();
         services.AddScoped<IIndexingService, IndexingService>();
         services.AddScoped<IRagService, RagService>();
+
+        // Register image description service for multi-modal RAG
+        services.AddScoped<IImageDescriptionService, ImageDescriptionService>();
 
         return services;
     }

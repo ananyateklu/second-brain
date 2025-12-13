@@ -28,7 +28,29 @@ public static class MappingExtensions
             UserId = note.UserId,
             Source = note.Source,
             ExternalId = note.ExternalId,
-            Folder = note.Folder
+            Folder = note.Folder,
+            Images = note.Images?.Select(i => i.ToResponse()).ToList() ?? new List<NoteImageResponse>()
+        };
+    }
+
+    /// <summary>
+    /// Maps a NoteImage entity to a NoteImageResponse DTO
+    /// </summary>
+    public static NoteImageResponse ToResponse(this NoteImage image)
+    {
+        return new NoteImageResponse
+        {
+            Id = image.Id,
+            NoteId = image.NoteId,
+            Base64Data = image.Base64Data,
+            MediaType = image.MediaType,
+            FileName = image.FileName,
+            ImageIndex = image.ImageIndex,
+            Description = image.Description,
+            AltText = image.AltText,
+            DescriptionProvider = image.DescriptionProvider,
+            CreatedAt = image.CreatedAt,
+            UpdatedAt = image.UpdatedAt
         };
     }
 

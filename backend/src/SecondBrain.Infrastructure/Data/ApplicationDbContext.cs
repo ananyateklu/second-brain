@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SummaryJob> SummaryJobs { get; set; } = null!;
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
     public DbSet<RagQueryLog> RagQueryLogs { get; set; } = null!;
+    public DbSet<NoteImage> NoteImages { get; set; } = null!;
 
     // PostgreSQL 18 Temporal Tables
     public DbSet<NoteVersion> NoteVersions { get; set; } = null!;
@@ -64,6 +65,23 @@ public class ApplicationDbContext : DbContext
             // Index for soft delete queries
             entity.HasIndex(e => new { e.UserId, e.IsDeleted })
                 .HasDatabaseName("ix_notes_user_deleted");
+
+            // One-to-many relationship with NoteImages
+            entity.HasMany(n => n.Images)
+                .WithOne(i => i.Note)
+                .HasForeignKey(i => i.NoteId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure NoteImage entity for multi-modal RAG
+        modelBuilder.Entity<NoteImage>(entity =>
+        {
+            // Matching query filter for parent note's soft delete
+            entity.HasQueryFilter(i => !i.Note!.IsDeleted);
+
+            entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_images_note_id");
+            entity.HasIndex(e => e.UserId).HasDatabaseName("ix_note_images_user_id");
+            entity.HasIndex(e => new { e.NoteId, e.ImageIndex }).HasDatabaseName("ix_note_images_note_order");
         });
 
         // Configure User entity

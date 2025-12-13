@@ -35,5 +35,15 @@ public sealed class UpdateNoteRequest
     /// Flag to explicitly indicate folder should be updated (to distinguish null from "remove folder")
     /// </summary>
     public bool UpdateFolder { get; set; }
+
+    /// <summary>
+    /// New images to add to the note
+    /// </summary>
+    public List<NoteImageDto>? Images { get; set; }
+
+    /// <summary>
+    /// IDs of existing images to delete from the note
+    /// </summary>
+    public List<string>? DeletedImageIds { get; set; }
 }
 

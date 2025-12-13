@@ -21,6 +21,31 @@ export interface NoteListItem {
 }
 
 /**
+ * Image attached to a note for multi-modal RAG support.
+ * Aligned with backend NoteImageResponse.
+ */
+export interface NoteImage {
+  id: string;
+  noteId: string;
+  /** Base64-encoded image data */
+  base64Data: string;
+  /** MIME type of the image (e.g., 'image/jpeg') */
+  mediaType: string;
+  /** Original filename */
+  fileName?: string;
+  /** Position/order of the image within the note */
+  imageIndex: number;
+  /** AI-generated description for RAG indexing */
+  description?: string;
+  /** User-provided alternative text */
+  altText?: string;
+  /** Provider used to generate the description */
+  descriptionProvider?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Full note entity with content (aligned with backend NoteResponse).
  * Used for get-by-id endpoint where full content is needed.
  */
@@ -28,6 +53,25 @@ export interface Note extends NoteListItem {
   content: string;
   userId?: string;
   externalId?: string;
+  /** Images attached to this note for multi-modal RAG */
+  images?: NoteImage[];
+}
+
+/**
+ * Image input for creating/updating notes.
+ * Aligned with backend NoteImageDto.
+ */
+export interface NoteImageInput {
+  /** Optional ID for existing images (used when updating) */
+  id?: string;
+  /** Base64-encoded image data (without data URL prefix) */
+  base64Data: string;
+  /** MIME type of the image */
+  mediaType: string;
+  /** Original filename */
+  fileName?: string;
+  /** User-provided alternative text */
+  altText?: string;
 }
 
 /**
@@ -39,6 +83,8 @@ export interface CreateNoteRequest {
   tags: string[];
   isArchived: boolean;
   folder?: string;
+  /** Images to attach to the note */
+  images?: NoteImageInput[];
 }
 
 /**
@@ -53,6 +99,10 @@ export interface UpdateNoteRequest {
   folder?: string;
   /** Set to true to explicitly update folder (required to clear folder with null/undefined) */
   updateFolder?: boolean;
+  /** New images to add to the note */
+  images?: NoteImageInput[];
+  /** IDs of images to delete from the note */
+  deletedImageIds?: string[];
 }
 
 /**

@@ -14,6 +14,14 @@ public interface INoteRepository
     Task<IEnumerable<Note>> GetByUserIdAsync(string userId);
 
     /// <summary>
+    /// Gets notes for a user with their associated images loaded.
+    /// Used for RAG indexing to include image descriptions in embeddings.
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <returns>Notes with Images navigation property populated</returns>
+    Task<IEnumerable<Note>> GetByUserIdWithImagesAsync(string userId);
+
+    /// <summary>
     /// Gets paginated notes for a user with sorting support
     /// </summary>
     /// <param name="userId">User ID</param>

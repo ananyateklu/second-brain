@@ -29,5 +29,10 @@ public sealed class CreateNoteRequest
     /// Folder/category for the note
     /// </summary>
     public string? Folder { get; set; }
+
+    /// <summary>
+    /// Images to attach to the note
+    /// </summary>
+    public List<NoteImageDto>? Images { get; set; }
 }
 
