@@ -104,10 +104,12 @@ public class IndexingService : IIndexingService
         _logger.LogInformation("Embedding provider validated. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}",
             provider, actualModel, providerDimensions);
 
-        // Fetch notes for the specific user (multi-tenant)
-        var notes = (await _noteRepository.GetByUserIdAsync(userId)).ToList();
+        // Fetch notes with images for the specific user (multi-tenant)
+        // Images are needed for multi-modal RAG (image descriptions are embedded)
+        var notes = (await _noteRepository.GetByUserIdWithImagesAsync(userId)).ToList();
 
-        _logger.LogInformation("Found notes for indexing. NoteCount: {Count}", notes.Count);
+        var totalImages = notes.Sum(n => n.Images?.Count ?? 0);
+        _logger.LogInformation("Found notes for indexing. NoteCount: {Count}, TotalImages: {ImageCount}", notes.Count, totalImages);
 
         // Create indexing job with totalNotes already set
         var job = new IndexingJob
@@ -181,11 +183,13 @@ public class IndexingService : IIndexingService
                 throw new InvalidOperationException($"Embedding provider '{job.EmbeddingProvider}' is not enabled");
             }
 
-            // Fetch notes for the specific user (multi-tenant)
-            var allNotes = (await noteRepository.GetByUserIdAsync(job.UserId)).ToList();
+            // Fetch notes with images for the specific user (multi-tenant)
+            // Images are needed for multi-modal RAG (image descriptions are embedded)
+            var allNotes = (await noteRepository.GetByUserIdWithImagesAsync(job.UserId)).ToList();
             var currentNoteIds = allNotes.Select(n => n.Id).ToHashSet();
 
-            _logger.LogInformation("Found {TotalNotes} total notes. Checking for deleted notes and changes...", allNotes.Count);
+            var totalImages = allNotes.Sum(n => n.Images?.Count ?? 0);
+            _logger.LogInformation("Found {TotalNotes} total notes with {TotalImages} images. Checking for deleted notes and changes...", allNotes.Count, totalImages);
 
             // Cleanup: Remove embeddings for notes that no longer exist in the database
             var indexedNoteIds = await vectorStore.GetIndexedNoteIdsAsync(job.UserId, CancellationToken.None);

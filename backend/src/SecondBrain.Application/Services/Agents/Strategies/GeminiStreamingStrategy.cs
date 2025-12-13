@@ -167,6 +167,9 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             await foreach (var evt in _geminiProvider.StreamWithFeaturesAsync(
                 messages, aiSettings, featureOptions, cancellationToken))
             {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
+
                 switch (evt.Type)
                 {
                     case GeminiStreamEventType.Text:

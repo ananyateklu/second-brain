@@ -71,4 +71,9 @@ public class Note : ISoftDeletable
     [Column("deleted_by")]
     [MaxLength(128)]
     public string? DeletedBy { get; set; }
+
+    /// <summary>
+    /// Images attached to this note for multi-modal RAG support.
+    /// </summary>
+    public List<NoteImage> Images { get; set; } = new();
 }

@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
 import { useBoundStore } from '../../../store/bound-store';
 import { useCreateNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote } from '../hooks/use-note-form';
+import { fileAttachmentsToNoteImages } from './NoteImageAttachment';
+import type { FileAttachment } from '../../../utils/multimodal-models';
 
 export function CreateNoteModal() {
   const isOpen = useBoundStore((state) => state.isCreateModalOpen);
@@ -12,16 +14,30 @@ export function CreateNoteModal() {
   const createNoteMutation = useCreateNote();
   const formRef = useRef<HTMLFormElement>(null);
 
+  // Image attachment state
+  const [newImages, setNewImages] = useState<FileAttachment[]>([]);
+
   const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty, reset } = useNoteForm({
     onSubmit: async (data) => {
       const noteData = formDataToNote(data);
+      const images = fileAttachmentsToNoteImages(newImages);
       await createNoteMutation.mutateAsync({
         ...noteData,
         isArchived: false,
+        images: images.length > 0 ? images : undefined,
       });
       closeModal();
     },
   });
+
+  // Image handlers
+  const handleAddImages = useCallback((images: FileAttachment[]) => {
+    setNewImages(prev => [...prev, ...images]);
+  }, []);
+
+  const handleRemoveNewImage = useCallback((imageId: string) => {
+    setNewImages(prev => prev.filter(img => img.id !== imageId));
+  }, []);
 
   // Keyboard shortcut: Cmd/Ctrl + S to save
   useEffect(() => {
@@ -51,6 +67,7 @@ export function CreateNoteModal() {
         content: '',
         tags: '',
       });
+      setNewImages([]);
     }
   }, [isOpen, reset]);
 
@@ -104,6 +121,9 @@ export function CreateNoteModal() {
           setValue={setValue}
           errors={errors}
           isSubmitting={isSubmitting}
+          newImages={newImages}
+          onAddImages={handleAddImages}
+          onRemoveNewImage={handleRemoveNewImage}
         />
       </form>
     </Modal>

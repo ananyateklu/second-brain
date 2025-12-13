@@ -1,4 +1,5 @@
 using MediatR;
+using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Common;
 
@@ -15,5 +16,7 @@ public record UpdateNoteCommand(
     bool? IsArchived,
     string? Folder,
     bool UpdateFolder,
-    string UserId
+    string UserId,
+    List<NoteImageDto>? Images = null,
+    List<string>? DeletedImageIds = null
 ) : IRequest<Result<NoteResponse>>;

@@ -1,4 +1,5 @@
 using MediatR;
+using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Common;
 
@@ -13,5 +14,6 @@ public record CreateNoteCommand(
     List<string> Tags,
     bool IsArchived,
     string? Folder,
-    string UserId
+    string UserId,
+    List<NoteImageDto>? Images = null
 ) : IRequest<Result<NoteResponse>>;

@@ -1,10 +1,13 @@
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Mappings;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Common;
+using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Commands.Notes.UpdateNote;
@@ -15,16 +18,22 @@ namespace SecondBrain.Application.Commands.Notes.UpdateNote;
 public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Result<NoteResponse>>
 {
     private readonly INoteRepository _noteRepository;
+    private readonly INoteImageRepository _noteImageRepository;
     private readonly INoteSummaryService _summaryService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<UpdateNoteCommandHandler> _logger;
 
     public UpdateNoteCommandHandler(
         INoteRepository noteRepository,
+        INoteImageRepository noteImageRepository,
         INoteSummaryService summaryService,
+        IServiceScopeFactory serviceScopeFactory,
         ILogger<UpdateNoteCommandHandler> logger)
     {
         _noteRepository = noteRepository;
+        _noteImageRepository = noteImageRepository;
         _summaryService = summaryService;
+        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
     }
 
@@ -108,10 +117,108 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
                 new Error("UpdateFailed", "Failed to update the note"));
         }
 
+        // Handle image deletions
+        if (request.DeletedImageIds != null && request.DeletedImageIds.Count > 0)
+        {
+            foreach (var imageId in request.DeletedImageIds)
+            {
+                await _noteImageRepository.DeleteAsync(imageId, cancellationToken);
+            }
+            _logger.LogInformation("Deleted {Count} images from note {NoteId}", request.DeletedImageIds.Count, request.NoteId);
+        }
+
+        // Handle new image uploads
+        if (request.Images != null && request.Images.Count > 0)
+        {
+            var newImages = request.Images.Where(i => string.IsNullOrEmpty(i.Id)).ToList();
+            if (newImages.Count > 0)
+            {
+                _logger.LogInformation("Processing {Count} new images for note {NoteId}", newImages.Count, request.NoteId);
+
+                // Get existing images to determine next index
+                var existingImages = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
+                var nextIndex = existingImages.Count > 0 ? existingImages.Max(i => i.ImageIndex) + 1 : 0;
+
+                var noteImages = new List<NoteImage>();
+                foreach (var imageDto in newImages)
+                {
+                    noteImages.Add(new NoteImage
+                    {
+                        Id = UuidV7.NewId(),
+                        NoteId = request.NoteId,
+                        UserId = request.UserId,
+                        Base64Data = imageDto.Base64Data,
+                        MediaType = imageDto.MediaType,
+                        FileName = imageDto.FileName,
+                        AltText = imageDto.AltText,
+                        ImageIndex = nextIndex++,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+
+                var savedImages = await _noteImageRepository.CreateManyAsync(noteImages, cancellationToken);
+
+                // Extract descriptions asynchronously (fire and forget for better UX)
+                // Use IServiceScopeFactory to create a new scope for the background task
+                // This ensures DI services are available after the HTTP request completes
+                var noteId = request.NoteId;
+                var noteTitle = updatedNote.Title;
+                var imageData = savedImages.Select(img => new ImageInput
+                {
+                    Id = img.Id,
+                    Base64Data = img.Base64Data,
+                    MediaType = img.MediaType,
+                    AltText = img.AltText
+                }).ToList();
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var imageDescriptionService = scope.ServiceProvider.GetRequiredService<IImageDescriptionService>();
+                        var noteImageRepository = scope.ServiceProvider.GetRequiredService<INoteImageRepository>();
+                        var logger = scope.ServiceProvider.GetRequiredService<ILogger<UpdateNoteCommandHandler>>();
+
+                        if (!imageDescriptionService.IsAvailable)
+                        {
+                            logger.LogDebug("Image description service not available, skipping extraction");
+                            return;
+                        }
+
+                        var results = await imageDescriptionService.ExtractDescriptionsBatchAsync(
+                            imageData, noteTitle, CancellationToken.None);
+
+                        foreach (var result in results.Where(r => r.Success && !string.IsNullOrEmpty(r.Description)))
+                        {
+                            await noteImageRepository.UpdateDescriptionAsync(
+                                result.ImageId!,
+                                result.Description!,
+                                result.Provider ?? "unknown",
+                                result.Model ?? "unknown",
+                                CancellationToken.None);
+                        }
+
+                        logger.LogInformation("Extracted descriptions for {Count}/{Total} images for note {NoteId}",
+                            results.Count(r => r.Success), imageData.Count, noteId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Background image description extraction failed for note {NoteId}", noteId);
+                    }
+                });
+            }
+        }
+
+        // Load images for response
+        updatedNote.Images = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
+
         _logger.LogInformation(
-            "Note updated successfully. NoteId: {NoteId}, SummaryRegenerated: {Regenerated}",
+            "Note updated successfully. NoteId: {NoteId}, SummaryRegenerated: {Regenerated}, ImageCount: {ImageCount}",
             request.NoteId,
-            shouldRegenerate);
+            shouldRegenerate,
+            updatedNote.Images.Count);
 
         return Result<NoteResponse>.Success(updatedNote.ToResponse());
     }

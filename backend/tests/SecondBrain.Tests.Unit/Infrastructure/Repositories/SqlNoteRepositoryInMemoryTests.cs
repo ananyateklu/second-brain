@@ -120,6 +120,16 @@ public class TestNoteRepository : INoteRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Note>> GetByUserIdWithImagesAsync(string userId)
+    {
+        // In-memory test implementation - includes Images if the DbContext has them configured
+        return await _context.Notes.AsNoTracking()
+            .Include(n => n.Images.OrderBy(i => i.ImageIndex))
+            .Where(n => n.UserId == userId)
+            .OrderByDescending(n => n.UpdatedAt)
+            .ToListAsync();
+    }
+
     public async Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
         string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null,
         string? sortBy = null, bool sortDescending = true)

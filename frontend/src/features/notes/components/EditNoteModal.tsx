@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
@@ -8,6 +8,8 @@ import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-f
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { NOTES_FOLDERS } from '../../../lib/constants';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
+import { fileAttachmentsToNoteImages } from './NoteImageAttachment';
+import type { FileAttachment } from '../../../utils/multimodal-models';
 
 export function EditNoteModal() {
   const isOpen = useBoundStore((state) => state.isEditModalOpen);
@@ -32,6 +34,10 @@ export function EditNoteModal() {
   const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // Image attachment state
+  const [newImages, setNewImages] = useState<FileAttachment[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
@@ -85,13 +91,35 @@ export function EditNoteModal() {
       if (!editingNote) return;
 
       const noteData = formDataToNote(data);
+      const images = fileAttachmentsToNoteImages(newImages);
       await updateNoteMutation.mutateAsync({
         id: editingNote.id,
-        data: noteData,
+        data: {
+          ...noteData,
+          images: images.length > 0 ? images : undefined,
+          deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
+        },
       });
       closeModal();
     },
   });
+
+  // Image handlers
+  const handleAddImages = useCallback((images: FileAttachment[]) => {
+    setNewImages(prev => [...prev, ...images]);
+  }, []);
+
+  const handleRemoveNewImage = useCallback((imageId: string) => {
+    setNewImages(prev => prev.filter(img => img.id !== imageId));
+  }, []);
+
+  const handleDeleteExistingImage = useCallback((imageId: string) => {
+    setDeletedImageIds(prev => [...prev, imageId]);
+  }, []);
+
+  const handleUndoDeleteExistingImage = useCallback((imageId: string) => {
+    setDeletedImageIds(prev => prev.filter(id => id !== imageId));
+  }, []);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +164,8 @@ export function EditNoteModal() {
         content: '',
         tags: '',
       });
+      setNewImages([]);
+      setDeletedImageIds([]);
     }
   }, [isOpen, reset]);
 
@@ -418,6 +448,13 @@ export function EditNoteModal() {
           setValue={setValue}
           errors={errors}
           isSubmitting={isSubmitting}
+          newImages={newImages}
+          existingImages={editingNote?.images}
+          deletedImageIds={deletedImageIds}
+          onAddImages={handleAddImages}
+          onRemoveNewImage={handleRemoveNewImage}
+          onDeleteExistingImage={handleDeleteExistingImage}
+          onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
         />
       </form>
 

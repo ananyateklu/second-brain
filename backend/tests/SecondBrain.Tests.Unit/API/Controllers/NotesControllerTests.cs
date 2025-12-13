@@ -12,6 +12,7 @@ using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Interfaces;
 
@@ -24,6 +25,8 @@ public class NotesControllerTests
     private readonly Mock<INoteSummaryService> _mockSummaryService;
     private readonly Mock<ISummaryGenerationBackgroundService> _mockSummaryBackgroundService;
     private readonly Mock<INoteRepository> _mockNoteRepository;
+    private readonly Mock<INoteImageRepository> _mockNoteImageRepository;
+    private readonly Mock<IImageDescriptionService> _mockImageDescriptionService;
     private readonly Mock<ILogger<NotesController>> _mockLogger;
     private readonly NotesController _sut;
 
@@ -34,6 +37,8 @@ public class NotesControllerTests
         _mockSummaryService = new Mock<INoteSummaryService>();
         _mockSummaryBackgroundService = new Mock<ISummaryGenerationBackgroundService>();
         _mockNoteRepository = new Mock<INoteRepository>();
+        _mockNoteImageRepository = new Mock<INoteImageRepository>();
+        _mockImageDescriptionService = new Mock<IImageDescriptionService>();
         _mockLogger = new Mock<ILogger<NotesController>>();
         _sut = new NotesController(
             _mockMediator.Object,
@@ -41,6 +46,8 @@ public class NotesControllerTests
             _mockSummaryService.Object,
             _mockSummaryBackgroundService.Object,
             _mockNoteRepository.Object,
+            _mockNoteImageRepository.Object,
+            _mockImageDescriptionService.Object,
             _mockLogger.Object);
     }
 
