@@ -1,6 +1,11 @@
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.Application.Commands.GeminiFiles.DeleteFile;
+using SecondBrain.Application.Commands.GeminiFiles.UploadBase64;
+using SecondBrain.Application.Queries.GeminiFiles.GetFile;
+using SecondBrain.Application.Queries.GeminiFiles.ListFiles;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
 
@@ -18,6 +23,7 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class GeminiFilesController : ControllerBase
 {
+    private readonly IMediator _mediator;
     private readonly GeminiProvider _geminiProvider;
     private readonly ILogger<GeminiFilesController> _logger;
 
@@ -56,9 +62,11 @@ public class GeminiFilesController : ControllerBase
     };
 
     public GeminiFilesController(
+        IMediator mediator,
         GeminiProvider geminiProvider,
         ILogger<GeminiFilesController> logger)
     {
+        _mediator = mediator;
         _geminiProvider = geminiProvider;
         _logger = logger;
     }
@@ -71,6 +79,10 @@ public class GeminiFilesController : ControllerBase
     /// <param name="waitForProcessing">If true, wait for file to become active (default: true)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The uploaded file metadata</returns>
+    /// <remarks>
+    /// This endpoint uses direct service calls due to complex streaming/temp file handling
+    /// that doesn't fit well in the CQRS pattern.
+    /// </remarks>
     [HttpPost("upload")]
     [RequestSizeLimit(MaxFileSize)]
     [ProducesResponseType(typeof(GeminiUploadedFile), StatusCodes.Status200OK)]
@@ -231,19 +243,12 @@ public class GeminiFilesController : ControllerBase
         string fileName,
         CancellationToken cancellationToken = default)
     {
-        if (!_geminiProvider.IsEnabled)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { error = "Gemini provider is not enabled" });
-        }
+        var result = await _mediator.Send(new GetGeminiFileQuery(fileName), cancellationToken);
 
-        var file = await _geminiProvider.GetFileAsync(fileName, cancellationToken);
-        if (file == null)
-        {
-            return NotFound(new { error = $"File not found: {fileName}" });
-        }
-
-        return Ok(file);
+        return result.Match(
+            onSuccess: file => Ok(file),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -257,14 +262,12 @@ public class GeminiFilesController : ControllerBase
         [FromQuery] int maxResults = 100,
         CancellationToken cancellationToken = default)
     {
-        if (!_geminiProvider.IsEnabled)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { error = "Gemini provider is not enabled" });
-        }
+        var result = await _mediator.Send(new ListGeminiFilesQuery(maxResults), cancellationToken);
 
-        var files = await _geminiProvider.ListFilesAsync(maxResults, cancellationToken);
-        return Ok(files);
+        return result.Match(
+            onSuccess: files => Ok(files),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -279,19 +282,12 @@ public class GeminiFilesController : ControllerBase
         string fileName,
         CancellationToken cancellationToken = default)
     {
-        if (!_geminiProvider.IsEnabled)
-        {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { error = "Gemini provider is not enabled" });
-        }
+        var result = await _mediator.Send(new DeleteGeminiFileCommand(fileName), cancellationToken);
 
-        var success = await _geminiProvider.DeleteFileAsync(fileName, cancellationToken);
-        if (!success)
-        {
-            return NotFound(new { error = $"File not found or could not be deleted: {fileName}" });
-        }
-
-        return NoContent();
+        return result.Match<IActionResult>(
+            onSuccess: _ => NoContent(),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -307,61 +303,31 @@ public class GeminiFilesController : ControllerBase
         [FromBody] Base64FileUploadRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!_geminiProvider.IsEnabled)
+        var result = await _mediator.Send(
+            new UploadBase64GeminiFileCommand(
+                request.Base64Content,
+                request.FileName,
+                request.DisplayName,
+                request.MimeType,
+                request.WaitForProcessing),
+            cancellationToken);
+
+        return result.Match(
+            onSuccess: file => Ok(file),
+            onFailure: error => HandleError(error)
+        );
+    }
+
+    private ActionResult HandleError(SecondBrain.Core.Common.Error error)
+    {
+        return error.Code switch
         {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new { error = "Gemini provider is not enabled" });
-        }
-
-        if (string.IsNullOrEmpty(request.Base64Content))
-        {
-            return BadRequest(new { error = "Base64 content is required" });
-        }
-
-        if (string.IsNullOrEmpty(request.FileName))
-        {
-            return BadRequest(new { error = "File name is required" });
-        }
-
-        try
-        {
-            var fileBytes = Convert.FromBase64String(request.Base64Content);
-
-            if (fileBytes.LongLength > MaxFileSize)
-            {
-                return BadRequest(new { error = $"File size exceeds maximum allowed ({MaxFileSize / (1024 * 1024 * 1024)}GB)" });
-            }
-
-            var uploadRequest = new GeminiFileUploadRequest
-            {
-                Bytes = fileBytes,
-                FileName = request.FileName,
-                DisplayName = request.DisplayName ?? request.FileName,
-                MimeType = request.MimeType ?? "application/octet-stream"
-            };
-
-            var result = request.WaitForProcessing
-                ? await _geminiProvider.UploadAndWaitAsync(uploadRequest, cancellationToken: cancellationToken)
-                : await _geminiProvider.UploadFileAsync(uploadRequest, cancellationToken);
-
-            if (result == null)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { error = "Failed to upload file to Gemini" });
-            }
-
-            return Ok(result);
-        }
-        catch (FormatException)
-        {
-            return BadRequest(new { error = "Invalid base64 content" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error uploading base64 file to Gemini");
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { error = "An error occurred while uploading the file" });
-        }
+            "ValidationFailed" => BadRequest(new { error = error.Code, message = error.Message }),
+            "NotFound" => NotFound(new { error = error.Code, message = error.Message }),
+            "ServiceUnavailable" => StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = error.Code, message = error.Message }),
+            "UploadFailed" => StatusCode(StatusCodes.Status500InternalServerError, new { error = error.Code, message = error.Message }),
+            _ => StatusCode(500, new { error = error.Code, message = error.Message })
+        };
     }
 }
 

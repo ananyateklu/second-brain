@@ -76,15 +76,19 @@ public class SqlChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// Gets paginated conversation headers (without messages) for list/sidebar display.
+    /// Gets paginated conversation headers (without messages) for list/sidebar display with sorting support.
     /// </summary>
     public async Task<(IEnumerable<ChatConversation> Items, int TotalCount)> GetConversationHeadersPagedAsync(
-        string userId, int page, int pageSize)
+        string userId,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        bool sortDescending = true)
     {
         try
         {
-            _logger.LogDebug("Retrieving paginated conversation headers. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}",
-                userId, page, pageSize);
+            _logger.LogDebug("Retrieving paginated conversation headers. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, SortBy: {SortBy}, Desc: {Desc}",
+                userId, page, pageSize, sortBy, sortDescending);
 
             var query = _context.ChatConversations
                 .AsNoTracking()
@@ -93,9 +97,11 @@ public class SqlChatRepository : IChatRepository
             // Get total count for pagination metadata
             var totalCount = await query.CountAsync();
 
+            // Apply sorting
+            query = ApplyConversationSorting(query, sortBy, sortDescending);
+
             // Get paginated results
             var conversations = await query
-                .OrderByDescending(c => c.UpdatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -110,6 +116,25 @@ public class SqlChatRepository : IChatRepository
             _logger.LogError(ex, "Error retrieving paginated conversation headers. UserId: {UserId}", userId);
             throw new RepositoryException("Failed to retrieve paginated conversation headers", ex);
         }
+    }
+
+    /// <summary>
+    /// Applies sorting to the conversation query based on the specified field and direction.
+    /// </summary>
+    private static IQueryable<ChatConversation> ApplyConversationSorting(IQueryable<ChatConversation> query, string? sortBy, bool sortDescending)
+    {
+        // Normalize sort field
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy) ? "updatedat" : sortBy.ToLowerInvariant();
+
+        return (normalizedSortBy, sortDescending) switch
+        {
+            ("createdat", true) => query.OrderByDescending(c => c.CreatedAt),
+            ("createdat", false) => query.OrderBy(c => c.CreatedAt),
+            ("title", true) => query.OrderByDescending(c => c.Title),
+            ("title", false) => query.OrderBy(c => c.Title),
+            (_, true) => query.OrderByDescending(c => c.UpdatedAt),  // Default: updatedAt desc
+            (_, false) => query.OrderBy(c => c.UpdatedAt)
+        };
     }
 
     public async Task<IEnumerable<ChatConversation>> GetAllAsync(string userId)

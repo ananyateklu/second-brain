@@ -36,8 +36,10 @@ public class GetNotesPagedQueryHandler : IRequestHandler<GetNotesPagedQuery, Res
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
+        var sortDescending = request.SortDirection == DTOs.Common.SortDirection.Descending;
         var (notes, totalCount) = await _noteRepository.GetByUserIdPagedAsync(
-            request.UserId, page, pageSize, request.Folder, request.IncludeArchived, request.Search);
+            request.UserId, page, pageSize, request.Folder, request.IncludeArchived, request.Search,
+            request.SortBy, sortDescending);
 
         var responses = notes.Select(n => n.ToListResponse()).ToList();
 

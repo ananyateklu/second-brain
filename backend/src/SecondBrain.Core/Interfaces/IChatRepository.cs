@@ -20,15 +20,21 @@ public interface IChatRepository
     Task<IEnumerable<ChatConversation>> GetConversationHeadersAsync(string userId);
 
     /// <summary>
-    /// Gets paginated conversation headers for list/sidebar display.
+    /// Gets paginated conversation headers for list/sidebar display with sorting support.
     /// Returns conversations without messages for optimal performance.
     /// </summary>
     /// <param name="userId">User ID</param>
     /// <param name="page">Page number (1-based)</param>
     /// <param name="pageSize">Number of items per page</param>
+    /// <param name="sortBy">Field to sort by (createdAt, updatedAt, title). Default: updatedAt</param>
+    /// <param name="sortDescending">Sort in descending order. Default: true</param>
     /// <returns>Tuple of (conversations, totalCount)</returns>
     Task<(IEnumerable<ChatConversation> Items, int TotalCount)> GetConversationHeadersPagedAsync(
-        string userId, int page, int pageSize);
+        string userId,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        bool sortDescending = true);
 
     /// <summary>
     /// Checks if a conversation exists and belongs to the specified user.

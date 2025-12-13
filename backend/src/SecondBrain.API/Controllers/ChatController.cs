@@ -6,6 +6,7 @@ using SecondBrain.Application.Commands.Chat.BulkDeleteConversations;
 using SecondBrain.Application.Commands.Chat.CreateConversation;
 using SecondBrain.Application.Commands.Chat.DeleteConversation;
 using SecondBrain.Application.Commands.Chat.UpdateConversationSettings;
+using SecondBrain.Application.DTOs.Common;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
@@ -102,14 +103,18 @@ public class ChatController : ControllerBase
     /// </summary>
     /// <param name="page">Page number (1-based, default: 1)</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100)</param>
+    /// <param name="sortBy">Field to sort by: createdAt, updatedAt, title (default: updatedAt)</param>
+    /// <param name="sortDirection">Sort direction: asc or desc (default: desc)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated list of conversation headers</returns>
     [HttpGet("conversations/paged")]
-    [ProducesResponseType(typeof(Application.DTOs.Common.PaginatedResult<ChatConversation>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedResult<ChatConversation>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Application.DTOs.Common.PaginatedResult<ChatConversation>>> GetConversationsPaged(
+    public async Task<ActionResult<PaginatedResult<ChatConversation>>> GetConversationsPaged(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = null,
         CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
@@ -119,7 +124,12 @@ public class ChatController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var result = await _mediator.Send(new GetConversationsPagedQuery(userId, page, pageSize), cancellationToken);
+        // Parse sort direction (default to Descending if not specified or invalid)
+        var sortDir = string.Equals(sortDirection, "asc", StringComparison.OrdinalIgnoreCase)
+            ? SortDirection.Ascending
+            : SortDirection.Descending;
+
+        var result = await _mediator.Send(new GetConversationsPagedQuery(userId, page, pageSize, sortBy, sortDir), cancellationToken);
 
         return result.Match(
             onSuccess: paged => Ok(paged),

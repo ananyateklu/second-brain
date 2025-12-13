@@ -3,6 +3,7 @@ using Google.GenAI.Types;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.AI.FileManagement;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Telemetry;
@@ -124,6 +125,7 @@ public class GeminiProvider : IAIProvider
     private readonly GeminiSettings _settings;
     private readonly ILogger<GeminiProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IGeminiFileService _fileService;
     private readonly Client? _client;
 
     public string ProviderName => "Gemini";
@@ -132,10 +134,12 @@ public class GeminiProvider : IAIProvider
     public GeminiProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
+        IGeminiFileService fileService,
         ILogger<GeminiProvider> logger)
     {
         _settings = settings.Value.Gemini;
         _httpClientFactory = httpClientFactory;
+        _fileService = fileService;
         _logger = logger;
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
@@ -1723,269 +1727,65 @@ public class GeminiProvider : IAIProvider
         yield break;
     }
 
-    #region File Upload Operations
+    #region File Upload Operations (Delegated to IGeminiFileService)
 
     /// <summary>
     /// Upload a file to Gemini for use with code execution or multimodal prompts.
     /// Files are stored for 48 hours and can be referenced in subsequent requests.
     /// </summary>
-    public async Task<Models.GeminiUploadedFile?> UploadFileAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<Models.GeminiUploadedFile?> UploadFileAsync(
         Models.GeminiFileUploadRequest request,
         CancellationToken cancellationToken = default)
-    {
-        if (!IsEnabled || _client == null)
-        {
-            _logger.LogWarning("Gemini file upload called but provider is not enabled");
-            return null;
-        }
-
-        try
-        {
-            Google.GenAI.Types.File? response = null;
-
-            if (request.Bytes != null && !string.IsNullOrEmpty(request.FileName))
-            {
-                // Upload from bytes
-                _logger.LogInformation("Uploading file {FileName} ({Size} bytes) to Gemini",
-                    request.FileName, request.Bytes.Length);
-
-                response = await _client.Files.UploadAsync(
-                    bytes: request.Bytes,
-                    fileName: request.FileName);
-            }
-            else if (request.FileStream != null && !string.IsNullOrEmpty(request.FileName))
-            {
-                // Upload from stream (avoids loading entire file into memory upfront)
-                _logger.LogInformation("Uploading file {FileName} from stream to Gemini",
-                    request.FileName);
-
-                // Copy stream to memory stream for Gemini API (the API requires bytes)
-                // Using CopyToAsync with a buffer size improves performance for large files
-                using (var memoryStream = new MemoryStream())
-                {
-                    await request.FileStream.CopyToAsync(memoryStream, 81920); // 80KB buffer
-                    var fileBytes = memoryStream.ToArray();
-
-                    _logger.LogDebug("Stream read complete, uploading {BytesCount} bytes for {FileName}",
-                        fileBytes.Length, request.FileName);
-
-                    response = await _client.Files.UploadAsync(
-                        bytes: fileBytes,
-                        fileName: request.FileName);
-                }
-            }
-            else if (!string.IsNullOrEmpty(request.FilePath))
-            {
-                // Upload from file path
-                _logger.LogInformation("Uploading file from path {FilePath} to Gemini", request.FilePath);
-
-                if (!string.IsNullOrEmpty(request.FileName))
-                {
-                    _logger.LogInformation("Using custom filename {FileName} for temp file upload", request.FileName);
-                }
-
-                response = await _client.Files.UploadAsync(filePath: request.FilePath);
-            }
-            else
-            {
-                _logger.LogError("File upload request must include either Bytes+FileName, FileStream+FileName, or FilePath");
-                return null;
-            }
-
-            if (response == null)
-            {
-                _logger.LogError("Gemini file upload returned null response");
-                return null;
-            }
-
-            var uploadedFile = MapToUploadedFile(response);
-            _logger.LogInformation("File uploaded successfully: {Name} (state: {State})",
-                uploadedFile.Name, uploadedFile.State);
-
-            return uploadedFile;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to upload file to Gemini");
-            return null;
-        }
-    }
+        => _fileService.UploadFileAsync(request, cancellationToken);
 
     /// <summary>
     /// Wait for a file to finish processing and become active.
     /// </summary>
-    public async Task<Models.GeminiUploadedFile?> WaitForFileProcessingAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<Models.GeminiUploadedFile?> WaitForFileProcessingAsync(
         string fileName,
         int maxWaitSeconds = 60,
         CancellationToken cancellationToken = default)
-    {
-        if (!IsEnabled || _client == null)
-            return null;
-
-        var startTime = DateTime.UtcNow;
-        var pollInterval = TimeSpan.FromSeconds(2);
-
-        while ((DateTime.UtcNow - startTime).TotalSeconds < maxWaitSeconds)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-                var file = await _client.Files.GetAsync(name: fileName);
-                if (file == null)
-                {
-                    _logger.LogWarning("File {FileName} not found", fileName);
-                    return null;
-                }
-
-                var uploadedFile = MapToUploadedFile(file);
-
-                if (uploadedFile.State == "ACTIVE")
-                {
-                    _logger.LogInformation("File {FileName} is now active", fileName);
-                    return uploadedFile;
-                }
-
-                if (uploadedFile.State == "FAILED")
-                {
-                    _logger.LogError("File {FileName} processing failed: {Error}",
-                        fileName, uploadedFile.Error);
-                    return uploadedFile;
-                }
-
-                _logger.LogDebug("File {FileName} still processing (state: {State}), waiting...",
-                    fileName, uploadedFile.State);
-
-                await Task.Delay(pollInterval, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking file status for {FileName}", fileName);
-                return null;
-            }
-        }
-
-        _logger.LogWarning("Timed out waiting for file {FileName} to process", fileName);
-        return null;
-    }
+        => _fileService.WaitForFileProcessingAsync(fileName, maxWaitSeconds, cancellationToken);
 
     /// <summary>
     /// Get metadata for an uploaded file.
     /// </summary>
-    public async Task<Models.GeminiUploadedFile?> GetFileAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<Models.GeminiUploadedFile?> GetFileAsync(
         string fileName,
         CancellationToken cancellationToken = default)
-    {
-        if (!IsEnabled || _client == null)
-            return null;
-
-        try
-        {
-            var file = await _client.Files.GetAsync(name: fileName);
-            return file != null ? MapToUploadedFile(file) : null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to get file metadata for {FileName}", fileName);
-            return null;
-        }
-    }
+        => _fileService.GetFileAsync(fileName, cancellationToken);
 
     /// <summary>
     /// Delete an uploaded file.
     /// </summary>
-    public async Task<bool> DeleteFileAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<bool> DeleteFileAsync(
         string fileName,
         CancellationToken cancellationToken = default)
-    {
-        if (!IsEnabled || _client == null)
-            return false;
-
-        try
-        {
-            await _client.Files.DeleteAsync(name: fileName);
-            _logger.LogInformation("File {FileName} deleted successfully", fileName);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete file {FileName}", fileName);
-            return false;
-        }
-    }
+        => _fileService.DeleteFileAsync(fileName, cancellationToken);
 
     /// <summary>
     /// List all uploaded files.
     /// </summary>
-    public async Task<List<Models.GeminiUploadedFile>> ListFilesAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<List<Models.GeminiUploadedFile>> ListFilesAsync(
         int maxResults = 100,
         CancellationToken cancellationToken = default)
-    {
-        if (!IsEnabled || _client == null)
-            return new List<Models.GeminiUploadedFile>();
-
-        try
-        {
-            var result = new List<Models.GeminiUploadedFile>();
-            var config = new Google.GenAI.Types.ListFilesConfig { PageSize = maxResults };
-            var pager = await _client.Files.ListAsync(config);
-
-            // Iterate through pages
-            await foreach (var file in pager)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                result.Add(MapToUploadedFile(file));
-                if (result.Count >= maxResults)
-                    break;
-            }
-
-            _logger.LogInformation("Listed {Count} files from Gemini", result.Count);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to list files from Gemini");
-            return new List<Models.GeminiUploadedFile>();
-        }
-    }
+        => _fileService.ListFilesAsync(maxResults, cancellationToken);
 
     /// <summary>
     /// Upload a file and wait for it to become active.
     /// This is a convenience method that combines upload and wait.
     /// </summary>
-    public async Task<Models.GeminiUploadedFile?> UploadAndWaitAsync(
+    /// <remarks>Delegates to IGeminiFileService for better separation of concerns.</remarks>
+    public Task<Models.GeminiUploadedFile?> UploadAndWaitAsync(
         Models.GeminiFileUploadRequest request,
         int maxWaitSeconds = 60,
         CancellationToken cancellationToken = default)
-    {
-        var uploadedFile = await UploadFileAsync(request, cancellationToken);
-        if (uploadedFile == null)
-            return null;
-
-        if (uploadedFile.IsReady)
-            return uploadedFile;
-
-        return await WaitForFileProcessingAsync(uploadedFile.Name, maxWaitSeconds, cancellationToken);
-    }
-
-    /// <summary>
-    /// Maps the SDK File type to our GeminiUploadedFile model.
-    /// </summary>
-    private static Models.GeminiUploadedFile MapToUploadedFile(Google.GenAI.Types.File file)
-    {
-        return new Models.GeminiUploadedFile
-        {
-            Name = file.Name ?? string.Empty,
-            DisplayName = file.DisplayName ?? string.Empty,
-            MimeType = file.MimeType ?? string.Empty,
-            SizeBytes = file.SizeBytes ?? 0,
-            Uri = file.Uri ?? string.Empty,
-            State = file.State?.ToString() ?? "UNKNOWN",
-            CreateTime = file.CreateTime,
-            ExpirationTime = file.ExpirationTime,
-            Error = file.Error?.Message
-        };
-    }
+        => _fileService.UploadAndWaitAsync(request, maxWaitSeconds, cancellationToken);
 
     #endregion
 }

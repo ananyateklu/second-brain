@@ -121,7 +121,8 @@ public class TestNoteRepository : INoteRepository
     }
 
     public async Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
-        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null)
+        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null,
+        string? sortBy = null, bool sortDescending = true)
     {
         var query = _context.Notes.AsNoTracking().Where(n => n.UserId == userId);
 
@@ -136,7 +137,20 @@ public class TestNoteRepository : INoteRepository
         }
 
         var totalCount = await query.CountAsync();
-        var notes = await query.OrderByDescending(n => n.UpdatedAt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        // Apply sorting
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy) ? "updatedat" : sortBy.ToLowerInvariant();
+        query = (normalizedSortBy, sortDescending) switch
+        {
+            ("createdat", true) => query.OrderByDescending(n => n.CreatedAt),
+            ("createdat", false) => query.OrderBy(n => n.CreatedAt),
+            ("title", true) => query.OrderByDescending(n => n.Title),
+            ("title", false) => query.OrderBy(n => n.Title),
+            (_, true) => query.OrderByDescending(n => n.UpdatedAt),
+            (_, false) => query.OrderBy(n => n.UpdatedAt)
+        };
+
+        var notes = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
 
         return (notes, totalCount);
     }
@@ -710,6 +724,185 @@ public class SqlNoteRepositoryInMemoryTests : IDisposable
 
         // Assert
         result.Should().BeNull();
+    }
+
+    #endregion
+
+    #region GetByUserIdPagedAsync Sorting Tests
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_SortByCreatedAtDescending_ReturnsSortedNotes()
+    {
+        // Arrange
+        var oldNote = CreateTestNote("note-1", "user-1", "Old Note");
+        oldNote.CreatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newNote = CreateTestNote("note-2", "user-1", "New Note");
+        newNote.CreatedAt = DateTime.UtcNow;
+
+        await _context.Notes.AddRangeAsync(oldNote, newNote);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "createdAt", sortDescending: true);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Id.Should().Be("note-2"); // Newer first
+        notesList[1].Id.Should().Be("note-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_SortByCreatedAtAscending_ReturnsSortedNotes()
+    {
+        // Arrange
+        var oldNote = CreateTestNote("note-1", "user-1", "Old Note");
+        oldNote.CreatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newNote = CreateTestNote("note-2", "user-1", "New Note");
+        newNote.CreatedAt = DateTime.UtcNow;
+
+        await _context.Notes.AddRangeAsync(oldNote, newNote);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "createdAt", sortDescending: false);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Id.Should().Be("note-1"); // Older first
+        notesList[1].Id.Should().Be("note-2"); // Newer second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_SortByTitleDescending_ReturnsSortedNotes()
+    {
+        // Arrange
+        var noteA = CreateTestNote("note-1", "user-1", "Alpha Note");
+        var noteZ = CreateTestNote("note-2", "user-1", "Zulu Note");
+
+        await _context.Notes.AddRangeAsync(noteA, noteZ);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "title", sortDescending: true);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Title.Should().Be("Zulu Note");   // Z first (descending)
+        notesList[1].Title.Should().Be("Alpha Note"); // A second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_SortByTitleAscending_ReturnsSortedNotes()
+    {
+        // Arrange
+        var noteA = CreateTestNote("note-1", "user-1", "Alpha Note");
+        var noteZ = CreateTestNote("note-2", "user-1", "Zulu Note");
+
+        await _context.Notes.AddRangeAsync(noteA, noteZ);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "title", sortDescending: false);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Title.Should().Be("Alpha Note"); // A first (ascending)
+        notesList[1].Title.Should().Be("Zulu Note");  // Z second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_SortByUpdatedAtDescending_ReturnsSortedNotes()
+    {
+        // Arrange
+        var oldNote = CreateTestNote("note-1", "user-1", "Old Updated Note");
+        oldNote.UpdatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newNote = CreateTestNote("note-2", "user-1", "New Updated Note");
+        newNote.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Notes.AddRangeAsync(oldNote, newNote);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "updatedAt", sortDescending: true);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Id.Should().Be("note-2"); // Newer first
+        notesList[1].Id.Should().Be("note-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_DefaultSort_SortsByUpdatedAtDescending()
+    {
+        // Arrange
+        var oldNote = CreateTestNote("note-1", "user-1", "Old Note");
+        oldNote.UpdatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newNote = CreateTestNote("note-2", "user-1", "New Note");
+        newNote.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Notes.AddRangeAsync(oldNote, newNote);
+        await _context.SaveChangesAsync();
+
+        // Act - No sortBy specified, should default to updatedAt descending
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Id.Should().Be("note-2"); // Newer first (default descending)
+        notesList[1].Id.Should().Be("note-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_InvalidSortBy_FallsBackToUpdatedAt()
+    {
+        // Arrange
+        var oldNote = CreateTestNote("note-1", "user-1", "Old Note");
+        oldNote.UpdatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newNote = CreateTestNote("note-2", "user-1", "New Note");
+        newNote.UpdatedAt = DateTime.UtcNow;
+
+        await _context.Notes.AddRangeAsync(oldNote, newNote);
+        await _context.SaveChangesAsync();
+
+        // Act - Invalid sortBy should fall back to updatedAt
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "invalidField", sortDescending: true);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Id.Should().Be("note-2"); // Newer first
+        notesList[1].Id.Should().Be("note-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetByUserIdPagedAsync_CaseInsensitiveSortBy_WorksCorrectly()
+    {
+        // Arrange
+        var noteA = CreateTestNote("note-1", "user-1", "Alpha Note");
+        var noteZ = CreateTestNote("note-2", "user-1", "Zulu Note");
+
+        await _context.Notes.AddRangeAsync(noteA, noteZ);
+        await _context.SaveChangesAsync();
+
+        // Act - Use uppercase sortBy
+        var (notes, _) = await _sut.GetByUserIdPagedAsync("user-1", 1, 10, sortBy: "TITLE", sortDescending: false);
+
+        // Assert
+        var notesList = notes.ToList();
+        notesList.Should().HaveCount(2);
+        notesList[0].Title.Should().Be("Alpha Note");
+        notesList[1].Title.Should().Be("Zulu Note");
     }
 
     #endregion

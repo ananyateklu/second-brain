@@ -6,6 +6,7 @@ using SecondBrain.Application.Commands.Notes.BulkDeleteNotes;
 using SecondBrain.Application.Commands.Notes.CreateNote;
 using SecondBrain.Application.Commands.Notes.DeleteNote;
 using SecondBrain.Application.Commands.Notes.UpdateNote;
+using SecondBrain.Application.DTOs.Common;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Mappings;
@@ -82,17 +83,21 @@ public class NotesController : ControllerBase
     /// <param name="folder">Optional folder filter</param>
     /// <param name="includeArchived">Include archived notes (default: false)</param>
     /// <param name="search">Optional search query</param>
+    /// <param name="sortBy">Field to sort by: createdAt, updatedAt, title (default: updatedAt)</param>
+    /// <param name="sortDirection">Sort direction: asc or desc (default: desc)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated list of notes</returns>
     [HttpGet("paged")]
-    [ProducesResponseType(typeof(Application.DTOs.Common.PaginatedResult<NoteListResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedResult<NoteListResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<Application.DTOs.Common.PaginatedResult<NoteListResponse>>> GetNotesPaged(
+    public async Task<ActionResult<PaginatedResult<NoteListResponse>>> GetNotesPaged(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? folder = null,
         [FromQuery] bool includeArchived = false,
         [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        [FromQuery] string? sortDirection = null,
         CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
@@ -102,7 +107,12 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var query = new GetNotesPagedQuery(userId, page, pageSize, folder, includeArchived, search);
+        // Parse sort direction (default to Descending if not specified or invalid)
+        var sortDir = string.Equals(sortDirection, "asc", StringComparison.OrdinalIgnoreCase)
+            ? SortDirection.Ascending
+            : SortDirection.Descending;
+
+        var query = new GetNotesPagedQuery(userId, page, pageSize, folder, includeArchived, search, sortBy, sortDir);
         var result = await _mediator.Send(query, cancellationToken);
 
         return result.ToActionResult();

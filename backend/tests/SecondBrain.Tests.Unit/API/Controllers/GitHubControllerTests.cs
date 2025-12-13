@@ -1,8 +1,22 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
-using SecondBrain.Application.Services.GitHub;
+using SecondBrain.Application.Commands.GitHub.CancelWorkflowRun;
+using SecondBrain.Application.Commands.GitHub.RerunWorkflow;
+using SecondBrain.Application.Queries.GitHub.GetBranches;
+using SecondBrain.Application.Queries.GitHub.GetCheckRuns;
+using SecondBrain.Application.Queries.GitHub.GetCommits;
+using SecondBrain.Application.Queries.GitHub.GetIssueComments;
+using SecondBrain.Application.Queries.GitHub.GetIssues;
+using SecondBrain.Application.Queries.GitHub.GetPullRequest;
+using SecondBrain.Application.Queries.GitHub.GetPullRequestFiles;
+using SecondBrain.Application.Queries.GitHub.GetPullRequestReviews;
+using SecondBrain.Application.Queries.GitHub.GetPullRequests;
+using SecondBrain.Application.Queries.GitHub.GetRepositoryInfo;
+using SecondBrain.Application.Queries.GitHub.GetWorkflowRun;
+using SecondBrain.Application.Queries.GitHub.GetWorkflowRuns;
+using SecondBrain.Application.Queries.GitHub.GetWorkflows;
 using SecondBrain.Application.Services.GitHub.Models;
 using SecondBrain.Core.Common;
 
@@ -10,20 +24,13 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class GitHubControllerTests
 {
-    private readonly Mock<IGitHubService> _mockGitHubService;
-    private readonly Mock<ILogger<GitHubController>> _mockLogger;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly GitHubController _sut;
 
     public GitHubControllerTests()
     {
-        _mockGitHubService = new Mock<IGitHubService>();
-        _mockLogger = new Mock<ILogger<GitHubController>>();
-
-        _sut = new GitHubController(
-            _mockGitHubService.Object,
-            _mockLogger.Object
-        );
-
+        _mockMediator = new Mock<IMediator>();
+        _sut = new GitHubController(_mockMediator.Object);
         SetupUnauthenticatedUser();
     }
 
@@ -43,8 +50,7 @@ public class GitHubControllerTests
             IsConfigured = true
         };
 
-        _mockGitHubService.Setup(s => s.GetRepositoryInfoAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetRepositoryInfoQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubRepositoryInfo>.Success(repoInfo));
 
         // Act
@@ -62,8 +68,7 @@ public class GitHubControllerTests
     public async Task GetRepositoryInfo_WhenValidationFails_ReturnsBadRequest()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetRepositoryInfoAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetRepositoryInfoQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubRepositoryInfo>.Failure(Error.Validation("GitHub token not configured")));
 
         // Act
@@ -78,8 +83,7 @@ public class GitHubControllerTests
     public async Task GetRepositoryInfo_WhenUnauthorized_ReturnsUnauthorized()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetRepositoryInfoAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetRepositoryInfoQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubRepositoryInfo>.Failure(Error.Custom("GitHub.Unauthorized", "Bad credentials")));
 
         // Act
@@ -94,8 +98,7 @@ public class GitHubControllerTests
     public async Task GetRepositoryInfo_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetRepositoryInfoAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetRepositoryInfoQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubRepositoryInfo>.Failure(Error.NotFound("Repository", "testrepo")));
 
         // Act
@@ -111,14 +114,18 @@ public class GitHubControllerTests
     {
         // Arrange
         var repoInfo = new GitHubRepositoryInfo { Owner = "custom", Repo = "repo", IsConfigured = true };
-        _mockGitHubService.Setup(s => s.GetRepositoryInfoAsync("custom", "repo", It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetRepositoryInfoQuery>(q => q.Owner == "custom" && q.Repo == "repo"),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubRepositoryInfo>.Success(repoInfo));
 
         // Act
         await _sut.GetRepositoryInfo("custom", "repo");
 
         // Assert
-        _mockGitHubService.Verify(s => s.GetRepositoryInfoAsync("custom", "repo", It.IsAny<CancellationToken>()), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetRepositoryInfoQuery>(q => q.Owner == "custom" && q.Repo == "repo"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -142,9 +149,7 @@ public class GitHubControllerTests
             HasMore = false
         };
 
-        _mockGitHubService.Setup(s => s.GetPullRequestsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string>(),
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetPullRequestsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestsResponse>.Success(prs));
 
         // Act
@@ -162,24 +167,27 @@ public class GitHubControllerTests
     {
         // Arrange
         var prs = new GitHubPullRequestsResponse { PullRequests = new List<PullRequestSummary>() };
-        _mockGitHubService.Setup(s => s.GetPullRequestsAsync(
-                "owner", "repo", "closed", 2, 50, It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestsQuery>(q =>
+                    q.Owner == "owner" && q.Repo == "repo" && q.State == "closed" && q.Page == 2 && q.PerPage == 50),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestsResponse>.Success(prs));
 
         // Act
         await _sut.GetPullRequests("owner", "repo", "closed", 2, 50);
 
         // Assert
-        _mockGitHubService.Verify(s => s.GetPullRequestsAsync("owner", "repo", "closed", 2, 50, It.IsAny<CancellationToken>()), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetPullRequestsQuery>(q =>
+                q.Owner == "owner" && q.Repo == "repo" && q.State == "closed" && q.Page == 2 && q.PerPage == 50),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task GetPullRequests_WhenError_ReturnsAppropriateStatusCode()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetPullRequestsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string>(),
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetPullRequestsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestsResponse>.Failure(Error.Custom("GitHub.Forbidden", "Rate limit exceeded")));
 
         // Act
@@ -199,8 +207,9 @@ public class GitHubControllerTests
     {
         // Arrange
         var pr = CreateTestPullRequest(123, "Test PR");
-        _mockGitHubService.Setup(s => s.GetPullRequestAsync(
-                123, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestQuery>(q => q.PullNumber == 123),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PullRequestSummary>.Success(pr));
 
         // Act
@@ -217,8 +226,9 @@ public class GitHubControllerTests
     public async Task GetPullRequest_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetPullRequestAsync(
-                999, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestQuery>(q => q.PullNumber == 999),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<PullRequestSummary>.Failure(Error.Custom("GitHub.NotFound", "Pull request not found")));
 
         // Act
@@ -243,8 +253,9 @@ public class GitHubControllerTests
             new() { Author = "reviewer2", State = "CHANGES_REQUESTED" }
         };
 
-        _mockGitHubService.Setup(s => s.GetPullRequestReviewsAsync(
-                1, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestReviewsQuery>(q => q.PullNumber == 1),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<List<ReviewSummary>>.Success(reviews));
 
         // Act
@@ -277,9 +288,7 @@ public class GitHubControllerTests
             HasMore = false
         };
 
-        _mockGitHubService.Setup(s => s.GetWorkflowRunsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
-                It.IsAny<string?>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetWorkflowRunsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubActionsResponse>.Success(runs));
 
         // Act
@@ -296,15 +305,22 @@ public class GitHubControllerTests
     {
         // Arrange
         var runs = new GitHubActionsResponse { WorkflowRuns = new List<WorkflowRunSummary>() };
-        _mockGitHubService.Setup(s => s.GetWorkflowRunsAsync(
-                "owner", "repo", "main", "completed", 1, 10, It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetWorkflowRunsQuery>(q =>
+                    q.Owner == "owner" && q.Repo == "repo" && q.Branch == "main" &&
+                    q.Status == "completed" && q.Page == 1 && q.PerPage == 10),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubActionsResponse>.Success(runs));
 
         // Act
         await _sut.GetWorkflowRuns("owner", "repo", "main", "completed", 1, 10);
 
         // Assert
-        _mockGitHubService.Verify(s => s.GetWorkflowRunsAsync("owner", "repo", "main", "completed", 1, 10, It.IsAny<CancellationToken>()), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetWorkflowRunsQuery>(q =>
+                q.Owner == "owner" && q.Repo == "repo" && q.Branch == "main" &&
+                q.Status == "completed" && q.Page == 1 && q.PerPage == 10),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -316,8 +332,9 @@ public class GitHubControllerTests
     {
         // Arrange
         var run = CreateTestWorkflowRun(12345, "CI Pipeline", "completed", "success");
-        _mockGitHubService.Setup(s => s.GetWorkflowRunAsync(
-                12345, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetWorkflowRunQuery>(q => q.RunId == 12345),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<WorkflowRunSummary>.Success(run));
 
         // Act
@@ -334,8 +351,9 @@ public class GitHubControllerTests
     public async Task GetWorkflowRun_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetWorkflowRunAsync(
-                99999, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetWorkflowRunQuery>(q => q.RunId == 99999),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<WorkflowRunSummary>.Failure(Error.Custom("GitHub.NotFound", "Workflow run not found")));
 
         // Act
@@ -359,8 +377,7 @@ public class GitHubControllerTests
             new() { Id = 2, Name = "Deploy", Path = ".github/workflows/deploy.yml" }
         };
 
-        _mockGitHubService.Setup(s => s.GetWorkflowsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetWorkflowsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<List<GitHubWorkflow>>.Success(workflows));
 
         // Act
@@ -386,8 +403,9 @@ public class GitHubControllerTests
             new() { Name = "test", Status = "completed", Conclusion = "success" }
         };
 
-        _mockGitHubService.Setup(s => s.GetCheckRunsAsync(
-                "abc123", It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetCheckRunsQuery>(q => q.Sha == "abc123"),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<List<CheckRunSummary>>.Success(checkRuns));
 
         // Act
@@ -407,8 +425,9 @@ public class GitHubControllerTests
     public async Task RerunWorkflow_WhenSuccessful_ReturnsAccepted()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.RerunWorkflowAsync(
-                12345, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<RerunWorkflowCommand>(c => c.RunId == 12345),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<bool>.Success(true));
 
         // Act
@@ -423,8 +442,9 @@ public class GitHubControllerTests
     public async Task RerunWorkflow_WhenError_ReturnsBadRequest()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.RerunWorkflowAsync(
-                12345, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<RerunWorkflowCommand>(c => c.RunId == 12345),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<bool>.Failure(Error.Validation("Cannot rerun workflow")));
 
         // Act
@@ -442,8 +462,9 @@ public class GitHubControllerTests
     public async Task CancelWorkflowRun_WhenSuccessful_ReturnsAccepted()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.CancelWorkflowRunAsync(
-                12345, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<CancelWorkflowRunCommand>(c => c.RunId == 12345),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<bool>.Success(true));
 
         // Act
@@ -472,8 +493,9 @@ public class GitHubControllerTests
             TotalCount = 2
         };
 
-        _mockGitHubService.Setup(s => s.GetPullRequestFilesAsync(
-                123, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestFilesQuery>(q => q.PullNumber == 123),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestFilesResponse>.Success(files));
 
         // Act
@@ -490,8 +512,9 @@ public class GitHubControllerTests
     public async Task GetPullRequestFiles_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetPullRequestFilesAsync(
-                999, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetPullRequestFilesQuery>(q => q.PullNumber == 999),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestFilesResponse>.Failure(Error.Custom("GitHub.NotFound", "PR not found")));
 
         // Act
@@ -519,8 +542,7 @@ public class GitHubControllerTests
             DefaultBranch = "main"
         };
 
-        _mockGitHubService.Setup(s => s.GetBranchesAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetGitHubBranchesQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubBranchesResponse>.Success(branches));
 
         // Act
@@ -554,9 +576,7 @@ public class GitHubControllerTests
             HasMore = false
         };
 
-        _mockGitHubService.Setup(s => s.GetIssuesAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string>(),
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetIssuesQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubIssuesResponse>.Success(issues));
 
         // Act
@@ -573,15 +593,20 @@ public class GitHubControllerTests
     {
         // Arrange
         var issues = new GitHubIssuesResponse { Issues = new List<IssueSummary>() };
-        _mockGitHubService.Setup(s => s.GetIssuesAsync(
-                "owner", "repo", "closed", 2, 50, It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetIssuesQuery>(q =>
+                    q.Owner == "owner" && q.Repo == "repo" && q.State == "closed" && q.Page == 2 && q.PerPage == 50),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubIssuesResponse>.Success(issues));
 
         // Act
         await _sut.GetIssues("owner", "repo", "closed", 2, 50);
 
         // Assert
-        _mockGitHubService.Verify(s => s.GetIssuesAsync("owner", "repo", "closed", 2, 50, It.IsAny<CancellationToken>()), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetIssuesQuery>(q =>
+                q.Owner == "owner" && q.Repo == "repo" && q.State == "closed" && q.Page == 2 && q.PerPage == 50),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -604,9 +629,7 @@ public class GitHubControllerTests
             HasMore = false
         };
 
-        _mockGitHubService.Setup(s => s.GetCommitsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetCommitsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubCommitsResponse>.Success(commits));
 
         // Act
@@ -623,15 +646,20 @@ public class GitHubControllerTests
     {
         // Arrange
         var commits = new GitHubCommitsResponse { Commits = new List<CommitSummary>() };
-        _mockGitHubService.Setup(s => s.GetCommitsAsync(
-                "owner", "repo", "develop", 1, 30, It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetCommitsQuery>(q =>
+                    q.Owner == "owner" && q.Repo == "repo" && q.Branch == "develop" && q.Page == 1 && q.PerPage == 30),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubCommitsResponse>.Success(commits));
 
         // Act
         await _sut.GetCommits("owner", "repo", "develop", 1, 30);
 
         // Assert
-        _mockGitHubService.Verify(s => s.GetCommitsAsync("owner", "repo", "develop", 1, 30, It.IsAny<CancellationToken>()), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetCommitsQuery>(q =>
+                q.Owner == "owner" && q.Repo == "repo" && q.Branch == "develop" && q.Page == 1 && q.PerPage == 30),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -652,8 +680,9 @@ public class GitHubControllerTests
             TotalCount = 2
         };
 
-        _mockGitHubService.Setup(s => s.GetIssueCommentsAsync(
-                123, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetIssueCommentsQuery>(q => q.IssueNumber == 123),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubCommentsResponse>.Success(comments));
 
         // Act
@@ -669,8 +698,9 @@ public class GitHubControllerTests
     public async Task GetIssueComments_WhenNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetIssueCommentsAsync(
-                999, It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetIssueCommentsQuery>(q => q.IssueNumber == 999),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubCommentsResponse>.Failure(Error.Custom("GitHub.NotFound", "Issue not found")));
 
         // Act
@@ -697,21 +727,13 @@ public class GitHubControllerTests
     public async Task HandleError_ReturnsCorrectStatusCode(string errorCode, int expectedStatusCode)
     {
         // Arrange
-        _mockGitHubService.Setup(s => s.GetPullRequestsAsync(
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string>(),
-                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetPullRequestsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<GitHubPullRequestsResponse>.Failure(Error.Custom(errorCode, "Error message")));
 
         // Act
         var result = await _sut.GetPullRequests();
 
         // Assert
-        // The controller returns different result types based on status code:
-        // - BadRequest() returns BadRequestObjectResult
-        // - Unauthorized() returns UnauthorizedObjectResult
-        // - NotFound() returns NotFoundObjectResult
-        // - StatusCode(xxx, ...) returns ObjectResult
-        // All inherit from ObjectResult, so we cast to get the status code
         var statusCodeResult = result as ObjectResult;
         statusCodeResult.Should().NotBeNull();
         statusCodeResult!.StatusCode.Should().Be(expectedStatusCode);

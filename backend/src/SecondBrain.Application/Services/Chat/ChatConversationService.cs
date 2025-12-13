@@ -35,16 +35,16 @@ public class ChatConversationService : IChatConversationService
     }
 
     public async Task<PaginatedResult<ChatConversation>> GetConversationsPagedAsync(
-        string userId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default)
+        string userId, int page = 1, int pageSize = 20, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default)
     {
         // Normalize pagination parameters
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        _logger.LogDebug("Retrieving paginated conversations for user. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}",
-            userId, page, pageSize);
+        _logger.LogDebug("Retrieving paginated conversations for user. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, SortBy: {SortBy}, SortDescending: {SortDescending}",
+            userId, page, pageSize, sortBy, sortDescending);
 
-        var (conversations, totalCount) = await _chatRepository.GetConversationHeadersPagedAsync(userId, page, pageSize);
+        var (conversations, totalCount) = await _chatRepository.GetConversationHeadersPagedAsync(userId, page, pageSize, sortBy, sortDescending);
 
         return PaginatedResult<ChatConversation>.Create(conversations, page, pageSize, totalCount);
     }

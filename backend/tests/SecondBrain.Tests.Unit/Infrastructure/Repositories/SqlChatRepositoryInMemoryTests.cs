@@ -422,15 +422,27 @@ public class TestChatRepository : IChatRepository
     }
 
     public async Task<(IEnumerable<ChatConversation> Items, int TotalCount)> GetConversationHeadersPagedAsync(
-        string userId, int page, int pageSize)
+        string userId, int page, int pageSize, string? sortBy = null, bool sortDescending = true)
     {
         var query = _context.ChatConversations
             .AsNoTracking()
             .Where(c => c.UserId == userId);
 
         var totalCount = await query.CountAsync();
+
+        // Apply sorting
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy) ? "updatedat" : sortBy.ToLowerInvariant();
+        query = (normalizedSortBy, sortDescending) switch
+        {
+            ("createdat", true) => query.OrderByDescending(c => c.CreatedAt),
+            ("createdat", false) => query.OrderBy(c => c.CreatedAt),
+            ("title", true) => query.OrderByDescending(c => c.Title),
+            ("title", false) => query.OrderBy(c => c.Title),
+            (_, true) => query.OrderByDescending(c => c.UpdatedAt),
+            (_, false) => query.OrderBy(c => c.UpdatedAt)
+        };
+
         var conversations = await query
-            .OrderByDescending(c => c.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -1251,6 +1263,142 @@ public class SqlChatRepositoryInMemoryTests : IDisposable
 
         // Assert
         result!.Messages.Should().HaveCount(2);
+    }
+
+    #endregion
+
+    #region GetConversationHeadersPagedAsync Sorting Tests
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_SortByCreatedAtDescending_ReturnsSortedConversations()
+    {
+        // Arrange
+        var oldConv = CreateTestConversation("conv-1", "user-1", "Old Conversation");
+        oldConv.CreatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newConv = CreateTestConversation("conv-2", "user-1", "New Conversation");
+        newConv.CreatedAt = DateTime.UtcNow;
+
+        await _context.ChatConversations.AddRangeAsync(oldConv, newConv);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10, sortBy: "createdAt", sortDescending: true);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Id.Should().Be("conv-2"); // Newer first
+        convList[1].Id.Should().Be("conv-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_SortByCreatedAtAscending_ReturnsSortedConversations()
+    {
+        // Arrange
+        var oldConv = CreateTestConversation("conv-1", "user-1", "Old Conversation");
+        oldConv.CreatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newConv = CreateTestConversation("conv-2", "user-1", "New Conversation");
+        newConv.CreatedAt = DateTime.UtcNow;
+
+        await _context.ChatConversations.AddRangeAsync(oldConv, newConv);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10, sortBy: "createdAt", sortDescending: false);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Id.Should().Be("conv-1"); // Older first
+        convList[1].Id.Should().Be("conv-2"); // Newer second
+    }
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_SortByTitleDescending_ReturnsSortedConversations()
+    {
+        // Arrange
+        var convA = CreateTestConversation("conv-1", "user-1", "Alpha Conversation");
+        var convZ = CreateTestConversation("conv-2", "user-1", "Zulu Conversation");
+
+        await _context.ChatConversations.AddRangeAsync(convA, convZ);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10, sortBy: "title", sortDescending: true);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Title.Should().Be("Zulu Conversation");  // Z first (descending)
+        convList[1].Title.Should().Be("Alpha Conversation"); // A second
+    }
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_SortByTitleAscending_ReturnsSortedConversations()
+    {
+        // Arrange
+        var convA = CreateTestConversation("conv-1", "user-1", "Alpha Conversation");
+        var convZ = CreateTestConversation("conv-2", "user-1", "Zulu Conversation");
+
+        await _context.ChatConversations.AddRangeAsync(convA, convZ);
+        await _context.SaveChangesAsync();
+
+        // Act
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10, sortBy: "title", sortDescending: false);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Title.Should().Be("Alpha Conversation"); // A first (ascending)
+        convList[1].Title.Should().Be("Zulu Conversation");  // Z second
+    }
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_DefaultSort_SortsByUpdatedAtDescending()
+    {
+        // Arrange
+        var oldConv = CreateTestConversation("conv-1", "user-1", "Old Conversation");
+        oldConv.UpdatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newConv = CreateTestConversation("conv-2", "user-1", "New Conversation");
+        newConv.UpdatedAt = DateTime.UtcNow;
+
+        await _context.ChatConversations.AddRangeAsync(oldConv, newConv);
+        await _context.SaveChangesAsync();
+
+        // Act - No sortBy specified, should default to updatedAt descending
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Id.Should().Be("conv-2"); // Newer first (default descending)
+        convList[1].Id.Should().Be("conv-1"); // Older second
+    }
+
+    [Fact]
+    public async Task GetConversationHeadersPagedAsync_InvalidSortBy_FallsBackToUpdatedAt()
+    {
+        // Arrange
+        var oldConv = CreateTestConversation("conv-1", "user-1", "Old Conversation");
+        oldConv.UpdatedAt = DateTime.UtcNow.AddDays(-10);
+
+        var newConv = CreateTestConversation("conv-2", "user-1", "New Conversation");
+        newConv.UpdatedAt = DateTime.UtcNow;
+
+        await _context.ChatConversations.AddRangeAsync(oldConv, newConv);
+        await _context.SaveChangesAsync();
+
+        // Act - Invalid sortBy should fall back to updatedAt
+        var (conversations, _) = await _sut.GetConversationHeadersPagedAsync("user-1", 1, 10, sortBy: "invalidField", sortDescending: true);
+
+        // Assert
+        var convList = conversations.ToList();
+        convList.Should().HaveCount(2);
+        convList[0].Id.Should().Be("conv-2"); // Newer first
+        convList[1].Id.Should().Be("conv-1"); // Older second
     }
 
     #endregion

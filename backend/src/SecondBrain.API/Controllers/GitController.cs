@@ -1,14 +1,30 @@
 using Asp.Versioning;
-using Microsoft.AspNetCore.Http;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using SecondBrain.Application.Services.Git;
+using SecondBrain.Application.Commands.Git.Commit;
+using SecondBrain.Application.Commands.Git.CreateBranch;
+using SecondBrain.Application.Commands.Git.DeleteBranch;
+using SecondBrain.Application.Commands.Git.DiscardChanges;
+using SecondBrain.Application.Commands.Git.MergeBranch;
+using SecondBrain.Application.Commands.Git.PublishBranch;
+using SecondBrain.Application.Commands.Git.Pull;
+using SecondBrain.Application.Commands.Git.Push;
+using SecondBrain.Application.Commands.Git.StageFiles;
+using SecondBrain.Application.Commands.Git.SwitchBranch;
+using SecondBrain.Application.Commands.Git.UnstageFiles;
+using SecondBrain.Application.Queries.Git.GetBranches;
+using SecondBrain.Application.Queries.Git.GetDiff;
+using SecondBrain.Application.Queries.Git.GetLog;
+using SecondBrain.Application.Queries.Git.GetStatus;
+using SecondBrain.Application.Queries.Git.ValidateRepository;
 using SecondBrain.Application.Services.Git.Models;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.API.Controllers;
 
 /// <summary>
-/// Controller for Git operations.
+/// Controller for Git operations using CQRS pattern.
 /// Provides secure access to Git repositories with authentication.
 /// </summary>
 [ApiController]
@@ -18,76 +34,39 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class GitController : ControllerBase
 {
-    private readonly IGitService _gitService;
-    private readonly IGitAuthorizationService _gitAuthorization;
-    private readonly ILogger<GitController> _logger;
+    private readonly IMediator _mediator;
 
-    public GitController(
-        IGitService gitService,
-        IGitAuthorizationService gitAuthorization,
-        ILogger<GitController> logger)
+    public GitController(IMediator mediator)
     {
-        _gitService = gitService;
-        _gitAuthorization = gitAuthorization;
-        _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
     /// Validates that the given path is a valid Git repository.
     /// </summary>
     [HttpGet("validate")]
-    public async Task<ActionResult<bool>> ValidateRepository([FromQuery] string repoPath)
+    public async Task<ActionResult<bool>> ValidateRepository([FromQuery] string repoPath, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogDebug("User {UserId} validating repository at {RepoPath}", userId, repoPath);
-
-        var result = await _gitService.ValidateRepositoryAsync(authorizedPath.Value!);
-        return result.Match<ActionResult<bool>>(
-            onSuccess: valid => Ok(valid),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "PathNotFound" => NotFound(new { error = error.Message }),
-                "InvalidRepository" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new ValidateRepositoryQuery(repoPath, userId), cancellationToken);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Gets the current status of a Git repository.
     /// </summary>
     [HttpGet("status")]
-    public async Task<ActionResult<GitStatus>> GetStatus([FromQuery] string repoPath)
+    public async Task<ActionResult<GitStatus>> GetStatus([FromQuery] string repoPath, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogDebug("User {UserId} getting status for {RepoPath}", userId, repoPath);
-
-        var result = await _gitService.GetStatusAsync(authorizedPath.Value!);
-        return result.Match<ActionResult<GitStatus>>(
-            onSuccess: status => Ok(status),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "PathNotFound" => NotFound(new { error = error.Message }),
-                "InvalidRepository" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new GetStatusQuery(repoPath, userId), cancellationToken);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -97,29 +76,15 @@ public class GitController : ControllerBase
     public async Task<ActionResult<GitDiffResult>> GetDiff(
         [FromQuery] string repoPath,
         [FromQuery] string filePath,
-        [FromQuery] bool staged = false)
+        [FromQuery] bool staged = false,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogDebug("User {UserId} getting diff for {FilePath} (staged: {Staged}) in {RepoPath}",
-            userId, filePath, staged, repoPath);
-
-        var result = await _gitService.GetDiffAsync(authorizedPath.Value!, filePath, staged);
-        return result.Match<ActionResult<GitDiffResult>>(
-            onSuccess: diff => Ok(diff),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "PathNotFound" => NotFound(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new GetDiffQuery(repoPath, filePath, staged, userId), cancellationToken);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -127,30 +92,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("stage")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> StageFiles([FromBody] GitStageRequest request)
+    public async Task<ActionResult> StageFiles([FromBody] GitStageRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} staging {FileCount} files in {RepoPath}",
-            userId, request.Files.Length, request.RepoPath);
-
-        var result = await _gitService.StageFilesAsync(authorizedPath.Value!, request.Files);
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "NoFiles" => BadRequest(new { error = error.Message }),
-                "InvalidPaths" => BadRequest(new { error = error.Message }),
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new StageFilesCommand(request.RepoPath, request.Files, userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -158,30 +107,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("unstage")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> UnstageFiles([FromBody] GitUnstageRequest request)
+    public async Task<ActionResult> UnstageFiles([FromBody] GitUnstageRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} unstaging {FileCount} files in {RepoPath}",
-            userId, request.Files.Length, request.RepoPath);
-
-        var result = await _gitService.UnstageFilesAsync(authorizedPath.Value!, request.Files);
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "NoFiles" => BadRequest(new { error = error.Message }),
-                "InvalidPaths" => BadRequest(new { error = error.Message }),
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new UnstageFilesCommand(request.RepoPath, request.Files, userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -189,28 +122,16 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("commit")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult<object>> Commit([FromBody] GitCommitRequest request)
+    public async Task<ActionResult<object>> Commit([FromBody] GitCommitRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} creating commit in {RepoPath}", userId, request.RepoPath);
-
-        var result = await _gitService.CommitAsync(authorizedPath.Value!, request.Message);
+        var result = await _mediator.Send(new CommitCommand(request.RepoPath, request.Message, userId), cancellationToken);
         return result.Match<ActionResult<object>>(
             onSuccess: hash => Ok(new { success = true, commitHash = hash }),
-            onFailure: error => error.Code switch
-            {
-                "NoMessage" => BadRequest(new { error = error.Message }),
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "CommitError" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
+            onFailure: HandleError<object>
         );
     }
 
@@ -219,31 +140,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("push")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult<GitOperationResult>> Push([FromBody] GitRemoteRequest request)
+    public async Task<ActionResult<GitOperationResult>> Push([FromBody] GitRemoteRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} pushing in {RepoPath}", userId, request.RepoPath);
-
-        var result = await _gitService.PushAsync(authorizedPath.Value!, request.Remote, request.Branch);
-        return result.Match<ActionResult<GitOperationResult>>(
-            onSuccess: opResult => opResult.Success
-                ? Ok(opResult)
-                : BadRequest(opResult),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidRemote" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidBranch" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                _ => StatusCode(500, new GitOperationResult { Success = false, Error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new PushCommand(request.RepoPath, request.Remote, request.Branch, userId), cancellationToken);
+        return HandleOperationResult(result);
     }
 
     /// <summary>
@@ -251,31 +155,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("pull")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult<GitOperationResult>> Pull([FromBody] GitRemoteRequest request)
+    public async Task<ActionResult<GitOperationResult>> Pull([FromBody] GitRemoteRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} pulling in {RepoPath}", userId, request.RepoPath);
-
-        var result = await _gitService.PullAsync(authorizedPath.Value!, request.Remote, request.Branch);
-        return result.Match<ActionResult<GitOperationResult>>(
-            onSuccess: opResult => opResult.Success
-                ? Ok(opResult)
-                : BadRequest(opResult),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidRemote" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidBranch" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                _ => StatusCode(500, new GitOperationResult { Success = false, Error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new PullCommand(request.RepoPath, request.Remote, request.Branch, userId), cancellationToken);
+        return HandleOperationResult(result);
     }
 
     /// <summary>
@@ -284,28 +171,15 @@ public class GitController : ControllerBase
     [HttpGet("log")]
     public async Task<ActionResult<List<GitLogEntry>>> GetLog(
         [FromQuery] string repoPath,
-        [FromQuery] int count = 20)
+        [FromQuery] int count = 20,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogDebug("User {UserId} getting log for {RepoPath}", userId, repoPath);
-
-        var result = await _gitService.GetLogAsync(authorizedPath.Value!, count);
-        return result.Match<ActionResult<List<GitLogEntry>>>(
-            onSuccess: log => Ok(log),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "PathNotFound" => NotFound(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new GetLogQuery(repoPath, count, userId), cancellationToken);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -313,28 +187,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("discard")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> DiscardChanges([FromBody] GitDiffRequest request)
+    public async Task<ActionResult> DiscardChanges([FromBody] GitDiffRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} discarding changes to {FilePath} in {RepoPath}",
-            userId, request.FilePath, request.RepoPath);
-
-        var result = await _gitService.DiscardChangesAsync(authorizedPath.Value!, request.FilePath);
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new DiscardChangesCommand(request.RepoPath, request.FilePath, userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -343,28 +203,15 @@ public class GitController : ControllerBase
     [HttpGet("branches")]
     public async Task<ActionResult<List<GitBranch>>> GetBranches(
         [FromQuery] string repoPath,
-        [FromQuery] bool includeRemote = true)
+        [FromQuery] bool includeRemote = true,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(repoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogDebug("User {UserId} getting branches for {RepoPath}", userId, repoPath);
-
-        var result = await _gitService.GetBranchesAsync(authorizedPath.Value!, includeRemote);
-        return result.Match<ActionResult<List<GitBranch>>>(
-            onSuccess: branches => Ok(branches),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "PathNotFound" => NotFound(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new GetBranchesQuery(repoPath, includeRemote, userId), cancellationToken);
+        return HandleResult(result);
     }
 
     /// <summary>
@@ -372,30 +219,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("branches/switch")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> SwitchBranch([FromBody] GitSwitchBranchRequest request)
+    public async Task<ActionResult> SwitchBranch([FromBody] GitSwitchBranchRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} switching to branch {BranchName} in {RepoPath}",
-            userId, request.BranchName, request.RepoPath);
-
-        var result = await _gitService.SwitchBranchAsync(authorizedPath.Value!, request.BranchName);
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "InvalidBranchName" => BadRequest(new { error = error.Message }),
-                "SwitchError" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new SwitchBranchCommand(request.RepoPath, request.BranchName, userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -403,36 +234,19 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("branches/create")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> CreateBranch([FromBody] GitCreateBranchRequest request)
+    public async Task<ActionResult> CreateBranch([FromBody] GitCreateBranchRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} creating branch {BranchName} in {RepoPath}",
-            userId, request.BranchName, request.RepoPath);
-
-        var result = await _gitService.CreateBranchAsync(
-            authorizedPath.Value!,
+        var result = await _mediator.Send(new CreateBranchCommand(
+            request.RepoPath,
             request.BranchName,
             request.SwitchToNewBranch,
-            request.BaseBranch);
-
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "InvalidBranchName" => BadRequest(new { error = error.Message }),
-                "InvalidBaseBranch" => BadRequest(new { error = error.Message }),
-                "CreateBranchError" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+            request.BaseBranch,
+            userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -440,31 +254,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("branches/delete")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult> DeleteBranch([FromBody] GitDeleteBranchRequest request)
+    public async Task<ActionResult> DeleteBranch([FromBody] GitDeleteBranchRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} deleting branch {BranchName} in {RepoPath}",
-            userId, request.BranchName, request.RepoPath);
-
-        var result = await _gitService.DeleteBranchAsync(authorizedPath.Value!, request.BranchName, request.Force);
-        return result.Match<ActionResult>(
-            onSuccess: _ => Ok(new { success = true }),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new { error = error.Message }),
-                "InvalidBranchName" => BadRequest(new { error = error.Message }),
-                "CannotDeleteCurrent" => BadRequest(new { error = error.Message }),
-                "DeleteBranchError" => BadRequest(new { error = error.Message }),
-                _ => StatusCode(500, new { error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new DeleteBranchCommand(request.RepoPath, request.BranchName, request.Force, userId), cancellationToken);
+        return HandleSuccessResult(result);
     }
 
     /// <summary>
@@ -472,32 +269,14 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("branches/merge")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult<GitOperationResult>> MergeBranch([FromBody] GitMergeBranchRequest request)
+    public async Task<ActionResult<GitOperationResult>> MergeBranch([FromBody] GitMergeBranchRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
-
-        _logger.LogInformation("User {UserId} merging branch {BranchName} in {RepoPath}",
-            userId, request.BranchName, request.RepoPath);
-
-        var result = await _gitService.MergeBranchAsync(authorizedPath.Value!, request.BranchName, request.Message);
-        return result.Match<ActionResult<GitOperationResult>>(
-            onSuccess: opResult => opResult.Success
-                ? Ok(opResult)
-                : BadRequest(opResult),
-            onFailure: error => error.Code switch
-            {
-                "InvalidPath" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidBranchName" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "MergeError" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                _ => StatusCode(500, new GitOperationResult { Success = false, Error = error.Message })
-            }
-        );
+        var result = await _mediator.Send(new MergeBranchCommand(request.RepoPath, request.BranchName, request.Message, userId), cancellationToken);
+        return HandleOperationResult(result);
     }
 
     /// <summary>
@@ -505,49 +284,68 @@ public class GitController : ControllerBase
     /// </summary>
     [HttpPost("branches/publish")]
     [EnableRateLimiting("ai-requests")]
-    public async Task<ActionResult<GitOperationResult>> PublishBranch([FromBody] GitPublishBranchRequest request)
+    public async Task<ActionResult<GitOperationResult>> PublishBranch([FromBody] GitPublishBranchRequest request, CancellationToken cancellationToken = default)
     {
         var userId = GetUserId();
         if (userId == null)
             return Unauthorized(new { error = "Not authenticated" });
 
-        var authorizedPath = AuthorizeRepoPath(request.RepoPath, userId);
-        if (authorizedPath.Result is not null)
-            return authorizedPath.Result;
+        var result = await _mediator.Send(new PublishBranchCommand(request.RepoPath, request.BranchName, request.Remote, userId), cancellationToken);
+        return HandleOperationResult(result);
+    }
 
-        _logger.LogInformation("User {UserId} publishing branch {BranchName} in {RepoPath}",
-            userId, request.BranchName, request.RepoPath);
+    #region Helper Methods
 
-        var result = await _gitService.PublishBranchAsync(authorizedPath.Value!, request.BranchName, request.Remote);
-        return result.Match<ActionResult<GitOperationResult>>(
-            onSuccess: opResult => opResult.Success
-                ? Ok(opResult)
-                : BadRequest(opResult),
+    private string? GetUserId() => HttpContext.Items["UserId"]?.ToString();
+
+    private ActionResult<T> HandleResult<T>(Result<T> result)
+    {
+        return result.Match<ActionResult<T>>(
+            onSuccess: value => Ok(value),
+            onFailure: HandleError<T>
+        );
+    }
+
+    private ActionResult HandleSuccessResult(Result<bool> result)
+    {
+        return result.Match<ActionResult>(
+            onSuccess: _ => Ok(new { success = true }),
             onFailure: error => error.Code switch
             {
-                "InvalidPath" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidBranchName" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "InvalidRemote" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                "PublishError" => BadRequest(new GitOperationResult { Success = false, Error = error.Message }),
-                _ => StatusCode(500, new GitOperationResult { Success = false, Error = error.Message })
+                "Forbidden" or "Unauthorized" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message, code = error.Code }),
+                "InvalidPath" or "InvalidRepository" or "NoFiles" or "InvalidPaths" or "NoMessage" or
+                "CommitError" or "InvalidRemote" or "InvalidBranch" or "InvalidBranchName" or
+                "InvalidBaseBranch" or "CreateBranchError" or "CannotDeleteCurrent" or "DeleteBranchError" or
+                "SwitchError" or "MergeError" or "PublishError" => BadRequest(new { error = error.Message }),
+                "PathNotFound" => NotFound(new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
             }
         );
     }
 
-    private string? GetUserId()
+    private ActionResult<GitOperationResult> HandleOperationResult(Result<GitOperationResult> result)
     {
-        return HttpContext.Items["UserId"]?.ToString();
+        return result.Match<ActionResult<GitOperationResult>>(
+            onSuccess: opResult => opResult.Success
+                ? Ok(opResult)
+                : BadRequest(opResult),
+            onFailure: error => HandleError<GitOperationResult>(error)
+        );
     }
 
-    private ActionResult<string> AuthorizeRepoPath(string repoPath, string userId)
+    private ActionResult<T> HandleError<T>(Error error)
     {
-        var authResult = _gitAuthorization.AuthorizeRepository(repoPath, userId);
-        if (authResult.IsFailure)
+        return error.Code switch
         {
-            var error = authResult.Error!;
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message, code = error.Code });
-        }
-
-        return authResult.Value!;
+            "Forbidden" or "Unauthorized" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message, code = error.Code }),
+            "InvalidPath" or "InvalidRepository" or "NoFiles" or "InvalidPaths" or "NoMessage" or
+            "CommitError" or "InvalidRemote" or "InvalidBranch" or "InvalidBranchName" or
+            "InvalidBaseBranch" or "CreateBranchError" or "CannotDeleteCurrent" or "DeleteBranchError" or
+            "SwitchError" or "MergeError" or "PublishError" => BadRequest(new { error = error.Message }),
+            "PathNotFound" => NotFound(new { error = error.Message }),
+            _ => StatusCode(500, new { error = error.Message })
+        };
     }
+
+    #endregion
 }
