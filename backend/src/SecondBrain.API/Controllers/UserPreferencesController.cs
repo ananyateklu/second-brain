@@ -1,8 +1,11 @@
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.API.Extensions;
+using SecondBrain.Application.Commands.UserPreferences.UpdatePreferences;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services;
+using SecondBrain.Application.Queries.UserPreferences.GetPreferences;
 
 namespace SecondBrain.API.Controllers;
 
@@ -12,33 +15,25 @@ namespace SecondBrain.API.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 public class UserPreferencesController : ControllerBase
 {
-    private readonly IUserPreferencesService _preferencesService;
-    private readonly ILogger<UserPreferencesController> _logger;
+    private readonly IMediator _mediator;
 
-    public UserPreferencesController(
-        IUserPreferencesService preferencesService,
-        ILogger<UserPreferencesController> logger)
+    public UserPreferencesController(IMediator mediator)
     {
-        _preferencesService = preferencesService;
-        _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
     /// Get user preferences
     /// </summary>
     [HttpGet("{userId}")]
-    public async Task<ActionResult<UserPreferencesResponse>> GetPreferences(string userId)
+    public async Task<ActionResult<UserPreferencesResponse>> GetPreferences(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var preferences = await _preferencesService.GetPreferencesAsync(userId);
-            return Ok(preferences);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting preferences for user {UserId}", userId);
-            return StatusCode(500, new { error = ex.Message });
-        }
+        var query = new GetPreferencesQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -47,18 +42,12 @@ public class UserPreferencesController : ControllerBase
     [HttpPut("{userId}")]
     public async Task<ActionResult<UserPreferencesResponse>> UpdatePreferences(
         string userId,
-        [FromBody] UpdateUserPreferencesRequest request)
+        [FromBody] UpdateUserPreferencesRequest request,
+        CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var preferences = await _preferencesService.UpdatePreferencesAsync(userId, request);
-            return Ok(preferences);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating preferences for user {UserId}", userId);
-            return StatusCode(500, new { error = ex.Message });
-        }
+        var command = new UpdatePreferencesCommand(userId, request);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.ToActionResult();
     }
 }
-

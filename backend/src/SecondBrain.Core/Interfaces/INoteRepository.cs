@@ -13,6 +13,19 @@ public interface INoteRepository
     Task<Note?> GetByUserIdAndExternalIdAsync(string userId, string externalId);
     Task<IEnumerable<Note>> GetByUserIdAsync(string userId);
 
+    /// <summary>
+    /// Gets paginated notes for a user
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="page">Page number (1-based)</param>
+    /// <param name="pageSize">Number of items per page</param>
+    /// <param name="folder">Optional folder filter</param>
+    /// <param name="includeArchived">Include archived notes</param>
+    /// <param name="search">Optional search query</param>
+    /// <returns>Tuple of (notes, totalCount)</returns>
+    Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
+        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null);
+
     // Soft delete operations
     Task<bool> SoftDeleteAsync(string id, string deletedBy);
     Task<int> SoftDeleteManyAsync(IEnumerable<string> ids, string userId);

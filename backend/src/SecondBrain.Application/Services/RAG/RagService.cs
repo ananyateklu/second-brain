@@ -175,7 +175,7 @@ public class RagService : IRagService
                             RelevanceScore = r.VectorScore * 10, // Scale to 0-10 for consistency
                             OriginalRank = index + 1,
                             FinalRank = index + 1,
-                            FinalScore = r.RRFScore,
+                            FinalScore = r.VectorScore, // Use vector similarity for display, not RRF score
                             WasReranked = false
                         })
                         .ToList();

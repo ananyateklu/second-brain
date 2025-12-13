@@ -1,3 +1,4 @@
+using SecondBrain.Application.DTOs.Common;
 using SecondBrain.Core.Entities;
 
 namespace SecondBrain.Application.Services.Chat;
@@ -11,6 +12,12 @@ public interface IChatConversationService
     /// Get all conversations for a user
     /// </summary>
     Task<IEnumerable<ChatConversation>> GetAllConversationsAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get paginated conversation headers (without messages) for a user
+    /// </summary>
+    Task<PaginatedResult<ChatConversation>> GetConversationsPagedAsync(
+        string userId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a conversation by ID (verifies ownership)

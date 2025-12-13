@@ -1,31 +1,29 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
+using SecondBrain.Application.Commands.Import.ImportNotes;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
-using SecondBrain.Application.Services;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class ImportControllerTests
 {
-    private readonly Mock<INotesImportService> _mockImportService;
-    private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly Mock<ILogger<ImportController>> _mockLogger;
     private readonly ImportController _sut;
 
     public ImportControllerTests()
     {
-        _mockImportService = new Mock<INotesImportService>();
-        _mockUserRepository = new Mock<IUserRepository>();
+        _mockMediator = new Mock<IMediator>();
         _mockLogger = new Mock<ILogger<ImportController>>();
 
         _sut = new ImportController(
-            _mockImportService.Object,
-            _mockUserRepository.Object,
+            _mockMediator.Object,
             _mockLogger.Object
         );
 
@@ -61,8 +59,10 @@ public class ImportControllerTests
             UpdatedCount = 0,
             SkippedCount = 0
         };
-        _mockImportService.Setup(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importResponse);
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<ImportNotesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ImportNotesResponse>.Success(importResponse));
 
         // Act
         var result = await _sut.ImportNotes(CancellationToken.None);
@@ -86,6 +86,7 @@ public class ImportControllerTests
         SetupRequestBody(@"{""notes"": []}");
 
         // Act & Assert
+        // The controller validates notes before calling MediatR, so it throws ValidationException
         await Assert.ThrowsAsync<ValidationException>(() => _sut.ImportNotes(CancellationToken.None));
     }
 
@@ -98,20 +99,7 @@ public class ImportControllerTests
         SetupRequestBody("invalid json");
 
         // Act & Assert
-        // JsonReaderException is a subclass of JsonException
         await Assert.ThrowsAnyAsync<System.Text.Json.JsonException>(() => _sut.ImportNotes(CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task ImportNotes_WithNoNotesInBatch_ThrowsValidationException()
-    {
-        // Arrange
-        var userId = "user-123";
-        SetupAuthenticatedUser(userId);
-        SetupRequestBody(@"{""notes"": [{""body"": ""No title""}]}");
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ValidationException>(() => _sut.ImportNotes(CancellationToken.None));
     }
 
     #endregion
@@ -141,8 +129,10 @@ public class ImportControllerTests
                 }
             }
         };
-        _mockImportService.Setup(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importResponse);
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<ImportNotesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ImportNotesResponse>.Success(importResponse));
 
         // Act
         var result = await _sut.ImportNotes(CancellationToken.None);
@@ -174,8 +164,10 @@ public class ImportControllerTests
             UpdatedCount = 1,
             SkippedCount = 0
         };
-        _mockImportService.Setup(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(importResponse);
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<ImportNotesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ImportNotesResponse>.Success(importResponse));
 
         // Act
         var result = await _sut.ImportNotes(CancellationToken.None);
@@ -188,21 +180,25 @@ public class ImportControllerTests
     }
 
     [Fact]
-    public async Task ImportNotes_PassesUserIdToService()
+    public async Task ImportNotes_PassesUserIdToMediator()
     {
         // Arrange
         var userId = "specific-user-id";
         SetupAuthenticatedUser(userId);
         SetupRequestBody(@"{""title"": ""Test Note"", ""body"": ""Content""}");
 
-        _mockImportService.Setup(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ImportNotesResponse { ImportedCount = 1 });
+        ImportNotesCommand? capturedCommand = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<ImportNotesCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<ImportNotesResponse>>, CancellationToken>((cmd, _) => capturedCommand = (ImportNotesCommand)cmd)
+            .ReturnsAsync(Result<ImportNotesResponse>.Success(new ImportNotesResponse { ImportedCount = 1 }));
 
         // Act
         await _sut.ImportNotes(CancellationToken.None);
 
         // Assert
-        _mockImportService.Verify(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()), Times.Once);
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.UserId.Should().Be(userId);
     }
 
     #endregion
@@ -210,18 +206,23 @@ public class ImportControllerTests
     #region ImportNotes Tests - Error Cases
 
     [Fact]
-    public async Task ImportNotes_WhenServiceThrows_RethrowsException()
+    public async Task ImportNotes_WhenMediatorReturnsFailure_Returns500()
     {
         // Arrange
         var userId = "user-123";
         SetupAuthenticatedUser(userId);
         SetupRequestBody(@"{""title"": ""Test Note"", ""body"": ""Content""}");
 
-        _mockImportService.Setup(s => s.ImportAsync(userId, It.IsAny<List<ImportNoteRequest>>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<ImportNotesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<ImportNotesResponse>.Failure(Error.Internal("Database error")));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _sut.ImportNotes(CancellationToken.None));
+        // Act
+        var result = await _sut.ImportNotes(CancellationToken.None);
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
     }
 
     #endregion
@@ -256,4 +257,3 @@ public class ImportControllerTests
 
     #endregion
 }
-

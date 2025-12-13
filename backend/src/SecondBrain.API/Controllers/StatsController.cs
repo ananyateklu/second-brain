@@ -1,9 +1,13 @@
 using Asp.Versioning;
-using Microsoft.AspNetCore.Authorization;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using SecondBrain.API.Extensions;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services.Stats;
-using SecondBrain.Application.Services;
+using SecondBrain.Application.Queries.Stats.GetAIUsageStats;
+using SecondBrain.Application.Queries.Stats.GetToolActionBreakdown;
+using SecondBrain.Application.Queries.Stats.GetToolCallAnalytics;
+using SecondBrain.Application.Queries.Stats.GetTopToolErrors;
 
 namespace SecondBrain.API.Controllers;
 
@@ -11,22 +15,18 @@ namespace SecondBrain.API.Controllers;
 [ApiVersion("1.0")]
 [Route("api/[controller]")]
 [Route("api/v{version:apiVersion}/[controller]")]
-//[Authorize] // Assuming we want auth, but based on other controllers I see ApiKeyAuth might be used or handled globally
 public class StatsController : ControllerBase
 {
-    private readonly IStatsService _statsService;
-    private readonly IToolCallAnalyticsService _toolCallAnalyticsService;
+    private readonly IMediator _mediator;
 
-    public StatsController(
-        IStatsService statsService,
-        IToolCallAnalyticsService toolCallAnalyticsService)
+    public StatsController(IMediator mediator)
     {
-        _statsService = statsService;
-        _toolCallAnalyticsService = toolCallAnalyticsService;
+        _mediator = mediator;
     }
 
     [HttpGet("ai")]
-    public async Task<ActionResult<AIUsageStatsResponse>> GetAIUsageStats()
+    [OutputCache(PolicyName = "Stats")]
+    public async Task<ActionResult<AIUsageStatsResponse>> GetAIUsageStats(CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
 
@@ -35,8 +35,10 @@ public class StatsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var stats = await _statsService.GetAIUsageStatsAsync(userId);
-        return Ok(stats);
+        var query = new GetAIUsageStatsQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -46,12 +48,15 @@ public class StatsController : ControllerBase
     /// <param name="daysBack">Number of days to look back (default: 30)</param>
     /// <param name="startDate">Optional start date for custom range</param>
     /// <param name="endDate">Optional end date for custom range</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Complete tool call analytics including usage, success rates, and errors</returns>
     [HttpGet("tools")]
+    [OutputCache(PolicyName = "Stats")]
     public async Task<ActionResult<ToolCallAnalyticsResponse>> GetToolCallAnalytics(
         [FromQuery] int daysBack = 30,
         [FromQuery] DateTime? startDate = null,
-        [FromQuery] DateTime? endDate = null)
+        [FromQuery] DateTime? endDate = null,
+        CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
 
@@ -60,15 +65,10 @@ public class StatsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var request = new ToolCallAnalyticsRequest
-        {
-            DaysBack = daysBack,
-            StartDate = startDate,
-            EndDate = endDate
-        };
+        var query = new GetToolCallAnalyticsQuery(userId, daysBack, startDate, endDate);
+        var result = await _mediator.Send(query, cancellationToken);
 
-        var analytics = await _toolCallAnalyticsService.GetToolCallAnalyticsAsync(userId, request);
-        return Ok(analytics);
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -77,11 +77,14 @@ public class StatsController : ControllerBase
     /// </summary>
     /// <param name="daysBack">Number of days to look back (default: 30)</param>
     /// <param name="toolName">Optional filter by specific tool name</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of tool action statistics</returns>
     [HttpGet("tools/actions")]
+    [OutputCache(PolicyName = "Stats")]
     public async Task<ActionResult<List<ToolActionStats>>> GetToolActionBreakdown(
         [FromQuery] int daysBack = 30,
-        [FromQuery] string? toolName = null)
+        [FromQuery] string? toolName = null,
+        CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
 
@@ -90,14 +93,10 @@ public class StatsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var request = new ToolCallAnalyticsRequest
-        {
-            DaysBack = daysBack,
-            ToolName = toolName
-        };
+        var query = new GetToolActionBreakdownQuery(userId, daysBack, toolName);
+        var result = await _mediator.Send(query, cancellationToken);
 
-        var actions = await _toolCallAnalyticsService.GetToolActionBreakdownAsync(userId, request);
-        return Ok(actions);
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -106,11 +105,14 @@ public class StatsController : ControllerBase
     /// </summary>
     /// <param name="topN">Number of top errors to return (default: 10)</param>
     /// <param name="daysBack">Number of days to look back (default: 30)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of top error statistics</returns>
     [HttpGet("tools/errors")]
+    [OutputCache(PolicyName = "Stats")]
     public async Task<ActionResult<List<ToolErrorStats>>> GetTopToolErrors(
         [FromQuery] int topN = 10,
-        [FromQuery] int daysBack = 30)
+        [FromQuery] int daysBack = 30,
+        CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
 
@@ -119,13 +121,9 @@ public class StatsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var request = new ToolCallAnalyticsRequest
-        {
-            DaysBack = daysBack
-        };
+        var query = new GetTopToolErrorsQuery(userId, topN, daysBack);
+        var result = await _mediator.Send(query, cancellationToken);
 
-        var errors = await _toolCallAnalyticsService.GetTopErrorsAsync(userId, topN, request);
-        return Ok(errors);
+        return result.ToActionResult();
     }
 }
-

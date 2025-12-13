@@ -147,6 +147,7 @@ export const API_ENDPOINTS = {
   // Notes
   NOTES: {
     BASE: '/notes',
+    PAGED: '/notes/paged',
     BY_ID: (id: string) => `/notes/${id}`,
     BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',
@@ -165,6 +166,7 @@ export const API_ENDPOINTS = {
   // Chat / Conversations
   CHAT: {
     CONVERSATIONS: '/chat/conversations',
+    CONVERSATIONS_PAGED: '/chat/conversations/paged',
     CONVERSATION_BY_ID: (id: string) => `/chat/conversations/${id}`,
     CONVERSATION_SETTINGS: (id: string) => `/chat/conversations/${id}/settings`,
     BULK_DELETE: '/chat/conversations/bulk-delete',

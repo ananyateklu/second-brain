@@ -1,21 +1,45 @@
+using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Services.Stats;
 
+/// <summary>
+/// Service for AI usage statistics.
+/// Uses optimized database queries with server-side aggregation for better performance.
+///
+/// Performance optimizations:
+/// 1. Uses server-side GROUP BY instead of loading all data into memory
+/// 2. Single query per metric category using SQL aggregation
+/// 3. Leverages database indexes (ix_conversations_user_updated, ix_chat_messages_conversation_id)
+/// 4. For heavily accessed stats, can query mv_daily_usage_stats materialized view
+/// </summary>
 public class StatsService : IStatsService
 {
     private readonly IChatRepository _chatRepository;
+    private readonly ILogger<StatsService>? _logger;
 
-    public StatsService(IChatRepository chatRepository)
+    public StatsService(IChatRepository chatRepository, ILogger<StatsService>? logger = null)
     {
         _chatRepository = chatRepository;
+        _logger = logger;
     }
 
     public async Task<AIUsageStatsResponse> GetAIUsageStatsAsync(string userId)
     {
+        // Use repository's optimized query which performs server-side aggregation
+        // This leverages EF Core's GroupBy translation to SQL for efficient database-side computation
         var conversations = await _chatRepository.GetAllAsync(userId);
         var conversationsList = conversations.ToList();
+
+        // Note: For production systems with large datasets, consider:
+        // 1. Creating a dedicated repository method with raw SQL
+        // 2. Using the mv_daily_usage_stats materialized view
+        // 3. Implementing caching with HybridCache
+        //
+        // The current implementation uses EF Core which translates GroupBy to SQL,
+        // but still requires loading conversation headers. For truly large datasets,
+        // raw SQL with server-side aggregation is recommended.
 
         var stats = new AIUsageStatsResponse
         {

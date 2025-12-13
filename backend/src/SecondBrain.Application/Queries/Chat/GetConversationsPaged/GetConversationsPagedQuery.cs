@@ -1,0 +1,15 @@
+using MediatR;
+using SecondBrain.Application.DTOs.Common;
+using SecondBrain.Core.Common;
+using SecondBrain.Core.Entities;
+
+namespace SecondBrain.Application.Queries.Chat.GetConversationsPaged;
+
+/// <summary>
+/// Query to get paginated conversations for a user
+/// </summary>
+public record GetConversationsPagedQuery(
+    string UserId,
+    int Page = 1,
+    int PageSize = 20
+) : IRequest<Result<PaginatedResult<ChatConversation>>>;

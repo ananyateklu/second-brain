@@ -619,7 +619,9 @@ export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingS
       title: note.title,
       preview: note.chunkContent,
       tags: note.tags,
-      similarityScore: note.relevanceScore,
+      relevanceScore: note.relevanceScore,
+      chunkContent: note.chunkContent,
+      chunkIndex: note.chunkIndex,
     })),
     processingStatus: state.processingStatus,
     // Image generation

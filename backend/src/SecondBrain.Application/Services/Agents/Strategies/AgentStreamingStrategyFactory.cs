@@ -10,12 +10,23 @@ namespace SecondBrain.Application.Services.Agents.Strategies;
 public class AgentStreamingStrategyFactory : IAgentStreamingStrategyFactory
 {
     private readonly IEnumerable<IAgentStreamingStrategy> _strategies;
-    private readonly SemanticKernelStreamingStrategy _fallbackStrategy;
+    private readonly IAgentStreamingStrategy _fallbackStrategy;
     private readonly ILogger<AgentStreamingStrategyFactory> _logger;
 
     public AgentStreamingStrategyFactory(
         IEnumerable<IAgentStreamingStrategy> strategies,
         SemanticKernelStreamingStrategy fallbackStrategy,
+        ILogger<AgentStreamingStrategyFactory> logger)
+        : this(strategies, (IAgentStreamingStrategy)fallbackStrategy, logger)
+    {
+    }
+
+    /// <summary>
+    /// Internal constructor for testing with mock fallback strategies.
+    /// </summary>
+    internal AgentStreamingStrategyFactory(
+        IEnumerable<IAgentStreamingStrategy> strategies,
+        IAgentStreamingStrategy fallbackStrategy,
         ILogger<AgentStreamingStrategyFactory> logger)
     {
         _strategies = strategies;

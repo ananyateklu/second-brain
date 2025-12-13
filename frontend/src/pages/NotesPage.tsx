@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useDeferredValue, useEffect } from 'react';
-import { useNotes, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
+import { useNotesPaged, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { NotesSkeleton } from '../features/notes/components/NotesSkeleton';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -40,7 +40,7 @@ const getDateBoundaries = () => {
   };
 };
 
-// Optimized filter function
+// Optimized filter function for client-side date filtering
 const applyDateFilter = (
   note: NoteListItem,
   dateFilter: string,
@@ -67,7 +67,6 @@ const applyDateFilter = (
       return !isBefore(noteDate, boundaries.ninetyDaysAgo);
     case 'custom':
       if (customDateStart && customDateEnd) {
-        // Parse custom date strings as local dates to avoid timezone issues
         const start = parse(customDateStart, 'yyyy-MM-dd', new Date());
         const end = endOfDay(parse(customDateEnd, 'yyyy-MM-dd', new Date()));
         return isWithinInterval(noteDate, { start, end });
@@ -79,7 +78,6 @@ const applyDateFilter = (
 };
 
 export function NotesPage() {
-  const { data: notes, isLoading, error } = useNotes();
   const bulkDeleteMutation = useBulkDeleteNotes();
   const openCreateModal = useBoundStore((state) => state.openCreateModal);
   const searchQuery = useBoundStore((state) => state.searchQuery);
@@ -96,7 +94,6 @@ export function NotesPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Defer search query updates to keep typing responsive
-  // This prevents expensive filtering from blocking user input
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const isSearchStale = searchQuery !== deferredSearchQuery;
 
@@ -104,21 +101,33 @@ export function NotesPage() {
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Reset bulk mode when leaving the page or when not needed
-  // Not strictly necessary as it is global, but good cleanup if desired.
-  // We keep it sticky for now as requested.
+  // Determine if we have client-side-only filters that backend doesn't support
+  const hasClientSideOnlyFilters = useMemo(() => {
+    return (
+      filterState.dateFilter !== 'all' ||
+      filterState.selectedTags.length > 0
+    );
+  }, [filterState.dateFilter, filterState.selectedTags]);
 
-  const handleNoteSelect = useCallback((noteId: string) => {
-    setSelectedNoteIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(noteId)) {
-        newSet.delete(noteId);
-      } else {
-        newSet.add(noteId);
-      }
-      return newSet;
-    });
-  }, []);
+  // For server-side pagination, we need a larger page size when using client-side filters
+  // to ensure we have enough items after filtering
+  const serverPageSize = hasClientSideOnlyFilters ? 100 : itemsPerPage;
+
+  // Use server-side paginated query
+  // Backend supports: folder, includeArchived, search
+  const { data: paginatedResult, isLoading, error, isFetching } = useNotesPaged({
+    page: hasClientSideOnlyFilters ? 1 : currentPage,
+    pageSize: serverPageSize,
+    folder: filterState.selectedFolder ?? undefined,
+    includeArchived: filterState.archiveFilter === 'archived',
+    search: deferredSearchQuery.trim() || undefined,
+  });
+
+  // Extract notes from paginated result
+  const notes = useMemo(() => {
+    return paginatedResult?.items ?? [];
+  }, [paginatedResult?.items]);
+  const serverTotalCount = paginatedResult?.totalCount ?? 0;
 
   // Memoize date boundaries - only recalculate when date filter changes
   const dateBoundaries = useMemo(() => {
@@ -126,21 +135,16 @@ export function NotesPage() {
     return getDateBoundaries();
   }, [filterState.dateFilter]);
 
-  // Apply all filters and sorting - optimized version
-  // Uses deferred search query to prevent UI lag while typing
+  // Apply client-side filters (date, tags) and sorting
+  // Server already handles: folder, archived, search
   const filteredNotes = useMemo(() => {
-    if (!notes) return [];
+    if (!notes.length) return [];
 
-    const query = (deferredSearchQuery || '').trim().toLowerCase();
-    const hasSearchQuery = query.length > 0;
     const hasDateFilter = filterState.dateFilter !== 'all';
     const hasTagFilter = filterState.selectedTags.length > 0;
-    const hasArchiveFilter = filterState.archiveFilter !== 'all';
-    const hasFolderFilter = filterState.selectedFolder !== null && filterState.selectedFolder !== undefined;
 
-    // Early return if no filters
-    if (!hasSearchQuery && !hasDateFilter && !hasTagFilter && !hasArchiveFilter && !hasFolderFilter) {
-      // Only need to sort
+    // If no client-side filters needed, just sort
+    if (!hasDateFilter && !hasTagFilter) {
       const sorted = [...notes];
       sorted.sort((a, b) => {
         switch (filterState.sortBy) {
@@ -159,22 +163,9 @@ export function NotesPage() {
       return sorted;
     }
 
-    // Apply filters
+    // Apply client-side filters
     const filtered = notes.filter((note) => {
-      // Search query filter
-      if (hasSearchQuery) {
-        const titleMatch = (note.title || '').toLowerCase().includes(query);
-        const summaryMatch = (note.summary || '').toLowerCase().includes(query);
-
-        const searchMatches =
-          searchMode === 'title' ? titleMatch :
-            searchMode === 'content' ? summaryMatch :
-              titleMatch || summaryMatch;
-
-        if (!searchMatches) return false;
-      }
-
-      // Date filter
+      // Date filter (client-side only)
       if (hasDateFilter && dateBoundaries) {
         if (!applyDateFilter(
           note,
@@ -187,28 +178,10 @@ export function NotesPage() {
         }
       }
 
-      // Tag filter
+      // Tag filter (client-side only)
       if (hasTagFilter) {
         if (!filterState.selectedTags.some(tag => note.tags?.includes(tag))) {
           return false;
-        }
-      }
-
-      // Archive filter
-      if (hasArchiveFilter) {
-        const isArchived = filterState.archiveFilter === 'archived';
-        if (note.isArchived !== isArchived) {
-          return false;
-        }
-      }
-
-      // Folder filter
-      if (hasFolderFilter) {
-        // Empty string means unfiled notes (no folder)
-        if (filterState.selectedFolder === '') {
-          if (note.folder) return false; // Has a folder, but we want unfiled
-        } else {
-          if (note.folder !== filterState.selectedFolder) return false;
         }
       }
 
@@ -232,15 +205,24 @@ export function NotesPage() {
     });
 
     return filtered;
-  }, [notes, deferredSearchQuery, searchMode, filterState, dateBoundaries]);
+  }, [notes, filterState, dateBoundaries]);
 
-  // Calculate paginated notes
-  const totalPages = Math.ceil(filteredNotes.length / itemsPerPage);
-  const paginatedNotes = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return filteredNotes.slice(startIndex, endIndex);
-  }, [filteredNotes, currentPage, itemsPerPage]);
+  // Calculate pagination
+  // When using client-side filters, we paginate the filtered results
+  // Otherwise, we use server-side pagination
+  const totalItems = hasClientSideOnlyFilters ? filteredNotes.length : serverTotalCount;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const displayedNotes = useMemo(() => {
+    if (hasClientSideOnlyFilters) {
+      // Client-side pagination for filtered results
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      return filteredNotes.slice(startIndex, endIndex);
+    }
+    // Server-side pagination - notes are already paginated
+    return filteredNotes;
+  }, [hasClientSideOnlyFilters, filteredNotes, currentPage, itemsPerPage]);
 
   // Reset to page 1 when filters/search change or when current page exceeds total pages
   useEffect(() => {
@@ -254,10 +236,22 @@ export function NotesPage() {
     setCurrentPage(1);
   }, [deferredSearchQuery, filterState, itemsPerPage]);
 
-  // Select/Deselect all handlers - operates on filtered notes
+  const handleNoteSelect = useCallback((noteId: string) => {
+    setSelectedNoteIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Select/Deselect all handlers - operates on displayed notes
   const handleSelectAll = useCallback(() => {
-    setSelectedNoteIds(new Set(filteredNotes.map((note) => note.id)));
-  }, [filteredNotes]);
+    setSelectedNoteIds(new Set(displayedNotes.map((note) => note.id)));
+  }, [displayedNotes]);
 
   const handleDeselectAll = useCallback(() => {
     setSelectedNoteIds(new Set());
@@ -274,7 +268,6 @@ export function NotesPage() {
     toast.info('Deleting notes...', `Deleting ${totalCount} note${totalCount === 1 ? '' : 's'}...`);
 
     try {
-      // Use bulk delete endpoint - single API call instead of multiple
       const result = await bulkDeleteMutation.mutateAsync(idsToDelete);
 
       toast.success('Notes deleted', `Successfully deleted ${result.deletedCount} note${result.deletedCount === 1 ? '' : 's'}.`);
@@ -316,7 +309,8 @@ export function NotesPage() {
     return <NotesSkeleton />;
   }
 
-  if (!notes || notes.length === 0) {
+  // Check if we have no notes at all (not just filtered to empty)
+  if (serverTotalCount === 0 && !deferredSearchQuery.trim() && !filterState.selectedFolder && filterState.archiveFilter !== 'archived') {
     return (
       <>
         <EmptyState
@@ -348,7 +342,7 @@ export function NotesPage() {
     (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) ||
     searchQuery.trim() !== '';
 
-  if (hasActiveFilters && filteredNotes.length === 0) {
+  if (hasActiveFilters && displayedNotes.length === 0 && totalItems === 0) {
     return (
       <>
         <EmptyState
@@ -372,11 +366,11 @@ export function NotesPage() {
   return (
     <>
       <div
-        className={notes && notes.length > 0 ? 'pt-2 transition-opacity duration-200' : 'transition-opacity duration-200'}
-        style={{ opacity: isSearchStale ? 0.7 : 1 }}
+        className={notes.length > 0 ? 'pt-2 transition-opacity duration-200' : 'transition-opacity duration-200'}
+        style={{ opacity: isSearchStale || isFetching ? 0.7 : 1 }}
       >
         <NoteList
-          notes={paginatedNotes}
+          notes={displayedNotes}
           viewMode={notesViewMode}
           isBulkMode={isBulkMode}
           selectedNoteIds={selectedNoteIds}
@@ -386,7 +380,7 @@ export function NotesPage() {
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
-          totalItems={filteredNotes.length}
+          totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
         />
@@ -394,7 +388,7 @@ export function NotesPage() {
       {isBulkMode && (
         <BulkActionsBar
           selectedCount={selectedNoteIds.size}
-          totalCount={filteredNotes.length}
+          totalCount={displayedNotes.length}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onDelete={handleBulkDelete}

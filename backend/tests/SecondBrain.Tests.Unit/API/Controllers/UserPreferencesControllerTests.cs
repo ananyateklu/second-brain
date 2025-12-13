@@ -1,26 +1,23 @@
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
+using SecondBrain.Application.Commands.UserPreferences.UpdatePreferences;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services;
+using SecondBrain.Application.Queries.UserPreferences.GetPreferences;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class UserPreferencesControllerTests
 {
-    private readonly Mock<IUserPreferencesService> _mockPreferencesService;
-    private readonly Mock<ILogger<UserPreferencesController>> _mockLogger;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly UserPreferencesController _sut;
 
     public UserPreferencesControllerTests()
     {
-        _mockPreferencesService = new Mock<IUserPreferencesService>();
-        _mockLogger = new Mock<ILogger<UserPreferencesController>>();
-        _sut = new UserPreferencesController(
-            _mockPreferencesService.Object,
-            _mockLogger.Object
-        );
+        _mockMediator = new Mock<IMediator>();
+        _sut = new UserPreferencesController(_mockMediator.Object);
     }
 
     #region GetPreferences Tests
@@ -43,8 +40,9 @@ public class UserPreferencesControllerTests
             UseRemoteOllama = false
         };
 
-        _mockPreferencesService.Setup(s => s.GetPreferencesAsync(userId))
-            .ReturnsAsync(preferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetPreferencesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(preferences));
 
         // Act
         var result = await _sut.GetPreferences(userId);
@@ -59,12 +57,13 @@ public class UserPreferencesControllerTests
     }
 
     [Fact]
-    public async Task GetPreferences_WhenServiceThrows_Returns500()
+    public async Task GetPreferences_WhenServiceFails_Returns500()
     {
         // Arrange
         var userId = "user-123";
-        _mockPreferencesService.Setup(s => s.GetPreferencesAsync(userId))
-            .ThrowsAsync(new Exception("Database error"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetPreferencesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Failure(Error.Internal("Database error")));
 
         // Act
         var result = await _sut.GetPreferences(userId);
@@ -75,18 +74,23 @@ public class UserPreferencesControllerTests
     }
 
     [Fact]
-    public async Task GetPreferences_CallsServiceWithCorrectUserId()
+    public async Task GetPreferences_CallsMediatorWithCorrectUserId()
     {
         // Arrange
         var userId = "specific-user-id";
-        _mockPreferencesService.Setup(s => s.GetPreferencesAsync(userId))
-            .ReturnsAsync(new UserPreferencesResponse());
+        GetPreferencesQuery? capturedQuery = null;
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetPreferencesQuery>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<UserPreferencesResponse>>, CancellationToken>((q, _) => capturedQuery = (GetPreferencesQuery)q)
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(new UserPreferencesResponse()));
 
         // Act
         await _sut.GetPreferences(userId);
 
         // Assert
-        _mockPreferencesService.Verify(s => s.GetPreferencesAsync(userId), Times.Once);
+        capturedQuery.Should().NotBeNull();
+        capturedQuery!.UserId.Should().Be(userId);
     }
 
     [Fact]
@@ -107,8 +111,9 @@ public class UserPreferencesControllerTests
             UseRemoteOllama = true
         };
 
-        _mockPreferencesService.Setup(s => s.GetPreferencesAsync(userId))
-            .ReturnsAsync(preferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetPreferencesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(preferences));
 
         // Act
         var result = await _sut.GetPreferences(userId);
@@ -149,8 +154,9 @@ public class UserPreferencesControllerTests
             EnableNotifications = true
         };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -163,14 +169,15 @@ public class UserPreferencesControllerTests
     }
 
     [Fact]
-    public async Task UpdatePreferences_WhenServiceThrows_Returns500()
+    public async Task UpdatePreferences_WhenServiceFails_Returns500()
     {
         // Arrange
         var userId = "user-123";
         var request = new UpdateUserPreferencesRequest { ChatProvider = "openai" };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ThrowsAsync(new Exception("Update failed"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Failure(Error.Internal("Update failed")));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -181,7 +188,7 @@ public class UserPreferencesControllerTests
     }
 
     [Fact]
-    public async Task UpdatePreferences_CallsServiceWithCorrectParameters()
+    public async Task UpdatePreferences_CallsMediatorWithCorrectParameters()
     {
         // Arrange
         var userId = "user-123";
@@ -192,20 +199,21 @@ public class UserPreferencesControllerTests
             DefaultNoteView = "grid"
         };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(new UserPreferencesResponse());
+        UpdatePreferencesCommand? capturedCommand = null;
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .Callback<IRequest<Result<UserPreferencesResponse>>, CancellationToken>((cmd, _) => capturedCommand = (UpdatePreferencesCommand)cmd)
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(new UserPreferencesResponse()));
 
         // Act
         await _sut.UpdatePreferences(userId, request);
 
         // Assert
-        _mockPreferencesService.Verify(s => s.UpdatePreferencesAsync(
-            userId,
-            It.Is<UpdateUserPreferencesRequest>(r =>
-                r.ChatProvider == "anthropic" &&
-                r.ChatModel == "claude-3-opus" &&
-                r.DefaultNoteView == "grid"
-            )), Times.Once);
+        capturedCommand.Should().NotBeNull();
+        capturedCommand!.UserId.Should().Be(userId);
+        capturedCommand.Request.ChatProvider.Should().Be("anthropic");
+        capturedCommand.Request.ChatModel.Should().Be("claude-3-opus");
+        capturedCommand.Request.DefaultNoteView.Should().Be("grid");
     }
 
     [Fact]
@@ -217,8 +225,9 @@ public class UserPreferencesControllerTests
 
         var updatedPreferences = new UserPreferencesResponse { ItemsPerPage = 50 };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -238,8 +247,9 @@ public class UserPreferencesControllerTests
 
         var updatedPreferences = new UserPreferencesResponse { FontSize = "large" };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -259,8 +269,9 @@ public class UserPreferencesControllerTests
 
         var updatedPreferences = new UserPreferencesResponse { EnableNotifications = false };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -288,8 +299,9 @@ public class UserPreferencesControllerTests
             UseRemoteOllama = true
         };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -310,8 +322,9 @@ public class UserPreferencesControllerTests
 
         var updatedPreferences = new UserPreferencesResponse { VectorStoreProvider = "Pinecone" };
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(updatedPreferences);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(updatedPreferences));
 
         // Act
         var result = await _sut.UpdatePreferences(userId, request);
@@ -323,20 +336,23 @@ public class UserPreferencesControllerTests
     }
 
     [Fact]
-    public async Task UpdatePreferences_WithEmptyRequest_StillCallsService()
+    public async Task UpdatePreferences_WithEmptyRequest_StillCallsMediator()
     {
         // Arrange
         var userId = "user-123";
         var request = new UpdateUserPreferencesRequest();
 
-        _mockPreferencesService.Setup(s => s.UpdatePreferencesAsync(userId, request))
-            .ReturnsAsync(new UserPreferencesResponse());
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdatePreferencesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<UserPreferencesResponse>.Success(new UserPreferencesResponse()));
 
         // Act
         await _sut.UpdatePreferences(userId, request);
 
         // Assert
-        _mockPreferencesService.Verify(s => s.UpdatePreferencesAsync(userId, request), Times.Once);
+        _mockMediator.Verify(
+            m => m.Send(It.Is<UpdatePreferencesCommand>(c => c.UserId == userId), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     #endregion
@@ -414,4 +430,3 @@ public class UserPreferencesControllerTests
 
     #endregion
 }
-

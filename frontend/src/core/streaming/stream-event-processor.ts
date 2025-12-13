@@ -54,8 +54,25 @@ interface StatusData {
   status: string;
 }
 
+/**
+ * Raw RAG note data from backend.
+ * Both ChatController and AgentController send relevanceScore.
+ */
+interface RawRagNote {
+  noteId: string;
+  title: string;
+  tags: string[];
+  relevanceScore: number;
+  chunkContent?: string;
+  content?: string;
+  preview?: string;
+  createdOn?: string | null;
+  modifiedOn?: string | null;
+  chunkIndex?: number;
+}
+
 interface RagData {
-  retrievedNotes?: RagContextNote[];
+  retrievedNotes?: RawRagNote[];
   ragLogId?: string;
 }
 
@@ -203,11 +220,26 @@ function parseStatusEvent(data: string): StreamEvent | null {
 
 /**
  * Parse RAG context event data (works for both 'rag' and 'context_retrieval' events)
+ * Both ChatController and AgentController send relevanceScore consistently.
  */
 function parseRagEvent(data: string): StreamEvent | null {
   try {
     const parsed = JSON.parse(data) as RagData;
-    const notes = parsed.retrievedNotes || [];
+    const rawNotes = parsed.retrievedNotes || [];
+
+    // Map raw notes to RagContextNote format
+    const notes: RagContextNote[] = rawNotes.map(note => ({
+      noteId: note.noteId,
+      title: note.title,
+      tags: note.tags,
+      relevanceScore: note.relevanceScore,
+      chunkContent: note.chunkContent ?? note.preview ?? '',
+      content: note.content ?? note.chunkContent ?? note.preview ?? '',
+      createdOn: note.createdOn,
+      modifiedOn: note.modifiedOn,
+      chunkIndex: note.chunkIndex ?? 0,
+    }));
+
     return {
       type: 'rag:context',
       notes,

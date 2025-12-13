@@ -219,9 +219,33 @@
 \echo ''
 
 -- Step 34: Token usage tracking
-\echo 'Step 34/34: Adding token usage tracking columns...'
+\echo 'Step 34/38: Adding token usage tracking columns...'
 \i 33_token_usage_tracking.sql
 \echo 'Token usage tracking columns added successfully.'
+\echo ''
+
+-- Step 35: Advanced database optimizations
+\echo 'Step 35/38: Applying advanced database optimizations...'
+\i 34_database_optimizations.sql
+\echo 'Advanced database optimizations applied successfully.'
+\echo ''
+
+-- Step 36: Table partitioning
+\echo 'Step 36/38: Setting up table partitioning...'
+\i 35_table_partitioning.sql
+\echo 'Table partitioning setup complete.'
+\echo ''
+
+-- Step 37: Advanced pgvector and PostgreSQL 18 optimizations
+\echo 'Step 37/38: Applying pgvector 0.8 and PostgreSQL 18 advanced optimizations...'
+\i 36_advanced_optimizations.sql
+\echo 'Advanced pgvector optimizations applied successfully.'
+\echo ''
+
+-- Step 38: Final statistics update
+\echo 'Step 38/38: Updating statistics...'
+ANALYZE;
+\echo 'Statistics updated successfully.'
 \echo ''
 
 \echo '============================================'
@@ -267,6 +291,28 @@
 \echo '  - Optimized HNSW vector index'
 \echo '  - Skip-scan optimized indexes'
 \echo '  - Monitoring functions'
+\echo ''
+\echo 'Advanced Optimizations:'
+\echo '  - BRIN indexes for time-series data'
+\echo '  - Covering indexes for index-only scans'
+\echo '  - Materialized views for analytics'
+\echo '  - Partitioned tables (chat_messages, rag_query_logs)'
+\echo '  - Extended statistics for correlated columns'
+\echo '  - Auto-vacuum tuning for high-write tables'
+\echo '  - JIT compilation enabled'
+\echo '  - Query performance monitoring functions'
+\echo ''
+\echo 'pgvector 0.8 Optimizations:'
+\echo '  - Vector quantization (halfvec) for 50% memory savings'
+\echo '  - HNSW iterative scan for filtered queries'
+\echo '  - Optimized HNSW index (m=24, ef_construction=128)'
+\echo '  - Hybrid search with SQL-level RRF fusion'
+\echo '  - RAG session initialization function'
+\echo ''
+\echo 'PostgreSQL 18 Storage Tuning:'
+\echo '  - FILLFACTOR: 80 (tool_calls), 85 (chat_messages), 90 (notes)'
+\echo '  - Index deduplication on user_id columns'
+\echo '  - Async I/O (io_uring on Linux, worker on macOS)'
 \echo ''
 \echo 'AI Provider Features:'
 \echo '  Gemini:'

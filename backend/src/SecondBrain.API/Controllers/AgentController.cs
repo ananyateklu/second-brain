@@ -19,6 +19,11 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class AgentController : ControllerBase
 {
+    /// <summary>
+    /// Maximum allowed response size in characters (512KB) to prevent memory exhaustion
+    /// </summary>
+    private const int MaxResponseSizeChars = 512 * 1024;
+
     private readonly IAgentService _agentService;
     private readonly IChatRepository _chatRepository;
     private readonly IUserPreferencesService _userPreferencesService;
@@ -193,11 +198,29 @@ public class AgentController : ControllerBase
             var pendingPreToolText = new Dictionary<string, string>();
             var lastToolEndPosition = 0;
 
+            var responseTruncated = false;
             await foreach (var evt in _agentService.ProcessStreamAsync(agentRequest, cancellationToken))
             {
+                // Skip further processing if response was truncated
+                if (responseTruncated && evt.Type == AgentEventType.Token)
+                    continue;
+
                 switch (evt.Type)
                 {
                     case AgentEventType.Token:
+                        // Check max response size to prevent memory exhaustion
+                        var tokenContent = evt.Content ?? "";
+                        if (fullResponse.Length + tokenContent.Length > MaxResponseSizeChars)
+                        {
+                            responseTruncated = true;
+                            _logger.LogWarning("Agent response truncated due to size limit. CurrentSize: {Size}, Limit: {Limit}",
+                                fullResponse.Length, MaxResponseSizeChars);
+                            fullResponse.Append("\n\n[Response truncated due to size limits]");
+                            await Response.WriteAsync("data: \\n\\n[Response truncated due to size limits]\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                            continue;
+                        }
+
                         fullResponse.Append(evt.Content);
                         var escapedToken = evt.Content?.Replace("\n", "\\n").Replace("\r", "") ?? "";
                         await Response.WriteAsync($"data: {escapedToken}\n\n");
@@ -312,6 +335,7 @@ public class AgentController : ControllerBase
                             ragLogId = evt.RagLogId;
                         }
 
+                        // Use consistent property naming with ChatController (relevanceScore, not similarityScore)
                         var contextRetrievalJson = JsonSerializer.Serialize(new
                         {
                             message = evt.Content,
@@ -321,7 +345,9 @@ public class AgentController : ControllerBase
                                 title = n.Title,
                                 preview = n.Preview,
                                 tags = n.Tags,
-                                similarityScore = n.SimilarityScore
+                                relevanceScore = n.SimilarityScore,
+                                chunkContent = n.ChunkContent ?? n.Preview,
+                                chunkIndex = 0
                             }).ToList(),
                             ragLogId = evt.RagLogId
                         });

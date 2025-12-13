@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { notesService } from '../../../services';
+import { notesService, type GetNotesPagedParams } from '../../../services';
 import { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, GenerateSummariesResponse } from '../../../types/notes';
+import type { PaginatedResult } from '../../../types/api';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 import { NOTES_FOLDERS } from '../../../lib/constants';
-import { noteKeys } from '../../../lib/query-keys';
+import { noteKeys, type NotePaginationParams } from '../../../lib/query-keys';
 
 // Type aliases for backward compatibility
 type CreateNoteInput = CreateNoteRequest;
@@ -21,6 +22,38 @@ export function useNotes() {
   return useApiQuery<NoteListItem[]>(
     noteKeys.all,
     () => notesService.getAll()
+  );
+}
+
+/**
+ * Query: Get paginated notes with server-side filtering
+ * Use this instead of useNotes() when dealing with large note collections.
+ * This enables server-side pagination, filtering, and search for better performance.
+ *
+ * @param params - Pagination and filter parameters
+ * @param enabled - Whether the query should be enabled (default: true)
+ * @returns Paginated result with notes and pagination metadata
+ */
+export function useNotesPaged(
+  params: GetNotesPagedParams,
+  enabled = true
+) {
+  const queryParams: NotePaginationParams = {
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+    folder: params.folder ?? undefined,
+    includeArchived: params.includeArchived,
+    search: params.search,
+  };
+
+  return useApiQuery<PaginatedResult<NoteListItem>>(
+    noteKeys.paged(queryParams),
+    () => notesService.getPaged(params),
+    {
+      enabled,
+      // Keep previous data while fetching new page for smoother UX
+      placeholderData: (previousData) => previousData,
+    }
   );
 }
 

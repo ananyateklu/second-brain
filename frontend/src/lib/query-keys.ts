@@ -28,6 +28,32 @@ export interface NoteFilters {
 }
 
 /**
+ * Parameters for paginated note queries (server-side pagination)
+ */
+export interface NotePaginationParams {
+  /** Page number (1-based) */
+  page: number;
+  /** Items per page */
+  pageSize: number;
+  /** Filter by folder name */
+  folder?: string | null;
+  /** Include archived notes */
+  includeArchived?: boolean;
+  /** Search term for title/content */
+  search?: string;
+}
+
+/**
+ * Parameters for paginated conversation queries (server-side pagination)
+ */
+export interface ConversationPaginationParams {
+  /** Page number (1-based) */
+  page: number;
+  /** Items per page */
+  pageSize: number;
+}
+
+/**
  * Filters for conversation queries
  */
 export interface ConversationFilters {
@@ -114,6 +140,9 @@ export const noteKeys = {
   /** Key for filtered note list */
   list: (filters?: NoteFilters) => [...noteKeys.lists(), filters] as const,
 
+  /** Key for paginated note list queries (server-side pagination) */
+  paged: (params: NotePaginationParams) => [...noteKeys.all, 'paged', params] as const,
+
   /** Key for note detail queries */
   details: () => [...noteKeys.all, 'detail'] as const,
 
@@ -142,6 +171,9 @@ export const conversationKeys = {
 
   /** Key for filtered conversation list */
   list: (filters?: ConversationFilters) => [...conversationKeys.lists(), filters] as const,
+
+  /** Key for paginated conversation list queries (server-side pagination) */
+  paged: (params: ConversationPaginationParams) => [...conversationKeys.all, 'paged', params] as const,
 
   /** Key for conversation detail queries */
   details: () => [...conversationKeys.all, 'detail'] as const,

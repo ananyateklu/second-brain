@@ -58,9 +58,10 @@ function normalizeNotes(notes: RagContextNote[] | RetrievedNoteContext[]): Norma
       title: note.title,
       preview: note.preview,
       tags: note.tags,
-      relevanceScore: note.similarityScore,
-      chunkContent: note.preview,
+      relevanceScore: note.relevanceScore,
+      chunkContent: note.chunkContent ?? note.preview,
       content: note.preview,
+      chunkIndex: note.chunkIndex,
     }));
   }
 }
@@ -177,15 +178,10 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
             )}
           </span>
           
-          {isStreaming ? (
-            <span className="text-[10px] opacity-70" style={{ color: 'var(--color-brand-500)' }}>
-              Retrieving notes...
-            </span>
-          ) : (
-            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-              · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
-            </span>
-          )}
+          {/* Show percentage when we have scores, even during streaming */}
+          <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+            · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
+          </span>
 
           <svg
             className={`w-2.5 h-2.5 ml-0.5 transition-transform opacity-50 ${isExpanded ? 'rotate-180' : ''}`}

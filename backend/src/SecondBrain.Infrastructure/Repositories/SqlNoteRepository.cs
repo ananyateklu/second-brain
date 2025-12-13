@@ -13,6 +13,15 @@ public class SqlNoteRepository : INoteRepository
     private readonly ApplicationDbContext _context;
     private readonly ILogger<SqlNoteRepository> _logger;
 
+    // Compiled queries for hot paths - eliminates query compilation overhead on single-entity lookups
+    private static readonly Func<ApplicationDbContext, string, Task<Note?>> GetByIdCompiledQuery =
+        EF.CompileAsyncQuery((ApplicationDbContext ctx, string id) =>
+            ctx.Notes.AsNoTracking().FirstOrDefault(n => n.Id == id));
+
+    private static readonly Func<ApplicationDbContext, string, string, Task<Note?>> GetByUserIdAndExternalIdCompiledQuery =
+        EF.CompileAsyncQuery((ApplicationDbContext ctx, string userId, string externalId) =>
+            ctx.Notes.AsNoTracking().FirstOrDefault(n => n.UserId == userId && n.ExternalId == externalId));
+
     public SqlNoteRepository(ApplicationDbContext context, ILogger<SqlNoteRepository> logger)
     {
         _context = context;
@@ -41,9 +50,17 @@ public class SqlNoteRepository : INoteRepository
         {
             _logger.LogDebug("Retrieving note by ID. NoteId: {NoteId}", id);
 
-            var note = await _context.Notes
-                .AsNoTracking()
-                .FirstOrDefaultAsync(n => n.Id == id);
+            Note? note;
+            try
+            {
+                // Use compiled query for better performance in production
+                note = await GetByIdCompiledQuery(_context, id);
+            }
+            catch (InvalidOperationException)
+            {
+                // Fallback to regular query when compiled query model doesn't match (e.g., in tests)
+                note = await _context.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id);
+            }
 
             if (note == null)
             {
@@ -216,9 +233,18 @@ public class SqlNoteRepository : INoteRepository
         {
             _logger.LogDebug("Retrieving note by userId and externalId. UserId: {UserId}, ExternalId: {ExternalId}", userId, externalId);
 
-            var note = await _context.Notes
-                .AsNoTracking()
-                .FirstOrDefaultAsync(n => n.UserId == userId && n.ExternalId == externalId);
+            Note? note;
+            try
+            {
+                // Use compiled query for better performance in production
+                note = await GetByUserIdAndExternalIdCompiledQuery(_context, userId, externalId);
+            }
+            catch (InvalidOperationException)
+            {
+                // Fallback to regular query when compiled query model doesn't match (e.g., in tests)
+                note = await _context.Notes.AsNoTracking()
+                    .FirstOrDefaultAsync(n => n.UserId == userId && n.ExternalId == externalId);
+            }
 
             if (note == null)
             {
@@ -256,6 +282,61 @@ public class SqlNoteRepository : INoteRepository
         {
             _logger.LogError(ex, "Error retrieving notes by userId. UserId: {UserId}", userId);
             throw new RepositoryException($"Failed to retrieve notes for user '{userId}'", ex);
+        }
+    }
+
+    public async Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
+        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving paginated notes. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, Folder: {Folder}",
+                userId, page, pageSize, folder);
+
+            var query = _context.Notes
+                .AsNoTracking()
+                .Where(n => n.UserId == userId);
+
+            // Apply folder filter
+            if (!string.IsNullOrEmpty(folder))
+            {
+                query = query.Where(n => n.Folder == folder);
+            }
+
+            // Apply archived filter
+            if (!includeArchived)
+            {
+                query = query.Where(n => !n.IsArchived);
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(search))
+            {
+                var searchLower = search.ToLower();
+                query = query.Where(n =>
+                    n.Title.ToLower().Contains(searchLower) ||
+                    n.Content.ToLower().Contains(searchLower));
+            }
+
+            // Get total count
+            var totalCount = await query.CountAsync();
+
+            // Get paginated results
+            var notes = await query
+                .OrderByDescending(n => n.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            _logger.LogDebug("Retrieved paginated notes. UserId: {UserId}, Count: {Count}, TotalCount: {TotalCount}",
+                userId, notes.Count, totalCount);
+
+            return (notes, totalCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving paginated notes. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to retrieve paginated notes for user '{userId}'", ex);
         }
     }
 

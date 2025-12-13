@@ -5,6 +5,7 @@
 
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, NOTES_FOLDERS } from '../lib/constants';
+import type { PaginatedResult } from '../types/api';
 import type {
   Note,
   NoteListItem,
@@ -23,6 +24,17 @@ import type {
 } from '../types/notes';
 
 /**
+ * Parameters for paginated notes request
+ */
+export interface GetNotesPagedParams {
+  page?: number;
+  pageSize?: number;
+  folder?: string | null;
+  includeArchived?: boolean;
+  search?: string;
+}
+
+/**
  * Notes service for CRUD operations and business logic
  */
 export const notesService = {
@@ -31,6 +43,31 @@ export const notesService = {
    */
   async getAll(): Promise<NoteListItem[]> {
     return apiClient.get<NoteListItem[]>(API_ENDPOINTS.NOTES.BASE);
+  },
+
+  /**
+   * Get paginated notes with server-side filtering
+   * @param params - Pagination and filter parameters
+   * @returns Paginated result with notes and metadata
+   */
+  async getPaged(params: GetNotesPagedParams = {}): Promise<PaginatedResult<NoteListItem>> {
+    const { page = 1, pageSize = 20, folder, includeArchived = false, search } = params;
+
+    const queryParams = new URLSearchParams();
+    queryParams.set('page', String(page));
+    queryParams.set('pageSize', String(pageSize));
+    queryParams.set('includeArchived', String(includeArchived));
+
+    if (folder) {
+      queryParams.set('folder', folder);
+    }
+    if (search?.trim()) {
+      queryParams.set('search', search.trim());
+    }
+
+    return apiClient.get<PaginatedResult<NoteListItem>>(
+      `${API_ENDPOINTS.NOTES.PAGED}?${queryParams.toString()}`
+    );
   },
 
   /**

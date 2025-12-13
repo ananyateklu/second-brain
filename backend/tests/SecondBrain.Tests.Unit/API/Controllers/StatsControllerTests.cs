@@ -1,22 +1,22 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.API.Controllers;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services.Stats;
+using SecondBrain.Application.Queries.Stats.GetAIUsageStats;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class StatsControllerTests
 {
-    private readonly Mock<IStatsService> _mockStatsService;
-    private readonly Mock<IToolCallAnalyticsService> _mockToolCallAnalyticsService;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly StatsController _sut;
 
     public StatsControllerTests()
     {
-        _mockStatsService = new Mock<IStatsService>();
-        _mockToolCallAnalyticsService = new Mock<IToolCallAnalyticsService>();
-        _sut = new StatsController(_mockStatsService.Object, _mockToolCallAnalyticsService.Object);
+        _mockMediator = new Mock<IMediator>();
+        _sut = new StatsController(_mockMediator.Object);
         SetupUnauthenticatedUser();
     }
 
@@ -40,8 +40,8 @@ public class StatsControllerTests
             ModelUsageCounts = new Dictionary<string, int> { { "gpt-4", 5 }, { "claude-3", 5 } },
             ProviderUsageCounts = new Dictionary<string, int> { { "openai", 5 }, { "anthropic", 5 } }
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(stats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(stats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -90,14 +90,17 @@ public class StatsControllerTests
         var userId = "specific-user-id";
         SetupAuthenticatedUser(userId);
 
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(new AIUsageStatsResponse());
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(new AIUsageStatsResponse()));
 
         // Act
         await _sut.GetAIUsageStats();
 
         // Assert
-        _mockStatsService.Verify(s => s.GetAIUsageStatsAsync(userId), Times.Once);
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetAIUsageStatsQuery>(q => q.UserId == userId),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -116,8 +119,8 @@ public class StatsControllerTests
                 { "claude-3-opus", 3 }
             }
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(stats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(stats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -144,8 +147,8 @@ public class StatsControllerTests
                 { "anthropic", 8 }
             }
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(stats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(stats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -172,8 +175,8 @@ public class StatsControllerTests
                 { "2024-01-16", 3 }
             }
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(stats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(stats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -199,8 +202,8 @@ public class StatsControllerTests
                 { "claude-3", 30000 }
             }
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(stats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(stats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -229,8 +232,8 @@ public class StatsControllerTests
             ModelUsageCounts = new Dictionary<string, int>(),
             ProviderUsageCounts = new Dictionary<string, int>()
         };
-        _mockStatsService.Setup(s => s.GetAIUsageStatsAsync(userId))
-            .ReturnsAsync(emptyStats);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAIUsageStatsQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIUsageStatsResponse>.Success(emptyStats));
 
         // Act
         var result = await _sut.GetAIUsageStats();
@@ -267,4 +270,3 @@ public class StatsControllerTests
 
     #endregion
 }
-

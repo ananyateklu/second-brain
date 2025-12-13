@@ -1,9 +1,15 @@
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.API.Extensions;
+using SecondBrain.Application.Commands.RagAnalytics.ClusterQueries;
+using SecondBrain.Application.Commands.RagAnalytics.SubmitFeedback;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services.RAG;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Application.Queries.RagAnalytics.GetPerformanceStats;
+using SecondBrain.Application.Queries.RagAnalytics.GetQueryLogById;
+using SecondBrain.Application.Queries.RagAnalytics.GetQueryLogs;
+using SecondBrain.Application.Queries.RagAnalytics.GetTopicStats;
 
 namespace SecondBrain.API.Controllers;
 
@@ -18,24 +24,11 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class RagAnalyticsController : ControllerBase
 {
-    private readonly IRagAnalyticsService _analyticsService;
-    private readonly ITopicClusteringService _clusteringService;
-    private readonly IRagQueryLogRepository _repository;
-    private readonly IChatRepository _chatRepository;
-    private readonly ILogger<RagAnalyticsController> _logger;
+    private readonly IMediator _mediator;
 
-    public RagAnalyticsController(
-        IRagAnalyticsService analyticsService,
-        ITopicClusteringService clusteringService,
-        IRagQueryLogRepository repository,
-        IChatRepository chatRepository,
-        ILogger<RagAnalyticsController> logger)
+    public RagAnalyticsController(IMediator mediator)
     {
-        _analyticsService = analyticsService;
-        _clusteringService = clusteringService;
-        _repository = repository;
-        _chatRepository = chatRepository;
-        _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -61,58 +54,24 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            // Verify the log exists and belongs to the user
-            var log = await _repository.GetByIdAsync(request.LogId);
-            if (log == null)
+        var command = new SubmitFeedbackCommand(
+            userId,
+            request.LogId,
+            request.Feedback,
+            request.Category,
+            request.Comment);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.Match<IActionResult>(
+            onSuccess: _ => Ok(new { success = true, message = "Feedback submitted successfully" }),
+            onFailure: error => error.Code switch
             {
-                return NotFound(new { error = $"RAG query log '{request.LogId}' not found" });
+                "NotFound" => NotFound(new { error = error.Message }),
+                "Forbidden" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
             }
-
-            if (log.UserId != userId)
-            {
-                _logger.LogWarning(
-                    "User attempted to submit feedback for another user's RAG query. UserId: {UserId}, LogId: {LogId}",
-                    userId, request.LogId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            await _analyticsService.UpdateFeedbackAsync(
-                request.LogId,
-                request.Feedback,
-                request.Category,
-                request.Comment,
-                cancellationToken);
-
-            // Also update the chat message with the feedback for persistence across page reloads
-            if (!string.IsNullOrEmpty(log.ConversationId))
-            {
-                var conversation = await _chatRepository.GetByIdAsync(log.ConversationId);
-                if (conversation != null)
-                {
-                    // Find the message with this ragLogId and update its feedback
-                    var message = conversation.Messages.FirstOrDefault(m => m.RagLogId == request.LogId.ToString());
-                    if (message != null)
-                    {
-                        message.RagFeedback = request.Feedback;
-                        await _chatRepository.UpdateAsync(log.ConversationId, conversation);
-                        _logger.LogDebug("Updated chat message feedback. MessageId: {MessageId}", message.Id);
-                    }
-                }
-            }
-
-            _logger.LogInformation(
-                "RAG feedback submitted. LogId: {LogId}, Feedback: {Feedback}, Category: {Category}",
-                request.LogId, request.Feedback, request.Category);
-
-            return Ok(new { success = true, message = "Feedback submitted successfully" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error submitting RAG feedback. LogId: {LogId}", request.LogId);
-            return StatusCode(500, new { error = "Failed to submit feedback" });
-        }
+        );
     }
 
     /// <summary>
@@ -136,35 +95,10 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var effectiveSince = since ?? DateTime.UtcNow.AddDays(-30);
-            var stats = await _analyticsService.GetPerformanceStatsAsync(userId, effectiveSince, cancellationToken);
+        var query = new GetPerformanceStatsQuery(userId, since);
+        var result = await _mediator.Send(query, cancellationToken);
 
-            var response = new RagPerformanceStatsResponse
-            {
-                TotalQueries = stats.TotalQueries,
-                QueriesWithFeedback = stats.QueriesWithFeedback,
-                PositiveFeedback = stats.PositiveFeedback,
-                NegativeFeedback = stats.NegativeFeedback,
-                PositiveFeedbackRate = stats.PositiveFeedbackRate,
-                AvgTotalTimeMs = stats.AvgTotalTimeMs,
-                AvgRetrievedCount = stats.AvgRetrievedCount,
-                AvgCosineScore = stats.AvgCosineScore,
-                AvgRerankScore = stats.AvgRerankScore,
-                CosineScoreCorrelation = stats.CosineScoreCorrelation,
-                RerankScoreCorrelation = stats.RerankScoreCorrelation,
-                PeriodStart = effectiveSince,
-                PeriodEnd = DateTime.UtcNow
-            };
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving RAG performance stats. UserId: {UserId}", userId);
-            return StatusCode(500, new { error = "Failed to retrieve performance statistics" });
-        }
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -193,47 +127,10 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        // Validate pagination parameters
-        page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 100);
+        var query = new GetQueryLogsQuery(userId, page, pageSize, since, feedbackOnly);
+        var result = await _mediator.Send(query, cancellationToken);
 
-        try
-        {
-            IEnumerable<Core.Entities.RagQueryLog> logs;
-
-            if (feedbackOnly)
-            {
-                logs = await _repository.GetWithFeedbackAsync(userId, since);
-            }
-            else
-            {
-                logs = await _repository.GetByUserIdAsync(userId, since);
-            }
-
-            var logsList = logs.ToList();
-            var totalCount = logsList.Count;
-            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-
-            var pagedLogs = logsList
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(MapToResponse)
-                .ToList();
-
-            return Ok(new RagQueryLogsResponse
-            {
-                Logs = pagedLogs,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize,
-                TotalPages = totalPages
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving RAG query logs. UserId: {UserId}", userId);
-            return StatusCode(500, new { error = "Failed to retrieve query logs" });
-        }
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -258,27 +155,18 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var log = await _repository.GetByIdAsync(id);
+        var query = new GetQueryLogByIdQuery(userId, id);
+        var result = await _mediator.Send(query, cancellationToken);
 
-            if (log == null)
+        return result.Match<ActionResult<RagQueryLogResponse>>(
+            onSuccess: log => Ok(log),
+            onFailure: error => error.Code switch
             {
-                return NotFound(new { error = $"RAG query log '{id}' not found" });
+                "NotFound" => NotFound(new { error = error.Message }),
+                "Forbidden" => StatusCode(StatusCodes.Status403Forbidden, new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
             }
-
-            if (log.UserId != userId)
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            return Ok(MapToResponse(log));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving RAG query log. LogId: {LogId}", id);
-            return StatusCode(500, new { error = "Failed to retrieve query log" });
-        }
+        );
     }
 
     /// <summary>
@@ -302,39 +190,25 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        if (clusterCount < 2 || clusterCount > 20)
-        {
-            return BadRequest(new { error = "Cluster count must be between 2 and 20" });
-        }
+        var command = new ClusterQueriesCommand(userId, clusterCount);
+        var result = await _mediator.Send(command, cancellationToken);
 
-        try
-        {
-            _logger.LogInformation(
-                "Starting topic clustering. UserId: {UserId}, ClusterCount: {Count}",
-                userId, clusterCount);
-
-            var result = await _clusteringService.ClusterQueriesAsync(
-                userId, clusterCount, cancellationToken: cancellationToken);
-
-            if (!result.Success)
-            {
-                return BadRequest(new { error = result.Error ?? "Clustering failed" });
-            }
-
-            return Ok(new
+        return result.Match<IActionResult>(
+            onSuccess: clusterResult => Ok(new
             {
                 success = true,
-                message = $"Successfully clustered {result.TotalProcessed} queries into {result.ClusterCount} topics",
-                totalProcessed = result.TotalProcessed,
-                clusterCount = result.ClusterCount,
-                topicLabels = result.TopicLabels
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error clustering queries. UserId: {UserId}", userId);
-            return StatusCode(500, new { error = "Failed to cluster queries" });
-        }
+                message = $"Successfully clustered {clusterResult.TotalProcessed} queries into {clusterResult.ClusterCount} topics",
+                totalProcessed = clusterResult.TotalProcessed,
+                clusterCount = clusterResult.ClusterCount,
+                topicLabels = clusterResult.TopicLabels
+            }),
+            onFailure: error => error.Code switch
+            {
+                "Validation" => BadRequest(new { error = error.Message }),
+                "ClusteringFailed" => BadRequest(new { error = error.Message }),
+                _ => StatusCode(500, new { error = error.Message })
+            }
+        );
     }
 
     /// <summary>
@@ -355,72 +229,9 @@ public class RagAnalyticsController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var stats = await _clusteringService.GetTopicStatsAsync(userId, cancellationToken);
-            var logs = await _repository.GetByUserIdAsync(userId);
-            var logsList = logs.ToList();
+        var query = new GetTopicStatsQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
 
-            var response = new TopicAnalyticsResponse
-            {
-                Topics = stats.Select(s => new TopicStatsResponse
-                {
-                    ClusterId = s.ClusterId,
-                    Label = s.Label,
-                    QueryCount = s.QueryCount,
-                    PositiveFeedback = s.PositiveFeedback,
-                    NegativeFeedback = s.NegativeFeedback,
-                    PositiveFeedbackRate = s.PositiveFeedbackRate,
-                    AvgCosineScore = s.AvgCosineScore,
-                    AvgRerankScore = s.AvgRerankScore,
-                    SampleQueries = s.SampleQueries
-                }).ToList(),
-                TotalClustered = logsList.Count(l => l.TopicCluster.HasValue),
-                TotalUnclustered = logsList.Count(l => !l.TopicCluster.HasValue),
-                LastClusteredAt = logsList
-                    .Where(l => l.TopicCluster.HasValue)
-                    .Select(l => l.CreatedAt)
-                    .DefaultIfEmpty()
-                    .Max()
-            };
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving topic stats. UserId: {UserId}", userId);
-            return StatusCode(500, new { error = "Failed to retrieve topic statistics" });
-        }
-    }
-
-    private static RagQueryLogResponse MapToResponse(Core.Entities.RagQueryLog log)
-    {
-        return new RagQueryLogResponse
-        {
-            Id = log.Id,
-            Query = log.Query,
-            ConversationId = log.ConversationId,
-            CreatedAt = log.CreatedAt,
-            TotalTimeMs = log.TotalTimeMs,
-            QueryEmbeddingTimeMs = log.QueryEmbeddingTimeMs,
-            VectorSearchTimeMs = log.VectorSearchTimeMs,
-            RerankTimeMs = log.RerankTimeMs,
-            RetrievedCount = log.RetrievedCount,
-            FinalCount = log.FinalCount,
-            TopCosineScore = log.TopCosineScore,
-            AvgCosineScore = log.AvgCosineScore,
-            TopRerankScore = log.TopRerankScore,
-            AvgRerankScore = log.AvgRerankScore,
-            HybridSearchEnabled = log.HybridSearchEnabled,
-            HyDEEnabled = log.HyDEEnabled,
-            MultiQueryEnabled = log.MultiQueryEnabled,
-            RerankingEnabled = log.RerankingEnabled,
-            UserFeedback = log.UserFeedback,
-            FeedbackCategory = log.FeedbackCategory,
-            FeedbackComment = log.FeedbackComment,
-            TopicCluster = log.TopicCluster,
-            TopicLabel = log.TopicLabel
-        };
+        return result.ToActionResult();
     }
 }
-

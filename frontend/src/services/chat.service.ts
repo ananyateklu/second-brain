@@ -7,6 +7,7 @@ import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, DEFAULT_USER_ID, getApiBaseUrl } from '../lib/constants';
 import { useAuthStore } from '../store/auth-store';
 import { loggers } from '../utils/logger';
+import type { PaginatedResult } from '../types/api';
 import type {
   ChatConversation,
   ChatResponseWithRag,
@@ -28,6 +29,14 @@ import type {
 import type { RagContextNote } from '../types/rag';
 
 /**
+ * Parameters for paginated conversations request
+ */
+export interface GetConversationsPagedParams {
+  page?: number;
+  pageSize?: number;
+}
+
+/**
  * Chat service for conversation and message operations
  */
 export const chatService = {
@@ -37,6 +46,25 @@ export const chatService = {
   async getConversations(userId: string = DEFAULT_USER_ID): Promise<ChatConversation[]> {
     return apiClient.get<ChatConversation[]>(
       `${API_ENDPOINTS.CHAT.CONVERSATIONS}?userId=${userId}`
+    );
+  },
+
+  /**
+   * Get paginated conversation headers (without messages) for better performance
+   * @param params - Pagination parameters
+   * @returns Paginated result with conversation headers and metadata
+   */
+  async getConversationsPaged(
+    params: GetConversationsPagedParams = {}
+  ): Promise<PaginatedResult<ChatConversation>> {
+    const { page = 1, pageSize = 20 } = params;
+
+    const queryParams = new URLSearchParams();
+    queryParams.set('page', String(page));
+    queryParams.set('pageSize', String(pageSize));
+
+    return apiClient.get<PaginatedResult<ChatConversation>>(
+      `${API_ENDPOINTS.CHAT.CONVERSATIONS_PAGED}?${queryParams.toString()}`
     );
   },
 

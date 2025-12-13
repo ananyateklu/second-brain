@@ -119,7 +119,10 @@ export interface RetrievedNoteContext {
   title: string;
   preview: string;
   tags: string[];
-  similarityScore: number;
+  /** Relevance score from RAG search (0-1, where 1 is most relevant) */
+  relevanceScore: number;
+  chunkContent?: string;
+  chunkIndex?: number;
 }
 
 /**

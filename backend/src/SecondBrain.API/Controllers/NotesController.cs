@@ -11,6 +11,7 @@ using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Mappings;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
+using SecondBrain.Application.Queries.Notes.GetNotesPaged;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Core.Interfaces;
 
@@ -67,6 +68,41 @@ public class NotesController : ControllerBase
         }
 
         var query = new GetAllNotesQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Get paginated notes for the authenticated user.
+    /// Returns lightweight response with summary instead of full content for better performance.
+    /// </summary>
+    /// <param name="page">Page number (1-based, default: 1)</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100)</param>
+    /// <param name="folder">Optional folder filter</param>
+    /// <param name="includeArchived">Include archived notes (default: false)</param>
+    /// <param name="search">Optional search query</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of notes</returns>
+    [HttpGet("paged")]
+    [ProducesResponseType(typeof(Application.DTOs.Common.PaginatedResult<NoteListResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<Application.DTOs.Common.PaginatedResult<NoteListResponse>>> GetNotesPaged(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? folder = null,
+        [FromQuery] bool includeArchived = false,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var query = new GetNotesPagedQuery(userId, page, pageSize, folder, includeArchived, search);
         var result = await _mediator.Send(query, cancellationToken);
 
         return result.ToActionResult();

@@ -65,11 +65,11 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Owner.Should().Be("testowner");
-        result.Value.Repo.Should().Be("testrepo");
-        result.Value.FullName.Should().Be("testowner/testrepo");
-        result.Value.DefaultBranch.Should().Be("main");
-        result.Value.IsConfigured.Should().BeTrue();
+        result.Value!.Owner.Should().Be("testowner");
+        result.Value!.Repo.Should().Be("testrepo");
+        result.Value!.FullName.Should().Be("testowner/testrepo");
+        result.Value!.DefaultBranch.Should().Be("main");
+        result.Value!.IsConfigured.Should().BeTrue();
     }
 
     [Fact]
@@ -89,8 +89,8 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Owner.Should().Be("custom");
-        result.Value.Repo.Should().Be("repo");
+        result.Value!.Owner.Should().Be("custom");
+        result.Value!.Repo.Should().Be("repo");
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GitHub.Unauthorized");
+        result.Error!.Code.Should().Be("GitHub.Unauthorized");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GitHub.NotFound");
+        result.Error!.Code.Should().Be("GitHub.NotFound");
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GitHub.Forbidden");
+        result.Error!.Code.Should().Be("GitHub.Forbidden");
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ExternalServiceError");
+        result.Error!.Code.Should().Be("ExternalServiceError");
     }
 
     #endregion
@@ -208,9 +208,9 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.PullRequests.Should().HaveCount(1);
-        result.Value.PullRequests.First().Number.Should().Be(1);
-        result.Value.PullRequests.First().Title.Should().Be("Fix bug");
+        result.Value!.PullRequests.Should().HaveCount(1);
+        result.Value!.PullRequests.First().Number.Should().Be(1);
+        result.Value!.PullRequests.First().Title.Should().Be("Fix bug");
     }
 
     [Fact]
@@ -244,7 +244,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.HasMore.Should().BeTrue();
+        result.Value!.HasMore.Should().BeTrue();
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.HasMore.Should().BeFalse();
+        result.Value!.HasMore.Should().BeFalse();
     }
 
     #endregion
@@ -296,9 +296,9 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Number.Should().Be(123);
-        result.Value.Title.Should().Be("Test PR");
-        result.Value.CommentsCount.Should().Be(5);
+        result.Value!.Number.Should().Be(123);
+        result.Value!.Title.Should().Be("Test PR");
+        result.Value!.CommentsCount.Should().Be(5);
     }
 
     [Fact]
@@ -312,7 +312,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GitHub.NotFound");
+        result.Error!.Code.Should().Be("GitHub.NotFound");
     }
 
     #endregion
@@ -354,10 +354,10 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.WorkflowRuns.Should().HaveCount(1);
-        result.Value.WorkflowRuns.First().Name.Should().Be("CI");
-        result.Value.WorkflowRuns.First().Status.Should().Be("completed");
-        result.Value.WorkflowRuns.First().Conclusion.Should().Be("success");
+        result.Value!.WorkflowRuns.Should().HaveCount(1);
+        result.Value!.WorkflowRuns.First().Name.Should().Be("CI");
+        result.Value!.WorkflowRuns.First().Status.Should().Be("completed");
+        result.Value!.WorkflowRuns.First().Conclusion.Should().Be("success");
     }
 
     [Fact]
@@ -418,8 +418,8 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(12345);
-        result.Value.Name.Should().Be("CI Pipeline");
+        result.Value!.Id.Should().Be(12345);
+        result.Value!.Name.Should().Be("CI Pipeline");
     }
 
     #endregion
@@ -447,8 +447,8 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value.First().Name.Should().Be("CI");
+        result.Value!.Should().HaveCount(2);
+        result.Value!.First().Name.Should().Be("CI");
     }
 
     #endregion
@@ -476,7 +476,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
+        result.Value!.Should().HaveCount(2);
     }
 
     #endregion
@@ -510,8 +510,8 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(2);
-        result.Value.First().State.Should().Be("APPROVED");
+        result.Value!.Should().HaveCount(2);
+        result.Value!.First().State.Should().Be("APPROVED");
     }
 
     #endregion
@@ -529,7 +529,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeTrue();
+        result.Value!.Should().BeTrue();
     }
 
     [Fact]
@@ -543,7 +543,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("GitHub.Forbidden");
+        result.Error!.Code.Should().Be("GitHub.Forbidden");
     }
 
     #endregion
@@ -561,7 +561,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeTrue();
+        result.Value!.Should().BeTrue();
     }
 
     #endregion
@@ -594,11 +594,11 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Files.Should().HaveCount(1);
-        result.Value.Files.First().Filename.Should().Be("src/app.ts");
-        result.Value.Files.First().Status.Should().Be("modified");
-        result.Value.Files.First().Additions.Should().Be(10);
-        result.Value.Files.First().Deletions.Should().Be(5);
+        result.Value!.Files.Should().HaveCount(1);
+        result.Value!.Files.First().Filename.Should().Be("src/app.ts");
+        result.Value!.Files.First().Status.Should().Be("modified");
+        result.Value!.Files.First().Additions.Should().Be(10);
+        result.Value!.Files.First().Deletions.Should().Be(5);
     }
 
     #endregion
@@ -645,9 +645,9 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Branches.Should().HaveCount(2);
-        result.Value.Branches.First().Name.Should().Be("main");
-        result.Value.Branches.First().IsProtected.Should().BeTrue();
+        result.Value!.Branches.Should().HaveCount(2);
+        result.Value!.Branches.First().Name.Should().Be("main");
+        result.Value!.Branches.First().IsProtected.Should().BeTrue();
     }
 
     #endregion
@@ -693,8 +693,8 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Issues.Should().HaveCount(2);
-        result.Value.Issues.First().Title.Should().Be("Bug report");
+        result.Value!.Issues.Should().HaveCount(2);
+        result.Value!.Issues.First().Title.Should().Be("Bug report");
     }
 
     [Fact]
@@ -743,9 +743,9 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Commits.Should().HaveCount(1);
-        result.Value.Commits.First().Message.Should().Be("Initial commit");
-        result.Value.Commits.First().ShortSha.Should().Be("abc123d");
+        result.Value!.Commits.Should().HaveCount(1);
+        result.Value!.Commits.First().Message.Should().Be("Initial commit");
+        result.Value!.Commits.First().ShortSha.Should().Be("abc123d");
     }
 
     [Fact]
@@ -798,9 +798,9 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Comments.Should().HaveCount(2);
-        result.Value.Comments.First().Body.Should().Be("First comment");
-        result.Value.TotalCount.Should().Be(2);
+        result.Value!.Comments.Should().HaveCount(2);
+        result.Value!.Comments.First().Body.Should().Be("First comment");
+        result.Value!.TotalCount.Should().Be(2);
     }
 
     #endregion
@@ -823,7 +823,7 @@ public class GitHubServiceTests : IDisposable
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be(expectedErrorCode);
+        result.Error!.Code.Should().Be(expectedErrorCode);
     }
 
     #endregion
