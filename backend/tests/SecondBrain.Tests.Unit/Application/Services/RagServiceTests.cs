@@ -18,6 +18,7 @@ public class RagServiceTests
     private readonly Mock<INativeHybridSearchService> _mockNativeHybridSearchService;
     private readonly Mock<IQueryExpansionService> _mockQueryExpansionService;
     private readonly Mock<IRerankerService> _mockRerankerService;
+    private readonly Mock<ICohereRerankerService> _mockCohereRerankerService;
     private readonly Mock<IRagAnalyticsService> _mockRagAnalyticsService;
     private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
     private readonly Mock<ILogger<RagService>> _mockLogger;
@@ -32,6 +33,7 @@ public class RagServiceTests
         _mockNativeHybridSearchService = new Mock<INativeHybridSearchService>();
         _mockQueryExpansionService = new Mock<IQueryExpansionService>();
         _mockRerankerService = new Mock<IRerankerService>();
+        _mockCohereRerankerService = new Mock<ICohereRerankerService>();
         _mockRagAnalyticsService = new Mock<IRagAnalyticsService>();
         _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
         _mockLogger = new Mock<ILogger<RagService>>();
@@ -58,6 +60,7 @@ public class RagServiceTests
             _mockNativeHybridSearchService.Object,
             _mockQueryExpansionService.Object,
             _mockRerankerService.Object,
+            _mockCohereRerankerService.Object,
             _mockRagAnalyticsService.Object,
             options,
             _mockLogger.Object

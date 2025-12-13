@@ -20,6 +20,7 @@ public class RagService : IRagService
     private readonly INativeHybridSearchService? _nativeHybridSearchService;
     private readonly IQueryExpansionService _queryExpansionService;
     private readonly IRerankerService _rerankerService;
+    private readonly ICohereRerankerService? _cohereRerankerService;
     private readonly IRagAnalyticsService? _analyticsService;
     private readonly RagSettings _settings;
     private readonly ILogger<RagService> _logger;
@@ -31,6 +32,7 @@ public class RagService : IRagService
         INativeHybridSearchService? nativeHybridSearchService,
         IQueryExpansionService queryExpansionService,
         IRerankerService rerankerService,
+        ICohereRerankerService? cohereRerankerService,
         IRagAnalyticsService? analyticsService,
         IOptions<RagSettings> settings,
         ILogger<RagService> logger)
@@ -41,6 +43,7 @@ public class RagService : IRagService
         _nativeHybridSearchService = nativeHybridSearchService;
         _queryExpansionService = queryExpansionService;
         _rerankerService = rerankerService;
+        _cohereRerankerService = cohereRerankerService;
         _analyticsService = analyticsService;
         _settings = settings.Value;
         _logger = logger;
@@ -150,8 +153,29 @@ public class RagService : IRagService
             {
                 if (enableReranking)
                 {
-                    rerankedResults = await _rerankerService.RerankAsync(
-                        query, hybridResults, effectiveTopK, cancellationToken);
+                    // Determine which reranking provider to use:
+                    // 1. User preference from RagOptions (if set)
+                    // 2. Fall back to appsettings.json default
+                    var rerankingProvider = options?.RerankingProvider ?? _settings.RerankingProvider;
+
+                    // Use Cohere reranker if configured and available (faster and more accurate)
+                    var useCohereReranker = rerankingProvider.Equals("Cohere", StringComparison.OrdinalIgnoreCase)
+                                            && _cohereRerankerService?.IsAvailable == true;
+
+                    if (useCohereReranker)
+                    {
+                        _logger.LogDebug("Using Cohere native rerank API");
+                        rerankedResults = await _cohereRerankerService!.RerankAsync(
+                            query, hybridResults, effectiveTopK, cancellationToken);
+                        rerankActivity?.SetTag("rag.rerank.provider", "Cohere");
+                    }
+                    else
+                    {
+                        // Fall back to LLM-based reranking
+                        rerankedResults = await _rerankerService.RerankAsync(
+                            query, hybridResults, effectiveTopK, cancellationToken);
+                        rerankActivity?.SetTag("rag.rerank.provider", rerankingProvider);
+                    }
                     rerankActivity?.SetTag("rag.rerank.enabled", true);
                 }
                 else

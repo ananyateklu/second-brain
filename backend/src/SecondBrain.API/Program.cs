@@ -39,6 +39,7 @@ if (File.Exists(envPath))
         { "ANTHROPIC_API_KEY", "AIProviders__Anthropic__ApiKey" },
         { "XAI_API_KEY", "AIProviders__XAI__ApiKey" },
         { "OLLAMA_BASE_URL", "AIProviders__Ollama__BaseUrl" },
+        { "COHERE_API_KEY", "AIProviders__Cohere__ApiKey" },
     };
 
     foreach (var mapping in mappings)

@@ -11,6 +11,7 @@ public class AIProvidersSettings
     public AnthropicSettings Anthropic { get; set; } = new();
     public OllamaSettings Ollama { get; set; } = new();
     public XAISettings XAI { get; set; } = new();
+    public CohereSettings Cohere { get; set; } = new();
 }
 
 public class OpenAISettings
@@ -643,4 +644,33 @@ public class GrokImageConfig
     /// Maximum images per request
     /// </summary>
     public int MaxCount { get; set; } = 4;
+}
+
+/// <summary>
+/// Configuration for Cohere AI provider - specializes in embeddings and reranking
+/// </summary>
+public class CohereSettings
+{
+    public bool Enabled { get; set; }
+    public string? ApiKey { get; set; }
+    public string BaseUrl { get; set; } = "https://api.cohere.com/v2";
+
+    /// <summary>
+    /// Default model for chat/generation (e.g., command-r-plus, command-r)
+    /// </summary>
+    public string DefaultModel { get; set; } = "command-r-plus";
+
+    /// <summary>
+    /// Model for reranking (e.g., rerank-v3.5, rerank-english-v3.0, rerank-multilingual-v3.0)
+    /// </summary>
+    public string RerankModel { get; set; } = "rerank-v3.5";
+
+    /// <summary>
+    /// Model for embeddings (e.g., embed-v4.0, embed-english-v3.0, embed-multilingual-v3.0)
+    /// </summary>
+    public string EmbedModel { get; set; } = "embed-v4.0";
+
+    public int MaxTokens { get; set; } = 4096;
+    public float Temperature { get; set; } = 0.7f;
+    public int TimeoutSeconds { get; set; } = 30;
 }

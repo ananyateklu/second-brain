@@ -38,6 +38,13 @@ public class RagOptions
     public bool? EnableAnalytics { get; set; }
 
     /// <summary>
+    /// Reranking provider to use for reranking search results.
+    /// When set to "Cohere", uses Cohere's native rerank API (faster and more accurate).
+    /// Other providers (OpenAI, Anthropic, Gemini, Grok) use LLM-based reranking.
+    /// </summary>
+    public string? RerankingProvider { get; set; }
+
+    /// <summary>
     /// Creates RagOptions from user preferences.
     /// </summary>
     public static RagOptions FromUserPreferences(
@@ -45,7 +52,8 @@ public class RagOptions
         bool? enableQueryExpansion = null,
         bool? enableHybridSearch = null,
         bool? enableReranking = null,
-        bool? enableAnalytics = null)
+        bool? enableAnalytics = null,
+        string? rerankingProvider = null)
     {
         return new RagOptions
         {
@@ -53,7 +61,8 @@ public class RagOptions
             EnableQueryExpansion = enableQueryExpansion,
             EnableHybridSearch = enableHybridSearch,
             EnableReranking = enableReranking,
-            EnableAnalytics = enableAnalytics
+            EnableAnalytics = enableAnalytics,
+            RerankingProvider = rerankingProvider
         };
     }
 }

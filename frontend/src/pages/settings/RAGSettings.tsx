@@ -94,6 +94,7 @@ const RERANKING_PROVIDER_OPTIONS = [
   { id: 'Anthropic', name: 'Anthropic', description: 'High-quality reranking with Claude models' },
   { id: 'Gemini', name: 'Gemini', description: 'Cost-effective reranking with Gemini models' },
   { id: 'Grok', name: 'Grok (xAI)', description: 'Reranking with xAI Grok models' },
+  { id: 'Cohere', name: 'Cohere', description: 'Native rerank API - fast and optimized for RAG', badge: 'Recommended' },
 ] as const;
 
 export function RAGSettings() {
@@ -270,6 +271,17 @@ export function RAGSettings() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                       <span>{option.name}</span>
+                      {'badge' in option && option.badge && (
+                        <span
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xl"
+                          style={{
+                            backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                            color: isActive ? 'white' : 'var(--color-brand-600)',
+                          }}
+                        >
+                          {option.badge}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
