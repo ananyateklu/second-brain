@@ -124,7 +124,9 @@ export function NotesPage() {
   });
 
   // Extract notes from paginated result
-  const notes = paginatedResult?.items ?? [];
+  const notes = useMemo(() => {
+    return paginatedResult?.items ?? [];
+  }, [paginatedResult?.items]);
   const serverTotalCount = paginatedResult?.totalCount ?? 0;
 
   // Memoize date boundaries - only recalculate when date filter changes
