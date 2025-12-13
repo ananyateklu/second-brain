@@ -236,7 +236,7 @@ builder.Services.AddControllers()
 builder.Services.AddAppConfiguration(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuth(builder.Configuration);
-builder.Services.AddApplicationServices();
+builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddAIServices(builder.Configuration);
 builder.Services.AddRagServices(builder.Configuration);
 builder.Services.AddValidators();

@@ -74,7 +74,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers application services
     /// </summary>
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddHttpClient();
 
@@ -84,6 +84,18 @@ public static class ServiceCollectionExtensions
         // Register MediatR with pipeline behaviors
         services.AddMediatR(cfg =>
         {
+            // Configure MediatR license key from environment or configuration
+            // MediatR 14+ requires a commercial license for production use
+            // The key can be set via:
+            // 1. Environment variable: MEDIATR_LICENSE_KEY
+            // 2. Configuration: MediatR:LicenseKey in appsettings.json
+            var licenseKey = configuration["MEDIATR_LICENSE_KEY"]
+                ?? configuration["MediatR:LicenseKey"];
+            if (!string.IsNullOrEmpty(licenseKey))
+            {
+                cfg.LicenseKey = licenseKey;
+            }
+
             // Register all handlers from the Application assembly
             cfg.RegisterServicesFromAssembly(typeof(CreateNoteCommand).Assembly);
 

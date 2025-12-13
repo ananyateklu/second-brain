@@ -21,6 +21,7 @@ out/
 # .NET
 bin/
 obj/
+BenchmarkDotNet.Artifacts/
 backend/credentials/
 backend/secondbrain-db.json
 backend/scripts/
