@@ -286,12 +286,19 @@ public class SqlNoteRepository : INoteRepository
     }
 
     public async Task<(IEnumerable<Note> Items, int TotalCount)> GetByUserIdPagedAsync(
-        string userId, int page, int pageSize, string? folder = null, bool includeArchived = false, string? search = null)
+        string userId,
+        int page,
+        int pageSize,
+        string? folder = null,
+        bool includeArchived = false,
+        string? search = null,
+        string? sortBy = null,
+        bool sortDescending = true)
     {
         try
         {
-            _logger.LogDebug("Retrieving paginated notes. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, Folder: {Folder}",
-                userId, page, pageSize, folder);
+            _logger.LogDebug("Retrieving paginated notes. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, Folder: {Folder}, SortBy: {SortBy}, Desc: {Desc}",
+                userId, page, pageSize, folder, sortBy, sortDescending);
 
             var query = _context.Notes
                 .AsNoTracking()
@@ -321,9 +328,11 @@ public class SqlNoteRepository : INoteRepository
             // Get total count
             var totalCount = await query.CountAsync();
 
+            // Apply sorting
+            query = ApplyNoteSorting(query, sortBy, sortDescending);
+
             // Get paginated results
             var notes = await query
-                .OrderByDescending(n => n.UpdatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -338,6 +347,25 @@ public class SqlNoteRepository : INoteRepository
             _logger.LogError(ex, "Error retrieving paginated notes. UserId: {UserId}", userId);
             throw new RepositoryException($"Failed to retrieve paginated notes for user '{userId}'", ex);
         }
+    }
+
+    /// <summary>
+    /// Applies sorting to the note query based on the specified field and direction.
+    /// </summary>
+    private static IQueryable<Note> ApplyNoteSorting(IQueryable<Note> query, string? sortBy, bool sortDescending)
+    {
+        // Normalize sort field
+        var normalizedSortBy = string.IsNullOrWhiteSpace(sortBy) ? "updatedat" : sortBy.ToLowerInvariant();
+
+        return (normalizedSortBy, sortDescending) switch
+        {
+            ("createdat", true) => query.OrderByDescending(n => n.CreatedAt),
+            ("createdat", false) => query.OrderBy(n => n.CreatedAt),
+            ("title", true) => query.OrderByDescending(n => n.Title),
+            ("title", false) => query.OrderBy(n => n.Title),
+            (_, true) => query.OrderByDescending(n => n.UpdatedAt),  // Default: updatedAt desc
+            (_, false) => query.OrderBy(n => n.UpdatedAt)
+        };
     }
 
     // ============================================

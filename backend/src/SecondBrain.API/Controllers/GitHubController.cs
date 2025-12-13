@@ -1,6 +1,21 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecondBrain.Application.Services.GitHub;
+using SecondBrain.Application.Commands.GitHub.CancelWorkflowRun;
+using SecondBrain.Application.Commands.GitHub.RerunWorkflow;
+using SecondBrain.Application.Queries.GitHub.GetBranches;
+using SecondBrain.Application.Queries.GitHub.GetCheckRuns;
+using SecondBrain.Application.Queries.GitHub.GetCommits;
+using SecondBrain.Application.Queries.GitHub.GetIssueComments;
+using SecondBrain.Application.Queries.GitHub.GetIssues;
+using SecondBrain.Application.Queries.GitHub.GetPullRequest;
+using SecondBrain.Application.Queries.GitHub.GetPullRequestFiles;
+using SecondBrain.Application.Queries.GitHub.GetPullRequestReviews;
+using SecondBrain.Application.Queries.GitHub.GetPullRequests;
+using SecondBrain.Application.Queries.GitHub.GetRepositoryInfo;
+using SecondBrain.Application.Queries.GitHub.GetWorkflowRun;
+using SecondBrain.Application.Queries.GitHub.GetWorkflowRuns;
+using SecondBrain.Application.Queries.GitHub.GetWorkflows;
 using SecondBrain.Application.Services.GitHub.Models;
 
 namespace SecondBrain.API.Controllers;
@@ -13,15 +28,11 @@ namespace SecondBrain.API.Controllers;
 [Authorize]
 public class GitHubController : ControllerBase
 {
-    private readonly IGitHubService _gitHubService;
-    private readonly ILogger<GitHubController> _logger;
+    private readonly IMediator _mediator;
 
-    public GitHubController(
-        IGitHubService gitHubService,
-        ILogger<GitHubController> logger)
+    public GitHubController(IMediator mediator)
     {
-        _gitHubService = gitHubService;
-        _logger = logger;
+        _mediator = mediator;
     }
 
     /// <summary>
@@ -36,7 +47,7 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetRepositoryInfoAsync(owner, repo, cancellationToken);
+        var result = await _mediator.Send(new GetRepositoryInfoQuery(owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: info => Ok(info),
@@ -64,8 +75,8 @@ public class GitHubController : ControllerBase
         [FromQuery] int perPage = 30,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetPullRequestsAsync(
-            owner, repo, state, page, perPage, cancellationToken);
+        var result = await _mediator.Send(
+            new GetPullRequestsQuery(owner, repo, state, page, perPage), cancellationToken);
 
         return result.Match(
             onSuccess: prs => Ok(prs),
@@ -85,8 +96,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetPullRequestAsync(
-            pullNumber, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetPullRequestQuery(pullNumber, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: pr => Ok(pr),
@@ -106,8 +117,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetPullRequestReviewsAsync(
-            pullNumber, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetPullRequestReviewsQuery(pullNumber, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: reviews => Ok(reviews),
@@ -130,8 +141,8 @@ public class GitHubController : ControllerBase
         [FromQuery] int perPage = 30,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetWorkflowRunsAsync(
-            owner, repo, branch, status, page, perPage, cancellationToken);
+        var result = await _mediator.Send(
+            new GetWorkflowRunsQuery(owner, repo, branch, status, page, perPage), cancellationToken);
 
         return result.Match(
             onSuccess: runs => Ok(runs),
@@ -151,8 +162,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetWorkflowRunAsync(
-            runId, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetWorkflowRunQuery(runId, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: run => Ok(run),
@@ -171,7 +182,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetWorkflowsAsync(owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetWorkflowsQuery(owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: workflows => Ok(workflows),
@@ -191,7 +203,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetCheckRunsAsync(sha, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetCheckRunsQuery(sha, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: checks => Ok(checks),
@@ -211,7 +224,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.RerunWorkflowAsync(runId, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new RerunWorkflowCommand(runId, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: _ => Accepted(),
@@ -231,7 +245,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.CancelWorkflowRunAsync(runId, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new CancelWorkflowRunCommand(runId, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: _ => Accepted(),
@@ -251,8 +266,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetPullRequestFilesAsync(
-            pullNumber, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetPullRequestFilesQuery(pullNumber, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: files => Ok(files),
@@ -271,7 +286,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetBranchesAsync(owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetGitHubBranchesQuery(owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: branches => Ok(branches),
@@ -293,8 +309,8 @@ public class GitHubController : ControllerBase
         [FromQuery] int perPage = 30,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetIssuesAsync(
-            owner, repo, state, page, perPage, cancellationToken);
+        var result = await _mediator.Send(
+            new GetIssuesQuery(owner, repo, state, page, perPage), cancellationToken);
 
         return result.Match(
             onSuccess: issues => Ok(issues),
@@ -316,8 +332,8 @@ public class GitHubController : ControllerBase
         [FromQuery] int perPage = 30,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetCommitsAsync(
-            owner, repo, branch, page, perPage, cancellationToken);
+        var result = await _mediator.Send(
+            new GetCommitsQuery(owner, repo, branch, page, perPage), cancellationToken);
 
         return result.Match(
             onSuccess: commits => Ok(commits),
@@ -337,8 +353,8 @@ public class GitHubController : ControllerBase
         [FromQuery] string? repo = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _gitHubService.GetIssueCommentsAsync(
-            issueNumber, owner, repo, cancellationToken);
+        var result = await _mediator.Send(
+            new GetIssueCommentsQuery(issueNumber, owner, repo), cancellationToken);
 
         return result.Match(
             onSuccess: comments => Ok(comments),

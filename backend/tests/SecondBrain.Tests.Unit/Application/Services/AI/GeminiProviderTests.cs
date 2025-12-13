@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.AI.FileManagement;
 using SecondBrain.Application.Services.AI.Providers;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI;
@@ -9,6 +10,7 @@ public class GeminiProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
+    private readonly Mock<IGeminiFileService> _mockFileService;
     private readonly Mock<ILogger<GeminiProvider>> _mockLogger;
 
     // Fake API key for testing - NOT a real key, format satisfies Gemini SDK validation (39 chars, starts with AIza)
@@ -19,6 +21,7 @@ public class GeminiProviderTests
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
+        _mockFileService = new Mock<IGeminiFileService>();
         _mockLogger = new Mock<ILogger<GeminiProvider>>();
     }
 
@@ -424,6 +427,7 @@ public class GeminiProviderTests
         return new GeminiProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
+            _mockFileService.Object,
             _mockLogger.Object);
     }
 

@@ -31,6 +31,7 @@ using SecondBrain.Application.Services.Auth;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.CircuitBreaker;
+using SecondBrain.Application.Services.AI.FileManagement;
 using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Providers;
@@ -192,6 +193,10 @@ public static class ServiceCollectionExtensions
         // Register client factories for testability
         services.AddSingleton<IAnthropicClientFactory, AnthropicClientFactory>();
         services.AddSingleton<IOpenAIClientFactory, OpenAIClientFactory>();
+
+        // Register file management services (extracted from providers for better separation of concerns)
+        services.AddSingleton<IImageConversionService, ImageConversionService>();
+        services.AddSingleton<IGeminiFileService, GeminiFileService>();
 
         // Register AI providers as singletons (they maintain their own state)
         services.AddSingleton<OpenAIProvider>();

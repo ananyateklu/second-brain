@@ -1,32 +1,38 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
+using SecondBrain.Application.Commands.AI.DeleteOllamaModel;
+using SecondBrain.Application.Commands.AI.GenerateChatCompletion;
+using SecondBrain.Application.Commands.AI.GenerateCompletion;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services.AI.Interfaces;
+using SecondBrain.Application.Queries.AI.GetAllProvidersHealth;
+using SecondBrain.Application.Queries.AI.GetEnabledProviders;
+using SecondBrain.Application.Queries.AI.GetProviderHealth;
+using SecondBrain.Application.Queries.AI.GetProviders;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class AIControllerTests
 {
-    private readonly Mock<IAIProviderFactory> _mockProviderFactory;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly Mock<ILogger<AIController>> _mockLogger;
-    private readonly Mock<IAIProvider> _mockProvider;
     private readonly AIController _sut;
 
     public AIControllerTests()
     {
-        _mockProviderFactory = new Mock<IAIProviderFactory>();
+        _mockMediator = new Mock<IMediator>();
         _mockLogger = new Mock<ILogger<AIController>>();
-        _mockProvider = new Mock<IAIProvider>();
 
-        // OllamaProvider is only used for Ollama-specific endpoints (PullModel, DeleteModel)
-        // which are not tested in these unit tests. Pass null for now.
+        // OllamaProvider is only used for Ollama-specific streaming endpoint (PullModel)
+        // which is not tested in these unit tests. Pass null for now.
         _sut = new AIController(
-            _mockProviderFactory.Object,
+            _mockMediator.Object,
             null!,
             _mockLogger.Object
         );
@@ -35,19 +41,20 @@ public class AIControllerTests
     #region GetProviders Tests
 
     [Fact]
-    public void GetProviders_ReturnsAllProviders()
+    public async Task GetProviders_ReturnsAllProviders()
     {
         // Arrange
-        var providers = new List<IAIProvider>
+        var providers = new List<ProviderInfo>
         {
-            CreateMockProvider("OpenAI", true),
-            CreateMockProvider("Anthropic", true),
-            CreateMockProvider("Ollama", false)
+            new() { Name = "OpenAI", IsEnabled = true },
+            new() { Name = "Anthropic", IsEnabled = true },
+            new() { Name = "Ollama", IsEnabled = false }
         };
-        _mockProviderFactory.Setup(f => f.GetAllProviders()).Returns(providers);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProvidersQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<ProviderInfo>>.Success(providers));
 
         // Act
-        var result = _sut.GetProviders();
+        var result = await _sut.GetProviders();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -59,14 +66,14 @@ public class AIControllerTests
     }
 
     [Fact]
-    public void GetProviders_WhenException_Returns500()
+    public async Task GetProviders_WhenError_Returns500()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Throws(new Exception("Provider error"));
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetProvidersQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<ProviderInfo>>.Failure(Error.Custom("ListProvidersFailed", "Provider error")));
 
         // Act
-        var result = _sut.GetProviders();
+        var result = await _sut.GetProviders();
 
         // Assert
         var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
@@ -78,18 +85,19 @@ public class AIControllerTests
     #region GetEnabledProviders Tests
 
     [Fact]
-    public void GetEnabledProviders_ReturnsOnlyEnabledProviders()
+    public async Task GetEnabledProviders_ReturnsOnlyEnabledProviders()
     {
         // Arrange
-        var providers = new List<IAIProvider>
+        var providers = new List<ProviderInfo>
         {
-            CreateMockProvider("OpenAI", true),
-            CreateMockProvider("Anthropic", true)
+            new() { Name = "OpenAI", IsEnabled = true },
+            new() { Name = "Anthropic", IsEnabled = true }
         };
-        _mockProviderFactory.Setup(f => f.GetEnabledProviders()).Returns(providers);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetEnabledProvidersQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<ProviderInfo>>.Success(providers));
 
         // Act
-        var result = _sut.GetEnabledProviders();
+        var result = await _sut.GetEnabledProviders();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -99,14 +107,14 @@ public class AIControllerTests
     }
 
     [Fact]
-    public void GetEnabledProviders_WhenNoEnabledProviders_ReturnsEmptyList()
+    public async Task GetEnabledProviders_WhenNoEnabledProviders_ReturnsEmptyList()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetEnabledProviders())
-            .Returns(new List<IAIProvider>());
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetEnabledProvidersQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<ProviderInfo>>.Success(new List<ProviderInfo>()));
 
         // Act
-        var result = _sut.GetEnabledProviders();
+        var result = await _sut.GetEnabledProviders();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -122,116 +130,75 @@ public class AIControllerTests
     public async Task GetAllProvidersHealth_ReturnsHealthForAllProviders()
     {
         // Arrange
-        var openAiHealth = new AIProviderHealth
+        var response = new AIHealthResponse
         {
-            Provider = "OpenAI",
-            IsHealthy = true,
-            Status = "Healthy",
-            CheckedAt = DateTime.UtcNow
-        };
-        var anthropicHealth = new AIProviderHealth
-        {
-            Provider = "Anthropic",
-            IsHealthy = true,
-            Status = "Healthy",
-            CheckedAt = DateTime.UtcNow
+            CheckedAt = DateTime.UtcNow,
+            Providers = new List<AIProviderHealth>
+            {
+                new() { Provider = "OpenAI", IsHealthy = true, Status = "Healthy", CheckedAt = DateTime.UtcNow },
+                new() { Provider = "Anthropic", IsHealthy = true, Status = "Healthy", CheckedAt = DateTime.UtcNow }
+            }
         };
 
-        var mockOpenAi = new Mock<IAIProvider>();
-        mockOpenAi.Setup(p => p.ProviderName).Returns("OpenAI");
-        mockOpenAi.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(openAiHealth);
-
-        var mockAnthropic = new Mock<IAIProvider>();
-        mockAnthropic.Setup(p => p.ProviderName).Returns("Anthropic");
-        mockAnthropic.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(anthropicHealth);
-
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { mockOpenAi.Object, mockAnthropic.Object });
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAllProvidersHealthQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIHealthResponse>.Success(response));
 
         // Act
         var result = await _sut.GetAllProvidersHealth();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        response.Providers.Should().HaveCount(2);
-        response.Providers.Should().Contain(p => p.Provider == "OpenAI" && p.IsHealthy);
-        response.Providers.Should().Contain(p => p.Provider == "Anthropic" && p.IsHealthy);
+        var healthResponse = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
+        healthResponse.Providers.Should().HaveCount(2);
+        healthResponse.Providers.Should().Contain(p => p.Provider == "OpenAI" && p.IsHealthy);
+        healthResponse.Providers.Should().Contain(p => p.Provider == "Anthropic" && p.IsHealthy);
     }
 
     [Fact]
     public async Task GetAllProvidersHealth_WhenProviderUnhealthy_IncludesErrorDetails()
     {
         // Arrange
-        var unhealthyProvider = new Mock<IAIProvider>();
-        unhealthyProvider.Setup(p => p.ProviderName).Returns("Ollama");
-        unhealthyProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AIProviderHealth
+        var response = new AIHealthResponse
+        {
+            CheckedAt = DateTime.UtcNow,
+            Providers = new List<AIProviderHealth>
             {
-                Provider = "Ollama",
-                IsHealthy = false,
-                Status = "Unreachable",
-                ErrorMessage = "Connection refused"
-            });
+                new() { Provider = "Ollama", IsHealthy = false, Status = "Unreachable", ErrorMessage = "Connection refused" }
+            }
+        };
 
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { unhealthyProvider.Object });
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAllProvidersHealthQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIHealthResponse>.Success(response));
 
         // Act
         var result = await _sut.GetAllProvidersHealth();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        var ollamaHealth = response.Providers.First(p => p.Provider == "Ollama");
+        var healthResponse = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
+        var ollamaHealth = healthResponse.Providers.First(p => p.Provider == "Ollama");
         ollamaHealth.IsHealthy.Should().BeFalse();
         ollamaHealth.ErrorMessage.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
-    public async Task GetAllProvidersHealth_WhenProviderThrowsException_ReturnsErrorStatus()
+    public async Task GetAllProvidersHealth_WithRemoteOllamaUrl_PassesParametersCorrectly()
     {
         // Arrange
-        var failingProvider = new Mock<IAIProvider>();
-        failingProvider.Setup(p => p.ProviderName).Returns("FailingProvider");
-        failingProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Health check failed"));
-
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { failingProvider.Object });
-
-        // Act
-        var result = await _sut.GetAllProvidersHealth();
-
-        // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        var failedHealth = response.Providers.First();
-        failedHealth.IsHealthy.Should().BeFalse();
-        failedHealth.Status.Should().Be("Error");
-        failedHealth.ErrorMessage.Should().Be("Health check failed");
-    }
-
-    [Fact]
-    public async Task GetAllProvidersHealth_WithRemoteOllamaUrl_PassesConfigOverrides()
-    {
-        // Arrange
-        var ollamaProvider = new Mock<IAIProvider>();
-        ollamaProvider.Setup(p => p.ProviderName).Returns("Ollama");
-        ollamaProvider.Setup(p => p.GetHealthStatusAsync(
-                It.Is<Dictionary<string, string>>(d => d.ContainsKey("ollamaBaseUrl")),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AIProviderHealth
+        var response = new AIHealthResponse
+        {
+            CheckedAt = DateTime.UtcNow,
+            Providers = new List<AIProviderHealth>
             {
-                Provider = "Ollama",
-                IsHealthy = true,
-                Status = "Healthy"
-            });
+                new() { Provider = "Ollama", IsHealthy = true, Status = "Healthy" }
+            }
+        };
 
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { ollamaProvider.Object });
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetAllProvidersHealthQuery>(q =>
+                    q.OllamaBaseUrl == "http://192.168.1.100:11434" && q.UseRemoteOllama == true),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIHealthResponse>.Success(response));
 
         // Act
         var result = await _sut.GetAllProvidersHealth(
@@ -239,10 +206,26 @@ public class AIControllerTests
             useRemoteOllama: true);
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        ollamaProvider.Verify(p => p.GetHealthStatusAsync(
-            It.Is<Dictionary<string, string>>(d => d["ollamaBaseUrl"] == "http://192.168.1.100:11434"),
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetAllProvidersHealthQuery>(q =>
+                q.OllamaBaseUrl == "http://192.168.1.100:11434" && q.UseRemoteOllama == true),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllProvidersHealth_WhenError_Returns500()
+    {
+        // Arrange
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetAllProvidersHealthQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIHealthResponse>.Failure(Error.Custom("HealthCheckFailed", "Factory error")));
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth();
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
     }
 
     #endregion
@@ -261,11 +244,10 @@ public class AIControllerTests
             AvailableModels = new[] { "gpt-4", "gpt-3.5-turbo" }
         };
 
-        _mockProvider.Setup(p => p.ProviderName).Returns("OpenAI");
-        _mockProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(health);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetProviderHealthQuery>(q => q.Provider == "openai"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIProviderHealth>.Success(health));
 
         // Act
         var result = await _sut.GetProviderHealth("openai");
@@ -282,25 +264,26 @@ public class AIControllerTests
     public async Task GetProviderHealth_WhenProviderNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetProvider("unknown"))
-            .Throws(new ArgumentException("Provider not found"));
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetProviderHealthQuery>(q => q.Provider == "unknown"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIProviderHealth>.Failure(Error.NotFound("Provider", "unknown")));
 
         // Act
         var result = await _sut.GetProviderHealth("unknown");
 
         // Assert
-        var notFoundResult = result.Result.Should().BeOfType<NotFoundObjectResult>().Subject;
-        notFoundResult.Value.Should().BeEquivalentTo(new { error = "Provider 'unknown' not found" });
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
-    public async Task GetProviderHealth_WhenException_Returns500()
+    public async Task GetProviderHealth_WhenError_Returns500()
     {
         // Arrange
-        _mockProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Unexpected error"));
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetProviderHealthQuery>(q => q.Provider == "openai"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIProviderHealth>.Failure(Error.Custom("HealthCheckFailed", "Unexpected error")));
 
         // Act
         var result = await _sut.GetProviderHealth("openai");
@@ -308,6 +291,34 @@ public class AIControllerTests
         // Assert
         var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetProviderHealth_WithRemoteOllama_PassesParametersCorrectly()
+    {
+        // Arrange
+        var health = new AIProviderHealth { Provider = "Ollama", IsHealthy = true };
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GetProviderHealthQuery>(q =>
+                    q.Provider == "ollama" &&
+                    q.OllamaBaseUrl == "http://remote:11434" &&
+                    q.UseRemoteOllama == true),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIProviderHealth>.Success(health));
+
+        // Act
+        var result = await _sut.GetProviderHealth("ollama",
+            ollamaBaseUrl: "http://remote:11434",
+            useRemoteOllama: true);
+
+        // Assert
+        result.Result.Should().BeOfType<OkObjectResult>();
+        _mockMediator.Verify(m => m.Send(
+            It.Is<GetProviderHealthQuery>(q =>
+                q.Provider == "ollama" &&
+                q.OllamaBaseUrl == "http://remote:11434" &&
+                q.UseRemoteOllama == true),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -328,11 +339,10 @@ public class AIControllerTests
             TokensUsed = 15
         };
 
-        _mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProvider.Setup(p => p.GenerateCompletionAsync(request, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GenerateCompletionCommand>(c => c.Provider == "openai"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Success(response));
 
         // Act
         var result = await _sut.GenerateCompletion("openai", request);
@@ -349,20 +359,8 @@ public class AIControllerTests
     {
         // Arrange
         var request = new AIRequest { Prompt = "" };
-
-        // Act
-        var result = await _sut.GenerateCompletion("openai", request);
-
-        // Assert
-        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.Value.Should().BeEquivalentTo(new { error = "Prompt is required" });
-    }
-
-    [Fact]
-    public async Task GenerateCompletion_WhenPromptWhitespace_ReturnsBadRequest()
-    {
-        // Arrange
-        var request = new AIRequest { Prompt = "   " };
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Validation("Prompt is required")));
 
         // Act
         var result = await _sut.GenerateCompletion("openai", request);
@@ -376,8 +374,10 @@ public class AIControllerTests
     {
         // Arrange
         var request = new AIRequest { Prompt = "Test prompt" };
-        _mockProviderFactory.Setup(f => f.GetProvider("unknown"))
-            .Throws(new ArgumentException("Provider not found"));
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GenerateCompletionCommand>(c => c.Provider == "unknown"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.NotFound("Provider", "unknown")));
 
         // Act
         var result = await _sut.GenerateCompletion("unknown", request);
@@ -391,16 +391,30 @@ public class AIControllerTests
     {
         // Arrange
         var request = new AIRequest { Prompt = "Test prompt" };
-        _mockProvider.Setup(p => p.IsEnabled).Returns(false);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Validation("Provider 'openai' is not enabled")));
 
         // Act
         var result = await _sut.GenerateCompletion("openai", request);
 
         // Assert
-        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.Value.Should().BeEquivalentTo(new { error = "Provider 'openai' is not enabled" });
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateCompletion_WhenError_Returns500()
+    {
+        // Arrange
+        var request = new AIRequest { Prompt = "Test" };
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Custom("GenerationFailed", "API error")));
+
+        // Act
+        var result = await _sut.GenerateCompletion("openai", request);
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
     }
 
     #endregion
@@ -427,14 +441,10 @@ public class AIControllerTests
             Success = true
         };
 
-        _mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProvider.Setup(p => p.GenerateChatCompletionAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<AIRequest?>(),
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GenerateChatCompletionCommand>(c => c.Provider == "openai"),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(response);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+            .ReturnsAsync(Result<AIResponse>.Success(response));
 
         // Act
         var result = await _sut.GenerateChatCompletion("openai", request);
@@ -450,13 +460,14 @@ public class AIControllerTests
     {
         // Arrange
         var request = new ChatCompletionRequest { Messages = null! };
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateChatCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Validation("Messages are required")));
 
         // Act
         var result = await _sut.GenerateChatCompletion("openai", request);
 
         // Assert
-        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.Value.Should().BeEquivalentTo(new { error = "Messages are required" });
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -464,6 +475,8 @@ public class AIControllerTests
     {
         // Arrange
         var request = new ChatCompletionRequest { Messages = new List<ChatMessage>() };
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateChatCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Validation("Messages are required")));
 
         // Act
         var result = await _sut.GenerateChatCompletion("openai", request);
@@ -480,8 +493,10 @@ public class AIControllerTests
         {
             Messages = new List<ChatMessage> { new() { Role = "user", Content = "Hi" } }
         };
-        _mockProviderFactory.Setup(f => f.GetProvider("invalid"))
-            .Throws(new ArgumentException("Provider not found"));
+        _mockMediator.Setup(m => m.Send(
+                It.Is<GenerateChatCompletionCommand>(c => c.Provider == "invalid"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.NotFound("Provider", "invalid")));
 
         // Act
         var result = await _sut.GenerateChatCompletion("invalid", request);
@@ -498,9 +513,8 @@ public class AIControllerTests
         {
             Messages = new List<ChatMessage> { new() { Role = "user", Content = "Hi" } }
         };
-        _mockProvider.Setup(p => p.IsEnabled).Returns(false);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateChatCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Validation("Provider 'openai' is not enabled")));
 
         // Act
         var result = await _sut.GenerateChatCompletion("openai", request);
@@ -510,21 +524,15 @@ public class AIControllerTests
     }
 
     [Fact]
-    public async Task GenerateChatCompletion_WhenException_Returns500()
+    public async Task GenerateChatCompletion_WhenError_Returns500()
     {
         // Arrange
         var request = new ChatCompletionRequest
         {
             Messages = new List<ChatMessage> { new() { Role = "user", Content = "Hi" } }
         };
-        _mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProvider.Setup(p => p.GenerateChatCompletionAsync(
-                It.IsAny<IEnumerable<ChatMessage>>(),
-                It.IsAny<AIRequest?>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("API Error"));
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
+        _mockMediator.Setup(m => m.Send(It.IsAny<GenerateChatCompletionCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<AIResponse>.Failure(Error.Custom("GenerationFailed", "API Error")));
 
         // Act
         var result = await _sut.GenerateChatCompletion("openai", request);
@@ -536,238 +544,92 @@ public class AIControllerTests
 
     #endregion
 
-    #region Additional GetAllProvidersHealth Tests
+    #region DeleteOllamaModel Tests
 
     [Fact]
-    public async Task GetAllProvidersHealth_WhenFactoryThrowsException_Returns500()
+    public async Task DeleteOllamaModel_WhenSuccessful_ReturnsOk()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Throws(new Exception("Factory error"));
+        _mockMediator.Setup(m => m.Send(
+                It.Is<DeleteOllamaModelCommand>(c => c.ModelName == "llama2"),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<string>.Success("Model 'llama2' deleted successfully"));
 
         // Act
-        var result = await _sut.GetAllProvidersHealth();
+        var result = await _sut.DeleteOllamaModel("llama2");
 
         // Assert
-        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteOllamaModel_WhenModelNameEmpty_ReturnsBadRequest()
+    {
+        // Arrange
+        _mockMediator.Setup(m => m.Send(It.IsAny<DeleteOllamaModelCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<string>.Failure(Error.Validation("Model name is required")));
+
+        // Act
+        var result = await _sut.DeleteOllamaModel("");
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task DeleteOllamaModel_WhenError_Returns500()
+    {
+        // Arrange
+        _mockMediator.Setup(m => m.Send(It.IsAny<DeleteOllamaModelCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<string>.Failure(Error.Custom("DeleteFailed", "Failed to delete model")));
+
+        // Act
+        var result = await _sut.DeleteOllamaModel("llama2");
+
+        // Assert
+        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be(500);
     }
 
     [Fact]
-    public async Task GetAllProvidersHealth_WhenNoProviders_ReturnsEmptyList()
+    public async Task DeleteOllamaModel_WithRemoteUrl_PassesParametersCorrectly()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider>());
-
-        // Act
-        var result = await _sut.GetAllProvidersHealth();
-
-        // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        response.Providers.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task GetAllProvidersHealth_SetsCheckedAtTimestamp()
-    {
-        // Arrange
-        var beforeCheck = DateTime.UtcNow.AddSeconds(-1);
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider>());
-
-        // Act
-        var result = await _sut.GetAllProvidersHealth();
-        var afterCheck = DateTime.UtcNow.AddSeconds(1);
-
-        // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        response.CheckedAt.Should().BeAfter(beforeCheck);
-        response.CheckedAt.Should().BeBefore(afterCheck);
-    }
-
-    [Fact]
-    public async Task GetAllProvidersHealth_WithoutRemoteOllama_UsesRegularHealthCheck()
-    {
-        // Arrange
-        var ollamaProvider = new Mock<IAIProvider>();
-        ollamaProvider.Setup(p => p.ProviderName).Returns("Ollama");
-        ollamaProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AIProviderHealth { Provider = "Ollama", IsHealthy = true });
-
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { ollamaProvider.Object });
-
-        // Act
-        var result = await _sut.GetAllProvidersHealth(useRemoteOllama: false);
-
-        // Assert
-        ollamaProvider.Verify(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()), Times.Once);
-        ollamaProvider.Verify(p => p.GetHealthStatusAsync(
-            It.IsAny<Dictionary<string, string>>(),
-            It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GetAllProvidersHealth_WhenSocketException_ReturnsUnreachableStatus()
-    {
-        // Arrange
-        var unreachableProvider = new Mock<IAIProvider>();
-        unreachableProvider.Setup(p => p.ProviderName).Returns("Ollama");
-        unreachableProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new HttpRequestException("Connection refused", 
-                new System.Net.Sockets.SocketException()));
-
-        _mockProviderFactory.Setup(f => f.GetAllProviders())
-            .Returns(new List<IAIProvider> { unreachableProvider.Object });
-
-        // Act
-        var result = await _sut.GetAllProvidersHealth();
-
-        // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
-        var health = response.Providers.First();
-        health.IsHealthy.Should().BeFalse();
-        health.Status.Should().Be("Unreachable");
-    }
-
-    #endregion
-
-    #region Additional GetProviderHealth Tests
-
-    [Fact]
-    public async Task GetProviderHealth_WithRemoteOllama_PassesConfigOverrides()
-    {
-        // Arrange
-        var ollamaProvider = new Mock<IAIProvider>();
-        ollamaProvider.Setup(p => p.ProviderName).Returns("Ollama");
-        ollamaProvider.Setup(p => p.GetHealthStatusAsync(
-                It.Is<Dictionary<string, string>>(d => d.ContainsKey("ollamaBaseUrl")),
+        _mockMediator.Setup(m => m.Send(
+                It.Is<DeleteOllamaModelCommand>(c =>
+                    c.ModelName == "llama2" && c.OllamaBaseUrl == "http://remote:11434"),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AIProviderHealth { Provider = "Ollama", IsHealthy = true });
-
-        _mockProviderFactory.Setup(f => f.GetProvider("ollama"))
-            .Returns(ollamaProvider.Object);
+            .ReturnsAsync(Result<string>.Success("Model deleted"));
 
         // Act
-        var result = await _sut.GetProviderHealth("ollama", 
-            ollamaBaseUrl: "http://remote:11434", 
-            useRemoteOllama: true);
+        var result = await _sut.DeleteOllamaModel("llama2", ollamaBaseUrl: "http://remote:11434");
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        ollamaProvider.Verify(p => p.GetHealthStatusAsync(
-            It.Is<Dictionary<string, string>>(d => d["ollamaBaseUrl"] == "http://remote:11434"),
+        result.Should().BeOfType<OkObjectResult>();
+        _mockMediator.Verify(m => m.Send(
+            It.Is<DeleteOllamaModelCommand>(c =>
+                c.ModelName == "llama2" && c.OllamaBaseUrl == "http://remote:11434"),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [Fact]
-    public async Task GetProviderHealth_ForNonOllamaWithRemoteUrl_IgnoresRemoteUrl()
-    {
-        // Arrange
-        var openAIProvider = new Mock<IAIProvider>();
-        openAIProvider.Setup(p => p.ProviderName).Returns("OpenAI");
-        openAIProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AIProviderHealth { Provider = "OpenAI", IsHealthy = true });
-
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(openAIProvider.Object);
-
-        // Act
-        var result = await _sut.GetProviderHealth("openai", 
-            ollamaBaseUrl: "http://remote:11434", 
-            useRemoteOllama: true);
-
-        // Assert
-        openAIProvider.Verify(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()), Times.Once);
-        openAIProvider.Verify(p => p.GetHealthStatusAsync(
-            It.IsAny<Dictionary<string, string>>(),
-            It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GetProviderHealth_ReturnsAvailableModels()
-    {
-        // Arrange
-        var health = new AIProviderHealth
-        {
-            Provider = "OpenAI",
-            IsHealthy = true,
-            AvailableModels = new[] { "gpt-4", "gpt-4o", "gpt-3.5-turbo" }
-        };
-        _mockProvider.Setup(p => p.ProviderName).Returns("OpenAI");
-        _mockProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(health);
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
-
-        // Act
-        var result = await _sut.GetProviderHealth("openai");
-
-        // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
-        var healthResult = okResult.Value.Should().BeOfType<AIProviderHealth>().Subject;
-        healthResult.AvailableModels.Should().HaveCount(3);
-        healthResult.AvailableModels.Should().Contain("gpt-4o");
-    }
-
     #endregion
 
-    #region Additional GetEnabledProviders Tests
+    #region GetEnabledProviders Error Tests
 
     [Fact]
-    public void GetEnabledProviders_WhenException_Returns500()
+    public async Task GetEnabledProviders_WhenError_Returns500()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetEnabledProviders())
-            .Throws(new Exception("Factory error"));
+        _mockMediator.Setup(m => m.Send(It.IsAny<GetEnabledProvidersQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<ProviderInfo>>.Failure(Error.Custom("ListEnabledProvidersFailed", "Factory error")));
 
         // Act
-        var result = _sut.GetEnabledProviders();
+        var result = await _sut.GetEnabledProviders();
 
         // Assert
         var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be(500);
-    }
-
-    #endregion
-
-    #region Additional GenerateCompletion Tests
-
-    [Fact]
-    public async Task GenerateCompletion_WhenException_Returns500()
-    {
-        // Arrange
-        var request = new AIRequest { Prompt = "Test" };
-        _mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("API error"));
-        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns(_mockProvider.Object);
-
-        // Act
-        var result = await _sut.GenerateCompletion("openai", request);
-
-        // Assert
-        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
-        statusResult.StatusCode.Should().Be(500);
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    private IAIProvider CreateMockProvider(string name, bool isEnabled)
-    {
-        var mock = new Mock<IAIProvider>();
-        mock.Setup(p => p.ProviderName).Returns(name);
-        mock.Setup(p => p.IsEnabled).Returns(isEnabled);
-        return mock.Object;
     }
 
     #endregion
 }
-

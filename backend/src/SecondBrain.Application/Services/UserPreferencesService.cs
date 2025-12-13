@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
+using SecondBrain.Application.Telemetry;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
@@ -11,56 +13,102 @@ public interface IUserPreferencesService
 {
     Task<UserPreferencesResponse> GetPreferencesAsync(string userId);
     Task<UserPreferencesResponse> UpdatePreferencesAsync(string userId, UpdateUserPreferencesRequest request);
+
+    /// <summary>
+    /// Invalidates the cached preferences for a user.
+    /// Call this when preferences are modified outside the normal update flow.
+    /// </summary>
+    Task InvalidateCacheAsync(string userId, CancellationToken cancellationToken = default);
 }
 
 public class UserPreferencesService : IUserPreferencesService
 {
     private readonly IUserRepository _userRepository;
+    private readonly HybridCache _cache;
     private readonly ILogger<UserPreferencesService> _logger;
+
+    /// <summary>
+    /// Cache key prefix for user preferences
+    /// </summary>
+    private const string CacheKeyPrefix = "user-prefs";
+
+    /// <summary>
+    /// L1 (memory) cache duration - short for responsiveness
+    /// </summary>
+    private static readonly TimeSpan LocalCacheExpiration = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// L2 (distributed) cache duration - longer for persistence
+    /// </summary>
+    private static readonly TimeSpan DistributedCacheExpiration = TimeSpan.FromHours(1);
 
     public UserPreferencesService(
         IUserRepository userRepository,
+        HybridCache cache,
         ILogger<UserPreferencesService> logger)
     {
         _userRepository = userRepository;
+        _cache = cache;
         _logger = logger;
     }
 
     public async Task<UserPreferencesResponse> GetPreferencesAsync(string userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
+        var cacheKey = GetCacheKey(userId);
+        var cacheHit = true;
+
+        // HybridCache provides stampede protection - multiple concurrent requests
+        // for the same user's preferences will share a single database lookup
+#pragma warning disable EXTEXP0018 // HybridCache is experimental
+        var response = await _cache.GetOrCreateAsync(
+            cacheKey,
+            async ct =>
+            {
+                cacheHit = false;
+                _logger.LogDebug("User preferences cache miss for user {UserId}", userId);
+
+                var user = await _userRepository.GetByIdAsync(userId);
+                if (user == null)
+                {
+                    throw new NotFoundException($"User with ID {userId} not found");
+                }
+
+                // Initialize preferences if they don't exist
+                if (user.Preferences == null)
+                {
+                    user.Preferences = new UserPreferences();
+                    user.UpdatedAt = DateTime.UtcNow;
+                    await _userRepository.UpdateAsync(userId, user);
+                    _logger.LogInformation("Initialized preferences for user {UserId}", userId);
+                }
+
+                _logger.LogDebug(
+                    "Loaded preferences from database for user {UserId}. VectorStoreProvider: {VectorStoreProvider}, ChatProvider: {ChatProvider}",
+                    userId,
+                    user.Preferences.VectorStoreProvider,
+                    user.Preferences.ChatProvider);
+
+                return MapToResponse(user.Preferences);
+            },
+            new HybridCacheEntryOptions
+            {
+                LocalCacheExpiration = LocalCacheExpiration,
+                Expiration = DistributedCacheExpiration
+            });
+#pragma warning restore EXTEXP0018
+
+        // Record telemetry
+        if (cacheHit)
         {
-            throw new NotFoundException($"User with ID {userId} not found");
+            ApplicationTelemetry.RecordCacheHit("user-preferences");
+            _logger.LogDebug("User preferences cache hit for user {UserId}", userId);
+        }
+        else
+        {
+            ApplicationTelemetry.RecordCacheMiss("user-preferences");
         }
 
-        // Initialize preferences if they don't exist
-        if (user.Preferences == null)
-        {
-            user.Preferences = new UserPreferences();
-            user.UpdatedAt = DateTime.UtcNow;
-            await _userRepository.UpdateAsync(userId, user);
-            _logger.LogInformation("Initialized preferences for user {UserId}", userId);
-        }
-
-        _logger.LogInformation(
-            "Retrieved preferences for user {UserId}. VectorStoreProvider: {VectorStoreProvider}, ChatProvider: {ChatProvider}, ChatModel: {ChatModel}",
-            userId,
-            user.Preferences.VectorStoreProvider,
-            user.Preferences.ChatProvider,
-            user.Preferences.ChatModel);
-
-        // Log RAG toggle values for debugging
-        _logger.LogInformation(
-            "RAG toggles for user {UserId} - HyDE: {HyDE}, QueryExpansion: {QueryExpansion}, HybridSearch: {HybridSearch}, Reranking: {Reranking}, Analytics: {Analytics}",
-            userId,
-            user.Preferences.RagEnableHyde,
-            user.Preferences.RagEnableQueryExpansion,
-            user.Preferences.RagEnableHybridSearch,
-            user.Preferences.RagEnableReranking,
-            user.Preferences.RagEnableAnalytics);
-
-        return MapToResponse(user.Preferences);
+        return response;
     }
 
     public async Task<UserPreferencesResponse> UpdatePreferencesAsync(string userId, UpdateUserPreferencesRequest request)
@@ -157,7 +205,7 @@ public class UserPreferencesService : IUserPreferencesService
             updatedUser.Preferences?.ChatModel);
 
         // Log the RAG toggle values in the response
-        _logger.LogInformation(
+        _logger.LogDebug(
             "RAG toggles after update for user {UserId} - HyDE: {HyDE}, QueryExpansion: {QueryExpansion}, HybridSearch: {HybridSearch}, Reranking: {Reranking}, Analytics: {Analytics}",
             userId,
             updatedUser.Preferences?.RagEnableHyde,
@@ -166,8 +214,45 @@ public class UserPreferencesService : IUserPreferencesService
             updatedUser.Preferences?.RagEnableReranking,
             updatedUser.Preferences?.RagEnableAnalytics);
 
-        return MapToResponse(updatedUser.Preferences);
+        // Invalidate cache after successful update
+        await InvalidateCacheAsync(userId);
+
+        // Cache the updated response immediately (write-through pattern)
+        var response = MapToResponse(updatedUser.Preferences);
+        var cacheKey = GetCacheKey(userId);
+
+#pragma warning disable EXTEXP0018 // HybridCache is experimental
+        await _cache.SetAsync(
+            cacheKey,
+            response,
+            new HybridCacheEntryOptions
+            {
+                LocalCacheExpiration = LocalCacheExpiration,
+                Expiration = DistributedCacheExpiration
+            });
+#pragma warning restore EXTEXP0018
+
+        _logger.LogDebug("Updated and cached preferences for user {UserId}", userId);
+
+        return response;
     }
+
+    /// <inheritdoc />
+    public async Task InvalidateCacheAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = GetCacheKey(userId);
+
+#pragma warning disable EXTEXP0018 // HybridCache is experimental
+        await _cache.RemoveAsync(cacheKey, cancellationToken);
+#pragma warning restore EXTEXP0018
+
+        _logger.LogDebug("Invalidated preferences cache for user {UserId}", userId);
+    }
+
+    /// <summary>
+    /// Generates a cache key for user preferences.
+    /// </summary>
+    private static string GetCacheKey(string userId) => $"{CacheKeyPrefix}:{userId}";
 
     private static UserPreferencesResponse MapToResponse(UserPreferences? preferences)
     {

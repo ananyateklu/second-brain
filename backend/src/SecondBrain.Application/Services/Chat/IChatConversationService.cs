@@ -14,10 +14,16 @@ public interface IChatConversationService
     Task<IEnumerable<ChatConversation>> GetAllConversationsAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get paginated conversation headers (without messages) for a user
+    /// Get paginated conversation headers (without messages) for a user with sorting support
     /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="page">Page number (1-based)</param>
+    /// <param name="pageSize">Number of items per page</param>
+    /// <param name="sortBy">Field to sort by (createdAt, updatedAt, title). Default: updatedAt</param>
+    /// <param name="sortDescending">Sort in descending order. Default: true</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<PaginatedResult<ChatConversation>> GetConversationsPagedAsync(
-        string userId, int page = 1, int pageSize = 20, CancellationToken cancellationToken = default);
+        string userId, int page = 1, int pageSize = 20, string? sortBy = null, bool sortDescending = true, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get a conversation by ID (verifies ownership)

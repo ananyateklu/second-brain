@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
+using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
 using SecondBrain.Application.Services;
 using SecondBrain.Core.Entities;
@@ -7,17 +10,104 @@ using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Tests.Unit.Application.Services;
 
+/// <summary>
+/// Fake HybridCache implementation for unit testing.
+/// HybridCache methods are not virtual, so we can't mock them with Moq.
+/// This fake provides a simple in-memory cache with tracking capabilities.
+/// </summary>
+public class FakeHybridCache : HybridCache
+{
+    private readonly ConcurrentDictionary<string, object> _cache = new();
+
+    public int GetOrCreateCallCount { get; private set; }
+    public int SetCallCount { get; private set; }
+    public int RemoveCallCount { get; private set; }
+    public List<string> RemovedKeys { get; } = [];
+    public List<string> SetKeys { get; } = [];
+    public List<(string Key, object Value)> SetValues { get; } = [];
+
+    /// <summary>
+    /// When true, GetOrCreateAsync will always call the factory (simulate cache miss)
+    /// </summary>
+    public bool AlwaysMiss { get; set; } = true;
+
+    public override async ValueTask<T> GetOrCreateAsync<TState, T>(
+        string key,
+        TState state,
+        Func<TState, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        GetOrCreateCallCount++;
+
+        if (!AlwaysMiss && _cache.TryGetValue(key, out var cached))
+        {
+            return (T)cached;
+        }
+
+        var result = await factory(state, cancellationToken);
+        _cache[key] = result!;
+        return result;
+    }
+
+    public override ValueTask SetAsync<T>(
+        string key,
+        T value,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        SetCallCount++;
+        SetKeys.Add(key);
+        SetValues.Add((key, value!));
+        _cache[key] = value!;
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        RemoveCallCount++;
+        RemovedKeys.Add(key);
+        _cache.TryRemove(key, out _);
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask RemoveByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        // Not implemented for tests - we don't use tags
+        return ValueTask.CompletedTask;
+    }
+
+    public void Clear()
+    {
+        _cache.Clear();
+        GetOrCreateCallCount = 0;
+        SetCallCount = 0;
+        RemoveCallCount = 0;
+        RemovedKeys.Clear();
+        SetKeys.Clear();
+        SetValues.Clear();
+    }
+}
+
 public class UserPreferencesServiceTests
 {
     private readonly Mock<IUserRepository> _mockUserRepository;
+    private readonly FakeHybridCache _fakeCache;
     private readonly Mock<ILogger<UserPreferencesService>> _mockLogger;
     private readonly UserPreferencesService _sut;
 
     public UserPreferencesServiceTests()
     {
         _mockUserRepository = new Mock<IUserRepository>();
+        _fakeCache = new FakeHybridCache();
         _mockLogger = new Mock<ILogger<UserPreferencesService>>();
-        _sut = new UserPreferencesService(_mockUserRepository.Object, _mockLogger.Object);
+
+        _sut = new UserPreferencesService(
+            _mockUserRepository.Object,
+            _fakeCache,
+            _mockLogger.Object);
     }
 
     #region GetPreferencesAsync Tests
@@ -481,6 +571,144 @@ public class UserPreferencesServiceTests
 
         // Assert
         result.ChatProvider.Should().Be("OpenAI"); // Unchanged
+    }
+
+    #endregion
+
+    #region Cache Tests
+
+    [Fact]
+    public async Task GetPreferencesAsync_UsesHybridCache()
+    {
+        // Arrange
+        var userId = "user-123";
+        var user = CreateUserWithPreferences(userId);
+
+        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
+            .ReturnsAsync(user);
+
+        // Act
+        await _sut.GetPreferencesAsync(userId);
+
+        // Assert - Verify cache was used
+        _fakeCache.GetOrCreateCallCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetPreferencesAsync_ReturnsCachedValueOnHit()
+    {
+        // Arrange
+        var userId = "user-123";
+        var user = CreateUserWithPreferences(userId);
+        user.Preferences!.ChatProvider = "OpenAI";
+
+        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
+            .ReturnsAsync(user);
+
+        _fakeCache.AlwaysMiss = false; // Allow cache hits
+
+        // First call - cache miss, loads from DB
+        await _sut.GetPreferencesAsync(userId);
+
+        // Verify repository was called once
+        _mockUserRepository.Verify(r => r.GetByIdAsync(userId), Times.Once);
+
+        // Act - Second call should return cached value
+        var result = await _sut.GetPreferencesAsync(userId);
+
+        // Assert - Repository should still only have been called once (cached)
+        _mockUserRepository.Verify(r => r.GetByIdAsync(userId), Times.Once);
+        result.ChatProvider.Should().Be("OpenAI");
+        _fakeCache.GetOrCreateCallCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task UpdatePreferencesAsync_InvalidatesCache()
+    {
+        // Arrange
+        var userId = "user-123";
+        var user = CreateUserWithPreferences(userId);
+        var request = new UpdateUserPreferencesRequest { ChatProvider = "OpenAI" };
+
+        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
+            .ReturnsAsync(user);
+        _mockUserRepository.Setup(r => r.UpdateAsync(userId, It.IsAny<User>()))
+            .ReturnsAsync((string _, User u) => u);
+
+        // Act
+        await _sut.UpdatePreferencesAsync(userId, request);
+
+        // Assert - Verify cache was invalidated (RemoveAsync called)
+        _fakeCache.RemoveCallCount.Should().Be(1);
+        _fakeCache.RemovedKeys.Should().Contain($"user-prefs:{userId}");
+    }
+
+    [Fact]
+    public async Task UpdatePreferencesAsync_CachesUpdatedPreferences()
+    {
+        // Arrange
+        var userId = "user-123";
+        var user = CreateUserWithPreferences(userId);
+        var request = new UpdateUserPreferencesRequest { ChatProvider = "OpenAI" };
+
+        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
+            .ReturnsAsync(user);
+        _mockUserRepository.Setup(r => r.UpdateAsync(userId, It.IsAny<User>()))
+            .ReturnsAsync((string _, User u) => u);
+
+        // Act
+        await _sut.UpdatePreferencesAsync(userId, request);
+
+        // Assert - Verify cache was updated with new preferences
+        _fakeCache.SetCallCount.Should().Be(1);
+        _fakeCache.SetKeys.Should().Contain($"user-prefs:{userId}");
+
+        var cachedValue = _fakeCache.SetValues.First(v => v.Key == $"user-prefs:{userId}").Value;
+        cachedValue.Should().BeOfType<UserPreferencesResponse>();
+        ((UserPreferencesResponse)cachedValue).ChatProvider.Should().Be("OpenAI");
+    }
+
+    [Fact]
+    public async Task InvalidateCacheAsync_RemovesCacheEntry()
+    {
+        // Arrange
+        var userId = "user-123";
+
+        // Act
+        await _sut.InvalidateCacheAsync(userId);
+
+        // Assert
+        _fakeCache.RemoveCallCount.Should().Be(1);
+        _fakeCache.RemovedKeys.Should().Contain($"user-prefs:{userId}");
+    }
+
+    [Fact]
+    public async Task GetPreferencesAsync_AfterUpdate_ReturnsNewValue()
+    {
+        // Arrange
+        var userId = "user-123";
+        var user = CreateUserWithPreferences(userId);
+        user.Preferences!.ChatProvider = "Claude";
+
+        _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
+            .ReturnsAsync(user);
+        _mockUserRepository.Setup(r => r.UpdateAsync(userId, It.IsAny<User>()))
+            .ReturnsAsync((string _, User u) => u);
+
+        _fakeCache.AlwaysMiss = false; // Allow cache hits
+
+        // First call - loads original value
+        var firstResult = await _sut.GetPreferencesAsync(userId);
+        firstResult.ChatProvider.Should().Be("Claude");
+
+        // Update preferences
+        await _sut.UpdatePreferencesAsync(userId, new UpdateUserPreferencesRequest { ChatProvider = "OpenAI" });
+
+        // Act - Get should return updated value from cache (write-through)
+        var secondResult = await _sut.GetPreferencesAsync(userId);
+
+        // Assert
+        secondResult.ChatProvider.Should().Be("OpenAI");
     }
 
     #endregion

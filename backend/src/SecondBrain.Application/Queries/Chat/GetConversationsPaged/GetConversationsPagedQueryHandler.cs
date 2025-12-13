@@ -27,15 +27,18 @@ public class GetConversationsPagedQueryHandler : IRequestHandler<GetConversation
         GetConversationsPagedQuery request,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Getting paginated conversations. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}",
-            request.UserId, request.Page, request.PageSize);
+        _logger.LogDebug("Getting paginated conversations. UserId: {UserId}, Page: {Page}, PageSize: {PageSize}, SortBy: {SortBy}, SortDirection: {SortDirection}",
+            request.UserId, request.Page, request.PageSize, request.SortBy, request.SortDirection);
 
         try
         {
+            var sortDescending = request.SortDirection == DTOs.Common.SortDirection.Descending;
             var result = await _chatService.GetConversationsPagedAsync(
                 request.UserId,
                 request.Page,
                 request.PageSize,
+                request.SortBy,
+                sortDescending,
                 cancellationToken);
 
             return Result<PaginatedResult<ChatConversation>>.Success(result);

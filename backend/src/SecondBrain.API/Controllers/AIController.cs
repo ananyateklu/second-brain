@@ -1,13 +1,18 @@
 using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using SecondBrain.Application.Commands.AI.DeleteOllamaModel;
+using SecondBrain.Application.Commands.AI.GenerateChatCompletion;
+using SecondBrain.Application.Commands.AI.GenerateCompletion;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Services.AI.Interfaces;
+using SecondBrain.Application.Queries.AI.GetAllProvidersHealth;
+using SecondBrain.Application.Queries.AI.GetEnabledProviders;
+using SecondBrain.Application.Queries.AI.GetProviderHealth;
+using SecondBrain.Application.Queries.AI.GetProviders;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
-using System.Net.Http;
-using System.Net.Sockets;
 using System.Text.Json;
 
 namespace SecondBrain.API.Controllers;
@@ -19,16 +24,16 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class AIController : ControllerBase
 {
-    private readonly IAIProviderFactory _providerFactory;
+    private readonly IMediator _mediator;
     private readonly OllamaProvider _ollamaProvider;
     private readonly ILogger<AIController> _logger;
 
     public AIController(
-        IAIProviderFactory providerFactory,
+        IMediator mediator,
         OllamaProvider ollamaProvider,
         ILogger<AIController> logger)
     {
-        _providerFactory = providerFactory;
+        _mediator = mediator;
         _ollamaProvider = ollamaProvider;
         _logger = logger;
     }
@@ -47,79 +52,13 @@ public class AIController : ControllerBase
         [FromQuery] bool useRemoteOllama = false,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var providers = _providerFactory.GetAllProviders();
-            var healthChecks = new List<AIProviderHealth>();
+        var result = await _mediator.Send(
+            new GetAllProvidersHealthQuery(ollamaBaseUrl, useRemoteOllama), cancellationToken);
 
-            // Build config overrides for Ollama if remote URL is provided
-            Dictionary<string, string>? ollamaConfigOverrides = null;
-            if (useRemoteOllama && !string.IsNullOrWhiteSpace(ollamaBaseUrl))
-            {
-                ollamaConfigOverrides = new Dictionary<string, string>
-                {
-                    { "ollamaBaseUrl", ollamaBaseUrl }
-                };
-            }
-
-            foreach (var provider in providers)
-            {
-                try
-                {
-                    AIProviderHealth health;
-
-                    // For Ollama, use the overload that accepts config overrides
-                    if (provider.ProviderName == "Ollama" && ollamaConfigOverrides != null)
-                    {
-                        health = await provider.GetHealthStatusAsync(ollamaConfigOverrides, cancellationToken);
-                    }
-                    else
-                    {
-                        health = await provider.GetHealthStatusAsync(cancellationToken);
-                    }
-
-                    healthChecks.Add(health);
-                }
-                catch (HttpRequestException ex) when (ex.InnerException is SocketException)
-                {
-                    // Connection failures for optional services (like Ollama) are expected
-                    _logger.LogWarning(ex, "Failed to check health for provider {Provider} - service unreachable", provider.ProviderName);
-                    healthChecks.Add(new AIProviderHealth
-                    {
-                        Provider = provider.ProviderName,
-                        IsHealthy = false,
-                        CheckedAt = DateTime.UtcNow,
-                        Status = "Unreachable",
-                        ErrorMessage = $"Cannot connect to {provider.ProviderName}. Service may not be running."
-                    });
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to check health for provider {Provider}", provider.ProviderName);
-                    healthChecks.Add(new AIProviderHealth
-                    {
-                        Provider = provider.ProviderName,
-                        IsHealthy = false,
-                        CheckedAt = DateTime.UtcNow,
-                        Status = "Error",
-                        ErrorMessage = ex.Message
-                    });
-                }
-            }
-
-            var response = new AIHealthResponse
-            {
-                CheckedAt = DateTime.UtcNow,
-                Providers = healthChecks
-            };
-
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking AI providers health");
-            return StatusCode(500, new { error = "Failed to check AI providers health" });
-        }
+        return result.Match(
+            onSuccess: response => Ok(response),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -139,37 +78,13 @@ public class AIController : ControllerBase
         [FromQuery] bool useRemoteOllama = false,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var aiProvider = _providerFactory.GetProvider(provider);
+        var result = await _mediator.Send(
+            new GetProviderHealthQuery(provider, ollamaBaseUrl, useRemoteOllama), cancellationToken);
 
-            AIProviderHealth health;
-
-            // For Ollama, use the overload that accepts config overrides
-            if (aiProvider.ProviderName == "Ollama" && useRemoteOllama && !string.IsNullOrWhiteSpace(ollamaBaseUrl))
-            {
-                var configOverrides = new Dictionary<string, string>
-                {
-                    { "ollamaBaseUrl", ollamaBaseUrl }
-                };
-                health = await aiProvider.GetHealthStatusAsync(configOverrides, cancellationToken);
-            }
-            else
-            {
-                health = await aiProvider.GetHealthStatusAsync(cancellationToken);
-            }
-
-            return Ok(health);
-        }
-        catch (ArgumentException)
-        {
-            return NotFound(new { error = $"Provider '{provider}' not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking health for provider {Provider}", provider);
-            return StatusCode(500, new { error = $"Failed to check health for provider '{provider}'" });
-        }
+        return result.Match(
+            onSuccess: health => Ok(health),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -184,32 +99,13 @@ public class AIController : ControllerBase
         [FromBody] AIRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.Prompt))
-        {
-            return BadRequest(new { error = "Prompt is required" });
-        }
+        var result = await _mediator.Send(
+            new GenerateCompletionCommand(provider, request), cancellationToken);
 
-        try
-        {
-            var aiProvider = _providerFactory.GetProvider(provider);
-
-            if (!aiProvider.IsEnabled)
-            {
-                return BadRequest(new { error = $"Provider '{provider}' is not enabled" });
-            }
-
-            var response = await aiProvider.GenerateCompletionAsync(request, cancellationToken);
-            return Ok(response);
-        }
-        catch (ArgumentException)
-        {
-            return NotFound(new { error = $"Provider '{provider}' not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating completion with provider {Provider}", provider);
-            return StatusCode(500, new { error = "Failed to generate completion" });
-        }
+        return result.Match(
+            onSuccess: response => Ok(response),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -224,36 +120,13 @@ public class AIController : ControllerBase
         [FromBody] ChatCompletionRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (request.Messages == null || !request.Messages.Any())
-        {
-            return BadRequest(new { error = "Messages are required" });
-        }
+        var result = await _mediator.Send(
+            new GenerateChatCompletionCommand(provider, request), cancellationToken);
 
-        try
-        {
-            var aiProvider = _providerFactory.GetProvider(provider);
-
-            if (!aiProvider.IsEnabled)
-            {
-                return BadRequest(new { error = $"Provider '{provider}' is not enabled" });
-            }
-
-            var response = await aiProvider.GenerateChatCompletionAsync(
-                request.Messages,
-                request.Settings,
-                cancellationToken);
-
-            return Ok(response);
-        }
-        catch (ArgumentException)
-        {
-            return NotFound(new { error = $"Provider '{provider}' not found" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating chat completion with provider {Provider}", provider);
-            return StatusCode(500, new { error = "Failed to generate chat completion" });
-        }
+        return result.Match(
+            onSuccess: response => Ok(response),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -262,24 +135,15 @@ public class AIController : ControllerBase
     [HttpGet("providers")]
     [OutputCache(PolicyName = "AIHealth")]
     [ProducesResponseType(typeof(IEnumerable<ProviderInfo>), StatusCodes.Status200OK)]
-    public ActionResult<IEnumerable<ProviderInfo>> GetProviders()
+    public async Task<ActionResult<IEnumerable<ProviderInfo>>> GetProviders(
+        CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var providers = _providerFactory.GetAllProviders();
-            var providerInfos = providers.Select(p => new ProviderInfo
-            {
-                Name = p.ProviderName,
-                IsEnabled = p.IsEnabled
-            });
+        var result = await _mediator.Send(new GetProvidersQuery(), cancellationToken);
 
-            return Ok(providerInfos);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error listing AI providers");
-            return StatusCode(500, new { error = "Failed to list AI providers" });
-        }
+        return result.Match(
+            onSuccess: providers => Ok(providers),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -287,24 +151,15 @@ public class AIController : ControllerBase
     /// </summary>
     [HttpGet("providers/enabled")]
     [ProducesResponseType(typeof(IEnumerable<ProviderInfo>), StatusCodes.Status200OK)]
-    public ActionResult<IEnumerable<ProviderInfo>> GetEnabledProviders()
+    public async Task<ActionResult<IEnumerable<ProviderInfo>>> GetEnabledProviders(
+        CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var providers = _providerFactory.GetEnabledProviders();
-            var providerInfos = providers.Select(p => new ProviderInfo
-            {
-                Name = p.ProviderName,
-                IsEnabled = p.IsEnabled
-            });
+        var result = await _mediator.Send(new GetEnabledProvidersQuery(), cancellationToken);
 
-            return Ok(providerInfos);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error listing enabled AI providers");
-            return StatusCode(500, new { error = "Failed to list enabled AI providers" });
-        }
+        return result.Match(
+            onSuccess: providers => Ok(providers),
+            onFailure: error => HandleError(error)
+        );
     }
 
     /// <summary>
@@ -402,31 +257,27 @@ public class AIController : ControllerBase
         [FromQuery] string? ollamaBaseUrl = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(modelName))
-        {
-            return BadRequest(new { error = "Model name is required" });
-        }
+        var result = await _mediator.Send(
+            new DeleteOllamaModelCommand(modelName, ollamaBaseUrl), cancellationToken);
 
-        try
-        {
-            var (success, errorMessage) = await _ollamaProvider.DeleteModelAsync(
-                modelName,
-                ollamaBaseUrl,
-                cancellationToken);
+        return result.Match(
+            onSuccess: message => Ok(new { message }),
+            onFailure: error => HandleError(error)
+        );
+    }
 
-            if (success)
-            {
-                return Ok(new { message = $"Model '{modelName}' deleted successfully" });
-            }
-            else
-            {
-                return BadRequest(new { error = errorMessage ?? "Failed to delete model" });
-            }
-        }
-        catch (Exception ex)
+    private ActionResult HandleError(SecondBrain.Core.Common.Error error)
+    {
+        return error.Code switch
         {
-            _logger.LogError(ex, "Error deleting Ollama model: {ModelName}", modelName);
-            return StatusCode(500, new { error = "Failed to delete model" });
-        }
+            "ValidationFailed" => BadRequest(new { error = error.Code, message = error.Message }),
+            "NotFound" => NotFound(new { error = error.Code, message = error.Message }),
+            "HealthCheckFailed" => StatusCode(500, new { error = error.Code, message = error.Message }),
+            "GenerationFailed" => StatusCode(500, new { error = error.Code, message = error.Message }),
+            "ListProvidersFailed" => StatusCode(500, new { error = error.Code, message = error.Message }),
+            "ListEnabledProvidersFailed" => StatusCode(500, new { error = error.Code, message = error.Message }),
+            "DeleteFailed" => StatusCode(500, new { error = error.Code, message = error.Message }),
+            _ => StatusCode(500, new { error = error.Code, message = error.Message })
+        };
     }
 }
