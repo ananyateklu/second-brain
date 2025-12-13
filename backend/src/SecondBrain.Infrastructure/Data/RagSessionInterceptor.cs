@@ -110,7 +110,7 @@ public class RagSessionInterceptor : DbConnectionInterceptor
             statements.Add("SET hnsw.iterative_scan = 'relaxed_order'");
             statements.Add($"SET hnsw.max_scan_tuples = {_maxScanTuples}");
             // Also configure IVFFlat if used
-            statements.Add("SET ivfflat.iterative_scan = 'on'");
+            statements.Add("SET ivfflat.iterative_scan = 'relaxed_order'");
             statements.Add("SET ivfflat.max_probes = 20");
         }
 
