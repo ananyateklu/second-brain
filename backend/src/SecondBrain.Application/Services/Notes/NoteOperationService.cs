@@ -117,19 +117,11 @@ public class NoteOperationService : INoteOperationService
 
         // 6. Create initial version with source tracking (including images)
         int versionNumber = 1;
-        try
-        {
-            var versionResponse = await _versionService.CreateInitialVersionAsync(
-                createdNote, request.UserId, cancellationToken);
-            versionNumber = versionResponse.VersionNumber;
-            _logger.LogDebug("Created initial version {Version} for note {NoteId} with {ImageCount} images",
-                versionNumber, createdNote.Id, createdNote.Images?.Count ?? 0);
-        }
-        catch (Exception ex)
-        {
-            // Log but don't fail note creation if versioning fails
-            _logger.LogWarning(ex, "Failed to create initial version for note {NoteId}", createdNote.Id);
-        }
+        var versionResponse = await _versionService.CreateInitialVersionAsync(
+            createdNote, request.UserId, cancellationToken);
+        versionNumber = versionResponse.VersionNumber;
+        _logger.LogDebug("Created initial version {Version} for note {NoteId} with {ImageCount} images",
+            versionNumber, createdNote.Id, createdNote.Images?.Count ?? 0);
 
         _logger.LogInformation(
             "Note created successfully. NoteId: {NoteId}, Source: {Source}, Version: {Version}",
@@ -278,26 +270,19 @@ public class NoteOperationService : INoteOperationService
         // 6. CRITICAL: Check if this note has any version history
         //    If not, create an initial version with the CURRENT (pre-update) state first
         int versionNumber = 0;
-        try
+        var existingVersionCount = await _versionService.GetVersionCountAsync(request.NoteId, cancellationToken);
+        if (existingVersionCount == 0)
         {
-            var existingVersionCount = await _versionService.GetVersionCountAsync(request.NoteId, cancellationToken);
-            if (existingVersionCount == 0)
-            {
-                // No version history exists - create initial version capturing the original state
-                // Load current images so they're captured in the initial version
-                note.Images = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
-                _logger.LogInformation(
-                    "Creating initial version for note {NoteId} (no prior history) with {ImageCount} images",
-                    request.NoteId, note.Images?.Count ?? 0);
-                var initialVersion = await _versionService.CreateInitialVersionAsync(
-                    note, request.UserId, cancellationToken);
-                _logger.LogDebug("Created initial version {Version} for note {NoteId}",
-                    initialVersion.VersionNumber, request.NoteId);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to check/create initial version for note {NoteId}", request.NoteId);
+            // No version history exists - create initial version capturing the original state
+            // Load current images so they're captured in the initial version
+            note.Images = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
+            _logger.LogInformation(
+                "Creating initial version for note {NoteId} (no prior history) with {ImageCount} images",
+                request.NoteId, note.Images?.Count ?? 0);
+            var initialVersion = await _versionService.CreateInitialVersionAsync(
+                note, request.UserId, cancellationToken);
+            _logger.LogDebug("Created initial version {Version} for note {NoteId}",
+                initialVersion.VersionNumber, request.NoteId);
         }
 
         // 7. Now apply the changes to the note object
@@ -401,17 +386,10 @@ public class NoteOperationService : INoteOperationService
 
         // 14. Create version snapshot with the NEW state (including images)
         var changeSummary = BuildChangeSummary(changes, request.Source);
-        try
-        {
-            versionNumber = await _versionService.CreateVersionAsync(
-                updatedNote, request.UserId, changeSummary, cancellationToken);
-            _logger.LogDebug("Created version {Version} for note {NoteId} with {ImageCount} images",
-                versionNumber, request.NoteId, updatedNote.Images?.Count ?? 0);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to create version for note {NoteId}", request.NoteId);
-        }
+        versionNumber = await _versionService.CreateVersionAsync(
+            updatedNote, request.UserId, changeSummary, cancellationToken);
+        _logger.LogDebug("Created version {Version} for note {NoteId} with {ImageCount} images",
+            versionNumber, request.NoteId, updatedNote.Images?.Count ?? 0);
 
         _logger.LogInformation(
             "Note updated successfully. NoteId: {NoteId}, Source: {Source}, Changes: {Changes}",
@@ -589,16 +567,8 @@ public class NoteOperationService : INoteOperationService
         }
 
         // Create version for the restore
-        int versionNumber = 0;
-        try
-        {
-            versionNumber = await _versionService.CreateVersionAsync(
-                note, userId, "Restored from trash", cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to create version for restored note {NoteId}", noteId);
-        }
+        var versionNumber = await _versionService.CreateVersionAsync(
+            note, userId, "Restored from trash", cancellationToken);
 
         return Result<NoteOperationResult>.Success(
             NoteOperationResultFactory.Updated(note, versionNumber, source, new[] { "restored" }));

@@ -145,12 +145,10 @@ public class GrokImageProviderTests
         // Act
         var sizes = provider.GetSupportedSizes("any-model").ToList();
 
-        // Assert
+        // Assert - Grok API only supports default 1024x1024, no custom sizes
         sizes.Should().NotBeEmpty();
         sizes.Should().Contain("1024x1024");
-        sizes.Should().Contain("1024x768");
-        sizes.Should().Contain("768x1024");
-        sizes.Should().HaveCount(3);
+        sizes.Should().HaveCount(1);
     }
 
     [Fact]

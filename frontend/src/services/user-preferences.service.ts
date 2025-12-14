@@ -71,11 +71,7 @@ export const userPreferencesService = {
     if (provider === 'PostgreSQL' || provider === 'Pinecone') {
       return provider;
     }
-    // Migration from old value
-    if (provider === 'Firestore') {
-      return 'PostgreSQL';
-    }
-    return 'PostgreSQL';
+    throw new Error(`Invalid vector store provider: ${provider}. Must be 'PostgreSQL' or 'Pinecone'.`);
   },
 
   /**

@@ -279,34 +279,6 @@ public abstract partial class BaseAgentStreamingStrategy : IAgentStreamingStrate
     }
 
     /// <summary>
-    /// Strips out legacy "---SYSTEM CONTEXT---" markers from stored content.
-    /// </summary>
-    protected static string StripLegacySystemContextMarkers(string? content)
-    {
-        if (string.IsNullOrEmpty(content))
-            return string.Empty;
-
-        var patterns = new[]
-        {
-            @"---SYSTEM CONTEXT[^-]*---[\s\S]*?---END SYSTEM CONTEXT---",
-            @"\n?---SYSTEM CONTEXT[^-]*---",
-            @"---END SYSTEM CONTEXT---\n?"
-        };
-
-        var result = content;
-        foreach (var pattern in patterns)
-        {
-            result = Regex.Replace(
-                result,
-                pattern,
-                "",
-                RegexOptions.IgnoreCase);
-        }
-
-        return result.Trim();
-    }
-
-    /// <summary>
     /// Cleans up text content from AI responses for use as note content.
     /// </summary>
     protected static string CleanContentForNote(string text)

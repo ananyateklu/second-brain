@@ -158,7 +158,30 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
     {
         try
         {
-            // Always create/replace the versioning function
+            // Ensure btree_gist extension exists for temporal features
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                CREATE EXTENSION IF NOT EXISTS btree_gist;
+            ");
+
+            // Add content_json column if not exists (from 42_note_version_content_json.sql)
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS content_json JSONB DEFAULT NULL;
+            ");
+
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS content_format INTEGER DEFAULT 0;
+            ");
+
+            // Add image_ids column if not exists (from 43_note_version_image_ids.sql)
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS image_ids TEXT[] DEFAULT ARRAY[]::TEXT[];
+            ");
+
+            // Create/replace the versioning function with all 12 parameters
+            // Must match SqlNoteVersionRepository.CreateVersionAsync signature
             await dbContext.Database.ExecuteSqlRawAsync(@"
                 CREATE OR REPLACE FUNCTION create_note_version(
                     p_note_id TEXT,
@@ -169,7 +192,10 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                     p_folder VARCHAR(256),
                     p_modified_by VARCHAR(128),
                     p_change_summary VARCHAR(500) DEFAULT NULL,
-                    p_source VARCHAR(50) DEFAULT 'web'
+                    p_source VARCHAR(50) DEFAULT 'web',
+                    p_content_json JSONB DEFAULT NULL,
+                    p_content_format INTEGER DEFAULT 0,
+                    p_image_ids TEXT[] DEFAULT ARRAY[]::TEXT[]
                 )
                 RETURNS INT AS $$
                 DECLARE
@@ -195,6 +221,8 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         valid_period,
                         title,
                         content,
+                        content_json,
+                        content_format,
                         tags,
                         is_archived,
                         folder,
@@ -202,6 +230,7 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         version_number,
                         change_summary,
                         source,
+                        image_ids,
                         created_at
                     ) VALUES (
                         gen_random_uuid()::text,
@@ -209,6 +238,8 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         tstzrange(v_now, NULL, '[)'),
                         p_title,
                         p_content,
+                        p_content_json,
+                        p_content_format,
                         p_tags,
                         p_is_archived,
                         p_folder,
@@ -216,18 +247,13 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         v_new_version_number,
                         p_change_summary,
                         p_source,
+                        p_image_ids,
                         v_now
                     );
 
                     RETURN v_new_version_number;
                 END;
                 $$ LANGUAGE plpgsql;
-            ");
-
-            // Also ensure the note_versions table has proper exclusion constraint
-            // (EF Core may not create the GIST index properly)
-            await dbContext.Database.ExecuteSqlRawAsync(@"
-                CREATE EXTENSION IF NOT EXISTS btree_gist;
             ");
         }
         catch (Exception ex)

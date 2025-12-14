@@ -130,17 +130,9 @@ public class NoteVersionService : INoteVersionService
     /// </summary>
     private static bool JsonContentEquals(string json1, string json2)
     {
-        try
-        {
-            using var doc1 = JsonDocument.Parse(json1);
-            using var doc2 = JsonDocument.Parse(json2);
-            return JsonElementEquals(doc1.RootElement, doc2.RootElement);
-        }
-        catch
-        {
-            // If JSON parsing fails, fall back to string comparison
-            return json1 == json2;
-        }
+        using var doc1 = JsonDocument.Parse(json1);
+        using var doc2 = JsonDocument.Parse(json2);
+        return JsonElementEquals(doc1.RootElement, doc2.RootElement);
     }
 
     /// <summary>
@@ -241,14 +233,7 @@ public class NoteVersionService : INoteVersionService
         if (string.IsNullOrEmpty(contentJson))
             return null;
 
-        try
-        {
-            return JsonDocument.Parse(contentJson).RootElement.Clone();
-        }
-        catch
-        {
-            return null;
-        }
+        return JsonDocument.Parse(contentJson).RootElement.Clone();
     }
 
     /// <summary>

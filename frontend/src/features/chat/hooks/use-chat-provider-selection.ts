@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
-import { useSettingsStore } from '../../../store/settings-store';
-import { useAuthStore } from '../../../store/auth-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { getDefaultModelForProvider } from '../../../utils/default-models';
 
 export interface ProviderInfo {
@@ -40,8 +39,8 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     setChatModel,
     loadPreferencesFromBackend,
     syncPreferencesToBackend,
-  } = useSettingsStore();
-  const user = useAuthStore((state) => state.user);
+  } = useBoundStore();
+  const user = useBoundStore((state) => state.user);
 
   const [selectedProvider, setSelectedProvider] = useState<string>(savedChatProvider || '');
   const [selectedModel, setSelectedModel] = useState<string>(savedChatModel || '');

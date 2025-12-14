@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useBoundStore } from '../../../../store/bound-store';
 import { toast } from '../../../../hooks/use-toast';
-import { formatBytes, formatSpeed, formatTimeRemaining } from '../../../../store/ollama-download-store';
+import { formatBytes, formatSpeed, formatTimeRemaining } from '../../../../store/slices/ollama-slice';
 
 interface OllamaModel {
   name: string;

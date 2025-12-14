@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSettingsStore } from '../../../store/settings-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { useAIHealth } from '../../../features/ai/hooks/use-ai-health';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { toast } from '../../../hooks/use-toast';
 import { useNotes } from '../../../features/notes/hooks/use-notes-query';
 import { useStartSummaryGeneration } from '../../../features/notes/hooks/use-summary-generation';
-import { useBoundStore } from '../../../store/bound-store';
 import type { NoteListItem } from '../../../types/notes';
 
 // Mapping from health data provider names to display names
@@ -184,7 +183,7 @@ export function NoteSummarySettings() {
         setNoteSummaryEnabled,
         setNoteSummaryProvider,
         setNoteSummaryModel,
-    } = useSettingsStore();
+    } = useBoundStore();
 
     // Get AI health data to determine available providers and models
     const { data: healthData, isLoading: isHealthLoading } = useAIHealth();

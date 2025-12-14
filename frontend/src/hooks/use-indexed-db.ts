@@ -11,7 +11,6 @@
 const DB_NAME = 'second-brain-drafts';
 const DB_VERSION = 1;
 const STORE_NAME = 'chat-drafts';
-const LOCALSTORAGE_PREFIX = 'sb-draft-';
 
 export interface DraftEntry {
   conversationId: string;
@@ -163,120 +162,48 @@ async function getAllDraftsFromIndexedDB(): Promise<DraftEntry[]> {
 }
 
 /**
- * localStorage fallback functions
- */
-function saveDraftToLocalStorage(draft: DraftEntry): void {
-  try {
-    const key = `${LOCALSTORAGE_PREFIX}${draft.conversationId}`;
-    localStorage.setItem(key, JSON.stringify(draft));
-  } catch (error) {
-    console.error('Failed to save draft to localStorage:', { error });
-  }
-}
-
-function loadDraftFromLocalStorage(conversationId: string): DraftEntry | null {
-  try {
-    const key = `${LOCALSTORAGE_PREFIX}${conversationId}`;
-    const data = localStorage.getItem(key);
-    if (data) {
-      return JSON.parse(data) as DraftEntry;
-    }
-  } catch (error) {
-    console.error('Failed to load draft from localStorage:', { error });
-  }
-  return null;
-}
-
-function deleteDraftFromLocalStorage(conversationId: string): void {
-  try {
-    const key = `${LOCALSTORAGE_PREFIX}${conversationId}`;
-    localStorage.removeItem(key);
-  } catch (error) {
-    console.error('Failed to delete draft from localStorage:', { error });
-  }
-}
-
-function getAllDraftsFromLocalStorage(): DraftEntry[] {
-  const drafts: DraftEntry[] = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(LOCALSTORAGE_PREFIX)) {
-        const data = localStorage.getItem(key);
-        if (data) {
-          drafts.push(JSON.parse(data) as DraftEntry);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to get all drafts from localStorage:', { error });
-  }
-  return drafts;
-}
-
-/**
  * Draft Storage API
- * Provides a unified interface that automatically falls back to localStorage
- * if IndexedDB is not available or fails.
+ * Uses IndexedDB for draft storage. Throws on failure.
  */
 export const draftStorage = {
   /**
    * Save a draft
    */
   async save(draft: DraftEntry): Promise<void> {
-    if (isIndexedDBAvailable()) {
-      try {
-        await saveDraftToIndexedDB(draft);
-        return;
-      } catch (error) {
-        console.warn('IndexedDB save failed, falling back to localStorage:', { error });
-      }
+    if (!isIndexedDBAvailable()) {
+      throw new Error('IndexedDB is not available');
     }
-    saveDraftToLocalStorage(draft);
+    await saveDraftToIndexedDB(draft);
   },
 
   /**
    * Load a draft by conversation ID
    */
   async load(conversationId: string): Promise<DraftEntry | null> {
-    if (isIndexedDBAvailable()) {
-      try {
-        const draft = await loadDraftFromIndexedDB(conversationId);
-        if (draft) return draft;
-      } catch (error) {
-        console.warn('IndexedDB load failed, falling back to localStorage:', { error });
-      }
+    if (!isIndexedDBAvailable()) {
+      throw new Error('IndexedDB is not available');
     }
-    return loadDraftFromLocalStorage(conversationId);
+    return await loadDraftFromIndexedDB(conversationId);
   },
 
   /**
    * Delete a draft by conversation ID
    */
   async delete(conversationId: string): Promise<void> {
-    if (isIndexedDBAvailable()) {
-      try {
-        await deleteDraftFromIndexedDB(conversationId);
-      } catch (error) {
-        console.warn('IndexedDB delete failed, attempting localStorage:', { error });
-      }
+    if (!isIndexedDBAvailable()) {
+      throw new Error('IndexedDB is not available');
     }
-    // Always try to clean up localStorage as well (in case of migration)
-    deleteDraftFromLocalStorage(conversationId);
+    await deleteDraftFromIndexedDB(conversationId);
   },
 
   /**
    * Get all drafts
    */
   async getAll(): Promise<DraftEntry[]> {
-    if (isIndexedDBAvailable()) {
-      try {
-        return await getAllDraftsFromIndexedDB();
-      } catch (error) {
-        console.warn('IndexedDB getAll failed, falling back to localStorage:', { error });
-      }
+    if (!isIndexedDBAvailable()) {
+      throw new Error('IndexedDB is not available');
     }
-    return getAllDraftsFromLocalStorage();
+    return await getAllDraftsFromIndexedDB();
   },
 
   /**

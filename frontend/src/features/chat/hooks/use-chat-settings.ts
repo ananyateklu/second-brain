@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUpdateConversationSettings } from './use-chat';
-import { useSettingsStore } from '../../../store/settings-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { ChatConversation } from '../types/chat';
 
 export interface ChatSettingsState {
@@ -49,7 +49,7 @@ function parseAgentCapabilities(capabilitiesJson: string | null | undefined): st
  */
 export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsState & ChatSettingsActions {
   const { conversationId, conversation, isNewChat } = options;
-  const { vectorStoreProvider: defaultVectorStore } = useSettingsStore();
+  const { vectorStoreProvider: defaultVectorStore } = useBoundStore();
   const updateConversationSettings = useUpdateConversationSettings();
 
   const [ragEnabled, setRagEnabledLocal] = useState<boolean>(false);

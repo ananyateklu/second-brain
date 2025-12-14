@@ -1,6 +1,6 @@
 
 import { toast } from '../../hooks/use-toast';
-import { useSettingsStore } from '../../store/settings-store';
+import { useBoundStore } from '../../store/bound-store';
 import type { FontSize, NoteView } from '../../store/types';
 
 export function GeneralSettings() {
@@ -13,7 +13,7 @@ export function GeneralSettings() {
         setItemsPerPage,
         autoSaveInterval,
         setAutoSaveInterval,
-    } = useSettingsStore();
+    } = useBoundStore();
 
     const handleFontSizeChange = (size: FontSize) => {
         setFontSize(size);

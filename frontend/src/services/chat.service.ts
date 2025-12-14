@@ -5,7 +5,7 @@
 
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, DEFAULT_USER_ID, getApiBaseUrl } from '../lib/constants';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import { loggers } from '../utils/logger';
 import type { PaginatedResult } from '../types/api';
 import type {
@@ -120,7 +120,7 @@ export const chatService = {
     const apiUrl = getApiBaseUrl();
     const url = `${apiUrl}${API_ENDPOINTS.CHAT.STREAM_MESSAGES(conversationId)}`;
 
-    const authStore = useAuthStore.getState();
+    const authStore = useBoundStore.getState();
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',

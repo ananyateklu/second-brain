@@ -19,11 +19,6 @@ const loadSidebarState = (): SidebarState => {
   if (stored === 'closed' || stored === 'collapsed' || stored === 'expanded') {
     return stored;
   }
-  // Migrate old boolean state
-  const oldCollapsed = localStorage.getItem('second-brain-sidebar-collapsed');
-  if (oldCollapsed === 'true') {
-    return 'collapsed';
-  }
   return 'expanded';
 };
 
@@ -85,7 +80,6 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   isCreateModalOpen: false,
   isEditModalOpen: false,
   editingNoteId: null,
-  editingNote: null, // Deprecated - kept for backwards compatibility
   isMobileMenuOpen: false,
   isSearchOpen: true,
   searchQuery: '',
@@ -104,13 +98,10 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   openCreateModal: () => set({ isCreateModalOpen: true }),
   closeCreateModal: () => set({ isCreateModalOpen: false }),
   openEditModal: (noteOrId: Note | NoteListItem | string) => {
-    // Extract the ID whether it's a full Note, NoteListItem, or just the ID string
     const noteId = typeof noteOrId === 'string' ? noteOrId : noteOrId.id;
-    // Keep editingNote for backwards compatibility if a full Note is passed
-    const editingNote = typeof noteOrId === 'object' && 'content' in noteOrId ? noteOrId : null;
-    set({ isEditModalOpen: true, editingNoteId: noteId, editingNote });
+    set({ isEditModalOpen: true, editingNoteId: noteId });
   },
-  closeEditModal: () => set({ isEditModalOpen: false, editingNoteId: null, editingNote: null }),
+  closeEditModal: () => set({ isEditModalOpen: false, editingNoteId: null }),
 
   // ============================================
   // Mobile Menu Actions

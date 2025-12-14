@@ -44,9 +44,12 @@ vi.mock('react-syntax-highlighter/dist/esm/languages/prism/diff', () => ({ defau
 // Now import the component after mocks are set up
 import { MarkdownMessage } from '../MarkdownMessage';
 
-// Mock theme store
-vi.mock('../../store/theme-store', () => ({
-    useThemeStore: vi.fn(() => 'light'),
+// Mock bound store
+vi.mock('../../store/bound-store', () => ({
+    useBoundStore: vi.fn((selector) => {
+        const state = { theme: 'light' };
+        return selector ? selector(state) : state;
+    }),
 }));
 
 // Mock notes hook

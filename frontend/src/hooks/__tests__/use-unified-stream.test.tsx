@@ -27,14 +27,23 @@ import {
 // Test Setup
 // ============================================
 
-// Mock the auth store
-vi.mock('../../store/auth-store', () => ({
-  useAuthStore: {
-    getState: () => ({
-      token: 'test-token',
-      user: { id: 'user-1' },
+// Mock the bound store
+vi.mock('../../store/bound-store', () => ({
+  useBoundStore: Object.assign(
+    vi.fn((selector) => {
+      const state = {
+        token: 'test-token',
+        user: { id: 'user-1' },
+      };
+      return selector ? selector(state) : state;
     }),
-  },
+    {
+      getState: () => ({
+        token: 'test-token',
+        user: { id: 'user-1' },
+      }),
+    }
+  ),
 }));
 
 // Mock chat service for image generation

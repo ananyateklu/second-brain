@@ -152,7 +152,7 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Verify(v => v.CreateVersionAsync(
             It.Is<Note>(n => n.Source == "agent"),
             TestUserId,
-            It.Is<string>(s => s.Contains("agent")),
+            It.Is<string>(s => s.Contains("Agent", StringComparison.OrdinalIgnoreCase)),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

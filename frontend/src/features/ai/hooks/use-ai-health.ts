@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { aiService } from '../../../services';
 import { AIHealthResponse, AIProviderHealth } from '../../../types/ai';
-import { useSettingsStore } from '../../../store/settings-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { aiHealthKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 
@@ -66,7 +66,7 @@ function clearCachedHealthData(): void {
 // Uses aggressive caching with localStorage persistence - survives page reloads
 // Only refetches when clicking the refresh button
 export function useAIHealth() {
-  const { ollamaRemoteUrl, useRemoteOllama } = useSettingsStore();
+  const { ollamaRemoteUrl, useRemoteOllama } = useBoundStore();
   const queryClient = useQueryClient();
   const queryKey = aiHealthKeys.health({ ollamaBaseUrl: ollamaRemoteUrl, useRemoteOllama });
 
@@ -126,7 +126,7 @@ export function useAIHealth() {
 // Query: Get health status for a specific provider
 // Uses same caching strategy as useAIHealth - relies on that hook's localStorage cache
 export function useProviderHealth(provider: string) {
-  const { ollamaRemoteUrl, useRemoteOllama } = useSettingsStore();
+  const { ollamaRemoteUrl, useRemoteOllama } = useBoundStore();
 
   return useConditionalQuery<AIProviderHealth>(
     !!provider,

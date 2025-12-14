@@ -7,7 +7,7 @@ import {
   useBulkDeleteConversations,
 } from './use-chat';
 import { toast } from '../../../hooks/use-toast';
-import { useAuthStore } from '../../../store/auth-store';
+import { useBoundStore } from '../../../store/bound-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { ChatConversation, CreateConversationRequest } from '../types/chat';
 import { MessageImage } from '../types/chat';
@@ -57,7 +57,7 @@ export function useChatConversationManager(
   const [isNewChat, setIsNewChat] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null);
 
-  const user = useAuthStore((state) => state.user);
+  const user = useBoundStore((state) => state.user);
   const { data: conversations } = useChatConversations();
   const { data: conversation } = useChatConversation(conversationId);
   const createConversationMutation = useCreateConversation();

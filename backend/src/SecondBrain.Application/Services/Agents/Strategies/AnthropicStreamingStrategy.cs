@@ -371,10 +371,10 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 if (msg.ToolCalls != null && msg.ToolCalls.Any())
                 {
                     var contentBlocks = new List<ContentBase>();
-                    var cleanedContent = StripLegacySystemContextMarkers(msg.Content);
-                    if (!string.IsNullOrWhiteSpace(cleanedContent))
+                    var content = msg.Content ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(content))
                     {
-                        contentBlocks.Add(new TextContent { Text = cleanedContent });
+                        contentBlocks.Add(new TextContent { Text = content });
                     }
 
                     var toolResultBlocks = new List<ContentBase>();
@@ -431,8 +431,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 }
                 else
                 {
-                    var cleanedContent = StripLegacySystemContextMarkers(msg.Content);
-                    messages.Add(new Message(RoleType.Assistant, cleanedContent));
+                    messages.Add(new Message(RoleType.Assistant, msg.Content ?? string.Empty));
                 }
             }
         }

@@ -30,7 +30,7 @@
 
 import { useReducer, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import { getApiBaseUrl, API_ENDPOINTS, RETRY, conversationKeys, noteKeys } from '../lib/constants';
 import { estimateTokenCount } from '../utils/token-utils';
 import {
@@ -110,7 +110,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
    * Get auth headers for the request
    */
   const getAuthHeaders = useCallback((): HeadersInit => {
-    const authStore = useAuthStore.getState();
+    const authStore = useBoundStore.getState();
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
