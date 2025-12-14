@@ -3,6 +3,57 @@
  * Aligned with backend Note DTOs
  */
 
+// ============================================
+// Note Source Types (Version Tracking)
+// ============================================
+
+/**
+ * Source of a note operation - indicates where/how a note was created or modified.
+ * Aligned with backend SecondBrain.Core.Enums.NoteSource enum.
+ *
+ * Values:
+ * - 'web': Created/modified via the web UI
+ * - 'agent': Created/modified by an AI agent
+ * - 'ios_notes': Imported from iOS Notes app
+ * - 'import': Imported from external sources
+ * - 'system': System-generated operations
+ * - 'restored': Restored from a previous version
+ * - 'api': Created/modified via direct API calls
+ */
+export type NoteSource =
+  | 'web'
+  | 'agent'
+  | 'ios_notes'
+  | 'import'
+  | 'system'
+  | 'restored'
+  | 'api';
+
+/**
+ * Human-readable labels for note sources (for UI display)
+ */
+export const NoteSourceLabels: Record<NoteSource, string> = {
+  web: 'Web',
+  agent: 'AI Agent',
+  ios_notes: 'iOS Notes',
+  import: 'Import',
+  system: 'System',
+  restored: 'Restored',
+  api: 'API',
+};
+
+/**
+ * Helper to get a display-friendly label for a note source
+ */
+export function getNoteSourceLabel(source: string | undefined): string {
+  if (!source) return 'Unknown';
+  return NoteSourceLabels[source as NoteSource] ?? source;
+}
+
+// ============================================
+// Core Note Types
+// ============================================
+
 /**
  * Lightweight note item for list views (aligned with backend NoteListResponse).
  * Contains summary instead of full content for better performance.
@@ -17,7 +68,8 @@ export interface NoteListItem {
   tags: string[];
   isArchived: boolean;
   folder?: string;
-  source?: string;
+  /** Source of the last modification (web, agent, ios_notes, etc.) */
+  source?: NoteSource;
 }
 
 /**
@@ -180,6 +232,8 @@ export interface NoteVersion {
   folder: string | null;
   modifiedBy: string;
   changeSummary: string | null;
+  /** Source of this version (web, agent, ios_notes, import, etc.) */
+  source: NoteSource;
   createdAt: string;
 }
 

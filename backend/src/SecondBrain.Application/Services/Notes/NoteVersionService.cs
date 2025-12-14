@@ -125,6 +125,7 @@ public class NoteVersionService : INoteVersionService
             Folder = version.Folder,
             ModifiedBy = version.ModifiedBy,
             ChangeSummary = version.ChangeSummary,
+            Source = version.Source,
             CreatedAt = version.CreatedAt
         };
     }

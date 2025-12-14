@@ -1,6 +1,7 @@
 using System.Text.Json;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -12,7 +13,17 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 /// </summary>
 public abstract class NotePluginBase : IAgentPlugin
 {
+    /// <summary>
+    /// Repository for read operations (thread-safe for concurrent agent operations).
+    /// </summary>
     protected readonly IParallelNoteRepository NoteRepository;
+
+    /// <summary>
+    /// Service for mutation operations (Create, Update, Delete).
+    /// All mutations MUST use this service for consistent version tracking.
+    /// </summary>
+    protected readonly INoteOperationService? NoteOperationService;
+
     protected readonly IRagService? RagService;
     protected readonly IStructuredOutputService? StructuredOutputService;
     protected readonly RagSettings? RagSettings;
@@ -29,12 +40,14 @@ public abstract class NotePluginBase : IAgentPlugin
         IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
-        IStructuredOutputService? structuredOutputService = null)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteOperationService? noteOperationService = null)
     {
         NoteRepository = noteRepository;
         RagService = ragService;
         RagSettings = ragSettings;
         StructuredOutputService = structuredOutputService;
+        NoteOperationService = noteOperationService;
     }
 
     #region IAgentPlugin Implementation

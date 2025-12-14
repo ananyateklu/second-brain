@@ -6,6 +6,7 @@
 export type {
   Note,
   NoteListItem,
+  NoteSource,
   CreateNoteRequest as CreateNoteInput,
   UpdateNoteRequest as UpdateNoteInput,
   NoteResponse,
@@ -15,3 +16,5 @@ export type {
   NotesFilterState,
   NoteSearchMode,
 } from '../../../types/notes';
+
+export { NoteSourceLabels, getNoteSourceLabel } from '../../../types/notes';

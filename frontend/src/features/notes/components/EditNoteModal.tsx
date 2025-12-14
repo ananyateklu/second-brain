@@ -374,12 +374,12 @@ export function EditNoteModal() {
             )}
           </div>
 
-          {/* History Button */}
+          {/* History Button - toggles panel */}
           <Button
             type="button"
-            variant="secondary"
-            onClick={() => { setIsHistoryOpen(true); }}
-            title="View version history"
+            variant={isHistoryOpen ? "primary" : "secondary"}
+            onClick={() => { setIsHistoryOpen(!isHistoryOpen); }}
+            title={isHistoryOpen ? "Close version history" : "View version history"}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -440,35 +440,50 @@ export function EditNoteModal() {
         </div>
       }
     >
-      <form ref={formRef} onSubmit={handleFormSubmit} className="h-full flex flex-col">
-        <RichNoteForm
-          register={register}
-          control={control}
-          setValue={setValue}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          newImages={newImages}
-          existingImages={editingNote?.images}
-          deletedImageIds={deletedImageIds}
-          onAddImages={handleAddImages}
-          onRemoveNewImage={handleRemoveNewImage}
-          onDeleteExistingImage={handleDeleteExistingImage}
-          onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
-        />
-      </form>
+      {/* Main content area - flex row for form + history panel */}
+      {/* Use negative margins to break out of modal's p-6 padding for full-height sidebar */}
+      <div
+        className="flex overflow-hidden -m-6 rounded-b-3xl"
+        style={{
+          height: 'calc(100% + 48px)', /* Account for the negative margin (24px * 2) */
+          backgroundColor: 'var(--surface-elevated)',
+        }}
+      >
+        {/* Form area - takes remaining space, restore padding */}
+        <form
+          ref={formRef}
+          onSubmit={handleFormSubmit}
+          className="flex-1 flex flex-col min-w-0 overflow-hidden p-6"
+        >
+          <RichNoteForm
+            register={register}
+            control={control}
+            setValue={setValue}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            newImages={newImages}
+            existingImages={editingNote?.images}
+            deletedImageIds={deletedImageIds}
+            onAddImages={handleAddImages}
+            onRemoveNewImage={handleRemoveNewImage}
+            onDeleteExistingImage={handleDeleteExistingImage}
+            onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
+          />
+        </form>
 
-      {/* Version History Panel */}
-      {isHistoryOpen && editingNote && (
-        <NoteVersionHistoryPanel
-          noteId={editingNote.id}
-          isOpen={isHistoryOpen}
-          onClose={() => { setIsHistoryOpen(false); }}
-          onRestore={() => {
-            // Refresh the note data after restore
-            closeModal();
-          }}
-        />
-      )}
+        {/* Version History Panel - inline sidebar, spans full height */}
+        {editingNote && (
+          <NoteVersionHistoryPanel
+            noteId={editingNote.id}
+            isOpen={isHistoryOpen}
+            onClose={() => { setIsHistoryOpen(false); }}
+            onRestore={() => {
+              // Refresh the note data after restore
+              closeModal();
+            }}
+          />
+        )}
+      </div>
     </Modal>
   );
 }

@@ -1,19 +1,28 @@
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Mappings;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Application.Services.Notes;
 
 namespace SecondBrain.Application.Services;
 
+/// <summary>
+/// Import service that delegates to INoteOperationService for consistent version tracking.
+/// This service acts as a thin wrapper to maintain backward compatibility.
+/// </summary>
+/// <remarks>
+/// <b>ARCHITECTURAL NOTE:</b> All import operations now flow through INoteOperationService
+/// to ensure proper source tracking, version history, and summary generation.
+/// </remarks>
 public class NotesImportService : INotesImportService
 {
-    private readonly INoteRepository _noteRepository;
+    private readonly INoteOperationService _noteOperationService;
     private readonly ILogger<NotesImportService> _logger;
 
-    public NotesImportService(INoteRepository noteRepository, ILogger<NotesImportService> logger)
+    public NotesImportService(
+        INoteOperationService noteOperationService,
+        ILogger<NotesImportService> logger)
     {
-        _noteRepository = noteRepository;
+        _noteOperationService = noteOperationService;
         _logger = logger;
     }
 
@@ -22,92 +31,32 @@ public class NotesImportService : INotesImportService
         IReadOnlyCollection<ImportNoteRequest> notes,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Starting import process. NoteCount: {NoteCount}", notes.Count);
-        var response = new ImportNotesResponse();
-        var noteIndex = 0;
+        _logger.LogInformation("Starting import process via NoteOperationService. NoteCount: {NoteCount}", notes.Count);
 
-        foreach (var dto in notes)
+        // Delegate to the central operation service for consistent handling
+        var result = await _noteOperationService.ImportBatchAsync(userId, notes, cancellationToken);
+
+        if (result.IsSuccess)
         {
-            noteIndex++;
-            _logger.LogInformation("Processing note {NoteIndex}/{TotalNotes}. Title: {Title}, ExternalId: {ExternalId}", 
-                noteIndex, notes.Count, dto.Title ?? "(empty)", dto.ExternalId ?? "(none)");
-
-            try
-            {
-                // Try to find existing note by ExternalId if provided
-                var existing = !string.IsNullOrWhiteSpace(dto.ExternalId)
-                    ? await _noteRepository.GetByUserIdAndExternalIdAsync(userId, dto.ExternalId)
-                    : null;
-
-                if (existing is null)
-                {
-                    // Create new note
-                    _logger.LogInformation("Creating new note. Title: {Title}, ContentLength: {ContentLength}, Folder: {Folder}, TagsCount: {TagsCount}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}", 
-                        dto.Title, dto.Content?.Length ?? 0, dto.Folder ?? "(none)", dto.Tags?.Count ?? 0, dto.CreatedAt, dto.UpdatedAt);
-                    
-                    var newNote = dto.ToEntity(userId);
-                    var created = await _noteRepository.CreateAsync(newNote);
-                    
-                    _logger.LogInformation("Note successfully created. NoteId: {NoteId}, CreatedAt: {CreatedAt}, UpdatedAt: {UpdatedAt}", 
-                        created.Id, created.CreatedAt, created.UpdatedAt);
-                    
-                    response.ImportedCount++;
-                    response.Notes.Add(new ImportNoteResult
-                    {
-                        Id = created.Id,
-                        Title = dto.Title ?? string.Empty,
-                        Status = "created",
-                        Message = "Note successfully imported"
-                    });
-                }
-                else
-                {
-                    // Update existing note
-                    _logger.LogInformation("Updating existing note. NoteId: {NoteId}, Title: {Title}, ContentLength: {ContentLength}, Folder: {Folder}, TagsCount: {TagsCount}, NewUpdatedAt: {NewUpdatedAt}", 
-                        existing.Id, dto.Title, dto.Content?.Length ?? 0, dto.Folder ?? "(none)", dto.Tags?.Count ?? 0, dto.UpdatedAt);
-                    
-                    existing.UpdateFrom(dto);
-                    var updated = await _noteRepository.UpdateAsync(existing.Id, existing);
-                    
-                    if (updated != null)
-                    {
-                        _logger.LogInformation("Note successfully updated. NoteId: {NoteId}, UpdatedAt: {UpdatedAt}", existing.Id, updated.UpdatedAt);
-                        response.UpdatedCount++;
-                        response.Notes.Add(new ImportNoteResult
-                        {
-                            Id = existing.Id,
-                            Title = dto.Title ?? string.Empty,
-                            Status = "updated",
-                            Message = "Note successfully updated"
-                        });
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Note update returned null. NoteId: {NoteId}", existing.Id);
-                        throw new Exception("Update operation returned null");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log error and continue with next note
-                _logger.LogError(ex, "Error importing note. Title: {Title}, ExternalId: {ExternalId}", 
-                    dto.Title ?? "(empty)", dto.ExternalId ?? "(none)");
-                
-                response.SkippedCount++;
-                response.Notes.Add(new ImportNoteResult
-                {
-                    Id = null,
-                    Title = dto.Title ?? string.Empty,
-                    Status = "skipped",
-                    Message = $"Error importing note: {ex.Message}"
-                });
-            }
+            var response = result.Value!;
+            _logger.LogInformation(
+                "Import process completed. Imported: {ImportedCount}, Updated: {UpdatedCount}, Skipped: {SkippedCount}",
+                response.ImportedCount, response.UpdatedCount, response.SkippedCount);
+            return response;
         }
 
-        _logger.LogInformation("Import process completed. Imported: {ImportedCount}, Updated: {UpdatedCount}, Skipped: {SkippedCount}", 
-            response.ImportedCount, response.UpdatedCount, response.SkippedCount);
-
-        return response;
+        // In case of error, return empty response with error details
+        _logger.LogError("Import failed: {Error}", result.Error?.Message ?? "Unknown error");
+        return new ImportNotesResponse
+        {
+            SkippedCount = notes.Count,
+            Notes = notes.Select(n => new ImportNoteResult
+            {
+                Id = null,
+                Title = n.Title ?? string.Empty,
+                Status = "skipped",
+                Message = result.Error?.Message ?? "Import operation failed"
+            }).ToList()
+        };
     }
 }

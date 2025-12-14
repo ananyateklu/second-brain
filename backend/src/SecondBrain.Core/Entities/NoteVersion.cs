@@ -89,6 +89,14 @@ public class NoteVersion
     public string? ChangeSummary { get; set; }
 
     /// <summary>
+    /// Source of the change (e.g., "web", "agent", "ios_notes", "import").
+    /// Tracks how this version was created or modified.
+    /// </summary>
+    [Column("source")]
+    [MaxLength(50)]
+    public string Source { get; set; } = "web";
+
+    /// <summary>
     /// When this version record was created.
     /// </summary>
     [Column("created_at")]
@@ -123,7 +131,7 @@ public class NoteVersion
     /// <summary>
     /// Creates a new NoteVersion from a Note entity.
     /// </summary>
-    public static NoteVersion FromNote(Note note, string modifiedBy, int versionNumber, string? changeSummary = null)
+    public static NoteVersion FromNote(Note note, string modifiedBy, int versionNumber, string? changeSummary = null, string? source = null)
     {
         return new NoteVersion
         {
@@ -138,6 +146,7 @@ public class NoteVersion
             ModifiedBy = modifiedBy,
             VersionNumber = versionNumber,
             ChangeSummary = changeSummary,
+            Source = source ?? note.Source ?? "web",
             CreatedAt = DateTime.UtcNow
         };
     }

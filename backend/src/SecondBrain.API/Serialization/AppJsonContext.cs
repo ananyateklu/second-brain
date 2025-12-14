@@ -51,6 +51,8 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(NoteVersionResponse[]))]
 [JsonSerializable(typeof(List<NoteVersionResponse>))]
 [JsonSerializable(typeof(IEnumerable<NoteVersionResponse>))]
+[JsonSerializable(typeof(NoteVersionHistoryResponse))]
+[JsonSerializable(typeof(NoteVersionDiffResponse))]
 // Chat conversation requests (excluding types with entity references)
 [JsonSerializable(typeof(CreateConversationRequest))]
 [JsonSerializable(typeof(SendMessageRequest))]

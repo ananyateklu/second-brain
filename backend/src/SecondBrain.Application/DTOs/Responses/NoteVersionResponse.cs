@@ -66,6 +66,11 @@ public class NoteVersionResponse
     public string? ChangeSummary { get; set; }
 
     /// <summary>
+    /// Source of the change (e.g., "web", "agent", "ios_notes", "import").
+    /// </summary>
+    public string Source { get; set; } = "web";
+
+    /// <summary>
     /// When this version record was created.
     /// </summary>
     public DateTime CreatedAt { get; set; }

@@ -7,6 +7,7 @@ using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -34,7 +35,8 @@ public class AgentService : IAgentService
         IRagService ragService,
         IUserPreferencesService userPreferencesService,
         ILogger<AgentService> logger,
-        IStructuredOutputService? structuredOutputService = null)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteOperationService? noteOperationService = null)
     {
         _strategyFactory = strategyFactory;
         _settings = settings.Value;
@@ -44,7 +46,8 @@ public class AgentService : IAgentService
         _logger = logger;
 
         // Register available plugins
-        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService));
+        // NotesPlugin uses INoteOperationService for all mutations (create, update, delete, append)
+        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService, noteOperationService));
     }
 
     private void RegisterPlugin(IAgentPlugin plugin)

@@ -135,35 +135,66 @@ public class SqlNoteVersionRepository : INoteVersionRepository
     {
         try
         {
-            // Use the database function for atomic version creation
-            var sql = @"
-                SELECT create_note_version(
-                    @noteId, @title, @content, @tags, @isArchived, @folder, @modifiedBy, @changeSummary
-                )";
+            // Get the next version number
+            var currentMaxVersion = await _context.NoteVersions
+                .Where(v => v.NoteId == note.Id)
+                .MaxAsync(v => (int?)v.VersionNumber, cancellationToken) ?? 0;
 
-            var connection = _context.Database.GetDbConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-                await connection.OpenAsync(cancellationToken);
+            var newVersionNumber = currentMaxVersion + 1;
+            var now = DateTime.UtcNow;
 
-            await using var command = connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.Add(new NpgsqlParameter("@noteId", note.Id));
-            command.Parameters.Add(new NpgsqlParameter("@title", note.Title));
-            command.Parameters.Add(new NpgsqlParameter("@content", note.Content));
-            command.Parameters.Add(new NpgsqlParameter("@tags", note.Tags.ToArray()));
-            command.Parameters.Add(new NpgsqlParameter("@isArchived", note.IsArchived));
-            command.Parameters.Add(new NpgsqlParameter("@folder", (object?)note.Folder ?? DBNull.Value));
-            command.Parameters.Add(new NpgsqlParameter("@modifiedBy", modifiedBy));
-            command.Parameters.Add(new NpgsqlParameter("@changeSummary", (object?)changeSummary ?? DBNull.Value));
+            // Close the current version (set end time) by updating ValidPeriod
+            var currentVersion = await _context.NoteVersions
+                .Where(v => v.NoteId == note.Id)
+                .Where(v => v.ValidPeriod.UpperBoundInfinite)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            var result = await command.ExecuteScalarAsync(cancellationToken);
-            var versionNumber = Convert.ToInt32(result);
+            if (currentVersion != null)
+            {
+                // Update the valid period to close it with EXCLUSIVE upper bound [start, end)
+                // This ensures no overlap with the new version which starts at the same time
+                var closedPeriod = new NpgsqlRange<DateTime>(
+                    currentVersion.ValidPeriod.LowerBound,
+                    currentVersion.ValidPeriod.LowerBoundIsInclusive,  // Keep original lower bound inclusivity
+                    false,  // Lower bound not infinite
+                    now,
+                    false,  // Upper bound EXCLUSIVE (important for WITHOUT OVERLAPS)
+                    false); // Upper bound not infinite
+                currentVersion.ValidPeriod = closedPeriod;
+            }
+
+            // Insert the new version with INCLUSIVE lower bound [now, infinity)
+            var newVersion = new NoteVersion
+            {
+                Id = Guid.CreateVersion7().ToString(),
+                NoteId = note.Id,
+                ValidPeriod = new NpgsqlRange<DateTime>(
+                    now,
+                    true,   // Lower bound INCLUSIVE
+                    false,  // Lower bound not infinite
+                    DateTime.MaxValue,
+                    false,  // Upper bound exclusive (doesn't matter for infinity)
+                    true),  // Upper bound IS infinite
+                Title = note.Title,
+                Content = note.Content,
+                Tags = new List<string>(note.Tags),
+                IsArchived = note.IsArchived,
+                Folder = note.Folder,
+                ModifiedBy = modifiedBy,
+                VersionNumber = newVersionNumber,
+                ChangeSummary = changeSummary,
+                Source = note.Source ?? "web",
+                CreatedAt = now
+            };
+
+            _context.NoteVersions.Add(newVersion);
+            await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}",
-                versionNumber, note.Id, modifiedBy);
+                newVersionNumber, note.Id, modifiedBy);
 
-            return versionNumber;
+            return newVersionNumber;
         }
         catch (Exception ex)
         {
@@ -189,6 +220,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 ModifiedBy = createdBy,
                 VersionNumber = 1,
                 ChangeSummary = "Initial version",
+                Source = note.Source ?? "web",
                 CreatedAt = DateTime.UtcNow
             };
 

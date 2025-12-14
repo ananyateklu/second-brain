@@ -242,8 +242,20 @@
 \echo 'Advanced pgvector optimizations applied successfully.'
 \echo ''
 
--- Step 38: Final statistics update
-\echo 'Step 38/38: Updating statistics...'
+-- Step 38: Note version source tracking
+\echo 'Step 38/40: Adding note version source tracking...'
+\i 38_note_version_source.sql
+\echo 'Note version source tracking added successfully.'
+\echo ''
+
+-- Step 39: Backfill initial note versions
+\echo 'Step 39/40: Backfilling initial note versions...'
+\i 39_backfill_initial_note_versions.sql
+\echo 'Initial note versions backfilled successfully.'
+\echo ''
+
+-- Step 40: Final statistics update
+\echo 'Step 40/40: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

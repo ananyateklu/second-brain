@@ -1,7 +1,11 @@
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Application.Services.RAG.Models;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Core.Models;
 
@@ -11,6 +15,7 @@ public class NotesPluginTests
 {
     private readonly Mock<IParallelNoteRepository> _mockNoteRepository;
     private readonly Mock<IRagService> _mockRagService;
+    private readonly Mock<INoteOperationService> _mockNoteOperationService;
     private readonly NotesPlugin _sut;
     private const string TestUserId = "user-123";
 
@@ -18,7 +23,8 @@ public class NotesPluginTests
     {
         _mockNoteRepository = new Mock<IParallelNoteRepository>();
         _mockRagService = new Mock<IRagService>();
-        _sut = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        _mockNoteOperationService = new Mock<INoteOperationService>();
+        _sut = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
         _sut.SetCurrentUserId(TestUserId);
     }
 
@@ -80,7 +86,7 @@ public class NotesPluginTests
     public async Task CreateNoteAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
         // Note: Not calling SetCurrentUserId
 
         // Act
@@ -134,8 +140,17 @@ public class NotesPluginTests
     public async Task CreateNoteAsync_WhenValid_CreatesNote()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .ReturnsAsync((Note n) => n);
+        var createdNote = CreateTestNote("note-123", "Test Note", "Test Content");
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = createdNote,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = true
+            }));
 
         // Act
         var result = await _sut.CreateNoteAsync("Test Note", "Test Content");
@@ -143,76 +158,105 @@ public class NotesPluginTests
         // Assert
         result.Should().Contain("Successfully created note");
         result.Should().Contain("Test Note");
-        _mockNoteRepository.Verify(r => r.CreateAsync(It.Is<Note>(n =>
-            n.Title == "Test Note" &&
-            n.Content == "Test Content" &&
-            n.UserId == TestUserId &&
-            n.Source == "agent"
-        )), Times.Once);
+        _mockNoteOperationService.Verify(s => s.CreateAsync(
+            It.Is<CreateNoteOperationRequest>(r =>
+                r.Title == "Test Note" &&
+                r.Content == "Test Content" &&
+                r.UserId == TestUserId &&
+                r.Source == NoteSource.Agent),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task CreateNoteAsync_WithTags_ParsesTagsCorrectly()
     {
         // Arrange
-        Note? capturedNote = null;
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .Callback<Note>(n => capturedNote = n)
-            .ReturnsAsync((Note n) => n);
+        CreateNoteOperationRequest? capturedRequest = null;
+        var createdNote = CreateTestNote("note-123", "Test", "Content", new List<string> { "tag1", "tag2", "tag3" });
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateNoteOperationRequest, CancellationToken>((r, _) => capturedRequest = r)
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = createdNote,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = true
+            }));
 
         // Act
         var result = await _sut.CreateNoteAsync("Test", "Content", "tag1, tag2, tag3");
 
         // Assert
-        capturedNote.Should().NotBeNull();
-        capturedNote!.Tags.Should().HaveCount(3);
-        capturedNote.Tags.Should().Contain("tag1");
-        capturedNote.Tags.Should().Contain("tag2");
-        capturedNote.Tags.Should().Contain("tag3");
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Tags.Should().HaveCount(3);
+        capturedRequest.Tags.Should().Contain("tag1");
+        capturedRequest.Tags.Should().Contain("tag2");
+        capturedRequest.Tags.Should().Contain("tag3");
     }
 
     [Fact]
     public async Task CreateNoteAsync_WithEmptyTags_CreatesNoteWithoutTags()
     {
         // Arrange
-        Note? capturedNote = null;
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .Callback<Note>(n => capturedNote = n)
-            .ReturnsAsync((Note n) => n);
+        CreateNoteOperationRequest? capturedRequest = null;
+        var createdNote = CreateTestNote("note-123", "Test", "Content");
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateNoteOperationRequest, CancellationToken>((r, _) => capturedRequest = r)
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = createdNote,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = true
+            }));
 
         // Act
         await _sut.CreateNoteAsync("Test", "Content", null);
 
         // Assert
-        capturedNote.Should().NotBeNull();
-        capturedNote!.Tags.Should().BeEmpty();
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Tags.Should().BeEmpty();
     }
 
     [Fact]
     public async Task CreateNoteAsync_TrimsTagsAndFiltersEmpty()
     {
         // Arrange
-        Note? capturedNote = null;
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .Callback<Note>(n => capturedNote = n)
-            .ReturnsAsync((Note n) => n);
+        CreateNoteOperationRequest? capturedRequest = null;
+        var createdNote = CreateTestNote("note-123", "Test", "Content", new List<string> { "tag1", "tag2" });
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<CreateNoteOperationRequest, CancellationToken>((r, _) => capturedRequest = r)
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = createdNote,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = true
+            }));
 
         // Act
         await _sut.CreateNoteAsync("Test", "Content", " tag1 , , tag2 ,  ");
 
         // Assert
-        capturedNote.Should().NotBeNull();
-        capturedNote!.Tags.Should().HaveCount(2);
-        capturedNote.Tags.Should().Contain("tag1");
-        capturedNote.Tags.Should().Contain("tag2");
+        capturedRequest.Should().NotBeNull();
+        capturedRequest!.Tags.Should().HaveCount(2);
+        capturedRequest.Tags.Should().Contain("tag1");
+        capturedRequest.Tags.Should().Contain("tag2");
     }
 
     [Fact]
-    public async Task CreateNoteAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task CreateNoteAsync_WhenServiceReturnsError_ReturnsError()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Failure(new Error("CreateFailed", "Database error")));
 
         // Act
         var result = await _sut.CreateNoteAsync("Test", "Content");
@@ -226,8 +270,17 @@ public class NotesPluginTests
     public async Task CreateNoteAsync_ReturnsNoteIdInResponse()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.CreateAsync(It.IsAny<Note>()))
-            .ReturnsAsync((Note n) => n);
+        var createdNote = CreateTestNote("note-123", "Test", "Content");
+        _mockNoteOperationService
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = createdNote,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = true
+            }));
 
         // Act
         var result = await _sut.CreateNoteAsync("Test", "Content");
@@ -244,7 +297,7 @@ public class NotesPluginTests
     public async Task SearchNotesAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.SearchNotesAsync("query");
@@ -386,7 +439,7 @@ public class NotesPluginTests
     public async Task UpdateNoteAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.UpdateNoteAsync("note-id", "New Title");
@@ -432,16 +485,25 @@ public class NotesPluginTests
         var note = CreateTestNote("note-id", "Old Title", "Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-id", It.IsAny<Note>()))
-            .ReturnsAsync((string id, Note n) => n);
+        _mockNoteOperationService
+            .Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = CreateTestNote("note-id", "New Title", "Content"),
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new List<string> { "title" },
+                IsNewNote = false
+            }));
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-id", title: "New Title");
 
         // Assert
         result.Should().Contain("Successfully updated");
-        _mockNoteRepository.Verify(r => r.UpdateAsync("note-id", It.Is<Note>(n =>
-            n.Title == "New Title")), Times.Once);
+        _mockNoteOperationService.Verify(s => s.UpdateAsync(
+            It.Is<UpdateNoteOperationRequest>(r => r.Title == "New Title"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -451,8 +513,16 @@ public class NotesPluginTests
         var note = CreateTestNote("note-id", "Title", "Old Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-id", It.IsAny<Note>()))
-            .ReturnsAsync((string id, Note n) => n);
+        _mockNoteOperationService
+            .Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = CreateTestNote("note-id", "Title", "New Content"),
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new List<string> { "content" },
+                IsNewNote = false
+            }));
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-id", content: "New Content");
@@ -468,8 +538,16 @@ public class NotesPluginTests
         var note = CreateTestNote("note-id", "Title", "Content", new List<string> { "old-tag" });
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-id", It.IsAny<Note>()))
-            .ReturnsAsync((string id, Note n) => n);
+        _mockNoteOperationService
+            .Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = CreateTestNote("note-id", "Title", "Content", new List<string> { "new-tag", "another-tag" }),
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new List<string> { "tags" },
+                IsNewNote = false
+            }));
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-id", tags: "new-tag, another-tag");
@@ -486,6 +564,16 @@ public class NotesPluginTests
         var note = CreateTestNote("note-id", "Title", "Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
+        _mockNoteOperationService
+            .Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = note,
+                VersionNumber = 1,
+                Source = NoteSource.Agent,
+                Changes = new List<string>(),
+                IsNewNote = false
+            }));
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-id"); // No changes provided
@@ -495,14 +583,15 @@ public class NotesPluginTests
     }
 
     [Fact]
-    public async Task UpdateNoteAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task UpdateNoteAsync_WhenServiceReturnsError_ReturnsError()
     {
         // Arrange
         var note = CreateTestNote("note-id", "Title", "Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-id", It.IsAny<Note>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _mockNoteOperationService
+            .Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Failure(new Error("UpdateFailed", "Database error")));
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-id", title: "New Title");
@@ -519,7 +608,7 @@ public class NotesPluginTests
     public async Task GetNoteAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.GetNoteAsync("note-id");
@@ -598,7 +687,7 @@ public class NotesPluginTests
     public async Task ListRecentNotesAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.ListRecentNotesAsync();
@@ -702,7 +791,7 @@ public class NotesPluginTests
     public async Task SemanticSearchAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.SemanticSearchAsync("query");
@@ -715,7 +804,7 @@ public class NotesPluginTests
     public async Task SemanticSearchAsync_WhenRagServiceNull_ReturnsFallbackMessage()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, null);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, null, null, null, _mockNoteOperationService.Object);
         plugin.SetCurrentUserId(TestUserId);
 
         // Act
@@ -810,7 +899,7 @@ public class NotesPluginTests
     public async Task DeleteNoteAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
-        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+        var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
         var result = await plugin.DeleteNoteAsync("note-id");
@@ -856,8 +945,15 @@ public class NotesPluginTests
         var note = CreateTestNote("note-id", "Test Note", "Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.DeleteAsync("note-id"))
-            .ReturnsAsync(true);
+        _mockNoteOperationService
+            .Setup(s => s.DeleteAsync(It.IsAny<DeleteNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteDeleteResult>.Success(new NoteDeleteResult
+            {
+                Success = true,
+                NoteId = "note-id",
+                Source = NoteSource.Agent,
+                WasSoftDelete = false
+            }));
 
         // Act
         var result = await _sut.DeleteNoteAsync("note-id");
@@ -865,18 +961,21 @@ public class NotesPluginTests
         // Assert
         result.Should().Contain("Successfully deleted");
         result.Should().Contain("Test Note");
-        _mockNoteRepository.Verify(r => r.DeleteAsync("note-id"), Times.Once);
+        _mockNoteOperationService.Verify(s => s.DeleteAsync(
+            It.Is<DeleteNoteOperationRequest>(r => r.NoteId == "note-id"),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteNoteAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task DeleteNoteAsync_WhenServiceReturnsError_ReturnsError()
     {
         // Arrange
         var note = CreateTestNote("note-id", "Title", "Content");
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.DeleteAsync("note-id"))
-            .ThrowsAsync(new Exception("Database error"));
+        _mockNoteOperationService
+            .Setup(s => s.DeleteAsync(It.IsAny<DeleteNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteDeleteResult>.Failure(new Error("DeleteFailed", "Database error")));
 
         // Act
         var result = await _sut.DeleteNoteAsync("note-id");
@@ -913,4 +1012,3 @@ public class NotesPluginTests
 
     #endregion
 }
-

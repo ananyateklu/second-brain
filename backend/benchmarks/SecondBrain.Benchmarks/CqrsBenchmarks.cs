@@ -16,8 +16,10 @@ using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Common;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
@@ -59,9 +61,7 @@ public class CqrsBenchmarks
     private GetAllConversationsQueryHandler _getAllConversationsHandler = null!;
     private GetConversationByIdQueryHandler _getConversationByIdHandler = null!;
     private Mock<INoteRepository> _noteRepositoryMock = null!;
-    private Mock<INoteImageRepository> _noteImageRepositoryMock = null!;
-    private Mock<INoteSummaryService> _summaryServiceMock = null!;
-    private Mock<IServiceScopeFactory> _serviceScopeFactoryMock = null!;
+    private Mock<INoteOperationService> _noteOperationServiceMock = null!;
     private Mock<IChatConversationService> _chatServiceMock = null!;
 
     // MediatR pipeline (with license)
@@ -142,15 +142,30 @@ public class CqrsBenchmarks
             .Setup(r => r.CreateAsync(It.IsAny<Note>()))
             .ReturnsAsync((Note n) => n);
 
-        _summaryServiceMock = new Mock<INoteSummaryService>();
-        _summaryServiceMock.Setup(s => s.IsEnabled).Returns(false);
-
-        _noteImageRepositoryMock = new Mock<INoteImageRepository>();
-        _noteImageRepositoryMock
-            .Setup(r => r.CreateManyAsync(It.IsAny<IEnumerable<NoteImage>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IEnumerable<NoteImage> images, CancellationToken _) => images.ToList());
-
-        _serviceScopeFactoryMock = new Mock<IServiceScopeFactory>();
+        // Setup note operation service mock for CreateNoteCommandHandler
+        _noteOperationServiceMock = new Mock<INoteOperationService>();
+        _noteOperationServiceMock
+            .Setup(s => s.CreateAsync(It.IsAny<CreateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateNoteOperationRequest req, CancellationToken _) =>
+                Result<NoteOperationResult>.Success(new NoteOperationResult
+                {
+                    Note = new Note
+                    {
+                        Id = "note-new",
+                        Title = req.Title,
+                        Content = req.Content,
+                        UserId = req.UserId,
+                        Tags = req.Tags ?? [],
+                        Folder = req.Folder,
+                        IsArchived = req.IsArchived,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    },
+                    VersionNumber = 1,
+                    Source = NoteSource.Web,
+                    Changes = [],
+                    IsNewNote = true
+                }));
 
         _chatServiceMock = new Mock<IChatConversationService>();
         _chatServiceMock
@@ -170,10 +185,7 @@ public class CqrsBenchmarks
             NullLogger<GetNoteByIdQueryHandler>.Instance);
 
         _createNoteHandler = new CreateNoteCommandHandler(
-            _noteRepositoryMock.Object,
-            _noteImageRepositoryMock.Object,
-            _summaryServiceMock.Object,
-            _serviceScopeFactoryMock.Object,
+            _noteOperationServiceMock.Object,
             NullLogger<CreateNoteCommandHandler>.Instance);
 
         _getAllConversationsHandler = new GetAllConversationsQueryHandler(
@@ -262,7 +274,7 @@ public class CqrsBenchmarks
 
             // Register mocked dependencies that handlers need
             services.AddSingleton(_noteRepositoryMock.Object);
-            services.AddSingleton(_summaryServiceMock.Object);
+            services.AddSingleton(_noteOperationServiceMock.Object);
             services.AddSingleton(_chatServiceMock.Object);
 
             // Build service provider

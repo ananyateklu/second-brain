@@ -123,6 +123,10 @@ public static class ServiceCollectionExtensions
         // AI-powered note summary service for list endpoint optimization
         services.AddScoped<INoteSummaryService, NoteSummaryService>();
 
+        // Central note operation service - ALL note mutations must go through this service
+        // Ensures consistent version tracking, source attribution, and summary generation
+        services.AddScoped<INoteOperationService, NoteOperationService>();
+
         // Background summary generation service
         services.AddScoped<ISummaryGenerationBackgroundService, SummaryGenerationBackgroundService>();
 
