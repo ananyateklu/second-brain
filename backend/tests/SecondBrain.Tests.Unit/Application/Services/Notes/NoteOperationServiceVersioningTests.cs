@@ -99,9 +99,9 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Agent);
-        result.Value.VersionNumber.Should().Be(1);
-        result.Value.IsNewNote.Should().BeTrue();
+        result.Value!.Source.Should().Be(NoteSource.Agent);
+        result.Value!.VersionNumber.Should().Be(1);
+        result.Value!.IsNewNote.Should().BeTrue();
 
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "agent"),
@@ -146,8 +146,8 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Agent);
-        result.Value.Changes.Should().Contain("title");
+        result.Value!.Source.Should().Be(NoteSource.Agent);
+        result.Value!.Changes.Should().Contain("title");
 
         _mockVersionService.Verify(v => v.CreateVersionAsync(
             It.Is<Note>(n => n.Source == "agent"),
@@ -194,8 +194,8 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Agent);
-        result.Value.Changes.Should().Contain("content");
+        result.Value!.Source.Should().Be(NoteSource.Agent);
+        result.Value!.Changes.Should().Contain("content");
     }
 
     /// <summary>
@@ -225,7 +225,7 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Agent);
+        result.Value!.Source.Should().Be(NoteSource.Agent);
     }
 
     #endregion
@@ -273,7 +273,7 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Web);
+        result.Value!.Source.Should().Be(NoteSource.Web);
 
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "web"),
@@ -327,7 +327,7 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.IosNotes);
+        result.Value!.Source.Should().Be(NoteSource.IosNotes);
 
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "ios_notes"),
@@ -377,7 +377,7 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Import);
+        result.Value!.Source.Should().Be(NoteSource.Import);
 
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "import"),
@@ -433,8 +433,8 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.NewVersionNumber.Should().Be(4);
-        result.Value.RestoredFromVersion.Should().Be(1);
+        result.Value!.NewVersionNumber.Should().Be(4);
+        result.Value!.RestoredFromVersion.Should().Be(1);
 
         // Verify the note was updated with restored source
         _mockNoteRepository.Verify(r => r.UpdateAsync(
@@ -474,9 +474,9 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.VersionNumber.Should().Be(0); // No new version
-        result.Value.Changes.Should().BeEmpty();
-        result.Value.HasChanges.Should().BeFalse();
+        result.Value!.VersionNumber.Should().Be(0); // No new version
+        result.Value!.Changes.Should().BeEmpty();
+        result.Value!.HasChanges.Should().BeFalse();
 
         // Should NOT call CreateVersionAsync when no changes
         _mockVersionService.Verify(v => v.CreateVersionAsync(
@@ -533,7 +533,7 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Changes.Should().BeEquivalentTo(expectedChanges);
+        result.Value!.Changes.Should().BeEquivalentTo(expectedChanges);
     }
 
     #endregion
@@ -568,9 +568,9 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Web);
-        result.Value.DeletedCount.Should().Be(3);
-        result.Value.WasSoftDelete.Should().BeTrue();
+        result.Value!.Source.Should().Be(NoteSource.Web);
+        result.Value!.DeletedCount.Should().Be(3);
+        result.Value!.WasSoftDelete.Should().BeTrue();
     }
 
     /// <summary>
@@ -601,9 +601,9 @@ public class NoteOperationServiceVersioningTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Source.Should().Be(NoteSource.Agent);
-        result.Value.DeletedCount.Should().Be(2);
-        result.Value.WasSoftDelete.Should().BeFalse();
+        result.Value!.Source.Should().Be(NoteSource.Agent);
+        result.Value!.DeletedCount.Should().Be(2);
+        result.Value!.WasSoftDelete.Should().BeFalse();
     }
 
     #endregion
