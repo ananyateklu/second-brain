@@ -16,7 +16,7 @@ import { useChatProviderSelection } from './use-chat-provider-selection';
 import { useChatSettings } from './use-chat-settings';
 import { useChatScroll } from './use-chat-scroll';
 import { useContextUsage } from './use-context-usage';
-import { chatService } from '../../../services';
+import { chatService } from '../../../services/chat.service';
 import { toast } from '../../../hooks/use-toast';
 import { useBoundStore } from '../../../store/bound-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { chatService, type GetConversationsPagedParams } from '../../../services';
+import { chatService, type GetConversationsPagedParams } from '../../../services/chat.service';
 import { ChatConversation, ChatResponseWithRag, CreateConversationRequest, SendMessageRequest, UpdateConversationSettingsRequest } from '../../../types/chat';
 import type { PaginatedResult } from '../../../types/api';
 import { DEFAULT_USER_ID } from '../../../lib/constants';

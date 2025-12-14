@@ -8,7 +8,7 @@ import {
   STYLE_OPTIONS,
 } from '../../../utils/image-generation-models';
 import { ImageGenerationRequest, ImageGenerationResponse } from '../../../types/chat';
-import { chatService } from '../../../services';
+import { chatService } from '../../../services/chat.service';
 
 interface ImageGenerationPanelProps {
   /** Current conversation ID */

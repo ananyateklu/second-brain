@@ -47,13 +47,13 @@ vi.mock('../../store/bound-store', () => ({
 }));
 
 // Mock chat service for image generation
-vi.mock('../../services', () => ({
+vi.mock('../../services/chat.service', () => ({
   chatService: {
     generateImage: vi.fn(),
   },
 }));
 
-import { chatService } from '../../services';
+import { chatService } from '../../services/chat.service';
 
 /**
  * Create a wrapper with QueryClient for testing hooks

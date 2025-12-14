@@ -15,10 +15,10 @@ import {
     useBulkDeleteConversations,
     useUpdateConversationSettings,
 } from '../use-chat';
-import { chatService } from '../../../../services';
+import { chatService } from '../../../../services/chat.service';
 
 // Mock the chat service
-vi.mock('../../../../services', () => ({
+vi.mock('../../../../services/chat.service', () => ({
     chatService: {
         getConversations: vi.fn(),
         getConversation: vi.fn(),

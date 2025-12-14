@@ -41,7 +41,7 @@ import {
   isImageGenerationActive,
 } from '../core/streaming/stream-reducer';
 import { StreamEventProcessor } from '../core/streaming/stream-event-processor';
-import { chatService } from '../services';
+import { chatService } from '../services/chat.service';
 import type {
   UnifiedStreamState,
   UseUnifiedStreamOptions,
