@@ -391,6 +391,18 @@ var initialVersion = await _versionService.CreateInitialVersionAsync(...);
 2. Update `create_note_version` function signature to match production (12 parameters)
 3. Use `ARRAY[]::TEXT[]` instead of `'{}'` to avoid SQL format string parsing issues
 
+**CI Race Condition Fix (2025-12-14):** In CI, multiple test instances run concurrently against the same shared PostgreSQL database. This caused race conditions where:
+
+- Multiple instances try to `CREATE EXTENSION btree_gist` simultaneously
+- Even with `IF NOT EXISTS`, a TOCTOU race can occur
+
+**Solution:** Wrapped extension/column creation in try-catch blocks that ignore specific PostgreSQL error codes:
+
+- `23505` (unique_violation) - Extension already exists
+- `42701` (duplicate_column) - Column already exists
+
+The `SeedTestData` method already handled user seeding race conditions via `DbUpdateException` catch.
+
 ---
 
 ## Files Modified Summary
