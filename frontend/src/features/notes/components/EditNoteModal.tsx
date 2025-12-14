@@ -39,6 +39,10 @@ export function EditNoteModal() {
   const [newImages, setNewImages] = useState<FileAttachment[]>([]);
   const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
+  // Track the note's updatedAt to detect when we need to reset the form
+  // This handles both: switching notes AND after a successful save (updatedAt changes)
+  const lastNoteStateRef = useRef<{ id: string; updatedAt: string } | null>(null);
+
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
     if (!allNotes) return [];
@@ -85,14 +89,25 @@ export function EditNoteModal() {
     await moveToFolderMutation.mutateAsync({ id: editingNote.id, folder });
   };
 
-  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty, reset } = useNoteForm({
+  // Compute the saved form baseline from editingNote
+  // This is more reliable than react-hook-form's isDirty after reset()
+  const savedFormData = useMemo(() => {
+    if (!editingNote || !isOpen) return null;
+    return noteToFormData(editingNote);
+  }, [editingNote, isOpen]);
+
+  // Track current title separately to ensure re-renders on title changes
+  // This is needed because react-hook-form's register() doesn't always trigger re-renders
+  const [currentTitle, setCurrentTitle] = useState('');
+
+  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, reset, watchedValues } = useNoteForm({
     defaultValues: editingNote ? noteToFormData(editingNote) : undefined,
     onSubmit: async (data) => {
       if (!editingNote) return;
 
       const noteData = formDataToNote(data);
       const images = fileAttachmentsToNoteImages(newImages);
-      await updateNoteMutation.mutateAsync({
+      const updatedNote = await updateNoteMutation.mutateAsync({
         id: editingNote.id,
         data: {
           ...noteData,
@@ -100,9 +115,32 @@ export function EditNoteModal() {
           deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
         },
       });
-      closeModal();
+      // Clear new images after successful save
+      setNewImages([]);
+      setDeletedImageIds([]);
+      // Reset form with the updated note data as new baseline
+      if (updatedNote) {
+        const newFormData = noteToFormData(updatedNote);
+        setCurrentTitle(newFormData.title);
+        // Reset form to new values
+        reset(newFormData, { keepDefaultValues: false });
+        // Update the ref to prevent the useEffect from resetting again
+        lastNoteStateRef.current = { id: updatedNote.id, updatedAt: updatedNote.updatedAt };
+      }
     },
   });
+
+  // Compute dirty state by comparing current values to saved baseline
+  // Use currentTitle (React state) for title, watchedValues for content/tags
+  // Also include image changes (new uploads or deletions)
+  let isDirty = rhfIsDirty;
+  if (savedFormData && watchedValues) {
+    const titleDirty = currentTitle !== savedFormData.title;
+    const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
+    const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
+    const hasImageChanges = newImages.length > 0 || deletedImageIds.length > 0;
+    isDirty = titleDirty || contentDirty || tagsDirty || hasImageChanges;
+  }
 
   // Image handlers
   const handleAddImages = useCallback((images: FileAttachment[]) => {
@@ -126,13 +164,31 @@ export function EditNoteModal() {
     void handleSubmit();
   };
 
-  // Reset form when editing note changes (use note ID to detect changes)
+  // Reset form when note changes (different note ID or after save when updatedAt changes)
   useEffect(() => {
     if (editingNote && isOpen) {
-      const formData = noteToFormData(editingNote);
-      reset(formData, {
-        keepDefaultValues: false,
-      });
+      const currentState = { id: editingNote.id, updatedAt: editingNote.updatedAt };
+      const lastState = lastNoteStateRef.current;
+
+      // Reset if: different note, or same note but updatedAt changed (after save)
+      const shouldReset = !lastState ||
+        lastState.id !== currentState.id ||
+        lastState.updatedAt !== currentState.updatedAt;
+
+      if (shouldReset) {
+        lastNoteStateRef.current = currentState;
+        const formData = noteToFormData(editingNote);
+        // Defer state update to avoid cascading renders warning
+        queueMicrotask(() => setCurrentTitle(formData.title));
+        reset(formData, {
+          keepDefaultValues: false,
+        });
+      }
+    }
+    // Clear state when modal closes so next open resets properly
+    if (!isOpen) {
+      lastNoteStateRef.current = null;
+      queueMicrotask(() => setCurrentTitle(''));
     }
   }, [editingNote, isOpen, reset]);
 
@@ -162,6 +218,7 @@ export function EditNoteModal() {
     reset({
       title: '',
       content: '',
+      contentJson: null,
       tags: '',
     });
     setNewImages([]);
@@ -374,12 +431,12 @@ export function EditNoteModal() {
             )}
           </div>
 
-          {/* History Button */}
+          {/* History Button - toggles panel */}
           <Button
             type="button"
-            variant="secondary"
-            onClick={() => { setIsHistoryOpen(true); }}
-            title="View version history"
+            variant={isHistoryOpen ? "primary" : "secondary"}
+            onClick={() => { setIsHistoryOpen(!isHistoryOpen); }}
+            title={isHistoryOpen ? "Close version history" : "View version history"}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -440,35 +497,52 @@ export function EditNoteModal() {
         </div>
       }
     >
-      <form ref={formRef} onSubmit={handleFormSubmit} className="h-full flex flex-col">
-        <RichNoteForm
-          register={register}
-          control={control}
-          setValue={setValue}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          newImages={newImages}
-          existingImages={editingNote?.images}
-          deletedImageIds={deletedImageIds}
-          onAddImages={handleAddImages}
-          onRemoveNewImage={handleRemoveNewImage}
-          onDeleteExistingImage={handleDeleteExistingImage}
-          onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
-        />
-      </form>
+      {/* Main content area - flex row for form + history panel */}
+      {/* Use negative margins to break out of modal's p-6 padding for full-height sidebar */}
+      <div
+        className="flex overflow-hidden -m-6 rounded-b-3xl"
+        style={{
+          height: 'calc(100% + 48px)', /* Account for the negative margin (24px * 2) */
+          backgroundColor: 'var(--surface-elevated)',
+        }}
+      >
+        {/* Form area - takes remaining space, restore padding */}
+        <form
+          ref={formRef}
+          onSubmit={handleFormSubmit}
+          className="flex-1 flex flex-col min-w-0 overflow-hidden p-6"
+        >
+          <RichNoteForm
+            register={register}
+            control={control}
+            setValue={setValue}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            onTitleChange={setCurrentTitle}
+            initialTags={editingNote?.tags ?? []}
+            newImages={newImages}
+            existingImages={editingNote?.images}
+            deletedImageIds={deletedImageIds}
+            onAddImages={handleAddImages}
+            onRemoveNewImage={handleRemoveNewImage}
+            onDeleteExistingImage={handleDeleteExistingImage}
+            onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
+          />
+        </form>
 
-      {/* Version History Panel */}
-      {isHistoryOpen && editingNote && (
-        <NoteVersionHistoryPanel
-          noteId={editingNote.id}
-          isOpen={isHistoryOpen}
-          onClose={() => { setIsHistoryOpen(false); }}
-          onRestore={() => {
-            // Refresh the note data after restore
-            closeModal();
-          }}
-        />
-      )}
+        {/* Version History Panel - inline sidebar, spans full height */}
+        {editingNote && (
+          <NoteVersionHistoryPanel
+            noteId={editingNote.id}
+            isOpen={isHistoryOpen}
+            onClose={() => { setIsHistoryOpen(false); }}
+            onRestore={() => {
+              // Note data will be refreshed via query invalidation
+              // Keep modal open - user can continue editing or close manually
+            }}
+          />
+        )}
+      </div>
     </Modal>
   );
 }

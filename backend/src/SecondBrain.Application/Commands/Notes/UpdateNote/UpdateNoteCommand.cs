@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
@@ -18,5 +19,7 @@ public record UpdateNoteCommand(
     bool UpdateFolder,
     string UserId,
     List<NoteImageDto>? Images = null,
-    List<string>? DeletedImageIds = null
+    List<string>? DeletedImageIds = null,
+    JsonElement? ContentJson = null,
+    bool UpdateContentJson = false
 ) : IRequest<Result<NoteResponse>>;

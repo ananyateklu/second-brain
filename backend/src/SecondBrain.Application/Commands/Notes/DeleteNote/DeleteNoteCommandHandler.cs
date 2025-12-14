@@ -1,23 +1,26 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Core.Common;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Enums;
 
 namespace SecondBrain.Application.Commands.Notes.DeleteNote;
 
 /// <summary>
-/// Handler for DeleteNoteCommand - deletes a note with ownership verification
+/// Handler for DeleteNoteCommand - deletes a note with ownership verification.
+/// Delegates to INoteOperationService for business logic.
 /// </summary>
 public class DeleteNoteCommandHandler : IRequestHandler<DeleteNoteCommand, Result>
 {
-    private readonly INoteRepository _noteRepository;
+    private readonly INoteOperationService _noteOperationService;
     private readonly ILogger<DeleteNoteCommandHandler> _logger;
 
     public DeleteNoteCommandHandler(
-        INoteRepository noteRepository,
+        INoteOperationService noteOperationService,
         ILogger<DeleteNoteCommandHandler> logger)
     {
-        _noteRepository = noteRepository;
+        _noteOperationService = noteOperationService;
         _logger = logger;
     }
 
@@ -25,37 +28,22 @@ public class DeleteNoteCommandHandler : IRequestHandler<DeleteNoteCommand, Resul
         DeleteNoteCommand request,
         CancellationToken cancellationToken)
     {
-        _logger.LogDebug("Deleting note. NoteId: {NoteId}, UserId: {UserId}", request.NoteId, request.UserId);
+        _logger.LogDebug("Deleting note {NoteId} for user {UserId}", request.NoteId, request.UserId);
 
-        var existingNote = await _noteRepository.GetByIdAsync(request.NoteId);
-
-        if (existingNote == null)
+        // Map command to operation request - hard delete (soft delete = false)
+        var operationRequest = new DeleteNoteOperationRequest
         {
-            return Result.Failure(
-                new Error("NotFound", $"Note with ID '{request.NoteId}' was not found"));
-        }
+            NoteId = request.NoteId,
+            UserId = request.UserId,
+            Source = NoteSource.Web,
+            SoftDelete = false // Original behavior was hard delete
+        };
 
-        // Verify ownership
-        if (existingNote.UserId != request.UserId)
-        {
-            _logger.LogWarning(
-                "User attempted to delete note belonging to another user. UserId: {UserId}, NoteId: {NoteId}, NoteUserId: {NoteUserId}",
-                request.UserId, request.NoteId, existingNote.UserId);
+        var result = await _noteOperationService.DeleteAsync(operationRequest, cancellationToken);
 
-            return Result.Failure(
-                Error.Forbidden("Access denied to this note"));
-        }
-
-        var deleted = await _noteRepository.DeleteAsync(request.NoteId);
-
-        if (!deleted)
-        {
-            return Result.Failure(
-                new Error("DeleteFailed", "Failed to delete the note"));
-        }
-
-        _logger.LogInformation("Note deleted successfully. NoteId: {NoteId}", request.NoteId);
-
-        return Result.Success();
+        return result.Match(
+            onSuccess: _ => Result.Success(),
+            onFailure: error => Result.Failure(error)
+        );
     }
 }

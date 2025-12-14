@@ -5,7 +5,7 @@
 
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, getApiBaseUrl } from '../lib/constants';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import type {
   AIHealthResponse,
   AIProviderHealth,
@@ -70,7 +70,7 @@ export const aiService = {
 
     const startPull = async () => {
       const apiUrl = getApiBaseUrl();
-      const authStore = useAuthStore.getState();
+      const authStore = useBoundStore.getState();
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',

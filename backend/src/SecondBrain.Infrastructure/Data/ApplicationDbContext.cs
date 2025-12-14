@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ToolCall> ToolCalls { get; set; } = null!;
     public DbSet<RetrievedNote> RetrievedNotes { get; set; } = null!;
     public DbSet<GeneratedImageData> GeneratedImages { get; set; } = null!;
+    public DbSet<ThinkingStep> ThinkingSteps { get; set; } = null!;
     public DbSet<IndexingJob> IndexingJobs { get; set; } = null!;
     public DbSet<SummaryJob> SummaryJobs { get; set; } = null!;
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
@@ -166,6 +167,12 @@ public class ApplicationDbContext : DbContext
                 .WithOne(g => g.Message)
                 .HasForeignKey(g => g.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // One-to-many relationship with ThinkingSteps
+            entity.HasMany(m => m.ThinkingSteps)
+                .WithOne(t => t.Message)
+                .HasForeignKey(t => t.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure ToolCall entity
@@ -202,6 +209,17 @@ public class ApplicationDbContext : DbContext
             entity.HasQueryFilter(g => !g.Message!.Conversation!.IsDeleted);
 
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_generated_images_message_id");
+        });
+
+        // Configure ThinkingStep entity
+        modelBuilder.Entity<ThinkingStep>(entity =>
+        {
+            // Matching query filter for parent message's conversation soft delete
+            entity.HasQueryFilter(t => !t.Message!.Conversation!.IsDeleted);
+
+            entity.HasIndex(e => e.MessageId).HasDatabaseName("idx_thinking_steps_message_id");
+            entity.HasIndex(e => e.ModelSource).HasDatabaseName("idx_thinking_steps_model_source");
+            entity.HasIndex(e => new { e.MessageId, e.StepNumber }).HasDatabaseName("idx_thinking_steps_message_order");
         });
 
         // Configure IndexingJob entity

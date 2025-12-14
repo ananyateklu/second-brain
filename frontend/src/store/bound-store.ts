@@ -8,7 +8,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '../lib/constants';
 import type { BoundStore, NoteView, FontSize, Theme } from './types';
-import type { VectorStoreProvider } from '../types/rag';
 import { registerStore } from './store-registry';
 
 // Import slice creators directly to avoid circular deps through services/index
@@ -82,33 +81,50 @@ const _useBoundStore = create<BoundStore>()(
         const parsed = persistedState as Partial<BoundStore> | undefined;
         if (parsed === undefined) return currentState;
 
-        // Validate NoteView - check if value exists and is valid
+        // Validate NoteView - throw on invalid value
         const validNoteViews: NoteView[] = ['list', 'grid'];
-        const parsedNoteView = parsed.defaultNoteView;
-        const defaultNoteView: NoteView = parsedNoteView !== undefined && validNoteViews.includes(parsedNoteView)
-          ? parsedNoteView
-          : currentState.defaultNoteView;
-
-        // Validate FontSize - check if value exists and is valid
-        const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
-        const parsedFontSize = parsed.fontSize;
-        const fontSize: FontSize = parsedFontSize !== undefined && validFontSizes.includes(parsedFontSize)
-          ? parsedFontSize
-          : currentState.fontSize;
-
-        // Validate VectorStoreProvider - use explicit assertion since persisted state is unknown
-        let vectorStoreProvider: VectorStoreProvider = currentState.vectorStoreProvider;
-        const parsedProvider = parsed.vectorStoreProvider;
-        if (parsedProvider === 'PostgreSQL' || parsedProvider === 'Pinecone') {
-          vectorStoreProvider = parsedProvider;
+        if (parsed.defaultNoteView !== undefined && !validNoteViews.includes(parsed.defaultNoteView)) {
+          throw new Error(`Invalid persisted defaultNoteView: ${parsed.defaultNoteView}`);
         }
 
-        // Validate Theme - check if value exists and is valid
+        // Validate FontSize - throw on invalid value
+        const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
+        if (parsed.fontSize !== undefined && !validFontSizes.includes(parsed.fontSize)) {
+          throw new Error(`Invalid persisted fontSize: ${parsed.fontSize}`);
+        }
+
+        // Validate VectorStoreProvider - throw on invalid value
+        if (parsed.vectorStoreProvider !== undefined &&
+            parsed.vectorStoreProvider !== 'PostgreSQL' &&
+            parsed.vectorStoreProvider !== 'Pinecone') {
+          throw new Error(`Invalid persisted vectorStoreProvider: ${parsed.vectorStoreProvider}`);
+        }
+
+        // Validate Theme - throw on invalid value
         const validThemes: Theme[] = ['light', 'dark', 'blue'];
-        const parsedTheme = parsed.theme;
-        const theme: Theme = parsedTheme !== undefined && validThemes.includes(parsedTheme)
-          ? parsedTheme
-          : currentState.theme;
+        if (parsed.theme !== undefined && !validThemes.includes(parsed.theme)) {
+          throw new Error(`Invalid persisted theme: ${parsed.theme}`);
+        }
+
+        // Validate numeric types
+        if (parsed.itemsPerPage !== undefined && typeof parsed.itemsPerPage !== 'number') {
+          throw new Error(`Invalid persisted itemsPerPage type: ${typeof parsed.itemsPerPage}`);
+        }
+        if (parsed.autoSaveInterval !== undefined && typeof parsed.autoSaveInterval !== 'number') {
+          throw new Error(`Invalid persisted autoSaveInterval type: ${typeof parsed.autoSaveInterval}`);
+        }
+
+        // Validate boolean types
+        const booleanFields = [
+          'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
+          'ragEnableHyde', 'ragEnableQueryExpansion', 'ragEnableHybridSearch',
+          'ragEnableReranking', 'ragEnableAnalytics'
+        ] as const;
+        for (const field of booleanFields) {
+          if (parsed[field] !== undefined && typeof parsed[field] !== 'boolean') {
+            throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
+          }
+        }
 
         return {
           ...currentState,
@@ -119,26 +135,26 @@ const _useBoundStore = create<BoundStore>()(
           // Merge validated settings
           chatProvider: parsed.chatProvider ?? currentState.chatProvider,
           chatModel: parsed.chatModel ?? currentState.chatModel,
-          vectorStoreProvider,
+          vectorStoreProvider: parsed.vectorStoreProvider ?? currentState.vectorStoreProvider,
           rerankingProvider: parsed.rerankingProvider ?? currentState.rerankingProvider,
-          defaultNoteView,
-          itemsPerPage: typeof parsed.itemsPerPage === 'number' ? parsed.itemsPerPage : currentState.itemsPerPage,
-          fontSize,
-          enableNotifications: typeof parsed.enableNotifications === 'boolean' ? parsed.enableNotifications : currentState.enableNotifications,
+          defaultNoteView: parsed.defaultNoteView ?? currentState.defaultNoteView,
+          itemsPerPage: parsed.itemsPerPage ?? currentState.itemsPerPage,
+          fontSize: parsed.fontSize ?? currentState.fontSize,
+          enableNotifications: parsed.enableNotifications ?? currentState.enableNotifications,
           ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? currentState.ollamaRemoteUrl,
-          useRemoteOllama: typeof parsed.useRemoteOllama === 'boolean' ? parsed.useRemoteOllama : currentState.useRemoteOllama,
-          autoSaveInterval: typeof parsed.autoSaveInterval === 'number' ? parsed.autoSaveInterval : currentState.autoSaveInterval,
-          noteSummaryEnabled: typeof parsed.noteSummaryEnabled === 'boolean' ? parsed.noteSummaryEnabled : currentState.noteSummaryEnabled,
+          useRemoteOllama: parsed.useRemoteOllama ?? currentState.useRemoteOllama,
+          autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
+          noteSummaryEnabled: parsed.noteSummaryEnabled ?? currentState.noteSummaryEnabled,
           noteSummaryProvider: parsed.noteSummaryProvider ?? currentState.noteSummaryProvider,
           noteSummaryModel: parsed.noteSummaryModel ?? currentState.noteSummaryModel,
           // RAG Feature Toggles
-          ragEnableHyde: typeof parsed.ragEnableHyde === 'boolean' ? parsed.ragEnableHyde : currentState.ragEnableHyde,
-          ragEnableQueryExpansion: typeof parsed.ragEnableQueryExpansion === 'boolean' ? parsed.ragEnableQueryExpansion : currentState.ragEnableQueryExpansion,
-          ragEnableHybridSearch: typeof parsed.ragEnableHybridSearch === 'boolean' ? parsed.ragEnableHybridSearch : currentState.ragEnableHybridSearch,
-          ragEnableReranking: typeof parsed.ragEnableReranking === 'boolean' ? parsed.ragEnableReranking : currentState.ragEnableReranking,
-          ragEnableAnalytics: typeof parsed.ragEnableAnalytics === 'boolean' ? parsed.ragEnableAnalytics : currentState.ragEnableAnalytics,
+          ragEnableHyde: parsed.ragEnableHyde ?? currentState.ragEnableHyde,
+          ragEnableQueryExpansion: parsed.ragEnableQueryExpansion ?? currentState.ragEnableQueryExpansion,
+          ragEnableHybridSearch: parsed.ragEnableHybridSearch ?? currentState.ragEnableHybridSearch,
+          ragEnableReranking: parsed.ragEnableReranking ?? currentState.ragEnableReranking,
+          ragEnableAnalytics: parsed.ragEnableAnalytics ?? currentState.ragEnableAnalytics,
           // Merge theme
-          theme,
+          theme: parsed.theme ?? currentState.theme,
           // Merge notes state
           filterState: parsed.filterState ? { ...currentState.filterState, ...parsed.filterState } : currentState.filterState,
           // Merge git state

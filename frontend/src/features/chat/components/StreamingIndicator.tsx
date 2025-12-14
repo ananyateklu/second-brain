@@ -276,6 +276,26 @@ export function StreamingIndicator({
         />
       )}
 
+      {/* Processing status bar - shown independently when tools are executing but no content yet */}
+      {agentModeEnabled && isStreaming && processingStatus && processingStatus !== 'Generating response...' && !showLoadingSpinner && (
+        <div className="flex justify-start">
+          <div
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
+            style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="relative w-4 h-4 flex-shrink-0">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                  style={{ borderTopColor: 'var(--color-brand-500)', borderRightColor: 'var(--color-brand-500)' }}
+                />
+              </div>
+              <span className="text-xs font-medium" style={{ color: 'var(--color-brand-500)' }}>{processingStatus}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main response message */}
       {hasDisplayContent && (
         <div className="flex justify-start">
@@ -283,18 +303,6 @@ export function StreamingIndicator({
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
           >
-            {/* Processing status bar */}
-            {agentModeEnabled && isStreaming && processingStatus && processingStatus !== 'Generating response...' && (
-              <div className="flex items-center gap-2 mb-2 pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div className="relative w-4 h-4 flex-shrink-0">
-                  <div
-                    className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                    style={{ borderTopColor: 'var(--color-brand-500)', borderRightColor: 'var(--color-brand-500)' }}
-                  />
-                </div>
-                <span className="text-xs font-medium" style={{ color: 'var(--color-brand-500)' }}>{processingStatus}</span>
-              </div>
-            )}
             {agentModeEnabled ? (
               <MarkdownMessageWithNoteReferences content={displayContent} showCursor={isStreaming} />
             ) : (

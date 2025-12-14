@@ -9,7 +9,7 @@ export { default as ChatInput } from './ChatInput';
 // Named exports for tree-shaking
 export * from './ChatInput';
 
-// Legacy standalone component exports (for backwards compatibility)
+// Standalone component exports
 export { ChatSuggestedPrompts } from './ChatSuggestedPrompts';
 export { SUGGESTED_PROMPTS, PROMPT_TEMPLATES } from './suggested-prompts-data';
 export type { SuggestedPrompt } from './suggested-prompts-data';

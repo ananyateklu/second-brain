@@ -26,12 +26,11 @@ public class GrokImageProvider : IImageGenerationProvider
         "grok-2-image-1212"
     };
     
-    // Grok supports standard sizes
-    private static readonly string[] SupportedSizes = 
-    { 
-        "1024x1024",
-        "1024x768",
-        "768x1024"
+    // Note: Grok API does NOT support size parameter - images are generated at default resolution
+    // Keeping this for UI display purposes only
+    private static readonly string[] SupportedSizes =
+    {
+        "1024x1024"  // Default size, cannot be changed via API
     };
 
     public string ProviderName => "Grok";
@@ -86,25 +85,22 @@ public class GrokImageProvider : IImageGenerationProvider
             }
 
             // xAI uses OpenAI-compatible API format
+            // Note: Grok API does NOT support size, quality, or style parameters
             var requestBody = new Dictionary<string, object>
             {
                 { "model", model },
                 { "prompt", request.Prompt },
-                { "n", Math.Min(request.Count, 4) },
+                { "n", Math.Min(request.Count, 10) },  // Grok supports up to 10 images per request
                 { "response_format", request.ResponseFormat }
             };
 
-            // Only add size if it's a valid size for Grok
-            if (SupportedSizes.Contains(request.Size))
-            {
-                requestBody["size"] = request.Size;
-            }
+            // Note: size parameter is intentionally NOT included - Grok API doesn't support it
 
             var jsonContent = JsonSerializer.Serialize(requestBody);
             var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-            _logger.LogInformation("Generating image with Grok Aurora. Model: {Model}, Size: {Size}", 
-                model, request.Size);
+            _logger.LogInformation("Generating image with Grok Aurora. Model: {Model}, Count: {Count}",
+                model, Math.Min(request.Count, 10));
 
             var response = await _httpClient.PostAsync("images/generations", httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -126,8 +122,13 @@ public class GrokImageProvider : IImageGenerationProvider
                 };
             }
 
-            var result = JsonSerializer.Deserialize<GrokImageResponse>(responseContent, 
+            var result = JsonSerializer.Deserialize<GrokImageResponse>(responseContent,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            _logger.LogDebug("Grok API response parsed. Data count: {Count}, First image has base64: {HasBase64}, has URL: {HasUrl}",
+                result?.Data?.Count ?? 0,
+                result?.Data?.FirstOrDefault()?.B64Json != null,
+                result?.Data?.FirstOrDefault()?.Url != null);
 
             if (result?.Data == null || result.Data.Count == 0)
             {
@@ -239,13 +240,19 @@ public class GrokImageProvider : IImageGenerationProvider
     // Response models for deserialization (OpenAI-compatible format)
     private class GrokImageResponse
     {
+        [System.Text.Json.Serialization.JsonPropertyName("data")]
         public List<GrokImageData> Data { get; set; } = new();
     }
 
     private class GrokImageData
     {
+        [System.Text.Json.Serialization.JsonPropertyName("url")]
         public string? Url { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("b64_json")]
         public string? B64Json { get; set; }
+
+        [System.Text.Json.Serialization.JsonPropertyName("revised_prompt")]
         public string? RevisedPrompt { get; set; }
     }
 }

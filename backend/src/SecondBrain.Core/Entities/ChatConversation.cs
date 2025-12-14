@@ -190,6 +190,7 @@ public class ChatMessage
     public List<ToolCall> ToolCalls { get; set; } = new();
     public List<MessageImage> Images { get; set; } = new();
     public List<GeneratedImageData> GeneratedImages { get; set; } = new();
+    public List<ThinkingStep> ThinkingSteps { get; set; } = new();
 }
 
 [Table("message_images")]
@@ -327,6 +328,64 @@ public class GeneratedImageData
 
     [Column("height")]
     public int? Height { get; set; }
+
+    // Navigation property back to message (ignored to prevent circular serialization)
+    [ForeignKey("MessageId")]
+    [JsonIgnore]
+    public ChatMessage? Message { get; set; }
+}
+
+/// <summary>
+/// Represents a single thinking/reasoning step during AI agent execution.
+/// Stored with individual timestamps to preserve chronological display order.
+/// </summary>
+[Table("thinking_steps")]
+public class ThinkingStep
+{
+    [Key]
+    [Column("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [Column("message_id")]
+    [MaxLength(128)]
+    public string MessageId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Order of this thinking step within the message (0-indexed)
+    /// </summary>
+    [Column("step_number")]
+    public int StepNumber { get; set; }
+
+    /// <summary>
+    /// The thinking/reasoning content
+    /// </summary>
+    [Column("content")]
+    public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When this thinking step began (from streaming)
+    /// </summary>
+    [Column("started_at")]
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// When this thinking step completed (null if still streaming)
+    /// </summary>
+    [Column("completed_at")]
+    public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Duration in milliseconds (if available)
+    /// </summary>
+    [Column("duration_ms")]
+    public double? DurationMs { get; set; }
+
+    /// <summary>
+    /// AI provider that generated this thinking (claude, grok, gemini, ollama, etc.)
+    /// </summary>
+    [Column("model_source")]
+    [MaxLength(50)]
+    public string? ModelSource { get; set; }
 
     // Navigation property back to message (ignored to prevent circular serialization)
     [ForeignKey("MessageId")]

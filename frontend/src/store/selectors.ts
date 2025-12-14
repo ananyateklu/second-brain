@@ -68,8 +68,6 @@ export const selectSettingsActions = (state: BoundStore) => ({
 export const selectIsCreateModalOpen = (state: BoundStore) => state.isCreateModalOpen;
 export const selectIsEditModalOpen = (state: BoundStore) => state.isEditModalOpen;
 export const selectEditingNoteId = (state: BoundStore) => state.editingNoteId;
-/** @deprecated Use selectEditingNoteId instead */
-export const selectEditingNote = (state: BoundStore) => state.editingNote;
 export const selectIsMobileMenuOpen = (state: BoundStore) => state.isMobileMenuOpen;
 export const selectIsSearchOpen = (state: BoundStore) => state.isSearchOpen;
 export const selectSearchQuery = (state: BoundStore) => state.searchQuery;

@@ -30,7 +30,7 @@
 
 import { useReducer, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import { getApiBaseUrl, API_ENDPOINTS, RETRY, conversationKeys, noteKeys } from '../lib/constants';
 import { estimateTokenCount } from '../utils/token-utils';
 import {
@@ -41,7 +41,7 @@ import {
   isImageGenerationActive,
 } from '../core/streaming/stream-reducer';
 import { StreamEventProcessor } from '../core/streaming/stream-event-processor';
-import { chatService } from '../services';
+import { chatService } from '../services/chat.service';
 import type {
   UnifiedStreamState,
   UseUnifiedStreamOptions,
@@ -50,6 +50,13 @@ import type {
   UseUnifiedStreamReturn,
   StreamEvent,
 } from '../core/streaming/types';
+
+// ============================================
+// Constants
+// ============================================
+
+// Note-related tools that should trigger cache invalidation when they complete
+const NOTE_MUTATION_TOOLS = ['CreateNote', 'UpdateNote', 'AppendToNote', 'DeleteNote', 'DuplicateNote'];
 
 // ============================================
 // Hook Implementation
@@ -103,7 +110,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
    * Get auth headers for the request
    */
   const getAuthHeaders = useCallback((): HeadersInit => {
-    const authStore = useAuthStore.getState();
+    const authStore = useBoundStore.getState();
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
@@ -151,8 +158,13 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
   const processEvents = useCallback((events: StreamEvent[]) => {
     for (const event of events) {
       dispatch({ type: 'EVENT', event });
+
+      // Invalidate notes cache immediately when a note-related tool completes
+      if (event.type === 'tool:end' && NOTE_MUTATION_TOOLS.includes(event.tool)) {
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+      }
     }
-  }, []);
+  }, [queryClient]);
 
   /**
    * Handle stream completion

@@ -14,6 +14,7 @@ using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
 using SecondBrain.Application.Queries.Notes.GetNotesPaged;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Core.Interfaces;
 
@@ -31,6 +32,7 @@ public class NotesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly INoteVersionService _versionService;
+    private readonly INoteOperationService _noteOperationService;
     private readonly INoteSummaryService _summaryService;
     private readonly ISummaryGenerationBackgroundService _summaryBackgroundService;
     private readonly INoteRepository _noteRepository;
@@ -41,6 +43,7 @@ public class NotesController : ControllerBase
     public NotesController(
         IMediator mediator,
         INoteVersionService versionService,
+        INoteOperationService noteOperationService,
         INoteSummaryService summaryService,
         ISummaryGenerationBackgroundService summaryBackgroundService,
         INoteRepository noteRepository,
@@ -50,6 +53,7 @@ public class NotesController : ControllerBase
     {
         _mediator = mediator;
         _versionService = versionService;
+        _noteOperationService = noteOperationService;
         _summaryService = summaryService;
         _summaryBackgroundService = summaryBackgroundService;
         _noteRepository = noteRepository;
@@ -201,7 +205,8 @@ public class NotesController : ControllerBase
             request.IsArchived,
             request.Folder,
             userId,
-            request.Images);
+            request.Images,
+            request.ContentJson);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -242,7 +247,9 @@ public class NotesController : ControllerBase
             request.UpdateFolder,
             userId,
             request.Images,
-            request.DeletedImageIds);
+            request.DeletedImageIds,
+            request.ContentJson,
+            request.UpdateContentJson);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -749,27 +756,27 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        // Verify the note belongs to the user
-        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
-        if (!noteResult.IsSuccess)
+        // Use NoteOperationService which updates both the note and creates version
+        var restoreRequest = new RestoreVersionOperationRequest
         {
-            return ResultExtensions.ToErrorActionResult(noteResult.Error!);
-        }
+            NoteId = id,
+            UserId = userId,
+            TargetVersionNumber = request.TargetVersion
+        };
 
-        try
-        {
-            var newVersionNumber = await _versionService.RestoreVersionAsync(id, request.TargetVersion, userId, cancellationToken);
-            return Ok(new
+        var result = await _noteOperationService.RestoreVersionAsync(restoreRequest, cancellationToken);
+
+        return result.Match(
+            onSuccess: restoreResult => Ok(new
             {
                 message = $"Note restored to version {request.TargetVersion}",
-                newVersionNumber,
-                noteId = id
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new { error = ex.Message });
-        }
+                newVersionNumber = restoreResult.NewVersionNumber,
+                noteId = id,
+                restoredFromVersion = restoreResult.RestoredFromVersion,
+                changedFields = restoreResult.ChangedFields
+            }),
+            onFailure: error => ResultExtensions.ToErrorActionResult(error)
+        );
     }
 
     /// <summary>

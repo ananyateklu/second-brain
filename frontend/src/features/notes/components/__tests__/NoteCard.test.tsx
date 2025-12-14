@@ -20,12 +20,12 @@ vi.mock('../../../../store/ui-store', () => ({
   }),
 }));
 
-vi.mock('../../../../store/theme-store', () => ({
-  useThemeStore: vi.fn((selector) => {
+vi.mock('../../../../store/bound-store', () => ({
+  useBoundStore: vi.fn((selector) => {
     const state = {
       theme: 'light',
     };
-    return selector(state);
+    return selector ? selector(state) : state;
   }),
 }));
 

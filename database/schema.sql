@@ -242,8 +242,26 @@
 \echo 'Advanced pgvector optimizations applied successfully.'
 \echo ''
 
--- Step 38: Final statistics update
-\echo 'Step 38/38: Updating statistics...'
+-- Step 38: Note version source tracking
+\echo 'Step 38/40: Adding note version source tracking...'
+\i 38_note_version_source.sql
+\echo 'Note version source tracking added successfully.'
+\echo ''
+
+-- Step 39: Backfill initial note versions
+\echo 'Step 39/41: Backfilling initial note versions...'
+\i 39_backfill_initial_note_versions.sql
+\echo 'Initial note versions backfilled successfully.'
+\echo ''
+
+-- Step 40: Thinking steps table
+\echo 'Step 40/41: Creating thinking_steps table...'
+\i 40_thinking_steps.sql
+\echo 'Thinking steps table created successfully.'
+\echo ''
+
+-- Step 41: Final statistics update
+\echo 'Step 41/41: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''
@@ -262,6 +280,7 @@ ANALYZE;
 \echo '  - chat_messages'
 \echo '  - chat_sessions (temporal)'
 \echo '  - tool_calls'
+\echo '  - thinking_steps'
 \echo '  - retrieved_notes'
 \echo '  - indexing_jobs'
 \echo '  - generated_images'
@@ -333,6 +352,6 @@ ANALYZE;
 \echo '    - Model pull history'
 \echo '    - Model info cache'
 \echo ''
-\echo 'Total tables: 28 (+ __EFMigrationsHistory created by EF Core)'
+\echo 'Total tables: 29 (+ __EFMigrationsHistory created by EF Core)'
 \echo '============================================'
 

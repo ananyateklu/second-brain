@@ -1,4 +1,4 @@
-import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
+import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors, useWatch } from 'react-hook-form';
 import { RichTextEditor } from '../../../components/editor/RichTextEditor';
 import { NoteFormData } from '../hooks/use-note-form';
 import { NoteImageAttachment } from './NoteImageAttachment';
@@ -11,6 +11,10 @@ interface RichNoteFormProps {
   setValue: UseFormSetValue<NoteFormData>;
   errors: FieldErrors<NoteFormData>;
   isSubmitting: boolean;
+  /** Callback when title changes - for dirty tracking */
+  onTitleChange?: (title: string) => void;
+  /** Initial tags from the note entity - passed to editor to display all tags */
+  initialTags?: string[];
   /** New images being added */
   newImages?: FileAttachment[];
   /** Existing images from the note */
@@ -33,6 +37,8 @@ export function RichNoteForm({
   setValue,
   errors,
   isSubmitting,
+  onTitleChange,
+  initialTags = [],
   newImages = [],
   existingImages = [],
   deletedImageIds = [],
@@ -43,18 +49,18 @@ export function RichNoteForm({
 }: RichNoteFormProps) {
   // Check if image handling is enabled (callbacks provided)
   const imageHandlingEnabled = !!(onAddImages && onRemoveNewImage);
+
+  // Use useWatch to get reactive contentJson value (updates when form resets)
+  const contentJson = useWatch({ control, name: 'contentJson' });
+
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
-      {/* Title - Sticky at top */}
+      {/* Title - Sticky at top, using Controller for controlled input */}
       <div className="sticky top-0 z-20 bg-[var(--surface-elevated)] -mx-2 px-2 pb-2">
-        <input
-          id="title"
-          placeholder="Untitled"
-          disabled={isSubmitting}
-          className="w-full bg-transparent text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-2 py-2"
-          autoFocus
-          autoComplete="off"
-          {...register('title', {
+        <Controller
+          name="title"
+          control={control}
+          rules={{
             required: 'Title is required',
             minLength: {
               value: 1,
@@ -64,7 +70,24 @@ export function RichNoteForm({
               value: 200,
               message: 'Title must be less than 200 characters',
             },
-          })}
+          }}
+          render={({ field }) => (
+            <input
+              id="title"
+              placeholder="Untitled"
+              disabled={isSubmitting}
+              className="w-full bg-transparent text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-2 py-2"
+              autoFocus
+              autoComplete="off"
+              value={field.value || ''}
+              onChange={(e) => {
+                field.onChange(e.target.value);
+                onTitleChange?.(e.target.value);
+              }}
+              onBlur={field.onBlur}
+              ref={field.ref}
+            />
+          )}
         />
         {errors.title && (
           <p className="text-sm text-[var(--color-error-text)] mt-1 px-2">{errors.title.message}</p>
@@ -80,8 +103,13 @@ export function RichNoteForm({
             rules={{ required: 'Content is required' }}
             render={({ field }) => (
               <RichTextEditor
-                content={field.value || ''}
-                onChange={field.onChange}
+                contentJson={contentJson}
+                initialTags={initialTags}
+                onChange={(markdown, json) => {
+                  // Update both content (markdown for search) and contentJson (canonical)
+                  field.onChange(markdown);
+                  setValue('contentJson', json, { shouldDirty: true });
+                }}
                 onTagsChange={(tags) => {
                   // Convert array of tags back to comma-separated string for the form
                   setValue('tags', tags.join(', '), { shouldDirty: true });

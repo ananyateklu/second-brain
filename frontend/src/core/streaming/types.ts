@@ -166,12 +166,11 @@ export interface UnifiedStreamState {
    * Length of textContent that has been captured in the timeline as text events.
    * Used to track which text has already been shown in timeline entries
    * so it won't be duplicated in the main response bubble.
-   * @deprecated Timeline is now the source of truth - this is kept for backward compatibility
    */
   textContentInTimeline: number;
-  /** Current thinking content - kept for backward compatibility with legacy code paths */
+  /** Current thinking content */
   thinkingContent: string;
-  /** Whether current thinking block is complete - kept for backward compatibility */
+  /** Whether current thinking block is complete */
   isThinkingComplete: boolean;
 
   // Tool executions

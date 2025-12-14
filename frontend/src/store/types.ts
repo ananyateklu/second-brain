@@ -122,8 +122,6 @@ export interface UISliceState {
   isEditModalOpen: boolean;
   /** ID of the note being edited - full note is fetched in the modal */
   editingNoteId: string | null;
-  /** @deprecated Use editingNoteId instead - kept for backwards compatibility during transition */
-  editingNote: Note | null;
   isMobileMenuOpen: boolean;
   isSearchOpen: boolean;
   searchQuery: string;

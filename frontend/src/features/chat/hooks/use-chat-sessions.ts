@@ -4,7 +4,7 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query';
-import { chatService } from '../../../services';
+import { chatService } from '../../../services/chat.service';
 import type {
   ChatSession,
   SessionStats,

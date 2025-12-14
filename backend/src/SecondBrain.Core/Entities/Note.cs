@@ -4,6 +4,21 @@ using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Core.Entities;
 
+/// <summary>
+/// Indicates the format of note content.
+/// </summary>
+public enum ContentFormat
+{
+    /// <summary>Plain markdown content (legacy format)</summary>
+    Markdown = 0,
+
+    /// <summary>HTML content</summary>
+    Html = 1,
+
+    /// <summary>TipTap/ProseMirror JSON (canonical format for UI editing)</summary>
+    TipTapJson = 2
+}
+
 [Table("notes")]
 public class Note : ISoftDeletable
 {
@@ -22,8 +37,28 @@ public class Note : ISoftDeletable
     [MaxLength(500)]
     public string Title { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Text content of the note (markdown format for search and display).
+    /// This is the primary content field used for full-text search and RAG.
+    /// </summary>
     [Column("content")]
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content.
+    /// This is the canonical format for UI editing - provides consistent
+    /// formatting and eliminates lossy conversions between formats.
+    /// When this field is present, it should be preferred for editing.
+    /// </summary>
+    [Column("content_json", TypeName = "jsonb")]
+    public string? ContentJson { get; set; }
+
+    /// <summary>
+    /// Indicates the format of the Content field.
+    /// Used for migration tracking and backward compatibility.
+    /// </summary>
+    [Column("content_format")]
+    public ContentFormat ContentFormat { get; set; } = ContentFormat.Markdown;
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

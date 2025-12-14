@@ -240,41 +240,6 @@ public class BaseAgentStreamingStrategyTests
     }
 
     [Fact]
-    public void StripLegacySystemContextMarkers_RemovesMarkers()
-    {
-        // Arrange
-        // The regex removes the markers and content between them but leaves surrounding newlines
-        var content = "Some content\n---SYSTEM CONTEXT---\nContext here\n---END SYSTEM CONTEXT---\nMore content";
-
-        // Act
-        var result = _sut.TestStripLegacySystemContextMarkers(content);
-
-        // Assert
-        // The pattern removes the markers but leaves the newline before and after
-        result.Should().Be("Some content\n\nMore content");
-    }
-
-    [Fact]
-    public void StripLegacySystemContextMarkers_HandlesNullContent()
-    {
-        // Act
-        var result = _sut.TestStripLegacySystemContextMarkers(null);
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public void StripLegacySystemContextMarkers_HandlesEmptyContent()
-    {
-        // Act
-        var result = _sut.TestStripLegacySystemContextMarkers("");
-
-        // Assert
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
     public void CleanContentForNote_RemovesThinkingBlocks()
     {
         // Arrange
@@ -573,7 +538,6 @@ public class TestableAgentStreamingStrategy : BaseAgentStreamingStrategy
     public AgentStreamEvent TestContextRetrievalEvent(int noteCount, List<RetrievedNoteContext> notes, string? ragLogId)
         => ContextRetrievalEvent(noteCount, notes, ragLogId);
     public string? TestGetLastUserMessage(AgentRequest request) => GetLastUserMessage(request);
-    public string TestStripLegacySystemContextMarkers(string? content) => StripLegacySystemContextMarkers(content);
     public string TestCleanContentForNote(string text) => CleanContentForNote(text);
     public AgentStreamEvent TestCategorizedErrorEvent(Exception exception, string context)
         => CategorizedErrorEvent(exception, context);

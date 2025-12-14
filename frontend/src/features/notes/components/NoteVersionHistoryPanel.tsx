@@ -1,6 +1,12 @@
 /**
  * NoteVersionHistoryPanel
- * Slide-out panel displaying version history for a note
+ * Inline panel displaying version history for a note (renders inside parent container)
+ *
+ * Features:
+ * - Smooth slide-in animation
+ * - Timeline visualization of versions
+ * - Side-by-side diff comparison
+ * - One-click version restore
  */
 
 import { useState } from 'react';
@@ -28,7 +34,7 @@ export function NoteVersionHistoryPanel({
   const [showDiff, setShowDiff] = useState(false);
 
   const handleRestore = (targetVersion: number) => {
-    if (confirm(`Restore note to version ${targetVersion}? This will create a new version.`)) {
+    if (confirm(`Restore note to version ${targetVersion}? This will create a new version with the content from version ${targetVersion}.`)) {
       restoreVersion(
         { noteId, targetVersion },
         {
@@ -50,62 +56,167 @@ export function NoteVersionHistoryPanel({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Inline panel - renders inside parent flex container */}
       <div
-        className="fixed inset-0 bg-black/30 z-40"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div
-        className="fixed inset-y-0 right-0 w-96 bg-[var(--surface-card)] shadow-2xl border-l z-50 flex flex-col"
-        style={{ borderColor: 'var(--border)' }}
+        className="flex flex-col border-l overflow-hidden rounded-br-3xl"
+        style={{
+          width: '380px',
+          minWidth: '380px',
+          height: '100%',
+          backgroundColor: 'var(--surface-card)',
+          borderColor: 'var(--border)',
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border)' }}>
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Version History
-            </h3>
+        <div
+          className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--surface-elevated)',
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex items-center justify-center w-7 h-7 rounded-lg"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-brand-600), var(--color-brand-700))',
+              }}
+            >
+              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Version History
+              </h3>
+              {history && history.totalVersions > 0 && (
+                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                  {history.totalVersions} version{history.totalVersions !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
-            style={{ color: 'var(--text-secondary)' }}
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105"
+            style={{
+              color: 'var(--text-tertiary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--surface-card)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-tertiary)';
+            }}
+            aria-label="Close version history"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'var(--border) transparent',
+          }}
+        >
           {isLoading ? (
-            <LoadingSpinner message="Loading version history..." className="h-32" />
+            <div className="flex items-center justify-center h-48">
+              <LoadingSpinner message="Loading history..." />
+            </div>
           ) : !history || history.versions.length === 0 ? (
-            <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
-              <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p>No version history available.</p>
-              <p className="text-sm mt-2" style={{ color: 'var(--text-tertiary)' }}>
+            <div className="flex flex-col items-center justify-center h-48 px-4 text-center">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                style={{ backgroundColor: 'var(--surface-elevated)' }}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                No version history
+              </p>
+              <p
+                className="text-[10px] max-w-[200px]"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
                 Versions are created when you save changes.
               </p>
             </div>
           ) : (
-            <>
-              <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-elevated)' }}>
-                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    {history.totalVersions}
-                  </span>
-                  {' '}version{history.totalVersions !== 1 ? 's' : ''} saved
-                </p>
+            <div className="p-2">
+              {/* Version count badge */}
+              <div
+                className="mb-2 px-2 py-1.5 rounded-lg flex items-center gap-2"
+                style={{
+                  backgroundColor: 'var(--surface-elevated)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
+                  }}
+                >
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    style={{ color: 'var(--color-brand-500)' }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-[10px] font-medium"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    <span style={{ color: 'var(--color-brand-500)' }}>{history.totalVersions}</span>
+                    {' '}version{history.totalVersions !== 1 ? 's' : ''}
+                  </p>
+                  <p
+                    className="text-[9px]"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Current: v{history.currentVersion}
+                  </p>
+                </div>
               </div>
+
+              {/* Timeline */}
               <NoteVersionTimeline
                 versions={history.versions}
                 currentVersion={history.currentVersion}
@@ -113,15 +224,40 @@ export function NoteVersionHistoryPanel({
                 onRestore={handleRestore}
                 isRestoring={isRestoring}
               />
-            </>
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t" style={{ borderColor: 'var(--border)' }}>
-          <p className="text-xs text-center" style={{ color: 'var(--text-tertiary)' }}>
-            Tip: Click "Compare" to see what changed between versions
-          </p>
+        <div
+          className="px-4 py-2 border-t flex-shrink-0 rounded-br-3xl"
+          style={{
+            borderColor: 'var(--border)',
+            backgroundColor: 'var(--surface-elevated)',
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <svg
+              className="w-3 h-3 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p
+              className="text-[10px]"
+              style={{ color: 'var(--text-tertiary)' }}
+            >
+              Click <strong style={{ color: 'var(--text-secondary)' }}>Compare</strong> to view changes
+            </p>
+          </div>
         </div>
       </div>
 

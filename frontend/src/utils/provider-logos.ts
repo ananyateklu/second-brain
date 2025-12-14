@@ -1,4 +1,4 @@
-import { useThemeStore } from '../store/theme-store';
+import { useBoundStore } from '../store/bound-store';
 import anthropicLight from '../assets/anthropic-light.svg';
 import anthropicDark from '../assets/anthropic-dark.svg';
 import googleLogo from '../assets/google.svg';
@@ -36,7 +36,7 @@ export function getProviderLogo(providerName: string, isDarkMode: boolean): stri
  * Use this in React components.
  */
 export function useProviderLogo(providerName: string): string | null {
-  const { theme } = useThemeStore();
+  const { theme } = useBoundStore();
   const isDarkMode = theme === 'dark' || theme === 'blue';
   return getProviderLogo(providerName, isDarkMode);
 }

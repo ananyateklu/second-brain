@@ -46,10 +46,17 @@ public class SqlNoteVersionRepository : INoteVersionRepository
     {
         try
         {
+            // Ensure timestamp is UTC for proper comparison with PostgreSQL timestamptz
+            var utcTimestamp = timestamp.Kind == DateTimeKind.Utc
+                ? timestamp
+                : timestamp.ToUniversalTime();
+
             // Use PostgreSQL range containment operator via raw SQL
+            // Include ALL columns that the NoteVersion entity expects
             var sql = @"
-                SELECT note_id, valid_period, title, content, tags, is_archived, 
-                       folder, modified_by, version_number, change_summary, created_at
+                SELECT id, note_id, valid_period, title, content, content_json, content_format,
+                       tags, is_archived, folder, modified_by, version_number, change_summary,
+                       source, image_ids, created_at
                 FROM note_versions
                 WHERE note_id = @noteId
                   AND valid_period @> @timestamp::timestamptz";
@@ -57,7 +64,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             return await _context.NoteVersions
                 .FromSqlRaw(sql,
                     new NpgsqlParameter("@noteId", noteId),
-                    new NpgsqlParameter("@timestamp", timestamp))
+                    new NpgsqlParameter("@timestamp", utcTimestamp))
                 .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -135,35 +142,58 @@ public class SqlNoteVersionRepository : INoteVersionRepository
     {
         try
         {
-            // Use the database function for atomic version creation
+            // Use the atomic database function to create a new version
+            // This function handles closing the previous version and creating the new one
+            // in a single operation, avoiding exclusion constraint violations
             var sql = @"
                 SELECT create_note_version(
-                    @noteId, @title, @content, @tags, @isArchived, @folder, @modifiedBy, @changeSummary
+                    @noteId,
+                    @title,
+                    @content,
+                    @tags,
+                    @isArchived,
+                    @folder,
+                    @modifiedBy,
+                    @changeSummary,
+                    @source,
+                    @contentJson,
+                    @contentFormat,
+                    @imageIds
                 )";
 
             var connection = _context.Database.GetDbConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-                await connection.OpenAsync(cancellationToken);
+            await connection.OpenAsync(cancellationToken);
 
-            await using var command = connection.CreateCommand();
-            command.CommandText = sql;
-            command.Parameters.Add(new NpgsqlParameter("@noteId", note.Id));
-            command.Parameters.Add(new NpgsqlParameter("@title", note.Title));
-            command.Parameters.Add(new NpgsqlParameter("@content", note.Content));
-            command.Parameters.Add(new NpgsqlParameter("@tags", note.Tags.ToArray()));
-            command.Parameters.Add(new NpgsqlParameter("@isArchived", note.IsArchived));
-            command.Parameters.Add(new NpgsqlParameter("@folder", (object?)note.Folder ?? DBNull.Value));
-            command.Parameters.Add(new NpgsqlParameter("@modifiedBy", modifiedBy));
-            command.Parameters.Add(new NpgsqlParameter("@changeSummary", (object?)changeSummary ?? DBNull.Value));
+            try
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = sql;
+                command.Parameters.Add(new NpgsqlParameter("@noteId", note.Id));
+                command.Parameters.Add(new NpgsqlParameter("@title", note.Title));
+                command.Parameters.Add(new NpgsqlParameter("@content", note.Content));
+                command.Parameters.Add(new NpgsqlParameter("@tags", note.Tags.ToArray()));
+                command.Parameters.Add(new NpgsqlParameter("@isArchived", note.IsArchived));
+                command.Parameters.Add(new NpgsqlParameter("@folder", (object?)note.Folder ?? DBNull.Value));
+                command.Parameters.Add(new NpgsqlParameter("@modifiedBy", modifiedBy));
+                command.Parameters.Add(new NpgsqlParameter("@changeSummary", (object?)changeSummary ?? DBNull.Value));
+                command.Parameters.Add(new NpgsqlParameter("@source", note.Source ?? "web"));
+                command.Parameters.Add(new NpgsqlParameter("@contentJson", NpgsqlDbType.Jsonb) { Value = (object?)note.ContentJson ?? DBNull.Value });
+                command.Parameters.Add(new NpgsqlParameter("@contentFormat", (int)note.ContentFormat));
+                command.Parameters.Add(new NpgsqlParameter("@imageIds", note.Images?.Select(i => i.Id).ToArray() ?? Array.Empty<string>()));
 
-            var result = await command.ExecuteScalarAsync(cancellationToken);
-            var versionNumber = Convert.ToInt32(result);
+                var result = await command.ExecuteScalarAsync(cancellationToken);
+                var newVersionNumber = Convert.ToInt32(result);
 
-            _logger.LogInformation(
-                "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}",
-                versionNumber, note.Id, modifiedBy);
+                _logger.LogInformation(
+                    "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}",
+                    newVersionNumber, note.Id, modifiedBy);
 
-            return versionNumber;
+                return newVersionNumber;
+            }
+            finally
+            {
+                // Let EF Core manage the connection state
+            }
         }
         catch (Exception ex)
         {
@@ -176,20 +206,32 @@ public class SqlNoteVersionRepository : INoteVersionRepository
     {
         try
         {
+            var now = DateTime.UtcNow;
             var version = new NoteVersion
             {
                 Id = Guid.CreateVersion7().ToString(),
                 NoteId = note.Id,
-                ValidPeriod = new NpgsqlRange<DateTime>(DateTime.UtcNow, DateTime.MaxValue),
+                // Use proper unbounded upper range [now, ) instead of [now, infinity]
+                ValidPeriod = new NpgsqlRange<DateTime>(
+                    now,
+                    true,   // Lower bound INCLUSIVE
+                    false,  // Lower bound not infinite
+                    default,
+                    false,  // Upper bound exclusive (doesn't matter for infinity)
+                    true),  // Upper bound IS infinite (unbounded)
                 Title = note.Title,
                 Content = note.Content,
+                ContentJson = note.ContentJson,
+                ContentFormat = note.ContentFormat,
                 Tags = new List<string>(note.Tags),
                 IsArchived = note.IsArchived,
                 Folder = note.Folder,
                 ModifiedBy = createdBy,
                 VersionNumber = 1,
                 ChangeSummary = "Initial version",
-                CreatedAt = DateTime.UtcNow
+                Source = note.Source ?? "web",
+                ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
+                CreatedAt = now
             };
 
             _context.NoteVersions.Add(version);
@@ -254,14 +296,18 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             }
 
             // Create a new version with the content from the target version
+            // Source is set to "restored" to indicate this is a restoration
             var note = new Note
             {
                 Id = noteId,
                 Title = targetVersion.Title,
                 Content = targetVersion.Content,
+                ContentJson = targetVersion.ContentJson,
+                ContentFormat = targetVersion.ContentFormat,
                 Tags = new List<string>(targetVersion.Tags),
                 IsArchived = targetVersion.IsArchived,
-                Folder = targetVersion.Folder
+                Folder = targetVersion.Folder,
+                Source = "restored"  // Mark this version as a restore operation
             };
 
             var changeSummary = $"Restored from version {targetVersionNumber}";

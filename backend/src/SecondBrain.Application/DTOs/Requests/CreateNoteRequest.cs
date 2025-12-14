@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace SecondBrain.Application.DTOs.Requests;
 
 /// <summary>
@@ -11,9 +13,16 @@ public sealed class CreateNoteRequest
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// Content/body of the note
+    /// Content/body of the note (markdown format for search and display)
     /// </summary>
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content.
+    /// This is the canonical format for UI editing - provides consistent
+    /// formatting and eliminates lossy conversions between formats.
+    /// </summary>
+    public JsonElement? ContentJson { get; set; }
 
     /// <summary>
     /// List of tags associated with the note

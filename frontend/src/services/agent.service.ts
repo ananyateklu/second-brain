@@ -4,7 +4,7 @@
  */
 
 import { API_ENDPOINTS, getApiBaseUrl } from '../lib/constants';
-import { useAuthStore } from '../store/auth-store';
+import { useBoundStore } from '../store/bound-store';
 import { loggers } from '../utils/logger';
 import type {
   AgentMessageRequest,
@@ -31,7 +31,7 @@ export const agentService = {
     const apiUrl = getApiBaseUrl();
     const url = `${apiUrl}${API_ENDPOINTS.AGENT.STREAM(conversationId)}`;
 
-    const authStore = useAuthStore.getState();
+    const authStore = useBoundStore.getState();
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',

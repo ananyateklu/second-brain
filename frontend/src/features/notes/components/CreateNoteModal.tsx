@@ -65,6 +65,7 @@ export function CreateNoteModal() {
     reset({
       title: '',
       content: '',
+      contentJson: null,
       tags: '',
     });
     setNewImages([]);

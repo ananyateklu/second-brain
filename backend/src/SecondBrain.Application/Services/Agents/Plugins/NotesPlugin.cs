@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 
@@ -29,9 +30,13 @@ public class NotesPlugin : IAgentPlugin
         IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
-        IStructuredOutputService? structuredOutputService = null)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteOperationService? noteOperationService = null)
     {
-        _crudPlugin = new NoteCrudPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
+        // NoteCrudPlugin uses INoteOperationService for mutations (Create, Update, Delete, Append, Duplicate)
+        _crudPlugin = new NoteCrudPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
+
+        // Other plugins only do reads, so they don't need the operation service
         _searchPlugin = new NoteSearchPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
         _organizationPlugin = new NoteOrganizationPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
         _analysisPlugin = new NoteAnalysisPlugin(noteRepository, ragService, ragSettings, structuredOutputService);

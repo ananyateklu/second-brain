@@ -318,11 +318,33 @@ const MessageWithContext = memo(function MessageWithContext({
   // Check for thinking content in message (supports both <thinking> and <think> tags)
   const hasThinkingContent = isAssistantMessage && hasThinkingTags(message.content);
 
+  // Check for persisted thinking steps with individual timestamps (preferred)
+  const hasPersistedThinkingSteps = !!(message.thinkingSteps && message.thinkingSteps.length > 0);
+
   // Extract thinking content from persisted messages when there are tool calls OR thinking tags
-  const persistedThinkingSteps =
-    (hasToolCalls || hasThinkingContent) && !isStreamingDuplicate
-      ? extractThinkingContent(message.content)
-      : [];
+  // Use persisted steps if available (they have individual timestamps), otherwise extract from content
+  const persistedThinkingSteps = (() => {
+    if (isStreamingDuplicate) return [];
+
+    // Prefer persisted thinkingSteps with individual timestamps
+    if (hasPersistedThinkingSteps) {
+      return message.thinkingSteps!.map(step => ({
+        content: step.content,
+        timestamp: new Date(step.startedAt),
+      }));
+    }
+
+    // Fallback: extract from content with message timestamp
+    if (hasToolCalls || hasThinkingContent) {
+      const messageTimestamp = new Date(message.timestamp || new Date().toISOString());
+      return extractThinkingContent(message.content).map(content => ({
+        content,
+        timestamp: messageTimestamp,
+      }));
+    }
+
+    return [];
+  })();
 
   // Only hide thinking/tool executions if this message is a duplicate of streaming content
   const shouldShowPersistedThinking =
@@ -348,13 +370,12 @@ const MessageWithContext = memo(function MessageWithContext({
           />
         )}
 
-        {shouldShowPersistedThinking && persistedThinkingSteps.map((thinkingContent, thinkingIndex) => (
+        {shouldShowPersistedThinking && persistedThinkingSteps.map((step, thinkingIndex) => (
           <ThinkingStepCard
             key={`${index}-thinking-${thinkingIndex}`}
             step={{
-              content: thinkingContent,
-              // Use message timestamp, fallback to empty string which will be handled by Date constructor
-              timestamp: new Date(message.timestamp || new Date().toISOString()),
+              content: step.content,
+              timestamp: step.timestamp,
             }}
           />
         ))}

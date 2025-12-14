@@ -1122,13 +1122,24 @@ public class OpenAIProvider : IAIProvider
     }
 
     /// <summary>
-    /// Create an assistant message with tool calls for context
+    /// Create an assistant message with tool calls for context.
+    /// Optionally includes text content that was generated before the tool calls.
     /// </summary>
-    public static AssistantChatMessage CreateAssistantToolCallMessage(IEnumerable<OpenAIToolCallInfo> toolCalls)
+    /// <param name="toolCalls">The tool calls to include</param>
+    /// <param name="textContent">Optional text content generated before tool calls (preserves context)</param>
+    public static AssistantChatMessage CreateAssistantToolCallMessage(
+        IEnumerable<OpenAIToolCallInfo> toolCalls,
+        string? textContent = null)
     {
         var chatToolCalls = toolCalls.Select(tc =>
             ChatToolCall.CreateFunctionToolCall(tc.Id, tc.Name, BinaryData.FromString(tc.Arguments))
         ).ToList();
+
+        // Include text content if provided - this ensures the model remembers what it said before tool execution
+        if (!string.IsNullOrEmpty(textContent))
+        {
+            return new AssistantChatMessage(chatToolCalls) { Content = { ChatMessageContentPart.CreateTextPart(textContent) } };
+        }
 
         return new AssistantChatMessage(chatToolCalls);
     }

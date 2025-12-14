@@ -51,6 +51,8 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(NoteVersionResponse[]))]
 [JsonSerializable(typeof(List<NoteVersionResponse>))]
 [JsonSerializable(typeof(IEnumerable<NoteVersionResponse>))]
+[JsonSerializable(typeof(NoteVersionHistoryResponse))]
+[JsonSerializable(typeof(NoteVersionDiffResponse))]
 // Chat conversation requests (excluding types with entity references)
 [JsonSerializable(typeof(CreateConversationRequest))]
 [JsonSerializable(typeof(SendMessageRequest))]
@@ -131,6 +133,8 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(Dictionary<string, Dictionary<string, long>>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(System.Text.Json.JsonElement))]
+[JsonSerializable(typeof(System.Text.Json.JsonElement?))]
 // Health check response
 [JsonSerializable(typeof(HealthCheckResponse))]
 [JsonSerializable(typeof(HealthCheckEntry))]

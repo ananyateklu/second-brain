@@ -1,3 +1,4 @@
+using System.Text.Json;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Common;
@@ -20,6 +21,8 @@ public static class MappingExtensions
             Id = note.Id,
             Title = note.Title,
             Content = note.Content,
+            ContentJson = ParseContentJson(note.ContentJson),
+            ContentFormat = MapContentFormat(note.ContentFormat),
             Summary = note.Summary,
             CreatedAt = note.CreatedAt,
             UpdatedAt = note.UpdatedAt,
@@ -30,6 +33,37 @@ public static class MappingExtensions
             ExternalId = note.ExternalId,
             Folder = note.Folder,
             Images = note.Images?.Select(i => i.ToResponse()).ToList() ?? new List<NoteImageResponse>()
+        };
+    }
+
+    /// <summary>
+    /// Parses ContentJson string to JsonElement for response
+    /// </summary>
+    private static JsonElement? ParseContentJson(string? contentJson)
+    {
+        if (string.IsNullOrEmpty(contentJson))
+            return null;
+
+        try
+        {
+            return JsonDocument.Parse(contentJson).RootElement.Clone();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Maps ContentFormat enum to string for API response
+    /// </summary>
+    private static string MapContentFormat(ContentFormat format)
+    {
+        return format switch
+        {
+            ContentFormat.Html => "html",
+            ContentFormat.TipTapJson => "tiptap_json",
+            _ => "markdown"
         };
     }
 
@@ -79,11 +113,17 @@ public static class MappingExtensions
     /// </summary>
     public static Note ToEntity(this CreateNoteRequest request, string userId)
     {
+        var hasContentJson = request.ContentJson.HasValue &&
+                            request.ContentJson.Value.ValueKind != JsonValueKind.Undefined &&
+                            request.ContentJson.Value.ValueKind != JsonValueKind.Null;
+
         return new Note
         {
             Id = UuidV7.NewId(),
             Title = request.Title,
             Content = request.Content,
+            ContentJson = hasContentJson ? request.ContentJson!.Value.GetRawText() : null,
+            ContentFormat = hasContentJson ? ContentFormat.TipTapJson : ContentFormat.Markdown,
             Tags = request.Tags,
             IsArchived = request.IsArchived,
             Folder = request.Folder,
@@ -115,6 +155,24 @@ public static class MappingExtensions
         if (request.Content != null)
         {
             note.Content = request.Content;
+        }
+
+        // Handle ContentJson update
+        if (request.UpdateContentJson)
+        {
+            if (request.ContentJson.HasValue &&
+                request.ContentJson.Value.ValueKind != JsonValueKind.Undefined &&
+                request.ContentJson.Value.ValueKind != JsonValueKind.Null)
+            {
+                note.ContentJson = request.ContentJson.Value.GetRawText();
+                note.ContentFormat = ContentFormat.TipTapJson;
+            }
+            else
+            {
+                note.ContentJson = null;
+                // Revert to Markdown format if ContentJson is cleared
+                note.ContentFormat = ContentFormat.Markdown;
+            }
         }
 
         if (request.Tags != null)

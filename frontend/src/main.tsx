@@ -7,7 +7,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { BackendReadyProvider } from './components/BackendReadyProvider';
 // Import bound-store first to register it before other stores are accessed
 import './store/bound-store';
-import { useThemeStore } from './store/theme-store';
+import { useBoundStore } from './store/bound-store';
 import { isTauri } from './lib/native-notifications';
 import { getBackendUrl, onBackendEvent } from './lib/tauri-bridge';
 import { setApiBaseUrl } from './lib/constants';
@@ -16,7 +16,7 @@ import './index.css';
 
 // Initialize theme before rendering to prevent FOUC
 const initializeTheme = () => {
-  const theme = useThemeStore.getState().theme;
+  const theme = useBoundStore.getState().theme;
   document.documentElement.setAttribute('data-theme', theme);
 
   // Also set the 'dark' class for Tailwind

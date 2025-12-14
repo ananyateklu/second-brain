@@ -3,6 +3,59 @@
  * Aligned with backend Note DTOs
  */
 
+import type { JSONContent } from '@tiptap/react';
+
+// ============================================
+// Note Source Types (Version Tracking)
+// ============================================
+
+/**
+ * Source of a note operation - indicates where/how a note was created or modified.
+ * Aligned with backend SecondBrain.Core.Enums.NoteSource enum.
+ *
+ * Values:
+ * - 'web': Created/modified via the web UI
+ * - 'agent': Created/modified by an AI agent
+ * - 'ios_notes': Imported from iOS Notes app
+ * - 'import': Imported from external sources
+ * - 'system': System-generated operations
+ * - 'restored': Restored from a previous version
+ * - 'api': Created/modified via direct API calls
+ */
+export type NoteSource =
+  | 'web'
+  | 'agent'
+  | 'ios_notes'
+  | 'import'
+  | 'system'
+  | 'restored'
+  | 'api';
+
+/**
+ * Human-readable labels for note sources (for UI display)
+ */
+export const NoteSourceLabels: Record<NoteSource, string> = {
+  web: 'Web',
+  agent: 'Agent',
+  ios_notes: 'iOS Notes',
+  import: 'Import',
+  system: 'System',
+  restored: 'Restored',
+  api: 'API',
+};
+
+/**
+ * Helper to get a display-friendly label for a note source
+ */
+export function getNoteSourceLabel(source: string | undefined): string {
+  if (!source) return 'Unknown';
+  return NoteSourceLabels[source as NoteSource] ?? source;
+}
+
+// ============================================
+// Core Note Types
+// ============================================
+
 /**
  * Lightweight note item for list views (aligned with backend NoteListResponse).
  * Contains summary instead of full content for better performance.
@@ -17,7 +70,8 @@ export interface NoteListItem {
   tags: string[];
   isArchived: boolean;
   folder?: string;
-  source?: string;
+  /** Source of the last modification (web, agent, ios_notes, etc.) */
+  source?: NoteSource;
 }
 
 /**
@@ -46,11 +100,21 @@ export interface NoteImage {
 }
 
 /**
+ * Content format indicator from backend
+ */
+export type ContentFormat = 'markdown' | 'html' | 'tiptap_json';
+
+/**
  * Full note entity with content (aligned with backend NoteResponse).
  * Used for get-by-id endpoint where full content is needed.
  */
 export interface Note extends NoteListItem {
+  /** Text content (markdown format for search and display) */
   content: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
+  /** Content format indicator */
+  contentFormat?: ContentFormat;
   userId?: string;
   externalId?: string;
   /** Images attached to this note for multi-modal RAG */
@@ -79,7 +143,10 @@ export interface NoteImageInput {
  */
 export interface CreateNoteRequest {
   title: string;
+  /** Text content (markdown format for search and display) */
   content: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
   tags: string[];
   isArchived: boolean;
   folder?: string;
@@ -93,7 +160,12 @@ export interface CreateNoteRequest {
  */
 export interface UpdateNoteRequest {
   title?: string;
+  /** Text content (markdown format for search and display) */
   content?: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
+  /** Set to true to explicitly update contentJson (required to distinguish null from no-change) */
+  updateContentJson?: boolean;
   tags?: string[];
   isArchived?: boolean;
   folder?: string;
@@ -174,12 +246,21 @@ export interface NoteVersion {
   validFrom: string;
   validTo: string | null;
   title: string;
+  /** Text content at this version (markdown format) */
   content: string;
+  /** TipTap/ProseMirror JSON representation at this version */
+  contentJson?: JSONContent | null;
+  /** Content format indicator */
+  contentFormat?: ContentFormat;
   tags: string[];
   isArchived: boolean;
   folder: string | null;
   modifiedBy: string;
   changeSummary: string | null;
+  /** Source of this version (web, agent, ios_notes, import, etc.) */
+  source: NoteSource;
+  /** IDs of images attached to the note at this version */
+  imageIds: string[];
   createdAt: string;
 }
 
@@ -205,8 +286,11 @@ export interface NoteVersionDiff {
   tagsChanged: boolean;
   archivedChanged: boolean;
   folderChanged: boolean;
+  imagesChanged: boolean;
   tagsAdded: string[];
   tagsRemoved: string[];
+  imagesAdded: string[];
+  imagesRemoved: string[];
 }
 
 /**

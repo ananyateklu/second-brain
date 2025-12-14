@@ -3,9 +3,10 @@ using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG;
-using SecondBrain.Core.Common;
-using SecondBrain.Core.Entities;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -13,6 +14,7 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 /// <summary>
 /// Plugin handling core CRUD operations for notes:
 /// Create, Get, Update, Delete, Append, Duplicate.
+/// Uses INoteOperationService for all mutations to ensure consistent version tracking.
 /// </summary>
 public class NoteCrudPlugin : NotePluginBase
 {
@@ -20,8 +22,9 @@ public class NoteCrudPlugin : NotePluginBase
         IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
-        IStructuredOutputService? structuredOutputService = null)
-        : base(noteRepository, ragService, ragSettings, structuredOutputService)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteOperationService? noteOperationService = null)
+        : base(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService)
     {
     }
 
@@ -112,28 +115,34 @@ For simple additions, use AppendToNote instead.";
             return "Error: The 'content' parameter is required but was not provided. You must call CreateNote with BOTH 'title' AND 'content' parameters in the same tool call. Please retry with: {\"title\": \"your title\", \"content\": \"your note content here\"}";
         }
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
-            var note = new Note
+            var request = new CreateNoteOperationRequest
             {
-                Id = UuidV7.NewId(),
+                UserId = CurrentUserId,
                 Title = title.Trim(),
                 Content = content.Trim(),
                 Tags = ParseTags(tags),
-                UserId = CurrentUserId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsArchived = false,
-                Source = "agent"
+                Source = NoteSource.Agent // Agent operations always use Agent source
             };
 
-            var created = await NoteRepository.CreateAsync(note);
+            var result = await NoteOperationService.CreateAsync(request);
 
-            var tagInfo = created.Tags.Any()
-                ? $" with tags: {string.Join(", ", created.Tags)}"
-                : "";
-
-            return $"Successfully created note \"{created.Title}\" (ID: {created.Id}){tagInfo}. Remember this note ID for future reference in this conversation.";
+            return result.Match(
+                onSuccess: op =>
+                {
+                    var tagInfo = op.Note.Tags.Any()
+                        ? $" with tags: {string.Join(", ", op.Note.Tags)}"
+                        : "";
+                    return $"Successfully created note \"{op.Note.Title}\" (ID: {op.Note.Id}){tagInfo}. Remember this note ID for future reference in this conversation.";
+                },
+                onFailure: error => $"Error creating note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -189,72 +198,73 @@ For simple additions, use AppendToNote instead.";
         var userError = ValidateUserContext("update note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
-
-            if (note == null)
+            // First get the note to verify it exists and get current state for feedback
+            var existingNote = await NoteRepository.GetByIdAsync(noteId);
+            if (existingNote == null)
             {
                 return $"Note with ID \"{noteId}\" not found.";
             }
 
-            if (note.UserId != CurrentUserId)
+            if (existingNote.UserId != CurrentUserId)
             {
                 return "Error: You don't have permission to update this note.";
             }
 
-            var changes = new List<string>();
-            var previousTags = new List<string>(note.Tags);
+            var previousTags = existingNote.Tags.ToList();
 
-            if (!string.IsNullOrWhiteSpace(title) && title != note.Title)
+            var request = new UpdateNoteOperationRequest
             {
-                note.Title = title;
-                changes.Add("title");
-            }
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim(),
+                Content = string.IsNullOrWhiteSpace(content) ? null : content.Trim(),
+                Tags = tags != null ? ParseTags(tags) : null,
+                Source = NoteSource.Agent
+            };
 
-            if (!string.IsNullOrWhiteSpace(content) && content != note.Content)
-            {
-                note.Content = content;
-                changes.Add("content");
-            }
+            var result = await NoteOperationService.UpdateAsync(request);
 
-            if (tags != null)
-            {
-                note.Tags = ParseTags(tags);
-                changes.Add("tags");
-            }
-
-            if (!changes.Any())
-            {
-                return $"No changes made to note \"{note.Title}\" (ID: {noteId}).";
-            }
-
-            note.UpdatedAt = DateTime.UtcNow;
-            await NoteRepository.UpdateAsync(noteId, note);
-
-            // Provide detailed feedback about what changed, especially for tags
-            var changeDetails = new List<string>();
-            foreach (var change in changes)
-            {
-                if (change == "tags")
+            return result.Match(
+                onSuccess: op =>
                 {
-                    var added = note.Tags.Except(previousTags).ToList();
-                    var removed = previousTags.Except(note.Tags).ToList();
+                    if (!op.HasChanges)
+                    {
+                        return $"No changes made to note \"{op.Note.Title}\" (ID: {noteId}).";
+                    }
 
-                    if (added.Any())
-                        changeDetails.Add($"added tags: {string.Join(", ", added)}");
-                    if (removed.Any())
-                        changeDetails.Add($"removed tags: {string.Join(", ", removed)}");
-                    if (!added.Any() && !removed.Any())
-                        changeDetails.Add($"updated tags to: {string.Join(", ", note.Tags)}");
-                }
-                else
-                {
-                    changeDetails.Add($"updated {change}");
-                }
-            }
+                    // Build detailed feedback about changes
+                    var changeDetails = new List<string>();
+                    foreach (var change in op.Changes)
+                    {
+                        if (change == "tags")
+                        {
+                            var added = op.Note.Tags.Except(previousTags).ToList();
+                            var removed = previousTags.Except(op.Note.Tags).ToList();
 
-            return $"Successfully updated note \"{note.Title}\" (ID: {noteId}). Changes: {string.Join(", ", changeDetails)}.";
+                            if (added.Any())
+                                changeDetails.Add($"added tags: {string.Join(", ", added)}");
+                            if (removed.Any())
+                                changeDetails.Add($"removed tags: {string.Join(", ", removed)}");
+                            if (!added.Any() && !removed.Any())
+                                changeDetails.Add($"updated tags to: {string.Join(", ", op.Note.Tags)}");
+                        }
+                        else
+                        {
+                            changeDetails.Add($"updated {change}");
+                        }
+                    }
+
+                    return $"Successfully updated note \"{op.Note.Title}\" (ID: {noteId}). Changes: {string.Join(", ", changeDetails)}.";
+                },
+                onFailure: error => $"Error updating note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -270,10 +280,15 @@ For simple additions, use AppendToNote instead.";
         var userError = ValidateUserContext("delete note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
+            // Get note first to capture title for feedback
             var note = await NoteRepository.GetByIdAsync(noteId);
-
             if (note == null)
             {
                 return $"Note with ID \"{noteId}\" not found.";
@@ -285,9 +300,21 @@ For simple additions, use AppendToNote instead.";
             }
 
             var noteTitle = note.Title;
-            await NoteRepository.DeleteAsync(noteId);
 
-            return $"Successfully deleted note \"{noteTitle}\" (ID: {noteId}).";
+            var request = new DeleteNoteOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                Source = NoteSource.Agent,
+                SoftDelete = false // Agent deletes are permanent
+            };
+
+            var result = await NoteOperationService.DeleteAsync(request);
+
+            return result.Match(
+                onSuccess: _ => $"Successfully deleted note \"{noteTitle}\" (ID: {noteId}).",
+                onFailure: error => $"Error deleting note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -310,26 +337,28 @@ For simple additions, use AppendToNote instead.";
             return "Error: Content to append cannot be empty.";
         }
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
-
-            if (note == null)
+            var request = new AppendToNoteOperationRequest
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                ContentToAppend = contentToAppend.Trim(),
+                AddNewline = addNewline,
+                Source = NoteSource.Agent
+            };
 
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to modify this note.";
-            }
+            var result = await NoteOperationService.AppendAsync(request);
 
-            var separator = addNewline ? "\n" : "";
-            note.Content = note.Content + separator + contentToAppend.Trim();
-            note.UpdatedAt = DateTime.UtcNow;
-            await NoteRepository.UpdateAsync(noteId, note);
-
-            return $"Successfully appended content to note \"{note.Title}\" (ID: {noteId}). Note now contains {note.Content.Length} characters. Continue with additional AppendToNote calls if more sections remain.";
+            return result.Match(
+                onSuccess: op => $"Successfully appended content to note \"{op.Note.Title}\" (ID: {noteId}). Note now contains {op.Note.Content.Length} characters. Continue with additional AppendToNote calls if more sections remain.",
+                onFailure: error => $"Error appending to note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -346,49 +375,36 @@ For simple additions, use AppendToNote instead.";
         var userError = ValidateUserContext("duplicate note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
-            var sourceNote = await NoteRepository.GetByIdAsync(noteId);
-
-            if (sourceNote == null)
+            var request = new DuplicateNoteOperationRequest
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (sourceNote.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to duplicate this note.";
-            }
-
-            var duplicateTitle = string.IsNullOrWhiteSpace(newTitle)
-                ? $"Copy of {sourceNote.Title}"
-                : newTitle.Trim();
-
-            var duplicateNote = new Note
-            {
-                Id = UuidV7.NewId(),
-                Title = duplicateTitle,
-                Content = sourceNote.Content,
-                Tags = new List<string>(sourceNote.Tags),
-                Folder = sourceNote.Folder,
+                SourceNoteId = noteId,
                 UserId = CurrentUserId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsArchived = false,
-                Source = "agent"
+                NewTitle = newTitle,
+                Source = NoteSource.Agent
             };
 
-            var created = await NoteRepository.CreateAsync(duplicateNote);
+            var result = await NoteOperationService.DuplicateAsync(request);
 
-            var tagInfo = created.Tags.Any()
-                ? $" with tags: {string.Join(", ", created.Tags)}"
-                : "";
-
-            var folderInfo = !string.IsNullOrEmpty(created.Folder)
-                ? $" in folder \"{created.Folder}\""
-                : "";
-
-            return $"Successfully duplicated note \"{sourceNote.Title}\" as \"{created.Title}\" (ID: {created.Id}){tagInfo}{folderInfo}.";
+            return result.Match(
+                onSuccess: op =>
+                {
+                    var tagInfo = op.Note.Tags.Any()
+                        ? $" with tags: {string.Join(", ", op.Note.Tags)}"
+                        : "";
+                    var folderInfo = !string.IsNullOrEmpty(op.Note.Folder)
+                        ? $" in folder \"{op.Note.Folder}\""
+                        : "";
+                    return $"Successfully duplicated note as \"{op.Note.Title}\" (ID: {op.Note.Id}){tagInfo}{folderInfo}.";
+                },
+                onFailure: error => $"Error duplicating note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {

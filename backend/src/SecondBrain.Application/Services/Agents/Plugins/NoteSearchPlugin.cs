@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
 

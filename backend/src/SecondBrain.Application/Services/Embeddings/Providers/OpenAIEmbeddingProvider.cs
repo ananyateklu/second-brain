@@ -38,8 +38,8 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
     };
 
     // Fallback models if API fails
-    private static readonly EmbeddingModelInfo[] FallbackModels = new[]
-    {
+    private static readonly EmbeddingModelInfo[] FallbackModels =
+    [
         new EmbeddingModelInfo
         {
             ModelId = "text-embedding-3-small",
@@ -54,15 +54,8 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
             DisplayName = "Text Embedding 3 Large",
             Dimensions = 3072,
             Description = "Larger embedding model with higher accuracy but more expensive"
-        },
-        new EmbeddingModelInfo
-        {
-            ModelId = "text-embedding-ada-002",
-            DisplayName = "Ada 002 (Legacy)",
-            Dimensions = 1536,
-            Description = "Legacy model, use text-embedding-3-small instead"
         }
-    };
+    ];
 
     public string ProviderName => "OpenAI";
     public string ModelName => _settings.Model;
@@ -80,15 +73,8 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
 
         if (IsEnabled && !string.IsNullOrEmpty(_settings.ApiKey))
         {
-            try
-            {
-                _client = _clientFactory.CreateClient(_settings.ApiKey!, _settings.Model);
-                _openAIClient = new OpenAIClient(_settings.ApiKey!);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to initialize OpenAI embedding client");
-            }
+            _client = _clientFactory.CreateClient(_settings.ApiKey!, _settings.Model);
+            _openAIClient = new OpenAIClient(_settings.ApiKey!);
         }
     }
 

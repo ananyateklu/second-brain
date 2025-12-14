@@ -186,6 +186,9 @@ public class AgentController : ControllerBase
             var startTime = DateTime.UtcNow;
             var fullResponse = new StringBuilder();
             var toolCalls = new List<ToolCall>();
+            // Track thinking steps with individual timestamps for chronological display
+            var thinkingSteps = new List<ThinkingStep>();
+            var currentThinkingStep = 0;
             // Track retrieved notes from automatic context injection
             var retrievedNotes = new List<RetrievedNote>();
             // Track RAG log ID for feedback submission
@@ -294,9 +297,21 @@ public class AgentController : ControllerBase
                         break;
 
                     case AgentEventType.Thinking:
+                        // Capture thinking step with timestamp for persistence
+                        var thinkingTimestamp = DateTime.UtcNow;
+                        thinkingSteps.Add(new ThinkingStep
+                        {
+                            StepNumber = currentThinkingStep++,
+                            Content = evt.Content ?? "",
+                            StartedAt = thinkingTimestamp,
+                            CompletedAt = thinkingTimestamp,
+                            ModelSource = conversation.Provider
+                        });
+
                         var thinkingJson = JsonSerializer.Serialize(new
                         {
-                            content = evt.Content
+                            content = evt.Content,
+                            timestamp = thinkingTimestamp.ToString("o") // ISO 8601 format
                         });
                         await Response.WriteAsync($"event: thinking\ndata: {thinkingJson}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);
@@ -410,7 +425,7 @@ public class AgentController : ControllerBase
             // Calculate RAG context tokens if RAG was used
             var ragContextTokens = retrievedNotes.Sum(n => TokenEstimator.EstimateTokenCount(n.ChunkContent ?? n.Title ?? ""));
 
-            // Add assistant message to conversation with tool calls, retrieved notes, and RAG log ID
+            // Add assistant message to conversation with tool calls, thinking steps, retrieved notes, and RAG log ID
             var assistantMessage = new ChatMessage
             {
                 Role = "assistant",
@@ -421,6 +436,7 @@ public class AgentController : ControllerBase
                 TokensActual = false, // Agent mode currently uses estimates
                 DurationMs = durationMs,
                 ToolCalls = toolCalls,
+                ThinkingSteps = thinkingSteps,
                 RetrievedNotes = retrievedNotes,
                 RagLogId = ragLogId,
                 ToolDefinitionTokens = toolDefinitionTokens,
@@ -436,7 +452,7 @@ public class AgentController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event with token usage, retrieved notes count, and RAG log ID for feedback
+            // Send end event with token usage, retrieved notes count, thinking steps count, and RAG log ID for feedback
             var endData = JsonSerializer.Serialize(new
             {
                 conversationId = id,
@@ -446,6 +462,7 @@ public class AgentController : ControllerBase
                 tokensActual = false,
                 durationMs = durationMs,
                 toolCallsCount = toolCalls.Count,
+                thinkingStepsCount = thinkingSteps.Count,
                 toolDefinitionTokens,
                 toolArgumentTokens = toolArgumentTokens > 0 ? toolArgumentTokens : (int?)null,
                 toolResultTokens = toolResultTokens > 0 ? toolResultTokens : (int?)null,

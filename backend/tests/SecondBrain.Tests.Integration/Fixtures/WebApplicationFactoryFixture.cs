@@ -24,6 +24,10 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
     private PostgreSqlContainer? _container;
     private string? _ciConnectionString;
 
+    // Static semaphore to serialize database initialization across concurrent test instances in CI
+    private static readonly SemaphoreSlim _initializationLock = new(1, 1);
+    private static bool _databaseInitialized;
+
     /// <summary>
     /// The connection string to the test database.
     /// Uses CI-provided connection string if available, otherwise Testcontainers.
@@ -137,14 +141,190 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(FakeTimeProvider);
 
-            // Ensure database is created
-            using var scope = services.BuildServiceProvider().CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            dbContext.Database.EnsureCreated();
+            // Use a lock to serialize database initialization in CI where multiple test instances
+            // may run concurrently against the same shared database
+            _initializationLock.Wait();
+            try
+            {
+                // Skip if already initialized by another test instance
+                if (!_databaseInitialized || _ciConnectionString == null)
+                {
+                    using var scope = services.BuildServiceProvider().CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            // Seed test data
-            SeedTestData(dbContext).GetAwaiter().GetResult();
+                    // EnsureCreated can fail if tables already exist from concurrent initialization
+                    try
+                    {
+                        dbContext.Database.EnsureCreated();
+                    }
+                    catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505" || ex.SqlState == "42P07")
+                    {
+                        // 23505: unique_violation (type already exists)
+                        // 42P07: duplicate_table
+                        // Tables already exist from another concurrent test - ignore
+                    }
+
+                    // Apply versioning stored procedures (not created by EF Core)
+                    ApplyVersioningSchema(dbContext).GetAwaiter().GetResult();
+
+                    // Seed test data
+                    SeedTestData(dbContext).GetAwaiter().GetResult();
+
+                    _databaseInitialized = true;
+                }
+            }
+            finally
+            {
+                _initializationLock.Release();
+            }
         });
+    }
+
+    /// <summary>
+    /// Applies versioning stored procedures that are not created by EF Core migrations.
+    /// This includes the note version functions required for temporal versioning.
+    /// </summary>
+    private async Task ApplyVersioningSchema(ApplicationDbContext dbContext)
+    {
+        // In CI, multiple test instances may run concurrently against the same database.
+        // We need to handle race conditions where multiple instances try to create
+        // extensions/columns simultaneously. PostgreSQL error 23505 (unique_violation)
+        // indicates the object already exists - we can safely ignore this.
+
+        // Ensure btree_gist extension exists for temporal features
+        // Wrap in try-catch to handle CI race conditions
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                CREATE EXTENSION IF NOT EXISTS btree_gist;
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505")
+        {
+            // Extension already exists (race condition in CI) - ignore
+        }
+
+        // Add columns if not exist - these are idempotent
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS content_json JSONB DEFAULT NULL;
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42701")
+        {
+            // Column already exists - ignore
+        }
+
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS content_format INTEGER DEFAULT 0;
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42701")
+        {
+            // Column already exists - ignore
+        }
+
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS image_ids TEXT[] DEFAULT ARRAY[]::TEXT[];
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42701")
+        {
+            // Column already exists - ignore
+        }
+
+        // Create/replace the versioning function with all 12 parameters
+        // Even CREATE OR REPLACE can fail with 23505 in concurrent environments
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                CREATE OR REPLACE FUNCTION create_note_version(
+                    p_note_id TEXT,
+                    p_title VARCHAR(500),
+                    p_content TEXT,
+                    p_tags TEXT[],
+                    p_is_archived BOOLEAN,
+                    p_folder VARCHAR(256),
+                    p_modified_by VARCHAR(128),
+                    p_change_summary VARCHAR(500) DEFAULT NULL,
+                    p_source VARCHAR(50) DEFAULT 'web',
+                    p_content_json JSONB DEFAULT NULL,
+                    p_content_format INTEGER DEFAULT 0,
+                    p_image_ids TEXT[] DEFAULT ARRAY[]::TEXT[]
+                )
+                RETURNS INT AS $$
+                DECLARE
+                    v_new_version_number INT;
+                    v_now TIMESTAMP WITH TIME ZONE := NOW();
+                BEGIN
+                    -- Get the next version number
+                    SELECT COALESCE(MAX(version_number), 0) + 1
+                    INTO v_new_version_number
+                    FROM note_versions
+                    WHERE note_id = p_note_id;
+
+                    -- Close the current version (set end time)
+                    UPDATE note_versions
+                    SET valid_period = tstzrange(lower(valid_period), v_now, '[)')
+                    WHERE note_id = p_note_id
+                      AND upper_inf(valid_period);
+
+                    -- Insert the new version
+                    INSERT INTO note_versions (
+                        id,
+                        note_id,
+                        valid_period,
+                        title,
+                        content,
+                        content_json,
+                        content_format,
+                        tags,
+                        is_archived,
+                        folder,
+                        modified_by,
+                        version_number,
+                        change_summary,
+                        source,
+                        image_ids,
+                        created_at
+                    ) VALUES (
+                        gen_random_uuid()::text,
+                        p_note_id,
+                        tstzrange(v_now, NULL, '[)'),
+                        p_title,
+                        p_content,
+                        p_content_json,
+                        p_content_format,
+                        p_tags,
+                        p_is_archived,
+                        p_folder,
+                        p_modified_by,
+                        v_new_version_number,
+                        p_change_summary,
+                        p_source,
+                        p_image_ids,
+                        v_now
+                    );
+
+                    RETURN v_new_version_number;
+                END;
+                $$ LANGUAGE plpgsql;
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505" || ex.SqlState == "42723")
+        {
+            // 23505: unique_violation (function already exists from concurrent creation)
+            // 42723: duplicate_function
+            // Function already exists - ignore
+        }
     }
 
     private async Task SeedTestData(ApplicationDbContext dbContext)
@@ -195,6 +375,10 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
             // Race condition: another test instance already seeded the data
             // This is expected in CI when tests run in parallel
         }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505")
+        {
+            // 23505: unique_violation - user already exists from another concurrent test
+        }
     }
 
     /// <summary>
@@ -231,7 +415,9 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
         using var scope = Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        // Clear all tables except users
+        // Clear note versions first (FK constraint)
+        dbContext.NoteVersions.RemoveRange(dbContext.NoteVersions);
+        // Clear notes
         dbContext.Notes.RemoveRange(dbContext.Notes);
         dbContext.ChatConversations.RemoveRange(dbContext.ChatConversations);
         await dbContext.SaveChangesAsync();

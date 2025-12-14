@@ -16,15 +16,21 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import tippy from 'tippy.js';
-import { forwardRef, useEffect, useImperativeHandle, useState, useMemo, useCallback } from 'react';
-import { marked } from 'marked';
+import { forwardRef, useEffect, useImperativeHandle, useState, useMemo, useCallback, useRef } from 'react';
 import { useBoundStore } from '../../store/bound-store';
+import { htmlToMarkdown } from '../../utils/markdown-utils';
 import 'tippy.js/dist/tippy.css';
 
+import type { JSONContent } from '@tiptap/react';
+
 interface RichTextEditorProps {
-  content: string;
-  onChange: (html: string) => void;
+  /** TipTap JSON content - canonical format for editing */
+  contentJson?: JSONContent | null;
+  /** Called when editor content changes - provides both JSON (canonical) and Markdown (for search/display) */
+  onChange: (markdown: string, json: JSONContent) => void;
   onTagsChange?: (tags: string[]) => void;
+  /** Initial tags from the note entity - used to display all tags including those not in contentJson */
+  initialTags?: string[];
   placeholder?: string;
   editable?: boolean;
 }
@@ -101,138 +107,93 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
 
 SuggestionList.displayName = 'SuggestionList';
 
-// Helper function to detect if content is HTML
-function isHtml(content: string): boolean {
-  if (!content || content.trim() === '') return false;
-
-  const trimmed = content.trim();
-
-  // Check if content starts with HTML tags (common patterns)
-  // This includes tags like <p>, <div>, <h1>, etc.
-  if (/^<[a-z][\s\S]*>/i.test(trimmed)) {
-    return true;
-  }
-
-  // Check for HTML entities or common HTML patterns
-  // Be more specific to avoid false positives with markdown
-  if (/&(nbsp|amp|lt|gt|quot|#\d+);/i.test(trimmed) || /<(p|div|span|h[1-6]|ul|ol|li|br|table|pre|code|blockquote|strong|em|a|img)[^>]*>/i.test(trimmed)) {
-    return true;
-  }
-
-  return false;
-}
-
-// Helper function to detect markdown patterns
-function hasMarkdownPatterns(content: string): boolean {
-  if (!content) return false;
-
-  // Check for common markdown patterns
-  const markdownPatterns = [
-    /^#{1,6}\s+/m,                    // Headers: # Header
-    /^\s*[-*+]\s+/m,                  // Unordered lists: - item
-    /^\s*\d+\.\s+/m,                  // Ordered lists: 1. item
-    /\*\*[^*]+\*\*/,                  // Bold: **text**
-    /\*[^*]+\*/,                      // Italic: *text*
-    /__[^_]+__/,                      // Bold: __text__
-    /_[^_]+_/,                        // Italic: _text_
-    /`[^`]+`/,                        // Inline code: `code`
-    /```[\s\S]*?```/,                 // Code blocks: ```code```
-    /^\s*>/m,                         // Blockquotes: > quote
-    /\[([^\]]+)\]\([^)]+\)/,          // Links: [text](url)
-    /!\[([^\]]*)\]\([^)]+\)/,         // Images: ![alt](url)
-    /^\s*[-*_]{3,}\s*$/m,             // Horizontal rules: ---
-    /^\|.*\|$/m,                      // Tables: |col1|col2|
-    /^\s*-\s*\[[ x]\]/mi,             // Task lists: - [ ] or - [x]
-  ];
-
-  return markdownPatterns.some(pattern => pattern.test(content));
-}
-
-// Helper function to convert markdown to HTML for TipTap
-function markdownToHtml(markdown: string): string {
-  if (!markdown || markdown.trim() === '') return '<p></p>';
-  try {
-    // Configure marked to use GFM (GitHub Flavored Markdown) and breaks
-    let html = marked.parse(markdown, {
-      breaks: true,
-      gfm: true
-    }) as string;
-
-    // Post-process HTML for TipTap compatibility
-    // Convert task lists to TipTap format
-    html = html.replace(
-      /<li><input\s+checked(?:="[^"]*")?\s+disabled(?:="[^"]*")?\s+type="checkbox"(?:="[^"]*")?>\s*/gi,
-      '<li data-type="taskItem" data-checked="true">'
-    );
-    html = html.replace(
-      /<li><input\s+disabled(?:="[^"]*")?\s+type="checkbox"(?:="[^"]*")?>\s*/gi,
-      '<li data-type="taskItem" data-checked="false">'
-    );
-
-    // Wrap task list items in task list ul
-    html = html.replace(
-      /<ul>\s*(<li data-type="taskItem")/gi,
-      '<ul data-type="taskList">$1'
-    );
-
-    return html;
-  } catch (error) {
-    console.error('Error converting markdown to HTML:', { error, markdown });
-    // Fallback: wrap in paragraph tags with line breaks preserved
-    return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
-  }
-}
+// --- Custom Mention Extension ---
+// Extends the default Mention to handle additional attributes from the backend
+// This ensures mention nodes with extra attrs like mentionSuggestionChar are properly parsed
+const CustomMention = Mention.extend({
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-id'),
+        renderHTML: attributes => {
+          if (!attributes.id) {
+            return {};
+          }
+          return { 'data-id': attributes.id };
+        },
+      },
+      label: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-label'),
+        renderHTML: attributes => {
+          if (!attributes.label) {
+            return {};
+          }
+          return { 'data-label': attributes.label };
+        },
+      },
+      // Handle mentionSuggestionChar that backend may add
+      mentionSuggestionChar: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-mention-suggestion-char'),
+        renderHTML: (_attributes) => {
+          // Don't render this attr to HTML - it's only for JSON serialization
+          return {};
+        },
+      },
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'span',
+      {
+        'data-type': this.name,
+        'data-id': node.attrs.id,
+        class: this.options.HTMLAttributes?.class || 'mention',
+        ...HTMLAttributes,
+      },
+      `#${node.attrs.id}`,
+    ];
+  },
+});
 
 // --- Editor Component ---
 export function RichTextEditor({
-  content,
+  contentJson,
   onChange,
   onTagsChange,
+  initialTags = [],
   placeholder = "Write your note here... Type '#' to add tags, '/' for commands.",
   editable = true
 }: RichTextEditorProps) {
   const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
-  const [tags, setTags] = useState<string[]>([]);
+  // Tags extracted from mention nodes in the content
+  const [contentTags, setContentTags] = useState<string[]>([]);
 
-  // Convert markdown to HTML if needed
-  const htmlContent = useMemo(() => {
-    if (!content || content.trim() === '') return '<p></p>';
+  // Track if user has made edits - only update parent tags after user interaction
+  // This prevents the initial tag extraction from overwriting form tags
+  const hasUserEditedRef = useRef(false);
 
-    // If content is already HTML, use it as-is
-    if (isHtml(content)) {
-      return content;
+  // Combine initialTags with contentTags for display
+  // This ensures tags added via API (not as mention nodes) are still visible
+  const displayTags = useMemo(() => {
+    const allTags = new Set([...initialTags, ...contentTags]);
+    return [...allTags].filter(tag => tag && tag.trim().length > 0);
+  }, [initialTags, contentTags]);
+
+  // Determine the initial content for the editor
+  // contentJson is the canonical format and should always be present for existing notes
+  const initialContent = useMemo<JSONContent | string>(() => {
+    // Use contentJson directly (canonical format)
+    if (contentJson && typeof contentJson === 'object' && contentJson.type === 'doc') {
+      return contentJson;
     }
 
-    // Check if content has markdown patterns and convert
-    if (hasMarkdownPatterns(content)) {
-      return markdownToHtml(content);
-    }
-
-    // For plain text without markdown, wrap in paragraph and convert line breaks
-    // This preserves the text structure while making it TipTap-compatible
-    const lines = content.split('\n');
-    const paragraphs = [];
-    let currentParagraph: string[] = [];
-
-    for (const line of lines) {
-      if (line.trim() === '') {
-        if (currentParagraph.length > 0) {
-          paragraphs.push(`<p>${currentParagraph.join('<br>')}</p>`);
-          currentParagraph = [];
-        }
-      } else {
-        currentParagraph.push(line);
-      }
-    }
-
-    // Add remaining paragraph
-    if (currentParagraph.length > 0) {
-      paragraphs.push(`<p>${currentParagraph.join('<br>')}</p>`);
-    }
-
-    return paragraphs.length > 0 ? paragraphs.join('') : '<p></p>';
-  }, [content]);
+    // For new notes with no content yet
+    return '<p></p>';
+  }, [contentJson]);
 
   const extractTags = useCallback((editorInstance: Editor) => {
     const newTags: string[] = [];
@@ -244,7 +205,7 @@ export function RichTextEditor({
     // Deduplicate tags and filter out empty strings
     const uniqueTags = [...new Set(newTags)].filter(tag => tag && tag.trim().length > 0);
 
-    setTags(prev => {
+    setContentTags(prev => {
       if (JSON.stringify(prev) !== JSON.stringify(uniqueTags)) {
         return uniqueTags;
       }
@@ -254,12 +215,17 @@ export function RichTextEditor({
     // Don't call onTagsChange inside extractTags to avoid circular dependency if onChange triggers re-render
   }, []);
 
-  // Call onTagsChange when tags state changes
+  // Call onTagsChange when contentTags state changes, but only after user has made edits
+  // This prevents the initial tag extraction from overwriting the form's tags
+  // that were loaded from the note entity
   useEffect(() => {
-    if (onTagsChange) {
-      onTagsChange(tags);
+    if (onTagsChange && hasUserEditedRef.current) {
+      // Merge initialTags with contentTags when reporting to parent
+      const allTags = new Set([...initialTags, ...contentTags]);
+      const mergedTags = [...allTags].filter(tag => tag && tag.trim().length > 0);
+      onTagsChange(mergedTags);
     }
-  }, [tags, onTagsChange]);
+  }, [contentTags, onTagsChange, initialTags]);
 
   const editor = useEditor({
     extensions: [
@@ -287,13 +253,13 @@ export function RichTextEditor({
       Highlight.configure({
         multicolor: true,
       }),
-      // Links
+      // Links - http, https, mailto are already built-in to linkifyjs
+      // Don't specify protocols option to avoid "already initialized" warnings
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
           class: 'text-[var(--color-brand-400)] underline hover:no-underline',
         },
-        protocols: ['http', 'https', 'mailto'],
       }),
       // Tables
       Table.configure({
@@ -312,7 +278,7 @@ export function RichTextEditor({
       }),
       // Horizontal Rule
       HorizontalRule,
-      Mention.configure({
+      CustomMention.configure({
         HTMLAttributes: {
           class: 'mention',
         },
@@ -399,7 +365,7 @@ export function RichTextEditor({
         },
       }),
     ],
-    content: htmlContent,
+    content: initialContent,
     editable: editable,
     editorProps: {
       attributes: {
@@ -429,10 +395,26 @@ export function RichTextEditor({
     onCreate: ({ editor }) => {
       // Initial tag extraction
       extractTags(editor);
+
+      // Only call onChange with initial state if we have actual content loaded
+      // This prevents overwriting the form with empty content when contentJson is still loading
+      // The useEffect below handles setting content once contentJson becomes available
+      if (contentJson && typeof contentJson === 'object' && contentJson.type === 'doc') {
+        const json = editor.getJSON();
+        const html = editor.getHTML();
+        const markdown = htmlToMarkdown(html);
+        onChange(markdown, json);
+      }
     },
     onUpdate: ({ editor }) => {
+      // Mark that user has made edits - this enables tag change propagation
+      hasUserEditedRef.current = true;
+
+      // Get TipTap JSON (canonical format) and Markdown (for search/display)
+      const json = editor.getJSON();
       const html = editor.getHTML();
-      onChange(html);
+      const markdown = htmlToMarkdown(html);
+      onChange(markdown, json);
       extractTags(editor);
     },
   });
@@ -525,25 +507,31 @@ export function RichTextEditor({
     }
   }, [extractTags]);
 
-  // Update content if it changes externally (and is different)
+  // Update content if it changes externally (e.g., switching notes)
   useEffect(() => {
-    if (editor && htmlContent !== editor.getHTML()) {
-      // Check if content is effectively different to avoid cursor jumps
-      // This is a simple check; strictly speaking we should compare content state
-      if (editor.getText() === '' && htmlContent === '<p></p>') return;
+    if (!editor) return;
 
-      // Update editor content when prop changes (e.g., when switching notes)
-      // Only update if content is actually different to prevent unnecessary updates
-      const currentHtml = editor.getHTML();
-      if (currentHtml !== htmlContent) {
-        editor.commands.setContent(htmlContent);
-        // Convert any #tag patterns to mention nodes after content is set
-        setTimeout(() => {
-          convertTagsToMentions(editor);
-        }, 0);
+    // contentJson is the canonical format
+    if (contentJson && typeof contentJson === 'object' && contentJson.type === 'doc') {
+      const currentJson = editor.getJSON();
+      if (JSON.stringify(currentJson) !== JSON.stringify(contentJson)) {
+        // Reset the user edit flag when loading new content
+        // This prevents the setContent from triggering tag overwrites
+        hasUserEditedRef.current = false;
+        editor.commands.setContent(contentJson);
+        setTimeout(() => convertTagsToMentions(editor), 0);
+
+        // Sync form with the new content - onUpdate isn't triggered for programmatic changes
+        // Use queueMicrotask to avoid cascading render warnings
+        queueMicrotask(() => {
+          const json = editor.getJSON();
+          const html = editor.getHTML();
+          const markdown = htmlToMarkdown(html);
+          onChange(markdown, json);
+        });
       }
     }
-  }, [htmlContent, editor, convertTagsToMentions]);
+  }, [contentJson, editor, convertTagsToMentions, onChange]);
 
   if (!editor) {
     return null;
@@ -758,13 +746,13 @@ export function RichTextEditor({
       )}
       <EditorContent editor={editor} />
 
-      {/* Tags Display */}
-      {tags.length > 0 && (
+      {/* Tags Display - shows both tags from note entity and tags extracted from content */}
+      {displayTags.length > 0 && (
         <div className="px-2 pb-2 pt-1 flex flex-wrap gap-1.5 border-t border-[var(--border)] mt-2">
           <span className="text-xs font-medium self-center mr-1" style={{ color: 'var(--text-tertiary)' }}>
             Tags:
           </span>
-          {tags.map((tag, index) => (
+          {displayTags.map((tag, index) => (
             <span
               key={index}
               className="inline-flex items-center rounded-md font-medium px-2 py-0.5 text-xs"
