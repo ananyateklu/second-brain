@@ -46,10 +46,17 @@ public class SqlNoteVersionRepository : INoteVersionRepository
     {
         try
         {
+            // Ensure timestamp is UTC for proper comparison with PostgreSQL timestamptz
+            var utcTimestamp = timestamp.Kind == DateTimeKind.Utc
+                ? timestamp
+                : timestamp.ToUniversalTime();
+
             // Use PostgreSQL range containment operator via raw SQL
+            // Include ALL columns that the NoteVersion entity expects
             var sql = @"
-                SELECT note_id, valid_period, title, content, tags, is_archived, 
-                       folder, modified_by, version_number, change_summary, created_at
+                SELECT id, note_id, valid_period, title, content, content_json, content_format,
+                       tags, is_archived, folder, modified_by, version_number, change_summary,
+                       source, image_ids, created_at
                 FROM note_versions
                 WHERE note_id = @noteId
                   AND valid_period @> @timestamp::timestamptz";
@@ -57,7 +64,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             return await _context.NoteVersions
                 .FromSqlRaw(sql,
                     new NpgsqlParameter("@noteId", noteId),
-                    new NpgsqlParameter("@timestamp", timestamp))
+                    new NpgsqlParameter("@timestamp", utcTimestamp))
                 .FirstOrDefaultAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -148,7 +155,10 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                     @folder,
                     @modifiedBy,
                     @changeSummary,
-                    @source
+                    @source,
+                    @contentJson,
+                    @contentFormat,
+                    @imageIds
                 )";
 
             var connection = _context.Database.GetDbConnection();
@@ -167,6 +177,9 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 command.Parameters.Add(new NpgsqlParameter("@modifiedBy", modifiedBy));
                 command.Parameters.Add(new NpgsqlParameter("@changeSummary", (object?)changeSummary ?? DBNull.Value));
                 command.Parameters.Add(new NpgsqlParameter("@source", note.Source ?? "web"));
+                command.Parameters.Add(new NpgsqlParameter("@contentJson", NpgsqlDbType.Jsonb) { Value = (object?)note.ContentJson ?? DBNull.Value });
+                command.Parameters.Add(new NpgsqlParameter("@contentFormat", (int)note.ContentFormat));
+                command.Parameters.Add(new NpgsqlParameter("@imageIds", note.Images?.Select(i => i.Id).ToArray() ?? Array.Empty<string>()));
 
                 var result = await command.ExecuteScalarAsync(cancellationToken);
                 var newVersionNumber = Convert.ToInt32(result);
@@ -208,6 +221,8 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                     true),  // Upper bound IS infinite (unbounded)
                 Title = note.Title,
                 Content = note.Content,
+                ContentJson = note.ContentJson,
+                ContentFormat = note.ContentFormat,
                 Tags = new List<string>(note.Tags),
                 IsArchived = note.IsArchived,
                 Folder = note.Folder,
@@ -215,6 +230,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 VersionNumber = 1,
                 ChangeSummary = "Initial version",
                 Source = note.Source ?? "web",
+                ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
                 CreatedAt = now
             };
 
@@ -280,14 +296,18 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             }
 
             // Create a new version with the content from the target version
+            // Source is set to "restored" to indicate this is a restoration
             var note = new Note
             {
                 Id = noteId,
                 Title = targetVersion.Title,
                 Content = targetVersion.Content,
+                ContentJson = targetVersion.ContentJson,
+                ContentFormat = targetVersion.ContentFormat,
                 Tags = new List<string>(targetVersion.Tags),
                 IsArchived = targetVersion.IsArchived,
-                Folder = targetVersion.Folder
+                Folder = targetVersion.Folder,
+                Source = "restored"  // Mark this version as a restore operation
             };
 
             var changeSummary = $"Restored from version {targetVersionNumber}";

@@ -7,11 +7,138 @@
  * - Change type badges (title, content, tags, etc.)
  * - Clean side-by-side layout
  * - Scrollable content areas
+ * - Renders content using TipTap contentJson (canonical format)
  */
+
+import { useMemo } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import { TaskList } from '@tiptap/extension-task-list';
+import { TaskItem } from '@tiptap/extension-task-item';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Highlight from '@tiptap/extension-highlight';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import Mention from '@tiptap/extension-mention';
+import type { JSONContent } from '@tiptap/react';
+
+// Custom Mention extension that renders tags with # prefix (consistent with RichTextEditor)
+const TagMention = Mention.extend({
+  addAttributes() {
+    return {
+      id: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-id'),
+        renderHTML: attributes => {
+          if (!attributes.id) {
+            return {};
+          }
+          return { 'data-id': attributes.id };
+        },
+      },
+      label: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-label'),
+        renderHTML: attributes => {
+          if (!attributes.label) {
+            return {};
+          }
+          return { 'data-label': attributes.label };
+        },
+      },
+      // Handle mentionSuggestionChar that backend may add
+      mentionSuggestionChar: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-mention-suggestion-char'),
+        renderHTML: () => ({}),
+      },
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'span',
+      {
+        'data-type': this.name,
+        'data-id': node.attrs.id,
+        class: 'mention inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]',
+        ...HTMLAttributes,
+      },
+      `#${node.attrs.id}`,
+    ];
+  },
+});
 
 import { useNoteVersionDiff } from '../hooks/use-note-versions';
 import { Modal } from '../../../components/ui/Modal';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
+import type { NoteVersion } from '../../../types/notes';
+
+/**
+ * Read-only TipTap editor for rendering content in the diff viewer.
+ * Uses contentJson (canonical format).
+ */
+function ReadOnlyContentViewer({ version }: { version: NoteVersion }) {
+  // contentJson is the canonical format
+  const initialContent = useMemo<JSONContent | string>(() => {
+    if (version.contentJson && typeof version.contentJson === 'object' && version.contentJson.type === 'doc') {
+      return version.contentJson;
+    }
+    return '<p></p>';
+  }, [version.contentJson]);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        horizontalRule: false,
+        link: false,
+        underline: false,
+      }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Highlight.configure({ multicolor: true }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-[var(--color-brand-400)] underline hover:no-underline',
+        },
+      }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg',
+        },
+      }),
+      HorizontalRule,
+      TagMention.configure({
+        HTMLAttributes: {
+          class: 'mention',
+        },
+      }),
+    ],
+    content: initialContent,
+    editable: false,
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert max-w-none text-sm leading-relaxed focus:outline-none',
+      },
+    },
+  });
+
+  if (!editor) {
+    return <span className="italic" style={{ color: 'var(--text-tertiary)' }}>Loading...</span>;
+  }
+
+  if (!version.contentJson) {
+    return <span className="italic" style={{ color: 'var(--text-tertiary)' }}>Empty</span>;
+  }
+
+  return <EditorContent editor={editor} />;
+}
 
 // Get source display info
 function getSourceLabel(source: string): string {
@@ -299,6 +426,7 @@ export function NoteVersionDiffViewer({
         diff.tagsChanged,
         diff.folderChanged,
         diff.archivedChanged,
+        diff.imagesChanged,
       ].filter(Boolean).length
     : 0;
 
@@ -394,11 +522,22 @@ export function NoteVersionDiffViewer({
               )}
               {diff.folderChanged && <ChangeBadge type="Folder" variant="changed" />}
               {diff.archivedChanged && <ChangeBadge type="Archive status" variant="changed" />}
+              {diff.imagesChanged && (
+                <>
+                  {diff.imagesAdded.length > 0 && (
+                    <ChangeBadge type={`${diff.imagesAdded.length} image${diff.imagesAdded.length > 1 ? 's' : ''} added`} variant="added" />
+                  )}
+                  {diff.imagesRemoved.length > 0 && (
+                    <ChangeBadge type={`${diff.imagesRemoved.length} image${diff.imagesRemoved.length > 1 ? 's' : ''} removed`} variant="removed" />
+                  )}
+                </>
+              )}
               {!diff.titleChanged &&
                 !diff.contentChanged &&
                 !diff.tagsChanged &&
                 !diff.folderChanged &&
-                !diff.archivedChanged && (
+                !diff.archivedChanged &&
+                !diff.imagesChanged && (
                   <ChangeBadge type="No changes" variant="neutral" />
                 )}
             </div>
@@ -420,22 +559,8 @@ export function NoteVersionDiffViewer({
           {/* Content diff */}
           <DiffSection
             label="Content"
-            fromContent={
-              <pre
-                className="whitespace-pre-wrap font-sans"
-                style={{ fontFamily: 'inherit' }}
-              >
-                {diff.fromVersion.content || '(empty)'}
-              </pre>
-            }
-            toContent={
-              <pre
-                className="whitespace-pre-wrap font-sans"
-                style={{ fontFamily: 'inherit' }}
-              >
-                {diff.toVersion.content || '(empty)'}
-              </pre>
-            }
+            fromContent={<ReadOnlyContentViewer version={diff.fromVersion} />}
+            toContent={<ReadOnlyContentViewer version={diff.toVersion} />}
             changed={diff.contentChanged}
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -482,6 +607,19 @@ export function NoteVersionDiffViewer({
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            }
+          />
+
+          {/* Images diff */}
+          <DiffSection
+            label="Images"
+            fromContent={`${diff.fromVersion.imageIds?.length ?? 0} image${(diff.fromVersion.imageIds?.length ?? 0) !== 1 ? 's' : ''} attached`}
+            toContent={`${diff.toVersion.imageIds?.length ?? 0} image${(diff.toVersion.imageIds?.length ?? 0) !== 1 ? 's' : ''} attached`}
+            changed={diff.imagesChanged}
+            icon={
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             }
           />

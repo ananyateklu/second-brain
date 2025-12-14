@@ -75,12 +75,24 @@ public class NoteOperationService : INoteOperationService
                 cancellationToken);
         }
 
-        // 3. Create the note entity
+        // 3. Generate contentJson from markdown if not provided
+        var contentJson = request.ContentJson;
+        if (string.IsNullOrEmpty(contentJson) && !string.IsNullOrEmpty(request.Content))
+        {
+            contentJson = MarkdownToTipTapConverter.Convert(request.Content);
+            _logger.LogDebug("Generated contentJson from markdown for note: {Title}", request.Title);
+        }
+
+        // 4. Create the note entity
         var note = new Note
         {
             Id = UuidV7.NewId(),
             Title = request.Title.Trim(),
             Content = request.Content?.Trim() ?? string.Empty,
+            ContentJson = contentJson,
+            ContentFormat = !string.IsNullOrEmpty(contentJson)
+                ? ContentFormat.TipTapJson
+                : ContentFormat.Markdown,
             Summary = summary,
             Tags = request.Tags ?? new List<string>(),
             IsArchived = request.IsArchived,
@@ -95,25 +107,28 @@ public class NoteOperationService : INoteOperationService
         // 4. Persist the note
         var createdNote = await _noteRepository.CreateAsync(note);
 
-        // 5. Create initial version with source tracking
+        // 5. Handle images BEFORE creating initial version (so version captures image IDs)
+        if (request.Images != null && request.Images.Count > 0)
+        {
+            await ProcessImagesAsync(createdNote.Id, request.UserId, request.Images, cancellationToken);
+            // Load images onto the note for version tracking
+            createdNote.Images = await _noteImageRepository.GetByNoteIdAsync(createdNote.Id, cancellationToken);
+        }
+
+        // 6. Create initial version with source tracking (including images)
         int versionNumber = 1;
         try
         {
             var versionResponse = await _versionService.CreateInitialVersionAsync(
                 createdNote, request.UserId, cancellationToken);
             versionNumber = versionResponse.VersionNumber;
-            _logger.LogDebug("Created initial version {Version} for note {NoteId}", versionNumber, createdNote.Id);
+            _logger.LogDebug("Created initial version {Version} for note {NoteId} with {ImageCount} images",
+                versionNumber, createdNote.Id, createdNote.Images?.Count ?? 0);
         }
         catch (Exception ex)
         {
             // Log but don't fail note creation if versioning fails
             _logger.LogWarning(ex, "Failed to create initial version for note {NoteId}", createdNote.Id);
-        }
-
-        // 6. Handle images if provided
-        if (request.Images != null && request.Images.Count > 0)
-        {
-            await ProcessImagesAsync(createdNote.Id, request.UserId, request.Images, cancellationToken);
         }
 
         _logger.LogInformation(
@@ -158,6 +173,7 @@ public class NoteOperationService : INoteOperationService
             UserId = request.UserId,
             Title = duplicateTitle,
             Content = sourceNote.Content,
+            ContentJson = sourceNote.ContentJson, // Preserve the original contentJson
             Tags = new List<string>(sourceNote.Tags),
             Folder = sourceNote.Folder,
             IsArchived = false,
@@ -240,13 +256,19 @@ public class NoteOperationService : INoteOperationService
 
         if (request.IsArchived.HasValue && request.IsArchived != note.IsArchived)
         {
-            changes.Add("archived");
+            changes.Add(request.IsArchived.Value ? "archived" : "unarchived");
+        }
+
+        // Track image changes
+        var hasNewImages = request.Images != null && request.Images.Any(i => string.IsNullOrEmpty(i.Id));
+        var hasDeletedImages = request.DeletedImageIds != null && request.DeletedImageIds.Count > 0;
+        if (hasNewImages || hasDeletedImages)
+        {
+            changes.Add("images");
         }
 
         // 5. No changes? Return early without creating a version
-        if (changes.Count == 0 &&
-            (request.Images == null || request.Images.Count == 0) &&
-            (request.DeletedImageIds == null || request.DeletedImageIds.Count == 0))
+        if (changes.Count == 0)
         {
             _logger.LogDebug("No changes detected for note {NoteId}", request.NoteId);
             return Result<NoteOperationResult>.Success(
@@ -262,9 +284,11 @@ public class NoteOperationService : INoteOperationService
             if (existingVersionCount == 0)
             {
                 // No version history exists - create initial version capturing the original state
+                // Load current images so they're captured in the initial version
+                note.Images = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
                 _logger.LogInformation(
-                    "Creating initial version for note {NoteId} (no prior history)",
-                    request.NoteId);
+                    "Creating initial version for note {NoteId} (no prior history) with {ImageCount} images",
+                    request.NoteId, note.Images?.Count ?? 0);
                 var initialVersion = await _versionService.CreateInitialVersionAsync(
                     note, request.UserId, cancellationToken);
                 _logger.LogDebug("Created initial version {Version} for note {NoteId}",
@@ -285,6 +309,24 @@ public class NoteOperationService : INoteOperationService
         if (request.Content != null && request.Content != oldContent)
         {
             note.Content = request.Content;
+
+            // Regenerate contentJson from markdown if not explicitly provided
+            // This ensures agent/API updates that only provide markdown get proper JSON
+            if (!request.UpdateContentJson)
+            {
+                note.ContentJson = MarkdownToTipTapConverter.Convert(request.Content);
+                note.ContentFormat = ContentFormat.TipTapJson;
+                _logger.LogDebug("Regenerated contentJson from markdown for note {NoteId}", request.NoteId);
+            }
+        }
+
+        // Update ContentJson if explicitly flagged (UI updates provide both)
+        if (request.UpdateContentJson)
+        {
+            note.ContentJson = request.ContentJson;
+            note.ContentFormat = !string.IsNullOrEmpty(request.ContentJson)
+                ? ContentFormat.TipTapJson
+                : ContentFormat.Markdown;
         }
 
         if (request.Tags != null && !request.Tags.SequenceEqual(oldTags))
@@ -302,24 +344,11 @@ public class NoteOperationService : INoteOperationService
             note.IsArchived = request.IsArchived.Value;
         }
 
-        // 8. Create version snapshot with the NEW state
-        var changeSummary = BuildChangeSummary(changes, request.Source);
-        try
-        {
-            versionNumber = await _versionService.CreateVersionAsync(
-                note, request.UserId, changeSummary, cancellationToken);
-            _logger.LogDebug("Created version {Version} for note {NoteId}", versionNumber, request.NoteId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to create version for note {NoteId}", request.NoteId);
-        }
-
-        // 9. Update source and timestamp
+        // 8. Update source and timestamp
         note.Source = request.Source.ToDbValue();
         note.UpdatedAt = DateTime.UtcNow;
 
-        // 10. Check if summary should be regenerated
+        // 9. Check if summary should be regenerated
         var shouldRegenerate = _summaryService.ShouldRegenerateSummary(
             oldContent, note.Content,
             oldTitle, note.Title,
@@ -338,7 +367,7 @@ public class NoteOperationService : INoteOperationService
                 note.Title, note.Content, note.Tags, cancellationToken);
         }
 
-        // 11. Persist updates
+        // 10. Persist note updates first
         var updatedNote = await _noteRepository.UpdateAsync(request.NoteId, note);
         if (updatedNote == null)
         {
@@ -346,7 +375,7 @@ public class NoteOperationService : INoteOperationService
                 Error.Internal("Failed to update note"));
         }
 
-        // 12. Handle image deletions
+        // 11. Handle image deletions BEFORE creating version
         if (request.DeletedImageIds != null && request.DeletedImageIds.Count > 0)
         {
             foreach (var imageId in request.DeletedImageIds)
@@ -357,7 +386,7 @@ public class NoteOperationService : INoteOperationService
                 request.DeletedImageIds.Count, request.NoteId);
         }
 
-        // 13. Handle new images
+        // 12. Handle new images BEFORE creating version
         if (request.Images != null && request.Images.Count > 0)
         {
             var newImages = request.Images.Where(i => string.IsNullOrEmpty(i.Id)).ToList();
@@ -367,8 +396,22 @@ public class NoteOperationService : INoteOperationService
             }
         }
 
-        // 14. Load images for response
+        // 13. Load images onto note BEFORE creating version (so version captures correct image IDs)
         updatedNote.Images = await _noteImageRepository.GetByNoteIdAsync(request.NoteId, cancellationToken);
+
+        // 14. Create version snapshot with the NEW state (including images)
+        var changeSummary = BuildChangeSummary(changes, request.Source);
+        try
+        {
+            versionNumber = await _versionService.CreateVersionAsync(
+                updatedNote, request.UserId, changeSummary, cancellationToken);
+            _logger.LogDebug("Created version {Version} for note {NoteId} with {ImageCount} images",
+                versionNumber, request.NoteId, updatedNote.Images?.Count ?? 0);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create version for note {NoteId}", request.NoteId);
+        }
 
         _logger.LogInformation(
             "Note updated successfully. NoteId: {NoteId}, Source: {Source}, Changes: {Changes}",
@@ -635,22 +678,29 @@ public class NoteOperationService : INoteOperationService
         if (note.Folder != targetVersion.Folder) changedFields.Add("folder");
         if (note.IsArchived != targetVersion.IsArchived) changedFields.Add("archived");
 
-        // 4. Restore via version service
+        // 4. Update the note's actual content to match the target version
+        note.Title = targetVersion.Title;
+        note.Content = targetVersion.Content;
+        note.Tags = new List<string>(targetVersion.Tags);
+        note.Folder = targetVersion.Folder;
+        note.IsArchived = targetVersion.IsArchived;
+        note.Source = NoteSource.Restored.ToDbValue();
+        note.UpdatedAt = DateTime.UtcNow;
+
+        // Save the updated note first
+        await _noteRepository.UpdateAsync(request.NoteId, note);
+
+        // 5. Create a new version record via version service
         var newVersionNumber = await _versionService.RestoreVersionAsync(
             request.NoteId, request.TargetVersionNumber, request.UserId, cancellationToken);
 
-        // 5. Fetch updated note
+        // Fetch the updated note to return
         var restoredNote = await _noteRepository.GetByIdAsync(request.NoteId);
         if (restoredNote == null)
         {
             return Result<RestoreVersionResult>.Failure(
                 Error.Internal("Note restored but could not be retrieved"));
         }
-
-        // Update the source to indicate restore
-        restoredNote.Source = NoteSource.Restored.ToDbValue();
-        restoredNote.UpdatedAt = DateTime.UtcNow;
-        await _noteRepository.UpdateAsync(request.NoteId, restoredNote);
 
         _logger.LogInformation(
             "Note {NoteId} restored to version {FromVersion}, new version {NewVersion}",
@@ -818,7 +868,7 @@ public class NoteOperationService : INoteOperationService
         var changeList = string.Join(", ", changes);
         var sourceLabel = source switch
         {
-            NoteSource.Agent => " (by AI agent)",
+            NoteSource.Agent => " (by Agent)",
             NoteSource.IosNotes => " (from iOS)",
             NoteSource.Import => " (from import)",
             NoteSource.System => " (system)",

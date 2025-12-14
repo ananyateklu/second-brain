@@ -39,6 +39,10 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
             UserId = request.UserId,
             Title = request.Title,
             Content = request.Content,
+            ContentJson = request.ContentJson?.ValueKind == System.Text.Json.JsonValueKind.Undefined
+                ? null
+                : request.ContentJson?.GetRawText(),
+            UpdateContentJson = request.UpdateContentJson,
             Tags = request.Tags,
             Folder = request.Folder,
             UpdateFolder = request.UpdateFolder,

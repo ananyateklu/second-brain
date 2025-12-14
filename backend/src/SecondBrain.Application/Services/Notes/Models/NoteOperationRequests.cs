@@ -19,9 +19,16 @@ public sealed record CreateNoteOperationRequest
     public required string Title { get; init; }
 
     /// <summary>
-    /// Note content (required).
+    /// Note content (required, markdown format for search and display).
     /// </summary>
     public required string Content { get; init; }
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content.
+    /// This is the canonical format for UI editing - provides consistent
+    /// formatting and eliminates lossy conversions between formats.
+    /// </summary>
+    public string? ContentJson { get; init; }
 
     /// <summary>
     /// Tags for categorization.
@@ -94,9 +101,22 @@ public sealed record UpdateNoteOperationRequest
     public string? Title { get; init; }
 
     /// <summary>
-    /// New content (null = no change).
+    /// New content (null = no change, markdown format for search and display).
     /// </summary>
     public string? Content { get; init; }
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content (null = no change).
+    /// This is the canonical format for UI editing - provides consistent
+    /// formatting and eliminates lossy conversions between formats.
+    /// </summary>
+    public string? ContentJson { get; init; }
+
+    /// <summary>
+    /// If true, the ContentJson value is applied even if null.
+    /// If false and ContentJson is null, no contentJson change occurs.
+    /// </summary>
+    public bool UpdateContentJson { get; init; }
 
     /// <summary>
     /// New tags list (null = no change).

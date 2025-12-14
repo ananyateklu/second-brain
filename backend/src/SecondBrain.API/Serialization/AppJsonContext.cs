@@ -133,6 +133,8 @@ namespace SecondBrain.API.Serialization;
 [JsonSerializable(typeof(Dictionary<string, Dictionary<string, long>>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(System.Text.Json.JsonElement))]
+[JsonSerializable(typeof(System.Text.Json.JsonElement?))]
 // Health check response
 [JsonSerializable(typeof(HealthCheckResponse))]
 [JsonSerializable(typeof(HealthCheckEntry))]

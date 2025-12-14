@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace SecondBrain.Application.DTOs.Responses;
 
 /// <summary>
@@ -36,9 +38,20 @@ public class NoteVersionResponse
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// Note content at this version.
+    /// Note content at this version (markdown format).
     /// </summary>
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content at this version.
+    /// This is the canonical format for comparing versions without format drift.
+    /// </summary>
+    public JsonElement? ContentJson { get; set; }
+
+    /// <summary>
+    /// Content format indicator: "markdown", "html", or "tiptap_json"
+    /// </summary>
+    public string ContentFormat { get; set; } = "markdown";
 
     /// <summary>
     /// Tags at this version.
@@ -69,6 +82,11 @@ public class NoteVersionResponse
     /// Source of the change (e.g., "web", "agent", "ios_notes", "import").
     /// </summary>
     public string Source { get; set; } = "web";
+
+    /// <summary>
+    /// IDs of images attached to the note at this version.
+    /// </summary>
+    public List<string> ImageIds { get; set; } = new();
 
     /// <summary>
     /// When this version record was created.
@@ -148,6 +166,11 @@ public class NoteVersionDiffResponse
     public bool FolderChanged { get; set; }
 
     /// <summary>
+    /// Whether images changed between versions.
+    /// </summary>
+    public bool ImagesChanged { get; set; }
+
+    /// <summary>
     /// Tags that were added.
     /// </summary>
     public List<string> TagsAdded { get; set; } = new();
@@ -156,6 +179,16 @@ public class NoteVersionDiffResponse
     /// Tags that were removed.
     /// </summary>
     public List<string> TagsRemoved { get; set; } = new();
+
+    /// <summary>
+    /// Image IDs that were added.
+    /// </summary>
+    public List<string> ImagesAdded { get; set; } = new();
+
+    /// <summary>
+    /// Image IDs that were removed.
+    /// </summary>
+    public List<string> ImagesRemoved { get; set; } = new();
 }
 
 /// <summary>

@@ -1,4 +1,4 @@
-import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
+import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors, useWatch } from 'react-hook-form';
 import { RichTextEditor } from '../../../components/editor/RichTextEditor';
 import { NoteFormData } from '../hooks/use-note-form';
 import { NoteImageAttachment } from './NoteImageAttachment';
@@ -13,6 +13,8 @@ interface RichNoteFormProps {
   isSubmitting: boolean;
   /** Callback when title changes - for dirty tracking */
   onTitleChange?: (title: string) => void;
+  /** Initial tags from the note entity - passed to editor to display all tags */
+  initialTags?: string[];
   /** New images being added */
   newImages?: FileAttachment[];
   /** Existing images from the note */
@@ -36,6 +38,7 @@ export function RichNoteForm({
   errors,
   isSubmitting,
   onTitleChange,
+  initialTags = [],
   newImages = [],
   existingImages = [],
   deletedImageIds = [],
@@ -46,6 +49,9 @@ export function RichNoteForm({
 }: RichNoteFormProps) {
   // Check if image handling is enabled (callbacks provided)
   const imageHandlingEnabled = !!(onAddImages && onRemoveNewImage);
+
+  // Use useWatch to get reactive contentJson value (updates when form resets)
+  const contentJson = useWatch({ control, name: 'contentJson' });
 
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
@@ -97,8 +103,13 @@ export function RichNoteForm({
             rules={{ required: 'Content is required' }}
             render={({ field }) => (
               <RichTextEditor
-                content={field.value || ''}
-                onChange={field.onChange}
+                contentJson={contentJson}
+                initialTags={initialTags}
+                onChange={(markdown, json) => {
+                  // Update both content (markdown for search) and contentJson (canonical)
+                  field.onChange(markdown);
+                  setValue('contentJson', json, { shouldDirty: true });
+                }}
                 onTagsChange={(tags) => {
                   // Convert array of tags back to comma-separated string for the form
                   setValue('tags', tags.join(', '), { shouldDirty: true });

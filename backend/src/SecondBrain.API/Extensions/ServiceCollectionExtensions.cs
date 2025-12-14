@@ -622,8 +622,16 @@ public static class ServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             // Global rate limiter - applies to all endpoints
+            // Uses NoLimiter in Testing environment to avoid flaky integration tests
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-                RateLimitPartition.GetFixedWindowLimiter(
+            {
+                var environment = context.RequestServices.GetService<IWebHostEnvironment>();
+                if (environment?.EnvironmentName == "Testing")
+                {
+                    return RateLimitPartition.GetNoLimiter(string.Empty);
+                }
+
+                return RateLimitPartition.GetFixedWindowLimiter(
                     partitionKey: GetRateLimitPartitionKey(context),
                     factory: _ => new FixedWindowRateLimiterOptions
                     {
@@ -631,7 +639,8 @@ public static class ServiceCollectionExtensions
                         Window = TimeSpan.FromMinutes(1),
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0
-                    }));
+                    });
+            });
 
             // AI-specific rate limiter - more restrictive for expensive AI operations
             options.AddPolicy("ai-requests", context =>

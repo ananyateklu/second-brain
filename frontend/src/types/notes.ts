@@ -3,6 +3,8 @@
  * Aligned with backend Note DTOs
  */
 
+import type { JSONContent } from '@tiptap/react';
+
 // ============================================
 // Note Source Types (Version Tracking)
 // ============================================
@@ -98,11 +100,21 @@ export interface NoteImage {
 }
 
 /**
+ * Content format indicator from backend
+ */
+export type ContentFormat = 'markdown' | 'html' | 'tiptap_json';
+
+/**
  * Full note entity with content (aligned with backend NoteResponse).
  * Used for get-by-id endpoint where full content is needed.
  */
 export interface Note extends NoteListItem {
+  /** Text content (markdown format for search and display) */
   content: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
+  /** Content format indicator */
+  contentFormat?: ContentFormat;
   userId?: string;
   externalId?: string;
   /** Images attached to this note for multi-modal RAG */
@@ -131,7 +143,10 @@ export interface NoteImageInput {
  */
 export interface CreateNoteRequest {
   title: string;
+  /** Text content (markdown format for search and display) */
   content: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
   tags: string[];
   isArchived: boolean;
   folder?: string;
@@ -145,7 +160,12 @@ export interface CreateNoteRequest {
  */
 export interface UpdateNoteRequest {
   title?: string;
+  /** Text content (markdown format for search and display) */
   content?: string;
+  /** TipTap/ProseMirror JSON representation - canonical format for UI editing */
+  contentJson?: JSONContent | null;
+  /** Set to true to explicitly update contentJson (required to distinguish null from no-change) */
+  updateContentJson?: boolean;
   tags?: string[];
   isArchived?: boolean;
   folder?: string;
@@ -226,7 +246,12 @@ export interface NoteVersion {
   validFrom: string;
   validTo: string | null;
   title: string;
+  /** Text content at this version (markdown format) */
   content: string;
+  /** TipTap/ProseMirror JSON representation at this version */
+  contentJson?: JSONContent | null;
+  /** Content format indicator */
+  contentFormat?: ContentFormat;
   tags: string[];
   isArchived: boolean;
   folder: string | null;
@@ -234,6 +259,8 @@ export interface NoteVersion {
   changeSummary: string | null;
   /** Source of this version (web, agent, ios_notes, import, etc.) */
   source: NoteSource;
+  /** IDs of images attached to the note at this version */
+  imageIds: string[];
   createdAt: string;
 }
 
@@ -259,8 +286,11 @@ export interface NoteVersionDiff {
   tagsChanged: boolean;
   archivedChanged: boolean;
   folderChanged: boolean;
+  imagesChanged: boolean;
   tagsAdded: string[];
   tagsRemoved: string[];
+  imagesAdded: string[];
+  imagesRemoved: string[];
 }
 
 /**

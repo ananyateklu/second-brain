@@ -141,6 +141,8 @@ public class SqlNoteRepository : INoteRepository
             existingNote.ExternalId = note.ExternalId;
             existingNote.Folder = note.Folder;
             existingNote.Summary = note.Summary;
+            existingNote.ContentJson = note.ContentJson;
+            existingNote.ContentFormat = note.ContentFormat;
 
             // Only set UpdatedAt if it hasn't been explicitly provided
             var now = DateTime.UtcNow;

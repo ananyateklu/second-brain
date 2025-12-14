@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace SecondBrain.Application.DTOs.Responses;
 
 /// <summary>
@@ -7,7 +9,23 @@ public sealed class NoteResponse
 {
     public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Text content of the note (markdown format for search and display).
+    /// </summary>
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content.
+    /// This is the canonical format for UI editing - when present, it should be
+    /// preferred over Content for editing to avoid lossy format conversions.
+    /// </summary>
+    public JsonElement? ContentJson { get; set; }
+
+    /// <summary>
+    /// Content format indicator: "markdown", "html", or "tiptap_json"
+    /// </summary>
+    public string ContentFormat { get; set; } = "markdown";
 
     /// <summary>
     /// AI-generated summary of the note (considering title, tags, and content).

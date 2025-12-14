@@ -77,6 +77,55 @@ const mockIndexingStats = {
   lastIndexedAt: '2024-01-15T12:00:00Z',
 };
 
+// Mock version history data for note versioning tests
+const mockVersionHistory = [
+  {
+    versionNumber: 3,
+    isCurrent: true,
+    validFrom: '2024-01-03T12:00:00Z',
+    validTo: null,
+    title: 'Updated Title v3',
+    content: 'Updated content v3',
+    tags: ['work', 'important', 'updated'],
+    isArchived: false,
+    folder: 'Projects',
+    modifiedBy: 'user-123',
+    changeSummary: 'Updated: title, content, tags',
+    source: 'web',
+    createdAt: '2024-01-03T12:00:00Z',
+  },
+  {
+    versionNumber: 2,
+    isCurrent: false,
+    validFrom: '2024-01-02T12:00:00Z',
+    validTo: '2024-01-03T12:00:00Z',
+    title: 'Updated Title v2',
+    content: 'Updated content v2',
+    tags: ['work', 'important'],
+    isArchived: false,
+    folder: null,
+    modifiedBy: 'user-123',
+    changeSummary: 'Updated: title, content',
+    source: 'agent',
+    createdAt: '2024-01-02T12:00:00Z',
+  },
+  {
+    versionNumber: 1,
+    isCurrent: false,
+    validFrom: '2024-01-01T12:00:00Z',
+    validTo: '2024-01-02T12:00:00Z',
+    title: 'First Note',
+    content: 'Content of first note',
+    tags: ['work', 'important'],
+    isArchived: false,
+    folder: null,
+    modifiedBy: 'user-123',
+    changeSummary: 'Initial version',
+    source: 'web',
+    createdAt: '2024-01-01T12:00:00Z',
+  },
+];
+
 const mockRagAnalytics = {
   totalQueries: 100,
   queriesWithFeedback: 25,
@@ -156,6 +205,94 @@ export const handlers = [
   http.post(`${API_BASE}/notes/bulk-delete`, async ({ request }) => {
     const body = await request.json() as { noteIds: string[] };
     return HttpResponse.json({ deletedCount: body.noteIds.length });
+  }),
+
+  // ============================================
+  // Note Version History Endpoints
+  // ============================================
+  http.get(`${API_BASE}/notes/:id/versions`, ({ params }) => {
+    const noteId = params.id as string;
+    const note = mockNotes.find((n) => n.id === noteId);
+    if (!note) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json({
+      noteId,
+      totalVersions: 3,
+      currentVersion: 3,
+      versions: mockVersionHistory.map((v) => ({ ...v, noteId })),
+    });
+  }),
+
+  http.get(`${API_BASE}/notes/:id/versions/at`, ({ params, request }) => {
+    const noteId = params.id as string;
+    const url = new URL(request.url);
+    const timestamp = url.searchParams.get('timestamp');
+    if (!timestamp) {
+      return new HttpResponse(null, { status: 400 });
+    }
+    const note = mockNotes.find((n) => n.id === noteId);
+    if (!note) {
+      return new HttpResponse(null, { status: 404 });
+    }
+    // Return version 1 for any timestamp query
+    return HttpResponse.json({
+      ...mockVersionHistory[2],
+      noteId,
+    });
+  }),
+
+  http.get(`${API_BASE}/notes/:id/versions/diff`, ({ params, request }) => {
+    const noteId = params.id as string;
+    const url = new URL(request.url);
+    const fromVersion = parseInt(url.searchParams.get('fromVersion') || '1');
+    const toVersion = parseInt(url.searchParams.get('toVersion') || '2');
+
+    const note = mockNotes.find((n) => n.id === noteId);
+    if (!note) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const from = mockVersionHistory.find((v) => v.versionNumber === fromVersion);
+    const to = mockVersionHistory.find((v) => v.versionNumber === toVersion);
+
+    if (!from || !to) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    return HttpResponse.json({
+      noteId,
+      fromVersion: { ...from, noteId },
+      toVersion: { ...to, noteId },
+      titleChanged: from.title !== to.title,
+      contentChanged: from.content !== to.content,
+      tagsChanged: JSON.stringify(from.tags) !== JSON.stringify(to.tags),
+      archivedChanged: from.isArchived !== to.isArchived,
+      folderChanged: from.folder !== to.folder,
+      tagsAdded: to.tags.filter((t: string) => !from.tags.includes(t)),
+      tagsRemoved: from.tags.filter((t: string) => !to.tags.includes(t)),
+    });
+  }),
+
+  http.post(`${API_BASE}/notes/:id/versions/restore`, async ({ params, request }) => {
+    const noteId = params.id as string;
+    const body = await request.json() as { targetVersion: number };
+
+    const note = mockNotes.find((n) => n.id === noteId);
+    if (!note) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    const targetVersionData = mockVersionHistory.find((v) => v.versionNumber === body.targetVersion);
+    if (!targetVersionData) {
+      return new HttpResponse(null, { status: 404 });
+    }
+
+    return HttpResponse.json({
+      message: `Note restored to version ${body.targetVersion}`,
+      newVersionNumber: 4,
+      noteId,
+    });
   }),
 
   // ============================================
@@ -410,5 +547,5 @@ export const handlers = [
   }),
 ];
 
-export { mockNotes, mockUser, mockConversations, mockAIProviders, mockIndexingStats, mockRagAnalytics };
+export { mockNotes, mockUser, mockConversations, mockAIProviders, mockIndexingStats, mockRagAnalytics, mockVersionHistory };
 

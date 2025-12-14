@@ -89,9 +89,12 @@ export function EditNoteModal() {
     await moveToFolderMutation.mutateAsync({ id: editingNote.id, folder });
   };
 
-  // Track the saved form state to compute dirty status manually
+  // Compute the saved form baseline from editingNote
   // This is more reliable than react-hook-form's isDirty after reset()
-  const [savedFormData, setSavedFormData] = useState<{ title: string; content: string; tags: string } | null>(null);
+  const savedFormData = useMemo(() => {
+    if (!editingNote || !isOpen) return null;
+    return noteToFormData(editingNote);
+  }, [editingNote, isOpen]);
 
   // Track current title separately to ensure re-renders on title changes
   // This is needed because react-hook-form's register() doesn't always trigger re-renders
@@ -118,8 +121,6 @@ export function EditNoteModal() {
       // Reset form with the updated note data as new baseline
       if (updatedNote) {
         const newFormData = noteToFormData(updatedNote);
-        // Update our saved state to track the new baseline
-        setSavedFormData({ ...newFormData });
         setCurrentTitle(newFormData.title);
         // Reset form to new values
         reset(newFormData, { keepDefaultValues: false });
@@ -131,12 +132,14 @@ export function EditNoteModal() {
 
   // Compute dirty state by comparing current values to saved baseline
   // Use currentTitle (React state) for title, watchedValues for content/tags
+  // Also include image changes (new uploads or deletions)
   let isDirty = rhfIsDirty;
   if (savedFormData && watchedValues) {
     const titleDirty = currentTitle !== savedFormData.title;
     const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
     const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
-    isDirty = titleDirty || contentDirty || tagsDirty;
+    const hasImageChanges = newImages.length > 0 || deletedImageIds.length > 0;
+    isDirty = titleDirty || contentDirty || tagsDirty || hasImageChanges;
   }
 
   // Image handlers
@@ -175,9 +178,8 @@ export function EditNoteModal() {
       if (shouldReset) {
         lastNoteStateRef.current = currentState;
         const formData = noteToFormData(editingNote);
-        // Update our saved state for manual dirty tracking
-        setSavedFormData({ ...formData });
-        setCurrentTitle(formData.title);
+        // Defer state update to avoid cascading renders warning
+        queueMicrotask(() => setCurrentTitle(formData.title));
         reset(formData, {
           keepDefaultValues: false,
         });
@@ -186,8 +188,7 @@ export function EditNoteModal() {
     // Clear state when modal closes so next open resets properly
     if (!isOpen) {
       lastNoteStateRef.current = null;
-      setSavedFormData(null);
-      setCurrentTitle('');
+      queueMicrotask(() => setCurrentTitle(''));
     }
   }, [editingNote, isOpen, reset]);
 
@@ -217,6 +218,7 @@ export function EditNoteModal() {
     reset({
       title: '',
       content: '',
+      contentJson: null,
       tags: '',
     });
     setNewImages([]);
@@ -517,6 +519,7 @@ export function EditNoteModal() {
             errors={errors}
             isSubmitting={isSubmitting}
             onTitleChange={setCurrentTitle}
+            initialTags={editingNote?.tags ?? []}
             newImages={newImages}
             existingImages={editingNote?.images}
             deletedImageIds={deletedImageIds}

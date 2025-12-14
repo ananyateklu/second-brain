@@ -212,7 +212,7 @@ BEGIN
     RAISE NOTICE '';
     RAISE NOTICE 'Source values:';
     RAISE NOTICE '  - web: Created/edited via web UI';
-    RAISE NOTICE '  - agent: Created/edited by AI agent';
+    RAISE NOTICE '  - agent: Created/edited by Agent';
     RAISE NOTICE '  - ios_notes: Imported from iOS Notes';
     RAISE NOTICE '  - import: Generic import source';
     RAISE NOTICE '============================================';

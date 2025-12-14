@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MediatR;
 using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
@@ -15,5 +16,6 @@ public record CreateNoteCommand(
     bool IsArchived,
     string? Folder,
     string UserId,
-    List<NoteImageDto>? Images = null
+    List<NoteImageDto>? Images = null,
+    JsonElement? ContentJson = null
 ) : IRequest<Result<NoteResponse>>;

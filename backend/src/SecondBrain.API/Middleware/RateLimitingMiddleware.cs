@@ -31,12 +31,13 @@ public class RateLimitingMiddleware
     private const int MaxRequestsPer15Minutes = 300;
     private const int CleanupIntervalMinutes = 5;
 
-    // Localhost/loopback addresses to skip rate limiting in development
+    // Localhost/loopback addresses to skip rate limiting in development/testing
     private static readonly HashSet<string> LocalhostAddresses = new(StringComparer.OrdinalIgnoreCase)
     {
         "127.0.0.1",
         "::1",
-        "localhost"
+        "localhost",
+        "unknown"  // Used in integration tests where RemoteIpAddress is null
     };
 
     private static DateTime _lastCleanup = DateTime.UtcNow;
@@ -55,6 +56,14 @@ public class RateLimitingMiddleware
         // Skip rate limiting for health checks
         if (context.Request.Path.StartsWithSegments("/api/health"))
         {
+            await _next(context);
+            return;
+        }
+
+        // Skip rate limiting in Testing environment entirely (integration tests)
+        if (_environment.EnvironmentName == "Testing")
+        {
+            _logger.LogDebug("Rate limiting skipped for Testing environment");
             await _next(context);
             return;
         }

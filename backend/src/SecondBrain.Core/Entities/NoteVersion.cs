@@ -44,10 +44,23 @@ public class NoteVersion
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// Note content at this version.
+    /// Note content at this version (markdown format for search and display).
     /// </summary>
     [Column("content")]
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>
+    /// TipTap/ProseMirror JSON representation of the note content at this version.
+    /// This is the canonical format for comparing versions without format drift.
+    /// </summary>
+    [Column("content_json", TypeName = "jsonb")]
+    public string? ContentJson { get; set; }
+
+    /// <summary>
+    /// Content format indicator at this version.
+    /// </summary>
+    [Column("content_format")]
+    public ContentFormat ContentFormat { get; set; } = ContentFormat.Markdown;
 
     /// <summary>
     /// Tags associated with this version.
@@ -97,6 +110,13 @@ public class NoteVersion
     public string Source { get; set; } = "web";
 
     /// <summary>
+    /// IDs of images attached to the note at this version.
+    /// Tracks which images existed when this version was created.
+    /// </summary>
+    [Column("image_ids", TypeName = "text[]")]
+    public List<string> ImageIds { get; set; } = new();
+
+    /// <summary>
     /// When this version record was created.
     /// </summary>
     [Column("created_at")]
@@ -140,6 +160,8 @@ public class NoteVersion
             ValidPeriod = CreateOpenEndedRange(DateTime.UtcNow),
             Title = note.Title,
             Content = note.Content,
+            ContentJson = note.ContentJson,
+            ContentFormat = note.ContentFormat,
             Tags = new List<string>(note.Tags),
             IsArchived = note.IsArchived,
             Folder = note.Folder,
@@ -147,6 +169,7 @@ public class NoteVersion
             VersionNumber = versionNumber,
             ChangeSummary = changeSummary,
             Source = source ?? note.Source ?? "web",
+            ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
             CreatedAt = DateTime.UtcNow
         };
     }

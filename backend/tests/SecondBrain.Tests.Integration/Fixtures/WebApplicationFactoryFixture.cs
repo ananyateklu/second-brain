@@ -142,9 +142,100 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Database.EnsureCreated();
 
+            // Apply versioning stored procedures (not created by EF Core)
+            ApplyVersioningSchema(dbContext).GetAwaiter().GetResult();
+
             // Seed test data
             SeedTestData(dbContext).GetAwaiter().GetResult();
         });
+    }
+
+    /// <summary>
+    /// Applies versioning stored procedures that are not created by EF Core migrations.
+    /// This includes the note version functions required for temporal versioning.
+    /// </summary>
+    private async Task ApplyVersioningSchema(ApplicationDbContext dbContext)
+    {
+        try
+        {
+            // Always create/replace the versioning function
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                CREATE OR REPLACE FUNCTION create_note_version(
+                    p_note_id TEXT,
+                    p_title VARCHAR(500),
+                    p_content TEXT,
+                    p_tags TEXT[],
+                    p_is_archived BOOLEAN,
+                    p_folder VARCHAR(256),
+                    p_modified_by VARCHAR(128),
+                    p_change_summary VARCHAR(500) DEFAULT NULL,
+                    p_source VARCHAR(50) DEFAULT 'web'
+                )
+                RETURNS INT AS $$
+                DECLARE
+                    v_new_version_number INT;
+                    v_now TIMESTAMP WITH TIME ZONE := NOW();
+                BEGIN
+                    -- Get the next version number
+                    SELECT COALESCE(MAX(version_number), 0) + 1
+                    INTO v_new_version_number
+                    FROM note_versions
+                    WHERE note_id = p_note_id;
+
+                    -- Close the current version (set end time)
+                    UPDATE note_versions
+                    SET valid_period = tstzrange(lower(valid_period), v_now, '[)')
+                    WHERE note_id = p_note_id
+                      AND upper_inf(valid_period);
+
+                    -- Insert the new version
+                    INSERT INTO note_versions (
+                        id,
+                        note_id,
+                        valid_period,
+                        title,
+                        content,
+                        tags,
+                        is_archived,
+                        folder,
+                        modified_by,
+                        version_number,
+                        change_summary,
+                        source,
+                        created_at
+                    ) VALUES (
+                        gen_random_uuid()::text,
+                        p_note_id,
+                        tstzrange(v_now, NULL, '[)'),
+                        p_title,
+                        p_content,
+                        p_tags,
+                        p_is_archived,
+                        p_folder,
+                        p_modified_by,
+                        v_new_version_number,
+                        p_change_summary,
+                        p_source,
+                        v_now
+                    );
+
+                    RETURN v_new_version_number;
+                END;
+                $$ LANGUAGE plpgsql;
+            ");
+
+            // Also ensure the note_versions table has proper exclusion constraint
+            // (EF Core may not create the GIST index properly)
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                CREATE EXTENSION IF NOT EXISTS btree_gist;
+            ");
+        }
+        catch (Exception ex)
+        {
+            // Log the error - this is critical for versioning to work
+            Console.WriteLine($"WARNING: Version schema setup failed: {ex.Message}");
+            throw; // Re-throw to fail fast if versioning isn't properly set up
+        }
     }
 
     private async Task SeedTestData(ApplicationDbContext dbContext)
@@ -231,7 +322,9 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
         using var scope = Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-        // Clear all tables except users
+        // Clear note versions first (FK constraint)
+        dbContext.NoteVersions.RemoveRange(dbContext.NoteVersions);
+        // Clear notes
         dbContext.Notes.RemoveRange(dbContext.Notes);
         dbContext.ChatConversations.RemoveRange(dbContext.ChatConversations);
         await dbContext.SaveChangesAsync();

@@ -5,7 +5,7 @@ import type { PaginatedResult } from '../../../types/api';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 import { NOTES_FOLDERS } from '../../../lib/constants';
-import { noteKeys, type NotePaginationParams } from '../../../lib/query-keys';
+import { noteKeys, noteVersionKeys, type NotePaginationParams } from '../../../lib/query-keys';
 
 // Type aliases for backward compatibility
 type CreateNoteInput = CreateNoteRequest;
@@ -161,6 +161,8 @@ export function useUpdateNote() {
         // Refetch to ensure consistency
         void queryClient.invalidateQueries({ queryKey: noteKeys.all });
         void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
+        // Invalidate version history so the UI shows the new version immediately
+        void queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(id) });
       },
     }
   );
@@ -266,6 +268,8 @@ export function useArchiveNote() {
         // Refetch to ensure consistency
         void queryClient.invalidateQueries({ queryKey: noteKeys.all });
         void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
+        // Invalidate version history since archiving creates a new version
+        void queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(id) });
       },
     }
   );
@@ -334,6 +338,8 @@ export function useUnarchiveNote() {
         // Refetch to ensure consistency
         void queryClient.invalidateQueries({ queryKey: noteKeys.all });
         void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
+        // Invalidate version history since unarchiving creates a new version
+        void queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(id) });
       },
     }
   );

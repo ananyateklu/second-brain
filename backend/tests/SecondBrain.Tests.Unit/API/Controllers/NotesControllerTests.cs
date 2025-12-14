@@ -22,6 +22,7 @@ public class NotesControllerTests
 {
     private readonly Mock<IMediator> _mockMediator;
     private readonly Mock<INoteVersionService> _mockVersionService;
+    private readonly Mock<INoteOperationService> _mockNoteOperationService;
     private readonly Mock<INoteSummaryService> _mockSummaryService;
     private readonly Mock<ISummaryGenerationBackgroundService> _mockSummaryBackgroundService;
     private readonly Mock<INoteRepository> _mockNoteRepository;
@@ -34,6 +35,7 @@ public class NotesControllerTests
     {
         _mockMediator = new Mock<IMediator>();
         _mockVersionService = new Mock<INoteVersionService>();
+        _mockNoteOperationService = new Mock<INoteOperationService>();
         _mockSummaryService = new Mock<INoteSummaryService>();
         _mockSummaryBackgroundService = new Mock<ISummaryGenerationBackgroundService>();
         _mockNoteRepository = new Mock<INoteRepository>();
@@ -43,6 +45,7 @@ public class NotesControllerTests
         _sut = new NotesController(
             _mockMediator.Object,
             _mockVersionService.Object,
+            _mockNoteOperationService.Object,
             _mockSummaryService.Object,
             _mockSummaryBackgroundService.Object,
             _mockNoteRepository.Object,

@@ -173,7 +173,7 @@ public enum NoteSource
     Web,
 
     /// <summary>
-    /// Created/modified by AI agent
+    /// Created/modified by Agent
     /// </summary>
     Agent,
 
@@ -658,7 +658,7 @@ public class NoteOperationService : INoteOperationService
     {
         var sourceLabel = source switch
         {
-            NoteSource.Agent => " (by AI agent)",
+            NoteSource.Agent => " (by Agent)",
             NoteSource.IosNotes => " (from iOS)",
             NoteSource.Import => " (from import)",
             _ => ""

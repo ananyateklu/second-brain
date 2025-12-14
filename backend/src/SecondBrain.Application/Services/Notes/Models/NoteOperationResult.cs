@@ -33,7 +33,7 @@ public sealed record NoteOperationResult
 
     /// <summary>
     /// Human-readable summary of the changes.
-    /// e.g., "Updated: title, content (by AI agent)"
+    /// e.g., "Updated: title, content ()"
     /// </summary>
     public string? ChangeSummary { get; init; }
 
@@ -235,7 +235,7 @@ public static class NoteOperationResultFactory
 
     private static string GetSourceSuffix(NoteSource source) => source switch
     {
-        NoteSource.Agent => " (by AI agent)",
+        NoteSource.Agent => " (by Agent)",
         NoteSource.IosNotes => " (from iOS)",
         NoteSource.Import => " (from import)",
         NoteSource.System => " (system)",

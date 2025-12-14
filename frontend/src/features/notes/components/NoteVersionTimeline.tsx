@@ -43,6 +43,14 @@ function getChangeIcon(changeSummary: string | null) {
     );
   }
 
+  if (summary.includes('image')) {
+    return (
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    );
+  }
+
   if (summary.includes('title')) {
     return (
       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -91,24 +99,6 @@ function getChangeIcon(changeSummary: string | null) {
   );
 }
 
-// Parse change summary to get badge types
-function getChangeBadges(changeSummary: string | null): string[] {
-  if (!changeSummary) return [];
-
-  const summary = changeSummary.toLowerCase();
-  const badges: string[] = [];
-
-  if (summary.includes('title')) badges.push('title');
-  if (summary.includes('content')) badges.push('content');
-  if (summary.includes('tags')) badges.push('tags');
-  if (summary.includes('archived')) badges.push('archived');
-  if (summary.includes('folder')) badges.push('folder');
-  if (summary.includes('initial')) badges.push('created');
-  if (summary.includes('restored')) badges.push('restored');
-
-  return badges;
-}
-
 // Badge colors
 function getBadgeStyle(badge: string): { bg: string; text: string } {
   switch (badge) {
@@ -122,6 +112,8 @@ function getBadgeStyle(badge: string): { bg: string; text: string } {
       return { bg: 'var(--surface-elevated)', text: 'var(--text-secondary)' };
     case 'folder':
       return { bg: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)', text: 'var(--color-brand-500)' };
+    case 'images':
+      return { bg: 'color-mix(in srgb, var(--color-accent-teal) 15%, transparent)', text: 'var(--color-accent-teal)' };
     case 'created':
       return { bg: 'color-mix(in srgb, var(--color-success) 15%, transparent)', text: 'var(--color-success)' };
     case 'restored':
@@ -129,6 +121,76 @@ function getBadgeStyle(badge: string): { bg: string; text: string } {
     default:
       return { bg: 'var(--surface-elevated)', text: 'var(--text-secondary)' };
   }
+}
+
+// Highlight keywords in change summary with badge styling
+function renderStyledSummary(summary: string) {
+  // Sort keywords by length (longest first) to avoid overlapping matches
+  const keywords = ['archived', 'content', 'folder', 'images', 'title', 'image', 'tags', 'unarchived', 'restored' ];
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  const summaryLower = summary.toLowerCase();
+
+  // Find all keyword positions
+  const matches: { index: number; keyword: string; endIndex: number }[] = [];
+  keywords.forEach(keyword => {
+    let idx = summaryLower.indexOf(keyword, 0);
+    while (idx !== -1) {
+      matches.push({ index: idx, keyword, endIndex: idx + keyword.length });
+      idx = summaryLower.indexOf(keyword, idx + 1);
+    }
+  });
+
+  // Sort by position, then by length (longer matches first)
+  matches.sort((a, b) => {
+    if (a.index !== b.index) return a.index - b.index;
+    return (b.endIndex - b.index) - (a.endIndex - a.index);
+  });
+
+  // Remove overlapping matches (keep the first/longest one at each position)
+  const filteredMatches: { index: number; keyword: string; endIndex: number }[] = [];
+  let lastEndIndex = -1;
+  matches.forEach(match => {
+    if (match.index >= lastEndIndex) {
+      filteredMatches.push(match);
+      lastEndIndex = match.endIndex;
+    }
+  });
+
+  // Build styled parts
+  filteredMatches.forEach(({ index, keyword, endIndex }, i) => {
+    // Add text before keyword
+    if (index > lastIndex) {
+      parts.push(summary.substring(lastIndex, index));
+    }
+
+    // Add styled keyword
+    const actualText = summary.substring(index, endIndex);
+    const badgeType = keyword === 'image' ? 'images' : keyword;
+    const style = getBadgeStyle(badgeType);
+
+    parts.push(
+      <span
+        key={`${keyword}-${i}`}
+        className="text-[9px] px-1.5 py-0.5 rounded-full font-medium mx-0.5"
+        style={{
+          backgroundColor: style.bg,
+          color: style.text,
+        }}
+      >
+        {actualText}
+      </span>
+    );
+
+    lastIndex = endIndex;
+  });
+
+  // Add remaining text
+  if (lastIndex < summary.length) {
+    parts.push(summary.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : summary;
 }
 
 // Get source display info
@@ -205,7 +267,6 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
       <div className="space-y-0.5">
         {versions.map((version, index) => {
           const isCurrent = version.versionNumber === currentVersion;
-          const badges = getChangeBadges(version.changeSummary);
 
           return (
             <div
@@ -285,36 +346,15 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       {getChangeIcon(version.changeSummary)}
                     </div>
                     <p
-                      className="text-[10px] leading-relaxed"
+                      className="text-[10px] leading-relaxed flex flex-wrap items-center"
                       style={{ color: 'var(--text-secondary)' }}
                     >
-                      {version.changeSummary}
+                      {renderStyledSummary(version.changeSummary)}
                     </p>
                   </div>
                 )}
 
-                {/* Change badges */}
-                {badges.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-1.5">
-                    {badges.map((badge) => {
-                      const style = getBadgeStyle(badge);
-                      return (
-                        <span
-                          key={badge}
-                          className="text-[9px] px-1.5 py-0.5 rounded-full font-medium capitalize"
-                          style={{
-                            backgroundColor: style.bg,
-                            color: style.text,
-                          }}
-                        >
-                          {badge}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Source and Modified by */}
+                {/* Source, Images, and Modified by */}
                 <div className="flex items-center gap-2 mb-2">
                   {/* Source badge */}
                   {(() => {
@@ -333,6 +373,23 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       </div>
                     );
                   })()}
+
+                  {/* Image count indicator */}
+                  {version.imageIds && version.imageIds.length > 0 && (
+                    <div
+                      className="flex items-center gap-1 text-[9px] px-1 py-0.5 rounded-md"
+                      style={{
+                        backgroundColor: 'color-mix(in srgb, var(--color-accent-teal) 12%, transparent)',
+                        color: 'var(--color-accent-teal)',
+                      }}
+                      title={`${version.imageIds.length} image${version.imageIds.length !== 1 ? 's' : ''} attached`}
+                    >
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="font-medium">{version.imageIds.length}</span>
+                    </div>
+                  )}
 
                   {/* Modified by */}
                   <div className="flex items-center gap-1">
