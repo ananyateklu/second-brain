@@ -264,6 +264,22 @@ export interface ChatMessage {
   deepSearchResult?: GrokDeepSearchResult;
   /** Grok thinking steps from Think Mode (Grok only) */
   grokThinkingSteps?: GrokThinkingStep[];
+  /** Persisted thinking steps with individual timestamps (agent mode) */
+  thinkingSteps?: PersistedThinkingStep[];
+}
+
+/**
+ * Persisted thinking step with individual timestamp
+ * Stored in database to preserve chronological display order after streaming ends
+ */
+export interface PersistedThinkingStep {
+  id: string;
+  stepNumber: number;
+  content: string;
+  startedAt: string;
+  completedAt?: string;
+  durationMs?: number;
+  modelSource?: string;
 }
 
 /**

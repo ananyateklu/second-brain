@@ -859,7 +859,7 @@ export interface NoteVersion {
 // Helper for display
 export const NOTE_SOURCE_DISPLAY: Record<NoteSource, { label: string; icon: string; color: string }> = {
   web: { label: 'Web UI', icon: 'globe', color: 'brand' },
-  agent: { label: 'AI Agent', icon: 'cpu', color: 'purple' },
+  agent: { label: 'Agent', icon: 'cpu', color: 'purple' },
   ios_notes: { label: 'iOS Import', icon: 'smartphone', color: 'blue' },
   import: { label: 'Imported', icon: 'download', color: 'green' },
   system: { label: 'System', icon: 'settings', color: 'gray' },

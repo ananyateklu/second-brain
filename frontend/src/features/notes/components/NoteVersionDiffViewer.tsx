@@ -19,7 +19,7 @@ function getSourceLabel(source: string): string {
     case 'web':
       return 'Web UI';
     case 'agent':
-      return 'AI Agent';
+      return 'Agent';
     case 'ios_notes':
       return 'iOS Import';
     case 'import':

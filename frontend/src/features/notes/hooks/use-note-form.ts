@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Note } from '../types/note';
 
 export interface NoteFormData {
@@ -18,7 +18,9 @@ export function useNoteForm({ defaultValues, onSubmit }: UseNoteFormOptions) {
     handleSubmit,
     control,
     setValue,
-    formState: { errors, isSubmitting, isDirty },
+    watch,
+    getValues,
+    formState: { errors, isSubmitting, isDirty, dirtyFields, defaultValues: formDefaultValues },
     reset,
   } = useForm<NoteFormData>({
     defaultValues: {
@@ -32,15 +34,31 @@ export function useNoteForm({ defaultValues, onSubmit }: UseNoteFormOptions) {
     await onSubmit(data);
   });
 
+  // useWatch subscribes to form changes and triggers re-renders
+  // This is more reliable than watch() for detecting field changes
+  const watchedTitle = useWatch({ control, name: 'title' });
+  const watchedContent = useWatch({ control, name: 'content' });
+  const watchedTags = useWatch({ control, name: 'tags' });
+
   return {
     register,
     control,
     setValue,
+    watch,
+    getValues,
     handleSubmit: onSubmitWrapper,
     errors,
     isSubmitting,
     isDirty,
+    dirtyFields,
+    formDefaultValues,
     reset,
+    // Expose watched values for reliable dirty tracking
+    watchedValues: {
+      title: watchedTitle,
+      content: watchedContent,
+      tags: watchedTags,
+    },
   };
 }
 

@@ -29,7 +29,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('initial')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
       </svg>
     );
@@ -37,7 +37,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('restored')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
       </svg>
     );
@@ -45,7 +45,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('title')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10" />
       </svg>
     );
@@ -53,7 +53,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('content')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
       </svg>
     );
@@ -61,7 +61,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('tags')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
       </svg>
     );
@@ -69,7 +69,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('archived')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
       </svg>
     );
@@ -77,7 +77,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   if (summary.includes('folder')) {
     return (
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
       </svg>
     );
@@ -85,7 +85,7 @@ function getChangeIcon(changeSummary: string | null) {
 
   // Default edit icon
   return (
-    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   );
@@ -138,7 +138,7 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
       return {
         label: 'Web',
         icon: (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
           </svg>
         ),
@@ -146,9 +146,9 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
       };
     case 'agent':
       return {
-        label: 'AI Agent',
+        label: 'Agent',
         icon: (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         ),
@@ -158,7 +158,7 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
       return {
         label: 'iOS Import',
         icon: (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
         ),
@@ -168,7 +168,7 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
       return {
         label: 'Imported',
         icon: (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
         ),
@@ -178,7 +178,7 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
       return {
         label: source || 'Unknown',
         icon: (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
@@ -198,11 +198,11 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
     <div className="relative">
       {/* Main timeline line */}
       <div
-        className="absolute left-[15px] top-6 bottom-6 w-[2px] rounded-full"
+        className="absolute left-[11px] top-3 bottom-3 w-[2px] rounded-full"
         style={{ backgroundColor: 'var(--border)' }}
       />
 
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {versions.map((version, index) => {
           const isCurrent = version.versionNumber === currentVersion;
           const badges = getChangeBadges(version.changeSummary);
@@ -210,25 +210,24 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
           return (
             <div
               key={version.versionNumber}
-              className="relative pl-10 py-3 group"
+              className="relative pl-9 py-1.5 group"
               style={{
                 animation: `fadeInSlideUp 0.3s ease-out ${index * 0.05}s both`,
               }}
             >
               {/* Timeline dot */}
               <div
-                className={`absolute left-[8px] top-4 w-[16px] h-[16px] rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                  isCurrent ? 'scale-110' : 'group-hover:scale-110'
-                }`}
+                className={`absolute left-[6px] top-2.5 w-[12px] h-[12px] rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isCurrent ? 'scale-110' : 'group-hover:scale-110'
+                  }`}
                 style={{
                   backgroundColor: isCurrent ? 'var(--color-brand-600)' : 'var(--surface-card)',
                   borderColor: isCurrent ? 'var(--color-brand-600)' : 'var(--border)',
-                  boxShadow: isCurrent ? '0 0 0 4px color-mix(in srgb, var(--color-brand-600) 20%, transparent)' : 'none',
+                  boxShadow: isCurrent ? '0 0 0 3px color-mix(in srgb, var(--color-brand-600) 20%, transparent)' : 'none',
                 }}
               >
                 {isCurrent && (
                   <div
-                    className="w-[6px] h-[6px] rounded-full animate-pulse"
+                    className="w-[4px] h-[4px] rounded-full animate-pulse"
                     style={{ backgroundColor: 'white' }}
                   />
                 )}
@@ -236,7 +235,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
 
               {/* Version card */}
               <div
-                className="rounded-xl p-3 transition-all duration-200 group-hover:shadow-md"
+                className="rounded-lg p-2 transition-all duration-200 group-hover:shadow-md"
                 style={{
                   backgroundColor: isCurrent
                     ? 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-card))'
@@ -247,17 +246,17 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                 }}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
                     <span
-                      className="text-sm font-semibold"
+                      className="text-xs font-semibold"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       Version {version.versionNumber}
                     </span>
                     {isCurrent && (
                       <span
-                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                        className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
                         style={{
                           backgroundColor: 'var(--color-brand-600)',
                           color: 'white',
@@ -268,7 +267,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     )}
                   </div>
                   <span
-                    className="text-xs"
+                    className="text-[10px]"
                     style={{ color: 'var(--text-tertiary)' }}
                     title={format(new Date(version.validFrom), 'PPpp')}
                   >
@@ -278,7 +277,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
 
                 {/* Change summary with icon */}
                 {version.changeSummary && (
-                  <div className="flex items-start gap-2 mb-2">
+                  <div className="flex items-start gap-1.5 mb-1.5">
                     <div
                       className="flex-shrink-0 mt-0.5"
                       style={{ color: 'var(--text-tertiary)' }}
@@ -286,7 +285,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       {getChangeIcon(version.changeSummary)}
                     </div>
                     <p
-                      className="text-xs leading-relaxed"
+                      className="text-[10px] leading-relaxed"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {version.changeSummary}
@@ -296,13 +295,13 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
 
                 {/* Change badges */}
                 {badges.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
+                  <div className="flex flex-wrap gap-1 mb-1.5">
                     {badges.map((badge) => {
                       const style = getBadgeStyle(badge);
                       return (
                         <span
                           key={badge}
-                          className="text-[10px] px-2 py-0.5 rounded-full font-medium capitalize"
+                          className="text-[9px] px-1.5 py-0.5 rounded-full font-medium capitalize"
                           style={{
                             backgroundColor: style.bg,
                             color: style.text,
@@ -316,13 +315,13 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                 )}
 
                 {/* Source and Modified by */}
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-2 mb-2">
                   {/* Source badge */}
                   {(() => {
                     const sourceInfo = getSourceInfo(version.source);
                     return (
                       <div
-                        className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md"
+                        className="flex items-center gap-1 text-[9px] px-1 py-0.5 rounded-md"
                         style={{
                           backgroundColor: `color-mix(in srgb, ${sourceInfo.color} 12%, transparent)`,
                           color: sourceInfo.color,
@@ -338,7 +337,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                   {/* Modified by */}
                   <div className="flex items-center gap-1">
                     <svg
-                      className="w-3 h-3"
+                      className="w-2.5 h-2.5"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -352,7 +351,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       />
                     </svg>
                     <span
-                      className="text-[10px] truncate"
+                      className="text-[9px] truncate"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
                       {version.modifiedBy || 'Unknown'}
@@ -362,10 +361,10 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
 
                 {/* Actions */}
                 {!isCurrent && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => { onCompare(version.versionNumber, currentVersion); }}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                       style={{
                         backgroundColor: 'var(--surface-elevated)',
                         color: 'var(--text-secondary)',
@@ -381,7 +380,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       }}
                     >
                       <svg
-                        className="w-3.5 h-3.5"
+                        className="w-3 h-3"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -398,7 +397,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     <button
                       onClick={() => { onRestore(version.versionNumber); }}
                       disabled={isRestoring}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       style={{
                         backgroundColor: 'var(--color-brand-600)',
                         color: 'white',
@@ -415,7 +414,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       {isRestoring ? (
                         <>
                           <svg
-                            className="w-3.5 h-3.5 animate-spin"
+                            className="w-3 h-3 animate-spin"
                             fill="none"
                             viewBox="0 0 24 24"
                           >
@@ -438,7 +437,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       ) : (
                         <>
                           <svg
-                            className="w-3.5 h-3.5"
+                            className="w-3 h-3"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

@@ -34,7 +34,7 @@ export type NoteSource =
  */
 export const NoteSourceLabels: Record<NoteSource, string> = {
   web: 'Web',
-  agent: 'AI Agent',
+  agent: 'Agent',
   ios_notes: 'iOS Notes',
   import: 'Import',
   system: 'System',

@@ -11,6 +11,8 @@ interface RichNoteFormProps {
   setValue: UseFormSetValue<NoteFormData>;
   errors: FieldErrors<NoteFormData>;
   isSubmitting: boolean;
+  /** Callback when title changes - for dirty tracking */
+  onTitleChange?: (title: string) => void;
   /** New images being added */
   newImages?: FileAttachment[];
   /** Existing images from the note */
@@ -33,6 +35,7 @@ export function RichNoteForm({
   setValue,
   errors,
   isSubmitting,
+  onTitleChange,
   newImages = [],
   existingImages = [],
   deletedImageIds = [],
@@ -43,18 +46,15 @@ export function RichNoteForm({
 }: RichNoteFormProps) {
   // Check if image handling is enabled (callbacks provided)
   const imageHandlingEnabled = !!(onAddImages && onRemoveNewImage);
+
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
-      {/* Title - Sticky at top */}
+      {/* Title - Sticky at top, using Controller for controlled input */}
       <div className="sticky top-0 z-20 bg-[var(--surface-elevated)] -mx-2 px-2 pb-2">
-        <input
-          id="title"
-          placeholder="Untitled"
-          disabled={isSubmitting}
-          className="w-full bg-transparent text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-2 py-2"
-          autoFocus
-          autoComplete="off"
-          {...register('title', {
+        <Controller
+          name="title"
+          control={control}
+          rules={{
             required: 'Title is required',
             minLength: {
               value: 1,
@@ -64,7 +64,24 @@ export function RichNoteForm({
               value: 200,
               message: 'Title must be less than 200 characters',
             },
-          })}
+          }}
+          render={({ field }) => (
+            <input
+              id="title"
+              placeholder="Untitled"
+              disabled={isSubmitting}
+              className="w-full bg-transparent text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-2 py-2"
+              autoFocus
+              autoComplete="off"
+              value={field.value || ''}
+              onChange={(e) => {
+                field.onChange(e.target.value);
+                onTitleChange?.(e.target.value);
+              }}
+              onBlur={field.onBlur}
+              ref={field.ref}
+            />
+          )}
         />
         {errors.title && (
           <p className="text-sm text-[var(--color-error-text)] mt-1 px-2">{errors.title.message}</p>

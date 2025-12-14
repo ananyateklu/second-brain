@@ -302,13 +302,16 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                 }
 
                 // Add assistant message with tool calls
+                // IMPORTANT: Include iterationText to preserve context of what was said before tool execution
+                var textBeforeTools = iterationText.ToString();
                 var assistantToolCallMessage = GrokProvider.CreateAssistantToolCallMessage(
                     pendingToolCalls.Select(tc => new Services.AI.Models.GrokToolCallInfo
                     {
                         Id = tc.Id,
                         Name = tc.Name,
                         Arguments = tc.Arguments
-                    }));
+                    }),
+                    textContent: !string.IsNullOrEmpty(textBeforeTools) ? textBeforeTools : null);
                 messages.Add(assistantToolCallMessage);
 
                 // Add tool results

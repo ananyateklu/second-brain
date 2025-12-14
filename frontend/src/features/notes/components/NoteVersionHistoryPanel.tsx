@@ -169,23 +169,23 @@ export function NoteVersionHistoryPanel({
               </p>
             </div>
           ) : (
-            <div className="p-3">
+            <div className="p-2">
               {/* Version count badge */}
               <div
-                className="mb-3 px-3 py-2 rounded-lg flex items-center gap-2.5"
+                className="mb-2 px-2 py-1.5 rounded-lg flex items-center gap-2"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
                   border: '1px solid var(--border)',
                 }}
               >
                 <div
-                  className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                  className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
                   }}
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-3 h-3"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -201,14 +201,14 @@ export function NoteVersionHistoryPanel({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-xs font-medium"
+                    className="text-[10px] font-medium"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <span style={{ color: 'var(--color-brand-500)' }}>{history.totalVersions}</span>
                     {' '}version{history.totalVersions !== 1 ? 's' : ''}
                   </p>
                   <p
-                    className="text-[10px]"
+                    className="text-[9px]"
                     style={{ color: 'var(--text-tertiary)' }}
                   >
                     Current: v{history.currentVersion}

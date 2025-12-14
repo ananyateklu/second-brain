@@ -154,6 +154,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.ThinkingSteps)
                 .AsNoTracking()
                 .AsSplitQuery()
                 .Where(c => c.UserId == userId)
@@ -186,6 +188,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.ThinkingSteps)
                 .AsNoTracking()
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -264,6 +268,15 @@ public class SqlChatRepository : IChatRepository
                     }
                     generatedImage.MessageId = message.Id;
                 }
+
+                foreach (var thinkingStep in message.ThinkingSteps)
+                {
+                    if (string.IsNullOrEmpty(thinkingStep.Id))
+                    {
+                        thinkingStep.Id = UuidV7.NewId();
+                    }
+                    thinkingStep.MessageId = message.Id;
+                }
             }
 
             _context.ChatConversations.Add(conversation);
@@ -295,6 +308,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.ThinkingSteps)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -360,6 +375,15 @@ public class SqlChatRepository : IChatRepository
                         generatedImage.Id = UuidV7.NewId();
                     }
                     generatedImage.MessageId = message.Id;
+                }
+
+                foreach (var thinkingStep in message.ThinkingSteps)
+                {
+                    if (string.IsNullOrEmpty(thinkingStep.Id))
+                    {
+                        thinkingStep.Id = UuidV7.NewId();
+                    }
+                    thinkingStep.MessageId = message.Id;
                 }
 
                 existingConversation.Messages.Add(message);
@@ -453,6 +477,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.ThinkingSteps)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -503,6 +529,15 @@ public class SqlChatRepository : IChatRepository
                     generatedImage.Id = UuidV7.NewId();
                 }
                 generatedImage.MessageId = message.Id;
+            }
+
+            foreach (var thinkingStep in message.ThinkingSteps)
+            {
+                if (string.IsNullOrEmpty(thinkingStep.Id))
+                {
+                    thinkingStep.Id = UuidV7.NewId();
+                }
+                thinkingStep.MessageId = message.Id;
             }
 
             conversation.Messages.Add(message);

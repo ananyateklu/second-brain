@@ -100,7 +100,7 @@ public static class NoteSourceExtensions
     public static string ToDisplayName(this NoteSource source) => source switch
     {
         NoteSource.Web => "Web UI",
-        NoteSource.Agent => "AI Agent",
+        NoteSource.Agent => "Agent",
         NoteSource.IosNotes => "iOS Notes Import",
         NoteSource.Import => "Import",
         NoteSource.System => "System",

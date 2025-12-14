@@ -17,7 +17,7 @@ interface VirtualizedConversationListProps {
 }
 
 // Estimated conversation item height
-const ITEM_HEIGHT = 72;
+const ITEM_HEIGHT = 53;
 
 /**
  * VirtualizedConversationList - A performant conversation list that supports 
@@ -98,7 +98,6 @@ export const VirtualizedConversationList = memo(({
                 top: 0,
                 left: 0,
                 width: '100%',
-                height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >

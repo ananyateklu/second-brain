@@ -39,6 +39,10 @@ export function EditNoteModal() {
   const [newImages, setNewImages] = useState<FileAttachment[]>([]);
   const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
+  // Track the note's updatedAt to detect when we need to reset the form
+  // This handles both: switching notes AND after a successful save (updatedAt changes)
+  const lastNoteStateRef = useRef<{ id: string; updatedAt: string } | null>(null);
+
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
     if (!allNotes) return [];
@@ -85,14 +89,22 @@ export function EditNoteModal() {
     await moveToFolderMutation.mutateAsync({ id: editingNote.id, folder });
   };
 
-  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty, reset } = useNoteForm({
+  // Track the saved form state to compute dirty status manually
+  // This is more reliable than react-hook-form's isDirty after reset()
+  const [savedFormData, setSavedFormData] = useState<{ title: string; content: string; tags: string } | null>(null);
+
+  // Track current title separately to ensure re-renders on title changes
+  // This is needed because react-hook-form's register() doesn't always trigger re-renders
+  const [currentTitle, setCurrentTitle] = useState('');
+
+  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, reset, watchedValues } = useNoteForm({
     defaultValues: editingNote ? noteToFormData(editingNote) : undefined,
     onSubmit: async (data) => {
       if (!editingNote) return;
 
       const noteData = formDataToNote(data);
       const images = fileAttachmentsToNoteImages(newImages);
-      await updateNoteMutation.mutateAsync({
+      const updatedNote = await updateNoteMutation.mutateAsync({
         id: editingNote.id,
         data: {
           ...noteData,
@@ -100,9 +112,32 @@ export function EditNoteModal() {
           deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
         },
       });
-      closeModal();
+      // Clear new images after successful save
+      setNewImages([]);
+      setDeletedImageIds([]);
+      // Reset form with the updated note data as new baseline
+      if (updatedNote) {
+        const newFormData = noteToFormData(updatedNote);
+        // Update our saved state to track the new baseline
+        setSavedFormData({ ...newFormData });
+        setCurrentTitle(newFormData.title);
+        // Reset form to new values
+        reset(newFormData, { keepDefaultValues: false });
+        // Update the ref to prevent the useEffect from resetting again
+        lastNoteStateRef.current = { id: updatedNote.id, updatedAt: updatedNote.updatedAt };
+      }
     },
   });
+
+  // Compute dirty state by comparing current values to saved baseline
+  // Use currentTitle (React state) for title, watchedValues for content/tags
+  let isDirty = rhfIsDirty;
+  if (savedFormData && watchedValues) {
+    const titleDirty = currentTitle !== savedFormData.title;
+    const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
+    const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
+    isDirty = titleDirty || contentDirty || tagsDirty;
+  }
 
   // Image handlers
   const handleAddImages = useCallback((images: FileAttachment[]) => {
@@ -126,13 +161,33 @@ export function EditNoteModal() {
     void handleSubmit();
   };
 
-  // Reset form when editing note changes (use note ID to detect changes)
+  // Reset form when note changes (different note ID or after save when updatedAt changes)
   useEffect(() => {
     if (editingNote && isOpen) {
-      const formData = noteToFormData(editingNote);
-      reset(formData, {
-        keepDefaultValues: false,
-      });
+      const currentState = { id: editingNote.id, updatedAt: editingNote.updatedAt };
+      const lastState = lastNoteStateRef.current;
+
+      // Reset if: different note, or same note but updatedAt changed (after save)
+      const shouldReset = !lastState ||
+        lastState.id !== currentState.id ||
+        lastState.updatedAt !== currentState.updatedAt;
+
+      if (shouldReset) {
+        lastNoteStateRef.current = currentState;
+        const formData = noteToFormData(editingNote);
+        // Update our saved state for manual dirty tracking
+        setSavedFormData({ ...formData });
+        setCurrentTitle(formData.title);
+        reset(formData, {
+          keepDefaultValues: false,
+        });
+      }
+    }
+    // Clear state when modal closes so next open resets properly
+    if (!isOpen) {
+      lastNoteStateRef.current = null;
+      setSavedFormData(null);
+      setCurrentTitle('');
     }
   }, [editingNote, isOpen, reset]);
 
@@ -461,6 +516,7 @@ export function EditNoteModal() {
             setValue={setValue}
             errors={errors}
             isSubmitting={isSubmitting}
+            onTitleChange={setCurrentTitle}
             newImages={newImages}
             existingImages={editingNote?.images}
             deletedImageIds={deletedImageIds}
@@ -478,8 +534,8 @@ export function EditNoteModal() {
             isOpen={isHistoryOpen}
             onClose={() => { setIsHistoryOpen(false); }}
             onRestore={() => {
-              // Refresh the note data after restore
-              closeModal();
+              // Note data will be refreshed via query invalidation
+              // Keep modal open - user can continue editing or close manually
             }}
           />
         )}

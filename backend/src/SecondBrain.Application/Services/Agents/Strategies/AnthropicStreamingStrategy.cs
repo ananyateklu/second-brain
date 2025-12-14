@@ -240,9 +240,12 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 yield return StatusEvent($"Executing {pendingToolCalls.Count} tool{(pendingToolCalls.Count > 1 ? "s" : "")}...");
 
                 // Add assistant message with tool use to history
-                if (responseContentBlocks.Count == 0 && !string.IsNullOrEmpty(textContent))
+                // IMPORTANT: Include the text content BEFORE tool use so Claude remembers what it said
+                // This fixes the context loss bug where text streamed before tool execution was forgotten
+                if (!string.IsNullOrEmpty(textContent))
                 {
-                    responseContentBlocks.Add(new TextContent { Text = textContent });
+                    // Insert text at the beginning of content blocks, before any tool_use blocks
+                    responseContentBlocks.Insert(0, new TextContent { Text = textContent });
                 }
 
                 messages.Add(new Message
