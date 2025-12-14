@@ -1,11 +1,24 @@
 /**
  * StreamEventProcessor Unit Tests
- * 
+ *
  * Tests the SSE parsing class for correct event parsing, buffering,
  * error handling, and event mapping from backend to frontend types.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock the logger to suppress expected error output during tests
+vi.mock('../../../utils/logger', () => ({
+  loggers: {
+    stream: {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  },
+}));
+
 import { StreamEventProcessor, createStreamEventProcessor } from '../stream-event-processor';
 import {
   buildSSEMessage,
