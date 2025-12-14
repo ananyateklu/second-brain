@@ -52,6 +52,13 @@ import type {
 } from '../core/streaming/types';
 
 // ============================================
+// Constants
+// ============================================
+
+// Note-related tools that should trigger cache invalidation when they complete
+const NOTE_MUTATION_TOOLS = ['CreateNote', 'UpdateNote', 'AppendToNote', 'DeleteNote', 'DuplicateNote'];
+
+// ============================================
 // Hook Implementation
 // ============================================
 
@@ -151,8 +158,13 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
   const processEvents = useCallback((events: StreamEvent[]) => {
     for (const event of events) {
       dispatch({ type: 'EVENT', event });
+
+      // Invalidate notes cache immediately when a note-related tool completes
+      if (event.type === 'tool:end' && NOTE_MUTATION_TOOLS.includes(event.tool)) {
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+      }
     }
-  }, []);
+  }, [queryClient]);
 
   /**
    * Handle stream completion
