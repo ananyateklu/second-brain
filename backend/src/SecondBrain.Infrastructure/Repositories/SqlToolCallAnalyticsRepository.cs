@@ -39,10 +39,10 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
-                SELECT 
+                SELECT
                     COUNT(*)::int AS total_calls,
-                    SUM(CASE WHEN tc.success THEN 1 ELSE 0 END)::int AS successful_calls,
-                    SUM(CASE WHEN NOT tc.success THEN 1 ELSE 0 END)::int AS failed_calls,
+                    COALESCE(SUM(CASE WHEN tc.success THEN 1 ELSE 0 END), 0)::int AS successful_calls,
+                    COALESCE(SUM(CASE WHEN NOT tc.success THEN 1 ELSE 0 END), 0)::int AS failed_calls,
                     COALESCE(
                         ROUND(100.0 * SUM(CASE WHEN tc.success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
                         0

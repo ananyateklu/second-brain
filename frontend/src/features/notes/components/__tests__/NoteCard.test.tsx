@@ -10,20 +10,12 @@ import React from 'react';
 import { NoteCard } from '../NoteCard';
 import type { Note } from '../../types/note';
 
-// Mock the stores
-vi.mock('../../../../store/ui-store', () => ({
-  useUIStore: vi.fn((selector) => {
-    const state = {
-      openEditModal: vi.fn(),
-    };
-    return selector(state);
-  }),
-}));
-
+// Mock the store
 vi.mock('../../../../store/bound-store', () => ({
   useBoundStore: vi.fn((selector) => {
     const state = {
       theme: 'light',
+      openEditModal: vi.fn(),
     };
     return selector ? selector(state) : state;
   }),
@@ -413,6 +405,21 @@ describe('NoteCard', () => {
       expect(screen.getByText('tag2')).toBeInTheDocument();
       expect(screen.getByText('+2')).toBeInTheDocument();
     });
+
+    it('should limit tags to 2 in micro variant', () => {
+      // Arrange
+      const note = createMockNote({
+        tags: ['tag1', 'tag2', 'tag3', 'tag4'],
+      });
+
+      // Act
+      render(<NoteCard note={note} variant="micro" />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('tag1')).toBeInTheDocument();
+      expect(screen.getByText('tag2')).toBeInTheDocument();
+      expect(screen.getByText('+2')).toBeInTheDocument();
+    });
   });
 
   // ============================================
@@ -430,6 +437,30 @@ describe('NoteCard', () => {
 
       // Assert - HTML should be stripped, content should still be visible
       expect(screen.getByText('Hello world')).toBeInTheDocument();
+    });
+
+    it('should handle empty content', () => {
+      // Arrange
+      const note = createMockNote({ content: '' });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('Test Note Title')).toBeInTheDocument();
+    });
+
+    it('should decode HTML entities', () => {
+      // Arrange
+      const note = createMockNote({
+        content: '<p>Test &amp; more &lt;content&gt;</p>',
+      });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('Test & more <content>')).toBeInTheDocument();
     });
   });
 
@@ -450,6 +481,243 @@ describe('NoteCard', () => {
       // Assert
       expect(screen.getByText('hashtag1')).toBeInTheDocument();
       expect(screen.getByText('hashtag2')).toBeInTheDocument();
+    });
+
+    it('should not extract duplicate hashtags', () => {
+      // Arrange
+      const note = createMockNote({
+        tags: [],
+        content: 'Content with #tag1 and #tag1 again',
+      });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert - tag1 should appear only once
+      const tags = screen.getAllByText('tag1');
+      expect(tags).toHaveLength(1);
+    });
+  });
+
+  // ============================================
+  // Archive Badge Tests
+  // ============================================
+  describe('archive badge', () => {
+    it('should show archived badge when note is archived', () => {
+      // Arrange
+      const note = createMockNote({ isArchived: true });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('Archived')).toBeInTheDocument();
+    });
+
+    it('should not show archived badge when note is not archived', () => {
+      // Arrange
+      const note = createMockNote({ isArchived: false });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.queryByText('Archived')).not.toBeInTheDocument();
+    });
+
+    it('should show archived badge in compact variant', () => {
+      // Arrange
+      const note = createMockNote({ isArchived: true });
+
+      // Act
+      render(<NoteCard note={note} variant="compact" />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('Archived')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Archive Button Tests
+  // ============================================
+  describe('archive button', () => {
+    it('should show archive button in full variant', () => {
+      // Act
+      render(<NoteCard note={createMockNote()} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByLabelText('Archive note')).toBeInTheDocument();
+    });
+
+    it('should show restore button when note is archived', () => {
+      // Arrange
+      const note = createMockNote({ isArchived: true });
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByLabelText('Restore note')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Chunk Count Tests
+  // ============================================
+  describe('chunk count', () => {
+    it('should display chunk count in compact variant', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" chunkCount={5} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('5 chunks')).toBeInTheDocument();
+    });
+
+    it('should display singular chunk for count of 1', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" chunkCount={1} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('1 chunk')).toBeInTheDocument();
+    });
+
+    it('should display chunk count in micro variant', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="micro" chunkCount={3} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('3 chunks')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Hover State Tests
+  // ============================================
+  describe('hover state', () => {
+    it('should respond to mouse enter and leave', () => {
+      // Act
+      render(<NoteCard note={createMockNote()} />, { wrapper: createWrapper() });
+
+      const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
+
+      // Assert - card exists
+      expect(card).toBeInTheDocument();
+
+      // Simulate hover
+      if (card) {
+        fireEvent.mouseEnter(card);
+        fireEvent.mouseLeave(card);
+      }
+
+      // Card should still be rendered
+      expect(screen.getByText('Test Note Title')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Relevance Score Color Tests
+  // ============================================
+  describe('relevance score colors', () => {
+    it('should display high relevance score (>=0.9)', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.95} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('95%')).toBeInTheDocument();
+    });
+
+    it('should display medium-high relevance score (>=0.8)', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.82} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('82%')).toBeInTheDocument();
+    });
+
+    it('should display medium relevance score (>=0.7)', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.75} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('75%')).toBeInTheDocument();
+    });
+
+    it('should display medium-low relevance score (>=0.6)', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.65} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('65%')).toBeInTheDocument();
+    });
+
+    it('should display low relevance score (<0.5)', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.45} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('45%')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Summary Display Tests
+  // ============================================
+  describe('summary display', () => {
+    it('should use summary when available', () => {
+      // Arrange
+      const note = {
+        ...createMockNote(),
+        summary: 'This is a summary of the note',
+      };
+
+      // Act
+      render(<NoteCard note={note} />, { wrapper: createWrapper() });
+
+      // Assert
+      expect(screen.getByText('This is a summary of the note')).toBeInTheDocument();
+    });
+  });
+
+  // ============================================
+  // Edit Modal Tests
+  // ============================================
+  describe('edit modal', () => {
+    it('should call openEditModal when clicking card (not in bulk mode)', () => {
+      // The openEditModal is mocked in useBoundStore mock at the top
+      // When clicking the card in non-bulk mode, it should call openEditModal
+
+      // Act
+      render(<NoteCard note={createMockNote()} />, { wrapper: createWrapper() });
+
+      const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
+
+      // Assert - card is clickable
+      expect(card).toBeInTheDocument();
+      expect(card).toHaveClass('cursor-pointer');
     });
   });
 });

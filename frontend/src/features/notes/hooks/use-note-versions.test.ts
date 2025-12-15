@@ -87,7 +87,7 @@ describe('useNoteVersionHistory', () => {
     expect(v3?.isCurrent).toBe(true);
   });
 
-  it('should not fetch when disabled', async () => {
+  it('should not fetch when disabled', () => {
     const { result } = renderHook(
       () => useNoteVersionHistory('note-1', false),
       { wrapper: createWrapper() }
@@ -179,7 +179,7 @@ describe('useNoteVersionDiff', () => {
     expect(result.current.data?.tagsRemoved).toHaveLength(0);
   });
 
-  it('should not fetch when fromVersion equals toVersion', async () => {
+  it('should not fetch when fromVersion equals toVersion', () => {
     const { result } = renderHook(
       () => useNoteVersionDiff('note-1', 1, 1, true),
       { wrapper: createWrapper() }

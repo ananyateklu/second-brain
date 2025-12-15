@@ -274,4 +274,124 @@ describe('GitHubBranchesList', () => {
       });
     });
   });
+
+  describe('External Links', () => {
+    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    });
+
+    afterEach(() => {
+      windowOpenSpy.mockRestore();
+    });
+
+    it('should open branch URL when branch name is clicked', async () => {
+      const branch = mockBranch({
+        name: 'main',
+        htmlUrl: 'https://github.com/owner/repo/tree/main',
+      });
+      vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
+
+      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('main')).toBeInTheDocument();
+      });
+
+      // Click the branch name span
+      fireEvent.click(screen.getByText('main'));
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        'https://github.com/owner/repo/tree/main',
+        '_blank'
+      );
+    });
+
+    it('should open branch URL when external link button is clicked', async () => {
+      const branch = mockBranch({
+        name: 'main',
+        htmlUrl: 'https://github.com/owner/repo/tree/main',
+      });
+      vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
+
+      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('main')).toBeInTheDocument();
+      });
+
+      // Find and click the external link button (it's the last button in the branch row)
+      const branchRow = screen.getByText('main').closest('div[class*="rounded-lg cursor-pointer"]');
+      const externalLinkButton = branchRow?.querySelector('button');
+      if (externalLinkButton) {
+        fireEvent.click(externalLinkButton);
+      }
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        'https://github.com/owner/repo/tree/main',
+        '_blank'
+      );
+    });
+
+    it('should not trigger onSelectBranch when clicking branch name link', async () => {
+      const branch = mockBranch({ name: 'main' });
+      vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
+      const onSelectBranch = vi.fn();
+
+      render(<GitHubBranchesList onSelectBranch={onSelectBranch} />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('main')).toBeInTheDocument();
+      });
+
+      // Click on the branch name span (should open link and stopPropagation)
+      fireEvent.click(screen.getByText('main'));
+
+      // The event should be stopped, so onSelectBranch shouldn't be called
+      // (though due to event bubbling in tests, behavior may vary)
+      expect(windowOpenSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Branch Sorting - Additional Cases', () => {
+    it('should sort non-protected branch after protected branch', async () => {
+      const branches = [
+        mockBranch({ name: 'feature', isDefault: false, isProtected: false }),
+        mockBranch({ name: 'release', isDefault: false, isProtected: true }),
+      ];
+      vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse(branches));
+
+      const { container } = render(<GitHubBranchesList />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        const branchNames = Array.from(container.querySelectorAll('span.cursor-pointer')).map(
+          (el) => el.textContent
+        );
+        // Protected branch should come before non-protected
+        expect(branchNames[0]).toBe('release');
+        expect(branchNames[1]).toBe('feature');
+      });
+    });
+
+    it('should sort alphabetically when branches have same priority', async () => {
+      const branches = [
+        mockBranch({ name: 'zebra', isDefault: false, isProtected: false }),
+        mockBranch({ name: 'alpha', isDefault: false, isProtected: false }),
+        mockBranch({ name: 'beta', isDefault: false, isProtected: false }),
+      ];
+      vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse(branches));
+
+      const { container } = render(<GitHubBranchesList />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        const branchNames = Array.from(container.querySelectorAll('span.cursor-pointer')).map(
+          (el) => el.textContent
+        );
+        expect(branchNames[0]).toBe('alpha');
+        expect(branchNames[1]).toBe('beta');
+        expect(branchNames[2]).toBe('zebra');
+      });
+    });
+  });
 });

@@ -9,8 +9,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import {
     useChatConversations,
+    useChatConversationsPaged,
     useChatConversation,
     useCreateConversation,
+    useSendMessage,
     useDeleteConversation,
     useBulkDeleteConversations,
     useUpdateConversationSettings,
@@ -21,6 +23,7 @@ import { chatService } from '../../../../services/chat.service';
 vi.mock('../../../../services/chat.service', () => ({
     chatService: {
         getConversations: vi.fn(),
+        getConversationsPaged: vi.fn(),
         getConversation: vi.fn(),
         createConversation: vi.fn(),
         deleteConversation: vi.fn(),
@@ -471,6 +474,226 @@ describe('use-chat', () => {
             });
 
             expect(result1.current.data).toEqual(conv1);
+        });
+    });
+
+    // ============================================
+    // useChatConversationsPaged Tests
+    // ============================================
+    describe('useChatConversationsPaged', () => {
+        it('should return loading state initially', () => {
+            // Arrange
+            vi.mocked(chatService.getConversationsPaged).mockImplementation(() => new Promise(() => { /* pending */ }));
+
+            // Act
+            const { result } = renderHook(() => useChatConversationsPaged({ page: 1, pageSize: 20 }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            expect(result.current.isLoading).toBe(true);
+        });
+
+        it('should return paginated conversations on success', async () => {
+            // Arrange
+            const mockResponse = {
+                items: [createMockConversation({ id: '1' }), createMockConversation({ id: '2' })],
+                totalCount: 10,
+                page: 1,
+                pageSize: 20,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            };
+            vi.mocked(chatService.getConversationsPaged).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useChatConversationsPaged({ page: 1, pageSize: 20 }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(result.current.data?.items).toHaveLength(2);
+            expect(result.current.data?.totalCount).toBe(10);
+        });
+
+        it('should call chatService.getConversationsPaged with correct params', async () => {
+            // Arrange
+            vi.mocked(chatService.getConversationsPaged).mockResolvedValue({
+                items: [],
+                totalCount: 0,
+                page: 2,
+                pageSize: 10,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: true,
+            });
+
+            // Act
+            renderHook(() => useChatConversationsPaged({ page: 2, pageSize: 10 }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await waitFor(() => {
+                expect(chatService.getConversationsPaged).toHaveBeenCalledWith({ page: 2, pageSize: 10 });
+            });
+        });
+
+        it('should not fetch when disabled', () => {
+            // Act
+            const { result } = renderHook(() => useChatConversationsPaged({ page: 1, pageSize: 20 }, false), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(chatService.getConversationsPaged).not.toHaveBeenCalled();
+        });
+
+        it('should use default page and pageSize when not provided', async () => {
+            // Arrange
+            vi.mocked(chatService.getConversationsPaged).mockResolvedValue({
+                items: [],
+                totalCount: 0,
+                page: 1,
+                pageSize: 20,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            });
+
+            // Act
+            renderHook(() => useChatConversationsPaged({}), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await waitFor(() => {
+                expect(chatService.getConversationsPaged).toHaveBeenCalledWith({});
+            });
+        });
+    });
+
+    // ============================================
+    // useSendMessage Tests
+    // ============================================
+    describe('useSendMessage', () => {
+        it('should call chatService.sendMessage with correct params', async () => {
+            // Arrange
+            const sendRequest = { content: 'Hello', role: 'user' as const };
+            const mockResponse = {
+                conversation: createMockConversation({
+                    id: 'conv-1',
+                    messages: [{ role: 'user', content: 'Hello' }],
+                }),
+                retrievedNotes: [],
+            };
+            vi.mocked(chatService.sendMessage).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useSendMessage(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync({
+                    conversationId: 'conv-1',
+                    request: sendRequest,
+                });
+            });
+
+            // Assert
+            expect(chatService.sendMessage).toHaveBeenCalledWith('conv-1', sendRequest);
+        });
+
+        it('should return response with conversation and retrieved notes', async () => {
+            // Arrange
+            const mockResponse = {
+                conversation: createMockConversation({
+                    id: 'conv-1',
+                    messages: [
+                        { role: 'user', content: 'Hello' },
+                        { role: 'assistant', content: 'Hi there!' },
+                    ],
+                }),
+                retrievedNotes: [{ noteId: 'note-1', title: 'Test Note', tags: [], relevanceScore: 0.9, chunkContent: 'Test content', content: 'Test content', chunkIndex: 0 }],
+            };
+            vi.mocked(chatService.sendMessage).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useSendMessage(), {
+                wrapper: createWrapper(),
+            });
+
+            let response;
+            await act(async () => {
+                response = await result.current.mutateAsync({
+                    conversationId: 'conv-1',
+                    request: { content: 'Hello' },
+                });
+            });
+
+            // Assert
+            expect(response).toEqual(mockResponse);
+        });
+
+        it('should handle send message error', async () => {
+            // Arrange
+            vi.mocked(chatService.sendMessage).mockRejectedValue(new Error('Send failed'));
+
+            // Act
+            const { result } = renderHook(() => useSendMessage(), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await expect(
+                act(async () => {
+                    await result.current.mutateAsync({
+                        conversationId: 'conv-1',
+                        request: { content: 'Hello' },
+                    });
+                })
+            ).rejects.toThrow('Send failed');
+        });
+
+        it('should update conversation cache on success', async () => {
+            // Arrange
+            const updatedConversation = createMockConversation({
+                id: 'conv-1',
+                messages: [{ role: 'user', content: 'Hello' }],
+            });
+            const mockResponse = {
+                conversation: updatedConversation,
+                retrievedNotes: [],
+            };
+            vi.mocked(chatService.sendMessage).mockResolvedValue(mockResponse);
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            // Act
+            const { result } = renderHook(() => useSendMessage(), { wrapper });
+
+            await act(async () => {
+                await result.current.mutateAsync({
+                    conversationId: 'conv-1',
+                    request: { content: 'Hello' },
+                });
+            });
+
+            // Assert - conversation should be cached
+            const cached = queryClient.getQueryData(['conversations', 'detail', 'conv-1']);
+            expect(cached).toEqual(updatedConversation);
         });
     });
 });

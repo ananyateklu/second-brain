@@ -4,10 +4,174 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../test/mocks/server';
 import { authService } from '../auth.service';
 import type { AuthResponse } from '../../types/auth';
+import { getApiBaseUrl } from '../../lib/constants';
 
 describe('authService', () => {
+  // ============================================
+  // login Tests (integration with MSW handlers)
+  // ============================================
+  describe('login', () => {
+    it('should return auth response on successful login', async () => {
+      // MSW handler returns mock data for valid credentials
+      const result = await authService.login({
+        identifier: 'test@example.com',
+        password: 'TestPassword123!',
+      });
+
+      expect(result).toBeDefined();
+      expect(result.token).toBeDefined();
+      expect(result.userId).toBeDefined();
+    });
+
+    it('should throw error with error field from response', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'wrongpassword',
+      })).rejects.toThrow('Invalid credentials');
+    });
+
+    it('should throw error with message field from response', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ message: 'User not found' }, { status: 404 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'nonexistent@example.com',
+        password: 'password123',
+      })).rejects.toThrow('User not found');
+    });
+
+    it('should throw default error when response has no error or message field', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ status: 'failed' }, { status: 400 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'password',
+      })).rejects.toThrow('Request failed');
+    });
+
+    it('should throw default error when response is not valid JSON', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return new HttpResponse('Internal Server Error', { status: 500 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'password',
+      })).rejects.toThrow('Request failed');
+    });
+
+    it('should prefer error field over message field', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ error: 'Primary error', message: 'Secondary message' }, { status: 401 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'password',
+      })).rejects.toThrow('Primary error');
+    });
+
+    it('should use message field when error field is not a string', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ error: 123, message: 'Fallback message' }, { status: 401 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'password',
+      })).rejects.toThrow('Fallback message');
+    });
+
+    it('should use default message when neither error nor message are strings', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/login`, () => {
+          return HttpResponse.json({ error: { code: 123 }, message: 456 }, { status: 401 });
+        })
+      );
+
+      await expect(authService.login({
+        identifier: 'test@example.com',
+        password: 'password',
+      })).rejects.toThrow('Request failed');
+    });
+  });
+
+  // ============================================
+  // register Tests (integration with MSW handlers)
+  // ============================================
+  describe('register', () => {
+    it('should return auth response on successful registration', async () => {
+      // MSW handler returns mock data for valid registration
+      const result = await authService.register({
+        email: 'newuser@example.com',
+        password: 'SecurePass123',
+        displayName: 'New User',
+      });
+
+      expect(result).toBeDefined();
+      expect(result.token).toBeDefined();
+      expect(result.userId).toBeDefined();
+    });
+
+    it('should throw error when email already exists', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/register`, () => {
+          return HttpResponse.json({ error: 'Email already registered' }, { status: 409 });
+        })
+      );
+
+      await expect(authService.register({
+        email: 'existing@example.com',
+        password: 'SecurePass123',
+        displayName: 'Test',
+      })).rejects.toThrow('Email already registered');
+    });
+
+    it('should throw error with message field from response', async () => {
+      const API_BASE = getApiBaseUrl();
+      server.use(
+        http.post(`${API_BASE}/auth/register`, () => {
+          return HttpResponse.json({ message: 'Registration disabled' }, { status: 403 });
+        })
+      );
+
+      await expect(authService.register({
+        email: 'test@example.com',
+        password: 'SecurePass123',
+      })).rejects.toThrow('Registration disabled');
+    });
+  });
     // ============================================
     // validateEmail Tests
     // ============================================
@@ -329,6 +493,64 @@ describe('authService', () => {
 
             // Act
             const result = authService.validateRegisterForm(email, password, confirmPassword, undefined);
+
+            // Assert
+            expect(result.valid).toBe(true);
+        });
+
+        it('should return error for invalid username (too short)', () => {
+            // Act
+            const result = authService.validateRegisterForm(
+              'test@example.com',
+              'SecurePass123',
+              'SecurePass123',
+              undefined,
+              'ab' // Too short
+            );
+
+            // Assert
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain('Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens');
+        });
+
+        it('should return error for invalid username (invalid characters)', () => {
+            // Act
+            const result = authService.validateRegisterForm(
+              'test@example.com',
+              'SecurePass123',
+              'SecurePass123',
+              undefined,
+              'user@name' // Invalid character
+            );
+
+            // Assert
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain('Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens');
+        });
+
+        it('should accept valid username', () => {
+            // Act
+            const result = authService.validateRegisterForm(
+              'test@example.com',
+              'SecurePass123',
+              'SecurePass123',
+              undefined,
+              'valid_user-123'
+            );
+
+            // Assert
+            expect(result.valid).toBe(true);
+        });
+
+        it('should accept undefined username', () => {
+            // Act
+            const result = authService.validateRegisterForm(
+              'test@example.com',
+              'SecurePass123',
+              'SecurePass123',
+              undefined,
+              undefined
+            );
 
             // Assert
             expect(result.valid).toBe(true);

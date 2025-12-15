@@ -263,6 +263,281 @@ describe('Button', () => {
             expect(button).toHaveClass('rounded-3xl');
             expect(button).toHaveClass('font-semibold');
         });
+
+        it('should have transition classes', () => {
+            render(<Button>Transition</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveClass('transition-all', 'duration-200');
+        });
+
+        it('should have gap class for icon spacing', () => {
+            render(<Button>Gap</Button>);
+            expect(screen.getByRole('button')).toHaveClass('gap-2');
+        });
+    });
+
+    // ============================================
+    // Inline Styles Tests (getVariantStyles)
+    // ============================================
+    describe('inline styles', () => {
+        it('should apply primary variant inline styles', () => {
+            render(<Button variant="primary">Primary</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+                borderColor: 'var(--btn-primary-border)',
+                boxShadow: 'var(--btn-primary-shadow)',
+            });
+        });
+
+        it('should apply secondary variant inline styles', () => {
+            render(<Button variant="secondary">Secondary</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveStyle({
+                color: 'var(--btn-secondary-text)',
+                borderColor: 'var(--btn-secondary-border)',
+                boxShadow: 'var(--btn-secondary-shadow)',
+            });
+        });
+
+        it('should apply danger variant inline styles', () => {
+            render(<Button variant="danger">Danger</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--color-error)',
+                color: '#ffffff',
+                borderColor: 'transparent',
+                boxShadow: 'var(--shadow-lg)',
+            });
+        });
+
+        it('should apply ghost variant inline styles', () => {
+            render(<Button variant="ghost">Ghost</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveStyle({
+                color: 'var(--text-secondary)',
+                boxShadow: 'none',
+            });
+        });
+    });
+
+    // ============================================
+    // Hover Interaction Tests
+    // ============================================
+    describe('hover interactions', () => {
+        it('should apply primary hover styles on mouseEnter', () => {
+            render(<Button variant="primary">Primary</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--btn-primary-hover-bg)',
+                borderColor: 'var(--btn-primary-hover-border)',
+                boxShadow: 'var(--btn-primary-hover-shadow)',
+            });
+        });
+
+        it('should apply secondary hover styles on mouseEnter', () => {
+            render(<Button variant="secondary">Secondary</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--btn-secondary-hover-bg)',
+                color: 'var(--btn-secondary-hover-text)',
+                borderColor: 'var(--btn-secondary-hover-border)',
+                boxShadow: 'var(--btn-secondary-hover-shadow)',
+            });
+        });
+
+        it('should apply danger hover styles on mouseEnter', () => {
+            render(<Button variant="danger">Danger</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--color-error-text)',
+                boxShadow: 'var(--shadow-xl)',
+            });
+        });
+
+        it('should apply ghost hover styles on mouseEnter', () => {
+            render(<Button variant="ghost">Ghost</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--text-primary)',
+            });
+        });
+
+        it('should reset primary styles on mouseLeave', () => {
+            render(<Button variant="primary">Primary</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+            fireEvent.mouseLeave(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+            });
+        });
+
+        it('should reset secondary styles on mouseLeave', () => {
+            render(<Button variant="secondary">Secondary</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+            fireEvent.mouseLeave(button);
+
+            expect(button).toHaveStyle({
+                color: 'var(--btn-secondary-text)',
+            });
+        });
+
+        it('should reset danger styles on mouseLeave', () => {
+            render(<Button variant="danger">Danger</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+            fireEvent.mouseLeave(button);
+
+            expect(button).toHaveStyle({
+                backgroundColor: 'var(--color-error)',
+                color: '#ffffff',
+            });
+        });
+
+        it('should reset ghost styles on mouseLeave', () => {
+            render(<Button variant="ghost">Ghost</Button>);
+            const button = screen.getByRole('button');
+
+            fireEvent.mouseEnter(button);
+            fireEvent.mouseLeave(button);
+
+            expect(button).toHaveStyle({
+                color: 'var(--text-secondary)',
+            });
+        });
+
+        it('should not apply hover styles when disabled', () => {
+            render(<Button variant="primary" disabled>Disabled</Button>);
+            const button = screen.getByRole('button');
+            const originalStyle = button.style.backgroundColor;
+
+            fireEvent.mouseEnter(button);
+
+            expect(button.style.backgroundColor).toBe(originalStyle);
+        });
+
+        it('should not apply hover styles when loading', () => {
+            render(<Button variant="primary" isLoading>Loading</Button>);
+            const button = screen.getByRole('button');
+            const originalStyle = button.style.backgroundColor;
+
+            fireEvent.mouseEnter(button);
+
+            expect(button.style.backgroundColor).toBe(originalStyle);
+        });
+
+        it('should not reset styles on mouseLeave when disabled', () => {
+            render(<Button variant="primary" disabled>Disabled</Button>);
+            const button = screen.getByRole('button');
+            const originalStyle = button.style.backgroundColor;
+
+            fireEvent.mouseLeave(button);
+
+            expect(button.style.backgroundColor).toBe(originalStyle);
+        });
+
+        it('should not reset styles on mouseLeave when loading', () => {
+            render(<Button variant="primary" isLoading>Loading</Button>);
+            const button = screen.getByRole('button');
+            const originalStyle = button.style.backgroundColor;
+
+            fireEvent.mouseLeave(button);
+
+            expect(button.style.backgroundColor).toBe(originalStyle);
+        });
+    });
+
+    // ============================================
+    // Variant Class Tests
+    // ============================================
+    describe('variant classes', () => {
+        it('should apply hover:scale-105 for primary', () => {
+            render(<Button variant="primary">Primary</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+        });
+
+        it('should apply hover:scale-105 for secondary', () => {
+            render(<Button variant="secondary">Secondary</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+        });
+
+        it('should apply hover:scale-105 for danger', () => {
+            render(<Button variant="danger">Danger</Button>);
+            const button = screen.getByRole('button');
+            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+        });
+
+        it('should not apply hover:scale-105 for ghost', () => {
+            render(<Button variant="ghost">Ghost</Button>);
+            const button = screen.getByRole('button');
+            expect(button).not.toHaveClass('hover:scale-105');
+        });
+    });
+
+    // ============================================
+    // Edge Cases
+    // ============================================
+    describe('edge cases', () => {
+        it('should handle empty children', () => {
+            render(<Button>{''}</Button>);
+            expect(screen.getByRole('button')).toBeInTheDocument();
+        });
+
+        it('should handle no children', () => {
+            render(<Button />);
+            expect(screen.getByRole('button')).toBeInTheDocument();
+        });
+
+        it('should handle complex children', () => {
+            render(
+                <Button>
+                    <span>Icon</span>
+                    <span>Text</span>
+                </Button>
+            );
+            const button = screen.getByRole('button');
+            expect(button).toHaveTextContent('IconText');
+        });
+
+        it('should handle all size and variant combinations', () => {
+            const variants = ['primary', 'secondary', 'danger', 'ghost'] as const;
+            const sizes = ['sm', 'md', 'lg'] as const;
+
+            variants.forEach((variant) => {
+                sizes.forEach((size) => {
+                    const { unmount } = render(
+                        <Button variant={variant} size={size}>
+                            {variant}-{size}
+                        </Button>
+                    );
+                    expect(screen.getByRole('button')).toBeInTheDocument();
+                    unmount();
+                });
+            });
+        });
     });
 });
 

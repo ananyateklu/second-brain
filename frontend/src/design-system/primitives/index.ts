@@ -4,19 +4,11 @@
  */
 
 export { Box, type BoxProps, type BoxStyleProps } from './Box';
-export {
-  Flex,
-  HStack,
-  VStack,
-  Center,
-  FlexHStack,
-  FlexVStack,
-  type FlexProps,
-} from './Flex';
+export { Flex, type FlexProps } from './Flex';
 export {
   Stack,
-  VStack as StackVStack,
-  HStack as StackHStack,
+  VStack,
+  HStack,
   type StackProps,
 } from './Stack';
 export {

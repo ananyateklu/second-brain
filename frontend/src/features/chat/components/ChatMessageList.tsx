@@ -327,8 +327,8 @@ const MessageWithContext = memo(function MessageWithContext({
     if (isStreamingDuplicate) return [];
 
     // Prefer persisted thinkingSteps with individual timestamps
-    if (hasPersistedThinkingSteps) {
-      return message.thinkingSteps!.map(step => ({
+    if (hasPersistedThinkingSteps && message.thinkingSteps) {
+      return message.thinkingSteps.map(step => ({
         content: step.content,
         timestamp: new Date(step.startedAt),
       }));

@@ -238,19 +238,6 @@ function getDailyChartData(notes: NoteListItem[], rangeStart: Date, now: Date, d
     .map(({ date, count }) => ({ date, count }));
 }
 
-/**
- * Get recent notes sorted by updatedAt (most recent first)
- */
-export function getRecentNotes(notes: NoteListItem[], limit = 5): NoteListItem[] {
-  return [...notes]
-    .sort((a, b) => {
-      const dateA = parseISO(a.updatedAt);
-      const dateB = parseISO(b.updatedAt);
-      return dateB.getTime() - dateA.getTime();
-    })
-    .slice(0, limit);
-}
-
 // ============================================
 // Chat Usage Chart Data
 // ============================================

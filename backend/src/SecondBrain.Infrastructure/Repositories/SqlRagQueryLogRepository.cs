@@ -24,6 +24,11 @@ public class SqlRagQueryLogRepository : IRagQueryLogRepository
 
     public async Task<RagQueryLog> CreateAsync(RagQueryLog log)
     {
+        if (log.CreatedAt == default)
+        {
+            log.CreatedAt = DateTime.UtcNow;
+        }
+
         _context.RagQueryLogs.Add(log);
         await _context.SaveChangesAsync();
         return log;

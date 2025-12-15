@@ -77,6 +77,7 @@ public class ChatController : ControllerBase
     /// <summary>
     /// Get all conversations for authenticated user (deprecated - use paginated endpoint)
     /// </summary>
+    [Obsolete("Use GetConversationsPaged instead. This endpoint will be removed in a future version.")]
     [HttpGet("conversations")]
     [ProducesResponseType(typeof(IEnumerable<ChatConversation>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

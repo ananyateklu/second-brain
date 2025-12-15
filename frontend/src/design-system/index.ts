@@ -105,18 +105,13 @@ export {
 
 export {
   Flex,
-  HStack,
-  VStack,
-  Center,
-  FlexHStack,
-  FlexVStack,
   type FlexProps,
 } from './primitives/Flex';
 
 export {
   Stack,
-  VStack as StackVStack,
-  HStack as StackHStack,
+  VStack,
+  HStack,
   type StackProps,
 } from './primitives/Stack';
 

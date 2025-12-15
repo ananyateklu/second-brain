@@ -120,19 +120,3 @@ export function groupModelsByCategory(models: string[]): ModelCategoryGroup[] {
     }))
     .filter(group => group.models.length > 0);
 }
-
-/**
- * Gets the display name for a category
- */
-export function getCategoryDisplayName(category: ModelCategory): string {
-  const displayNames: Record<ModelCategory, string> = {
-    text: 'Text',
-    vision: 'Vision',
-    audio: 'Audio',
-    embedding: 'Embedding',
-    'image-gen': 'Image Generation',
-    other: 'Other',
-  };
-  return displayNames[category];
-}
-

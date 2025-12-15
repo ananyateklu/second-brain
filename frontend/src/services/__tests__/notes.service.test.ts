@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { notesService } from '../notes.service';
 import type { Note, CreateNoteRequest } from '../../types/notes';
+import { mockNotes, mockVersionHistory } from '../../test/mocks/handlers';
 
 // Helper function to create test notes
 function createTestNote(overrides: Partial<Note> = {}): Note {
@@ -346,6 +347,16 @@ describe('notesService', () => {
             // Assert
             expect(notes[0].title).toBe(originalFirst);
         });
+
+        it('should preserve original order for unknown sort option', () => {
+            // Act - use an unknown sort option which triggers the default case
+            const result = notesService.sortNotes(notes, 'unknown-sort' as never);
+
+            // Assert - order should be preserved (stable sort with 0 comparison)
+            expect(result[0].title).toBe('Banana');
+            expect(result[1].title).toBe('Apple');
+            expect(result[2].title).toBe('Cherry');
+        });
     });
 
     // ============================================
@@ -504,6 +515,276 @@ describe('notesService', () => {
             expect(result.updatedAt).not.toBe(originalUpdatedAt);
             expect(result.updatedAt >= beforeUpdate).toBe(true);
             expect(result.updatedAt <= afterUpdate).toBe(true);
+        });
+    });
+
+    // ============================================
+    // API Methods Tests (Integration with MSW)
+    // ============================================
+    describe('API methods', () => {
+        describe('getAll', () => {
+            it('should fetch all notes', async () => {
+                const result = await notesService.getAll();
+
+                expect(result).toBeDefined();
+                expect(Array.isArray(result)).toBe(true);
+                expect(result.length).toBe(mockNotes.length);
+            });
+        });
+
+        describe('getPaged', () => {
+            it('should fetch paginated notes with default params', async () => {
+                const result = await notesService.getPaged();
+
+                expect(result).toBeDefined();
+                expect(result.items).toBeDefined();
+                expect(result.totalCount).toBeDefined();
+                expect(result.page).toBe(1);
+            });
+
+            it('should fetch paginated notes with custom params', async () => {
+                const result = await notesService.getPaged({
+                    page: 1,
+                    pageSize: 10,
+                    search: 'First',
+                });
+
+                expect(result).toBeDefined();
+                expect(result.page).toBe(1);
+            });
+
+            it('should handle folder filter', async () => {
+                const result = await notesService.getPaged({
+                    folder: 'Projects',
+                });
+
+                expect(result).toBeDefined();
+            });
+
+            it('should handle includeArchived flag', async () => {
+                const result = await notesService.getPaged({
+                    includeArchived: true,
+                });
+
+                expect(result).toBeDefined();
+            });
+        });
+
+        describe('getById', () => {
+            it('should fetch a note by ID', async () => {
+                const result = await notesService.getById('note-1');
+
+                expect(result).toBeDefined();
+                expect(result.id).toBe('note-1');
+                expect(result.title).toBe('First Note');
+            });
+        });
+
+        describe('create', () => {
+            it('should create a new note', async () => {
+                const input: CreateNoteRequest = {
+                    title: 'New Note',
+                    content: 'New content',
+                    tags: ['test'],
+                    isArchived: false,
+                };
+
+                const result = await notesService.create(input);
+
+                expect(result).toBeDefined();
+                expect(result.title).toBe('New Note');
+            });
+
+            it('should throw error for invalid note', async () => {
+                const input: CreateNoteRequest = {
+                    title: '', // Invalid - empty title
+                    content: 'Content',
+                    tags: [],
+                    isArchived: false,
+                };
+
+                await expect(notesService.create(input)).rejects.toThrow('Title is required');
+            });
+        });
+
+        describe('update', () => {
+            it('should update an existing note', async () => {
+                const result = await notesService.update('note-1', {
+                    title: 'Updated Title',
+                });
+
+                expect(result).toBeDefined();
+                expect(result.title).toBe('Updated Title');
+            });
+        });
+
+        describe('delete', () => {
+            it('should delete a note', async () => {
+                await expect(notesService.delete('note-1')).resolves.toBeUndefined();
+            });
+        });
+
+        describe('bulkDelete', () => {
+            it('should delete multiple notes', async () => {
+                const result = await notesService.bulkDelete(['note-1', 'note-2']);
+
+                expect(result).toBeDefined();
+                expect(result.deletedCount).toBe(2);
+            });
+        });
+
+        describe('archive', () => {
+            it('should archive a note', async () => {
+                const result = await notesService.archive('note-1');
+
+                expect(result).toBeDefined();
+                expect(result.isArchived).toBe(true);
+            });
+        });
+
+        describe('unarchive', () => {
+            it('should unarchive a note', async () => {
+                const result = await notesService.unarchive('note-1');
+
+                expect(result).toBeDefined();
+                expect(result.isArchived).toBe(false);
+            });
+        });
+
+        describe('import', () => {
+            it('should import multiple notes', async () => {
+                const result = await notesService.import([
+                    { title: 'Imported 1', content: 'Content 1', tags: [] },
+                    { title: 'Imported 2', content: 'Content 2', tags: ['imported'] },
+                ]);
+
+                expect(result).toBeDefined();
+                expect(result.successCount).toBe(2);
+            });
+        });
+    });
+
+    // ============================================
+    // Version History Tests (Integration with MSW)
+    // ============================================
+    describe('version history', () => {
+        describe('getVersionHistory', () => {
+            it('should fetch version history for a note', async () => {
+                const result = await notesService.getVersionHistory('note-1');
+
+                expect(result).toBeDefined();
+                expect(result.noteId).toBe('note-1');
+                expect(result.totalVersions).toBe(3);
+                expect(result.currentVersion).toBe(3);
+                expect(Array.isArray(result.versions)).toBe(true);
+            });
+        });
+
+        describe('getVersionAtTime', () => {
+            it('should fetch version at specific timestamp', async () => {
+                const result = await notesService.getVersionAtTime(
+                    'note-1',
+                    '2024-01-01T12:00:00Z'
+                );
+
+                expect(result).toBeDefined();
+                expect(result.noteId).toBe('note-1');
+                expect(result.versionNumber).toBe(mockVersionHistory[2].versionNumber);
+            });
+        });
+
+        describe('getVersionDiff', () => {
+            it('should fetch diff between two versions', async () => {
+                const result = await notesService.getVersionDiff('note-1', 1, 2);
+
+                expect(result).toBeDefined();
+                expect(result.noteId).toBe('note-1');
+                expect(result.fromVersion).toBeDefined();
+                expect(result.toVersion).toBeDefined();
+                expect(typeof result.titleChanged).toBe('boolean');
+                expect(typeof result.contentChanged).toBe('boolean');
+            });
+        });
+
+        describe('restoreVersion', () => {
+            it('should restore note to a previous version', async () => {
+                const result = await notesService.restoreVersion('note-1', 1);
+
+                expect(result).toBeDefined();
+                expect(result.message).toContain('restored');
+                expect(result.newVersionNumber).toBe(4);
+                expect(result.noteId).toBe('note-1');
+            });
+        });
+    });
+
+    // ============================================
+    // Summary Generation Tests (Integration with MSW)
+    // ============================================
+    describe('summary generation', () => {
+        describe('generateSummaries', () => {
+            it('should generate summaries for specific notes', async () => {
+                const result = await notesService.generateSummaries(['note-1', 'note-2']);
+
+                expect(result).toBeDefined();
+                expect(result.totalProcessed).toBe(2);
+                expect(result.successCount).toBe(2);
+                expect(result.failureCount).toBe(0);
+            });
+
+            it('should generate summaries for all notes when no IDs provided', async () => {
+                const result = await notesService.generateSummaries();
+
+                expect(result).toBeDefined();
+                expect(result.totalProcessed).toBeGreaterThan(0);
+            });
+        });
+
+        describe('startSummaryGeneration', () => {
+            it('should start a background summary job', async () => {
+                const result = await notesService.startSummaryGeneration(['note-1']);
+
+                expect(result).toBeDefined();
+                expect(result.id).toBeDefined();
+                expect(result.status).toBe('running');
+            });
+
+            it('should start job for all notes when no IDs provided', async () => {
+                const result = await notesService.startSummaryGeneration();
+
+                expect(result).toBeDefined();
+                expect(result.id).toBeDefined();
+            });
+        });
+
+        describe('getSummaryJobStatus', () => {
+            it('should get status of a summary job', async () => {
+                const result = await notesService.getSummaryJobStatus('test-job-id');
+
+                expect(result).toBeDefined();
+                expect(result.id).toBe('test-job-id');
+                expect(result.status).toBe('completed');
+                expect(result.totalNotes).toBe(5);
+                expect(result.processedNotes).toBe(5);
+            });
+        });
+
+        describe('cancelSummaryJob', () => {
+            it('should cancel a summary job', async () => {
+                const result = await notesService.cancelSummaryJob('test-job-id');
+
+                expect(result).toBeDefined();
+                expect(result.message).toContain('cancelled');
+            });
+        });
+    });
+
+    // ============================================
+    // Constants Tests
+    // ============================================
+    describe('constants', () => {
+        it('should expose ARCHIVED_FOLDER constant', () => {
+            expect(notesService.ARCHIVED_FOLDER).toBe('Archived');
         });
     });
 });

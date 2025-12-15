@@ -24,6 +24,114 @@ import { createDraftSlice } from './slices/draft-slice';
 import { createGitSlice } from './slices/git-slice';
 
 // ============================================
+// Persist Config - Exported for Testing
+// ============================================
+
+/**
+ * Validates persisted state before merging.
+ * Throws an error if any persisted value is invalid.
+ * @internal Exported for testing purposes only.
+ */
+export function validatePersistedState(parsed: Partial<BoundStore> | undefined): void {
+  if (parsed === undefined) return;
+
+  // Validate NoteView
+  const validNoteViews: NoteView[] = ['list', 'grid'];
+  if (parsed.defaultNoteView !== undefined && !validNoteViews.includes(parsed.defaultNoteView)) {
+    throw new Error(`Invalid persisted defaultNoteView: ${parsed.defaultNoteView}`);
+  }
+
+  // Validate FontSize
+  const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
+  if (parsed.fontSize !== undefined && !validFontSizes.includes(parsed.fontSize)) {
+    throw new Error(`Invalid persisted fontSize: ${parsed.fontSize}`);
+  }
+
+  // Validate VectorStoreProvider
+  if (parsed.vectorStoreProvider !== undefined &&
+      parsed.vectorStoreProvider !== 'PostgreSQL' &&
+      parsed.vectorStoreProvider !== 'Pinecone') {
+    throw new Error(`Invalid persisted vectorStoreProvider: ${parsed.vectorStoreProvider}`);
+  }
+
+  // Validate Theme
+  const validThemes: Theme[] = ['light', 'dark', 'blue'];
+  if (parsed.theme !== undefined && !validThemes.includes(parsed.theme)) {
+    throw new Error(`Invalid persisted theme: ${parsed.theme}`);
+  }
+
+  // Validate numeric types
+  if (parsed.itemsPerPage !== undefined && typeof parsed.itemsPerPage !== 'number') {
+    throw new Error(`Invalid persisted itemsPerPage type: ${typeof parsed.itemsPerPage}`);
+  }
+  if (parsed.autoSaveInterval !== undefined && typeof parsed.autoSaveInterval !== 'number') {
+    throw new Error(`Invalid persisted autoSaveInterval type: ${typeof parsed.autoSaveInterval}`);
+  }
+
+  // Validate boolean types
+  const booleanFields = [
+    'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
+    'ragEnableHyde', 'ragEnableQueryExpansion', 'ragEnableHybridSearch',
+    'ragEnableReranking', 'ragEnableAnalytics'
+  ] as const;
+  for (const field of booleanFields) {
+    if (parsed[field] !== undefined && typeof parsed[field] !== 'boolean') {
+      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
+    }
+  }
+}
+
+/**
+ * Merges persisted state with current state after validation.
+ * @internal Exported for testing purposes only.
+ */
+export function mergePersistedState(
+  persistedState: unknown,
+  currentState: BoundStore
+): BoundStore {
+  const parsed = persistedState as Partial<BoundStore> | undefined;
+  if (parsed === undefined) return currentState;
+
+  // Validate before merging
+  validatePersistedState(parsed);
+
+  return {
+    ...currentState,
+    // Merge auth state
+    user: parsed.user ?? currentState.user,
+    token: parsed.token ?? currentState.token,
+    isAuthenticated: parsed.isAuthenticated ?? currentState.isAuthenticated,
+    // Merge validated settings
+    chatProvider: parsed.chatProvider ?? currentState.chatProvider,
+    chatModel: parsed.chatModel ?? currentState.chatModel,
+    vectorStoreProvider: parsed.vectorStoreProvider ?? currentState.vectorStoreProvider,
+    rerankingProvider: parsed.rerankingProvider ?? currentState.rerankingProvider,
+    defaultNoteView: parsed.defaultNoteView ?? currentState.defaultNoteView,
+    itemsPerPage: parsed.itemsPerPage ?? currentState.itemsPerPage,
+    fontSize: parsed.fontSize ?? currentState.fontSize,
+    enableNotifications: parsed.enableNotifications ?? currentState.enableNotifications,
+    ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? currentState.ollamaRemoteUrl,
+    useRemoteOllama: parsed.useRemoteOllama ?? currentState.useRemoteOllama,
+    autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
+    noteSummaryEnabled: parsed.noteSummaryEnabled ?? currentState.noteSummaryEnabled,
+    noteSummaryProvider: parsed.noteSummaryProvider ?? currentState.noteSummaryProvider,
+    noteSummaryModel: parsed.noteSummaryModel ?? currentState.noteSummaryModel,
+    // RAG Feature Toggles
+    ragEnableHyde: parsed.ragEnableHyde ?? currentState.ragEnableHyde,
+    ragEnableQueryExpansion: parsed.ragEnableQueryExpansion ?? currentState.ragEnableQueryExpansion,
+    ragEnableHybridSearch: parsed.ragEnableHybridSearch ?? currentState.ragEnableHybridSearch,
+    ragEnableReranking: parsed.ragEnableReranking ?? currentState.ragEnableReranking,
+    ragEnableAnalytics: parsed.ragEnableAnalytics ?? currentState.ragEnableAnalytics,
+    // Merge theme
+    theme: parsed.theme ?? currentState.theme,
+    // Merge notes state
+    filterState: parsed.filterState ? { ...currentState.filterState, ...parsed.filterState } : currentState.filterState,
+    // Merge git state
+    repositoryPath: parsed.repositoryPath ?? currentState.repositoryPath,
+  };
+}
+
+// ============================================
 // Combined Store
 // ============================================
 
@@ -77,90 +185,7 @@ const _useBoundStore = create<BoundStore>()(
         // Git state
         repositoryPath: state.repositoryPath,
       }),
-      merge: (persistedState, currentState) => {
-        const parsed = persistedState as Partial<BoundStore> | undefined;
-        if (parsed === undefined) return currentState;
-
-        // Validate NoteView - throw on invalid value
-        const validNoteViews: NoteView[] = ['list', 'grid'];
-        if (parsed.defaultNoteView !== undefined && !validNoteViews.includes(parsed.defaultNoteView)) {
-          throw new Error(`Invalid persisted defaultNoteView: ${parsed.defaultNoteView}`);
-        }
-
-        // Validate FontSize - throw on invalid value
-        const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
-        if (parsed.fontSize !== undefined && !validFontSizes.includes(parsed.fontSize)) {
-          throw new Error(`Invalid persisted fontSize: ${parsed.fontSize}`);
-        }
-
-        // Validate VectorStoreProvider - throw on invalid value
-        if (parsed.vectorStoreProvider !== undefined &&
-            parsed.vectorStoreProvider !== 'PostgreSQL' &&
-            parsed.vectorStoreProvider !== 'Pinecone') {
-          throw new Error(`Invalid persisted vectorStoreProvider: ${parsed.vectorStoreProvider}`);
-        }
-
-        // Validate Theme - throw on invalid value
-        const validThemes: Theme[] = ['light', 'dark', 'blue'];
-        if (parsed.theme !== undefined && !validThemes.includes(parsed.theme)) {
-          throw new Error(`Invalid persisted theme: ${parsed.theme}`);
-        }
-
-        // Validate numeric types
-        if (parsed.itemsPerPage !== undefined && typeof parsed.itemsPerPage !== 'number') {
-          throw new Error(`Invalid persisted itemsPerPage type: ${typeof parsed.itemsPerPage}`);
-        }
-        if (parsed.autoSaveInterval !== undefined && typeof parsed.autoSaveInterval !== 'number') {
-          throw new Error(`Invalid persisted autoSaveInterval type: ${typeof parsed.autoSaveInterval}`);
-        }
-
-        // Validate boolean types
-        const booleanFields = [
-          'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
-          'ragEnableHyde', 'ragEnableQueryExpansion', 'ragEnableHybridSearch',
-          'ragEnableReranking', 'ragEnableAnalytics'
-        ] as const;
-        for (const field of booleanFields) {
-          if (parsed[field] !== undefined && typeof parsed[field] !== 'boolean') {
-            throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
-          }
-        }
-
-        return {
-          ...currentState,
-          // Merge auth state
-          user: parsed.user ?? currentState.user,
-          token: parsed.token ?? currentState.token,
-          isAuthenticated: parsed.isAuthenticated ?? currentState.isAuthenticated,
-          // Merge validated settings
-          chatProvider: parsed.chatProvider ?? currentState.chatProvider,
-          chatModel: parsed.chatModel ?? currentState.chatModel,
-          vectorStoreProvider: parsed.vectorStoreProvider ?? currentState.vectorStoreProvider,
-          rerankingProvider: parsed.rerankingProvider ?? currentState.rerankingProvider,
-          defaultNoteView: parsed.defaultNoteView ?? currentState.defaultNoteView,
-          itemsPerPage: parsed.itemsPerPage ?? currentState.itemsPerPage,
-          fontSize: parsed.fontSize ?? currentState.fontSize,
-          enableNotifications: parsed.enableNotifications ?? currentState.enableNotifications,
-          ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? currentState.ollamaRemoteUrl,
-          useRemoteOllama: parsed.useRemoteOllama ?? currentState.useRemoteOllama,
-          autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
-          noteSummaryEnabled: parsed.noteSummaryEnabled ?? currentState.noteSummaryEnabled,
-          noteSummaryProvider: parsed.noteSummaryProvider ?? currentState.noteSummaryProvider,
-          noteSummaryModel: parsed.noteSummaryModel ?? currentState.noteSummaryModel,
-          // RAG Feature Toggles
-          ragEnableHyde: parsed.ragEnableHyde ?? currentState.ragEnableHyde,
-          ragEnableQueryExpansion: parsed.ragEnableQueryExpansion ?? currentState.ragEnableQueryExpansion,
-          ragEnableHybridSearch: parsed.ragEnableHybridSearch ?? currentState.ragEnableHybridSearch,
-          ragEnableReranking: parsed.ragEnableReranking ?? currentState.ragEnableReranking,
-          ragEnableAnalytics: parsed.ragEnableAnalytics ?? currentState.ragEnableAnalytics,
-          // Merge theme
-          theme: parsed.theme ?? currentState.theme,
-          // Merge notes state
-          filterState: parsed.filterState ? { ...currentState.filterState, ...parsed.filterState } : currentState.filterState,
-          // Merge git state
-          repositoryPath: parsed.repositoryPath ?? currentState.repositoryPath,
-        };
-      },
+      merge: mergePersistedState,
     }
   )
 );

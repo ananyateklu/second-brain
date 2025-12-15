@@ -90,6 +90,33 @@ describe('Modal', () => {
             // Assert
             expect(onClose).toHaveBeenCalledTimes(1);
         });
+
+        it('should apply hover styles on mouse enter', () => {
+            // Act
+            render(<Modal {...defaultProps} />);
+            const closeButton = screen.getByLabelText('Close modal');
+
+            // Trigger hover
+            fireEvent.mouseEnter(closeButton);
+
+            // Assert
+            expect(closeButton.style.color).toBe('var(--text-primary)');
+            expect(closeButton.style.backgroundColor).toBe('var(--surface-elevated)');
+        });
+
+        it('should remove hover styles on mouse leave', () => {
+            // Act
+            render(<Modal {...defaultProps} />);
+            const closeButton = screen.getByLabelText('Close modal');
+
+            // Trigger hover then leave
+            fireEvent.mouseEnter(closeButton);
+            fireEvent.mouseLeave(closeButton);
+
+            // Assert
+            expect(closeButton.style.color).toBe('var(--text-tertiary)');
+            expect(closeButton.style.backgroundColor).toBe('transparent');
+        });
     });
 
     // ============================================

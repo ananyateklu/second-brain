@@ -138,24 +138,3 @@ export const Flex = forwardRef<HTMLDivElement, FlexProps>(
 );
 
 Flex.displayName = 'Flex';
-
-/**
- * Convenience exports for common flex patterns
- */
-export const HStack = forwardRef<HTMLDivElement, Omit<FlexProps, 'direction'>>(
-  (props, ref) => <Flex ref={ref} direction="row" {...props} />
-);
-HStack.displayName = 'HStack';
-
-export const VStack = forwardRef<HTMLDivElement, Omit<FlexProps, 'direction'>>(
-  (props, ref) => <Flex ref={ref} direction="column" {...props} />
-);
-VStack.displayName = 'VStack';
-
-export const Center = forwardRef<HTMLDivElement, Omit<FlexProps, 'align' | 'justify'>>(
-  (props, ref) => <Flex ref={ref} align="center" justify="center" {...props} />
-);
-Center.displayName = 'Center';
-
-// Re-export with aliases for index.ts
-export { HStack as FlexHStack, VStack as FlexVStack };

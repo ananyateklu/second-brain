@@ -32,7 +32,6 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.CircuitBreaker;
 using SecondBrain.Application.Services.AI.FileManagement;
-using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.AI.StructuredOutput;
@@ -245,34 +244,6 @@ public static class ServiceCollectionExtensions
 
         // Register image generation factory
         services.AddSingleton<IImageGenerationProviderFactory, ImageGenerationProviderFactory>();
-
-        // Register Gemini function registry for native function calling
-        // The registry collects all IGeminiFunctionHandler implementations and provides them to the GeminiProvider
-        services.AddScoped<IGeminiFunctionRegistry, GeminiFunctionRegistry>();
-
-        // Register Gemini function handlers
-        // These handlers wrap plugin functionality for Gemini's native function calling
-        services.AddScoped<SecondBrain.Application.Services.AI.FunctionCalling.Handlers.NotesGeminiFunctionHandler>();
-        services.AddScoped<IGeminiFunctionHandler>(sp =>
-            sp.GetRequiredService<SecondBrain.Application.Services.AI.FunctionCalling.Handlers.NotesGeminiFunctionHandler>());
-
-        // Register Ollama function registry for native function calling
-        // The registry collects all IOllamaFunctionHandler implementations and provides them to the OllamaProvider
-        services.AddScoped<IOllamaFunctionRegistry, OllamaFunctionRegistry>();
-
-        // Register Ollama function handlers (similar pattern to Gemini)
-        // Note: Ollama uses the same plugin infrastructure but with OllamaSharp Tool format
-
-        // Register OpenAI function registry for native function calling
-        // The registry collects all IOpenAIFunctionHandler implementations and provides them to the OpenAIProvider
-        services.AddScoped<IOpenAIFunctionRegistry, OpenAIFunctionRegistry>();
-
-        // Register OpenAI function handlers (similar pattern to Gemini and Ollama)
-        // Note: OpenAI uses the same plugin infrastructure but with OpenAI ChatTool format
-
-        // Register Grok function registry for native function calling
-        // Grok uses OpenAI-compatible API, so patterns are similar to OpenAI
-        services.AddScoped<IGrokFunctionRegistry, GrokFunctionRegistry>();
 
         // Register Grok search tools (Live Search and DeepSearch)
         services.AddScoped<GrokSearchTool>();
