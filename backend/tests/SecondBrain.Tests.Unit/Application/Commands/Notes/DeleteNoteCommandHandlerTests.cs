@@ -130,7 +130,7 @@ public class DeleteNoteCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NotFound");
+        result.Error!.Code.Should().Be("NotFound");
     }
 
     [Fact]
@@ -149,7 +149,7 @@ public class DeleteNoteCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Forbidden");
+        result.Error!.Code.Should().Be("Forbidden");
     }
 
     [Fact]
@@ -168,7 +168,7 @@ public class DeleteNoteCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("DeleteFailed");
+        result.Error!.Code.Should().Be("DeleteFailed");
     }
 
     [Fact]

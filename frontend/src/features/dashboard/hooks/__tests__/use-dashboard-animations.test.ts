@@ -92,26 +92,26 @@ describe('useDashboardAnimations', () => {
       expect(result.current.isReady).toBe(false);
     });
 
-    it('should become true when data is loaded', async () => {
+    it('should become true when data is loaded', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true));
 
       // Fast-forward timers
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
       expect(result.current.isReady).toBe(true);
     });
 
-    it('should reset to false when data unloads', async () => {
+    it('should reset to false when data unloads', () => {
       vi.useFakeTimers();
       const { result, rerender } = renderHook(
         ({ loaded }) => useDashboardAnimations(loaded),
         { initialProps: { loaded: true } }
       );
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -127,11 +127,11 @@ describe('useDashboardAnimations', () => {
   // getItemAnimation Tests
   // ============================================
   describe('getItemAnimation', () => {
-    it('should return animation state for item', async () => {
+    it('should return animation state for item', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true, 5));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -143,11 +143,11 @@ describe('useDashboardAnimations', () => {
       expect(animation).toHaveProperty('className');
     });
 
-    it('should return style with opacity', async () => {
+    it('should return style with opacity', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true, 5));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -156,11 +156,11 @@ describe('useDashboardAnimations', () => {
       expect(animation.style).toHaveProperty('opacity');
     });
 
-    it('should return visible class when ready', async () => {
+    it('should return visible class when ready', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true, 5));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -182,11 +182,11 @@ describe('useDashboardAnimations', () => {
   // getSectionAnimation Tests
   // ============================================
   describe('getSectionAnimation', () => {
-    it('should return animation state for section', async () => {
+    it('should return animation state for section', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -198,11 +198,11 @@ describe('useDashboardAnimations', () => {
       expect(animation).toHaveProperty('className');
     });
 
-    it('should return section-specific class names', async () => {
+    it('should return section-specific class names', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -216,11 +216,11 @@ describe('useDashboardAnimations', () => {
   // triggerAnimations Tests
   // ============================================
   describe('triggerAnimations', () => {
-    it('should reset isReady when called', async () => {
+    it('should reset isReady when called', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -233,11 +233,11 @@ describe('useDashboardAnimations', () => {
       expect(result.current.isReady).toBe(false);
     });
 
-    it('should re-trigger animations after reset', async () => {
+    it('should re-trigger animations after reset', () => {
       vi.useFakeTimers();
       const { result } = renderHook(() => useDashboardAnimations(true));
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -245,7 +245,7 @@ describe('useDashboardAnimations', () => {
         result.current.triggerAnimations();
       });
 
-      await act(async () => {
+      act(() => {
         vi.advanceTimersByTime(100);
       });
 
@@ -382,29 +382,29 @@ describe('useAnimatedVisibility', () => {
     expect(result.current.opacity).toBe(0);
   });
 
-  it('should animate to visible after delay', async () => {
+  it('should animate to visible after delay', () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useAnimatedVisibility(true, 100));
 
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(150);
     });
 
     expect(result.current.opacity).toBe(1);
   });
 
-  it('should include transform when not using reduced motion', async () => {
+  it('should include transform when not using reduced motion', () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useAnimatedVisibility(true, 0));
 
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(50);
     });
 
     expect(result.current.transform).toBeDefined();
   });
 
-  it('should only use opacity when reduced motion is preferred', async () => {
+  it('should only use opacity when reduced motion is preferred', () => {
     mockMatchMedia.mockImplementation((query: string) => ({
       matches: query === '(prefers-reduced-motion: reduce)',
       media: query,
@@ -419,7 +419,7 @@ describe('useAnimatedVisibility', () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => useAnimatedVisibility(true, 0));
 
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(50);
     });
 

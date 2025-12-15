@@ -240,7 +240,7 @@ describe('ToastContainer', () => {
     // Toast Rendering Tests
     // ============================================
     describe('toast rendering', () => {
-        it('should render toasts from context', async () => {
+        it('should render toasts from context', () => {
             let contextValue: ToastContextValue | null = null;
 
             render(
@@ -251,7 +251,7 @@ describe('ToastContainer', () => {
             );
 
             // Add toasts via context
-            await act(async () => {
+            act(() => {
                 if (contextValue) {
                     contextValue.addToast({ type: 'success', title: 'Success Toast', duration: 5000 });
                     contextValue.addToast({ type: 'error', title: 'Error Toast', duration: 5000 });
@@ -263,7 +263,7 @@ describe('ToastContainer', () => {
             expect(screen.getByText('Error Toast')).toBeInTheDocument();
         });
 
-        it('should render multiple toast types', async () => {
+        it('should render multiple toast types', () => {
             let contextValue: ToastContextValue | null = null;
 
             render(
@@ -273,7 +273,7 @@ describe('ToastContainer', () => {
                 </ToastProvider>
             );
 
-            await act(async () => {
+            act(() => {
                 if (contextValue) {
                     contextValue.addToast({ type: 'info', title: 'Info Toast', duration: 5000 });
                     contextValue.addToast({ type: 'warning', title: 'Warning Toast', duration: 5000 });

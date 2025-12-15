@@ -543,7 +543,7 @@ describe('use-note-versions', () => {
             expect(typeof result.current).toBe('function');
         });
 
-        it('should call prefetchQuery when prefetch function is invoked', async () => {
+        it('should call prefetchQuery when prefetch function is invoked', () => {
             // Arrange
             const mockHistory = createMockVersionHistory('note-1');
             vi.mocked(notesService.getVersionHistory).mockResolvedValue(mockHistory);
@@ -561,7 +561,7 @@ describe('use-note-versions', () => {
             // Act
             const { result } = renderHook(() => usePrefetchVersionHistory(), { wrapper });
 
-            await act(async () => {
+            act(() => {
                 result.current('note-123');
             });
 
@@ -588,7 +588,7 @@ describe('use-note-versions', () => {
             expect(typeof result.current).toBe('function');
         });
 
-        it('should call invalidateQueries when invoked', async () => {
+        it('should call invalidateQueries when invoked', () => {
             // Arrange
             const queryClient = new QueryClient({
                 defaultOptions: { queries: { retry: false } },
@@ -603,7 +603,7 @@ describe('use-note-versions', () => {
             // Act
             const { result } = renderHook(() => useInvalidateVersionQueries(), { wrapper });
 
-            await act(async () => {
+            act(() => {
                 result.current('note-456');
             });
 

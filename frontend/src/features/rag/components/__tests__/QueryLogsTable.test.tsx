@@ -188,7 +188,8 @@ describe('QueryLogsTable', () => {
       render(<QueryLogsTable {...defaultProps} logs={[createMockLog()]} />);
 
       const row = screen.getByText('Test query for searching notes').closest('tr');
-      fireEvent.click(row!);
+      expect(row).not.toBeNull();
+      fireEvent.click(row as HTMLElement);
 
       expect(screen.getByText('Full Query')).toBeInTheDocument();
     });
@@ -197,8 +198,9 @@ describe('QueryLogsTable', () => {
       render(<QueryLogsTable {...defaultProps} logs={[createMockLog()]} />);
 
       const row = screen.getByText('Test query for searching notes').closest('tr');
-      fireEvent.click(row!);
-      fireEvent.click(row!);
+      expect(row).not.toBeNull();
+      fireEvent.click(row as HTMLElement);
+      fireEvent.click(row as HTMLElement);
 
       expect(screen.queryByText('Full Query')).not.toBeInTheDocument();
     });
@@ -207,7 +209,8 @@ describe('QueryLogsTable', () => {
       render(<QueryLogsTable {...defaultProps} logs={[createMockLog()]} />);
 
       const row = screen.getByText('Test query for searching notes').closest('tr');
-      fireEvent.click(row!);
+      expect(row).not.toBeNull();
+      fireEvent.click(row as HTMLElement);
 
       expect(screen.getByText('Timing Breakdown')).toBeInTheDocument();
       expect(screen.getByText('Embedding:')).toBeInTheDocument();
@@ -222,7 +225,8 @@ describe('QueryLogsTable', () => {
       })]} />);
 
       const row = screen.getByText('Test query for searching notes').closest('tr');
-      fireEvent.click(row!);
+      expect(row).not.toBeNull();
+      fireEvent.click(row as HTMLElement);
 
       expect(screen.getByText('Features Enabled')).toBeInTheDocument();
       expect(screen.getByText('Hybrid')).toBeInTheDocument();

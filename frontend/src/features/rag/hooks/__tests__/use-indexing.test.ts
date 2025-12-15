@@ -123,7 +123,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate({
           userId: 'user-1',
           embeddingProvider: 'OpenAI',
@@ -161,7 +161,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate({
           userId: 'user-1',
           vectorStoreProvider: 'Pinecone',
@@ -186,7 +186,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate({ userId: 'user-1' });
       });
 
@@ -311,7 +311,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate('note-123');
       });
 
@@ -328,7 +328,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate('invalid-note');
       });
 
@@ -348,7 +348,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate({ userId: 'user-1', vectorStoreProvider: 'PostgreSQL' });
       });
 
@@ -370,7 +370,7 @@ describe('use-indexing hooks', () => {
         wrapper: createWrapper(),
       });
 
-      await act(async () => {
+      act(() => {
         result.current.mutate({ jobId: 'job-123', userId: 'user-1' });
       });
 

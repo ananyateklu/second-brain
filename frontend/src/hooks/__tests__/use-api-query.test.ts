@@ -296,7 +296,7 @@ describe('use-api-query', () => {
             expect(result.current.isStale).toBe(false);
         });
 
-        it('should allow options override', async () => {
+        it('should allow options override', () => {
             // Arrange
             const mockData = { data: true };
             const getQueryKey = () => ['override-test'];

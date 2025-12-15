@@ -64,7 +64,7 @@ public class RegisterCommandHandlerTests
             Id = "new-user-id",
             Email = command.Email.ToLowerInvariant(),
             Username = command.Username,
-            DisplayName = command.DisplayName,
+            DisplayName = command.DisplayName ?? "New User",
             PasswordHash = "hashed-password",
             IsActive = true
         };
@@ -82,11 +82,11 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be("new-user-id");
-        result.Value.Email.Should().Be(command.Email.ToLowerInvariant());
-        result.Value.Username.Should().Be(command.Username);
-        result.Value.Token.Should().Be("test-jwt-token");
-        result.Value.IsNewUser.Should().BeTrue();
+        result.Value!.UserId.Should().Be("new-user-id");
+        result.Value!.Email.Should().Be(command.Email.ToLowerInvariant());
+        result.Value!.Username.Should().Be(command.Username);
+        result.Value!.Token.Should().Be("test-jwt-token");
+        result.Value!.IsNewUser.Should().BeTrue();
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.IsNewUser.Should().BeTrue();
+        result.Value!.IsNewUser.Should().BeTrue();
     }
 
     [Fact]
@@ -255,7 +255,7 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     [Fact]
@@ -272,7 +272,7 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     [Fact]
@@ -289,8 +289,8 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
-        result.Error.Message.Should().Contain("Invalid email");
+        result.Error!.Code.Should().Be("ValidationFailed");
+        result.Error!.Message.Should().Contain("Invalid email");
     }
 
     [Fact]
@@ -307,8 +307,8 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
-        result.Error.Message.Should().Contain("6 characters");
+        result.Error!.Code.Should().Be("ValidationFailed");
+        result.Error!.Message.Should().Contain("6 characters");
     }
 
     [Theory]
@@ -370,8 +370,8 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Conflict");
-        result.Error.Message.Should().Contain("email already exists");
+        result.Error!.Code.Should().Be("Conflict");
+        result.Error!.Message.Should().Contain("email already exists");
     }
 
     [Fact]
@@ -391,7 +391,7 @@ public class RegisterCommandHandlerTests
             .ReturnsAsync((User?)null);
 
         _mockUserRepository
-            .Setup(r => r.GetByUsernameAsync(command.Username))
+            .Setup(r => r.GetByUsernameAsync(command.Username!))
             .ReturnsAsync(existingUser);
 
         // Act
@@ -399,8 +399,8 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Conflict");
-        result.Error.Message.Should().Contain("Username is already taken");
+        result.Error!.Code.Should().Be("Conflict");
+        result.Error!.Message.Should().Contain("Username is already taken");
     }
 
     #endregion
@@ -514,7 +514,7 @@ public class RegisterCommandHandlerTests
 
         // Assert
         _mockJwtService.Verify(j => j.GenerateToken(createdUser), Times.Once);
-        result.Value.Token.Should().Be("new-user-token");
+        result.Value!.Token.Should().Be("new-user-token");
     }
 
     #endregion
@@ -539,7 +539,7 @@ public class RegisterCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
+        result.Error!.Code.Should().Be("InternalError");
     }
 
     #endregion
