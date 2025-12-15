@@ -160,12 +160,11 @@ describe('FeedbackSummaryCard', () => {
 
     it('should have ambient glow element', () => {
       const { container } = render(<FeedbackSummaryCard stats={createMockStats()} />);
-      const glow = container.querySelector('.opacity-15.blur-3xl');
-      expect(glow).toBeInTheDocument();
+      expect(container.querySelector('.opacity-15.blur-3xl')).toBeInTheDocument();
     });
 
     it('should use positive color for positive feedback', () => {
-      const { container } = render(<FeedbackSummaryCard stats={createMockStats()} />);
+      render(<FeedbackSummaryCard stats={createMockStats()} />);
       const positiveValue = screen.getByText('Positive Feedback')
         .closest('div')
         ?.querySelector('.font-semibold');
@@ -173,7 +172,7 @@ describe('FeedbackSummaryCard', () => {
     });
 
     it('should use error color for negative feedback', () => {
-      const { container } = render(<FeedbackSummaryCard stats={createMockStats()} />);
+      render(<FeedbackSummaryCard stats={createMockStats()} />);
       const negativeValue = screen.getByText('Negative Feedback')
         .closest('div')
         ?.querySelector('.font-semibold');
@@ -192,8 +191,7 @@ describe('FeedbackSummaryCard', () => {
 
     it('should have border-top on footer', () => {
       const { container } = render(<FeedbackSummaryCard stats={createMockStats()} />);
-      const footer = container.querySelector('.mt-3.pt-2.border-t');
-      expect(footer).toBeInTheDocument();
+      expect(container.querySelector('.mt-3.pt-2.border-t')).toBeInTheDocument();
     });
   });
 
@@ -204,7 +202,7 @@ describe('FeedbackSummaryCard', () => {
     it('should handle zero total queries', () => {
       // This will cause division by zero for awaiting feedback percentage
       // The component should handle it gracefully
-      const { container } = render(<FeedbackSummaryCard stats={createMockStats({
+      render(<FeedbackSummaryCard stats={createMockStats({
         totalQueries: 0,
         queriesWithFeedback: 0,
       })} />);

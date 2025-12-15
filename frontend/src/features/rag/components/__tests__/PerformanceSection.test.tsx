@@ -16,13 +16,13 @@ vi.mock('../RagStatsCards', () => ({
 }));
 
 vi.mock('../ScoreCorrelationCard', () => ({
-  ScoreCorrelationCard: ({ stats }: { stats: RagPerformanceStats }) => (
+  ScoreCorrelationCard: ({ stats: _stats }: { stats: RagPerformanceStats }) => (
     <div data-testid="score-correlation-card">ScoreCorrelationCard</div>
   ),
 }));
 
 vi.mock('../FeedbackSummaryCard', () => ({
-  FeedbackSummaryCard: ({ stats }: { stats: RagPerformanceStats }) => (
+  FeedbackSummaryCard: ({ stats: _stats }: { stats: RagPerformanceStats }) => (
     <div data-testid="feedback-summary-card">FeedbackSummaryCard</div>
   ),
 }));

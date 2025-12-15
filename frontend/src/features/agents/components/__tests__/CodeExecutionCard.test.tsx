@@ -101,7 +101,7 @@ describe('CodeExecutionCard', () => {
     });
 
     it('should show chevron rotation when expanded', () => {
-      const { container } = render(<CodeExecutionCard result={createMockResult()} />);
+      render(<CodeExecutionCard result={createMockResult()} />);
 
       const headerButton = screen.getAllByRole('button')[0];
       const chevron = headerButton.querySelector('svg:last-of-type');
@@ -261,9 +261,7 @@ describe('CodeExecutionCard', () => {
   // ============================================
   describe('streaming behavior', () => {
     it('should show streaming indicator in header when streaming', () => {
-      const { container } = render(
-        <CodeExecutionCard result={createMockResult()} isStreaming={true} />
-      );
+      render(<CodeExecutionCard result={createMockResult()} isStreaming={true} />);
 
       const headerButton = screen.getAllByRole('button')[0];
       const pulseIndicator = headerButton.querySelector('.animate-pulse.w-1\\.5.h-1\\.5');

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AnalyticsTabBar, type TabType } from '../AnalyticsTabBar';
+import { AnalyticsTabBar } from '../AnalyticsTabBar';
 
 describe('AnalyticsTabBar', () => {
   const mockOnTabChange = vi.fn();
@@ -69,9 +69,7 @@ describe('AnalyticsTabBar', () => {
     });
 
     it('should show active indicator line under active tab', () => {
-      const { container } = render(
-        <AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />
-      );
+      render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const performanceTab = screen.getByText('Performance').closest('button');
       const indicator = performanceTab?.querySelector('.absolute.bottom-0');
@@ -79,9 +77,7 @@ describe('AnalyticsTabBar', () => {
     });
 
     it('should not show indicator under inactive tabs', () => {
-      const { container } = render(
-        <AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />
-      );
+      render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const topicsTab = screen.getByText('Topics').closest('button');
       const indicator = topicsTab?.querySelector('.absolute.bottom-0');

@@ -16,10 +16,10 @@ vi.mock('../QueryLogsTable', () => ({
     page,
     pageSize,
     totalPages,
-    onPageChange,
+    onPageChange: _onPageChange,
     isLoading,
     feedbackOnly,
-    setFeedbackOnly,
+    setFeedbackOnly: _setFeedbackOnly,
   }: {
     logs: RagQueryLog[];
     totalCount: number;

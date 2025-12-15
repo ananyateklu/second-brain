@@ -100,7 +100,7 @@ describe('ThinkingStepCard', () => {
     });
 
     it('should show chevron icon that rotates when expanded', () => {
-      const { container } = render(<ThinkingStepCard step={createMockThinkingStep()} />);
+      render(<ThinkingStepCard step={createMockThinkingStep()} />);
 
       // Find the chevron icon (last svg in button)
       const button = screen.getByRole('button');

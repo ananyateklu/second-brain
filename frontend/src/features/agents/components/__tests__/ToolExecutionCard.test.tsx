@@ -243,7 +243,7 @@ describe('ToolExecutionCard', () => {
     });
 
     it('should show chevron rotation when expanded', () => {
-      const { container } = render(
+      render(
         <ToolExecutionCard execution={createMockExecution()} />,
         { wrapper: createWrapper() }
       );

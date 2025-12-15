@@ -107,18 +107,14 @@ describe('RagStatsCards', () => {
     });
 
     it('should use positive trend type when feedback rate >= 70%', () => {
-      const { container } = render(
-        <RagStatsCards stats={createMockStats({ positiveFeedbackRate: 0.75 })} />
-      );
+      render(<RagStatsCards stats={createMockStats({ positiveFeedbackRate: 0.75 })} />);
 
       const trendElement = screen.getByText('40 positive / 10 negative');
       expect(trendElement).toHaveStyle({ color: 'var(--color-brand-400)' });
     });
 
     it('should use negative trend type when feedback rate < 50%', () => {
-      const { container } = render(
-        <RagStatsCards stats={createMockStats({ positiveFeedbackRate: 0.4, queriesWithFeedback: 50 })} />
-      );
+      render(<RagStatsCards stats={createMockStats({ positiveFeedbackRate: 0.4, queriesWithFeedback: 50 })} />);
 
       const trendElement = screen.getByText('40 positive / 10 negative');
       expect(trendElement).toHaveStyle({ color: 'var(--color-error)' });

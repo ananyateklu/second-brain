@@ -7,7 +7,6 @@ import { describe, it, expect } from 'vitest';
 import {
   categorizeModel,
   groupModelsByCategory,
-  type ModelCategory,
 } from '../model-categorizer';
 
 describe('model-categorizer', () => {

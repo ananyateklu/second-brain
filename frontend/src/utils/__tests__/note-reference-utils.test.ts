@@ -6,7 +6,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseNoteReferences,
-  hasNoteReferences,
   splitTextWithNoteReferences,
 } from '../note-reference-utils';
 
