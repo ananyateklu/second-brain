@@ -58,6 +58,8 @@ describe('use-rag-analytics hooks', () => {
         avgRerankScore: 0.82,
         cosineScoreCorrelation: 0.65,
         rerankScoreCorrelation: 0.72,
+        periodStart: '2024-01-01T00:00:00Z',
+        periodEnd: '2024-01-31T23:59:59Z',
       });
 
       const { result } = renderHook(() => useRagPerformanceStats(), {
@@ -84,6 +86,8 @@ describe('use-rag-analytics hooks', () => {
         avgRerankScore: 0.8,
         cosineScoreCorrelation: 0.6,
         rerankScoreCorrelation: 0.7,
+        periodStart: '2024-01-01T00:00:00Z',
+        periodEnd: '2024-01-31T23:59:59Z',
       });
 
       const sinceDate = new Date('2024-01-01');
@@ -110,6 +114,8 @@ describe('use-rag-analytics hooks', () => {
         avgRerankScore: 0,
         cosineScoreCorrelation: 0,
         rerankScoreCorrelation: 0,
+        periodStart: null,
+        periodEnd: '2024-01-31T23:59:59Z',
       });
 
       const { result } = renderHook(() => useRagPerformanceStats(), {
@@ -131,12 +137,13 @@ describe('use-rag-analytics hooks', () => {
       const { ragService } = await import('../../../../services/rag.service');
       vi.mocked(ragService.getQueryLogs).mockResolvedValue({
         logs: [
-          { id: '1', query: 'test query', responseTimeMs: 200 },
-          { id: '2', query: 'another query', responseTimeMs: 150 },
+          { id: '1', query: 'test query', totalTimeMs: 200, conversationId: null, createdAt: '2024-01-15T12:00:00Z', queryEmbeddingTimeMs: null, vectorSearchTimeMs: null, rerankTimeMs: null, retrievedCount: null, finalCount: null, topCosineScore: null, avgCosineScore: null, topRerankScore: null, avgRerankScore: null, hybridSearchEnabled: true, hyDEEnabled: false, multiQueryEnabled: false, rerankingEnabled: true, userFeedback: null, feedbackCategory: null, feedbackComment: null, topicCluster: null, topicLabel: null },
+          { id: '2', query: 'another query', totalTimeMs: 150, conversationId: null, createdAt: '2024-01-15T12:05:00Z', queryEmbeddingTimeMs: null, vectorSearchTimeMs: null, rerankTimeMs: null, retrievedCount: null, finalCount: null, topCosineScore: null, avgCosineScore: null, topRerankScore: null, avgRerankScore: null, hybridSearchEnabled: true, hyDEEnabled: false, multiQueryEnabled: false, rerankingEnabled: true, userFeedback: null, feedbackCategory: null, feedbackComment: null, topicCluster: null, topicLabel: null },
         ],
         totalCount: 100,
         page: 1,
         pageSize: 20,
+        totalPages: 5,
       });
 
       const { result } = renderHook(() => useRagQueryLogs(1, 20), {
@@ -156,6 +163,7 @@ describe('use-rag-analytics hooks', () => {
         totalCount: 0,
         page: 1,
         pageSize: 20,
+        totalPages: 0,
       });
 
       const { result } = renderHook(() => useRagQueryLogs(), {
@@ -170,10 +178,11 @@ describe('use-rag-analytics hooks', () => {
     it('should filter by feedback when feedbackOnly is true', async () => {
       const { ragService } = await import('../../../../services/rag.service');
       vi.mocked(ragService.getQueryLogs).mockResolvedValue({
-        logs: [{ id: '1', query: 'query with feedback', feedback: 'thumbs_up' }],
+        logs: [{ id: '1', query: 'query with feedback', userFeedback: 'thumbs_up', conversationId: null, createdAt: '2024-01-15T12:00:00Z', totalTimeMs: 200, queryEmbeddingTimeMs: null, vectorSearchTimeMs: null, rerankTimeMs: null, retrievedCount: null, finalCount: null, topCosineScore: null, avgCosineScore: null, topRerankScore: null, avgRerankScore: null, hybridSearchEnabled: true, hyDEEnabled: false, multiQueryEnabled: false, rerankingEnabled: true, feedbackCategory: null, feedbackComment: null, topicCluster: null, topicLabel: null }],
         totalCount: 10,
         page: 1,
         pageSize: 20,
+        totalPages: 1,
       });
 
       const { result } = renderHook(
@@ -193,6 +202,7 @@ describe('use-rag-analytics hooks', () => {
         totalCount: 0,
         page: 1,
         pageSize: 20,
+        totalPages: 0,
       });
 
       const sinceDate = new Date('2024-01-01');
@@ -222,11 +232,14 @@ describe('use-rag-analytics hooks', () => {
             positiveFeedback: 40,
             negativeFeedback: 10,
             positiveFeedbackRate: 0.8,
+            avgCosineScore: 0.75,
+            avgRerankScore: 0.82,
             sampleQueries: ['How to debug?'],
           },
         ],
         totalClustered: 100,
         totalUnclustered: 20,
+        lastClusteredAt: '2024-01-15T12:00:00Z',
       });
 
       const { result } = renderHook(() => useTopicAnalytics(), {
@@ -253,6 +266,7 @@ describe('use-rag-analytics hooks', () => {
         topics: [],
         totalClustered: 0,
         totalUnclustered: 0,
+        lastClusteredAt: null,
       });
 
       const { result } = renderHook(() => useTopicAnalytics(true), {
@@ -270,6 +284,7 @@ describe('use-rag-analytics hooks', () => {
         topics: [],
         totalClustered: 0,
         totalUnclustered: 0,
+        lastClusteredAt: null,
       });
 
       const { result } = renderHook(() => useTopicAnalytics(), {

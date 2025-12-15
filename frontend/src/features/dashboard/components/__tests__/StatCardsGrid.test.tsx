@@ -46,11 +46,22 @@ function createMockNotesStats() {
 function createMockAIStats(overrides: Partial<AIUsageStats> = {}): AIUsageStats {
   return {
     totalConversations: 50,
+    totalMessages: 500,
     ragConversationsCount: 20,
     agentConversationsCount: 10,
     imageGenerationConversationsCount: 5,
     totalImagesGenerated: 15,
-    totalMessages: 500,
+    modelUsageCounts: { 'gpt-4': 30, 'claude-3': 20 },
+    providerUsageCounts: { 'OpenAI': 30, 'Anthropic': 20 },
+    modelTokenUsageCounts: { 'gpt-4': 10000, 'claude-3': 8000 },
+    dailyConversationCounts: { '2024-01-01': 10 },
+    dailyRagConversationCounts: { '2024-01-01': 5 },
+    dailyNonRagConversationCounts: { '2024-01-01': 5 },
+    dailyAgentConversationCounts: { '2024-01-01': 3 },
+    dailyNonAgentConversationCounts: { '2024-01-01': 7 },
+    dailyImageGenerationConversationCounts: { '2024-01-01': 2 },
+    dailyModelUsageCounts: {},
+    dailyModelTokenUsageCounts: {},
     ...overrides,
   };
 }
@@ -58,10 +69,14 @@ function createMockAIStats(overrides: Partial<AIUsageStats> = {}): AIUsageStats 
 function createMockSessionStats(overrides: Partial<SessionStats> = {}): SessionStats {
   return {
     totalSessions: 30,
-    avgSessionDurationMinutes: 15.5,
-    activeSessions: 2,
     totalMessagesSent: 100,
     totalMessagesReceived: 150,
+    totalTokensUsed: 5000,
+    avgSessionDurationMinutes: 15.5,
+    uniqueConversations: 25,
+    firstSessionAt: '2024-01-01T10:00:00Z',
+    lastSessionAt: '2024-01-15T14:30:00Z',
+    activeSessions: 2,
     ...overrides,
   };
 }

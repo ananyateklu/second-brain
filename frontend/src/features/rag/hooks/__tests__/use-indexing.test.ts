@@ -58,7 +58,15 @@ describe('use-indexing hooks', () => {
     it('should fetch embedding providers', async () => {
       const { ragService } = await import('../../../../services');
       vi.mocked(ragService.getEmbeddingProviders).mockResolvedValue([
-        { provider: 'OpenAI', models: ['text-embedding-3-small', 'text-embedding-ada-002'], isConfigured: true },
+        {
+          name: 'OpenAI',
+          isEnabled: true,
+          currentModel: 'text-embedding-3-small',
+          currentDimensions: 1536,
+          availableModels: [
+            { modelId: 'text-embedding-3-small', displayName: 'Text Embedding 3 Small', dimensions: 1536, supportsPinecone: true, isDefault: true },
+          ],
+        },
       ]);
 
       const { result } = renderHook(() => useEmbeddingProviders(), {
@@ -68,7 +76,7 @@ describe('use-indexing hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toHaveLength(1);
-      expect(result.current.data?.[0].provider).toBe('OpenAI');
+      expect(result.current.data?.[0].name).toBe('OpenAI');
     });
 
     it('should have error state property', async () => {
@@ -92,7 +100,23 @@ describe('use-indexing hooks', () => {
   describe('useStartIndexing', () => {
     it('should start indexing job', async () => {
       const { ragService } = await import('../../../../services');
-      const mockJob = { id: 'job-123', status: 'pending', progress: 0 };
+      const mockJob = {
+        id: 'job-123',
+        status: 'pending' as const,
+        totalNotes: 100,
+        processedNotes: 0,
+        skippedNotes: 0,
+        deletedNotes: 0,
+        totalChunks: 0,
+        processedChunks: 0,
+        errors: [],
+        embeddingProvider: 'OpenAI',
+        embeddingModel: 'text-embedding-3-small',
+        startedAt: null,
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+        progressPercentage: 0,
+      };
       vi.mocked(ragService.startIndexing).mockResolvedValue(mockJob);
 
       const { result } = renderHook(() => useStartIndexing(), {
@@ -114,7 +138,23 @@ describe('use-indexing hooks', () => {
 
     it('should call startIndexing with vectorStoreProvider', async () => {
       const { ragService } = await import('../../../../services');
-      const mockJob = { id: 'job-456', status: 'pending', progress: 0 };
+      const mockJob = {
+        id: 'job-456',
+        status: 'pending' as const,
+        totalNotes: 100,
+        processedNotes: 0,
+        skippedNotes: 0,
+        deletedNotes: 0,
+        totalChunks: 0,
+        processedChunks: 0,
+        errors: [],
+        embeddingProvider: 'OpenAI',
+        embeddingModel: 'text-embedding-3-small',
+        startedAt: null,
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+        progressPercentage: 0,
+      };
       vi.mocked(ragService.startIndexing).mockResolvedValue(mockJob);
 
       const { result } = renderHook(() => useStartIndexing(), {
@@ -163,8 +203,19 @@ describe('use-indexing hooks', () => {
       vi.mocked(ragService.getIndexingStatus).mockResolvedValue({
         id: 'job-123',
         status: 'running',
-        progress: 50,
-        currentOperation: 'Embedding notes',
+        totalNotes: 100,
+        processedNotes: 50,
+        skippedNotes: 0,
+        deletedNotes: 0,
+        totalChunks: 200,
+        processedChunks: 100,
+        errors: [],
+        embeddingProvider: 'OpenAI',
+        embeddingModel: 'text-embedding-3-small',
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+        progressPercentage: 50,
       });
 
       const { result } = renderHook(() => useIndexingStatus('job-123', true), {
@@ -174,7 +225,7 @@ describe('use-indexing hooks', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.status).toBe('running');
-      expect(result.current.data?.progress).toBe(50);
+      expect(result.current.data?.progressPercentage).toBe(50);
     });
 
     it('should not fetch when disabled', () => {
@@ -201,11 +252,15 @@ describe('use-indexing hooks', () => {
     it('should fetch index stats', async () => {
       const { ragService } = await import('../../../../services');
       vi.mocked(ragService.getIndexStats).mockResolvedValue({
-        totalNotes: 100,
-        totalChunks: 500,
-        lastIndexedAt: new Date().toISOString(),
-        vectorStoreStats: {
-          PostgreSQL: { indexed: 100, pending: 0 },
+        postgreSQL: {
+          totalEmbeddings: 500,
+          uniqueNotes: 100,
+          lastIndexedAt: new Date().toISOString(),
+          embeddingProvider: 'OpenAI',
+          vectorStoreProvider: 'PostgreSQL',
+          totalNotesInSystem: 100,
+          notIndexedCount: 0,
+          staleNotesCount: 0,
         },
       });
 
@@ -215,15 +270,23 @@ describe('use-indexing hooks', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data?.totalNotes).toBe(100);
-      expect(result.current.data?.totalChunks).toBe(500);
+      expect(result.current.data?.postgreSQL?.uniqueNotes).toBe(100);
+      expect(result.current.data?.postgreSQL?.totalEmbeddings).toBe(500);
     });
 
     it('should use default userId if not provided', async () => {
       const { ragService } = await import('../../../../services');
       vi.mocked(ragService.getIndexStats).mockResolvedValue({
-        totalNotes: 50,
-        totalChunks: 200,
+        postgreSQL: {
+          totalEmbeddings: 200,
+          uniqueNotes: 50,
+          lastIndexedAt: null,
+          embeddingProvider: 'OpenAI',
+          vectorStoreProvider: 'PostgreSQL',
+          totalNotesInSystem: 50,
+          notIndexedCount: 0,
+          staleNotesCount: 0,
+        },
       });
 
       const { result } = renderHook(() => useIndexStats(), {
@@ -242,7 +305,7 @@ describe('use-indexing hooks', () => {
   describe('useReindexNote', () => {
     it('should reindex a single note', async () => {
       const { ragService } = await import('../../../../services');
-      vi.mocked(ragService.reindexNote).mockResolvedValue({ success: true });
+      vi.mocked(ragService.reindexNote).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useReindexNote(), {
         wrapper: createWrapper(),
@@ -279,7 +342,7 @@ describe('use-indexing hooks', () => {
   describe('useDeleteIndexedNotes', () => {
     it('should delete indexed notes', async () => {
       const { ragService } = await import('../../../../services');
-      vi.mocked(ragService.deleteIndexedNotes).mockResolvedValue({ deletedCount: 50 });
+      vi.mocked(ragService.deleteIndexedNotes).mockResolvedValue(undefined);
 
       const { result } = renderHook(() => useDeleteIndexedNotes(), {
         wrapper: createWrapper(),

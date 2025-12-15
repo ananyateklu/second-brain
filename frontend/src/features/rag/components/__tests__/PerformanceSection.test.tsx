@@ -41,6 +41,8 @@ function createMockStats(overrides: Partial<RagPerformanceStats> = {}): RagPerfo
     avgRerankScore: 0.82,
     cosineScoreCorrelation: 0.65,
     rerankScoreCorrelation: 0.72,
+    periodStart: '2024-01-01T00:00:00Z',
+    periodEnd: '2024-01-31T23:59:59Z',
     ...overrides,
   };
 }

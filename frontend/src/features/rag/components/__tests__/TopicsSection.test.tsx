@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { TopicsSection } from '../TopicsSection';
-import type { TopicAnalyticsResponse, TopicCluster } from '../../../../types/rag';
+import type { TopicAnalyticsResponse, TopicStats } from '../../../../types/rag';
 
 // Mock TopicDistributionCard
 vi.mock('../TopicDistributionCard', () => ({
@@ -27,7 +27,7 @@ vi.mock('../TopicDistributionCard', () => ({
 }));
 
 // Helper to create mock topic
-function createMockTopic(overrides: Partial<TopicCluster> = {}): TopicCluster {
+function createMockTopic(overrides: Partial<TopicStats> = {}): TopicStats {
   return {
     clusterId: 1,
     label: 'Development',
@@ -35,6 +35,8 @@ function createMockTopic(overrides: Partial<TopicCluster> = {}): TopicCluster {
     positiveFeedback: 20,
     negativeFeedback: 5,
     positiveFeedbackRate: 0.8,
+    avgCosineScore: 0.75,
+    avgRerankScore: 0.82,
     sampleQueries: ['How to debug?'],
     ...overrides,
   };
@@ -46,6 +48,7 @@ function createMockTopicData(overrides: Partial<TopicAnalyticsResponse> = {}): T
     topics: [createMockTopic()],
     totalClustered: 100,
     totalUnclustered: 20,
+    lastClusteredAt: '2024-01-15T12:00:00Z',
     ...overrides,
   };
 }

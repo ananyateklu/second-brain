@@ -81,17 +81,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: true,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: true,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: true,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -110,17 +110,17 @@ describe('useDashboardData', () => {
         data: undefined,
         isLoading: false,
         error: testError,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -143,17 +143,17 @@ describe('useDashboardData', () => {
         data: mockNotes,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -171,17 +171,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -207,17 +207,17 @@ describe('useDashboardData', () => {
         data: [{ id: '1' }],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -240,17 +240,17 @@ describe('useDashboardData', () => {
         data: undefined,
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -273,17 +273,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -301,17 +301,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -329,17 +329,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -362,17 +362,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -390,7 +390,7 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: {
@@ -399,12 +399,12 @@ describe('useDashboardData', () => {
           modelTokenUsageCounts: { 'gpt-4': 10000, 'claude-3': 8000 },
         },
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -429,17 +429,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -457,7 +457,7 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: {
@@ -465,12 +465,12 @@ describe('useDashboardData', () => {
           modelTokenUsageCounts: { 'gpt-4': 10000, 'claude-3': 8000 },
         },
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),
@@ -501,17 +501,17 @@ describe('useDashboardData', () => {
         data: [],
         isLoading: false,
         error: null,
-      } as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotes>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
         isLoading: false,
-      } as ReturnType<typeof useAIStats>);
+      } as unknown as ReturnType<typeof useAIStats>);
 
       vi.mocked(useSessionStats).mockReturnValue({
         data: mockSessionStats,
         isLoading: false,
-      } as ReturnType<typeof useSessionStats>);
+      } as unknown as ReturnType<typeof useSessionStats>);
 
       const { result } = renderHook(() => useDashboardData(), {
         wrapper: createWrapper(),

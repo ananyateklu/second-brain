@@ -160,15 +160,18 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var noteId = CreateNoteId();
+        // Create versions where version number matches recency (v5 is most recent, v1 is oldest)
         for (int i = 1; i <= 5; i++)
         {
-            await CreateTestVersionAsync(noteId, versionNumber: i, createdAt: DateTime.UtcNow.AddMinutes(-i));
+            await CreateTestVersionAsync(noteId, versionNumber: i, createdAt: DateTime.UtcNow.AddMinutes(i - 6));
         }
 
         // Act
         var result = await _sut.GetVersionHistoryAsync(noteId, skip: 1, take: 2);
 
         // Assert
+        // Ordered by CreatedAt desc: v5 (most recent), v4, v3, v2, v1 (oldest)
+        // Skip 1, take 2 => v4, v3
         result.Should().HaveCount(2);
         result[0].VersionNumber.Should().Be(4); // Second most recent
         result[1].VersionNumber.Should().Be(3); // Third most recent
@@ -342,15 +345,18 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var noteId = CreateNoteId();
+        // Create versions where version number matches recency (v5 is most recent, v1 is oldest)
         for (int i = 1; i <= 5; i++)
         {
-            await CreateTestVersionAsync(noteId, versionNumber: i, modifiedBy: "user-123", createdAt: DateTime.UtcNow.AddMinutes(-i));
+            await CreateTestVersionAsync(noteId, versionNumber: i, modifiedBy: "user-123", createdAt: DateTime.UtcNow.AddMinutes(i - 6));
         }
 
         // Act
         var result = await _sut.GetVersionsByUserAsync("user-123", skip: 2, take: 2);
 
         // Assert
+        // Ordered by CreatedAt desc: v5 (most recent), v4, v3, v2, v1 (oldest)
+        // Skip 2, take 2 => v3, v2
         result.Should().HaveCount(2);
         result[0].VersionNumber.Should().Be(3);
         result[1].VersionNumber.Should().Be(2);
@@ -413,7 +419,7 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
     public async Task CreateInitialVersionAsync_CreatesVersionWithCorrectData()
     {
         // Arrange
-        var note = CreateTestNote();
+        var note = await CreateAndSaveTestNoteAsync();
 
         // Act
         var version = await _sut.CreateInitialVersionAsync(note, createdBy: "user-123");
@@ -432,7 +438,7 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
     public async Task CreateInitialVersionAsync_CreatesVersionWithInfiniteUpperBound()
     {
         // Arrange
-        var note = CreateTestNote();
+        var note = await CreateAndSaveTestNoteAsync();
 
         // Act
         var version = await _sut.CreateInitialVersionAsync(note, createdBy: "user-123");
@@ -445,10 +451,10 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
     public async Task CreateInitialVersionAsync_PreservesNoteFields()
     {
         // Arrange
-        var note = CreateTestNote();
-        note.Tags = new List<string> { "tag1", "tag2" };
-        note.IsArchived = true;
-        note.Folder = "test-folder";
+        var note = await CreateAndSaveTestNoteAsync(
+            tags: new List<string> { "tag1", "tag2" },
+            isArchived: true,
+            folder: "test-folder");
 
         // Act
         var version = await _sut.CreateInitialVersionAsync(note, createdBy: "user-123");
@@ -529,6 +535,29 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
         DateTime? createdAt = null)
     {
         var now = createdAt ?? DateTime.UtcNow;
+
+        await using var dbContext = _fixture.CreateDbContext();
+
+        // Ensure the parent note exists (create if not already present)
+        var existingNote = await dbContext.Notes.FindAsync(noteId);
+        if (existingNote == null)
+        {
+            var note = new Note
+            {
+                Id = noteId,
+                Title = title ?? $"Test Note v{versionNumber}",
+                Content = $"Content for version {versionNumber}",
+                UserId = modifiedBy ?? "test-user",
+                Tags = new List<string> { "test" },
+                IsArchived = false,
+                Source = "test",
+                CreatedAt = now,
+                UpdatedAt = now
+            };
+            dbContext.Notes.Add(note);
+            await dbContext.SaveChangesAsync();
+        }
+
         var version = new NoteVersion
         {
             Id = Guid.NewGuid().ToString(),
@@ -549,27 +578,36 @@ public class NoteVersionRepositoryTests : IAsyncLifetime
             CreatedAt = now
         };
 
-        await using var dbContext = _fixture.CreateDbContext();
         dbContext.NoteVersions.Add(version);
         await dbContext.SaveChangesAsync();
 
         return version;
     }
 
-    private static Note CreateTestNote()
+    private async Task<Note> CreateAndSaveTestNoteAsync(
+        List<string>? tags = null,
+        bool isArchived = false,
+        string? folder = null)
     {
-        return new Note
+        var note = new Note
         {
             Id = Guid.NewGuid().ToString(),
             Title = "Test Note",
             Content = "Test content",
             UserId = "test-user",
-            Tags = new List<string>(),
-            IsArchived = false,
+            Tags = tags ?? new List<string>(),
+            IsArchived = isArchived,
+            Folder = folder,
             Source = "web",
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+
+        await using var dbContext = _fixture.CreateDbContext();
+        dbContext.Notes.Add(note);
+        await dbContext.SaveChangesAsync();
+
+        return note;
     }
 
     #endregion
