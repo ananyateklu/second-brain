@@ -44,10 +44,11 @@ vi.mock('react-syntax-highlighter/dist/esm/languages/prism/diff', () => ({ defau
 // Now import the component after mocks are set up
 import { MarkdownMessage } from '../MarkdownMessage';
 
-// Mock bound store
+// Mock bound store (includes openEditModal for note linking)
+const mockOpenEditModal = vi.fn();
 vi.mock('../../store/bound-store', () => ({
     useBoundStore: vi.fn((selector) => {
-        const state = { theme: 'light' };
+        const state = { theme: 'light', openEditModal: mockOpenEditModal };
         return selector ? selector(state) : state;
     }),
 }));
@@ -60,12 +61,6 @@ vi.mock('../../features/notes/hooks/use-notes-query', () => ({
             { id: '2', title: 'Another Note', content: 'More content' },
         ],
     })),
-}));
-
-// Mock UI store
-const mockOpenEditModal = vi.fn();
-vi.mock('../../store/ui-store', () => ({
-    useUIStore: vi.fn(() => mockOpenEditModal),
 }));
 
 describe('MarkdownMessage', () => {

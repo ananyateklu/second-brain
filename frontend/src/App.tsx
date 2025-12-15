@@ -9,7 +9,7 @@ import {
   onOpenDocumentation,
   onOpenReportIssue
 } from './lib/tauri-bridge';
-import { useUIStore } from './store/ui-store';
+import { useBoundStore } from './store/bound-store';
 import { useIndexingRestoration } from './hooks/use-indexing-restoration';
 import { useSummaryRestoration } from './hooks/use-summary-restoration';
 import { useUserSettingsEffect } from './hooks/use-user-settings-effect';
@@ -22,7 +22,7 @@ const SummaryNotification = lazy(() => import('./components/ui/SummaryNotificati
 
 function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);
-  const openCreateModal = useUIStore((state) => state.openCreateModal);
+  const openCreateModal = useBoundStore((state) => state.openCreateModal);
 
   // Restore any active indexing jobs on app mount
   useIndexingRestoration();

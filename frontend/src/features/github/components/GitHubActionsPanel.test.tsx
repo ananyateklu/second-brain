@@ -470,4 +470,210 @@ describe('GitHubActionsPanel', () => {
       });
     });
   });
+
+  describe('Refresh Button', () => {
+    it('should refetch when refresh button is clicked', async () => {
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([mockWorkflowRun()]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Refresh')).toBeInTheDocument();
+      });
+
+      // Clear previous calls
+      vi.mocked(githubService.getWorkflowRuns).mockClear();
+
+      fireEvent.click(screen.getByTitle('Refresh'));
+
+      await waitFor(() => {
+        expect(githubService.getWorkflowRuns).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Keyboard Navigation', () => {
+    it('should call onSelectRun when Enter key is pressed', async () => {
+      const run = mockWorkflowRun({ id: 1, displayTitle: 'Test Run' });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+      const onSelectRun = vi.fn();
+
+      render(<GitHubActionsPanel onSelectRun={onSelectRun} />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Run')).toBeInTheDocument();
+      });
+
+      const buttonElement = screen.getByText('Test Run').closest('div[role="button"]');
+      expect(buttonElement).toBeTruthy();
+      fireEvent.keyDown(buttonElement as HTMLElement, { key: 'Enter' });
+
+      expect(onSelectRun).toHaveBeenCalledWith(run);
+    });
+
+    it('should call onSelectRun when Space key is pressed', async () => {
+      const run = mockWorkflowRun({ id: 1, displayTitle: 'Test Run' });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+      const onSelectRun = vi.fn();
+
+      render(<GitHubActionsPanel onSelectRun={onSelectRun} />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Test Run')).toBeInTheDocument();
+      });
+
+      const buttonElement = screen.getByText('Test Run').closest('div[role="button"]');
+      expect(buttonElement).toBeTruthy();
+      fireEvent.keyDown(buttonElement as HTMLElement, { key: ' ' });
+
+      expect(onSelectRun).toHaveBeenCalledWith(run);
+    });
+  });
+
+  describe('Workflow Actions', () => {
+    it('should show Cancel button for in_progress workflow', async () => {
+      const run = mockWorkflowRun({
+        id: 1,
+        status: 'in_progress',
+        conclusion: undefined as unknown as WorkflowConclusion,
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Cancel')).toBeInTheDocument();
+      });
+    });
+
+    it('should call cancelWorkflowRun when Cancel is clicked', async () => {
+      const run = mockWorkflowRun({
+        id: 123,
+        status: 'in_progress',
+        conclusion: undefined as unknown as WorkflowConclusion,
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+      vi.mocked(githubService.cancelWorkflowRun).mockResolvedValue(undefined);
+
+      render(<GitHubActionsPanel owner="owner" repo="repo" />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Cancel')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Cancel'));
+
+      await waitFor(() => {
+        // runId is first argument in the mutation
+        expect(githubService.cancelWorkflowRun).toHaveBeenCalledWith(123, 'owner', 'repo');
+      });
+    });
+
+    it('should show Re-run button for failed workflow', async () => {
+      const run = mockWorkflowRun({
+        id: 1,
+        status: 'completed',
+        conclusion: 'failure',
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Re-run')).toBeInTheDocument();
+      });
+    });
+
+    it('should call rerunWorkflow when Re-run is clicked', async () => {
+      const run = mockWorkflowRun({
+        id: 456,
+        status: 'completed',
+        conclusion: 'failure',
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+      vi.mocked(githubService.rerunWorkflow).mockResolvedValue(undefined);
+
+      render(<GitHubActionsPanel owner="owner" repo="repo" />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Re-run')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByText('Re-run'));
+
+      await waitFor(() => {
+        // runId is first argument in the mutation
+        expect(githubService.rerunWorkflow).toHaveBeenCalledWith(456, 'owner', 'repo');
+      });
+    });
+
+    it('should show Re-run button for cancelled workflow', async () => {
+      const run = mockWorkflowRun({
+        id: 1,
+        status: 'completed',
+        conclusion: 'cancelled',
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Re-run')).toBeInTheDocument();
+      });
+    });
+
+    it('should not show Re-run button for successful workflow', async () => {
+      const run = mockWorkflowRun({
+        id: 1,
+        status: 'completed',
+        conclusion: 'success',
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('Test workflow')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Re-run')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('External Links', () => {
+    it('should have external link to GitHub for each run', async () => {
+      const run = mockWorkflowRun({
+        id: 1,
+        htmlUrl: 'https://github.com/owner/repo/actions/runs/1',
+      });
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse([run]));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByTitle('View on GitHub')).toBeInTheDocument();
+      });
+
+      const link = screen.getByTitle('View on GitHub');
+      expect(link).toHaveAttribute('href', 'https://github.com/owner/repo/actions/runs/1');
+      expect(link).toHaveAttribute('target', '_blank');
+    });
+  });
+
+  describe('In-Progress Indicator', () => {
+    it('should show running count when auto-refresh is on and runs are in progress', async () => {
+      const runs = [
+        mockWorkflowRun({ id: 1, status: 'in_progress', conclusion: undefined as unknown as WorkflowConclusion }),
+        mockWorkflowRun({ id: 2, status: 'queued', conclusion: undefined as unknown as WorkflowConclusion }),
+        mockWorkflowRun({ id: 3, status: 'completed', conclusion: 'success' }),
+      ];
+      vi.mocked(githubService.getWorkflowRuns).mockResolvedValue(mockWorkflowRunsResponse(runs));
+
+      render(<GitHubActionsPanel />, { wrapper: createWrapper() });
+
+      await waitFor(() => {
+        expect(screen.getByText('2 running')).toBeInTheDocument();
+      });
+    });
+  });
 });

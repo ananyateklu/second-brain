@@ -164,6 +164,33 @@ export const handlers = [
     return HttpResponse.json(mockNotes);
   }),
 
+  // Paged notes endpoint - MUST come before /:id to avoid being matched as an ID
+  http.get(`${API_BASE}/notes/paged`, ({ request }) => {
+    const url = new URL(request.url);
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const pageSize = parseInt(url.searchParams.get('pageSize') || '20');
+    const search = url.searchParams.get('search');
+
+    let filteredNotes = [...mockNotes];
+    if (search) {
+      filteredNotes = filteredNotes.filter(
+        (n) => n.title.toLowerCase().includes(search.toLowerCase()) ||
+               n.content.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    const startIndex = (page - 1) * pageSize;
+    const paginatedNotes = filteredNotes.slice(startIndex, startIndex + pageSize);
+
+    return HttpResponse.json({
+      items: paginatedNotes,
+      totalCount: filteredNotes.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(filteredNotes.length / pageSize),
+    });
+  }),
+
   http.get(`${API_BASE}/notes/:id`, ({ params }) => {
     const note = mockNotes.find((n) => n.id === params.id);
     if (note) {
@@ -292,6 +319,80 @@ export const handlers = [
       message: `Note restored to version ${body.targetVersion}`,
       newVersionNumber: 4,
       noteId,
+    });
+  }),
+
+  // ============================================
+  // Note Summary Generation Endpoints
+  // ============================================
+  http.post(`${API_BASE}/notes/generate-summaries`, async ({ request }) => {
+    const body = await request.json() as { noteIds?: string[] };
+    const noteIds = body.noteIds || [];
+    return HttpResponse.json({
+      totalProcessed: noteIds.length > 0 ? noteIds.length : mockNotes.length,
+      successCount: noteIds.length > 0 ? noteIds.length : mockNotes.length,
+      failureCount: 0,
+      errors: [],
+    });
+  }),
+
+  http.post(`${API_BASE}/notes/summaries/start`, async ({ request }) => {
+    const body = await request.json() as { noteIds?: string[] };
+    const jobId = `summary-job-${Date.now()}`;
+    return HttpResponse.json({
+      id: jobId,
+      status: 'running',
+      totalNotes: body.noteIds?.length || mockNotes.length,
+      processedNotes: 0,
+      successCount: 0,
+      failureCount: 0,
+      skippedCount: 0,
+      errors: [],
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }),
+
+  http.get(`${API_BASE}/notes/summaries/status/:jobId`, ({ params }) => {
+    const jobId = params.jobId as string;
+    return HttpResponse.json({
+      id: jobId,
+      status: 'completed',
+      totalNotes: 5,
+      processedNotes: 5,
+      successCount: 5,
+      failureCount: 0,
+      skippedCount: 0,
+      errors: [],
+      startedAt: '2024-01-15T12:00:00Z',
+      completedAt: '2024-01-15T12:01:00Z',
+    });
+  }),
+
+  http.post(`${API_BASE}/notes/summaries/cancel/:jobId`, ({ params }) => {
+    const jobId = params.jobId as string;
+    return HttpResponse.json({
+      message: `Summary job ${jobId} cancelled successfully`,
+    });
+  }),
+
+  // Note import endpoint
+  http.post(`${API_BASE}/notes/import`, async ({ request }) => {
+    const body = await request.json() as { notes: unknown[] };
+    return HttpResponse.json({
+      totalProcessed: body.notes.length,
+      successCount: body.notes.length,
+      failureCount: 0,
+      results: body.notes.map((note, index) => ({
+        id: `imported-note-${index}`,
+        success: true,
+        note: {
+          id: `imported-note-${index}`,
+          ...(note as Record<string, unknown>),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      })),
     });
   }),
 

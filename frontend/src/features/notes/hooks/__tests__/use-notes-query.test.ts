@@ -7,7 +7,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote, useBulkDeleteNotes } from '../use-notes-query';
+import {
+    useNotes,
+    useNote,
+    useNotesPaged,
+    useCreateNote,
+    useUpdateNote,
+    useDeleteNote,
+    useBulkDeleteNotes,
+    useArchiveNote,
+    useUnarchiveNote,
+    useMoveToFolder,
+    useGenerateSummaries,
+} from '../use-notes-query';
 import { notesService } from '../../../../services';
 import { toast } from '../../../../hooks/use-toast';
 
@@ -16,10 +28,14 @@ vi.mock('../../../../services', () => ({
     notesService: {
         getAll: vi.fn(),
         getById: vi.fn(),
+        getPaged: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
         bulkDelete: vi.fn(),
+        archive: vi.fn(),
+        unarchive: vi.fn(),
+        generateSummaries: vi.fn(),
     },
 }));
 
@@ -463,6 +479,617 @@ describe('use-notes-query', () => {
             await waitFor(() => {
                 const cachedNotes = queryClient.getQueryData<unknown[]>(['notes']);
                 expect(cachedNotes?.length).toBe(2);
+            });
+        });
+    });
+
+    // ============================================
+    // useNotesPaged Tests
+    // ============================================
+    describe('useNotesPaged', () => {
+        it('should return loading state initially', () => {
+            // Arrange
+            vi.mocked(notesService.getPaged).mockImplementation(() => new Promise(() => { /* pending */ }));
+
+            // Act
+            const { result } = renderHook(() => useNotesPaged({ page: 1, pageSize: 20 }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            expect(result.current.isLoading).toBe(true);
+        });
+
+        it('should return paginated notes on success', async () => {
+            // Arrange
+            const mockResponse = {
+                items: [createMockNote({ id: '1' }), createMockNote({ id: '2' })],
+                totalCount: 10,
+                page: 1,
+                pageSize: 20,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPreviousPage: false,
+            };
+            vi.mocked(notesService.getPaged).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useNotesPaged({ page: 1, pageSize: 20 }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(result.current.data?.items).toHaveLength(2);
+            expect(result.current.data?.totalCount).toBe(10);
+        });
+
+        it('should call notesService.getPaged with correct params', async () => {
+            // Arrange
+            vi.mocked(notesService.getPaged).mockResolvedValue({
+                items: [],
+                totalCount: 0,
+                page: 2,
+                pageSize: 10,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: true,
+            });
+
+            // Act
+            renderHook(() => useNotesPaged({ page: 2, pageSize: 10, folder: 'work' }), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await waitFor(() => {
+                expect(notesService.getPaged).toHaveBeenCalledWith({ page: 2, pageSize: 10, folder: 'work' });
+            });
+        });
+
+        it('should not fetch when disabled', () => {
+            // Act
+            const { result } = renderHook(() => useNotesPaged({ page: 1, pageSize: 20 }, false), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(notesService.getPaged).not.toHaveBeenCalled();
+        });
+    });
+
+    // ============================================
+    // useArchiveNote Tests
+    // ============================================
+    describe('useArchiveNote', () => {
+        it('should call notesService.archive with note id', async () => {
+            // Arrange
+            const archivedNote = createMockNote({ id: 'note-1', isArchived: true, folder: 'Archived' });
+            vi.mocked(notesService.archive).mockResolvedValue(archivedNote);
+
+            // Act
+            const { result } = renderHook(() => useArchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync('note-1');
+            });
+
+            // Assert
+            expect(notesService.archive).toHaveBeenCalledWith('note-1');
+        });
+
+        it('should show success toast on successful archive', async () => {
+            // Arrange
+            vi.mocked(notesService.archive).mockResolvedValue(createMockNote({ isArchived: true }));
+
+            // Act
+            const { result } = renderHook(() => useArchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync('note-1');
+            });
+
+            // Assert
+            expect(toast.success).toHaveBeenCalledWith('Note archived');
+        });
+
+        it('should show error toast on failed archive', async () => {
+            // Arrange
+            vi.mocked(notesService.archive).mockRejectedValue(new Error('Archive failed'));
+
+            // Act
+            const { result } = renderHook(() => useArchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync('note-1');
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert
+            expect(toast.error).toHaveBeenCalledWith('Failed to archive note', 'Archive failed');
+        });
+
+        it('should optimistically update notes list to archived state', async () => {
+            // Arrange
+            const existingNotes = [
+                createMockNote({ id: 'note-1', isArchived: false, folder: 'work' }),
+                createMockNote({ id: 'note-2', isArchived: false }),
+            ];
+
+            vi.mocked(notesService.archive).mockImplementation(
+                () => new Promise((resolve) => setTimeout(() => {
+                    resolve(createMockNote({ id: 'note-1', isArchived: true, folder: 'Archived' }));
+                }, 100))
+            );
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useArchiveNote(), { wrapper });
+
+            act(() => {
+                result.current.mutate('note-1');
+            });
+
+            // Assert - optimistic update should set isArchived and folder immediately
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; isArchived: boolean; folder?: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.isArchived).toBe(true);
+                expect(note?.folder).toBe('Archived');
+            });
+        });
+    });
+
+    // ============================================
+    // useUnarchiveNote Tests
+    // ============================================
+    describe('useUnarchiveNote', () => {
+        it('should call notesService.unarchive with note id', async () => {
+            // Arrange
+            const unarchivedNote = createMockNote({ id: 'note-1', isArchived: false, folder: undefined });
+            vi.mocked(notesService.unarchive).mockResolvedValue(unarchivedNote);
+
+            // Act
+            const { result } = renderHook(() => useUnarchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync('note-1');
+            });
+
+            // Assert
+            expect(notesService.unarchive).toHaveBeenCalledWith('note-1');
+        });
+
+        it('should show success toast on successful unarchive', async () => {
+            // Arrange
+            vi.mocked(notesService.unarchive).mockResolvedValue(createMockNote({ isArchived: false }));
+
+            // Act
+            const { result } = renderHook(() => useUnarchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync('note-1');
+            });
+
+            // Assert
+            expect(toast.success).toHaveBeenCalledWith('Note restored from archive');
+        });
+
+        it('should show error toast on failed unarchive', async () => {
+            // Arrange
+            vi.mocked(notesService.unarchive).mockRejectedValue(new Error('Unarchive failed'));
+
+            // Act
+            const { result } = renderHook(() => useUnarchiveNote(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync('note-1');
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert
+            expect(toast.error).toHaveBeenCalledWith('Failed to restore note', 'Unarchive failed');
+        });
+
+        it('should optimistically update notes list to unarchived state', async () => {
+            // Arrange
+            const existingNotes = [
+                createMockNote({ id: 'note-1', isArchived: true, folder: 'Archived' }),
+                createMockNote({ id: 'note-2', isArchived: false }),
+            ];
+
+            vi.mocked(notesService.unarchive).mockImplementation(
+                () => new Promise((resolve) => setTimeout(() => {
+                    resolve(createMockNote({ id: 'note-1', isArchived: false, folder: undefined }));
+                }, 100))
+            );
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useUnarchiveNote(), { wrapper });
+
+            act(() => {
+                result.current.mutate('note-1');
+            });
+
+            // Assert - optimistic update should set isArchived to false
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; isArchived: boolean; folder?: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.isArchived).toBe(false);
+            });
+        });
+    });
+
+    // ============================================
+    // useMoveToFolder Tests
+    // ============================================
+    describe('useMoveToFolder', () => {
+        it('should call notesService.update with folder parameter', async () => {
+            // Arrange
+            vi.mocked(notesService.update).mockResolvedValue(createMockNote({ folder: 'work' }));
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync({ id: 'note-1', folder: 'work' });
+            });
+
+            // Assert
+            expect(notesService.update).toHaveBeenCalledWith('note-1', { folder: 'work', updateFolder: true });
+        });
+
+        it('should show success toast with folder name on successful move', async () => {
+            // Arrange
+            vi.mocked(notesService.update).mockResolvedValue(createMockNote({ folder: 'Projects' }));
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync({ id: 'note-1', folder: 'Projects' });
+            });
+
+            // Assert
+            expect(toast.success).toHaveBeenCalledWith('Moved to folder "Projects"');
+        });
+
+        it('should show success toast for removing from folder', async () => {
+            // Arrange
+            vi.mocked(notesService.update).mockResolvedValue(createMockNote({ folder: undefined }));
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync({ id: 'note-1', folder: null });
+            });
+
+            // Assert
+            expect(toast.success).toHaveBeenCalledWith('Removed from folder');
+        });
+
+        it('should show error toast on failed move', async () => {
+            // Arrange
+            vi.mocked(notesService.update).mockRejectedValue(new Error('Move failed'));
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync({ id: 'note-1', folder: 'work' });
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert
+            expect(toast.error).toHaveBeenCalledWith('Failed to move note', 'Move failed');
+        });
+
+        it('should optimistically update notes list folder', async () => {
+            // Arrange
+            const existingNotes = [
+                createMockNote({ id: 'note-1', folder: undefined }),
+                createMockNote({ id: 'note-2', folder: 'work' }),
+            ];
+
+            vi.mocked(notesService.update).mockImplementation(
+                () => new Promise((resolve) => setTimeout(() => {
+                    resolve(createMockNote({ id: 'note-1', folder: 'projects' }));
+                }, 100))
+            );
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), { wrapper });
+
+            act(() => {
+                result.current.mutate({ id: 'note-1', folder: 'projects' });
+            });
+
+            // Assert - optimistic update should set folder immediately
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; folder?: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.folder).toBe('projects');
+            });
+        });
+    });
+
+    // ============================================
+    // useGenerateSummaries Tests
+    // ============================================
+    describe('useGenerateSummaries', () => {
+        it('should call notesService.generateSummaries with note ids', async () => {
+            // Arrange
+            const mockResponse = {
+                totalProcessed: 2,
+                successCount: 2,
+                failureCount: 0,
+                skippedCount: 0,
+                results: [
+                    { noteId: 'note-1', title: 'Note 1', success: true, summary: 'Summary 1', skipped: false },
+                    { noteId: 'note-2', title: 'Note 2', success: true, summary: 'Summary 2', skipped: false },
+                ],
+            };
+            vi.mocked(notesService.generateSummaries).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useGenerateSummaries(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync(['note-1', 'note-2']);
+            });
+
+            // Assert
+            expect(notesService.generateSummaries).toHaveBeenCalledWith(['note-1', 'note-2']);
+        });
+
+        it('should return generated summaries on success', async () => {
+            // Arrange
+            const mockResponse = {
+                totalProcessed: 3,
+                successCount: 3,
+                failureCount: 0,
+                skippedCount: 0,
+                results: [
+                    { noteId: 'note-1', title: 'Note 1', success: true, summary: 'First summary', skipped: false },
+                    { noteId: 'note-2', title: 'Note 2', success: true, summary: 'Second summary', skipped: false },
+                    { noteId: 'note-3', title: 'Note 3', success: true, summary: 'Third summary', skipped: false },
+                ],
+            };
+            vi.mocked(notesService.generateSummaries).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useGenerateSummaries(), {
+                wrapper: createWrapper(),
+            });
+
+            let response;
+            await act(async () => {
+                response = await result.current.mutateAsync(['note-1', 'note-2', 'note-3']);
+            });
+
+            // Assert
+            expect(response).toEqual(mockResponse);
+        });
+
+        it('should show error toast on failed generation', async () => {
+            // Arrange
+            vi.mocked(notesService.generateSummaries).mockRejectedValue(new Error('Generation failed'));
+
+            // Act
+            const { result } = renderHook(() => useGenerateSummaries(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync(['note-1']);
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert
+            expect(toast.error).toHaveBeenCalledWith('Failed to generate summaries', 'Generation failed');
+        });
+
+        it('should handle empty note ids array', async () => {
+            // Arrange
+            const mockResponse = {
+                totalProcessed: 0,
+                successCount: 0,
+                failureCount: 0,
+                skippedCount: 0,
+                results: [],
+            };
+            vi.mocked(notesService.generateSummaries).mockResolvedValue(mockResponse);
+
+            // Act
+            const { result } = renderHook(() => useGenerateSummaries(), {
+                wrapper: createWrapper(),
+            });
+
+            let response: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+            await act(async () => {
+                response = await result.current.mutateAsync([]);
+            });
+
+            // Assert
+            expect(notesService.generateSummaries).toHaveBeenCalledWith([]);
+            expect(response?.totalProcessed).toBe(0);
+        });
+    });
+
+    // ============================================
+    // Rollback Tests
+    // ============================================
+    describe('rollback on error', () => {
+        it('should rollback notes list on update error', async () => {
+            // Arrange
+            const existingNotes = [createMockNote({ id: 'note-1', title: 'Original Title' })];
+
+            vi.mocked(notesService.update).mockRejectedValue(new Error('Update failed'));
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useUpdateNote(), { wrapper });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync({ id: 'note-1', data: { title: 'New Title' } });
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert - should rollback to original state
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; title: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.title).toBe('Original Title');
+            });
+        });
+
+        it('should rollback on archive error', async () => {
+            // Arrange
+            const existingNotes = [createMockNote({ id: 'note-1', isArchived: false, folder: 'work' })];
+
+            vi.mocked(notesService.archive).mockRejectedValue(new Error('Archive failed'));
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useArchiveNote(), { wrapper });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync('note-1');
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert - should rollback to original state (not archived)
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; isArchived: boolean; folder?: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.isArchived).toBe(false);
+                expect(note?.folder).toBe('work');
+            });
+        });
+
+        it('should rollback on move to folder error', async () => {
+            // Arrange
+            const existingNotes = [createMockNote({ id: 'note-1', folder: 'original' })];
+
+            vi.mocked(notesService.update).mockRejectedValue(new Error('Move failed'));
+
+            const queryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+            });
+
+            function wrapper({ children }: { children: React.ReactNode }) {
+                return React.createElement(QueryClientProvider, { client: queryClient }, children);
+            }
+
+            queryClient.setQueryData(['notes'], existingNotes);
+
+            // Act
+            const { result } = renderHook(() => useMoveToFolder(), { wrapper });
+
+            await act(async () => {
+                try {
+                    await result.current.mutateAsync({ id: 'note-1', folder: 'new-folder' });
+                } catch {
+                    // Expected error
+                }
+            });
+
+            // Assert - should rollback to original folder
+            await waitFor(() => {
+                const cachedNotes = queryClient.getQueryData<Array<{ id: string; folder?: string }>>(['notes']);
+                const note = cachedNotes?.find(n => n.id === 'note-1');
+                expect(note?.folder).toBe('original');
             });
         });
     });

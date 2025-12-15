@@ -299,10 +299,7 @@ export const chatService = {
         break;
 
       default:
-        if (data && eventType === 'message') {
-          const unescapedData = data.replace(/\\n/g, '\n');
-          callbacks.onToken(unescapedData);
-        }
+        // Unknown event types are silently ignored
         break;
     }
   },

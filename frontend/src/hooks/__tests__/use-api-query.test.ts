@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useApiQuery, useConditionalQuery, usePollingQuery } from '../use-api-query';
+import { useApiQuery, useConditionalQuery, usePollingQuery, createQueryHook } from '../use-api-query';
 
 // Create a wrapper component with QueryClient
 function createWrapper() {
@@ -228,6 +228,113 @@ describe('use-api-query', () => {
             expect(result.current).toHaveProperty('isLoading');
             expect(result.current).toHaveProperty('data');
             expect(mockFn).toHaveBeenCalled();
+        });
+    });
+
+    // ============================================
+    // createQueryHook Tests
+    // ============================================
+    describe('createQueryHook', () => {
+        it('should create a typed query hook', async () => {
+            // Arrange
+            const mockData = { id: 1, name: 'Test' };
+            const getQueryKey = (params: { id: number }) => ['items', params.id];
+            const queryFn = vi.fn().mockResolvedValue(mockData);
+            const useItemQuery = createQueryHook(getQueryKey, queryFn);
+
+            // Act
+            const { result } = renderHook(
+                () => useItemQuery({ id: 1 }),
+                { wrapper: createWrapper() }
+            );
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(result.current.data).toEqual(mockData);
+            expect(queryFn).toHaveBeenCalledWith({ id: 1 });
+        });
+
+        it('should pass query key correctly', async () => {
+            // Arrange
+            const mockData = { value: 'test' };
+            const getQueryKey = (params: { key: string }) => ['test', params.key];
+            const queryFn = vi.fn().mockResolvedValue(mockData);
+            const useTestQuery = createQueryHook(getQueryKey, queryFn);
+
+            // Act
+            const { result } = renderHook(
+                () => useTestQuery({ key: 'abc' }),
+                { wrapper: createWrapper() }
+            );
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(queryFn).toHaveBeenCalledWith({ key: 'abc' });
+        });
+
+        it('should respect default options', async () => {
+            // Arrange
+            const mockData = { count: 5 };
+            const getQueryKey = () => ['default-test'];
+            const queryFn = vi.fn().mockResolvedValue(mockData);
+            const useDefaultQuery = createQueryHook(getQueryKey, queryFn, { staleTime: 10000 });
+
+            // Act
+            const { result } = renderHook(
+                () => useDefaultQuery(undefined),
+                { wrapper: createWrapper() }
+            );
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(result.current.isStale).toBe(false);
+        });
+
+        it('should allow options override', async () => {
+            // Arrange
+            const mockData = { data: true };
+            const getQueryKey = () => ['override-test'];
+            const queryFn = vi.fn().mockResolvedValue(mockData);
+            const useOverrideQuery = createQueryHook(getQueryKey, queryFn, { staleTime: 10000 });
+
+            // Act - override enabled to false
+            const { result } = renderHook(
+                () => useOverrideQuery(undefined, { enabled: false }),
+                { wrapper: createWrapper() }
+            );
+
+            // Assert
+            expect(queryFn).not.toHaveBeenCalled();
+            expect(result.current.fetchStatus).toBe('idle');
+        });
+
+        it('should return extended result with API error helpers', async () => {
+            // Arrange
+            const mockData = { success: true };
+            const getQueryKey = () => ['helpers-test'];
+            const queryFn = vi.fn().mockResolvedValue(mockData);
+            const useHelpersQuery = createQueryHook(getQueryKey, queryFn);
+
+            // Act
+            const { result } = renderHook(
+                () => useHelpersQuery(undefined),
+                { wrapper: createWrapper() }
+            );
+
+            // Assert
+            await waitFor(() => {
+                expect(result.current.isSuccess).toBe(true);
+            });
+            expect(result.current).toHaveProperty('isApiError');
+            expect(result.current).toHaveProperty('apiError');
+            expect(result.current).toHaveProperty('isAuthError');
+            expect(result.current).toHaveProperty('isNotFoundError');
         });
     });
 
