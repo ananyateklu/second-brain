@@ -32,6 +32,11 @@ pub struct Secrets {
     pub pinecone_api_key: Option<String>,
     pub pinecone_environment: Option<String>,
     pub pinecone_index_name: Option<String>,
+    pub github_personal_access_token: Option<String>,
+    pub github_default_owner: Option<String>,
+    pub github_default_repo: Option<String>,
+    pub git_allowed_repository_roots: Option<String>,
+    pub git_require_user_scoped_root: Option<bool>,
 }
 
 impl Secrets {
@@ -87,6 +92,11 @@ impl Secrets {
             pinecone_api_key: redact_key(&self.pinecone_api_key),
             pinecone_environment: self.pinecone_environment.clone(),
             pinecone_index_name: self.pinecone_index_name.clone(),
+            github_personal_access_token: redact_key(&self.github_personal_access_token),
+            github_default_owner: self.github_default_owner.clone(),
+            github_default_repo: self.github_default_repo.clone(),
+            git_allowed_repository_roots: self.git_allowed_repository_roots.clone(),
+            git_require_user_scoped_root: self.git_require_user_scoped_root,
         }
     }
 
@@ -139,6 +149,11 @@ pub struct RedactedSecrets {
     pub pinecone_api_key: Option<String>,
     pub pinecone_environment: Option<String>,
     pub pinecone_index_name: Option<String>,
+    pub github_personal_access_token: Option<String>,
+    pub github_default_owner: Option<String>,
+    pub github_default_repo: Option<String>,
+    pub git_allowed_repository_roots: Option<String>,
+    pub git_require_user_scoped_root: Option<bool>,
 }
 
 /// Redact a secret key, showing only first and last few characters

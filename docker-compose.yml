@@ -238,6 +238,11 @@ services:
       - Pinecone__IndexName=${PINECONE_INDEX_NAME:-second-brain-index}
       - Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGINS}
       - Cors__AllowLocalNetworkIps=${CORS_ALLOW_LOCAL_NETWORK:-false}
+      - GitHub__PersonalAccessToken=${GITHUB_PERSONAL_ACCESS_TOKEN}
+      - GitHub__DefaultOwner=${GITHUB_DEFAULT_OWNER}
+      - GitHub__DefaultRepo=${GITHUB_DEFAULT_REPO}
+      - Git__AllowedRepositoryRoots__0=${GIT_ALLOWED_REPOSITORY_ROOTS}
+      - Git__RequireUserScopedRoot=${GIT_REQUIRE_USER_SCOPED_ROOT:-false}
     volumes:
       - ./backend/credentials:/app/credentials:ro
     depends_on:

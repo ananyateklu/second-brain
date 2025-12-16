@@ -727,6 +727,30 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
         command.env("Pinecone__IndexName", pinecone_index);
     }
 
+    // Add GitHub integration settings
+    if let Some(ref github_token) = secrets.github_personal_access_token {
+        command.env("GitHub__PersonalAccessToken", github_token);
+    }
+    if let Some(ref github_owner) = secrets.github_default_owner {
+        command.env("GitHub__DefaultOwner", github_owner);
+    }
+    if let Some(ref github_repo) = secrets.github_default_repo {
+        command.env("GitHub__DefaultRepo", github_repo);
+    }
+
+    // Add Git integration settings
+    if let Some(ref git_roots) = secrets.git_allowed_repository_roots {
+        // Support comma-separated list of paths
+        for (i, root) in git_roots.split(',').map(|s| s.trim()).enumerate() {
+            if !root.is_empty() {
+                command.env(format!("Git__AllowedRepositoryRoots__{}", i), root);
+            }
+        }
+    }
+    if let Some(require_user_scoped) = secrets.git_require_user_scoped_root {
+        command.env("Git__RequireUserScopedRoot", require_user_scoped.to_string());
+    }
+
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let mut child = command
