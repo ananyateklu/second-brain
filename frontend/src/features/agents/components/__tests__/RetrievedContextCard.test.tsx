@@ -279,7 +279,8 @@ describe('RetrievedContextCard', () => {
       mockUseNotes.mockReturnValue({ data: [fullNote], isLoading: false });
 
       render(
-        <RetrievedContextCard retrievedNotes={[createMockRetrievedNote({ noteId: 'note-1' })]} />,
+        // Pass title: undefined so the component falls back to fullNote.title
+        <RetrievedContextCard retrievedNotes={[createMockRetrievedNote({ noteId: 'note-1', title: undefined })]} />,
         { wrapper: createWrapper() }
       );
 
@@ -302,8 +303,8 @@ describe('RetrievedContextCard', () => {
 
     it('should sort notes by relevance score (highest first)', () => {
       const fullNotes = [
-        { id: 'note-1', title: 'Low Score', content: '', tags: [], isArchived: false, createdAt: '', updatedAt: '' },
-        { id: 'note-2', title: 'High Score', content: '', tags: [], isArchived: false, createdAt: '', updatedAt: '' },
+        { id: 'note-1', title: 'Low Score Note', content: '', tags: [], isArchived: false, createdAt: '', updatedAt: '' },
+        { id: 'note-2', title: 'High Score Note', content: '', tags: [], isArchived: false, createdAt: '', updatedAt: '' },
       ];
 
       mockUseNotes.mockReturnValue({ data: fullNotes, isLoading: false });
@@ -311,15 +312,18 @@ describe('RetrievedContextCard', () => {
       render(
         <RetrievedContextCard
           retrievedNotes={[
-            createMockRetrievedNote({ noteId: 'note-1', relevanceScore: 0.5 }),
-            createMockRetrievedNote({ noteId: 'note-2', relevanceScore: 0.9 }),
+            // Pass title: undefined so component uses fullNotes titles
+            createMockRetrievedNote({ noteId: 'note-1', relevanceScore: 0.5, title: undefined }),
+            createMockRetrievedNote({ noteId: 'note-2', relevanceScore: 0.9, title: undefined }),
           ]}
         />,
         { wrapper: createWrapper() }
       );
 
-      const titles = screen.getAllByText(/Score/);
-      expect(titles[0]).toHaveTextContent('High Score');
+      // Find all note title elements and verify high score (90%) comes first
+      const titles = screen.getAllByText(/Score Note/);
+      expect(titles[0]).toHaveTextContent('High Score Note');
+      expect(titles[1]).toHaveTextContent('Low Score Note');
     });
   });
 
