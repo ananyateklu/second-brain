@@ -23,6 +23,11 @@ fn test_secrets_persistence_workflow() {
         pinecone_api_key: None,
         pinecone_environment: None,
         pinecone_index_name: None,
+        github_personal_access_token: None,
+        github_default_owner: None,
+        github_default_repo: None,
+        git_allowed_repository_roots: None,
+        git_require_user_scoped_root: None,
     };
 
     let save_result = save_secrets(&app_data, &secrets);
@@ -80,6 +85,11 @@ fn test_secrets_full_roundtrip() {
         pinecone_api_key: Some("pinecone-key".to_string()),
         pinecone_environment: Some("us-east-1".to_string()),
         pinecone_index_name: Some("my-index".to_string()),
+        github_personal_access_token: Some("ghp-test-token".to_string()),
+        github_default_owner: Some("test-owner".to_string()),
+        github_default_repo: Some("test-repo".to_string()),
+        git_allowed_repository_roots: Some("/home/user/repos,/var/git".to_string()),
+        git_require_user_scoped_root: Some(false),
     };
 
     // Save and load
