@@ -154,7 +154,7 @@ export function ImageGenerationProgress({
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline */}
       <div
-        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors ${isGenerating ? 'animate-pulse' : ''
+        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isGenerating ? 'animate-pulse' : ''
           }`}
         style={{
           backgroundColor: 'var(--surface-card)',

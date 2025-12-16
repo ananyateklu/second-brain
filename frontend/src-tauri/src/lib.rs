@@ -748,7 +748,10 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
         }
     }
     if let Some(require_user_scoped) = secrets.git_require_user_scoped_root {
-        command.env("Git__RequireUserScopedRoot", require_user_scoped.to_string());
+        command.env(
+            "Git__RequireUserScopedRoot",
+            require_user_scoped.to_string(),
+        );
     }
 
     command.stdout(Stdio::piped()).stderr(Stdio::piped());

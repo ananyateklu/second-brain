@@ -6,6 +6,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
+using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
@@ -36,7 +37,9 @@ public class AgentService : IAgentService
         IUserPreferencesService userPreferencesService,
         ILogger<AgentService> logger,
         IStructuredOutputService? structuredOutputService = null,
-        INoteOperationService? noteOperationService = null)
+        INoteOperationService? noteOperationService = null,
+        GrokSearchTool? grokSearchTool = null,
+        GrokDeepSearchTool? grokDeepSearchTool = null)
     {
         _strategyFactory = strategyFactory;
         _settings = settings.Value;
@@ -48,6 +51,12 @@ public class AgentService : IAgentService
         // Register available plugins
         // NotesPlugin uses INoteOperationService for all mutations (create, update, delete, append)
         RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService, noteOperationService));
+
+        // GrokSearchPlugin provides web search and deep search capabilities
+        if (grokSearchTool != null && grokDeepSearchTool != null)
+        {
+            RegisterPlugin(new GrokSearchPlugin(grokSearchTool, grokDeepSearchTool));
+        }
     }
 
     private void RegisterPlugin(IAgentPlugin plugin)

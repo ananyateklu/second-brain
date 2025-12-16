@@ -378,6 +378,7 @@ public class AgentController : ControllerBase
                         return;
 
                     case AgentEventType.Grounding:
+                        // Gemini grounding sources
                         if (evt.GroundingSources != null && evt.GroundingSources.Count > 0)
                         {
                             var groundingJson = JsonSerializer.Serialize(new
@@ -390,6 +391,25 @@ public class AgentController : ControllerBase
                                 }).ToList()
                             });
                             await Response.WriteAsync($"event: grounding\ndata: {groundingJson}\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                        }
+
+                        // Grok Live Search sources
+                        if (evt.GrokSearchSources != null && evt.GrokSearchSources.Count > 0)
+                        {
+                            var grokSearchJson = JsonSerializer.Serialize(new
+                            {
+                                sources = evt.GrokSearchSources.Select(s => new
+                                {
+                                    url = s.Url,
+                                    title = s.Title,
+                                    snippet = s.Snippet,
+                                    sourceType = s.SourceType,
+                                    publishedAt = s.PublishedAt,
+                                    relevanceScore = s.RelevanceScore
+                                }).ToList()
+                            });
+                            await Response.WriteAsync($"event: grok_search\ndata: {grokSearchJson}\n\n");
                             await Response.Body.FlushAsync(cancellationToken);
                         }
                         break;

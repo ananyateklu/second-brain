@@ -209,8 +209,8 @@ export function ChatMessageList({
               />
             )}
 
-            {/* Show streaming message */}
-            {(isStreaming || (streamingMessage && !hasMatchingPersistedMessage)) && (
+            {/* Show streaming message - also keep visible while we have grounding/search sources */}
+            {(isStreaming || (streamingMessage && !hasMatchingPersistedMessage) || (groundingSources.length > 0) || (grokSearchSources.length > 0)) && (
               <StreamingIndicator
                 isStreaming={isStreaming}
                 streamingMessage={streamingMessage}

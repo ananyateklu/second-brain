@@ -69,7 +69,18 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
         var tools = new List<OpenAIChatTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var capabilityId in request.Capabilities ?? new List<string>())
+        // Build list of capabilities to include
+        var capabilitiesToInclude = new HashSet<string>(request.Capabilities ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+
+        // Auto-include web search capability for Grok when search features are enabled
+        if ((settings.XAI.Features.EnableLiveSearch || settings.XAI.Features.EnableDeepSearch) &&
+            context.Plugins.ContainsKey("web"))
+        {
+            capabilitiesToInclude.Add("web");
+            _logger.LogDebug("Auto-including web search capability for Grok agent");
+        }
+
+        foreach (var capabilityId in capabilitiesToInclude)
         {
             if (!context.Plugins.TryGetValue(capabilityId, out var plugin))
                 continue;

@@ -60,12 +60,16 @@ public class GrokSearchTool
         {
             using var httpClient = CreateHttpClient();
 
-            // Parse sources
-            var sourceList = string.IsNullOrEmpty(sources)
+            // Parse sources (deduplicate to avoid X.AI API error)
+            var rawSources = string.IsNullOrEmpty(sources)
                 ? _settings.Search.DefaultSources
                 : sources.Split(',').Select(s => s.Trim().ToLower()).ToList();
 
+            // Always deduplicate - both user input and settings could have duplicates
+            var sourceList = rawSources.Distinct().ToList();
+
             // Build request with search_parameters
+            // X.AI API expects sources as tagged enum objects: [{"type": "web"}, {"type": "x"}]
             var requestBody = new
             {
                 model = _settings.DefaultModel,
@@ -76,7 +80,7 @@ public class GrokSearchTool
                 search_parameters = new
                 {
                     mode = "on",
-                    sources = sourceList,
+                    sources = sourceList.Select(s => new { type = s }).ToList(),
                     recency = recency ?? _settings.Search.DefaultRecency,
                     max_results = maxResults ?? _settings.Search.MaxResults
                 }
@@ -129,6 +133,14 @@ public class GrokSearchTool
     private HttpClient CreateHttpClient()
     {
         var client = _httpClientFactory.CreateClient("Grok");
+
+        // Set BaseAddress from settings if not already configured
+        if (client.BaseAddress == null && !string.IsNullOrWhiteSpace(_settings.BaseUrl))
+        {
+            var baseUrl = _settings.BaseUrl.TrimEnd('/') + "/";
+            client.BaseAddress = new Uri(baseUrl);
+        }
+
         if (!string.IsNullOrWhiteSpace(_settings.ApiKey) &&
             !client.DefaultRequestHeaders.Contains("Authorization"))
         {

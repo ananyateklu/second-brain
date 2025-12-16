@@ -137,6 +137,14 @@ public class GrokDeepSearchTool
     private HttpClient CreateHttpClient()
     {
         var client = _httpClientFactory.CreateClient("Grok");
+
+        // Set BaseAddress from settings if not already configured
+        if (client.BaseAddress == null && !string.IsNullOrWhiteSpace(_settings.BaseUrl))
+        {
+            var baseUrl = _settings.BaseUrl.TrimEnd('/') + "/";
+            client.BaseAddress = new Uri(baseUrl);
+        }
+
         if (!string.IsNullOrWhiteSpace(_settings.ApiKey) &&
             !client.DefaultRequestHeaders.Contains("Authorization"))
         {

@@ -138,10 +138,15 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                                   (mightNeedCalculation && settings.Gemini.Features.EnableCodeExecution) ||
                                   (request.FileReferences?.Count > 0); // Enable when files are provided
 
+        // Auto-enable grounding when query needs real-time info, or when explicitly enabled in settings
+        var enableGrounding = mightNeedRealTimeInfo || settings.Gemini.Features.EnableGrounding;
+
+        // IMPORTANT: Gemini doesn't support grounding + function calling together
+        // When grounding is enabled, we must disable function declarations
         var featureOptions = new GeminiFeatureOptions
         {
-            FunctionDeclarations = functionDeclarations.Count > 0 ? functionDeclarations : null,
-            EnableGrounding = mightNeedRealTimeInfo && settings.Gemini.Features.EnableGrounding,
+            FunctionDeclarations = enableGrounding ? null : (functionDeclarations.Count > 0 ? functionDeclarations : null),
+            EnableGrounding = enableGrounding,
             EnableCodeExecution = enableCodeExecution,
             EnableThinking = enableThinking,
             ThinkingBudget = enableThinking ? (request.ThinkingBudget ?? settings.Gemini.Thinking.DefaultBudget) : null,
@@ -149,7 +154,9 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
         };
 
         if (featureOptions.EnableGrounding)
-            _logger.LogInformation("Enabling Google Search grounding for this query");
+        {
+            _logger.LogInformation("Enabling Google Search grounding for this query (function calling disabled - not supported together)");
+        }
         if (featureOptions.EnableCodeExecution)
             _logger.LogInformation("Enabling code execution for this query");
         if (featureOptions.EnableThinking)

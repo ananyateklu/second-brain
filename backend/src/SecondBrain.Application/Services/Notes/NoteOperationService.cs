@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.DTOs.Requests;
@@ -644,6 +645,11 @@ public class NoteOperationService : INoteOperationService
         var changedFields = new List<string>();
         if (note.Title != targetVersion.Title) changedFields.Add("title");
         if (note.Content != targetVersion.Content) changedFields.Add("content");
+        // Track contentJson changes - compare serialized forms
+        var targetContentJson = targetVersion.ContentJson.HasValue
+            ? JsonSerializer.Serialize(targetVersion.ContentJson.Value)
+            : null;
+        if (note.ContentJson != targetContentJson) changedFields.Add("contentJson");
         if (!note.Tags.SequenceEqual(targetVersion.Tags)) changedFields.Add("tags");
         if (note.Folder != targetVersion.Folder) changedFields.Add("folder");
         if (note.IsArchived != targetVersion.IsArchived) changedFields.Add("archived");
@@ -651,6 +657,15 @@ public class NoteOperationService : INoteOperationService
         // 4. Update the note's actual content to match the target version
         note.Title = targetVersion.Title;
         note.Content = targetVersion.Content;
+        // Restore ContentJson - use the pre-serialized value from change tracking
+        note.ContentJson = targetContentJson;
+        // Restore ContentFormat - parse string back to enum
+        note.ContentFormat = targetVersion.ContentFormat?.ToLowerInvariant() switch
+        {
+            "html" => ContentFormat.Html,
+            "tiptap_json" => ContentFormat.TipTapJson,
+            _ => ContentFormat.Markdown
+        };
         note.Tags = new List<string>(targetVersion.Tags);
         note.Folder = targetVersion.Folder;
         note.IsArchived = targetVersion.IsArchived;

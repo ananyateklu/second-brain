@@ -492,7 +492,7 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline */}
       <div
-        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors ${isExecuting ? 'animate-pulse' : ''}`}
+        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isExecuting ? 'animate-pulse' : ''}`}
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: isExecuting ? 'var(--color-brand-500)' : 'var(--border)'

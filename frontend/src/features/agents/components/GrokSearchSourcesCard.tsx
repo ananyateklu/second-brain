@@ -139,7 +139,7 @@ export function GrokSearchSourcesCard({ sources, isStreaming = false }: GrokSear
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline - Grok/X themed */}
       <div
-        className="absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors"
+        className="absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors"
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)'

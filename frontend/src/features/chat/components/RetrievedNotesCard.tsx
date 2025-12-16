@@ -100,26 +100,33 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
           (current.relevanceScore || 0) > (best.relevanceScore || 0) ? current : best
           , chunks[0]);
 
-        // Try to find the full note for complete data
-        const fullNote = allNotes?.find((n) => n.id === noteId);
+        // Try to find the full note for additional metadata (isArchived, folder, etc.)
+        const cachedNote = allNotes?.find((n) => n.id === noteId);
 
-        // If full note is found, use it; otherwise create a minimal note object from retrieved data
-        const noteToDisplay = fullNote || {
+        // Always use RAG data for content, enhance with cached metadata if available
+        // NoteListItem from cache has summary but NOT content, so we must use RAG data
+        const ragContent = bestChunk.content || bestChunk.chunkContent || bestChunk.preview || '';
+
+        const noteToDisplay = {
           id: noteId,
-          title: bestChunk.title || 'Untitled Note',
-          content: bestChunk.content || bestChunk.preview || '',
-          tags: bestChunk.tags || [],
-          isArchived: false,
-          createdAt: bestChunk.createdOn || new Date().toISOString(),
-          updatedAt: bestChunk.modifiedOn || new Date().toISOString(),
+          title: bestChunk.title || cachedNote?.title || 'Untitled Note',
+          // Use RAG content since cached NoteListItem doesn't have content field
+          content: ragContent,
+          tags: bestChunk.tags || cachedNote?.tags || [],
+          // Use cached metadata if available
+          isArchived: cachedNote?.isArchived ?? false,
+          folder: cachedNote?.folder,
+          summary: cachedNote?.summary,
+          createdAt: bestChunk.createdOn || cachedNote?.createdAt || new Date().toISOString(),
+          updatedAt: bestChunk.modifiedOn || cachedNote?.updatedAt || new Date().toISOString(),
         };
 
         return {
           note: noteToDisplay,
           relevanceScore: bestChunk.relevanceScore,
           chunkCount: chunks.length,
-          chunkContent: bestChunk.chunkContent,
-          content: bestChunk.content,
+          chunkContent: bestChunk.chunkContent || ragContent,
+          content: ragContent,
           createdOn: bestChunk.createdOn,
         };
       })
@@ -140,7 +147,7 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
     <div className="relative pl-12 py-2 group">
       {/* Timeline icon */}
       <div 
-        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
+        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
         style={{ 
           backgroundColor: 'var(--surface-card)',
           borderColor: isStreaming ? 'var(--color-brand-500)' : 'var(--border)'
@@ -212,13 +219,14 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
               </div>
             ) : (
               <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2">
-                {notesWithData.map(({ note, relevanceScore, chunkCount, content, createdOn }) => (
+                {notesWithData.map(({ note, relevanceScore, chunkCount, chunkContent, content, createdOn }) => (
                   <NoteCard
                     key={note.id}
                     note={note}
                     variant="micro"
                     relevanceScore={relevanceScore}
                     chunkCount={chunkCount}
+                    chunkContent={chunkContent}
                     content={content}
                     createdOn={createdOn}
                     showDeleteButton={false}

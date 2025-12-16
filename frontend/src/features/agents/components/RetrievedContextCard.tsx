@@ -12,31 +12,38 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
   const [isExpanded, setIsExpanded] = useState(true);
   const { data: allNotes, isLoading } = useNotes();
 
-  // Map retrieved notes to display data, joining with full note data when available
+  // Map retrieved notes to display data, joining with cached note metadata when available
   const notesWithData = useMemo(() => {
     if (!retrievedNotes || retrievedNotes.length === 0) return [];
 
     return retrievedNotes
       .map((retrievedNote) => {
-        // Try to find the full note for complete data
-        const fullNote = allNotes?.find((n) => n.id === retrievedNote.noteId);
+        // Try to find cached note for additional metadata (isArchived, folder, etc.)
+        const cachedNote = allNotes?.find((n) => n.id === retrievedNote.noteId);
 
-        // If full note is found, use it; otherwise create a minimal note object from retrieved data
-        const noteToDisplay = fullNote || {
+        // Always use RAG data for content, enhance with cached metadata if available
+        // NoteListItem from cache has summary but NOT content, so we must use RAG data
+        const ragContent = retrievedNote.chunkContent || retrievedNote.preview || '';
+
+        const noteToDisplay = {
           id: retrievedNote.noteId,
-          title: retrievedNote.title || 'Untitled Note',
-          content: retrievedNote.preview || '',
-          tags: retrievedNote.tags || [],
-          isArchived: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          title: retrievedNote.title || cachedNote?.title || 'Untitled Note',
+          // Use RAG content since cached NoteListItem doesn't have content field
+          content: ragContent,
+          tags: retrievedNote.tags || cachedNote?.tags || [],
+          // Use cached metadata if available
+          isArchived: cachedNote?.isArchived ?? false,
+          folder: cachedNote?.folder,
+          summary: cachedNote?.summary,
+          createdAt: cachedNote?.createdAt || new Date().toISOString(),
+          updatedAt: cachedNote?.updatedAt || new Date().toISOString(),
         };
 
         return {
           note: noteToDisplay,
           relevanceScore: retrievedNote.relevanceScore,
-          chunkContent: retrievedNote.chunkContent ?? retrievedNote.preview,
-          content: retrievedNote.preview,
+          chunkContent: ragContent,
+          content: ragContent,
         };
       })
       .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
@@ -54,7 +61,7 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline - Search/Context icon */}
       <div 
-        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
+        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
         style={{ 
           backgroundColor: 'var(--surface-card)',
           borderColor: isStreaming ? 'var(--color-brand-500)' : 'var(--border)'
@@ -123,12 +130,13 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
               </div>
             ) : (
               <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2">
-                {notesWithData.map(({ note, relevanceScore, content }) => (
+                {notesWithData.map(({ note, relevanceScore, chunkContent, content }) => (
                   <NoteCard
                     key={note.id}
                     note={note}
                     variant="micro"
                     relevanceScore={relevanceScore}
+                    chunkContent={chunkContent}
                     content={content}
                     showDeleteButton={false}
                   />
