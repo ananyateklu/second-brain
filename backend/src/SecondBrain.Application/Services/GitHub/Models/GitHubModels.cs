@@ -780,3 +780,78 @@ public record GitHubCommentsResponse
     public List<CommentSummary> Comments { get; init; } = [];
     public int TotalCount { get; init; }
 }
+
+// ===== User Repository Models =====
+
+public record GitHubRepository
+{
+    [JsonPropertyName("id")]
+    public long Id { get; init; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    [JsonPropertyName("full_name")]
+    public string FullName { get; init; } = string.Empty;
+
+    [JsonPropertyName("owner")]
+    public GitHubUser? Owner { get; init; }
+
+    [JsonPropertyName("private")]
+    public bool IsPrivate { get; init; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; init; }
+
+    [JsonPropertyName("html_url")]
+    public string HtmlUrl { get; init; } = string.Empty;
+
+    [JsonPropertyName("default_branch")]
+    public string DefaultBranch { get; init; } = "main";
+
+    [JsonPropertyName("language")]
+    public string? Language { get; init; }
+
+    [JsonPropertyName("stargazers_count")]
+    public int StargazersCount { get; init; }
+
+    [JsonPropertyName("forks_count")]
+    public int ForksCount { get; init; }
+
+    [JsonPropertyName("open_issues_count")]
+    public int OpenIssuesCount { get; init; }
+
+    [JsonPropertyName("updated_at")]
+    public DateTime UpdatedAt { get; init; }
+
+    [JsonPropertyName("pushed_at")]
+    public DateTime? PushedAt { get; init; }
+}
+
+public record RepositorySummary
+{
+    public long Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string FullName { get; init; } = string.Empty;
+    public string Owner { get; init; } = string.Empty;
+    public string OwnerAvatarUrl { get; init; } = string.Empty;
+    public bool IsPrivate { get; init; }
+    public string? Description { get; init; }
+    public string HtmlUrl { get; init; } = string.Empty;
+    public string DefaultBranch { get; init; } = "main";
+    public string? Language { get; init; }
+    public int StargazersCount { get; init; }
+    public int ForksCount { get; init; }
+    public int OpenIssuesCount { get; init; }
+    public DateTime UpdatedAt { get; init; }
+    public DateTime? PushedAt { get; init; }
+}
+
+public record GitHubRepositoriesResponse
+{
+    public List<RepositorySummary> Repositories { get; init; } = [];
+    public int TotalCount { get; init; }
+    public int Page { get; init; }
+    public int PerPage { get; init; }
+    public bool HasMore { get; init; }
+}

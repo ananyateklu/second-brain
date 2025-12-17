@@ -17,10 +17,13 @@ import type {
   GitHubCommitsResponse,
   GitHubCommitsRequest,
   GitHubCommentsResponse,
+  GitHubRepositoriesResponse,
+  GitHubRepositoriesRequest,
 } from '../types/github';
 
 // Add GitHub endpoints to constants
 const GITHUB_ENDPOINTS = {
+  REPOSITORIES: '/github/repositories',
   REPOSITORY: '/github/repository',
   PULLS: '/github/pulls',
   PULL_BY_NUMBER: (number: number) => `/github/pulls/${number}`,
@@ -42,6 +45,24 @@ const GITHUB_ENDPOINTS = {
  * Service for GitHub API integration
  */
 export const githubService = {
+  /**
+   * Get user's accessible repositories
+   */
+  async getUserRepositories(request?: GitHubRepositoriesRequest): Promise<GitHubRepositoriesResponse> {
+    const params = new URLSearchParams();
+    if (request?.type) params.append('type', request.type);
+    if (request?.sort) params.append('sort', request.sort);
+    if (request?.page) params.append('page', request.page.toString());
+    if (request?.perPage) params.append('perPage', request.perPage.toString());
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${GITHUB_ENDPOINTS.REPOSITORIES}?${queryString}`
+      : GITHUB_ENDPOINTS.REPOSITORIES;
+
+    return apiClient.get<GitHubRepositoriesResponse>(url);
+  },
+
   /**
    * Get repository information and validate configuration
    */

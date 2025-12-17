@@ -148,4 +148,14 @@ public interface IGitHubService
         string? owner = null,
         string? repo = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets repositories accessible to the authenticated user.
+    /// </summary>
+    Task<Result<GitHubRepositoriesResponse>> GetUserRepositoriesAsync(
+        string? type = "all",
+        string? sort = "pushed",
+        int page = 1,
+        int perPage = 30,
+        CancellationToken cancellationToken = default);
 }

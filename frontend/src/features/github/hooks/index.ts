@@ -1,6 +1,7 @@
 // GitHub Query Hooks
 export {
   useGitHubRepository,
+  useGitHubRepositories,
   useGitHubPullRequests,
   useGitHubPullRequest,
   useGitHubPullRequestReviews,

@@ -6,6 +6,7 @@ import type {
   GitHubWorkflowRunsRequest,
   GitHubIssuesRequest,
   GitHubCommitsRequest,
+  GitHubRepositoriesRequest,
 } from '../../../types/github';
 
 /**
@@ -17,6 +18,23 @@ export const useGitHubRepository = (owner?: string, repo?: string) => {
     queryFn: () => githubService.getRepositoryInfo(owner, repo),
     retry: 1,
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+/**
+ * Hook to fetch user's accessible repositories
+ */
+export const useGitHubRepositories = (request?: GitHubRepositoriesRequest) => {
+  return useQuery({
+    queryKey: githubKeys.repositories({
+      type: request?.type,
+      sort: request?.sort,
+      page: request?.page,
+      perPage: request?.perPage,
+    }),
+    queryFn: () => githubService.getUserRepositories(request),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
   });
 };
 

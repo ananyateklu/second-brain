@@ -23,6 +23,41 @@ export interface GitHubRepositoryInfo {
   isConfigured: boolean;
 }
 
+// User Repository Types
+
+export interface RepositorySummary {
+  id: number;
+  name: string;
+  fullName: string;
+  owner: string;
+  ownerAvatarUrl: string;
+  isPrivate: boolean;
+  description?: string;
+  htmlUrl: string;
+  defaultBranch: string;
+  language?: string;
+  stargazersCount: number;
+  forksCount: number;
+  openIssuesCount: number;
+  updatedAt: string;
+  pushedAt?: string;
+}
+
+export interface GitHubRepositoriesResponse {
+  repositories: RepositorySummary[];
+  totalCount: number;
+  page: number;
+  perPage: number;
+  hasMore: boolean;
+}
+
+export interface GitHubRepositoriesRequest {
+  type?: 'all' | 'owner' | 'public' | 'private' | 'member';
+  sort?: 'created' | 'updated' | 'pushed' | 'full_name';
+  page?: number;
+  perPage?: number;
+}
+
 // Pull Request Types
 
 export interface ReviewSummary {

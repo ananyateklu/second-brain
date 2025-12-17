@@ -13,6 +13,7 @@ using SecondBrain.Application.Queries.GitHub.GetPullRequestFiles;
 using SecondBrain.Application.Queries.GitHub.GetPullRequestReviews;
 using SecondBrain.Application.Queries.GitHub.GetPullRequests;
 using SecondBrain.Application.Queries.GitHub.GetRepositoryInfo;
+using SecondBrain.Application.Queries.GitHub.GetUserRepositories;
 using SecondBrain.Application.Queries.GitHub.GetWorkflowRun;
 using SecondBrain.Application.Queries.GitHub.GetWorkflowRuns;
 using SecondBrain.Application.Queries.GitHub.GetWorkflows;
@@ -58,6 +59,29 @@ public class GitHubController : ControllerBase
                 "NotFound" => NotFound(new { error = error.Code, message = error.Message }),
                 _ => StatusCode(500, new { error = error.Code, message = error.Message })
             }
+        );
+    }
+
+    /// <summary>
+    /// Gets repositories accessible to the authenticated user.
+    /// </summary>
+    [HttpGet("repositories")]
+    [ProducesResponseType(typeof(GitHubRepositoriesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetUserRepositories(
+        [FromQuery] string? type = "all",
+        [FromQuery] string? sort = "pushed",
+        [FromQuery] int page = 1,
+        [FromQuery] int perPage = 30,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetUserRepositoriesQuery(type, sort, page, perPage), cancellationToken);
+
+        return result.Match(
+            onSuccess: repos => Ok(repos),
+            onFailure: error => HandleError(error)
         );
     }
 

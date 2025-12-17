@@ -858,6 +858,70 @@ public sealed class GitHubService : IGitHubService, IDisposable
         }
     }
 
+    public async Task<Result<GitHubRepositoriesResponse>> GetUserRepositoriesAsync(
+        string? type = "all",
+        string? sort = "pushed",
+        int page = 1,
+        int perPage = 30,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(_settings.PersonalAccessToken))
+        {
+            return Result<GitHubRepositoriesResponse>.Failure(Error.Validation(
+                "GitHub Personal Access Token is not configured."));
+        }
+
+        try
+        {
+            var url = $"/user/repos?type={type ?? "all"}&sort={sort ?? "pushed"}&direction=desc&page={page}&per_page={perPage}";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return HandleErrorResponse<GitHubRepositoriesResponse>(response);
+            }
+
+            var repositories = await response.Content.ReadFromJsonAsync<List<GitHubRepository>>(_jsonOptions, cancellationToken)
+                ?? [];
+
+            var summaries = repositories.Select(r => new RepositorySummary
+            {
+                Id = r.Id,
+                Name = r.Name,
+                FullName = r.FullName,
+                Owner = r.Owner?.Login ?? string.Empty,
+                OwnerAvatarUrl = r.Owner?.AvatarUrl ?? string.Empty,
+                IsPrivate = r.IsPrivate,
+                Description = r.Description,
+                HtmlUrl = r.HtmlUrl,
+                DefaultBranch = r.DefaultBranch,
+                Language = r.Language,
+                StargazersCount = r.StargazersCount,
+                ForksCount = r.ForksCount,
+                OpenIssuesCount = r.OpenIssuesCount,
+                UpdatedAt = r.UpdatedAt,
+                PushedAt = r.PushedAt
+            }).ToList();
+
+            var hasMore = response.Headers.TryGetValues("Link", out var linkValues)
+                && linkValues.Any(v => v.Contains("rel=\"next\""));
+
+            return Result<GitHubRepositoriesResponse>.Success(new GitHubRepositoriesResponse
+            {
+                Repositories = summaries,
+                TotalCount = summaries.Count,
+                Page = page,
+                PerPage = perPage,
+                HasMore = hasMore
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get user repositories");
+            return Result<GitHubRepositoriesResponse>.Failure(Error.ExternalService("GitHub", ex.Message));
+        }
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

@@ -429,6 +429,10 @@ export const githubKeys = {
   /** Root key for all github queries */
   all: ['github'] as const,
 
+  /** Key for user repositories list */
+  repositories: (filters?: { type?: string; sort?: string; page?: number; perPage?: number }) =>
+    [...githubKeys.all, 'repositories', filters] as const,
+
   /** Key for repository info */
   repository: (owner?: string, repo?: string) =>
     [...githubKeys.all, 'repository', { owner, repo }] as const,
