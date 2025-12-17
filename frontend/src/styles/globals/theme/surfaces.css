@@ -1,0 +1,120 @@
+/* =============================================================================
+   Theme Surfaces
+   Surface layers, borders, text hierarchy
+   ============================================================================= */
+
+:root {
+  /* Semantic surface tokens */
+  --color-surface: var(--background);
+  --color-surface-elevated: color-mix(in srgb, var(--background) 90%, transparent);
+  --color-border-subtle: color-mix(in srgb, var(--color-brand-600) 25%, transparent);
+  --color-text-muted: color-mix(in srgb, var(--foreground) 70%, transparent);
+
+  /* Surface and border variables for components - higher opacity for darker appearance */
+  --surface: color-mix(in srgb, var(--background) 92%, transparent);
+  --surface-elevated: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background) 95%, white) 94%,
+    transparent
+  );
+  --surface-card: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background) 92%, white) 95%,
+    transparent
+  );
+
+  /* Solid (non-transparent) background colors for components that need opaque backgrounds */
+  --background-solid: #030503;
+  --surface-solid: #050805;
+  --surface-elevated-solid: #080c08;
+  --surface-card-solid: #060a06;
+
+  /* Border variables */
+  --border: color-mix(in srgb, var(--foreground) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--foreground);
+  --text-secondary: color-mix(in srgb, var(--foreground) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--foreground) 50%, transparent);
+}
+
+/* =============================================================================
+   Light Theme Surfaces
+   ============================================================================= */
+[data-theme="light"] {
+  /* Surface and border variables */
+  --surface: color-mix(in srgb, var(--color-brand-50) 50%, transparent);
+  --surface-elevated: color-mix(in srgb, #ffffff 60%, transparent);
+  --surface-card: color-mix(in srgb, #ffffff 70%, transparent);
+
+  /* Solid (non-transparent) background colors for light theme */
+  --background-solid: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-elevated-solid: #ffffff;
+  --surface-card-solid: #ffffff;
+
+  --border: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-brand-950) 25%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--color-brand-950);
+  --text-secondary: color-mix(in srgb, var(--color-brand-950) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-brand-950) 50%, transparent);
+}
+
+/* =============================================================================
+   Dark Theme Surfaces
+   ============================================================================= */
+[data-theme="dark"] {
+  /* Surface and border variables - increased opacity for darker appearance */
+  --surface: color-mix(in srgb, #050805 92%, transparent);
+  --surface-elevated: color-mix(
+    in srgb,
+    color-mix(in srgb, #050805 95%, var(--color-brand-900)) 94%,
+    transparent
+  );
+  --surface-card: color-mix(
+    in srgb,
+    color-mix(in srgb, #050805 92%, var(--color-brand-900)) 95%,
+    transparent
+  );
+
+  /* Solid (non-transparent) background colors for dark theme */
+  --background-solid: #030503;
+  --surface-solid: #050805;
+  --surface-elevated-solid: #080c08;
+  --surface-card-solid: #060a06;
+
+  --border: color-mix(in srgb, var(--color-brand-50) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-brand-50) 25%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--color-brand-50);
+  --text-secondary: color-mix(in srgb, var(--color-brand-50) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-brand-50) 50%, transparent);
+}
+
+/* =============================================================================
+   Blue Theme Surfaces
+   ============================================================================= */
+[data-theme="blue"] {
+  /* Surface and border variables - darker components */
+  --surface: color-mix(in srgb, var(--color-blue-900) 60%, transparent);
+  --surface-elevated: color-mix(in srgb, var(--color-blue-950) 70%, transparent);
+  --surface-card: color-mix(in srgb, var(--color-blue-950) 70%, transparent);
+
+  /* Solid (non-transparent) background colors for blue theme */
+  --background-solid: var(--color-blue-900);
+  --surface-solid: var(--color-blue-950);
+  --surface-elevated-solid: var(--color-blue-950);
+  --surface-card-solid: var(--color-blue-950);
+
+  --border: color-mix(in srgb, var(--color-blue-50) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-blue-50) 25%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--color-blue-50);
+  --text-secondary: color-mix(in srgb, var(--color-blue-50) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-blue-50) 50%, transparent);
+}

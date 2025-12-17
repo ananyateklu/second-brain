@@ -24,6 +24,7 @@ export type SidebarState = 'closed' | 'collapsed' | 'expanded';
 export type SearchMode = 'both' | 'title' | 'content';
 export type NoteView = 'list' | 'grid';
 export type FontSize = 'small' | 'medium' | 'large';
+export type GitHubTabType = 'local-changes' | 'code' | 'pull-requests' | 'issues' | 'actions' | 'commits' | 'branches';
 
 // ============================================
 // Notes Filter Types
@@ -134,6 +135,14 @@ export interface UISliceState {
   directoryViewMode: NotesViewMode;
   isFullscreenChat: boolean;
   isFullscreenDirectory: boolean;
+  /** GitHub page active tab */
+  githubActiveTab: GitHubTabType;
+  /** GitHub selected repository owner */
+  githubOwner: string | null;
+  /** GitHub selected repository name */
+  githubRepo: string | null;
+  /** Git settings panel open state */
+  isGitSettingsOpen: boolean;
 }
 
 export interface UISliceActions {
@@ -158,6 +167,14 @@ export interface UISliceActions {
   toggleFullscreenDirectory: () => void;
   setFullscreenChat: (isFullscreen: boolean) => void;
   setFullscreenDirectory: (isFullscreen: boolean) => void;
+  /** Set GitHub active tab */
+  setGitHubActiveTab: (tab: GitHubTabType) => void;
+  /** Set GitHub repository */
+  setGitHubRepo: (owner: string | null, repo: string | null) => void;
+  /** Open Git settings panel */
+  openGitSettings: () => void;
+  /** Close Git settings panel */
+  closeGitSettings: () => void;
 }
 
 export type UISlice = UISliceState & UISliceActions;

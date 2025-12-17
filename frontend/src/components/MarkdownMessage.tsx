@@ -252,7 +252,7 @@ export function MarkdownMessage({ content, showCursor = false }: MarkdownMessage
 
             return (
               <pre
-                className="p-4 rounded-lg mb-4 overflow-x-auto"
+                className="p-4 rounded-lg mb-4 overflow-x-auto thin-scrollbar"
                 style={{
                   backgroundColor: 'var(--surface-card)',
                   border: '1px solid var(--border)',
@@ -329,7 +329,7 @@ export function MarkdownMessage({ content, showCursor = false }: MarkdownMessage
           ),
           // Tables
           table: ({ node: _node, ...props }) => (
-            <div className="overflow-x-auto my-4">
+            <div className="overflow-x-auto thin-scrollbar my-4">
               <table
                 className="min-w-full border-collapse"
                 style={{ borderColor: 'var(--border)' }}

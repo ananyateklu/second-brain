@@ -1,0 +1,268 @@
+/* =============================================================================
+   TipTap/ProseMirror Editor Styles
+   These must remain global because ProseMirror generates its own elements
+   ============================================================================= */
+
+/* Base Editor Styles */
+.ProseMirror {
+  outline: none !important;
+  min-height: 300px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Mention/Tag Styling */
+.mention {
+  color: var(--color-brand-600);
+  background-color: var(--color-brand-100);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.4rem;
+  box-decoration-break: clone;
+  font-weight: 500;
+  font-size: 0.9em;
+  margin: 0 1px;
+}
+
+[data-theme="dark"] .mention,
+[data-theme="blue"] .mention {
+  color: var(--color-brand-300);
+  background-color: color-mix(in srgb, var(--color-brand-900) 80%, transparent);
+}
+
+/* Typography */
+.ProseMirror h1 {
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror h2 {
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror h3 {
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  line-height: 1.5;
+}
+
+.ProseMirror h1:first-child,
+.ProseMirror h2:first-child,
+.ProseMirror h3:first-child,
+.ProseMirror h4:first-child,
+.ProseMirror h5:first-child,
+.ProseMirror h6:first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs */
+.ProseMirror p {
+  margin-bottom: 1em;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+/* Lists */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  line-height: 1.75;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.5em;
+}
+
+/* Blockquote */
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 1em;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  line-height: 1.75;
+}
+
+/* Code */
+.ProseMirror pre {
+  background: var(--surface-card);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-family: monospace;
+  padding: 0.75rem 1rem;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror code {
+  background: var(--surface-card);
+  border-radius: 0.25rem;
+  font-family: monospace;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.9em;
+}
+
+/* Horizontal Rule */
+.ProseMirror hr {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+/* Task Lists (Checkboxes) */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+  cursor: pointer;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+  width: 1.2em;
+  height: 1.2em;
+  margin-top: 0.2em;
+  accent-color: var(--color-brand-600);
+}
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Tables */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  table-layout: auto;
+  border: 1px solid var(--border);
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  min-width: 1em;
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.ProseMirror table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-brand-600) 10%, transparent);
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--color-brand-600);
+  pointer-events: none;
+}
+
+/* Links */
+.ProseMirror a {
+  color: var(--color-brand-400);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a:hover {
+  text-decoration: none;
+}
+
+/* Highlight */
+.ProseMirror mark {
+  background-color: #fef08a;
+  color: inherit;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.2em;
+}
+
+/* Images */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Underline */
+.ProseMirror u {
+  text-decoration: underline;
+}

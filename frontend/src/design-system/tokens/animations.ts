@@ -47,7 +47,7 @@ export const transitions = {
 } as const;
 
 /**
- * Animation keyframe names (defined in globals.css)
+ * Animation keyframe names (defined in styles/globals/ and styles/components/)
  */
 export const animationNames = {
   fadeIn: 'fadeIn',

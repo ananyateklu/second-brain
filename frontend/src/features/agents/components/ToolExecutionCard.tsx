@@ -629,7 +629,7 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
 
               return (
                 <div
-                  className="p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap"
+                  className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
                   style={{
                     backgroundColor: 'var(--surface-card)',
                     color: 'var(--text-secondary)',

@@ -270,13 +270,7 @@ const HealthStatusSection = ({ health, isDisabled }: HealthStatusSectionProps) =
       </p>
     )}
     {health?.availableModels && health.availableModels.length > 0 && (
-      <div
-        className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1"
-        style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: 'var(--border) transparent',
-        }}
-      >
+      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto thin-scrollbar pr-1">
         {health.availableModels.map((model: string) => (
           <code
             key={model}

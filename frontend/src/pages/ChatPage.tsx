@@ -229,8 +229,8 @@ export function ChatPage() {
       backgroundColor: 'var(--surface-card)',
       borderColor: 'var(--border)',
       boxShadow: 'var(--shadow-2xl)',
-      height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-      maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      height: `calc(100vh - ${titleBarHeight}px - 21px)`,
+      maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
     };
 
   return (

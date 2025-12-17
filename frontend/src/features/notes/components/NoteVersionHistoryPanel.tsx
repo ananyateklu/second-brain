@@ -123,13 +123,7 @@ export function NoteVersionHistoryPanel({
         </div>
 
         {/* Content */}
-        <div
-          className="flex-1 overflow-y-auto"
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'var(--border) transparent',
-          }}
-        >
+        <div className="flex-1 overflow-y-auto thin-scrollbar">
           {isLoading ? (
             <div className="flex items-center justify-center h-48">
               <LoadingSpinner message="Loading history..." />

@@ -199,7 +199,7 @@ export const QueryLogsTable = memo(({
 
       {/* Table */}
       <div className="flex-1 min-h-0 overflow-hidden relative z-10 flex flex-col">
-        <div className="overflow-x-auto overflow-y-auto flex-1">
+        <div className="overflow-x-auto overflow-y-auto thin-scrollbar flex-1">
           <table className="w-full">
             <thead className="sticky top-0 z-20">
               <tr>

@@ -324,11 +324,9 @@ function DiffSection({
             </div>
           ) : (
             <div
-              className="text-sm max-h-40 overflow-y-auto"
+              className="text-sm max-h-40 overflow-y-auto thin-scrollbar"
               style={{
                 color: 'var(--text-secondary)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'var(--border) transparent',
               }}
             >
               {fromContent || (
@@ -390,11 +388,9 @@ function DiffSection({
             </div>
           ) : (
             <div
-              className="text-sm max-h-40 overflow-y-auto"
+              className="text-sm max-h-40 overflow-y-auto thin-scrollbar"
               style={{
                 color: 'var(--text-secondary)',
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'var(--border) transparent',
               }}
             >
               {toContent || (
@@ -453,13 +449,7 @@ export function NoteVersionDiffViewer({
           <LoadingSpinner message="Loading diff..." />
         </div>
       ) : diff ? (
-        <div
-          className="max-h-[60vh] overflow-y-auto pr-2"
-          style={{
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'var(--border) transparent',
-          }}
-        >
+        <div className="max-h-[60vh] overflow-y-auto thin-scrollbar pr-2">
           {/* Summary header */}
           <div
             className="flex flex-wrap items-center gap-2 p-4 rounded-xl mb-6"

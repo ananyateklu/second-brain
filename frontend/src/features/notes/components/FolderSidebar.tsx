@@ -184,7 +184,7 @@ export function FolderSidebar({
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto thin-scrollbar py-2">
         {/* All Notes */}
         <button
           onClick={() => {

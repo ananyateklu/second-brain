@@ -4,7 +4,7 @@
  */
 
 import type { Note, NoteListItem } from '../../features/notes/types/note';
-import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode } from '../types';
+import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode, GitHubTabType } from '../types';
 
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';
 const NOTES_VIEW_MODE_STORAGE_KEY = 'second-brain-notes-view-mode';
@@ -90,6 +90,10 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   directoryViewMode: initialDirectoryViewMode,
   isFullscreenChat: false,
   isFullscreenDirectory: false,
+  githubActiveTab: 'code' as GitHubTabType,
+  githubOwner: null,
+  githubRepo: null,
+  isGitSettingsOpen: false,
 
   // ============================================
   // Modal Actions
@@ -183,4 +187,18 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   toggleFullscreenDirectory: () => set((state) => ({ isFullscreenDirectory: !state.isFullscreenDirectory })),
   setFullscreenChat: (isFullscreen: boolean) => set({ isFullscreenChat: isFullscreen }),
   setFullscreenDirectory: (isFullscreen: boolean) => set({ isFullscreenDirectory: isFullscreen }),
+
+  // ============================================
+  // GitHub Actions
+  // ============================================
+
+  setGitHubActiveTab: (tab: GitHubTabType) => set({ githubActiveTab: tab }),
+  setGitHubRepo: (owner: string | null, repo: string | null) => set({ githubOwner: owner, githubRepo: repo }),
+
+  // ============================================
+  // Git Settings Actions
+  // ============================================
+
+  openGitSettings: () => set({ isGitSettingsOpen: true }),
+  closeGitSettings: () => set({ isGitSettingsOpen: false }),
 });

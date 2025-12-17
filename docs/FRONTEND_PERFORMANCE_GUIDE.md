@@ -972,12 +972,12 @@ export class WorkerPool<TInput, TOutput> {
 
 ### 6. CSS Containment 🔴 NOT IMPLEMENTED
 
-> **Status:** CSS containment rules not yet added to `globals.css`.
+> **Status:** CSS containment rules not yet added to CSS files.
 
 Add CSS containment for better rendering performance:
 
 ```css
-/* globals.css */
+/* styles/globals/base/containment.css or index.css */
 
 /* Strict containment for virtualized lists */
 .virtual-list-container {
@@ -2154,7 +2154,7 @@ export function useRovingFocus<T>(items: T[]) {
 | Add Web Vitals monitoring | Medium | Medium | 🔴 Pending | Create `lib/analytics.ts` |
 | Optimize bundle chunks | Medium | Medium | ✅ Done | `vite.config.ts` |
 | Add progressive image loading | Low | Low | 🔴 Pending | Create `ProgressiveImage.tsx` |
-| Implement CSS containment | Low | Low | 🔴 Pending | `globals.css` |
+| Implement CSS containment | Low | Low | 🔴 Pending | `styles/globals/base/` |
 
 ### Phase 4: Quality & Testing (Week 7-8) 🔴 PENDING
 

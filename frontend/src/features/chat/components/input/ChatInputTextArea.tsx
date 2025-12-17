@@ -1,6 +1,6 @@
 /**
  * ChatInput TextArea Component
- * 
+ *
  * The main text input area for the compound ChatInput.
  * Features:
  * - Scrollable when content exceeds max height
@@ -12,6 +12,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useChatInputContext } from './ChatInputContext';
 import { getAllSupportedExtensions } from '../../../../utils/multimodal-models';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatInputTextAreaProps {
   /** Custom placeholder text */
@@ -143,7 +144,7 @@ export function ChatInputTextArea({
       : 'Type a message... (@ to mention notes, Shift+Enter for new line)';
 
   return (
-    <div className="flex-1 relative chat-input-textarea-wrapper">
+    <div className={`flex-1 relative ${styles.textareaWrapper}`}>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -164,10 +165,10 @@ export function ChatInputTextArea({
         disabled={isLoading || disabled || isGeneratingImage}
         rows={1}
         className={`
-          w-full resize-none outline-none text-sm leading-relaxed 
-          placeholder:opacity-50 
-          chat-input-textarea
-          ${isFocused ? 'chat-input-textarea-focused' : ''}
+          w-full resize-none outline-none text-sm leading-relaxed
+          placeholder:opacity-50
+          ${styles.textarea}
+          ${isFocused ? styles.textareaFocused : ''}
         `}
         style={{
           backgroundColor: 'transparent',
@@ -200,7 +201,7 @@ export function ChatInputTextArea({
       {/* Action buttons positioned inside the textarea area, left of scrollbar */}
       {actions && (
         <div
-          className="chat-input-actions-slot"
+          className={styles.actionsSlot}
           style={{
             position: 'absolute',
             right: '0px', // Position close to the edge, left of scrollbar

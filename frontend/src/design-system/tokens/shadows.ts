@@ -1,6 +1,6 @@
 /**
  * Shadow Tokens
- * Maps to CSS custom properties defined in globals.css
+ * Maps to CSS custom properties defined in styles/globals/theme/effects.css
  */
 
 /**

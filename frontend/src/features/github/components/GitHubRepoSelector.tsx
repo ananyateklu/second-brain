@@ -227,7 +227,7 @@ export const GitHubRepoSelector = ({
           </div>
 
           {/* Repository List */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto thin-scrollbar">
             {isLoadingRepos ? (
               <div className="p-4 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />

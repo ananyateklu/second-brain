@@ -161,7 +161,7 @@ export function CodeViewer({
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
       {/* File header */}
       <div
-        className="flex items-center justify-between px-4 py-2 border-b flex-shrink-0"
+        className="flex items-center justify-between px-4 py-[18.5px] border-b flex-shrink-0"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           borderColor: 'var(--border)',

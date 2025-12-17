@@ -116,7 +116,7 @@ export const GitHubIssuesList = ({
       </div>
 
       {/* Issues List - Scrollable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 thin-scrollbar">
       {issues.length === 0 ? (
         <div className="text-center py-12">
           <svg

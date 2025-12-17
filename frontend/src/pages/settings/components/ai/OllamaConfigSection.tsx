@@ -336,7 +336,7 @@ export const OllamaConfigSection = ({ downloadedModels, onRefreshHealth }: Ollam
               </div>
 
               {/* Models Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto thin-scrollbar pr-1">
                 {POPULAR_OLLAMA_MODELS
                   .filter(model => selectedModelCategory === null || model.category === selectedModelCategory)
                   .map((model) => {

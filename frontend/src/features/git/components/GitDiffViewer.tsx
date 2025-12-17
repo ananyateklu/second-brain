@@ -4,7 +4,7 @@
  */
 
 import { memo, useMemo } from 'react';
-import { X, FileCode, Plus, Minus, FileSearch } from 'lucide-react';
+import { X, FileCode, FileSearch } from 'lucide-react';
 import { getIcon } from 'material-file-icons';
 import type { GitDiffResult } from '../../../types/git';
 
@@ -226,191 +226,117 @@ export const GitDiffViewer = memo(function GitDiffViewer({
 
   if (isLoading) {
     return (
-      <div
-        className="h-full rounded-2xl flex items-center justify-center relative overflow-hidden"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="animate-spin rounded-full h-10 w-10 border-2"
-            style={{
-              borderColor: 'var(--border)',
-              borderTopColor: 'var(--color-brand-500)',
-            }}
-          />
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            Loading diff...
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full">
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-2"
+          style={{
+            borderColor: 'var(--border)',
+            borderTopColor: 'var(--color-brand-500)',
+          }}
+        />
+        <p className="mt-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          Loading diff...
+        </p>
       </div>
     );
   }
 
   if (!diff) {
     return (
-      <div
-        className="h-full rounded-2xl flex flex-col items-center justify-center text-center p-8 relative overflow-hidden"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-          backdropFilter: 'blur(20px)',
-        }}
-      >
-        {/* Ambient glow effect */}
+      <div className="flex flex-col items-center justify-center h-full">
         <div
-          className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, var(--color-primary), transparent)',
-          }}
-        />
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+          className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)',
           }}
         >
           <FileSearch
             className="w-10 h-10"
-            style={{ color: 'var(--color-brand-500)' }}
+            style={{ color: 'var(--color-brand-500)', opacity: 0.7 }}
           />
         </div>
-        <p className="text-base font-medium" style={{ color: 'var(--text-primary)' }}>
-          Select a file to view diff
+        <p className="text-lg font-medium" style={{ color: 'var(--text-secondary)' }}>
+          Select a file to view
         </p>
-        <p className="text-sm mt-2 max-w-xs" style={{ color: 'var(--text-tertiary)' }}>
-          Click on any file in the changes panel to see what's changed
+        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          Choose a file from the changes on the left
         </p>
       </div>
     );
   }
 
   return (
-    <div
-      className="h-full rounded-2xl flex flex-col overflow-hidden relative"
-      style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-        backdropFilter: 'blur(20px)',
-      }}
-    >
-      {/* Ambient glow effect */}
+    <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
+      {/* File header */}
       <div
-        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
+        className="flex items-center justify-between px-4 py-[16px] border-b flex-shrink-0"
         style={{
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        }}
-      />
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-5 py-4"
-        style={{
-          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--surface-elevated)',
+          borderColor: 'var(--border)',
         }}
       >
-        <div className="flex items-center gap-4 min-w-0">
-          {/* File icon */}
-          <div
-            className="flex items-center justify-center w-10 h-10 rounded-xl flex-shrink-0"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <MaterialFileIcon fileName={fileName} />
-          </div>
-
-          {/* File info */}
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <span
-                className="text-sm font-semibold truncate"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {fileName}
-              </span>
-              {/* Stats badges */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {stats.additions > 0 && (
-                  <div
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-md"
-                    style={{
-                      backgroundColor: 'var(--color-git-add-line-bg)',
-                    }}
-                  >
-                    <Plus className="w-3 h-3" style={{ color: 'var(--color-git-add)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--color-git-add)' }}>
-                      {stats.additions}
-                    </span>
-                  </div>
-                )}
-                {stats.deletions > 0 && (
-                  <div
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-md"
-                    style={{
-                      backgroundColor: 'var(--color-git-remove-line-bg)',
-                    }}
-                  >
-                    <Minus className="w-3 h-3" style={{ color: 'var(--color-git-remove)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--color-git-remove)' }}>
-                      {stats.deletions}
-                    </span>
-                  </div>
-                )}
-                {stats.additions === 0 && stats.deletions === 0 && (
-                  <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                    Binary or metadata change
-                  </span>
-                )}
-              </div>
-            </div>
+        <div className="flex items-center gap-3 min-w-0">
+          <MaterialFileIcon fileName={fileName} />
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="text-sm font-medium truncate"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {fileName}
+            </span>
             {directory && (
-              <p
-                className="text-xs truncate mt-0.5"
+              <span
+                className="text-xs truncate hidden sm:block"
                 style={{ color: 'var(--text-tertiary)' }}
               >
                 {directory}
-              </p>
+              </span>
             )}
           </div>
         </div>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
-          }}
-          title="Close diff"
-        >
-          <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-        </button>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Stats badges */}
+          {stats.additions > 0 && (
+            <span className="text-xs font-medium" style={{ color: 'var(--color-git-add)' }}>
+              +{stats.additions}
+            </span>
+          )}
+          {stats.deletions > 0 && (
+            <span className="text-xs font-medium" style={{ color: 'var(--color-git-remove)' }}>
+              -{stats.deletions}
+            </span>
+          )}
+          {stats.additions === 0 && stats.deletions === 0 && (
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Binary
+            </span>
+          )}
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+            title="Close diff"
+          >
+            <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+          </button>
+        </div>
       </div>
 
       {/* Diff content */}
       <div
-        className="flex-1 overflow-auto [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]"
-        style={{
-          backgroundColor: 'var(--surface-elevated)',
-        }}
+        className="flex-1 overflow-auto thin-scrollbar"
+        style={{ backgroundColor: 'var(--surface-card)' }}
       >
         {parsedLines.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--text-tertiary) 10%, transparent)',
               }}
             >
-              <FileCode className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
+              <FileCode className="w-6 h-6" style={{ color: 'var(--text-tertiary)' }} />
             </div>
             <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               No changes in this file

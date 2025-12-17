@@ -1,9 +1,9 @@
 /**
  * ChatInput Container Component
- * 
+ *
  * The main glassmorphism container for the chat input with dynamic height
  * management based on focus state.
- * 
+ *
  * Features:
  * - Smooth 300ms height transitions
  * - 70vh max when focused, 30vh max when unfocused
@@ -13,6 +13,7 @@
 
 import React, { useCallback, useRef } from 'react';
 import { useChatInputContext } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatInputContainerProps {
   children: React.ReactNode;
@@ -40,12 +41,12 @@ export function ChatInputContainer({ children }: ChatInputContainerProps) {
 
   // Dynamic classes based on state
   const containerClasses = [
-    'chat-input-glass',
-    'chat-input-container',
-    'chat-input-dynamic',
+    styles.glass,
+    styles.container,
+    styles.dynamic,
     'relative flex flex-col rounded-3xl px-3 py-2',
-    isFocused ? 'chat-input-focused' : 'chat-input-blurred',
-    isScrollable ? 'chat-input-scrollable' : '',
+    isFocused ? styles.focused : styles.blurred,
+    isScrollable ? styles.scrollable : '',
   ].filter(Boolean).join(' ');
 
   // Inline styles for dynamic max-height
@@ -89,7 +90,7 @@ export function ChatInputRow({ children }: { children: React.ReactNode }) {
 export function ChatInputScrollArea({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="chat-input-scroll-area overflow-y-auto"
+      className={`${styles.scrollArea} overflow-y-auto thin-scrollbar`}
       style={{
         scrollbarGutter: 'stable',
         // Enable momentum scrolling
@@ -115,7 +116,7 @@ export function ChatInputVisionIndicator() {
 
   return (
     <div
-      className="mt-2 text-center text-xs chat-input-vision-indicator"
+      className={`mt-2 text-center text-xs ${styles.visionIndicator}`}
       style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}
     >
       <span className="inline-flex items-center gap-1">
@@ -143,7 +144,7 @@ export function ChatInputFocusOverlay() {
 
   return (
     <div
-      className="chat-input-focus-overlay"
+      className={styles.focusOverlay}
       style={{
         position: 'fixed',
         inset: 0,

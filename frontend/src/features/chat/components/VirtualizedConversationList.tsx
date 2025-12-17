@@ -76,7 +76,7 @@ export const VirtualizedConversationList = memo(({
   return (
     <div
       ref={parentRef}
-      className="h-full overflow-auto pb-2"
+      className="h-full overflow-auto thin-scrollbar pb-2"
       style={{ contain: 'strict' }}
     >
       <div

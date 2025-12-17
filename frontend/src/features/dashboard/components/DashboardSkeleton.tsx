@@ -166,7 +166,7 @@ function SkeletonModelUsage() {
 
                 {/* Interactive Legend */}
                 <div
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto"
+                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
                   }}

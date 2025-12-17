@@ -1,0 +1,222 @@
+/* =============================================================================
+   Selection Mode Styles (CSS Module)
+   Chat selection mode animations and interactions
+   ============================================================================= */
+
+/* =============================================================================
+   Selection Animations
+   ============================================================================= */
+
+/* Checkbox fill animation with scale bounce */
+@keyframes checkIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Checkmark draw animation */
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Trash icon shake on delete button hover */
+@keyframes shakeDelete {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px) rotate(3deg);
+  }
+}
+
+/* Subtle pulse when delete is actionable */
+@keyframes pulseDelete {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Action bar slide down entrance */
+@keyframes slideDownReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 80px;
+  }
+}
+
+/* Staggered checkbox fade in */
+@keyframes staggerFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Background highlight on selection */
+@keyframes selectHighlight {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--surface-card) 60%, transparent);
+  }
+  100% {
+    background-color: color-mix(in srgb, var(--surface-card) 40%, transparent);
+  }
+}
+
+/* Selection mode toggle rotation */
+@keyframes toggleRotateIn {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes toggleRotateOut {
+  0% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* =============================================================================
+   Selection Mode Classes
+   ============================================================================= */
+
+.actionBar {
+  animation: slideDownReveal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.checkbox {
+  animation: staggerFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 30ms);
+  opacity: 0;
+}
+
+.checkboxInner {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.checkboxInnerChecked {
+  animation: checkIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.checkboxInnerUnchecked {
+  animation: checkOut 0.15s ease-out forwards;
+}
+
+.checkmark {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.checkboxInnerChecked .checkmark {
+  animation: checkmarkDraw 0.2s ease-out 0.1s forwards;
+}
+
+.deletePulse {
+  animation: pulseDelete 1.5s ease-in-out infinite;
+}
+
+.deleteShake:hover svg {
+  animation: shakeDelete 0.5s ease-in-out;
+}
+
+.itemHighlight {
+  animation: selectHighlight 0.3s ease-out forwards;
+}
+
+.toggleRotateIn {
+  animation: toggleRotateIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.toggleRotateOut {
+  animation: toggleRotateOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* =============================================================================
+   Reduced Motion Support
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .actionBar,
+  .checkbox,
+  .checkboxInnerChecked,
+  .checkboxInnerUnchecked,
+  .checkboxInnerChecked .checkmark,
+  .deletePulse,
+  .deleteShake:hover svg,
+  .itemHighlight,
+  .toggleRotateIn,
+  .toggleRotateOut {
+    animation: none;
+  }
+
+  .checkbox {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .actionBar {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 80px;
+  }
+}

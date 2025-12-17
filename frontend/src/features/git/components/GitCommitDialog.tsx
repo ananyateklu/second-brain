@@ -147,7 +147,7 @@ export const GitCommitDialog = memo(function GitCommitDialog({
               </span>
             </div>
             {stagedFiles.length > 0 && (
-              <div className="px-4 py-3 max-h-32 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+              <div className="px-4 py-3 max-h-32 overflow-y-auto thin-scrollbar">
                 <div className="space-y-2">
                   {stagedFiles.slice(0, 10).map((file) => {
                     const styles = getStatusStyles(file.status);

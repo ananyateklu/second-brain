@@ -6,6 +6,7 @@
 import React from 'react';
 import { useChatInputContext } from './ChatInputContext';
 import type { SuggestedPrompt } from './suggested-prompts-data';
+import styles from '@styles/components/chat-input.module.css';
 
 // Get icon for prompt category
 function getCategoryIcon(category: SuggestedPrompt['category']) {
@@ -120,7 +121,7 @@ export function ChatInputSmartPromptsPanel() {
           <button
             key={prompt.id}
             onClick={() => { onPromptClick(prompt); }}
-            className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate"
+            className={`${styles.promptChip} px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate`}
             style={{
               '--chip-index': index,
               backgroundColor: promptsGenerated

@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-dom';
+import { useBoundStore } from '../store/bound-store';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -15,7 +16,6 @@ const NotesSkeleton = lazy(() => import('../features/notes/components/NotesSkele
 const DirectorySkeleton = lazy(() => import('../features/notes/components/DirectorySkeleton').then(m => ({ default: m.DirectorySkeleton })));
 const ChatSkeleton = lazy(() => import('../components/skeletons').then(m => ({ default: m.ChatSkeleton })));
 const RagAnalyticsSkeleton = lazy(() => import('../features/rag/components/RagAnalyticsSkeleton').then(m => ({ default: m.RagAnalyticsSkeleton })));
-const GitPageSkeleton = lazy(() => import('../features/git/components/GitPageSkeleton').then(m => ({ default: m.GitPageSkeleton })));
 const GitHubPageSkeleton = lazy(() => import('../features/github/components/GitHubPageSkeleton').then(m => ({ default: m.GitHubPageSkeleton })));
 const GeneralSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.GeneralSettingsSkeleton })));
 const AISettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.AISettingsSkeleton })));
@@ -44,8 +44,16 @@ const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => (
 const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
 const IndexingSettings = lazy(() => import('../pages/settings/IndexingSettings').then(m => ({ default: m.IndexingSettings })));
 
-// Lazy load Git page
-const GitPage = lazy(() => import('../pages/GitPage').then(m => ({ default: m.GitPage })));
+// Git redirect component - redirects /git to /github with local-changes tab
+function GitRedirect() {
+  const setGitHubActiveTab = useBoundStore((state) => state.setGitHubActiveTab);
+
+  useEffect(() => {
+    setGitHubActiveTab('local-changes');
+  }, [setGitHubActiveTab]);
+
+  return <Navigate to="/github" replace />;
+}
 
 // Lazy load GitHub page
 const GitHubPage = lazy(() => import('../pages/GitHubPage').then(m => ({ default: m.GitHubPage })));
@@ -181,17 +189,7 @@ const routes = [
   },
   {
     path: '/git',
-    element: (
-      <ProtectedRoute>
-        <ErrorBoundary>
-          <AppLayout>
-            <Suspense fallback={<GitPageSkeleton />}>
-              <GitPage />
-            </Suspense>
-          </AppLayout>
-        </ErrorBoundary>
-      </ProtectedRoute>
-    ),
+    element: <GitRedirect />,
   },
   {
     path: '/github',

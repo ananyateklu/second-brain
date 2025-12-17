@@ -164,7 +164,7 @@ export function Dropdown<T extends string | number>({
           style={menuStyle}
           role="listbox"
         >
-          <div className="py-1 max-h-64 overflow-y-auto">
+          <div className="py-1 max-h-64 overflow-y-auto thin-scrollbar">
             {options.map((option) => {
               const isSelected = option.value === value;
               return (
@@ -319,7 +319,7 @@ export function MultiSelectDropdown<T extends string | number>({
             borderColor: 'var(--border)',
           }}
         >
-          <div className="py-1 max-h-64 overflow-y-auto">
+          <div className="py-1 max-h-64 overflow-y-auto thin-scrollbar">
             {options.map((option) => {
               const isSelected = values.includes(option.value);
               return (

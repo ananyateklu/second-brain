@@ -118,7 +118,7 @@ export function RagAnalyticsSkeleton() {
     <div className="flex flex-col h-full">
       <ShimmerStyles />
 
-      <div className="pt-4 flex-1 overflow-auto">
+      <div className="pt-4 flex-1 overflow-auto thin-scrollbar">
         <div className="flex flex-col min-h-full gap-4 overflow-visible">
           {/* Stats Cards - 2x2 Grid */}
           <div className="flex-shrink-0 overflow-visible">

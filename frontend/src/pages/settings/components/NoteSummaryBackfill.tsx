@@ -324,7 +324,7 @@ export function NoteSummaryBackfill() {
 
                     {/* Notes List */}
                     <div
-                        className="max-h-[20.7rem] overflow-y-auto rounded-xl border"
+                        className="max-h-[20.7rem] overflow-y-auto thin-scrollbar rounded-xl border"
                         style={{ borderColor: 'var(--border)' }}
                     >
                         {notesWithoutSummaries.map((note: NoteListItem) => (

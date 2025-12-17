@@ -58,7 +58,8 @@ export const notesService = {
     queryParams.set('pageSize', String(pageSize));
     queryParams.set('includeArchived', String(includeArchived));
 
-    if (folder) {
+    // Handle folder filter - empty string means "unfiled", null/undefined means "all folders"
+    if (folder !== undefined && folder !== null) {
       queryParams.set('folder', folder);
     }
     if (search?.trim()) {

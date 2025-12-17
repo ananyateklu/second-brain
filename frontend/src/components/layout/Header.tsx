@@ -6,7 +6,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector } from './header-components';
+import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -19,7 +19,6 @@ const getPageTitle = (pathname: string): string => {
     '/directory': 'Directory',
     '/chat': 'Chat',
     '/analytics': 'RAG Analytics',
-    '/git': 'Source Control',
     '/github': 'GitHub',
   };
   return titleMap[pathname] || 'Page';
@@ -49,6 +48,11 @@ export function Header() {
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
   const isRagAnalyticsPage = location.pathname === '/analytics';
+  const isGitHubPage = location.pathname === '/github';
+
+  // GitHub tab state for showing Git controls on local-changes tab
+  const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
+  const showGitControls = isGitHubPage && githubActiveTab === 'local-changes';
 
   // RAG Analytics state
   const activeTab = useBoundStore((state) => state.activeTab);
@@ -148,7 +152,7 @@ export function Header() {
         className="hidden md:flex flex-col md:px-6 transition-all duration-300 w-full"
         style={{
           backgroundColor: 'transparent',
-          paddingTop: '1.8rem',
+          paddingTop: '1.2rem',
           paddingBottom: '0.2rem'
         }}
       >
@@ -175,6 +179,12 @@ export function Header() {
 
             {/* Settings Navigation - Only on Settings pages */}
             {isSettingsPage && <SettingsNavTabs />}
+
+            {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
+            {showGitControls && <GitNavControls />}
+
+            {/* GitHub Navigation - Only on GitHub page */}
+            {isGitHubPage && <GitHubNavTabs />}
 
             {/* Summary Generation Indicator */}
             <SummaryIndicator />

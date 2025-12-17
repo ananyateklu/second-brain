@@ -175,7 +175,7 @@ export function ChatMessageList({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]"
+      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] thin-scrollbar"
     >
       <div className="max-w-4xl mx-auto space-y-4 pb-34">
         {hasNoMessages ? (

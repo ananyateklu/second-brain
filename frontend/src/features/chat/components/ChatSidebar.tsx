@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChatConversation } from '../types/chat';
 import { VirtualizedConversationList } from './VirtualizedConversationList';
+import styles from '@styles/components/selection.module.css';
 
 export interface ChatSidebarProps {
   conversations: ChatConversation[];
@@ -85,8 +86,8 @@ export function ChatSidebar({
   };
 
   const getToggleAnimationClass = () => {
-    if (toggleAnimation === 'in') return 'toggle-rotate-in';
-    if (toggleAnimation === 'out') return 'toggle-rotate-out';
+    if (toggleAnimation === 'in') return styles.toggleRotateIn;
+    if (toggleAnimation === 'out') return styles.toggleRotateOut;
     return '';
   };
 
@@ -192,7 +193,7 @@ export function ChatSidebar({
       {/* Selection Mode Actions Bar */}
       {isSelectionMode && (
         <div
-          className="selection-action-bar flex-shrink-0 px-3 py-2 border-b flex items-center justify-center gap-2 backdrop-blur-md"
+          className={`${styles.actionBar} flex-shrink-0 px-3 py-2 border-b flex items-center justify-center gap-2 backdrop-blur-md`}
           style={{
             borderColor: 'var(--border)',
             background: 'var(--glass-bg)',
@@ -237,7 +238,7 @@ export function ChatSidebar({
           <button
             onClick={() => { void handleBulkDelete(); }}
             disabled={selectedIds.size === 0 || !onBulkDeleteConversations}
-            className={`delete-button-shake flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${selectedIds.size > 0 ? 'delete-button-pulse' : ''}`}
+            className={`${styles.deleteShake} flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${selectedIds.size > 0 ? styles.deletePulse : ''}`}
             style={{
               background: selectedIds.size > 0
                 ? 'linear-gradient(135deg, rgb(239, 68, 68), rgb(185, 28, 28))'
@@ -266,7 +267,7 @@ export function ChatSidebar({
       )}
 
       {/* Conversations List - Scrollable with Virtual Scrolling */}
-      <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+      <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
         {conversations.length === 0 ? (
           <div className="text-center py-8 px-4" style={{ color: 'var(--text-secondary)' }}>
             <p className="text-sm">No conversations yet</p>

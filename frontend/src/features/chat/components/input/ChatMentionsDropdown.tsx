@@ -1,12 +1,13 @@
 /**
  * Mentions Dropdown Component
  * Shows note suggestions when typing @ in chat input
- * 
+ *
  * Can be used standalone with props or with ChatInputContext
  */
 
 import type { NoteListItem } from '../../../../types/notes';
 import { useChatInputContextSafe } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatMentionsDropdownProps {
   /** Notes to display (optional if using context) */
@@ -34,7 +35,7 @@ export function ChatMentionsDropdown({
 
   return (
     <div
-      className="mentions-dropdown absolute bottom-full left-4 right-4 mb-2 rounded-xl overflow-hidden z-50"
+      className={`${styles.mentionsDropdown} absolute bottom-full left-4 right-4 mb-2 rounded-xl overflow-hidden z-50`}
       style={{
         backgroundColor: 'var(--surface-elevated)',
         border: '1px solid var(--border)',

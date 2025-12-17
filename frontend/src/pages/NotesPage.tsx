@@ -105,9 +105,10 @@ export function NotesPage() {
   const hasClientSideOnlyFilters = useMemo(() => {
     return (
       filterState.dateFilter !== 'all' ||
-      filterState.selectedTags.length > 0
+      filterState.selectedTags.length > 0 ||
+      filterState.archiveFilter === 'archived' // Need client-side filter for archived-only
     );
-  }, [filterState.dateFilter, filterState.selectedTags]);
+  }, [filterState.dateFilter, filterState.selectedTags, filterState.archiveFilter]);
 
   // For server-side pagination, we need a larger page size when using client-side filters
   // to ensure we have enough items after filtering
@@ -115,11 +116,12 @@ export function NotesPage() {
 
   // Use server-side paginated query
   // Backend supports: folder, includeArchived, search
+  // includeArchived: true when showing 'all' or 'archived', false for 'not-archived' only
   const { data: paginatedResult, isLoading, error, isFetching } = useNotesPaged({
     page: hasClientSideOnlyFilters ? 1 : currentPage,
     pageSize: serverPageSize,
     folder: filterState.selectedFolder ?? undefined,
-    includeArchived: filterState.archiveFilter === 'archived',
+    includeArchived: filterState.archiveFilter !== 'not-archived',
     search: deferredSearchQuery.trim() || undefined,
   });
 
@@ -135,16 +137,17 @@ export function NotesPage() {
     return getDateBoundaries();
   }, [filterState.dateFilter]);
 
-  // Apply client-side filters (date, tags) and sorting
-  // Server already handles: folder, archived, search
+  // Apply client-side filters (date, tags, archived-only) and sorting
+  // Server already handles: folder, includeArchived (includes/excludes), search
   const filteredNotes = useMemo(() => {
     if (!notes.length) return [];
 
     const hasDateFilter = filterState.dateFilter !== 'all';
     const hasTagFilter = filterState.selectedTags.length > 0;
+    const hasArchivedOnlyFilter = filterState.archiveFilter === 'archived';
 
     // If no client-side filters needed, just sort
-    if (!hasDateFilter && !hasTagFilter) {
+    if (!hasDateFilter && !hasTagFilter && !hasArchivedOnlyFilter) {
       const sorted = [...notes];
       sorted.sort((a, b) => {
         switch (filterState.sortBy) {
@@ -165,6 +168,11 @@ export function NotesPage() {
 
     // Apply client-side filters
     const filtered = notes.filter((note) => {
+      // Archive filter - show only archived notes when filter is 'archived'
+      if (hasArchivedOnlyFilter && !note.isArchived) {
+        return false;
+      }
+
       // Date filter (client-side only)
       if (hasDateFilter && dateBoundaries) {
         if (!applyDateFilter(

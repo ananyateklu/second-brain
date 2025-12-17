@@ -1,13 +1,14 @@
 /**
  * Formatting Toolbar Component
  * Provides markdown formatting options for chat input
- * 
+ *
  * Can be used standalone with props or with ChatInputContext
  */
 
 import React from 'react';
 import { FORMATTING_ACTIONS, type FormattingAction } from './formatting-actions';
 import { useChatInputContextSafe } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatFormattingToolbarProps {
   /** Callback for formatting (optional if using context) */
@@ -30,7 +31,7 @@ export function ChatFormattingToolbar({
 
   return (
     <div
-      className="formatting-toolbar mb-2 flex items-center gap-1 px-3 py-2 rounded-xl"
+      className={`${styles.toolbar} mb-2 flex items-center gap-1 px-3 py-2 rounded-xl`}
       style={{
         backgroundColor: 'var(--surface-elevated)',
         border: '1px solid var(--border)',

@@ -343,7 +343,7 @@ export function EditNoteModal() {
             {/* Folder Dropdown */}
             {isFolderDropdownOpen && (
               <div
-                className="absolute top-full right-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto rounded-xl border shadow-xl z-50"
+                className="absolute top-full right-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto thin-scrollbar rounded-xl border shadow-xl z-50"
                 style={{
                   backgroundColor: 'var(--surface-card-solid)',
                   borderColor: 'var(--border)',

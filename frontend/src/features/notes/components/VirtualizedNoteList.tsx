@@ -98,7 +98,7 @@ export const VirtualizedNoteList = memo(({
     return (
       <div
         ref={parentRef}
-        className="h-full overflow-auto"
+        className="h-full overflow-auto thin-scrollbar"
         style={{ contain: 'strict' }}
       >
         <div

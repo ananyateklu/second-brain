@@ -1,0 +1,181 @@
+/* =============================================================================
+   Dashboard Component Styles (Global)
+   These must remain global because they use container-level selectors
+   and platform-specific @supports rules
+   ============================================================================= */
+
+/* =============================================================================
+   Dashboard Container - GPU Acceleration
+   ============================================================================= */
+
+.dashboard-container {
+  /* Enable hardware acceleration for entire dashboard */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* =============================================================================
+   Dashboard Animations
+   ============================================================================= */
+
+/* Dashboard stat card entrance animation */
+@keyframes dashboardCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dashboard section entrance animation */
+@keyframes dashboardSectionEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chart line draw animation */
+@keyframes chartLineDraw {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* Stats number counter animation */
+@keyframes statsCountUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dashboard loading skeleton */
+@keyframes dashboardShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* =============================================================================
+   Dashboard Item Visibility Classes
+   ============================================================================= */
+
+.dashboard-item-hidden {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.dashboard-item-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dashboard-section-hidden {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.dashboard-section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =============================================================================
+   WebKit/Tauri-Specific Optimizations
+   ============================================================================= */
+
+@supports (-webkit-app-region: drag) {
+  /* Reduce blur intensity for better performance */
+  .dashboard-container .backdrop-blur-md {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Disable ambient glow effects on Tauri for performance */
+  .dashboard-container [aria-hidden="true"].blur-3xl,
+  .dashboard-container [aria-hidden="true"].blur-2xl {
+    display: none !important;
+  }
+
+  /* Faster transitions */
+  .dashboard-container * {
+    transition-duration: 250ms !important;
+  }
+
+  /* Force GPU compositing for smoother animations */
+  .dashboard-stats-grid > div {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+}
+
+/* =============================================================================
+   Dashboard Interactive Elements
+   ============================================================================= */
+
+/* Smooth transitions for interactive elements */
+.dashboard-container button {
+  /* Only transition specific properties, not 'all' */
+  transition-property: transform, background-color, color, border-color, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout thrashing during animations */
+.dashboard-container .rounded-2xl,
+.dashboard-container .rounded-3xl {
+  contain: layout style paint;
+}
+
+/* =============================================================================
+   Dashboard Skeleton
+   ============================================================================= */
+
+.dashboard-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-card) 25%,
+    var(--surface-elevated) 50%,
+    var(--surface-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: dashboardShimmer 1.5s ease-in-out infinite;
+}
+
+/* =============================================================================
+   Reduced Motion Support
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-container * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .dashboard-item-hidden,
+  .dashboard-section-hidden {
+    opacity: 1;
+    transform: none;
+  }
+}

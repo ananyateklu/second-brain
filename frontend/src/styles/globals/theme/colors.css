@@ -1,0 +1,311 @@
+/* =============================================================================
+   Theme Colors
+   Brand palette, semantic tokens, status colors, capability colors
+   ============================================================================= */
+
+:root {
+  /* Brand color palette based on #36693d */
+  --color-brand-950: #0f1a11; /* Darkest - almost black with green tint */
+  --color-brand-900: #1a2e1e; /* Very dark green */
+  --color-brand-800: #25422b; /* Dark green */
+  --color-brand-700: #2f5638; /* Medium-dark green */
+  --color-brand-600: #36693d; /* Base color - primary green */
+  --color-brand-500: #4a7d52; /* Medium green */
+  --color-brand-400: #5e9167; /* Medium-light green */
+  --color-brand-300: #7aa884; /* Light green */
+  --color-brand-200: #a3c4ab; /* Very light green */
+  --color-brand-100: #cce0d1; /* Pale green */
+  --color-brand-50: #f0f7f2; /* Lightest - almost white with green tint */
+
+  /* Semantic color tokens */
+  --color-primary: var(--color-brand-600);
+  --color-primary-alpha: color-mix(in srgb, var(--color-brand-600) 15%, transparent);
+
+  /* Default theme colors (dark) */
+  --background: #050805; /* Almost black with green tint */
+  --foreground: var(--color-brand-50);
+  --link: var(--color-brand-300);
+  --link-hover: var(--color-brand-200);
+
+  /* Error colors */
+  --color-error: #ef4444;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #dc2626;
+  --color-error-text-light: #f87171;
+
+  /* Success colors (using brand green) */
+  --color-success: var(--color-brand-400);
+  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+
+  /* Warning colors (subtle amber) */
+  --color-warning: #d4a574;
+  --color-warning-light: rgba(212, 165, 116, 0.12);
+
+  /* Git diff colors */
+  --color-git-add: var(--color-brand-400);
+  --color-git-add-bg: color-mix(in srgb, var(--color-brand-400) 6%, transparent);
+  --color-git-add-line-bg: color-mix(in srgb, var(--color-brand-400) 8%, transparent);
+  --color-git-remove: var(--color-error-text);
+  --color-git-remove-bg: color-mix(in srgb, var(--color-error) 6%, transparent);
+  --color-git-remove-line-bg: color-mix(in srgb, var(--color-error) 8%, transparent);
+  --color-git-modified: var(--color-warning);
+  --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
+
+  /* Notes capability colors */
+  --color-notes: var(--color-brand-300);
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors (blue accent) */
+  --color-accent-blue: #5d7dac;
+  --color-accent-blue-alpha: color-mix(in srgb, #5d7dac 15%, transparent);
+  --color-accent-blue-text: #5d7dac;
+  --color-accent-blue-border: #5d7dac;
+  --color-accent-blue-dot: #5d7dac;
+
+  /* Image generation capability colors (purple accent) */
+  --color-accent-purple: #a78bfa;
+  --color-accent-purple-alpha: color-mix(in srgb, #a78bfa 15%, transparent);
+  --color-accent-purple-text: #a78bfa;
+  --color-accent-purple-border: #a78bfa;
+  --color-accent-purple-dot: #a78bfa;
+
+  /* Image generation capability colors (muted green - legacy) */
+  --color-image-gen: var(--color-brand-200);
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
+
+  /* Blue theme indicator */
+  --blue-indicator: #4a6d99;
+
+  /* Smart prompt chip colors (dark mode default) */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+}
+
+/* =============================================================================
+   Light Theme Colors
+   ============================================================================= */
+[data-theme="light"] {
+  --background: var(--color-brand-50);
+  --foreground: var(--color-brand-950);
+  --link: var(--color-brand-700);
+  --link-hover: var(--color-brand-800);
+  --color-primary-alpha: color-mix(in srgb, var(--color-brand-600) 15%, transparent);
+
+  /* Error colors for light theme */
+  --color-error: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #b91c1c;
+  --color-error-text-light: #dc2626;
+
+  /* Success colors for light theme */
+  --color-success: var(--color-brand-600);
+  --color-success-light: color-mix(in srgb, var(--color-brand-600) 12%, transparent);
+
+  /* Warning colors for light theme */
+  --color-warning: #b8956a;
+  --color-warning-light: rgba(184, 149, 106, 0.1);
+
+  /* Git diff colors for light theme */
+  --color-git-add: var(--color-brand-600);
+  --color-git-add-bg: color-mix(in srgb, var(--color-brand-500) 5%, transparent);
+  --color-git-add-line-bg: color-mix(in srgb, var(--color-brand-500) 7%, transparent);
+  --color-git-remove: var(--color-error-text);
+  --color-git-remove-bg: color-mix(in srgb, var(--color-error) 5%, transparent);
+  --color-git-remove-line-bg: color-mix(in srgb, var(--color-error) 7%, transparent);
+  --color-git-modified: var(--color-warning);
+  --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 8%, transparent);
+
+  /* Notes capability colors for light theme */
+  --color-notes: var(--color-brand-400);
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  --color-notes-text: var(--color-brand-400);
+  --color-notes-border: var(--color-brand-400);
+  --color-notes-dot: var(--color-brand-400);
+
+  /* Web search capability colors for light theme */
+  --color-accent-blue: #4a6d99;
+  --color-accent-blue-alpha: color-mix(in srgb, #4a6d99 15%, transparent);
+  --color-accent-blue-text: #4a6d99;
+  --color-accent-blue-border: #4a6d99;
+  --color-accent-blue-dot: #4a6d99;
+
+  /* Purple accent colors for light mode */
+  --color-accent-purple: #8b5cf6;
+  --color-accent-purple-alpha: color-mix(in srgb, #8b5cf6 15%, transparent);
+  --color-accent-purple-text: #8b5cf6;
+  --color-accent-purple-border: #8b5cf6;
+  --color-accent-purple-dot: #8b5cf6;
+
+  /* Image generation capability colors for light theme */
+  --color-image-gen: var(--color-brand-500);
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-500);
+  --color-image-gen-border: var(--color-brand-500);
+
+  /* Smart prompt chip colors for light theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-100) 50%, #ffffff);
+  --prompt-chip-text: var(--color-brand-700);
+  --prompt-chip-border: var(--color-brand-300);
+  --prompt-chip-hover-bg: var(--color-brand-100);
+
+  color-scheme: light;
+}
+
+/* =============================================================================
+   Dark Theme Colors
+   ============================================================================= */
+[data-theme="dark"] {
+  --background: #050805;
+  --foreground: var(--color-brand-50);
+  --link: var(--color-brand-300);
+  --link-hover: var(--color-brand-200);
+  --color-primary-alpha: color-mix(in srgb, var(--color-brand-600) 20%, transparent);
+
+  /* Error colors for dark theme */
+  --color-error: #f87171;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #f87171;
+  --color-error-text-light: #fca5a5;
+
+  /* Success colors for dark theme */
+  --color-success: var(--color-brand-400);
+  --color-success-light: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+
+  /* Warning colors for dark theme */
+  --color-warning: #d4a574;
+  --color-warning-light: rgba(212, 165, 116, 0.12);
+
+  /* Git diff colors for dark theme */
+  --color-git-add: var(--color-brand-400);
+  --color-git-add-bg: color-mix(in srgb, var(--color-brand-400) 6%, transparent);
+  --color-git-add-line-bg: color-mix(in srgb, var(--color-brand-400) 8%, transparent);
+  --color-git-remove: var(--color-error-text);
+  --color-git-remove-bg: color-mix(in srgb, var(--color-error) 6%, transparent);
+  --color-git-remove-line-bg: color-mix(in srgb, var(--color-error) 8%, transparent);
+  --color-git-modified: var(--color-warning);
+  --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
+
+  /* Notes capability colors for dark theme */
+  --color-notes: var(--color-brand-300);
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors for dark theme */
+  --color-accent-blue: #5d7dac;
+  --color-accent-blue-alpha: color-mix(in srgb, #5d7dac 15%, transparent);
+  --color-accent-blue-text: #5d7dac;
+  --color-accent-blue-border: #5d7dac;
+  --color-accent-blue-dot: #5d7dac;
+
+  /* Purple accent colors for dark theme */
+  --color-accent-purple: #a78bfa;
+  --color-accent-purple-alpha: color-mix(in srgb, #a78bfa 15%, transparent);
+  --color-accent-purple-text: #a78bfa;
+  --color-accent-purple-border: #a78bfa;
+  --color-accent-purple-dot: #a78bfa;
+
+  /* Image generation capability colors for dark theme */
+  --color-image-gen: var(--color-brand-200);
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
+
+  /* Smart prompt chip colors for dark theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+
+  color-scheme: dark;
+}
+
+/* =============================================================================
+   Blue Theme Colors
+   ============================================================================= */
+[data-theme="blue"] {
+  /* Blue color palette for blue theme */
+  --color-blue-950: #0a1628;
+  --color-blue-900: #0f1e3a;
+  --color-blue-800: #1a2d4d;
+  --color-blue-700: #253d60;
+  --color-blue-600: #304d73;
+  --color-blue-500: #3b5d86;
+  --color-blue-400: #4a6d99;
+  --color-blue-300: #5d7dac;
+  --color-blue-200: #8fa3c4;
+  --color-blue-100: #b8c7db;
+  --color-blue-50: #e8edf3;
+
+  --background: var(--color-blue-900);
+  --foreground: var(--color-blue-50);
+  --link: var(--color-blue-300);
+  --link-hover: var(--color-blue-200);
+  --color-primary-alpha: color-mix(in srgb, var(--color-brand-600) 20%, transparent);
+
+  /* Error colors for blue theme */
+  --color-error: #f87171;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #f87171;
+  --color-error-text-light: #fca5a5;
+
+  /* Notes capability colors for blue theme */
+  --color-notes: var(--color-brand-300);
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors for blue theme */
+  --color-accent-blue: var(--color-blue-300);
+  --color-accent-blue-alpha: color-mix(in srgb, var(--color-blue-300) 15%, transparent);
+  --color-accent-blue-text: var(--color-blue-300);
+  --color-accent-blue-border: var(--color-blue-300);
+  --color-accent-blue-dot: var(--color-blue-300);
+
+  /* Purple accent colors for blue theme */
+  --color-accent-purple: #8b5cf6;
+  --color-accent-purple-alpha: color-mix(in srgb, #8b5cf6 15%, transparent);
+  --color-accent-purple-text: #8b5cf6;
+  --color-accent-purple-border: #8b5cf6;
+  --color-accent-purple-dot: #8b5cf6;
+
+  /* Image generation capability colors for blue theme */
+  --color-image-gen: var(--color-brand-200);
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
+
+  /* Git diff colors for blue theme */
+  --color-git-add: var(--color-brand-400);
+  --color-git-add-bg: color-mix(in srgb, var(--color-brand-400) 6%, transparent);
+  --color-git-add-line-bg: color-mix(in srgb, var(--color-brand-400) 8%, transparent);
+  --color-git-remove: var(--color-error-text);
+  --color-git-remove-bg: color-mix(in srgb, var(--color-error) 6%, transparent);
+  --color-git-remove-line-bg: color-mix(in srgb, var(--color-error) 8%, transparent);
+  --color-git-modified: var(--color-warning);
+  --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
+
+  /* Smart prompt chip colors for blue theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
+
+  /* Blue theme indicator */
+  --blue-indicator: var(--color-blue-400);
+
+  color-scheme: dark;
+}

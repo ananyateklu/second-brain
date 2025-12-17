@@ -137,18 +137,28 @@ export function NotesFilter({
     [notes]
   );
 
-  // Memoize folder calculation - only recalculate when notes array changes
+  // Filter notes based on archive filter for counts and folder list
+  const filteredNotesForCounts = useMemo(() => {
+    return notes.filter(note => {
+      if (filterState.archiveFilter === 'archived') return note.isArchived;
+      if (filterState.archiveFilter === 'not-archived') return !note.isArchived;
+      return true; // 'all'
+    });
+  }, [notes, filterState.archiveFilter]);
+
+  // Memoize folder calculation - respects archive filter
   const allFolders = useMemo(() => {
-    const folders = notes
+    const folders = filteredNotesForCounts
       .map(note => note.folder)
       .filter((folder): folder is string => !!folder);
     return Array.from(new Set(folders)).sort();
-  }, [notes]);
+  }, [filteredNotesForCounts]);
 
-  // Count notes in each folder
+  // Count notes in each folder - respects archive filter
   const folderCounts = useMemo(() => {
     const counts: Record<string, number> = { unfiled: 0 };
-    notes.forEach(note => {
+
+    filteredNotesForCounts.forEach(note => {
       if (note.folder) {
         counts[note.folder] = (counts[note.folder] || 0) + 1;
       } else {
@@ -156,7 +166,7 @@ export function NotesFilter({
       }
     });
     return counts;
-  }, [notes]);
+  }, [filteredNotesForCounts]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -441,7 +451,7 @@ export function NotesFilter({
             count={filterState.selectedTags.length}
           />
           {renderDropdownMenu(isTagDropdownOpen, (
-            <div className="p-2 max-h-64 overflow-y-auto">
+            <div className="p-2 max-h-64 overflow-y-auto thin-scrollbar">
               {allTags.map((tag) => (
                 <label
                   key={tag}
@@ -578,7 +588,7 @@ export function NotesFilter({
             onClick={() => { setIsFolderDropdownOpen(!isFolderDropdownOpen); }}
           />
           {renderDropdownMenu(isFolderDropdownOpen, (
-            <div className="p-2 max-h-64 overflow-y-auto">
+            <div className="p-2 max-h-64 overflow-y-auto thin-scrollbar">
               {/* All folders option */}
               <button
                 type="button"
@@ -609,7 +619,7 @@ export function NotesFilter({
                   </svg>
                   All folders
                 </span>
-                <span className="text-xs opacity-60">{notes.length}</span>
+                <span className="text-xs opacity-60">{filteredNotesForCounts.length}</span>
               </button>
 
               {/* Unfiled option */}

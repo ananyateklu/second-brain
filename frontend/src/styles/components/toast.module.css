@@ -1,0 +1,74 @@
+/* =============================================================================
+   Toast Component Styles (CSS Module)
+   Individual toast notification animations
+   ============================================================================= */
+
+/* =============================================================================
+   Toast Animations
+   ============================================================================= */
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+/* =============================================================================
+   Toast Item Base
+   ============================================================================= */
+
+.item {
+  /* Reset potential conflicting styles */
+  list-style: none !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* =============================================================================
+   Toast Animation States
+   ============================================================================= */
+
+.enter {
+  animation: toastSlideIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+.exit {
+  animation: toastSlideOut 0.25s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}
+
+/* =============================================================================
+   Reduced Motion Support
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .enter,
+  .exit {
+    animation: none;
+  }
+
+  .enter {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  .exit {
+    opacity: 0;
+    transform: translateX(0) scale(1);
+  }
+}

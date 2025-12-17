@@ -370,12 +370,10 @@ export function ModelUsageSection({
               {/* Models by Provider - Left Col */}
               <div className="lg:col-span-1 h-64">
                 <div
-                  className="h-full overflow-y-auto rounded-lg p-4 [&::-webkit-scrollbar]:w-0.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]"
+                  className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
                     border: '1px solid var(--border)',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'var(--border) transparent',
                   }}
                 >
                   <div className="space-y-4">
@@ -564,11 +562,9 @@ export function ModelUsageSection({
 
                 {/* Interactive Legend */}
                 <div
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]"
+                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'var(--border) transparent'
                   }}
                 >
                   {dataWithColors.map((entry) => (

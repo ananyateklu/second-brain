@@ -4,6 +4,7 @@ import { useGitHubBranches, useGitHubRepositoryTree, useGitHubFileContent } from
 import type { BranchSummary } from '../../../types/github';
 import { FileTreeView } from './code-browser/FileTreeView';
 import { CodeViewer } from './code-browser/CodeViewer';
+import { GitHubRepoSelector } from '../../../components/layout/header-components';
 
 interface GitHubCodeBrowserProps {
   owner?: string;
@@ -132,18 +133,23 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
 
   return (
     <div
-      className="flex flex-col h-[calc(100vh-200px)] min-h-[500px] rounded-xl border overflow-hidden"
+      className="flex flex-col h-full overflow-hidden"
       style={{
         backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
-      {/* Branch selector header */}
+      {/* Repo & Branch selector header */}
       <div
-        className="flex items-center gap-3 px-4 py-3 border-b flex-shrink-0"
+        className="flex items-center gap-6 px-4 py-3 border-b flex-shrink-0"
         style={{ borderColor: 'var(--border)' }}
       >
+        {/* Repository selector */}
+        <GitHubRepoSelector />
+
+        {/* Divider */}
+        <div className="h-5 w-px" style={{ backgroundColor: 'var(--border)' }} />
+
+        {/* Branch selector */}
         <div className="relative">
           <button
             onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
@@ -243,12 +249,12 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
       <div className="flex flex-1 min-h-0">
         {/* File tree sidebar with glassmorphism */}
         <div
-          className="w-72 flex-shrink-0 overflow-hidden"
+          className="w-90 flex-shrink-0 overflow-hidden"
           style={{
             background: 'var(--glass-bg)',
             backdropFilter: 'blur(var(--glass-blur))',
             WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            borderRight: '1px solid var(--glass-border)',
+            borderRight: '1px solid var(--border)',
           }}
         >
           <FileTreeView

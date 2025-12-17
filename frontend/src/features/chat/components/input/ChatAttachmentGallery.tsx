@@ -1,13 +1,14 @@
 /**
  * Attachment Gallery Component
  * Displays attached files with preview, removal, and lightbox functionality
- * 
+ *
  * Can be used standalone with props or with ChatInputContext
  */
 
 import { type FileAttachment, formatFileSize } from '../../../../utils/multimodal-models';
 import { FILE_ICONS } from './file-icons';
 import { useChatInputContextSafe } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatAttachmentGalleryProps {
   /** Files to display (optional if using context) */
@@ -48,7 +49,7 @@ export function ChatAttachmentGallery({
       {files.map((file, index) => (
         <div
           key={file.id}
-          className="attachment-item relative group rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105"
+          className={`${styles.attachment} relative group rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105`}
           style={{
             width: '100px',
             height: '100px',

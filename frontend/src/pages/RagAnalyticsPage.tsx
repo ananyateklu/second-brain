@@ -8,6 +8,7 @@ import { useMemo, useEffect, useState, startTransition } from 'react';
 import { EmptyState } from '../components/ui/EmptyState';
 import { RagAnalyticsSkeleton } from '../features/rag/components/RagAnalyticsSkeleton';
 import { useBoundStore } from '../store/bound-store';
+import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import {
   useRagPerformanceStats,
   useRagQueryLogs,
@@ -20,6 +21,9 @@ import {
 } from '../features/rag/components';
 
 export function RagAnalyticsPage() {
+  // Get title bar height for proper container sizing
+  const titleBarHeight = useTitleBarHeight();
+
   // Get state from store
   const activeTab = useBoundStore((state) => state.activeTab);
   const selectedTimeRange = useBoundStore((state) => state.selectedTimeRange);
@@ -63,9 +67,15 @@ export function RagAnalyticsPage() {
 
   const error = statsError || logsError;
 
+  // Calculate container height - accounts for title bar and bottom padding
+  const containerHeight = `calc(100vh - ${titleBarHeight}px - 113px)`;
+
   if (error) {
     return (
-      <div className="p-6 h-full flex items-center justify-center">
+      <div
+        className="p-6 flex items-center justify-center"
+        style={{ height: containerHeight, maxHeight: containerHeight }}
+      >
         <div
           className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md"
           style={{
@@ -113,7 +123,10 @@ export function RagAnalyticsPage() {
 
   if (!stats || stats.totalQueries === 0) {
     return (
-      <div className="p-6 h-full flex items-center justify-center">
+      <div
+        className="p-6 flex items-center justify-center"
+        style={{ height: containerHeight, maxHeight: containerHeight }}
+      >
         <EmptyState
           icon={
             <svg
@@ -139,9 +152,15 @@ export function RagAnalyticsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div
+      className="flex flex-col"
+      style={{
+        height: containerHeight,
+        maxHeight: containerHeight,
+      }}
+    >
       {/* Tab Content - Full Screen */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto thin-scrollbar min-h-0">
         {/* Performance Tab */}
         {activeTab === 'performance' && (
           <div className="pt-4 animate-in fade-in duration-300">

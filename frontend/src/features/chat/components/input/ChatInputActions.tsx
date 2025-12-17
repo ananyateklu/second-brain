@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { useChatInputContext } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 
 export interface ChatInputActionsProps {
   children?: React.ReactNode;
@@ -34,7 +35,7 @@ export function ChatInputSendButton() {
     <button
       onClick={isStreaming ? onCancel : onSend}
       disabled={!isStreaming && (isLoading || isGeneratingImage || !hasContent || disabled)}
-      className={`send-button-animated flex-shrink-0 w-10 h-10 p-0 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? 'has-content' : ''
+      className={`${styles.sendButton} flex-shrink-0 w-10 h-10 p-0 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? styles.hasContent : ''
         }`}
       style={{
         backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',

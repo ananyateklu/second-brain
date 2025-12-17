@@ -299,7 +299,7 @@ function CodeExecutionDisplay({ result }: { result: { code: string; language: st
 
       {isExpanded && (
         <div
-          className="mt-2 p-2 rounded text-xs font-mono overflow-x-auto"
+          className="mt-2 p-2 rounded text-xs font-mono overflow-x-auto thin-scrollbar"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             border: '1px solid var(--border)',

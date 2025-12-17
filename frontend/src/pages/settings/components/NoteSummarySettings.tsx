@@ -134,7 +134,7 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                                 boxShadow: 'var(--shadow-xl)',
                             }}
                         >
-                            <div className="max-h-60 overflow-y-auto">
+                            <div className="max-h-60 overflow-y-auto thin-scrollbar">
                                 {availableModels.map((model) => {
                                     const isSelected = model === selectedModel;
                                     return (
@@ -695,7 +695,7 @@ export function NoteSummarySettings() {
                     <div className="space-y-1.5">
                         {/* Notes Grid */}
                         <div
-                            className="max-h-[18.2rem] overflow-y-auto rounded-xl p-1.5"
+                            className="max-h-[18.2rem] overflow-y-auto thin-scrollbar rounded-xl p-1.5"
                             style={{ backgroundColor: 'var(--surface-elevated)' }}
                         >
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5">

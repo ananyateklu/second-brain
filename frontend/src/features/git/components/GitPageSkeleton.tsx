@@ -87,7 +87,7 @@ function SkeletonStatusPanel() {
       </div>
 
       {/* File sections */}
-      <div className="flex-1 overflow-y-auto pt-2 pb-3 space-y-3 relative z-10 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+      <div className="flex-1 overflow-y-auto pt-2 pb-3 space-y-3 relative z-10 thin-scrollbar">
         {/* Staged Section */}
         <div
           className="rounded-xl overflow-hidden mx-4"

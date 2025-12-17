@@ -1,0 +1,204 @@
+/* =============================================================================
+   Page Transition Styles (Global)
+   These must remain global because they use platform-specific rules
+   and element selectors
+   ============================================================================= */
+
+/* =============================================================================
+   Page Transition Container
+   ============================================================================= */
+
+.page-transition-container {
+  /* Enable GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Ensure smooth font rendering during transitions */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =============================================================================
+   Page Transition Animations
+   ============================================================================= */
+
+/* Page enter animation */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Page exit animation */
+@keyframes pageExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+/* Alternative fade transition for simpler effect */
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pageFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Slide transitions for different directions */
+@keyframes pageSlideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pageSlideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* =============================================================================
+   Layout Containers
+   ============================================================================= */
+
+/* Main content wrapper - ensure smooth transitions */
+.main-content-wrapper {
+  /* GPU acceleration for main content area */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Smooth transitions */
+  transition-property: margin-left;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* App layout container */
+.app-layout {
+  /* Ensure layout stability during page transitions */
+  contain: layout style;
+}
+
+/* =============================================================================
+   WebKit/Tauri-Specific Optimizations
+   ============================================================================= */
+
+@supports (-webkit-app-region: drag) {
+  .page-transition-container {
+    /* Faster transitions for Tauri/WebKit */
+    --page-transition-duration: 200ms;
+    /* Force GPU layer for smoother animations */
+    will-change: transform, opacity;
+  }
+
+  /* Disable heavy effects during page transitions on WebKit */
+  .page-transition-container[data-transitioning="true"] .backdrop-blur-md,
+  .page-transition-container[data-transitioning="true"] .blur-3xl,
+  .page-transition-container[data-transitioning="true"] .blur-2xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+  }
+}
+
+/* =============================================================================
+   Navigation Link Transitions
+   ============================================================================= */
+
+/* Navigation link transitions - optimized for smoothness */
+nav a {
+  /* GPU-accelerated transitions */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Only transition specific properties */
+  transition-property: transform, background-color, color, border-color,
+    box-shadow, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active link indicator animation */
+@keyframes navLinkActivate {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Apply smooth focus transition */
+nav a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* =============================================================================
+   Reduced Motion Support
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-container {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .main-content-wrapper {
+    transition: none !important;
+  }
+
+  nav a {
+    transition: none !important;
+  }
+
+  @keyframes pageEnter {
+    0%,
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pageExit {
+    0%,
+    100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

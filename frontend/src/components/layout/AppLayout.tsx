@@ -44,8 +44,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       classes.push('px-4', 'md:px-6');
     }
 
-    // Top padding for chat/directory/github
-    if ((isChatPage || isDirectoryPage || isGitHubPage) && !isPageFullscreen) {
+    // Top padding for chat/directory/git/github
+    if ((isChatPage || isDirectoryPage || isGitPage || isGitHubPage) && !isPageFullscreen) {
       classes.push('md:pt-4');
     }
 
@@ -68,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Overflow handling
     if (!isChatPage && !isGitPage && !isGitHubPage) {
-      classes.push('overflow-y-auto', '[scrollbar-width:thin]', '[scrollbar-color:var(--color-brand-600)_transparent]', '[&::-webkit-scrollbar]:w-1', '[&::-webkit-scrollbar-track]:bg-transparent', '[&::-webkit-scrollbar-thumb]:rounded-full', '[&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)]', '[&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]');
+      classes.push('overflow-y-auto', 'thin-scrollbar');
     } else {
       classes.push('overflow-hidden');
     }
@@ -102,7 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           ...(isPageFullscreen ? { marginLeft: 0 } : {}),
         }}
       >
-        {!isChatPage && !isDirectoryPage && !isGitPage && !isGitHubPage && <Header />}
+        {!isChatPage && !isDirectoryPage && <Header />}
 
         <main className={mainClasses}>
           <PageTransition>

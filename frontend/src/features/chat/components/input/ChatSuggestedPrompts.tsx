@@ -1,13 +1,14 @@
 /**
  * Suggested Prompts Component
  * Shows quick action prompts when input is empty and agent mode is enabled
- * 
+ *
  * This is the standalone component (not context-aware).
  * For the context-aware version, use ChatInputSmartPromptsPanel.
  */
 
 import React from 'react';
 import { SUGGESTED_PROMPTS, type SuggestedPrompt } from './suggested-prompts-data';
+import styles from '@styles/components/chat-input.module.css';
 
 // Get icon for prompt category
 function getCategoryIcon(category: SuggestedPrompt['category']) {
@@ -55,7 +56,7 @@ export function ChatSuggestedPrompts({
         <button
           key={prompt.id}
           onClick={() => { onPromptClick(prompt.id); }}
-          className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5"
+          className={`${styles.promptChip} px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5`}
           style={{
             '--chip-index': index,
             backgroundColor: 'var(--surface-elevated)',

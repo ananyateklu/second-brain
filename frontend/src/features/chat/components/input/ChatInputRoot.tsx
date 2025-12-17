@@ -2,7 +2,7 @@
  * ChatInput Root Component
  * Main container for the compound ChatInput pattern
  * Provides context to all child components
- * 
+ *
  * Features:
  * - Dynamic height based on focus state (70vh focused, 30vh unfocused)
  * - Smooth 300ms transitions
@@ -11,6 +11,7 @@
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { ChatInputContext, type ChatInputContextValue, type ImageGenerationSettings, type ImageModelInfo } from './ChatInputContext';
+import styles from '@styles/components/chat-input.module.css';
 import type { FileAttachment } from '../../../../utils/multimodal-models';
 import type { NoteListItem } from '../../../../types/notes';
 import type { SuggestedPrompt } from './suggested-prompts-data';
@@ -636,8 +637,8 @@ export function ChatInputRoot({
   // Dynamic classes for the wrapper based on focus state
   const wrapperClasses = [
     'absolute bottom-0 left-0 w-full px-6 py-6 z-20 pointer-events-none',
-    'chat-input-wrapper',
-    isFocused ? 'chat-input-wrapper-focused' : 'chat-input-wrapper-blurred',
+    styles.wrapper,
+    isFocused ? styles.wrapperFocused : '',
     className || '',
   ].filter(Boolean).join(' ');
 

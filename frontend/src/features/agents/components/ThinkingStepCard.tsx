@@ -68,7 +68,7 @@ const thinkingMarkdownComponents: Components = {
     if (isCodeBlock) {
       return (
         <code
-          className="block p-2 rounded text-xs overflow-x-auto"
+          className="block p-2 rounded text-xs overflow-x-auto thin-scrollbar"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             color: 'var(--text-primary)',
@@ -91,7 +91,7 @@ const thinkingMarkdownComponents: Components = {
   // Pre blocks
   pre: ({ node: _node, ...props }: ComponentPropsWithoutRef<'pre'> & { node?: unknown }) => (
     <pre
-      className="p-2 rounded overflow-x-auto text-xs [&:not(:last-child)]:mb-2"
+      className="p-2 rounded overflow-x-auto thin-scrollbar text-xs [&:not(:last-child)]:mb-2"
       style={{
         backgroundColor: 'var(--surface-elevated)',
       }}

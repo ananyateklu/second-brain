@@ -6,6 +6,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Toast } from './ToastContext';
 import { useToastContext } from './use-toast-context';
+import styles from '@styles/components/toast.module.css';
 
 // ============================================
 // Icons
@@ -184,14 +185,14 @@ export function ToastItem({ toast, index }: ToastItemProps) {
       role="alert"
       aria-live="polite"
       className={`
-        custom-toast-item
+        ${styles.item}
         relative overflow-hidden rounded-2xl border
         bg-[var(--glass-bg)] backdrop-blur-[16px]
         shadow-[0_20px_40px_-12px_rgba(0,0,0,0.35),0_8px_16px_-8px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]
         transition-all duration-300 ease-out
         min-w-[280px] max-w-[360px]
         ${config.containerClass}
-        ${toast.isExiting ? 'toast-exit' : 'toast-enter'}
+        ${toast.isExiting ? styles.exit : styles.enter}
       `}
       style={{
         transform: `translateY(${index * 4}px)`,

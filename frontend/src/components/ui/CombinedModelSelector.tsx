@@ -395,13 +395,7 @@ export function CombinedModelSelector({
             </div>
 
             {/* Models List */}
-            <div
-              className="max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]"
-              style={{
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'var(--border) transparent',
-              }}
-            >
+            <div className="max-h-[320px] overflow-y-auto thin-scrollbar">
               {groupedModels.length === 0 ? (
                 <div
                   className="px-4 py-8 text-center text-sm"

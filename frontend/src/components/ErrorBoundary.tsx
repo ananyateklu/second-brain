@@ -179,7 +179,7 @@ export function ErrorFallback({
                   Technical details
                 </summary>
                 <pre
-                  className="mt-2 p-2 rounded text-xs overflow-auto"
+                  className="mt-2 p-2 rounded text-xs overflow-auto thin-scrollbar"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
                     color: 'var(--error-text)',
@@ -241,7 +241,7 @@ export function ErrorFallback({
               Error Details
             </summary>
             <pre
-              className="text-xs p-4 rounded-lg overflow-auto"
+              className="text-xs p-4 rounded-lg overflow-auto thin-scrollbar"
               style={{
                 backgroundColor: 'var(--surface-elevated)',
                 color: 'var(--error-text)',

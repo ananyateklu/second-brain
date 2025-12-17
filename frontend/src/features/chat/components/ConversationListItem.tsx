@@ -4,6 +4,7 @@ import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
 import { useBoundStore } from '../../../store/bound-store';
 import { getProviderLogo } from '../../../utils/provider-logos';
+import styles from '@styles/components/selection.module.css';
 
 /**
  * Custom circular checkbox component with animations
@@ -41,7 +42,7 @@ function CircularCheckbox({
         e.stopPropagation();
         onChange();
       }}
-      className="selection-checkbox flex-shrink-0 relative w-5 h-5 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className={`${styles.checkbox} flex-shrink-0 relative w-5 h-5 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
       style={{
         '--stagger-index': staggerIndex,
         backgroundColor: checked
@@ -70,7 +71,7 @@ function CircularCheckbox({
     >
       {/* Checkmark icon */}
       <svg
-        className={`absolute inset-0 w-full h-full p-1 selection-checkbox-inner ${isAnimating ? (checked ? 'checked' : 'unchecked') : ''}`}
+        className={`absolute inset-0 w-full h-full p-1 ${styles.checkboxInner} ${isAnimating ? (checked ? styles.checkboxInnerChecked : styles.checkboxInnerUnchecked) : ''}`}
         viewBox="0 0 24 24"
         fill="none"
         style={{
@@ -80,7 +81,7 @@ function CircularCheckbox({
         }}
       >
         <path
-          className="selection-checkmark"
+          className={styles.checkmark}
           d="M5 13l4 4L19 7"
           stroke="white"
           strokeWidth={3}
@@ -175,7 +176,7 @@ export const ConversationListItem = memo(function ConversationListItem({
         }
       `}</style>
       <div
-        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
+        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''}`}
         style={{
           backgroundColor: getBackgroundColor(),
           borderLeftWidth: leftBorder.width,

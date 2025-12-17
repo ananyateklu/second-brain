@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./globals.css";
+@import "./styles/globals/index.css";
 
 @variant dark (.dark &);
 
@@ -7,7 +7,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Brand palette - imported from globals.css */
+  /* Brand palette - imported from styles/globals/theme/colors.css */
   --color-brand-950: var(--color-brand-950);
   --color-brand-900: var(--color-brand-900);
   --color-brand-800: var(--color-brand-800);
@@ -68,7 +68,7 @@
   --header-height-sm: 5.5rem;
 }
 
-/* Theme colors are now defined in globals.css */
+/* Theme colors are defined in styles/globals/theme/colors.css */
 
 * {
   box-sizing: border-box;

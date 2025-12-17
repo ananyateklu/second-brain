@@ -145,8 +145,8 @@ export function NotesDirectoryPage() {
       backgroundColor: 'var(--surface-card)',
       borderColor: 'var(--border)',
       boxShadow: 'var(--shadow-2xl)',
-      height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-      maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      height: `calc(100vh - ${titleBarHeight}px - 21px)`,
+      maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
     };
 
   if (error) {
@@ -226,7 +226,7 @@ export function NotesDirectoryPage() {
           </div>
 
           {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto py-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+          <div className="flex-1 overflow-y-auto py-2 thin-scrollbar">
             {/* All Notes */}
             <button
               onClick={() => {
@@ -515,7 +515,7 @@ export function NotesDirectoryPage() {
         </div>
 
         {/* Notes Content */}
-        <div className="flex-1 overflow-y-auto p-6 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+        <div className="flex-1 overflow-y-auto p-6 thin-scrollbar">
           {isLoading ? (
             <DirectoryContentSkeleton />
           ) : filteredNotes.length === 0 ? (

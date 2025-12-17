@@ -97,10 +97,10 @@ export function Sidebar() {
   const canCloseFromCollapsed = isCollapsed && previousSidebarState === 'expanded';
 
   // Calculate top position and height accounting for title bar
-  const topPosition = '1rem';
+  const topPosition = '0.7rem';
   // Height: viewport height - title bar - top margin (1rem) - bottom margin (1rem)
-  const sidebarHeight = `calc(100vh - ${titleBarHeight}px - 2rem)`;
-  const maxHeight = `calc(100vh - ${titleBarHeight}px - 2rem)`;
+  const sidebarHeight = `calc(100vh - ${titleBarHeight}px - 1rem)`;
+  const maxHeight = `calc(100vh - ${titleBarHeight}px - 1.2rem)`;
 
   // Render nav link with consistent styling
   const renderNavLink = (
@@ -179,7 +179,7 @@ export function Sidebar() {
         }}
       />
 
-      <div className="flex-1 flex flex-col relative z-10 overflow-y-auto min-h-0">
+      <div className="flex-1 flex flex-col relative z-10 overflow-y-auto thin-scrollbar min-h-0">
         {/* Logo/Brand - Desktop only, mobile has it in header */}
         <div className={`mb-6 transition-all duration-600 ease-out hidden md:block ${isCollapsed ? 'mb-4' : 'mb-8'}`}>
           <div className="flex justify-center">
@@ -283,17 +283,6 @@ export function Sidebar() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
           ), 'analytics')}
-
-          {renderNavLink('/git', 'Source Control', (
-            <svg
-              className={`flex-shrink-0 transition-all duration-300 relative z-10 h-5 w-5 group-hover:scale-110 group-hover:rotate-3`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          ), 'git')}
 
           {renderNavLink('/github', 'GitHub', (
             <svg
@@ -611,7 +600,7 @@ export function Sidebar() {
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
           boxShadow: 'var(--shadow-2xl), 0 0 80px -20px var(--color-primary-alpha)',
-          paddingTop: isCollapsed ? '1rem' : '2rem',
+          paddingTop: isCollapsed ? '0.8rem' : '1.5rem',
           transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
           backdropFilter: 'blur(20px)',
           background: `linear-gradient(to bottom, var(--surface-card), var(--surface-card))`,

@@ -53,44 +53,36 @@ const FileSection = memo(function FileSection({
   if (files.length === 0) return null;
 
   return (
-    <div
-      className="rounded-xl overflow-hidden transition-all duration-200"
-      style={{
-        backgroundColor: 'var(--surface-elevated)',
-      }}
-    >
+    <div>
       {/* Section Header */}
       <div
-        className="flex items-center justify-between px-3 cursor-pointer transition-colors duration-200"
+        className="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150"
         onClick={onToggle}
-        style={{
-          backgroundColor: isExpanded ? 'transparent' : 'transparent',
-        }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--foreground) 5%, transparent)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'transparent';
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
-            className="flex items-center justify-center w-6 h-6 rounded-lg transition-all duration-200"
+            className="transition-transform duration-200"
             style={{
-              backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              color: accentColor,
             }}
           >
             {icon}
           </div>
           <span
-            className="text-sm font-semibold"
-            style={{ color: 'var(--text-primary)' }}
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: 'var(--text-tertiary)' }}
           >
             {title}
           </span>
           <span
-            className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+            className="text-xs font-medium px-1.5 py-0.5 rounded"
             style={{
               backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
               color: accentColor,
@@ -99,7 +91,7 @@ const FileSection = memo(function FileSection({
             {files.length}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {actions && (
             <div
               className="flex items-center gap-1"
@@ -113,20 +105,18 @@ const FileSection = memo(function FileSection({
 
       {/* File List */}
       {isExpanded && (
-        <div className="pb-2">
-          <div className="space-y-0">
-            {files.map((file) => (
-              <GitFileItem
-                key={file.filePath}
-                file={file}
-                isActive={activeFile === file.filePath}
-                onViewDiff={onViewDiff}
-                onStage={onStage}
-                onUnstage={onUnstage}
-                onDiscard={onDiscard}
-              />
-            ))}
-          </div>
+        <div className="py-1">
+          {files.map((file) => (
+            <GitFileItem
+              key={file.filePath}
+              file={file}
+              isActive={activeFile === file.filePath}
+              onViewDiff={onViewDiff}
+              onStage={onStage}
+              onUnstage={onUnstage}
+              onDiscard={onDiscard}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -270,84 +260,72 @@ export const GitStatusPanel = memo(function GitStatusPanel({
 
   return (
     <div
-      className="h-full flex flex-col overflow-hidden rounded-2xl relative"
+      className="h-full flex flex-col overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-        backdropFilter: 'blur(20px)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur))',
+        WebkitBackdropFilter: 'blur(var(--glass-blur))',
       }}
     >
-      {/* Ambient glow effect */}
-      <div
-        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        }}
-      />
-
       {/* Commit Input Section */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="p-3 flex-shrink-0">
         {/* Commit message input */}
-        <textarea
-          ref={commitTextareaRef}
-          value={commitMessage}
-          onChange={(e) => setCommitMessage(e.target.value)}
-          onKeyDown={handleCommitKeyDown}
-          placeholder="Message (Cmd+Enter to commit)"
-          rows={1}
-          className="w-full px-3 py-2 rounded-lg text-sm resize-none transition-all duration-200 focus:outline-none"
-          style={{
-            backgroundColor: 'var(--background-primary)',
-            border: '1px solid color-mix(in srgb, var(--border) 50%, transparent)',
-            color: 'var(--text-primary)',
-            minHeight: '38px', // Minimum height to match single row
-            maxHeight: '200px', // Maximum height before scrolling
-            overflowY: 'hidden', // Will be set to 'auto' if content exceeds maxHeight
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-primary-alpha)';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--border) 50%, transparent)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-        />
+        <div className="flex gap-2">
+          <textarea
+            ref={commitTextareaRef}
+            value={commitMessage}
+            onChange={(e) => setCommitMessage(e.target.value)}
+            onKeyDown={handleCommitKeyDown}
+            placeholder="Commit message..."
+            rows={1}
+            className="flex-1 px-3 py-2 rounded-xl text-sm resize-none transition-all duration-200 focus:outline-none"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-primary)',
+              minHeight: '36px',
+              maxHeight: '120px',
+              overflowY: 'hidden',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+              e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-primary-alpha)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          />
 
-        {/* Commit button */}
-        <button
-          onClick={handleCommit}
-          disabled={!commitMessage.trim() || status.stagedChanges.length === 0 || commit.isPending}
-          className="group relative flex items-center justify-center gap-2 w-full mt-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
-          style={{
-            backgroundColor: 'var(--btn-primary-bg)',
-            color: 'var(--btn-primary-text)',
-            boxShadow: 'var(--btn-primary-shadow)',
-          }}
-        >
-          {/* Shimmer effect */}
-          {!commit.isPending && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-          )}
-          {commit.isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-              <span className="relative z-10">Committing...</span>
-            </>
-          ) : (
-            <>
-              <GitCommit className="w-4 h-4 relative z-10" />
-              <span className="relative z-10">
-                Commit{status.stagedChanges.length > 0 ? ` (${status.stagedChanges.length})` : ''}
-              </span>
-            </>
-          )}
-        </button>
+          {/* Commit button */}
+          <button
+            onClick={handleCommit}
+            disabled={!commitMessage.trim() || status.stagedChanges.length === 0 || commit.isPending}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'var(--surface-elevated)',
+              color: status.stagedChanges.length > 0 && commitMessage.trim() ? 'white' : 'var(--text-secondary)',
+              border: '1px solid var(--border)',
+            }}
+            title="Commit staged changes (Cmd+Enter)"
+          >
+            {commit.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <GitCommit className="w-4 h-4" />
+            )}
+            {status.stagedChanges.length > 0 && (
+              <span className="text-xs font-semibold">{status.stagedChanges.length}</span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* File sections */}
-      <div className="flex-1 overflow-y-auto pt-2 pb-3 space-y-3 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+      <div
+        className="flex-1 overflow-y-auto border-t thin-scrollbar"
+        style={{ borderColor: 'var(--border)' }}
+      >
         {/* Staged Changes */}
         <FileSection
           title="Staged"
@@ -419,15 +397,15 @@ export const GitStatusPanel = memo(function GitStatusPanel({
 
         {/* Empty state */}
         {!status.hasChanges && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
+          <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
             <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)',
               }}
             >
               <CheckCircle2
-                className="w-8 h-8"
+                className="w-6 h-6"
                 style={{ color: 'var(--color-brand-500)' }}
               />
             </div>
@@ -441,11 +419,25 @@ export const GitStatusPanel = memo(function GitStatusPanel({
               className="text-xs mt-1"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              Your working directory is clean
+              Working directory is clean
             </p>
           </div>
         )}
       </div>
+
+      {/* Footer with file count */}
+      {status.hasChanges && (
+        <div
+          className="px-3 py-2 text-xs flex-shrink-0 border-t"
+          style={{
+            borderColor: 'var(--border)',
+            color: 'var(--text-tertiary)',
+            backgroundColor: 'var(--surface-card)',
+          }}
+        >
+          {status.stagedChanges.length + status.unstagedChanges.length + status.untrackedFiles.length} changed files
+        </div>
+      )}
 
       {/* Discard confirmation dialog */}
       <GitDiscardDialog

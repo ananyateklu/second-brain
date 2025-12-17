@@ -1,0 +1,27 @@
+/* =============================================================================
+   Global Styles Entry Point
+   Import order matters - theme foundation must come first
+   ============================================================================= */
+
+/* Theme Foundation */
+@import './theme/colors.css';
+@import './theme/surfaces.css';
+@import './theme/effects.css';
+@import './theme/buttons.css';
+
+/* Animations */
+@import './animations/core.css';
+@import './animations/utilities.css';
+
+/* Base Styles */
+@import './base/scrollbar.css';
+@import './base/focus.css';
+@import './base/interactions.css';
+
+/* Platform-Specific */
+@import './platform/macos.css';
+
+/* Component Styles (global, not modules - for libraries that generate their own elements) */
+@import '../components/editor.css';
+@import '../components/dashboard.css';
+@import '../components/transitions.css';

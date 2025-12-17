@@ -1,0 +1,52 @@
+/* =============================================================================
+   Scrollbar Styles
+   Global and utility scrollbar styling
+   ============================================================================= */
+
+/* Sidebar scrollbar - thinner for navigation */
+aside::-webkit-scrollbar {
+  width: 6px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Thin scrollbar utility - for code browsers, file trees, etc. */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+.thin-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

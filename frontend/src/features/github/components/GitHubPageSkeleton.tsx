@@ -85,7 +85,7 @@ function SkeletonContentArea() {
       </div>
 
       {/* List items - Scrollable */}
-      <div className="flex-1 overflow-y-auto space-y-2 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-600)_transparent] [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-600)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-500)]">
+      <div className="flex-1 overflow-y-auto space-y-2 thin-scrollbar">
         {Array.from({ length: 12 }).map((_, i) => (
           <SkeletonListItem key={i} />
         ))}

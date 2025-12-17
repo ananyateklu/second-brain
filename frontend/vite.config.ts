@@ -22,6 +22,12 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@styles': path.resolve(__dirname, './src/styles'),
+    },
+  },
   // Use relative paths for Tauri production builds
   base: './',
   server: {

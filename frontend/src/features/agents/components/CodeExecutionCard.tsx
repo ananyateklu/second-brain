@@ -101,7 +101,7 @@ export function CodeExecutionCard({ result, isStreaming = false }: CodeExecution
 
             {/* Code or Output Display */}
             <div
-              className="p-3 rounded-lg text-xs font-mono overflow-x-auto"
+              className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar"
               style={{
                 backgroundColor: 'var(--surface-card)',
                 color: 'var(--text-secondary)',

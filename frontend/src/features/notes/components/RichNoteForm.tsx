@@ -94,7 +94,7 @@ export function RichNoteForm({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[var(--border)] scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto thin-scrollbar pr-2">
         {/* Rich Content Editor */}
         <div className="min-h-[300px]">
           <Controller

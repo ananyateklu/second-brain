@@ -3,35 +3,34 @@
  * Main page for Git operations - status, staging, commits, push/pull
  */
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { AlertCircle, Settings } from 'lucide-react';
 import { useBoundStore } from '../store/bound-store';
 import { useGitStatus, useSelectedDiff } from '../features/git/hooks';
 import {
   GitStatusPanel,
   GitDiffViewer,
-  GitBranchBar,
   GitSettingsPanel,
   GitEmptyState,
 } from '../features/git/components';
 import { GitPageSkeleton } from '../features/git/components/GitPageSkeleton';
+import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 
 export function GitPage() {
+  const titleBarHeight = useTitleBarHeight();
   const repositoryPath = useBoundStore((state) => state.repositoryPath);
   const setSelectedDiffFile = useBoundStore((state) => state.setSelectedDiffFile);
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const isGitSettingsOpen = useBoundStore((state) => state.isGitSettingsOpen);
+  const openGitSettings = useBoundStore((state) => state.openGitSettings);
+  const closeGitSettings = useBoundStore((state) => state.closeGitSettings);
 
   const { data: status, isLoading: isStatusLoading, error: statusError } = useGitStatus();
   const { data: selectedDiff, isLoading: isDiffLoading } = useSelectedDiff();
 
-  const handleOpenSettings = useCallback(() => {
-    setIsSettingsOpen(true);
-  }, []);
-
-  const handleCloseSettings = useCallback(() => {
-    setIsSettingsOpen(false);
-  }, []);
+  // Calculate height similar to GitHubPage - accounts for title bar, header, and bottom padding
+  const headerHeight = 80;
+  const bottomPadding = 10;
+  const containerHeight = `calc(100vh - ${titleBarHeight}px - ${headerHeight}px - ${bottomPadding}px)`;
 
   const handleViewDiff = useCallback(
     (filePath: string, staged: boolean) => {
@@ -49,29 +48,18 @@ export function GitPage() {
     return (
       <>
         <div
-          className="h-full pt-4 pb-3 px-4"
-          style={{ backgroundColor: 'var(--background-primary)' }}
+          className="flex flex-col rounded-3xl border overflow-hidden"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-2xl)',
+            height: containerHeight,
+            maxHeight: containerHeight,
+          }}
         >
-          <div
-            className="h-full rounded-2xl overflow-hidden relative"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-              backdropFilter: 'blur(20px)',
-            }}
-          >
-            {/* Ambient glow effect */}
-            <div
-              className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-              style={{
-                background: 'radial-gradient(circle, var(--color-primary), transparent)',
-              }}
-            />
-            <GitEmptyState onOpenSettings={handleOpenSettings} />
-          </div>
+          <GitEmptyState onOpenSettings={openGitSettings} />
         </div>
-        <GitSettingsPanel isOpen={isSettingsOpen} onClose={handleCloseSettings} />
+        <GitSettingsPanel isOpen={isGitSettingsOpen} onClose={closeGitSettings} />
       </>
     );
   }
@@ -88,22 +76,16 @@ export function GitPage() {
     return (
       <>
         <div
-          className="h-full flex flex-col pt-4 pb-3 px-4"
-          style={{ backgroundColor: 'var(--background-primary)' }}
+          className="flex flex-col rounded-3xl border overflow-hidden"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-2xl)',
+            height: containerHeight,
+            maxHeight: containerHeight,
+          }}
         >
-          <GitBranchBar
-            status={null}
-            onOpenSettings={handleOpenSettings}
-          />
-          <div
-            className="flex-1 flex items-center justify-center mt-4 rounded-2xl relative overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-              backdropFilter: 'blur(20px)',
-            }}
-          >
+          <div className="flex-1 flex items-center justify-center relative overflow-hidden">
             {/* Ambient glow effect */}
             <div
               className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
@@ -160,7 +142,7 @@ export function GitPage() {
               )}
 
               <button
-                onClick={handleOpenSettings}
+                onClick={openGitSettings}
                 className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -174,7 +156,7 @@ export function GitPage() {
             </div>
           </div>
         </div>
-        <GitSettingsPanel isOpen={isSettingsOpen} onClose={handleCloseSettings} />
+        <GitSettingsPanel isOpen={isGitSettingsOpen} onClose={closeGitSettings} />
       </>
     );
   }
@@ -186,38 +168,33 @@ export function GitPage() {
 
   return (
     <>
+      {/* Main content - two panels side by side */}
       <div
-        className="h-full flex flex-col overflow-hidden pt-4 pb-4"
-        style={{ backgroundColor: 'var(--background-primary)' }}
+        className="flex gap-4 overflow-hidden"
+        style={{
+          height: containerHeight,
+          maxHeight: containerHeight,
+        }}
       >
-        {/* Branch bar */}
-        <GitBranchBar
-          status={status ?? null}
-          onOpenSettings={handleOpenSettings}
-        />
+        {/* Left panel: File status */}
+        <div className="w-96 min-w-[384px] max-w-[480px] flex-shrink-0 h-full">
+          {status && (
+            <GitStatusPanel status={status} onViewDiff={handleViewDiff} />
+          )}
+        </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex gap-4 mt-4 min-h-0">
-          {/* Left panel: File status */}
-          <div className="w-96 min-w-[384px] max-w-[480px] flex-shrink-0">
-            {status && (
-              <GitStatusPanel status={status} onViewDiff={handleViewDiff} />
-            )}
-          </div>
-
-          {/* Right panel: Diff viewer */}
-          <div className="flex-1 min-w-0">
-            <GitDiffViewer
-              diff={selectedDiff ?? null}
-              isLoading={isDiffLoading}
-              onClose={handleCloseDiff}
-            />
-          </div>
+        {/* Right panel: Diff viewer */}
+        <div className="flex-1 min-w-0 h-full">
+          <GitDiffViewer
+            diff={selectedDiff ?? null}
+            isLoading={isDiffLoading}
+            onClose={handleCloseDiff}
+          />
         </div>
       </div>
 
       {/* Dialogs */}
-      <GitSettingsPanel isOpen={isSettingsOpen} onClose={handleCloseSettings} />
+      <GitSettingsPanel isOpen={isGitSettingsOpen} onClose={closeGitSettings} />
     </>
   );
 }

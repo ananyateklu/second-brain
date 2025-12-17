@@ -1,0 +1,101 @@
+/* =============================================================================
+   Interactive Elements
+   Range inputs, file icons, and other interactive element styles
+   ============================================================================= */
+
+/* ========================================
+   Range Input (Slider) Styling
+   ======================================== */
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand-300);
+  cursor: pointer;
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(54, 105, 61, 0);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: -5px; /* Centers the thumb on the track */
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--color-brand-50);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 4px rgba(54, 105, 61, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 0 6px rgba(54, 105, 61, 0.2);
+}
+
+/* Firefox */
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-brand-400);
+  cursor: pointer;
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  background: var(--color-brand-300);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Track styling */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Focus states for range inputs */
+input[type="range"]:focus-visible {
+  outline: none;
+}
+
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 3px var(--input-focus-ring);
+}
+
+input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 3px var(--input-focus-ring);
+}
+
+/* ========================================
+   File Type Icon Colors
+   ======================================== */
+
+.file-icon-pdf {
+  color: #ef4444;
+}
+
+.file-icon-doc {
+  color: #3b82f6;
+}
+
+.file-icon-txt {
+  color: #6b7280;
+}
+
+.file-icon-image {
+  color: #10b981;
+}
