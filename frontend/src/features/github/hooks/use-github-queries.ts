@@ -7,6 +7,8 @@ import type {
   GitHubIssuesRequest,
   GitHubCommitsRequest,
   GitHubRepositoriesRequest,
+  GitHubRepositoryTreeRequest,
+  GitHubFileContentRequest,
 } from '../../../types/github';
 
 /**
@@ -253,5 +255,48 @@ export const useGitHubIssueComments = (
     queryFn: () => githubService.getIssueComments(issueNumber, owner, repo),
     enabled: enabled && issueNumber > 0,
     staleTime: 1000 * 30, // 30 seconds
+  });
+};
+
+/**
+ * Hook to fetch repository file tree (recursive)
+ * Uses the tree SHA from a branch to fetch all files/directories
+ */
+export const useGitHubRepositoryTree = (
+  request: GitHubRepositoryTreeRequest | null,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: githubKeys.repositoryTree(
+      request?.treeSha ?? '',
+      request?.owner,
+      request?.repo
+    ),
+    queryFn: () => githubService.getRepositoryTree(request!),
+    enabled: enabled && !!request?.treeSha,
+    staleTime: 1000 * 60 * 5, // 5 minutes (tree doesn't change often)
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+  });
+};
+
+/**
+ * Hook to fetch file content from repository
+ * Returns decoded content with language detection
+ */
+export const useGitHubFileContent = (
+  request: GitHubFileContentRequest | null,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: githubKeys.fileContent(
+      request?.path ?? '',
+      request?.ref,
+      request?.owner,
+      request?.repo
+    ),
+    queryFn: () => githubService.getFileContent(request!),
+    enabled: enabled && !!request?.path,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
 };

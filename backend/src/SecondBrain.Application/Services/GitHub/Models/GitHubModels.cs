@@ -855,3 +855,121 @@ public record GitHubRepositoriesResponse
     public int PerPage { get; init; }
     public bool HasMore { get; init; }
 }
+
+// ===== Repository Tree Models =====
+
+/// <summary>
+/// GitHub API response for a single tree entry
+/// </summary>
+public record GitHubTreeEntry
+{
+    [JsonPropertyName("path")]
+    public string Path { get; init; } = string.Empty;
+
+    [JsonPropertyName("mode")]
+    public string Mode { get; init; } = string.Empty;
+
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = string.Empty; // "blob" or "tree"
+
+    [JsonPropertyName("sha")]
+    public string Sha { get; init; } = string.Empty;
+
+    [JsonPropertyName("size")]
+    public long? Size { get; init; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; init; }
+}
+
+/// <summary>
+/// GitHub API response for the git/trees endpoint
+/// </summary>
+public record GitHubTreeApiResponse
+{
+    [JsonPropertyName("sha")]
+    public string Sha { get; init; } = string.Empty;
+
+    [JsonPropertyName("url")]
+    public string Url { get; init; } = string.Empty;
+
+    [JsonPropertyName("tree")]
+    public List<GitHubTreeEntry> Tree { get; init; } = [];
+
+    [JsonPropertyName("truncated")]
+    public bool Truncated { get; init; }
+}
+
+/// <summary>
+/// Simplified tree entry for application consumption
+/// </summary>
+public record TreeEntrySummary
+{
+    public string Path { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string Type { get; init; } = string.Empty; // "file" or "directory"
+    public string Sha { get; init; } = string.Empty;
+    public long? Size { get; init; }
+}
+
+/// <summary>
+/// Application response for repository tree
+/// </summary>
+public record GitHubRepositoryTreeResponse
+{
+    public string Sha { get; init; } = string.Empty;
+    public List<TreeEntrySummary> Entries { get; init; } = [];
+    public bool Truncated { get; init; }
+    public int TotalCount { get; init; }
+}
+
+// ===== File Content Models =====
+
+/// <summary>
+/// GitHub API response for the contents endpoint (single file)
+/// </summary>
+public record GitHubFileContentApiResponse
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = string.Empty;
+
+    [JsonPropertyName("encoding")]
+    public string? Encoding { get; init; }
+
+    [JsonPropertyName("size")]
+    public long Size { get; init; }
+
+    [JsonPropertyName("name")]
+    public string Name { get; init; } = string.Empty;
+
+    [JsonPropertyName("path")]
+    public string Path { get; init; } = string.Empty;
+
+    [JsonPropertyName("content")]
+    public string? Content { get; init; }
+
+    [JsonPropertyName("sha")]
+    public string Sha { get; init; } = string.Empty;
+
+    [JsonPropertyName("html_url")]
+    public string HtmlUrl { get; init; } = string.Empty;
+
+    [JsonPropertyName("download_url")]
+    public string? DownloadUrl { get; init; }
+}
+
+/// <summary>
+/// Application response for file content
+/// </summary>
+public record GitHubFileContentResponse
+{
+    public string Path { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string Content { get; init; } = string.Empty;
+    public string Sha { get; init; } = string.Empty;
+    public long Size { get; init; }
+    public string HtmlUrl { get; init; } = string.Empty;
+    public bool IsBinary { get; init; }
+    public bool IsTruncated { get; init; }
+    public string? Language { get; init; }
+}

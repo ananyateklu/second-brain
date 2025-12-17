@@ -53,10 +53,9 @@ const mockCommit = (overrides: Partial<CommitSummary> = {}): CommitSummary => ({
 
 const mockBranch = (overrides: Partial<BranchSummary> = {}): BranchSummary => ({
   name: 'main',
-  sha: 'abc123',
+  commitSha: 'abc123',
   isProtected: false,
   isDefault: true,
-  htmlUrl: 'https://github.com/owner/repo/tree/main',
   ...overrides,
 });
 
@@ -70,7 +69,6 @@ const mockCommitsResponse = (commits: CommitSummary[] = [], hasMore = false): Gi
 
 const mockBranchesResponse = (branches: BranchSummary[] = []): GitHubBranchesResponse => ({
   branches,
-  totalCount: branches.length,
 });
 
 describe('GitHubCommitsList', () => {

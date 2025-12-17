@@ -378,10 +378,9 @@ describe('githubService', () => {
     it('should return branches in the repository', async () => {
       const mockBranches: GitHubBranchesResponse = {
         branches: [
-          { name: 'main', sha: 'abc123', isProtected: true, isDefault: true, htmlUrl: '' },
-          { name: 'develop', sha: 'def456', isProtected: false, isDefault: false, htmlUrl: '' },
+          { name: 'main', commitSha: 'abc123', isProtected: true, isDefault: true },
+          { name: 'develop', commitSha: 'def456', isProtected: false, isDefault: false },
         ],
-        totalCount: 2,
       };
 
       vi.mocked(apiClient.get).mockResolvedValue(mockBranches);
@@ -393,7 +392,7 @@ describe('githubService', () => {
     });
 
     it('should include owner and repo as query parameters', async () => {
-      vi.mocked(apiClient.get).mockResolvedValue({ branches: [], totalCount: 0 });
+      vi.mocked(apiClient.get).mockResolvedValue({ branches: [] });
 
       await githubService.getBranches('owner', 'repo');
 

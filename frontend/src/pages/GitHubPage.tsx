@@ -7,15 +7,16 @@ import { GitHubRepoSelector } from '../features/github/components/GitHubRepoSele
 import { GitHubIssuesList } from '../features/github/components/GitHubIssuesList';
 import { GitHubCommitsList } from '../features/github/components/GitHubCommitsList';
 import { GitHubBranchesList } from '../features/github/components/GitHubBranchesList';
+import { GitHubCodeBrowser } from '../features/github/components/GitHubCodeBrowser';
 import { GitHubPageSkeleton } from '../features/github/components/GitHubPageSkeleton';
 import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import type { PullRequestSummary, WorkflowRunSummary, IssueSummary, CommitSummary, BranchSummary } from '../types/github';
 
-type TabType = 'pull-requests' | 'actions' | 'issues' | 'commits' | 'branches';
+type TabType = 'pull-requests' | 'actions' | 'issues' | 'commits' | 'branches' | 'code';
 
 export const GitHubPage = () => {
   const titleBarHeight = useTitleBarHeight();
-  const [activeTab, setActiveTab] = useState<TabType>('pull-requests');
+  const [activeTab, setActiveTab] = useState<TabType>('code');
   const [selectedPR, setSelectedPR] = useState<PullRequestSummary | null>(null);
   const [selectedRun, setSelectedRun] = useState<WorkflowRunSummary | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<IssueSummary | null>(null);
@@ -140,6 +141,16 @@ export const GitHubPage = () => {
             style={{ backgroundColor: 'var(--surface-elevated)' }}
           >
             <TabButton
+              active={activeTab === 'code'}
+              onClick={() => setActiveTab('code')}
+              icon={
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M4.72 3.22a.75.75 0 011.06 1.06L2.06 8l3.72 3.72a.75.75 0 11-1.06 1.06L.47 8.53a.75.75 0 010-1.06l4.25-4.25zm6.56 0a.75.75 0 10-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 101.06 1.06l4.25-4.25a.75.75 0 000-1.06l-4.25-4.25z" />
+                </svg>
+              }
+              label="Code"
+            />
+            <TabButton
               active={activeTab === 'pull-requests'}
               onClick={() => setActiveTab('pull-requests')}
               icon={
@@ -195,6 +206,12 @@ export const GitHubPage = () => {
 
         {/* Content - Scrollable area with proper height constraint */}
         <div className="flex-1 min-h-0 px-6 pb-6">
+          {activeTab === 'code' && (
+            <GitHubCodeBrowser
+              owner={repoInfo?.owner}
+              repo={repoInfo?.repo}
+            />
+          )}
           {activeTab === 'pull-requests' && (
             <GitHubPullRequestList
               owner={repoInfo?.owner}

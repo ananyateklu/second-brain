@@ -45,7 +45,7 @@ export const GitHubBranchesList = ({
   }
 
   const branches = data?.branches || [];
-  const totalCount = data?.totalCount || 0;
+  const totalCount = branches.length;
 
   // Sort branches: default first, then protected, then alphabetically
   const sortedBranches = [...branches].sort((a, b) => {
@@ -102,6 +102,8 @@ export const GitHubBranchesList = ({
               branch={branch}
               isSelected={selectedBranchName === branch.name}
               onClick={() => onSelectBranch?.(branch)}
+              owner={owner}
+              repo={repo}
             />
           ))}
         </div>
@@ -115,9 +117,11 @@ interface BranchRowProps {
   branch: BranchSummary;
   isSelected: boolean;
   onClick: () => void;
+  owner?: string;
+  repo?: string;
 }
 
-const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
+const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps) => {
   return (
     <div
       onClick={onClick}
@@ -162,7 +166,9 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
             style={{ color: 'var(--text-primary)' }}
             onClick={(e) => {
               e.stopPropagation();
-              window.open(branch.htmlUrl, '_blank');
+              if (owner && repo) {
+                window.open(`https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branch.name)}`, '_blank');
+              }
             }}
           >
             {branch.name}
@@ -196,7 +202,7 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
         </div>
 
         {/* SHA */}
-        {branch.sha && (
+        {branch.commitSha && (
           <code
             className="text-xs px-1.5 py-0.5 rounded shrink-0"
             style={{
@@ -204,7 +210,7 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
               color: 'var(--text-tertiary)',
             }}
           >
-            {branch.sha.substring(0, 7)}
+            {branch.commitSha.substring(0, 7)}
           </code>
         )}
 
@@ -212,7 +218,9 @@ const BranchRow = ({ branch, isSelected, onClick }: BranchRowProps) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            window.open(branch.htmlUrl, '_blank');
+            if (owner && repo) {
+              window.open(`https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branch.name)}`, '_blank');
+            }
           }}
           className="p-1 rounded-md transition-all hover:bg-white/5 shrink-0"
           style={{ color: 'var(--text-tertiary)' }}

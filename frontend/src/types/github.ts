@@ -221,15 +221,14 @@ export interface GitHubPullRequestFilesRequest {
 
 export interface BranchSummary {
   name: string;
-  sha: string;
+  commitSha: string;
   isProtected: boolean;
   isDefault: boolean;
-  htmlUrl: string;
 }
 
 export interface GitHubBranchesResponse {
   branches: BranchSummary[];
-  totalCount: number;
+  defaultBranch?: string;
 }
 
 export interface GitHubBranchesRequest {
@@ -562,4 +561,95 @@ export const getIssueStateBgColor = (state: IssueState): string => {
     default:
       return 'bg-gray-500/10';
   }
+};
+
+// Repository Tree Types (Code Browser)
+
+export interface TreeEntrySummary {
+  path: string;
+  name: string;
+  type: 'file' | 'directory';
+  sha: string;
+  size?: number;
+}
+
+export interface GitHubRepositoryTreeResponse {
+  sha: string;
+  entries: TreeEntrySummary[];
+  truncated: boolean;
+  totalCount: number;
+}
+
+export interface GitHubRepositoryTreeRequest {
+  treeSha: string;
+  owner?: string;
+  repo?: string;
+}
+
+// File Content Types (Code Browser)
+
+export interface GitHubFileContentResponse {
+  path: string;
+  name: string;
+  content: string;
+  sha: string;
+  size: number;
+  htmlUrl: string;
+  isBinary: boolean;
+  isTruncated: boolean;
+  language?: string;
+}
+
+export interface GitHubFileContentRequest {
+  path: string;
+  ref?: string;
+  owner?: string;
+  repo?: string;
+}
+
+// Hierarchical File Tree Node (built client-side from flat entries)
+
+export interface FileTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  sha: string;
+  size?: number;
+  children?: FileTreeNode[];
+  isExpanded?: boolean;
+}
+
+// Language mapping for react-syntax-highlighter
+
+export const getLanguageForHighlighter = (lang?: string): string => {
+  if (!lang) return 'text';
+  const mapping: Record<string, string> = {
+    csharp: 'csharp',
+    typescript: 'typescript',
+    javascript: 'javascript',
+    python: 'python',
+    rust: 'rust',
+    go: 'go',
+    java: 'java',
+    json: 'json',
+    markdown: 'markdown',
+    yaml: 'yaml',
+    html: 'html',
+    css: 'css',
+    bash: 'bash',
+    shell: 'bash',
+    sql: 'sql',
+    xml: 'xml',
+    ruby: 'ruby',
+    php: 'php',
+    swift: 'swift',
+    kotlin: 'kotlin',
+    scala: 'scala',
+    dockerfile: 'dockerfile',
+    makefile: 'makefile',
+    toml: 'toml',
+    ini: 'ini',
+    plaintext: 'text',
+  };
+  return mapping[lang.toLowerCase()] || 'text';
 };

@@ -922,6 +922,212 @@ public sealed class GitHubService : IGitHubService, IDisposable
         }
     }
 
+    public async Task<Result<GitHubRepositoryTreeResponse>> GetRepositoryTreeAsync(
+        string treeSha,
+        string? owner = null,
+        string? repo = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (resolvedOwner, resolvedRepo, error) = ResolveOwnerRepo(owner, repo);
+        if (error != null) return Result<GitHubRepositoryTreeResponse>.Failure(error);
+
+        try
+        {
+            // Use recursive=1 to get the full tree in a single API call
+            var url = $"/repos/{resolvedOwner}/{resolvedRepo}/git/trees/{Uri.EscapeDataString(treeSha)}?recursive=1";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return HandleErrorResponse<GitHubRepositoryTreeResponse>(response);
+            }
+
+            var treeResponse = await response.Content.ReadFromJsonAsync<GitHubTreeApiResponse>(_jsonOptions, cancellationToken);
+            if (treeResponse == null)
+            {
+                return Result<GitHubRepositoryTreeResponse>.Failure(Error.NotFound("Repository tree not found"));
+            }
+
+            // Map the flat tree entries to our summary format
+            var entries = treeResponse.Tree.Select(e => new TreeEntrySummary
+            {
+                Path = e.Path,
+                Name = System.IO.Path.GetFileName(e.Path),
+                Type = e.Type == "blob" ? "file" : "directory",
+                Sha = e.Sha,
+                Size = e.Size
+            }).ToList();
+
+            return Result<GitHubRepositoryTreeResponse>.Success(new GitHubRepositoryTreeResponse
+            {
+                Sha = treeResponse.Sha,
+                Entries = entries,
+                Truncated = treeResponse.Truncated,
+                TotalCount = entries.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get repository tree for {Owner}/{Repo} at {TreeSha}",
+                resolvedOwner, resolvedRepo, treeSha);
+            return Result<GitHubRepositoryTreeResponse>.Failure(Error.ExternalService("GitHub", ex.Message));
+        }
+    }
+
+    public async Task<Result<GitHubFileContentResponse>> GetFileContentAsync(
+        string path,
+        string? reference = null,
+        string? owner = null,
+        string? repo = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (resolvedOwner, resolvedRepo, error) = ResolveOwnerRepo(owner, repo);
+        if (error != null) return Result<GitHubFileContentResponse>.Failure(error);
+
+        try
+        {
+            var url = $"/repos/{resolvedOwner}/{resolvedRepo}/contents/{Uri.EscapeDataString(path)}";
+            if (!string.IsNullOrEmpty(reference))
+            {
+                url += $"?ref={Uri.EscapeDataString(reference)}";
+            }
+
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return HandleErrorResponse<GitHubFileContentResponse>(response);
+            }
+
+            var fileResponse = await response.Content.ReadFromJsonAsync<GitHubFileContentApiResponse>(_jsonOptions, cancellationToken);
+            if (fileResponse == null || fileResponse.Type != "file")
+            {
+                return Result<GitHubFileContentResponse>.Failure(Error.NotFound("File not found or path is a directory"));
+            }
+
+            // Check for large files (>1MB content won't be included by GitHub API)
+            var isTruncated = fileResponse.Content == null && fileResponse.Size > 0;
+            var isBinary = IsBinaryFile(fileResponse.Name);
+
+            string content = string.Empty;
+            if (!isBinary && !isTruncated && fileResponse.Content != null)
+            {
+                try
+                {
+                    // GitHub returns base64 encoded content with newlines
+                    var cleanContent = fileResponse.Content.Replace("\n", "").Replace("\r", "");
+                    var bytes = Convert.FromBase64String(cleanContent);
+                    content = System.Text.Encoding.UTF8.GetString(bytes);
+                }
+                catch (FormatException)
+                {
+                    // If base64 decoding fails, treat as binary
+                    isBinary = true;
+                }
+            }
+
+            return Result<GitHubFileContentResponse>.Success(new GitHubFileContentResponse
+            {
+                Path = fileResponse.Path,
+                Name = fileResponse.Name,
+                Content = content,
+                Sha = fileResponse.Sha,
+                Size = fileResponse.Size,
+                HtmlUrl = fileResponse.HtmlUrl,
+                IsBinary = isBinary,
+                IsTruncated = isTruncated,
+                Language = GetLanguageFromExtension(fileResponse.Name)
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get file content for {Path} in {Owner}/{Repo}",
+                path, resolvedOwner, resolvedRepo);
+            return Result<GitHubFileContentResponse>.Failure(Error.ExternalService("GitHub", ex.Message));
+        }
+    }
+
+    private static bool IsBinaryFile(string filename)
+    {
+        var binaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Images
+            ".png", ".jpg", ".jpeg", ".gif", ".ico", ".svg", ".webp", ".bmp", ".tiff", ".tif",
+            // Documents
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+            // Archives
+            ".zip", ".tar", ".gz", ".rar", ".7z", ".bz2", ".xz",
+            // Executables
+            ".exe", ".dll", ".so", ".dylib", ".bin",
+            // Fonts
+            ".woff", ".woff2", ".ttf", ".eot", ".otf",
+            // Media
+            ".mp3", ".mp4", ".wav", ".avi", ".mov", ".mkv", ".flv", ".wmv",
+            // Other
+            ".iso", ".dmg", ".msi", ".deb", ".rpm"
+        };
+
+        var extension = System.IO.Path.GetExtension(filename);
+        return binaryExtensions.Contains(extension);
+    }
+
+    private static string? GetLanguageFromExtension(string filename)
+    {
+        var extension = System.IO.Path.GetExtension(filename).ToLowerInvariant();
+        return extension switch
+        {
+            ".cs" => "csharp",
+            ".ts" or ".tsx" => "typescript",
+            ".js" or ".jsx" => "javascript",
+            ".py" => "python",
+            ".rs" => "rust",
+            ".go" => "go",
+            ".java" => "java",
+            ".rb" => "ruby",
+            ".php" => "php",
+            ".swift" => "swift",
+            ".kt" or ".kts" => "kotlin",
+            ".c" or ".h" => "c",
+            ".cpp" or ".hpp" or ".cc" or ".cxx" => "cpp",
+            ".html" or ".htm" => "html",
+            ".css" or ".scss" or ".sass" or ".less" => "css",
+            ".json" => "json",
+            ".xml" => "xml",
+            ".yaml" or ".yml" => "yaml",
+            ".md" or ".markdown" => "markdown",
+            ".sql" => "sql",
+            ".sh" or ".bash" or ".zsh" => "bash",
+            ".ps1" or ".psm1" => "powershell",
+            ".dockerfile" or ".Dockerfile" => "dockerfile",
+            ".toml" => "toml",
+            ".ini" or ".cfg" or ".conf" => "ini",
+            ".vue" => "vue",
+            ".svelte" => "svelte",
+            ".graphql" or ".gql" => "graphql",
+            ".proto" => "protobuf",
+            ".r" or ".R" => "r",
+            ".scala" => "scala",
+            ".lua" => "lua",
+            ".pl" or ".pm" => "perl",
+            ".ex" or ".exs" => "elixir",
+            ".erl" or ".hrl" => "erlang",
+            ".hs" or ".lhs" => "haskell",
+            ".clj" or ".cljs" or ".cljc" or ".edn" => "clojure",
+            ".fs" or ".fsi" or ".fsx" => "fsharp",
+            ".ml" or ".mli" => "ocaml",
+            ".dart" => "dart",
+            ".m" => "objectivec",
+            ".mm" => "objectivecpp",
+            ".asm" or ".s" => "asm",
+            ".makefile" or ".mk" => "makefile",
+            ".cmake" => "cmake",
+            ".tf" or ".tfvars" => "hcl",
+            ".nix" => "nix",
+            ".txt" or ".log" => "text",
+            _ => null
+        };
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

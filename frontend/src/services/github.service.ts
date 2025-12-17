@@ -19,6 +19,10 @@ import type {
   GitHubCommentsResponse,
   GitHubRepositoriesResponse,
   GitHubRepositoriesRequest,
+  GitHubRepositoryTreeResponse,
+  GitHubRepositoryTreeRequest,
+  GitHubFileContentResponse,
+  GitHubFileContentRequest,
 } from '../types/github';
 
 // Add GitHub endpoints to constants
@@ -39,6 +43,8 @@ const GITHUB_ENDPOINTS = {
   ISSUES: '/github/issues',
   ISSUE_COMMENTS: (issueNumber: number) => `/github/issues/${issueNumber}/comments`,
   COMMITS: '/github/commits',
+  TREE: (treeSha: string) => `/github/tree/${encodeURIComponent(treeSha)}`,
+  CONTENT: '/github/content',
 } as const;
 
 /**
@@ -338,6 +344,38 @@ export const githubService = {
       : GITHUB_ENDPOINTS.ISSUE_COMMENTS(issueNumber);
 
     return apiClient.get<GitHubCommentsResponse>(url);
+  },
+
+  /**
+   * Get repository file tree (recursive)
+   * Uses the tree SHA from a branch to fetch all files/directories
+   */
+  async getRepositoryTree(request: GitHubRepositoryTreeRequest): Promise<GitHubRepositoryTreeResponse> {
+    const params = new URLSearchParams();
+    if (request.owner) params.append('owner', request.owner);
+    if (request.repo) params.append('repo', request.repo);
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${GITHUB_ENDPOINTS.TREE(request.treeSha)}?${queryString}`
+      : GITHUB_ENDPOINTS.TREE(request.treeSha);
+
+    return apiClient.get<GitHubRepositoryTreeResponse>(url);
+  },
+
+  /**
+   * Get file content from repository
+   * Returns decoded content with language detection
+   */
+  async getFileContent(request: GitHubFileContentRequest): Promise<GitHubFileContentResponse> {
+    const params = new URLSearchParams();
+    params.append('path', request.path);
+    if (request.ref) params.append('ref', request.ref);
+    if (request.owner) params.append('owner', request.owner);
+    if (request.repo) params.append('repo', request.repo);
+
+    const url = `${GITHUB_ENDPOINTS.CONTENT}?${params.toString()}`;
+    return apiClient.get<GitHubFileContentResponse>(url);
   },
 };
 

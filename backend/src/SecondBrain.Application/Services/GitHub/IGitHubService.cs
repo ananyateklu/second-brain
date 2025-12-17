@@ -158,4 +158,34 @@ public interface IGitHubService
         int page = 1,
         int perPage = 30,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the full repository tree recursively for a given branch/commit.
+    /// </summary>
+    /// <param name="treeSha">Branch name, tag, or commit SHA to get the tree for.</param>
+    /// <param name="owner">Repository owner (optional, uses default if not specified).</param>
+    /// <param name="repo">Repository name (optional, uses default if not specified).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Repository tree with all files and directories.</returns>
+    Task<Result<GitHubRepositoryTreeResponse>> GetRepositoryTreeAsync(
+        string treeSha,
+        string? owner = null,
+        string? repo = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the content of a specific file from the repository.
+    /// </summary>
+    /// <param name="path">Path to the file within the repository.</param>
+    /// <param name="reference">Branch name, tag, or commit SHA (optional, uses default branch if not specified).</param>
+    /// <param name="owner">Repository owner (optional, uses default if not specified).</param>
+    /// <param name="repo">Repository name (optional, uses default if not specified).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>File content with metadata.</returns>
+    Task<Result<GitHubFileContentResponse>> GetFileContentAsync(
+        string path,
+        string? reference = null,
+        string? owner = null,
+        string? repo = null,
+        CancellationToken cancellationToken = default);
 }

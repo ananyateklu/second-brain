@@ -32,16 +32,14 @@ function createWrapper() {
 
 const mockBranch = (overrides: Partial<BranchSummary> = {}): BranchSummary => ({
   name: 'main',
-  sha: 'abc123def456789',
+  commitSha: 'abc123def456789',
   isProtected: false,
   isDefault: true,
-  htmlUrl: 'https://github.com/owner/repo/tree/main',
   ...overrides,
 });
 
 const mockBranchesResponse = (branches: BranchSummary[] = []): GitHubBranchesResponse => ({
   branches,
-  totalCount: branches.length,
 });
 
 describe('GitHubBranchesList', () => {
@@ -168,7 +166,7 @@ describe('GitHubBranchesList', () => {
     });
 
     it('should display short SHA when available', async () => {
-      const branch = mockBranch({ sha: 'abc1234567890' });
+      const branch = mockBranch({ commitSha: 'abc1234567890' });
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
 
       render(<GitHubBranchesList />, { wrapper: createWrapper() });
@@ -179,7 +177,7 @@ describe('GitHubBranchesList', () => {
     });
 
     it('should handle branches without SHA gracefully', async () => {
-      const branch = mockBranch({ sha: undefined as unknown as string });
+      const branch = mockBranch({ commitSha: undefined as unknown as string });
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
 
       render(<GitHubBranchesList />, { wrapper: createWrapper() });
@@ -289,11 +287,10 @@ describe('GitHubBranchesList', () => {
     it('should open branch URL when branch name is clicked', async () => {
       const branch = mockBranch({
         name: 'main',
-        htmlUrl: 'https://github.com/owner/repo/tree/main',
       });
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
 
-      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+      render(<GitHubBranchesList owner="owner" repo="repo" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
         expect(screen.getByText('main')).toBeInTheDocument();
@@ -311,11 +308,10 @@ describe('GitHubBranchesList', () => {
     it('should open branch URL when external link button is clicked', async () => {
       const branch = mockBranch({
         name: 'main',
-        htmlUrl: 'https://github.com/owner/repo/tree/main',
       });
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
 
-      render(<GitHubBranchesList />, { wrapper: createWrapper() });
+      render(<GitHubBranchesList owner="owner" repo="repo" />, { wrapper: createWrapper() });
 
       await waitFor(() => {
         expect(screen.getByText('main')).toBeInTheDocument();
@@ -339,7 +335,7 @@ describe('GitHubBranchesList', () => {
       vi.mocked(githubService.getBranches).mockResolvedValue(mockBranchesResponse([branch]));
       const onSelectBranch = vi.fn();
 
-      render(<GitHubBranchesList onSelectBranch={onSelectBranch} />, { wrapper: createWrapper() });
+      render(<GitHubBranchesList owner="owner" repo="repo" onSelectBranch={onSelectBranch} />, { wrapper: createWrapper() });
 
       await waitFor(() => {
         expect(screen.getByText('main')).toBeInTheDocument();

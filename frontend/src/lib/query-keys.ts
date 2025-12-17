@@ -484,6 +484,14 @@ export const githubKeys = {
   /** Key for issue/PR comments */
   issueComments: (issueNumber: number, owner?: string, repo?: string) =>
     [...githubKeys.all, 'issueComments', issueNumber, { owner, repo }] as const,
+
+  /** Key for repository tree (code browser) */
+  repositoryTree: (treeSha: string, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'repositoryTree', treeSha, { owner, repo }] as const,
+
+  /** Key for file content (code browser) */
+  fileContent: (path: string, ref?: string, owner?: string, repo?: string) =>
+    [...githubKeys.all, 'fileContent', path, { ref, owner, repo }] as const,
 } as const;
 
 // ============================================

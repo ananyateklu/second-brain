@@ -17,6 +17,8 @@ using SecondBrain.Application.Queries.GitHub.GetUserRepositories;
 using SecondBrain.Application.Queries.GitHub.GetWorkflowRun;
 using SecondBrain.Application.Queries.GitHub.GetWorkflowRuns;
 using SecondBrain.Application.Queries.GitHub.GetWorkflows;
+using SecondBrain.Application.Queries.GitHub.GetRepositoryTree;
+using SecondBrain.Application.Queries.GitHub.GetFileContent;
 using SecondBrain.Application.Services.GitHub.Models;
 
 namespace SecondBrain.API.Controllers;
@@ -382,6 +384,60 @@ public class GitHubController : ControllerBase
 
         return result.Match(
             onSuccess: comments => Ok(comments),
+            onFailure: error => HandleError(error)
+        );
+    }
+
+    /// <summary>
+    /// Gets the full repository tree recursively for a given branch/commit.
+    /// </summary>
+    /// <param name="treeSha">Branch name, tag, or commit SHA to get the tree for.</param>
+    /// <param name="owner">Repository owner (optional, uses default if not specified).</param>
+    /// <param name="repo">Repository name (optional, uses default if not specified).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpGet("tree/{treeSha}")]
+    [ProducesResponseType(typeof(GitHubRepositoryTreeResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRepositoryTree(
+        string treeSha,
+        [FromQuery] string? owner = null,
+        [FromQuery] string? repo = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetRepositoryTreeQuery(treeSha, owner, repo), cancellationToken);
+
+        return result.Match(
+            onSuccess: tree => Ok(tree),
+            onFailure: error => HandleError(error)
+        );
+    }
+
+    /// <summary>
+    /// Gets the content of a specific file from the repository.
+    /// </summary>
+    /// <param name="path">Path to the file within the repository.</param>
+    /// <param name="ref">Branch name, tag, or commit SHA (optional, uses default branch if not specified).</param>
+    /// <param name="owner">Repository owner (optional, uses default if not specified).</param>
+    /// <param name="repo">Repository name (optional, uses default if not specified).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpGet("content")]
+    [ProducesResponseType(typeof(GitHubFileContentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetFileContent(
+        [FromQuery] string path,
+        [FromQuery(Name = "ref")] string? @ref = null,
+        [FromQuery] string? owner = null,
+        [FromQuery] string? repo = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(
+            new GetFileContentQuery(path, @ref, owner, repo), cancellationToken);
+
+        return result.Match(
+            onSuccess: content => Ok(content),
             onFailure: error => HandleError(error)
         );
     }

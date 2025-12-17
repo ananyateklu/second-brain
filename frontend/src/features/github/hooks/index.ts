@@ -14,6 +14,9 @@ export {
   useGitHubIssues,
   useGitHubCommits,
   useGitHubIssueComments,
+  // Code browser hooks
+  useGitHubRepositoryTree,
+  useGitHubFileContent,
 } from './use-github-queries';
 
 // GitHub Mutation Hooks
