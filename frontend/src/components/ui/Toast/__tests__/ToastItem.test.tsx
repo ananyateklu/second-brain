@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ToastItem } from '../ToastItem';
 import { Toast, ToastContext, ToastContextValue } from '../ToastContext';
+import styles from '@styles/components/toast.module.css';
 
 // Mock useToastContext
 const mockRemoveToast = vi.fn();
@@ -257,14 +258,14 @@ describe('ToastItem', () => {
       const toast = createMockToast({ isExiting: false });
       renderWithContext(toast);
 
-      expect(screen.getByRole('alert')).toHaveClass('toast-enter');
+      expect(screen.getByRole('alert')).toHaveClass(styles.enter);
     });
 
     it('should apply toast-exit class when exiting', () => {
       const toast = createMockToast({ isExiting: true });
       renderWithContext(toast);
 
-      expect(screen.getByRole('alert')).toHaveClass('toast-exit');
+      expect(screen.getByRole('alert')).toHaveClass(styles.exit);
     });
   });
 

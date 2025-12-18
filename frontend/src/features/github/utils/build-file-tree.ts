@@ -47,9 +47,7 @@ export function buildFileTree(entries: TreeEntrySummary[]): FileTreeNode[] {
         } else {
           const parentPath = parts.slice(0, i).join('/');
           const parent = nodeMap.get(parentPath);
-          if (parent && parent.children) {
-            parent.children.push(node);
-          }
+          parent?.children?.push(node);
         }
       }
     }

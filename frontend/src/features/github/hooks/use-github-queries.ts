@@ -272,7 +272,10 @@ export const useGitHubRepositoryTree = (
       request?.owner,
       request?.repo
     ),
-    queryFn: () => githubService.getRepositoryTree(request!),
+    queryFn: () => {
+      if (!request) throw new Error('Request is required');
+      return githubService.getRepositoryTree(request);
+    },
     enabled: enabled && !!request?.treeSha,
     staleTime: 1000 * 60 * 5, // 5 minutes (tree doesn't change often)
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
@@ -294,7 +297,10 @@ export const useGitHubFileContent = (
       request?.owner,
       request?.repo
     ),
-    queryFn: () => githubService.getFileContent(request!),
+    queryFn: () => {
+      if (!request) throw new Error('Request is required');
+      return githubService.getFileContent(request);
+    },
     enabled: enabled && !!request?.path,
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes

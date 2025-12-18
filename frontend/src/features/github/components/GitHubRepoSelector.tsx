@@ -57,18 +57,19 @@ export const GitHubRepoSelector = ({
   });
 
   // Filter repositories based on search input
+  const repositories = reposData?.repositories;
   const filteredRepos = useMemo(() => {
-    if (!reposData?.repositories) return [];
-    if (!inputValue.trim()) return reposData.repositories;
+    if (!repositories) return [];
+    if (!inputValue.trim()) return repositories;
 
     const search = inputValue.toLowerCase();
-    return reposData.repositories.filter(
+    return repositories.filter(
       (repo) =>
         repo.fullName.toLowerCase().includes(search) ||
         repo.name.toLowerCase().includes(search) ||
         repo.owner.toLowerCase().includes(search)
     );
-  }, [reposData?.repositories, inputValue]);
+  }, [repositories, inputValue]);
 
   // Update recent repos when current repo changes
   useEffect(() => {
@@ -114,8 +115,8 @@ export const GitHubRepoSelector = ({
   };
 
   const handleSelectRepo = (repo: RepositorySummary | RepoConfig) => {
-    const owner = 'owner' in repo && typeof repo.owner === 'string' ? repo.owner : (repo as RepoConfig).owner;
-    const repoName = 'name' in repo ? (repo as RepositorySummary).name : (repo as RepoConfig).repo;
+    const owner = 'owner' in repo && typeof repo.owner === 'string' ? repo.owner : repo.owner;
+    const repoName = 'name' in repo ? repo.name : repo.repo;
     onRepoChange(owner, repoName);
     setIsOpen(false);
     setInputValue('');
@@ -380,7 +381,7 @@ export const GitHubRepoSelector = ({
           {/* Bottom actions */}
           <div className="p-2 border-t flex items-center gap-2" style={{ borderColor: 'var(--border)' }}>
             <button
-              onClick={() => refetch()}
+              onClick={() => void refetch()}
               disabled={isFetching}
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-surface-elevated disabled:opacity-50"
               style={{ color: 'var(--text-secondary)' }}
