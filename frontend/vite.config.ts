@@ -47,6 +47,17 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      // Suppress warning about dynamic import of notes.service.ts
+      // This is intentional to avoid circular dependency: summary-slice -> notes.service -> api-client -> bound-store
+      onwarn(warning, warn) {
+        if (
+          warning.code === 'MIXED_EXTERNAL_AND_NON_EXTERNAL' ||
+          (warning.message?.includes('notes.service.ts') && warning.message?.includes('dynamically imported'))
+        ) {
+          return; // Suppress this expected warning
+        }
+        warn(warning);
+      },
       output: {
         manualChunks(id) {
           // Only split node_modules - let app code be handled by Vite

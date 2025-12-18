@@ -194,7 +194,8 @@ export const createSummarySlice: SliceCreator<SummarySlice> = (set, get) => ({
 
       try {
         // Fetch current status from backend
-        const { notesService } = await import('../../services');
+        // Dynamic import to avoid circular dependency: summary-slice -> notes.service -> api-client -> bound-store
+        const { notesService } = await import('../../services/notes.service');
         const jobStatus = await notesService.getSummaryJobStatus(storedJob.jobId);
 
         if (jobStatus.status === 'running' || jobStatus.status === 'pending') {

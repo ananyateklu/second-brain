@@ -299,7 +299,7 @@ describe('summarySlice', () => {
 
       // Mock the dynamic import
       const mockGetSummaryJobStatus = vi.fn().mockResolvedValue(createMockJob({ status: 'running' }));
-      vi.doMock('../../../services', () => ({
+      vi.doMock('../../../services/notes.service', () => ({
         notesService: {
           getSummaryJobStatus: mockGetSummaryJobStatus,
         },
@@ -330,7 +330,7 @@ describe('summarySlice', () => {
 
       // Mock the dynamic import to return completed job
       const mockGetSummaryJobStatus = vi.fn().mockResolvedValue(createMockJob({ status: 'completed' }));
-      vi.doMock('../../../services', () => ({
+      vi.doMock('../../../services/notes.service', () => ({
         notesService: {
           getSummaryJobStatus: mockGetSummaryJobStatus,
         },
@@ -359,7 +359,7 @@ describe('summarySlice', () => {
 
       // Mock the dynamic import to throw error
       const mockGetSummaryJobStatus = vi.fn().mockRejectedValue(new Error('Network error'));
-      vi.doMock('../../../services', () => ({
+      vi.doMock('../../../services/notes.service', () => ({
         notesService: {
           getSummaryJobStatus: mockGetSummaryJobStatus,
         },
@@ -388,7 +388,7 @@ describe('summarySlice', () => {
 
       // Mock the dynamic import
       const mockGetSummaryJobStatus = vi.fn().mockResolvedValue(createMockJob({ status: 'pending' }));
-      vi.doMock('../../../services', () => ({
+      vi.doMock('../../../services/notes.service', () => ({
         notesService: {
           getSummaryJobStatus: mockGetSummaryJobStatus,
         },
@@ -419,7 +419,7 @@ describe('summarySlice', () => {
 
       // Mock the dynamic import to return failed job
       const mockGetSummaryJobStatus = vi.fn().mockResolvedValue(createMockJob({ status: 'failed' }));
-      vi.doMock('../../../services', () => ({
+      vi.doMock('../../../services/notes.service', () => ({
         notesService: {
           getSummaryJobStatus: mockGetSummaryJobStatus,
         },
