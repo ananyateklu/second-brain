@@ -38,7 +38,7 @@ public class ChatConversation : ISoftDeletable
     public bool AgentEnabled { get; set; } = false;
 
     [Column("agent_rag_enabled")]
-    public bool AgentRagEnabled { get; set; } = true;
+    public bool AgentRagEnabled { get; set; } = false;
 
     [Column("image_generation_enabled")]
     public bool ImageGenerationEnabled { get; set; } = false;

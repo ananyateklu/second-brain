@@ -55,8 +55,9 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   const [ragEnabled, setRagEnabledLocal] = useState<boolean>(false);
   const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore);
   const [agentModeEnabled, setAgentModeEnabledLocal] = useState<boolean>(false);
-  const [agentRagEnabled, setAgentRagEnabledLocal] = useState<boolean>(true);
-  const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(false);
+  const [agentRagEnabled, setAgentRagEnabledLocal] = useState<boolean>(false);
+  // Notes capability defaults to true since it's the primary reason to use agent mode
+  const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(true);
 
   // Track the last conversation ID to only sync on conversation change, not on data updates
   const lastLoadedConversationId = useRef<string | null>(null);
@@ -80,7 +81,10 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
       }
       setAgentModeEnabledLocal(agentEnabled);
       setAgentRagEnabledLocal(agentRagEnabled);
-      setNotesCapabilityEnabledLocal(capabilities.includes('notes'));
+      // If no capabilities are stored, default to notes enabled (primary agent capability)
+      // Otherwise use the stored value
+      const hasStoredCapabilities = conversation.agentCapabilities && conversation.agentCapabilities !== '[]';
+      setNotesCapabilityEnabledLocal(hasStoredCapabilities ? capabilities.includes('notes') : true);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [conversation]);
@@ -95,8 +99,8 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
       setRagEnabledLocal(false);
       setSelectedVectorStoreLocal(defaultVectorStore);
       setAgentModeEnabledLocal(false);
-      setAgentRagEnabledLocal(true); // Default to true for new chats
-      setNotesCapabilityEnabledLocal(false);
+      setAgentRagEnabledLocal(false); // Default to false - agent uses tools explicitly
+      setNotesCapabilityEnabledLocal(true); // Default to true - primary agent capability
       /* eslint-enable react-hooks/set-state-in-effect */
     }
     prevIsNewChatRef.current = isNewChat;

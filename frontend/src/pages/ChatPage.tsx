@@ -70,7 +70,7 @@ export function ChatPage() {
     ragEnabled,
     selectedVectorStore,
     agentModeEnabled,
-    agentRagEnabled,
+    agentRagEnabled: _agentRagEnabled,
     notesCapabilityEnabled,
 
     // Streaming State
@@ -117,7 +117,8 @@ export function ChatPage() {
     handleRagToggle,
     handleVectorStoreChange,
     setAgentModeEnabled,
-    setAgentRagEnabled,
+    setAgentRagEnabled: _setAgentRagEnabled,
+    setNotesCapabilityEnabled,
     handleSendMessage,
     handleGenerateImage,
     handleImageGenerated,
@@ -270,11 +271,13 @@ export function ChatPage() {
             onModelChange={handleModelChange}
             onRefreshProviders={refreshProviders}
             isRefreshing={isRefreshing}
-            ragEnabled={ragEnabled}
+            ragEnabled={agentModeEnabled ? notesCapabilityEnabled : ragEnabled}
             onRagToggle={(enabled) => {
               // Route to appropriate handler based on agent mode
+              // In agent mode: RAG button enables notes capability (SemanticSearch tool access)
+              // In normal mode: RAG button enables traditional RAG context injection
               if (agentModeEnabled) {
-                setAgentRagEnabled(enabled);
+                setNotesCapabilityEnabled(enabled);
               } else {
                 void handleRagToggle(enabled);
               }
@@ -283,7 +286,7 @@ export function ChatPage() {
             onVectorStoreChange={(provider) => { void handleVectorStoreChange(provider as VectorStoreProvider); }}
             agentModeEnabled={agentModeEnabled}
             onAgentModeChange={setAgentModeEnabled}
-            agentRagEnabled={agentRagEnabled}
+            agentRagEnabled={notesCapabilityEnabled}
             agentCapabilities={agentCapabilities}
             isLoading={isLoading}
             isImageGenerationMode={isImageGenerationMode}

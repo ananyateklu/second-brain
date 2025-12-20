@@ -23,11 +23,10 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
     public AnthropicStreamingStrategy(
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
         ILogger<AnthropicStreamingStrategy> logger)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
         _logger = logger;
     }
@@ -83,25 +82,13 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
         // Build message history
         var messages = BuildAnthropicMessages(request);
 
-        // RAG context injection
-        string? injectedContext = null;
-        await foreach (var evt in TryInjectRagContextAsync(
-            context,
-            ctx => injectedContext = ctx,
-            cancellationToken))
-        {
-            yield return evt;
-        }
-
         var systemPrompt = context.GetSystemPrompt(request.Capabilities);
-        if (!string.IsNullOrEmpty(injectedContext))
-        {
-            systemPrompt += "\n\n" + injectedContext;
-        }
 
         var fullResponse = new StringBuilder();
         var emittedThinkingBlocks = new HashSet<string>();
         var maxIterations = 10;
+        var toolsExecutedThisSession = false;
+        string? lastToolResultSummary = null;
 
         // Token tracking
         int totalInputTokens = 0;
@@ -156,6 +143,11 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
             var hasEmittedFirstToken = false;
             var streamOutputs = new List<MessageResponse>();
 
+            // Track thinking blocks for tool use (required by Anthropic API)
+            var currentThinkingContent = new StringBuilder();
+            string? currentThinkingSignature = null;
+            var isInThinkingBlock = false;
+
             // Stream the response
             await foreach (var streamEvent in StreamAnthropicWithErrorHandling(
                 client, parameters, cancellationToken, e => errorMessage = e))
@@ -178,19 +170,62 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                         totalCacheReadTokens += streamEvent.Usage.CacheReadInputTokens;
                 }
 
+                // Detect thinking block start
+                if (streamEvent.ContentBlock?.Type == "thinking")
+                {
+                    isInThinkingBlock = true;
+                    currentThinkingContent.Clear();
+                    currentThinkingSignature = null;
+                    continue;
+                }
+
                 // Detect tool_use content blocks
                 if (streamEvent.ContentBlock?.Type == "tool_use")
                 {
+                    // If we were in a thinking block, finalize it before tool use
+                    if (isInThinkingBlock && currentThinkingContent.Length > 0)
+                    {
+                        isInThinkingBlock = false;
+                        // Add thinking block to response content for tool use preservation
+                        responseContentBlocks.Add(new ThinkingContent
+                        {
+                            Thinking = currentThinkingContent.ToString(),
+                            Signature = currentThinkingSignature ?? ""
+                        });
+                    }
                     hasToolUse = true;
                     yield return StatusEvent($"Planning to use {streamEvent.ContentBlock.Name}...");
+                    continue;
+                }
+
+                // Handle thinking signature delta (comes just before content_block_stop)
+                if (streamEvent.Delta?.Signature != null)
+                {
+                    currentThinkingSignature = streamEvent.Delta.Signature;
                     continue;
                 }
 
                 // Handle native thinking content delta
                 if (streamEvent.Delta?.Thinking != null)
                 {
+                    currentThinkingContent.Append(streamEvent.Delta.Thinking);
                     yield return ThinkingEvent(streamEvent.Delta.Thinking);
                     continue;
+                }
+
+                // Handle text block start (may signal end of thinking block)
+                if (streamEvent.ContentBlock?.Type == "text" && isInThinkingBlock)
+                {
+                    isInThinkingBlock = false;
+                    // Add thinking block to response content for tool use preservation
+                    if (currentThinkingContent.Length > 0)
+                    {
+                        responseContentBlocks.Add(new ThinkingContent
+                        {
+                            Thinking = currentThinkingContent.ToString(),
+                            Signature = currentThinkingSignature ?? ""
+                        });
+                    }
                 }
 
                 // Handle text deltas
@@ -242,10 +277,23 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 // Add assistant message with tool use to history
                 // IMPORTANT: Include the text content BEFORE tool use so Claude remembers what it said
                 // This fixes the context loss bug where text streamed before tool execution was forgotten
+                // NOTE: Anthropic requires thinking blocks to be FIRST in the content array
                 if (!string.IsNullOrEmpty(textContent))
                 {
-                    // Insert text at the beginning of content blocks, before any tool_use blocks
-                    responseContentBlocks.Insert(0, new TextContent { Text = textContent });
+                    // Find the insertion point: after any ThinkingContent, before ToolUseContent
+                    var insertIndex = 0;
+                    for (int i = 0; i < responseContentBlocks.Count; i++)
+                    {
+                        if (responseContentBlocks[i] is ThinkingContent)
+                        {
+                            insertIndex = i + 1; // Insert after thinking blocks
+                        }
+                        else
+                        {
+                            break; // Stop at first non-thinking block
+                        }
+                    }
+                    responseContentBlocks.Insert(insertIndex, new TextContent { Text = textContent });
                 }
 
                 messages.Add(new Message
@@ -307,6 +355,10 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                         ToolUseId = toolId,
                         Content = new List<ContentBase> { new TextContent { Text = result } }
                     });
+
+                    // Track that tools were executed and capture result for potential fallback
+                    toolsExecutedThisSession = true;
+                    lastToolResultSummary = result;
                 }
 
                 // Add tool results as user message
@@ -320,6 +372,51 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
             }
 
             break; // No more tool calls
+        }
+
+        // Handle case where tools were executed but no text response was generated
+        // This can happen with extended thinking where Claude puts reasoning in thinking blocks only
+        if (toolsExecutedThisSession && string.IsNullOrWhiteSpace(fullResponse.ToString()))
+        {
+            _logger.LogWarning("Tools were executed but no text response was generated. Attempting follow-up request.");
+
+            // Add a follow-up message prompting Claude to summarize the tool results
+            messages.Add(new Message(RoleType.User,
+                "Please provide a brief, helpful response summarizing the tool results for the user."));
+
+            var followUpParameters = new MessageParameters
+            {
+                Model = request.Model,
+                Messages = messages,
+                MaxTokens = request.MaxTokens ?? 1024,
+                System = new List<SystemMessage> { new(systemPrompt) },
+                Temperature = request.Temperature.HasValue ? (decimal)request.Temperature.Value : 0.7m,
+                Stream = true
+            };
+
+            // Don't include tools in the follow-up to encourage text response
+            // Also disable extended thinking to ensure we get text output
+            await foreach (var streamEvent in StreamAnthropicWithErrorHandling(
+                client, followUpParameters, cancellationToken, e => _logger.LogError("Follow-up error: {Error}", e)))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    yield break;
+
+                if (streamEvent.Delta?.Text != null)
+                {
+                    fullResponse.Append(streamEvent.Delta.Text);
+                    yield return TokenEvent(streamEvent.Delta.Text);
+                }
+
+                // Track token usage from follow-up
+                if (streamEvent.Usage != null)
+                {
+                    if (streamEvent.Usage.InputTokens > 0)
+                        totalInputTokens += streamEvent.Usage.InputTokens;
+                    if (streamEvent.Usage.OutputTokens > 0)
+                        totalOutputTokens += streamEvent.Usage.OutputTokens;
+                }
+            }
         }
 
         // Log final token usage

@@ -243,6 +243,8 @@ services:
       - GitHub__DefaultRepo=${GITHUB_DEFAULT_REPO}
       - Git__AllowedRepositoryRoots__0=${GIT_ALLOWED_REPOSITORY_ROOTS}
       - Git__RequireUserScopedRoot=${GIT_REQUIRE_USER_SCOPED_ROOT:-false}
+      - Voice__ElevenLabs__ApiKey=${ELEVEN_LABS_API_KEY}
+      - Voice__Deepgram__ApiKey=${ELEVEN_LABS_DEEPGRAM_API_KEY}
     volumes:
       - ./backend/credentials:/app/credentials:ro
     depends_on:

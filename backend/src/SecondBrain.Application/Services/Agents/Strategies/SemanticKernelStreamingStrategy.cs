@@ -46,12 +46,11 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
     public SemanticKernelStreamingStrategy(
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
         Microsoft.Extensions.Options.IOptions<AIProvidersSettings> settings,
         ILogger<SemanticKernelStreamingStrategy> logger)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
         _settings = settings.Value;
         _logger = logger;
@@ -127,15 +126,6 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
                     chatHistory.AddAssistantMessage(message.Content);
                 }
             }
-        }
-
-        // RAG context injection
-        await foreach (var evt in TryInjectRagContextAsync(
-            context,
-            ctx => chatHistory.AddSystemMessage(ctx),
-            cancellationToken))
-        {
-            yield return evt;
         }
 
         var chatService = kernel!.GetRequiredService<IChatCompletionService>();

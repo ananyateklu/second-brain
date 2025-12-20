@@ -25,11 +25,10 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
         OpenAIProvider? openAIProvider,
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
         ILogger<OpenAIStreamingStrategy> logger)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
         _openAIProvider = openAIProvider;
         _logger = logger;
@@ -113,22 +112,6 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             }
         }
 
-        // RAG context injection
-        await foreach (var evt in TryInjectRagContextAsync(
-            context,
-            ctx =>
-            {
-                var systemMsg = messages[0] as OpenAI.Chat.SystemChatMessage;
-                if (systemMsg != null)
-                {
-                    messages[0] = new OpenAI.Chat.SystemChatMessage(systemMsg.Content + "\n\n" + ctx);
-                }
-            },
-            cancellationToken))
-        {
-            yield return evt;
-        }
-
         var fullResponse = new StringBuilder();
         var emittedThinkingBlocks = new HashSet<string>();
         var maxIterations = settings.OpenAI.FunctionCalling.MaxIterations;
@@ -151,6 +134,7 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             var pendingToolCalls = new List<Services.AI.Models.OpenAIToolCallInfo>();
             var iterationText = new StringBuilder();
             var hasEmittedFirstToken = false;
+            var lastSpeakableLength = 0; // Track how much speakable content we've already yielded
 
             await foreach (var evt in _openAIProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
@@ -179,7 +163,14 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
                                 yield return ThinkingEvent(thinkingContent);
                             }
 
-                            yield return TokenEvent(evt.Text);
+                            // Extract only new speakable (non-thinking) content from accumulated text
+                            // This properly handles thinking blocks that span multiple tokens
+                            var speakableContent = Helpers.ThinkingExtractor.ExtractNewSpeakableContent(
+                                currentContent, ref lastSpeakableLength);
+                            if (!string.IsNullOrEmpty(speakableContent))
+                            {
+                                yield return TokenEvent(speakableContent);
+                            }
                         }
                         break;
 

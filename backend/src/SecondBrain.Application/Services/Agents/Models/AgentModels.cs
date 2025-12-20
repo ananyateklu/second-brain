@@ -20,9 +20,9 @@ public class AgentRequest
     /// <summary>
     /// Whether to automatically retrieve RAG context before responding.
     /// When true, the agent searches notes for relevant context automatically.
-    /// When false, the agent can still use search tools explicitly.
+    /// When false (default), the agent uses search tools explicitly when needed.
     /// </summary>
-    public bool AgentRagEnabled { get; set; } = true;
+    public bool AgentRagEnabled { get; set; } = false;
 
     /// <summary>
     /// Optional override for Ollama base URL (for remote Ollama support)

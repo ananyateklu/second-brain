@@ -322,7 +322,14 @@ public class ChatController : ControllerBase
 
                 if (ragContext.RetrievedNotes.Any())
                 {
-                    retrievedNotes = ragContext.RetrievedNotes.Select(n =>
+                    // Deduplicate by NoteId, keeping the chunk with highest similarity score
+                    // This prevents the same note appearing multiple times when multiple chunks match
+                    var uniqueNotes = ragContext.RetrievedNotes
+                        .GroupBy(n => n.NoteId)
+                        .Select(g => g.OrderByDescending(n => n.SimilarityScore).First())
+                        .ToList();
+
+                    retrievedNotes = uniqueNotes.Select(n =>
                     {
                         var parsed = NoteContentParser.Parse(n.Content);
                         return new RagContextResponse
@@ -703,8 +710,15 @@ public class ChatController : ControllerBase
 
                 if (ragContext.RetrievedNotes.Any())
                 {
+                    // Deduplicate by NoteId, keeping the chunk with highest similarity score
+                    // This prevents the same note appearing multiple times when multiple chunks match
+                    var uniqueNotes = ragContext.RetrievedNotes
+                        .GroupBy(n => n.NoteId)
+                        .Select(g => g.OrderByDescending(n => n.SimilarityScore).First())
+                        .ToList();
+
                     // Map retrieved notes to response DTO
-                    retrievedNotes = ragContext.RetrievedNotes.Select(n =>
+                    retrievedNotes = uniqueNotes.Select(n =>
                     {
                         var parsed = NoteContentParser.Parse(n.Content);
                         return new RagContextResponse

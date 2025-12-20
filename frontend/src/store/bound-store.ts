@@ -22,6 +22,7 @@ import { createIndexingSlice } from './slices/indexing-slice';
 import { createSummarySlice } from './slices/summary-slice';
 import { createDraftSlice } from './slices/draft-slice';
 import { createGitSlice } from './slices/git-slice';
+import { createVoiceSlice } from './slices/voice-slice';
 
 // ============================================
 // Persist Config - Exported for Testing
@@ -128,6 +129,10 @@ export function mergePersistedState(
     filterState: parsed.filterState ? { ...currentState.filterState, ...parsed.filterState } : currentState.filterState,
     // Merge git state
     repositoryPath: parsed.repositoryPath ?? currentState.repositoryPath,
+    // Merge voice state (only persistent settings)
+    selectedProvider: parsed.selectedProvider ?? currentState.selectedProvider,
+    selectedModel: parsed.selectedModel ?? currentState.selectedModel,
+    selectedVoiceId: parsed.selectedVoiceId ?? currentState.selectedVoiceId,
   };
 }
 
@@ -149,6 +154,7 @@ const _useBoundStore = create<BoundStore>()(
       ...createSummarySlice(...args),
       ...createDraftSlice(...args),
       ...createGitSlice(...args),
+      ...createVoiceSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility
@@ -184,6 +190,10 @@ const _useBoundStore = create<BoundStore>()(
         filterState: state.filterState,
         // Git state
         repositoryPath: state.repositoryPath,
+        // Voice state
+        selectedProvider: state.selectedProvider,
+        selectedModel: state.selectedModel,
+        selectedVoiceId: state.selectedVoiceId,
       }),
       merge: mergePersistedState,
     }

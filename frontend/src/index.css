@@ -422,3 +422,59 @@ button:focus-visible {
   vertical-align: text-bottom;
   animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Voice transcript markdown - compact styling */
+.voice-transcript-content .markdown-content {
+  font-size: inherit;
+}
+
+.voice-transcript-content .markdown-content p {
+  margin-bottom: 0.5rem;
+}
+
+.voice-transcript-content .markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.voice-transcript-content .markdown-content ul,
+.voice-transcript-content .markdown-content ol {
+  margin-bottom: 0.5rem;
+  margin-left: 1rem;
+}
+
+.voice-transcript-content .markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.voice-transcript-content .markdown-content h1,
+.voice-transcript-content .markdown-content h2,
+.voice-transcript-content .markdown-content h3,
+.voice-transcript-content .markdown-content h4,
+.voice-transcript-content .markdown-content h5,
+.voice-transcript-content .markdown-content h6 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: inherit;
+}
+
+.voice-transcript-content .markdown-content h1 {
+  font-size: 1.1em;
+}
+
+.voice-transcript-content .markdown-content h2 {
+  font-size: 1.05em;
+}
+
+.voice-transcript-content .markdown-content blockquote {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+}
+
+.voice-transcript-content .markdown-content pre {
+  margin-bottom: 0.5rem;
+  font-size: 0.85em;
+}
+
+.voice-transcript-content .markdown-content code {
+  font-size: 0.9em;
+}

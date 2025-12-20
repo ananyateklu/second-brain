@@ -58,6 +58,10 @@ function GitRedirect() {
 // Lazy load GitHub page
 const GitHubPage = lazy(() => import('../pages/GitHubPage').then(m => ({ default: m.GitHubPage })));
 
+// Lazy load Voice Agent page
+const VoiceAgentPage = lazy(() => import('../pages/VoiceAgentPage').then(m => ({ default: m.VoiceAgentPage })));
+const VoiceAgentSkeleton = lazy(() => import('../features/voice/components/VoiceAgentSkeleton').then(m => ({ default: m.VoiceAgentSkeleton })));
+
 // Route definitions (shared between browser and hash routers)
 const routes = [
   {
@@ -199,6 +203,20 @@ const routes = [
           <AppLayout>
             <Suspense fallback={<GitHubPageSkeleton />}>
               <GitHubPage />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/voice',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<VoiceAgentSkeleton />}>
+              <VoiceAgentPage />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>
