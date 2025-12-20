@@ -79,13 +79,26 @@ public class GrokRealtimeClient : IGrokRealtimeClient
             _receiveTask = ReceiveLoopAsync(_receiveCts.Token);
 
             // Send initial session configuration
-            await SendSessionUpdateAsync(config, cancellationToken);
+            try
+            {
+                await SendSessionUpdateAsync(config, cancellationToken);
+            }
+            catch (Exception)
+            {
+                // Clean up _receiveCts if SendSessionUpdateAsync fails
+                _receiveCts.Cancel();
+                _receiveCts.Dispose();
+                _receiveCts = null;
+                throw;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to connect to Grok Realtime API");
             _webSocket?.Dispose();
             _webSocket = null;
+            _receiveCts?.Dispose();
+            _receiveCts = null;
             throw;
         }
     }

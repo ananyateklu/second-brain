@@ -4,7 +4,7 @@
  * Orchestrates recording, playback, WebSocket communication, and state management
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useBoundStore } from '../../../store/bound-store';
 import { voiceService, VoiceWebSocketConnection, type VoiceWebSocketCallbacks } from '../../../services/voice.service';
 import { requestMicrophoneAccess } from '../../../services/voice-audio.service';
@@ -64,8 +64,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     currentAssistantTranscript,
     transcriptHistory,
     error,
-    agentEnabled: _agentEnabled,
-    capabilities: _capabilities,
     setSessionId,
     setSessionState,
     setIsConnecting,
@@ -87,7 +85,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     addThinkingStep,
     setRetrievedNotes,
     setGroundingSources,
-    clearAgentState: _clearAgentState,
   } = useBoundStore();
 
   // WebSocket connection ref
@@ -103,9 +100,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
   const isMicrophoneEnabledRef = useRef(isMicrophoneEnabled);
   const isAudioPlayingRef = useRef(isAudioPlaying);
   const isConnectedRef = useRef(isConnected);
-
-  // Track if we've started recording after connection
-  const [_hasStartedRecording, setHasStartedRecording] = useState(false);
 
   // Keep callback refs up to date
   useEffect(() => {
@@ -362,7 +356,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
         // Start recording and voice activity detection
         await audioRecorder.start(stream);
         voiceActivity.start(stream);
-        setHasStartedRecording(true);
 
         // Send start control to begin listening
         wsConnection.sendControl('start');
@@ -401,7 +394,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
       audioRecorder.stop();
       voiceActivity.stop();
       audioPlayer.stop();
-      setHasStartedRecording(false);
 
       // Stop microphone stream
       if (streamRef.current) {

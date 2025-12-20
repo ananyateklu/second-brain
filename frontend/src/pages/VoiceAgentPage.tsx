@@ -6,13 +6,99 @@
  * Uses full available height for immersive voice experience
  */
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, Component, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { MicrophoneIcon } from '@heroicons/react/24/outline';
+import { MicrophoneIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { VoiceAgentInterface, VoiceAgentSkeleton } from '../features/voice/components';
 import { voiceService } from '../services/voice.service';
 import { useBoundStore } from '../store/bound-store';
 import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
+
+// ============================================================================
+// Voice Error Boundary
+// ============================================================================
+
+interface VoiceErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode;
+}
+
+interface VoiceErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class VoiceErrorBoundary extends Component<VoiceErrorBoundaryProps, VoiceErrorBoundaryState> {
+  constructor(props: VoiceErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): VoiceErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
+    console.error('VoiceErrorBoundary caught error:', error, errorInfo);
+  }
+
+  handleRetry = (): void => {
+    this.setState({ hasError: false, error: undefined });
+  };
+
+  override render(): ReactNode {
+    if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <div className="flex flex-col items-center justify-center gap-6 p-8 h-full">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center"
+          >
+            <ExclamationTriangleIcon className="w-10 h-10 text-red-500" />
+          </motion.div>
+
+          <div className="text-center max-w-md">
+            <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+              Voice Agent Error
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              {this.state.error?.message || 'An unexpected error occurred with the voice agent.'}
+            </p>
+
+            <div className="bg-[var(--surface)] rounded-lg p-3 mb-4 text-left">
+              <p className="text-xs text-[var(--text-tertiary)] font-mono break-all">
+                {this.state.error?.stack?.split('\n').slice(0, 3).join('\n') || 'No stack trace available'}
+              </p>
+            </div>
+
+            <button
+              onClick={this.handleRetry}
+              className="
+                inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                bg-[var(--color-brand-500)] text-white font-medium
+                hover:bg-[var(--color-brand-600)] transition-colors
+              "
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// ============================================================================
+// Voice Agent Page Component
+// ============================================================================
 
 export function VoiceAgentPage() {
   const { setServiceStatus, isServiceAvailable, deepgramAvailable, elevenLabsAvailable } = useBoundStore();
@@ -130,9 +216,11 @@ export function VoiceAgentPage() {
 
       {/* Main content - fills remaining space */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <Suspense fallback={<VoiceAgentSkeleton />}>
-          <VoiceAgentInterface />
-        </Suspense>
+        <VoiceErrorBoundary>
+          <Suspense fallback={<VoiceAgentSkeleton />}>
+            <VoiceAgentInterface />
+          </Suspense>
+        </VoiceErrorBoundary>
       </div>
     </div>
   );

@@ -92,6 +92,7 @@ export class VoiceWebSocketConnection {
   private maxReconnectAttempts = 3;
   private reconnectDelay = 1000;
   private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private reconnectTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private isConnecting = false;
   private intentionalDisconnect = false;
 
@@ -195,6 +196,13 @@ export class VoiceWebSocketConnection {
   disconnect(): void {
     this.intentionalDisconnect = true;
     this.stopPingInterval();
+
+    // Clear any pending reconnection timeout to prevent memory leaks
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
       this.ws = null;
@@ -298,7 +306,9 @@ export class VoiceWebSocketConnection {
     // Attempt reconnection only if not an intentional disconnect and not a clean close
     if (!this.intentionalDisconnect && event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      setTimeout(() => {
+      // Store timeout ID so we can clear it on disconnect to prevent memory leaks
+      this.reconnectTimeoutId = setTimeout(() => {
+        this.reconnectTimeoutId = null;
         console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
         this.connect().catch(console.error);
       }, this.reconnectDelay * this.reconnectAttempts);

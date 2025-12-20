@@ -14,28 +14,15 @@ import type {
   VoiceRetrievedNote,
   VoiceGroundingSource,
 } from '../../features/voice/types/voice-types';
+import { normalizeState } from '../../features/voice/utils/voice-utils';
 
 // ============================================
-// Helpers
+// Constants
 // ============================================
 
-// Map numeric state values to string state names (backend sends numbers)
-const numericToStringState: Record<number, VoiceSessionState> = {
-  0: 'Idle',
-  1: 'Listening',
-  2: 'Processing',
-  3: 'Speaking',
-  4: 'Interrupted',
-  5: 'Ended',
-};
-
-// Normalize state to string (backend may send number or string)
-function normalizeState(state: VoiceSessionState | number): VoiceSessionState {
-  if (typeof state === 'number') {
-    return numericToStringState[state] ?? 'Idle';
-  }
-  return state;
-}
+// Maximum number of transcript entries to keep in history
+// Prevents unbounded memory growth during long voice sessions
+const MAX_TRANSCRIPT_ENTRIES = 100;
 
 // ============================================
 // Default State
@@ -159,12 +146,17 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
   },
 
   addTranscriptEntry: (role: 'user' | 'assistant', content: string) => {
-    set((state) => ({
-      transcriptHistory: [
+    set((state) => {
+      const newTranscripts = [
         ...state.transcriptHistory,
         { role, content, timestamp: Date.now() },
-      ],
-    }));
+      ];
+      // Keep only the last MAX_TRANSCRIPT_ENTRIES to prevent unbounded memory growth
+      if (newTranscripts.length > MAX_TRANSCRIPT_ENTRIES) {
+        newTranscripts.splice(0, newTranscripts.length - MAX_TRANSCRIPT_ENTRIES);
+      }
+      return { transcriptHistory: newTranscripts };
+    });
   },
 
   clearTranscriptHistory: () => {

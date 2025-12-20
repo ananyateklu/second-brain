@@ -3,7 +3,7 @@
  * Settings panel for voice agent configuration (provider, model, voice, agent capabilities)
  */
 
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Cog6ToothIcon, SpeakerWaveIcon, WrenchScrewdriverIcon, BoltIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
 import { useBoundStore } from '../../../store/bound-store';
@@ -62,16 +62,24 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
     return providerHealth?.availableModels || [];
   }, [selectedProvider, healthData?.providers]);
 
-  // Load voices and service status on mount
+  // Track initialization to prevent re-setting defaults
+  const voicesInitializedRef = useRef(false);
+  const grokVoicesInitializedRef = useRef(false);
+
+  // Load voices and service status on mount (runs once)
   useEffect(() => {
     const loadVoices = async () => {
       try {
         const voices = await voiceService.getVoices();
         setAvailableVoices(voices);
 
-        // Set default voice if none selected
-        if (!selectedVoiceId && voices.length > 0) {
-          setSelectedVoiceId(voices[0].voiceId);
+        // Set default voice only on initial load, not on re-renders
+        if (!voicesInitializedRef.current && voices.length > 0) {
+          voicesInitializedRef.current = true;
+          // Only set if no voice is currently selected
+          if (!selectedVoiceId) {
+            setSelectedVoiceId(voices[0].voiceId);
+          }
         }
       } catch (error) {
         console.error('Failed to load voices:', error);
@@ -83,9 +91,13 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
         const grokVoices = await voiceService.getGrokVoices();
         setAvailableGrokVoices(grokVoices);
 
-        // Set default Grok voice if none selected
-        if (!selectedGrokVoice && grokVoices.length > 0) {
-          setSelectedGrokVoice(grokVoices[0].voiceId);
+        // Set default Grok voice only on initial load
+        if (!grokVoicesInitializedRef.current && grokVoices.length > 0) {
+          grokVoicesInitializedRef.current = true;
+          // Only set if no Grok voice is currently selected
+          if (!selectedGrokVoice) {
+            setSelectedGrokVoice(grokVoices[0].voiceId);
+          }
         }
       } catch (error) {
         console.error('Failed to load Grok voices:', error);
@@ -101,10 +113,13 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
       }
     };
 
-    loadVoices();
-    loadGrokVoices();
-    loadStatus();
-  }, [selectedVoiceId, selectedGrokVoice, setAvailableVoices, setSelectedVoiceId, setAvailableGrokVoices, setSelectedGrokVoice, setServiceStatus]);
+    void loadVoices();
+    void loadGrokVoices();
+    void loadStatus();
+    // Only run once on mount - removed selectedVoiceId and selectedGrokVoice from deps
+    // to prevent infinite re-renders when setting defaults
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setAvailableVoices, setSelectedVoiceId, setAvailableGrokVoices, setSelectedGrokVoice, setServiceStatus]);
 
   // Set default provider if none selected
   useEffect(() => {

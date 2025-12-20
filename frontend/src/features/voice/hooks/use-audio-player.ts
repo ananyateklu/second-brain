@@ -132,7 +132,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}): UseAudioPla
   useEffect(() => {
     return () => {
       if (playerRef.current) {
-        playerRef.current.close();
+        void playerRef.current.close();
       }
     };
   }, []);

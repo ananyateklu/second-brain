@@ -308,7 +308,12 @@ public class VoiceFeaturesConfig
     /// <summary>
     /// Session idle timeout in minutes before auto-disconnect
     /// </summary>
-    public int SessionIdleTimeoutMinutes { get; set; } = 5;
+    public int SessionIdleTimeoutMinutes { get; set; } = 30;
+
+    /// <summary>
+    /// Interval in minutes between cleanup runs for expired sessions
+    /// </summary>
+    public int CleanupIntervalMinutes { get; set; } = 5;
 
     /// <summary>
     /// Enable voice activity detection on the server side

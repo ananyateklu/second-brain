@@ -53,12 +53,22 @@ export function useVoiceActivity(options: UseVoiceActivityOptions = {}): UseVoic
   }, [onSpeechStart, onSpeechEnd, onSilence]);
 
   // Update audio level visualization
-  const updateAudioLevel = useCallback(() => {
-    if (analyserRef.current) {
+  const updateAudioLevel = useCallback((): void => {
+    // Define the animation frame handler
+    const tick = (): void => {
+      // Early return if analyser is null - don't schedule next frame
+      if (!analyserRef.current) {
+        rafIdRef.current = null;
+        return;
+      }
+
       const level = getAudioLevel(analyserRef.current.analyser);
       setAudioLevel(level);
-    }
-    rafIdRef.current = requestAnimationFrame(updateAudioLevel);
+      rafIdRef.current = requestAnimationFrame(tick);
+    };
+
+    // Start the animation loop
+    tick();
   }, []);
 
   // Start voice activity detection
@@ -69,7 +79,7 @@ export function useVoiceActivity(options: UseVoiceActivityOptions = {}): UseVoic
         vadRef.current.stop();
       }
       if (analyserRef.current) {
-        analyserRef.current.audioContext.close();
+        void analyserRef.current.audioContext.close();
       }
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
@@ -115,7 +125,7 @@ export function useVoiceActivity(options: UseVoiceActivityOptions = {}): UseVoic
     }
 
     if (analyserRef.current) {
-      analyserRef.current.audioContext.close();
+      void analyserRef.current.audioContext.close();
       analyserRef.current = null;
     }
 
@@ -137,7 +147,7 @@ export function useVoiceActivity(options: UseVoiceActivityOptions = {}): UseVoic
         vadRef.current.stop();
       }
       if (analyserRef.current) {
-        analyserRef.current.audioContext.close();
+        void analyserRef.current.audioContext.close();
       }
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);

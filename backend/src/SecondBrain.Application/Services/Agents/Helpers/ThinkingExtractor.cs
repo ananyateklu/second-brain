@@ -5,8 +5,15 @@ namespace SecondBrain.Application.Services.Agents.Helpers;
 /// <summary>
 /// Extracts thinking/reasoning blocks from AI model responses.
 /// </summary>
-public class ThinkingExtractor : IThinkingExtractor
+public partial class ThinkingExtractor : IThinkingExtractor
 {
+    /// <summary>
+    /// Source-generated regex for matching thinking blocks (compiled for performance in hot paths).
+    /// Matches &lt;thinking&gt;...&lt;/thinking&gt; blocks (case-insensitive, handles multiline).
+    /// </summary>
+    [GeneratedRegex(@"<thinking>[\s\S]*?</thinking>", RegexOptions.IgnoreCase)]
+    private static partial Regex ThinkingTagRegex();
+
     // Models that support native extended thinking
     private static readonly string[] ThinkingCapableModels = new[]
     {
@@ -69,13 +76,8 @@ public class ThinkingExtractor : IThinkingExtractor
             return content;
 
         // Remove complete <thinking>...</thinking> blocks (case-insensitive, handles multiline)
-        var result = Regex.Replace(
-            content,
-            @"<thinking>[\s\S]*?</thinking>",
-            "",
-            RegexOptions.IgnoreCase);
-
-        return result;
+        // Uses source-generated regex for performance in streaming hot paths
+        return ThinkingTagRegex().Replace(content, "");
     }
 
     /// <summary>

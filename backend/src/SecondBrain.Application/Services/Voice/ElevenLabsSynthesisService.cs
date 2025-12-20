@@ -299,7 +299,6 @@ internal class ElevenLabsSynthesisSession : ISynthesisSession
     private readonly ClientWebSocket _webSocket;
     private readonly CancellationTokenSource _cts;
     private Task? _receiveTask;
-    private int _audioSequence;
 
     public string SessionId { get; } = Guid.NewGuid().ToString();
     public bool IsConnected => _webSocket.State == WebSocketState.Open;
@@ -497,9 +496,9 @@ internal class ElevenLabsSynthesisSession : ISynthesisSession
                     "Cancelled",
                     CancellationToken.None);
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore errors during cancel
+                _logger.LogDebug(ex, "Error during WebSocket cancellation for session {SessionId}", SessionId);
             }
         }
     }
@@ -589,9 +588,8 @@ internal class ElevenLabsSynthesisSession : ISynthesisSession
                     if (currentMessageType == WebSocketMessageType.Binary)
                     {
                         // ElevenLabs sends raw binary audio data for PCM formats
-                        _audioSequence++;
-                        _logger.LogDebug("Received binary audio chunk {Sequence}: {ByteCount} bytes for session {SessionId}",
-                            _audioSequence, messageData.Length, SessionId);
+                        _logger.LogDebug("Received binary audio chunk: {ByteCount} bytes for session {SessionId}",
+                            messageData.Length, SessionId);
                         _onAudio(messageData);
                     }
                     else if (currentMessageType == WebSocketMessageType.Text)
@@ -641,9 +639,8 @@ internal class ElevenLabsSynthesisSession : ISynthesisSession
                 if (!string.IsNullOrEmpty(audioBase64))
                 {
                     var audioData = Convert.FromBase64String(audioBase64);
-                    _audioSequence++;
-                    _logger.LogDebug("Received base64 audio chunk {Sequence}: {ByteCount} bytes for session {SessionId}",
-                        _audioSequence, audioData.Length, SessionId);
+                    _logger.LogDebug("Received base64 audio chunk: {ByteCount} bytes for session {SessionId}",
+                        audioData.Length, SessionId);
                     _onAudio(audioData);
                 }
             }

@@ -39,6 +39,11 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
     public bool IsConnected => _realtimeClient.IsConnected;
 
+    /// <summary>
+    /// Maximum allowed audio chunk size (1MB) to prevent memory issues
+    /// </summary>
+    private const int MaxAudioChunkSize = 1024 * 1024;
+
     public GrokVoiceHandler(
         IGrokRealtimeClient realtimeClient,
         IVoiceSessionManager sessionManager,
@@ -88,6 +93,13 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         if (!IsConnected)
         {
             _logger.LogWarning("Cannot process audio - not connected to xAI Realtime");
+            return;
+        }
+
+        if (audioData.Length > MaxAudioChunkSize)
+        {
+            _logger.LogWarning("Audio chunk size {Size} bytes exceeds maximum limit of {Limit} bytes. Skipping chunk.",
+                audioData.Length, MaxAudioChunkSize);
             return;
         }
 
@@ -146,36 +158,39 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
     private async Task ProcessEventAsync(GrokRealtimeEvent evt, CancellationToken cancellationToken)
     {
-        if (_eventEmitter == null || _session == null) return;
+        // Capture references locally to prevent race conditions in concurrent scenarios
+        var session = _session;
+        var eventEmitter = _eventEmitter;
+        if (eventEmitter == null || session == null) return;
 
         switch (evt.EventType)
         {
             case GrokRealtimeEventType.Error:
-                await HandleErrorEventAsync((GrokErrorEvent)evt, cancellationToken);
+                await HandleErrorEventAsync((GrokErrorEvent)evt, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.SessionCreated:
-                await HandleSessionCreatedAsync((GrokSessionCreatedEvent)evt, cancellationToken);
+                await HandleSessionCreatedAsync((GrokSessionCreatedEvent)evt, session, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.InputAudioBufferSpeechStarted:
-                await HandleSpeechStartedAsync(cancellationToken);
+                await HandleSpeechStartedAsync(session, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.InputAudioBufferSpeechStopped:
-                await HandleSpeechStoppedAsync(cancellationToken);
+                await HandleSpeechStoppedAsync(session, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ConversationItemInputAudioTranscriptionCompleted:
-                await HandleTranscriptionCompletedAsync((GrokTranscriptionCompletedEvent)evt, cancellationToken);
+                await HandleTranscriptionCompletedAsync((GrokTranscriptionCompletedEvent)evt, session, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseCreated:
-                await HandleResponseCreatedAsync(cancellationToken);
+                await HandleResponseCreatedAsync(session, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseAudioDelta:
-                await HandleAudioDeltaAsync((GrokAudioDeltaEvent)evt, cancellationToken);
+                await HandleAudioDeltaAsync((GrokAudioDeltaEvent)evt, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseAudioDone:
@@ -183,19 +198,19 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 break;
 
             case GrokRealtimeEventType.ResponseTextDelta:
-                await HandleTextDeltaAsync((GrokTextDeltaEvent)evt, cancellationToken);
+                await HandleTextDeltaAsync((GrokTextDeltaEvent)evt, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseAudioTranscriptDelta:
-                await HandleAudioTranscriptDeltaAsync((GrokAudioTranscriptDeltaEvent)evt, cancellationToken);
+                await HandleAudioTranscriptDeltaAsync((GrokAudioTranscriptDeltaEvent)evt, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseFunctionCallArgumentsDone:
-                await HandleFunctionCallDoneAsync((GrokFunctionCallArgumentsDoneEvent)evt, cancellationToken);
+                await HandleFunctionCallDoneAsync((GrokFunctionCallArgumentsDoneEvent)evt, eventEmitter, cancellationToken);
                 break;
 
             case GrokRealtimeEventType.ResponseDone:
-                await HandleResponseDoneAsync((GrokResponseDoneEvent)evt, cancellationToken);
+                await HandleResponseDoneAsync((GrokResponseDoneEvent)evt, session, eventEmitter, cancellationToken);
                 break;
 
             default:
@@ -204,43 +219,43 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         }
     }
 
-    private async Task HandleErrorEventAsync(GrokErrorEvent evt, CancellationToken ct)
+    private async Task HandleErrorEventAsync(GrokErrorEvent evt, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         var error = evt.Error;
         _logger.LogError("Grok Realtime error: {Type} - {Message}", error?.Type, error?.Message);
-        await _eventEmitter!.SendErrorAsync(
+        await eventEmitter.SendErrorAsync(
             error?.Code ?? "GROK_ERROR",
             error?.Message ?? "Unknown error",
             true,
             ct);
     }
 
-    private async Task HandleSessionCreatedAsync(GrokSessionCreatedEvent evt, CancellationToken ct)
+    private async Task HandleSessionCreatedAsync(GrokSessionCreatedEvent evt, VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         _logger.LogInformation("Grok session created: {SessionId}, Voice: {Voice}",
             evt.Session?.Id, evt.Session?.Voice);
 
-        await _sessionManager.UpdateSessionStateAsync(_session!.Id, VoiceSessionState.Idle);
-        await _eventEmitter!.SendStateAsync(VoiceSessionState.Idle, cancellationToken: ct);
+        await _sessionManager.UpdateSessionStateAsync(session.Id, VoiceSessionState.Idle);
+        await eventEmitter.SendStateAsync(VoiceSessionState.Idle, cancellationToken: ct);
     }
 
-    private async Task HandleSpeechStartedAsync(CancellationToken ct)
+    private async Task HandleSpeechStartedAsync(VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         _logger.LogDebug("Speech started detected by Grok");
         _currentTranscript.Clear();
 
-        await _sessionManager.UpdateSessionStateAsync(_session!.Id, VoiceSessionState.Listening);
-        await _eventEmitter!.SendStateAsync(VoiceSessionState.Listening, cancellationToken: ct);
+        await _sessionManager.UpdateSessionStateAsync(session.Id, VoiceSessionState.Listening);
+        await eventEmitter.SendStateAsync(VoiceSessionState.Listening, cancellationToken: ct);
     }
 
-    private async Task HandleSpeechStoppedAsync(CancellationToken ct)
+    private async Task HandleSpeechStoppedAsync(VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         _logger.LogDebug("Speech stopped detected by Grok");
-        await _sessionManager.UpdateSessionStateAsync(_session!.Id, VoiceSessionState.Processing);
-        await _eventEmitter!.SendStateAsync(VoiceSessionState.Processing, cancellationToken: ct);
+        await _sessionManager.UpdateSessionStateAsync(session.Id, VoiceSessionState.Processing);
+        await eventEmitter.SendStateAsync(VoiceSessionState.Processing, cancellationToken: ct);
     }
 
-    private async Task HandleTranscriptionCompletedAsync(GrokTranscriptionCompletedEvent evt, CancellationToken ct)
+    private async Task HandleTranscriptionCompletedAsync(GrokTranscriptionCompletedEvent evt, VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         var transcript = evt.Transcript ?? "";
         _logger.LogDebug("Transcription completed: {Transcript}", transcript);
@@ -252,10 +267,10 @@ public class GrokVoiceHandler : IGrokVoiceHandler
             IsFinal = true,
             Confidence = 1.0
         };
-        await _eventEmitter!.SendTranscriptAsync(result, ct);
+        await eventEmitter.SendTranscriptAsync(result, ct);
 
         // Add user turn to session
-        await _sessionManager.AddTurnAsync(_session!.Id, new VoiceTurn
+        await _sessionManager.AddTurnAsync(session.Id, new VoiceTurn
         {
             Role = "user",
             Content = transcript,
@@ -263,18 +278,18 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         });
     }
 
-    private async Task HandleResponseCreatedAsync(CancellationToken ct)
+    private async Task HandleResponseCreatedAsync(VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         _logger.LogDebug("Grok response created");
         _currentResponseText.Clear();
         _audioSequence = 0;
 
-        await _sessionManager.UpdateSessionStateAsync(_session!.Id, VoiceSessionState.Speaking);
-        await _eventEmitter!.SendStateAsync(VoiceSessionState.Speaking, cancellationToken: ct);
-        await _eventEmitter.SendAiResponseStartAsync(ct);
+        await _sessionManager.UpdateSessionStateAsync(session.Id, VoiceSessionState.Speaking);
+        await eventEmitter.SendStateAsync(VoiceSessionState.Speaking, cancellationToken: ct);
+        await eventEmitter.SendAiResponseStartAsync(ct);
     }
 
-    private async Task HandleAudioDeltaAsync(GrokAudioDeltaEvent evt, CancellationToken ct)
+    private async Task HandleAudioDeltaAsync(GrokAudioDeltaEvent evt, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(evt.Delta)) return;
 
@@ -282,7 +297,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         var audioBytes = Convert.FromBase64String(evt.Delta);
 
         // Send audio to frontend (xAI Realtime API uses 24kHz PCM16)
-        await _eventEmitter!.SendAudioAsync(
+        await eventEmitter.SendAudioAsync(
             audioBytes,
             "pcm_24000",
             24000,
@@ -290,39 +305,42 @@ public class GrokVoiceHandler : IGrokVoiceHandler
             ct);
     }
 
-    private async Task HandleAudioDoneAsync(CancellationToken ct)
+    private Task HandleAudioDoneAsync(CancellationToken ct)
     {
+        // Use cancellation token in logging to maintain consistency with other handlers
+        ct.ThrowIfCancellationRequested();
         _logger.LogDebug("Grok audio done, sequence: {Sequence}", _audioSequence);
         // Final audio chunk indicator is handled by response.done
+        return Task.CompletedTask;
     }
 
-    private async Task HandleTextDeltaAsync(GrokTextDeltaEvent evt, CancellationToken ct)
+    private async Task HandleTextDeltaAsync(GrokTextDeltaEvent evt, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(evt.Delta)) return;
 
         _currentResponseText.Append(evt.Delta);
 
         // Send text chunk to frontend for display
-        await _eventEmitter!.SendAiResponseChunkAsync(
+        await eventEmitter.SendAiResponseChunkAsync(
             evt.Delta,
             _currentResponseText.ToString(),
             ct);
     }
 
-    private async Task HandleAudioTranscriptDeltaAsync(GrokAudioTranscriptDeltaEvent evt, CancellationToken ct)
+    private async Task HandleAudioTranscriptDeltaAsync(GrokAudioTranscriptDeltaEvent evt, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         // This is the transcription of what the AI is saying
         if (string.IsNullOrEmpty(evt.Delta)) return;
 
         _currentResponseText.Append(evt.Delta);
 
-        await _eventEmitter!.SendAiResponseChunkAsync(
+        await eventEmitter.SendAiResponseChunkAsync(
             evt.Delta,
             _currentResponseText.ToString(),
             ct);
     }
 
-    private async Task HandleFunctionCallDoneAsync(GrokFunctionCallArgumentsDoneEvent evt, CancellationToken ct)
+    private async Task HandleFunctionCallDoneAsync(GrokFunctionCallArgumentsDoneEvent evt, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         var toolName = evt.Name ?? "unknown";
         var arguments = evt.Arguments ?? "{}";
@@ -331,7 +349,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         _logger.LogInformation("Grok function call: {Name} with args: {Args}", toolName, arguments);
 
         // Send tool call start event (for UI tracking)
-        await _eventEmitter!.SendToolCallStartAsync(callId, toolName, arguments, ct);
+        await eventEmitter.SendToolCallStartAsync(callId, toolName, arguments, ct);
 
         // Handle built-in tools (web_search, x_search) - xAI handles execution
         if (toolName is "web_search" or "x_search")
@@ -351,10 +369,10 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                     }
                 }
             };
-            await _eventEmitter!.SendGroundingSourcesAsync(groundingEvent, ct);
+            await eventEmitter.SendGroundingSourcesAsync(groundingEvent, ct);
 
             // Send tool call end event (built-in tools complete immediately)
-            await _eventEmitter.SendToolCallEndAsync(callId, toolName, $"Search completed via {toolName}", ct);
+            await eventEmitter.SendToolCallEndAsync(callId, toolName, $"Search completed via {toolName}", ct);
             return;
         }
 
@@ -380,7 +398,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                     toolName, result.Success, result.Result.Length);
 
                 // Send tool call end event with result
-                await _eventEmitter.SendToolCallEndAsync(callId, toolName, result.Result, ct);
+                await eventEmitter.SendToolCallEndAsync(callId, toolName, result.Result, ct);
 
                 // Send function output back to xAI to continue the conversation
                 await _realtimeClient.SendFunctionCallOutputAsync(callId, result.Result, ct);
@@ -393,7 +411,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 _logger.LogError(ex, "Error executing custom tool {ToolName}", toolName);
 
                 var errorResult = $"Error executing tool: {ex.Message}";
-                await _eventEmitter.SendToolCallEndAsync(callId, toolName, errorResult, ct);
+                await eventEmitter.SendToolCallEndAsync(callId, toolName, errorResult, ct);
 
                 // Send error back to xAI so it can inform the user
                 await _realtimeClient.SendFunctionCallOutputAsync(callId, errorResult, ct);
@@ -405,11 +423,11 @@ public class GrokVoiceHandler : IGrokVoiceHandler
             _logger.LogWarning("Unknown tool called: {ToolName}. Available tools: {Available}",
                 toolName, string.Join(", ", _pluginMethods.Keys));
 
-            await _eventEmitter.SendToolCallEndAsync(callId, toolName, $"Unknown tool: {toolName}", ct);
+            await eventEmitter.SendToolCallEndAsync(callId, toolName, $"Unknown tool: {toolName}", ct);
         }
     }
 
-    private async Task HandleResponseDoneAsync(GrokResponseDoneEvent evt, CancellationToken ct)
+    private async Task HandleResponseDoneAsync(GrokResponseDoneEvent evt, VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         var usage = evt.Response?.Usage;
         _logger.LogInformation("Grok response done. Tokens - Input: {Input}, Output: {Output}",
@@ -418,7 +436,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         // Add assistant turn to session
         if (_currentResponseText.Length > 0)
         {
-            await _sessionManager.AddTurnAsync(_session!.Id, new VoiceTurn
+            await _sessionManager.AddTurnAsync(session.Id, new VoiceTurn
             {
                 Role = "assistant",
                 Content = _currentResponseText.ToString(),
@@ -431,15 +449,15 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         }
 
         // Send end event
-        await _eventEmitter!.SendAiResponseEndAsync(
+        await eventEmitter.SendAiResponseEndAsync(
             _currentResponseText.ToString(),
             usage?.InputTokens ?? 0,
             usage?.OutputTokens ?? 0,
             ct);
 
         // Return to idle state
-        await _sessionManager.UpdateSessionStateAsync(_session!.Id, VoiceSessionState.Idle);
-        await _eventEmitter.SendStateAsync(VoiceSessionState.Idle, cancellationToken: ct);
+        await _sessionManager.UpdateSessionStateAsync(session.Id, VoiceSessionState.Idle);
+        await eventEmitter.SendStateAsync(VoiceSessionState.Idle, cancellationToken: ct);
 
         // Reset state
         _currentResponseText.Clear();

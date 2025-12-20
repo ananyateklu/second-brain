@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     user_id VARCHAR(128) NOT NULL,
     chat_provider VARCHAR(50),
     chat_model VARCHAR(100),
-    vector_store_provider VARCHAR(50) NOT NULL DEFAULT 'Pinecone',
+    vector_store_provider VARCHAR(50) NOT NULL DEFAULT 'PostgreSQL',
     default_note_view VARCHAR(20) NOT NULL DEFAULT 'list',
     items_per_page INTEGER NOT NULL DEFAULT 20,
     font_size VARCHAR(20) NOT NULL DEFAULT 'medium',

@@ -8,6 +8,23 @@ import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VoiceSessionState } from '../types/voice-types';
 
+// Pre-generated random offsets for speaking waveform bars
+// Stored outside component to avoid regeneration on re-renders
+interface WaveformBarOffset {
+  scaleMultiplier: number;
+  durationOffset: number;
+}
+
+const WAVEFORM_BAR_COUNT = 5;
+
+// Pre-generate waveform offsets outside component (pure/static values)
+const WAVEFORM_OFFSETS: WaveformBarOffset[] = Array.from({ length: WAVEFORM_BAR_COUNT }, (_, i) => ({
+  // Use deterministic values based on index instead of Math.random()
+  // This creates varied but consistent animation across renders
+  scaleMultiplier: 0.5 + ((i * 0.618) % 1) * 0.5, // Golden ratio distribution
+  durationOffset: ((i * 0.382) % 1) * 0.1, // Complementary distribution
+}));
+
 interface VoiceOrbProps {
   state: VoiceSessionState;
   audioLevel: number;
@@ -26,7 +43,7 @@ export function VoiceOrb({ state, audioLevel, size = 'md', onClick, disabled = f
   const dimensions = sizeMap[size];
   const normalizedLevel = Math.min(1, Math.max(0, audioLevel));
 
-  // State-based colors
+  // State-based colors - memoized since colors are static per state
   const colors = useMemo(() => {
     switch (state) {
       case 'Listening':
@@ -233,15 +250,15 @@ export function VoiceOrb({ state, audioLevel, size = 'md', onClick, disabled = f
               height: dimensions.orb,
             }}
           >
-            {[...Array(5)].map((_, i) => (
+            {WAVEFORM_OFFSETS.map((offset, i) => (
               <motion.div
                 key={i}
                 initial={{ scaleY: 0.3 }}
                 animate={{
-                  scaleY: [0.3, 0.3 + normalizedLevel * 0.7 * (0.5 + Math.random() * 0.5), 0.3],
+                  scaleY: [0.3, 0.3 + normalizedLevel * 0.7 * offset.scaleMultiplier, 0.3],
                 }}
                 transition={{
-                  duration: 0.15 + Math.random() * 0.1,
+                  duration: 0.15 + offset.durationOffset,
                   repeat: Infinity,
                   delay: i * 0.05,
                 }}

@@ -134,11 +134,20 @@ export function VoiceAgentInterface() {
   // Handle orb click - start or interrupt
   const handleOrbClick = useCallback(() => {
     if (!isConnected) {
-      handleStart();
+      void handleStart();
     } else if (isAudioPlaying) {
       interrupt();
     }
   }, [isConnected, isAudioPlaying, handleStart, interrupt]);
+
+  // Wrapped handlers for components that don't expect promises
+  const handleStartSync = useCallback(() => {
+    void handleStart();
+  }, [handleStart]);
+
+  const handleStopSync = useCallback(() => {
+    void endSession();
+  }, [endSession]);
 
   // Check if ready to start based on voice provider type
   const canStart = voiceProviderType === 'GrokVoice'
@@ -213,8 +222,8 @@ export function VoiceAgentInterface() {
               isConnecting={isConnecting}
               isMicrophoneEnabled={isMicrophoneEnabled}
               isAudioPlaying={isAudioPlaying}
-              onStart={handleStart}
-              onStop={endSession}
+              onStart={handleStartSync}
+              onStop={handleStopSync}
               onToggleMicrophone={toggleMicrophone}
               onInterrupt={interrupt}
             />
@@ -324,8 +333,8 @@ export function VoiceAgentInterface() {
                 isConnecting={isConnecting}
                 isMicrophoneEnabled={isMicrophoneEnabled}
                 isAudioPlaying={isAudioPlaying}
-                onStart={handleStart}
-                onStop={endSession}
+                onStart={handleStartSync}
+                onStop={handleStopSync}
                 onToggleMicrophone={toggleMicrophone}
                 onInterrupt={interrupt}
               />

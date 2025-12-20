@@ -33,6 +33,10 @@ public class ApplicationDbContext : DbContext
     // Gemini Context Caching
     public DbSet<GeminiContextCache> GeminiContextCaches { get; set; } = null!;
 
+    // Voice Sessions
+    public DbSet<VoiceSession> VoiceSessions { get; set; } = null!;
+    public DbSet<VoiceTurn> VoiceTurns { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -363,6 +367,58 @@ public class ApplicationDbContext : DbContext
                 .HasForeignKey(e => e.ConversationId)
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // =========================================================================
+        // Voice Sessions Configuration
+        // =========================================================================
+
+        modelBuilder.Entity<VoiceSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Configure UUIDv7 with database default
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("uuidv7()");
+
+            // Configure JSONB column
+            entity.Property(e => e.OptionsJson)
+                .HasColumnType("jsonb");
+
+            // Indexes
+            entity.HasIndex(e => e.UserId).HasDatabaseName("ix_voice_sessions_user_id");
+            entity.HasIndex(e => e.Status).HasDatabaseName("ix_voice_sessions_status");
+            entity.HasIndex(e => e.StartedAt)
+                .IsDescending(true)
+                .HasDatabaseName("ix_voice_sessions_started_at");
+            entity.HasIndex(e => new { e.UserId, e.StartedAt })
+                .IsDescending(false, true)
+                .HasDatabaseName("ix_voice_sessions_user_started");
+
+            // One-to-many relationship with VoiceTurns
+            entity.HasMany(s => s.Turns)
+                .WithOne(t => t.Session)
+                .HasForeignKey(t => t.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<VoiceTurn>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Configure UUIDv7 with database default
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("uuidv7()");
+
+            // Configure JSONB column for tool calls
+            entity.Property(e => e.ToolCallsJson)
+                .HasColumnType("jsonb");
+
+            // Indexes
+            entity.HasIndex(e => e.SessionId).HasDatabaseName("ix_voice_turns_session_id");
+            entity.HasIndex(e => e.Timestamp).HasDatabaseName("ix_voice_turns_timestamp");
+            entity.HasIndex(e => new { e.SessionId, e.Timestamp })
+                .HasDatabaseName("ix_voice_turns_session_timestamp");
         });
     }
 }

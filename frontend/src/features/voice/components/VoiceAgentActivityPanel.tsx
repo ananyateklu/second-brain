@@ -11,6 +11,7 @@ import type {
   VoiceRetrievedNote,
   VoiceGroundingSource,
 } from '../types/voice-types';
+import { getToolLabelPastTense, getToolIconPath } from '../utils/voice-utils';
 
 interface VoiceAgentActivityPanelProps {
   toolExecutions: VoiceToolExecution[];
@@ -21,61 +22,17 @@ interface VoiceAgentActivityPanelProps {
   className?: string;
 }
 
-// Get tool-specific icon
-function getToolIcon(toolName: string): React.ReactNode {
-  switch (toolName) {
-    case 'CreateNote':
-      return (
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-      );
-    case 'SearchNotes':
-    case 'SemanticSearch':
-      return (
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      );
-    case 'UpdateNote':
-      return (
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-        </svg>
-      );
-    case 'LiveSearch':
-    case 'DeepSearch':
-      return (
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-        </svg>
-      );
-    default:
-      return (
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      );
-  }
-}
-
-// Get user-friendly tool label
-function getToolLabel(toolName: string): string {
-  switch (toolName) {
-    case 'CreateNote': return 'Created Note';
-    case 'SearchNotes': return 'Searched Notes';
-    case 'SemanticSearch': return 'Semantic Search';
-    case 'UpdateNote': return 'Updated Note';
-    case 'GetNote': return 'Retrieved Note';
-    case 'ListRecentNotes': return 'Listed Notes';
-    case 'GetNoteStats': return 'Note Statistics';
-    case 'DeleteNote': return 'Deleted Note';
-    case 'ArchiveNote': return 'Archived Note';
-    case 'LiveSearch': return 'Web Search';
-    case 'DeepSearch': return 'Deep Search';
-    default: return toolName;
-  }
+// Render tool icon using shared path data
+function ToolIcon({ toolName }: { toolName: string }): React.ReactNode {
+  const iconPath = getToolIconPath(toolName);
+  return (
+    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath.d} />
+      {iconPath.d2 && (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath.d2} />
+      )}
+    </svg>
+  );
 }
 
 // Tool Execution Item
@@ -100,13 +57,13 @@ function ToolExecutionItem({ execution }: { execution: VoiceToolExecution }) {
           className={`flex-shrink-0 ${isExecuting ? 'animate-spin' : ''}`}
           style={{ color: 'var(--color-brand-500)' }}
         >
-          {getToolIcon(execution.toolName)}
+          <ToolIcon toolName={execution.toolName} />
         </span>
         <span
           className="flex-1 text-xs font-medium truncate"
           style={{ color: 'var(--text-primary)' }}
         >
-          {getToolLabel(execution.toolName)}
+          {getToolLabelPastTense(execution.toolName)}
         </span>
         <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
           {time}

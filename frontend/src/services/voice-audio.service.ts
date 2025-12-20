@@ -63,18 +63,41 @@ export class AudioRecorder {
       sampleRate: this.options.sampleRate,
     });
 
-    // Create the AudioWorklet processor for efficient audio processing
+    this.sourceNode = this.audioContext.createMediaStreamSource(stream);
+
+    // Try to use AudioWorklet (modern, non-deprecated approach)
+    if (this.audioContext.audioWorklet) {
+      try {
+        await this.audioContext.audioWorklet.addModule(
+          new URL('../workers/audio-processor.worklet.ts', import.meta.url)
+        );
+
+        this.workletNode = new AudioWorkletNode(this.audioContext, 'audio-processor');
+        this.workletNode.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+          if (this.isRecording && this.onDataCallback) {
+            const dataCopy = new Float32Array(event.data);
+            this.onDataCallback(dataCopy);
+          }
+        };
+
+        this.sourceNode.connect(this.workletNode);
+        this.workletNode.connect(this.audioContext.destination);
+        this.isRecording = true;
+        return;
+      } catch (e) {
+        console.warn('AudioWorklet not available, falling back to ScriptProcessor', e);
+      }
+    }
+
+    // Fallback to ScriptProcessorNode for older browsers
+    // Note: ScriptProcessorNode is deprecated but still works in all browsers
     try {
-      // Create a simple script processor as fallback (AudioWorklet is preferred but needs module)
-      // For now, use ScriptProcessorNode which is deprecated but widely supported
       const bufferSize = 4096;
       const scriptProcessor = this.audioContext.createScriptProcessor(
         bufferSize,
         this.options.channelCount,
         this.options.channelCount
       );
-
-      this.sourceNode = this.audioContext.createMediaStreamSource(stream);
 
       scriptProcessor.onaudioprocess = (event) => {
         if (this.isRecording && this.onDataCallback) {
@@ -90,7 +113,6 @@ export class AudioRecorder {
 
       // Store reference for cleanup (cast to any to avoid type issues)
       (this as unknown as Record<string, AudioNode>).scriptProcessor = scriptProcessor;
-
       this.isRecording = true;
     } catch (error) {
       console.error('Error starting audio recorder:', error);

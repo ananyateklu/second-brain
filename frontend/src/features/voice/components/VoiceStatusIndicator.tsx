@@ -7,28 +7,11 @@ import { motion } from 'framer-motion';
 import { VoiceSessionState } from '../types/voice-types';
 
 interface VoiceStatusIndicatorProps {
-  state: VoiceSessionState | number;
+  /** Voice session state - should be normalized by caller using normalizeState() */
+  state: VoiceSessionState;
   isConnected: boolean;
   isConnecting: boolean;
   error: string | null;
-}
-
-// Map numeric state values to string state names (backend sends numbers)
-const numericToStringState: Record<number, VoiceSessionState> = {
-  0: 'Idle',
-  1: 'Listening',
-  2: 'Processing',
-  3: 'Speaking',
-  4: 'Interrupted',
-  5: 'Ended',
-};
-
-// Normalize state to string
-function normalizeState(state: VoiceSessionState | number): VoiceSessionState {
-  if (typeof state === 'number') {
-    return numericToStringState[state] ?? 'Idle';
-  }
-  return state;
 }
 
 const stateConfig: Record<
@@ -76,8 +59,7 @@ export function VoiceStatusIndicator({
   isConnecting,
   error,
 }: VoiceStatusIndicatorProps) {
-  const normalizedState = normalizeState(state);
-  const config = stateConfig[normalizedState];
+  const config = stateConfig[state];
 
   // Show error state
   if (error) {
@@ -104,7 +86,7 @@ export function VoiceStatusIndicator({
   }
 
   // Show not connected state
-  if (!isConnected && normalizedState === 'Idle') {
+  if (!isConnected && state === 'Idle') {
     return (
       <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--surface)]">
         <div className="w-2 h-2 rounded-full bg-[var(--text-tertiary)]" />

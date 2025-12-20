@@ -68,7 +68,16 @@ public class TTSOrchestrator : ITTSOrchestrator
         if (_disposed)
             return;
 
-        await _initLock.WaitAsync(cancellationToken);
+        try
+        {
+            await _initLock.WaitAsync(cancellationToken);
+        }
+        catch (ObjectDisposedException)
+        {
+            _logger.LogDebug("TTSOrchestrator disposed during connection attempt");
+            return;
+        }
+
         try
         {
             // Double-check after acquiring lock
@@ -109,7 +118,7 @@ public class TTSOrchestrator : ITTSOrchestrator
                     currentSeq, audioData.Length, _sessionId);
 
                 // Fire and forget but log any errors
-                Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     try
                     {
@@ -128,7 +137,12 @@ public class TTSOrchestrator : ITTSOrchestrator
                         _logger.LogError(ex, "Failed to send audio chunk {Sequence} for session {SessionId}",
                             currentSeq, _sessionId);
                     }
-                });
+                }, cancellationToken)
+                .ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                        _logger.LogError(t.Exception, "Unobserved error in audio send task for session {SessionId}", _sessionId);
+                }, TaskContinuationOptions.OnlyOnFaulted);
             },
             cancellationToken);
 

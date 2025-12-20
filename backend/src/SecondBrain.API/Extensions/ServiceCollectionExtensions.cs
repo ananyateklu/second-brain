@@ -1083,6 +1083,9 @@ public static class ServiceCollectionExtensions
         // Session manager is singleton to maintain state across requests
         services.AddSingleton<IVoiceSessionManager, VoiceSessionManager>();
 
+        // Background service for cleaning up expired voice sessions (prevents memory leak)
+        services.AddHostedService<VoiceSessionCleanupService>();
+
         // Register STT (Speech-to-Text) providers
         services.AddScoped<DeepgramTranscriptionService>();
 

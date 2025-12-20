@@ -268,6 +268,88 @@ public class VoiceSessionOptions
         Provider.Equals("grok", StringComparison.OrdinalIgnoreCase) ||
         Provider.Equals("grokvoice", StringComparison.OrdinalIgnoreCase) ||
         Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Valid Grok voice IDs
+    /// </summary>
+    private static readonly HashSet<string> ValidGrokVoices = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ara", "rex", "sal", "eve", "leo"
+    };
+
+    /// <summary>
+    /// Validates the session options and returns any validation errors
+    /// </summary>
+    /// <returns>A validation result containing any errors found</returns>
+    public VoiceSessionOptionsValidationResult Validate()
+    {
+        var errors = new List<string>();
+
+        // Temperature validation (standard range for AI models is 0-2)
+        if (Temperature < 0 || Temperature > 2)
+        {
+            errors.Add("Temperature must be between 0 and 2");
+        }
+
+        // MaxTokens validation
+        if (MaxTokens <= 0)
+        {
+            errors.Add("MaxTokens must be a positive integer");
+        }
+
+        // VoiceId validation for standard voice providers
+        if (VoiceProviderType == VoiceProviderType.Standard && string.IsNullOrWhiteSpace(VoiceId))
+        {
+            errors.Add("VoiceId is required for standard voice provider");
+        }
+
+        // GrokVoice validation
+        if (IsGrokVoice && !ValidGrokVoices.Contains(GrokVoice))
+        {
+            errors.Add($"GrokVoice must be one of: {string.Join(", ", ValidGrokVoices)}");
+        }
+
+        // Provider validation
+        if (string.IsNullOrWhiteSpace(Provider))
+        {
+            errors.Add("Provider is required");
+        }
+
+        // Model validation
+        if (string.IsNullOrWhiteSpace(Model))
+        {
+            errors.Add("Model is required");
+        }
+
+        // Language code validation (basic check for ISO 639-1 format)
+        if (string.IsNullOrWhiteSpace(Language) || Language.Length < 2)
+        {
+            errors.Add("Language must be a valid language code (e.g., 'en', 'es', 'fr')");
+        }
+
+        return new VoiceSessionOptionsValidationResult(errors);
+    }
+}
+
+/// <summary>
+/// Result of validating VoiceSessionOptions
+/// </summary>
+public class VoiceSessionOptionsValidationResult
+{
+    /// <summary>
+    /// List of validation errors found
+    /// </summary>
+    public IReadOnlyList<string> Errors { get; }
+
+    /// <summary>
+    /// Whether the options are valid (no errors)
+    /// </summary>
+    public bool IsValid => Errors.Count == 0;
+
+    public VoiceSessionOptionsValidationResult(IEnumerable<string> errors)
+    {
+        Errors = errors.ToList().AsReadOnly();
+    }
 }
 
 /// <summary>

@@ -133,6 +133,14 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
+                    b.Property<int?>("CacheCreationTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cache_creation_tokens");
+
+                    b.Property<int?>("CacheReadTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cache_read_tokens");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("text")
@@ -156,6 +164,14 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("output_tokens");
 
+                    b.Property<int?>("RagChunksCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("rag_chunks_count");
+
+                    b.Property<int?>("RagContextTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("rag_context_tokens");
+
                     b.Property<string>("RagFeedback")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
@@ -166,6 +182,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("rag_log_id");
 
+                    b.Property<int?>("ReasoningTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("reasoning_tokens");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -175,6 +195,22 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("timestamp");
+
+                    b.Property<bool?>("TokensActual")
+                        .HasColumnType("boolean")
+                        .HasColumnName("tokens_actual");
+
+                    b.Property<int?>("ToolArgumentTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("tool_argument_tokens");
+
+                    b.Property<int?>("ToolDefinitionTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("tool_definition_tokens");
+
+                    b.Property<int?>("ToolResultTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("tool_result_tokens");
 
                     b.Property<Guid?>("UuidV7")
                         .ValueGeneratedOnAdd()
@@ -259,6 +295,77 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasDatabaseName("ix_chat_sessions_user_conversation");
 
                     b.ToTable("chat_sessions");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.GeminiContextCache", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CacheName")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("cache_name");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("content_hash");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("display_name");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("model");
+
+                    b.Property<int?>("TokenCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("token_count");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CacheName")
+                        .IsUnique()
+                        .HasDatabaseName("idx_gemini_caches_cache_name");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("idx_gemini_caches_expires");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_gemini_caches_user_id");
+
+                    b.HasIndex("UserId", "ContentHash", "Model")
+                        .HasDatabaseName("idx_gemini_caches_content_hash");
+
+                    b.ToTable("gemini_context_caches");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.GeneratedImageData", b =>
@@ -432,6 +539,16 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("content");
 
+                    b.Property<int>("ContentFormat")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("content_format");
+
+                    b.Property<string>("ContentJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content_json");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -468,6 +585,11 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("source");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("summary");
 
                     b.PrimitiveCollection<List<string>>("Tags")
                         .IsRequired()
@@ -571,6 +693,11 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("note_id");
 
+                    b.Property<string>("NoteSummary")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("note_summary");
+
                     b.PrimitiveCollection<List<string>>("NoteTags")
                         .IsRequired()
                         .HasColumnType("text[]")
@@ -625,6 +752,91 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.ToTable("note_embeddings");
                 });
 
+            modelBuilder.Entity("SecondBrain.Core.Entities.NoteImage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AltText")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("alt_text");
+
+                    b.Property<string>("Base64Data")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("base64_data");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime?>("DescriptionGeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("description_generated_at");
+
+                    b.Property<string>("DescriptionModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("description_model");
+
+                    b.Property<string>("DescriptionProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("description_provider");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<int>("ImageIndex")
+                        .HasColumnType("integer")
+                        .HasColumnName("image_index");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("media_type");
+
+                    b.Property<string>("NoteId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("note_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteId")
+                        .HasDatabaseName("ix_note_images_note_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_note_images_user_id");
+
+                    b.HasIndex("NoteId", "ImageIndex")
+                        .HasDatabaseName("ix_note_images_note_order");
+
+                    b.ToTable("note_images");
+                });
+
             modelBuilder.Entity("SecondBrain.Core.Entities.NoteVersion", b =>
                 {
                     b.Property<string>("Id")
@@ -641,6 +853,16 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("content");
 
+                    b.Property<int>("ContentFormat")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("content_format");
+
+                    b.Property<string>("ContentJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("content_json");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -649,6 +871,13 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("folder");
+
+                    b.PrimitiveCollection<List<string>>("ImageIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text[]")
+                        .HasColumnName("image_ids")
+                        .HasDefaultValueSql("'{}'::text[]");
 
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean")
@@ -663,6 +892,14 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<string>("NoteId")
                         .HasColumnType("text")
                         .HasColumnName("note_id");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("web")
+                        .HasColumnName("source");
 
                     b.PrimitiveCollection<List<string>>("Tags")
                         .IsRequired()
@@ -886,6 +1123,127 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.ToTable("retrieved_notes");
                 });
 
+            modelBuilder.Entity("SecondBrain.Core.Entities.SummaryJob", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.PrimitiveCollection<List<string>>("Errors")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("errors");
+
+                    b.Property<int>("FailureCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failure_count");
+
+                    b.Property<int>("ProcessedNotes")
+                        .HasColumnType("integer")
+                        .HasColumnName("processed_notes");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("skipped_count");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("SuccessCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("success_count");
+
+                    b.Property<int>("TotalNotes")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_notes");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_summary_jobs_status");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_summary_jobs_user_id");
+
+                    b.HasIndex("UserId", "Status")
+                        .HasDatabaseName("ix_summary_jobs_user_status");
+
+                    b.ToTable("summary_jobs");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.ThinkingStep", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<double?>("DurationMs")
+                        .HasColumnType("double precision")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("ModelSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("model_source");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<int>("StepNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("step_number");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("idx_thinking_steps_message_id");
+
+                    b.HasIndex("ModelSource")
+                        .HasDatabaseName("idx_thinking_steps_model_source");
+
+                    b.HasIndex("MessageId", "StepNumber")
+                        .HasDatabaseName("idx_thinking_steps_message_order");
+
+                    b.ToTable("thinking_steps");
+                });
+
             modelBuilder.Entity("SecondBrain.Core.Entities.ToolCall", b =>
                 {
                     b.Property<string>("Id")
@@ -906,6 +1264,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
                         .HasColumnName("message_id");
+
+                    b.Property<string>("PreToolText")
+                        .HasColumnType("text")
+                        .HasColumnName("pre_tool_text");
 
                     b.Property<string>("Result")
                         .IsRequired()
@@ -1023,10 +1385,49 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("items_per_page");
 
+                    b.Property<bool>("NoteSummaryEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("note_summary_enabled");
+
+                    b.Property<string>("NoteSummaryModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("note_summary_model");
+
+                    b.Property<string>("NoteSummaryProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("note_summary_provider");
+
                     b.Property<string>("OllamaRemoteUrl")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("ollama_remote_url");
+
+                    b.Property<bool>("RagEnableAnalytics")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rag_enable_analytics");
+
+                    b.Property<bool>("RagEnableHybridSearch")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rag_enable_hybrid_search");
+
+                    b.Property<bool>("RagEnableHyde")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rag_enable_hyde");
+
+                    b.Property<bool>("RagEnableQueryExpansion")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rag_enable_query_expansion");
+
+                    b.Property<bool>("RagEnableReranking")
+                        .HasColumnType("boolean")
+                        .HasColumnName("rag_enable_reranking");
+
+                    b.Property<string>("RerankingProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("reranking_provider");
 
                     b.Property<bool>("UseRemoteOllama")
                         .HasColumnType("boolean")
@@ -1044,45 +1445,6 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("vector_store_provider");
 
-                    b.Property<string>("RerankingProvider")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("reranking_provider");
-
-                    b.Property<bool>("NoteSummaryEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("note_summary_enabled");
-
-                    b.Property<string>("NoteSummaryProvider")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("note_summary_provider");
-
-                    b.Property<string>("NoteSummaryModel")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("note_summary_model");
-
-                    b.Property<bool>("RagEnableHyde")
-                        .HasColumnType("boolean")
-                        .HasColumnName("rag_enable_hyde");
-
-                    b.Property<bool>("RagEnableQueryExpansion")
-                        .HasColumnType("boolean")
-                        .HasColumnName("rag_enable_query_expansion");
-
-                    b.Property<bool>("RagEnableHybridSearch")
-                        .HasColumnType("boolean")
-                        .HasColumnName("rag_enable_hybrid_search");
-
-                    b.Property<bool>("RagEnableReranking")
-                        .HasColumnType("boolean")
-                        .HasColumnName("rag_enable_reranking");
-
-                    b.Property<bool>("RagEnableAnalytics")
-                        .HasColumnType("boolean")
-                        .HasColumnName("rag_enable_analytics");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId")
@@ -1090,6 +1452,150 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasDatabaseName("ix_user_preferences_user_id");
 
                     b.ToTable("user_preferences");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.VoiceSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("uuidv7()");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ended_at");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model");
+
+                    b.Property<string>("OptionsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("options_json");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("provider");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<int>("TotalAudioDurationMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_audio_duration_ms");
+
+                    b.Property<int>("TotalInputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_input_tokens");
+
+                    b.Property<int>("TotalOutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_output_tokens");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedAt")
+                        .IsDescending()
+                        .HasDatabaseName("ix_voice_sessions_started_at");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_voice_sessions_status");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_voice_sessions_user_id");
+
+                    b.HasIndex("UserId", "StartedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_voice_sessions_user_started");
+
+                    b.ToTable("voice_sessions");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.VoiceTurn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("uuidv7()");
+
+                    b.Property<int?>("AudioDurationMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("audio_duration_ms");
+
+                    b.Property<string>("AudioUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("audio_url");
+
+                    b.Property<string>("Content")
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<int?>("InputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<int?>("OutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("output_tokens");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("session_id");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
+
+                    b.Property<string>("ToolCallsJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("tool_calls_json");
+
+                    b.Property<string>("TranscriptText")
+                        .HasColumnType("text")
+                        .HasColumnName("transcript_text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_voice_turns_session_id");
+
+                    b.HasIndex("Timestamp")
+                        .HasDatabaseName("ix_voice_turns_timestamp");
+
+                    b.HasIndex("SessionId", "Timestamp")
+                        .HasDatabaseName("ix_voice_turns_session_timestamp");
+
+                    b.ToTable("voice_turns");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>
@@ -1135,6 +1641,17 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Navigation("Message");
                 });
 
+            modelBuilder.Entity("SecondBrain.Core.Entities.NoteImage", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.Note", "Note")
+                        .WithMany("Images")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Note");
+                });
+
             modelBuilder.Entity("SecondBrain.Core.Entities.NoteVersion", b =>
                 {
                     b.HasOne("SecondBrain.Core.Entities.Note", "Note")
@@ -1149,6 +1666,17 @@ namespace SecondBrain.Infrastructure.Migrations
                 {
                     b.HasOne("SecondBrain.Core.Entities.ChatMessage", "Message")
                         .WithMany("RetrievedNotes")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.ThinkingStep", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.ChatMessage", "Message")
+                        .WithMany("ThinkingSteps")
                         .HasForeignKey("MessageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1178,6 +1706,17 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SecondBrain.Core.Entities.VoiceTurn", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.VoiceSession", "Session")
+                        .WithMany("Turns")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Session");
+                });
+
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatConversation", b =>
                 {
                     b.Navigation("Messages");
@@ -1191,12 +1730,24 @@ namespace SecondBrain.Infrastructure.Migrations
 
                     b.Navigation("RetrievedNotes");
 
+                    b.Navigation("ThinkingSteps");
+
                     b.Navigation("ToolCalls");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.Note", b =>
+                {
+                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.User", b =>
                 {
                     b.Navigation("Preferences");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.VoiceSession", b =>
+                {
+                    b.Navigation("Turns");
                 });
 #pragma warning restore 612, 618
         }
