@@ -499,9 +499,18 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
         let currentConversationId = conversationId;
 
         // Build capabilities array for agent mode
+        // Always include 'notes' when agent mode is enabled - it's the primary capability
         const capabilities: string[] = [];
-        if (agentModeEnabled && notesCapabilityEnabled) {
-          capabilities.push('notes');
+        if (agentModeEnabled) {
+          // Notes is always enabled in agent mode (can be extended with more capabilities later)
+          if (notesCapabilityEnabled) {
+            capabilities.push('notes');
+          }
+          // Fallback: if no capabilities would be sent, default to notes
+          // This ensures tools are always available in agent mode
+          if (capabilities.length === 0) {
+            capabilities.push('notes');
+          }
         }
 
         // Create conversation if needed

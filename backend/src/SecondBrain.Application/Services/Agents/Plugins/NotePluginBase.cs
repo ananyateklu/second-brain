@@ -29,7 +29,7 @@ public abstract class NotePluginBase : IAgentPlugin
     protected readonly RagSettings? RagSettings;
 
     protected string CurrentUserId = string.Empty;
-    protected bool AgentRagEnabled = true;
+    protected bool AgentRagEnabled = false;
 
     /// <summary>
     /// Maximum length for content preview in list operations.

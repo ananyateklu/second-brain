@@ -22,7 +22,6 @@ public class GeminiStreamingStrategyTests
 {
     private readonly Mock<IToolExecutor> _mockToolExecutor;
     private readonly Mock<IThinkingExtractor> _mockThinkingExtractor;
-    private readonly Mock<IRagContextInjector> _mockRagInjector;
     private readonly Mock<IPluginToolBuilder> _mockToolBuilder;
     private readonly Mock<IAgentRetryPolicy> _mockRetryPolicy;
     private readonly Mock<ILogger<GeminiStreamingStrategy>> _mockLogger;
@@ -31,7 +30,6 @@ public class GeminiStreamingStrategyTests
     {
         _mockToolExecutor = new Mock<IToolExecutor>();
         _mockThinkingExtractor = new Mock<IThinkingExtractor>();
-        _mockRagInjector = new Mock<IRagContextInjector>();
         _mockToolBuilder = new Mock<IPluginToolBuilder>();
         _mockRetryPolicy = new Mock<IAgentRetryPolicy>();
         _mockLogger = new Mock<ILogger<GeminiStreamingStrategy>>();
@@ -43,7 +41,6 @@ public class GeminiStreamingStrategyTests
             provider,
             _mockToolExecutor.Object,
             _mockThinkingExtractor.Object,
-            _mockRagInjector.Object,
             _mockToolBuilder.Object,
             _mockRetryPolicy.Object,
             _mockLogger.Object);

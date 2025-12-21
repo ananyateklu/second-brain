@@ -33,6 +33,8 @@ interface RichTextEditorProps {
   initialTags?: string[];
   placeholder?: string;
   editable?: boolean;
+  /** Hide the internal tags display (when parent wants to render tags externally) */
+  hideTagsDisplay?: boolean;
 }
 
 // --- Suggestion UI Component ---
@@ -165,7 +167,8 @@ export function RichTextEditor({
   onTagsChange,
   initialTags = [],
   placeholder = "Write your note here... Type '#' to add tags, '/' for commands.",
-  editable = true
+  editable = true,
+  hideTagsDisplay = false,
 }: RichTextEditorProps) {
   const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
@@ -747,7 +750,7 @@ export function RichTextEditor({
       <EditorContent editor={editor} />
 
       {/* Tags Display - shows both tags from note entity and tags extracted from content */}
-      {displayTags.length > 0 && (
+      {!hideTagsDisplay && displayTags.length > 0 && (
         <div className="px-2 pb-2 pt-1 flex flex-wrap gap-1.5 border-t border-[var(--border)] mt-2">
           <span className="text-xs font-medium self-center mr-1" style={{ color: 'var(--text-tertiary)' }}>
             Tags:

@@ -14,7 +14,7 @@ public record CreateConversationCommand(
     string UserId,
     bool RagEnabled = false,
     bool AgentEnabled = false,
-    bool AgentRagEnabled = true,
+    bool AgentRagEnabled = false,
     bool ImageGenerationEnabled = false,
     string? AgentCapabilities = null,
     string? VectorStoreProvider = null

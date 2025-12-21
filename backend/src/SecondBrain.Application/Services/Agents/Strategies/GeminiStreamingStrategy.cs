@@ -25,11 +25,10 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
         GeminiProvider? geminiProvider,
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
         ILogger<GeminiStreamingStrategy> logger)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
         _geminiProvider = geminiProvider;
         _logger = logger;
@@ -96,15 +95,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             }
         }
 
-        // RAG context injection
         var lastUserMessage = GetLastUserMessage(request);
-        await foreach (var evt in TryInjectRagContextAsync(
-            context,
-            ctx => messages[0].Content += "\n\n" + ctx,
-            cancellationToken))
-        {
-            yield return evt;
-        }
 
         var fullResponse = new StringBuilder();
         var emittedThinkingBlocks = new HashSet<string>();

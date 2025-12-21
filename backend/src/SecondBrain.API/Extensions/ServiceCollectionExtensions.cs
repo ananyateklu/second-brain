@@ -40,6 +40,7 @@ using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Helpers;
+using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
 using SecondBrain.Application.Services.Git;
 using SecondBrain.Application.Services.GitHub;
@@ -48,6 +49,13 @@ using SecondBrain.Application.Services.Embeddings.Providers;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Application.Services.RAG.Interfaces;
 using SecondBrain.Application.Services.VectorStore;
+using SecondBrain.Application.Services.Voice;
+using SecondBrain.Application.Services.Voice.Formatting;
+using SecondBrain.Application.Services.Voice.GrokRealtime;
+using SecondBrain.Application.Services.Voice.Orchestration;
+using SecondBrain.Application.Services.Voice.ResponseProcessors;
+using SecondBrain.Application.Services.Voice.Synthesis;
+using SecondBrain.Application.Services.Voice.Transcription;
 using SecondBrain.Application.Validators;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -176,6 +184,42 @@ public static class ServiceCollectionExtensions
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             };
+
+            // Handle JWT token from query string for WebSocket connections
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    // Debug logging for WebSocket auth (only for voice endpoints)
+                    if (path.StartsWithSegments("/api/voice"))
+                    {
+                        var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                        logger?.LogInformation(
+                            "[VoiceAuth] OnMessageReceived - Path: {Path}, HasToken: {HasToken}, IsWebSocket: {IsWebSocket}",
+                            path,
+                            !string.IsNullOrEmpty(accessToken),
+                            context.HttpContext.WebSockets.IsWebSocketRequest);
+
+                        // Extract token from query string for voice endpoints
+                        if (!string.IsNullOrEmpty(accessToken))
+                        {
+                            context.Token = accessToken;
+                            logger?.LogInformation("[VoiceAuth] Token extracted from query string");
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices.GetService<ILogger<JwtBearerEvents>>();
+                    logger?.LogWarning("JWT Authentication failed: {Error}", context.Exception?.Message);
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         // Register auth services
@@ -258,7 +302,6 @@ public static class ServiceCollectionExtensions
         // Register Agent service helpers
         services.AddScoped<IToolExecutor, ToolExecutor>();
         services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
-        services.AddScoped<IRagContextInjector, RagContextInjector>();
         services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();
         services.AddSingleton<IAgentRetryPolicy, AgentRetryPolicy>(); // Unified retry policy with exponential backoff
 
@@ -1003,6 +1046,93 @@ public static class ServiceCollectionExtensions
 
         // Register image description service for multi-modal RAG
         services.AddScoped<IImageDescriptionService, ImageDescriptionService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers Voice Agent services (multi-provider STT and TTS)
+    /// Supports: Deepgram (STT), ElevenLabs/OpenAI/Google/Azure (TTS)
+    /// </summary>
+    public static IServiceCollection AddVoiceServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        // Configure Voice settings
+        services.Configure<VoiceSettings>(configuration.GetSection(VoiceSettings.SectionName));
+
+        // Register HTTP clients for STT providers
+        services.AddHttpClient("Deepgram", client =>
+        {
+            client.BaseAddress = new Uri("https://api.deepgram.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        // Register HTTP clients for TTS providers
+        services.AddHttpClient("ElevenLabs", client =>
+        {
+            client.BaseAddress = new Uri("https://api.elevenlabs.io/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        services.AddHttpClient("OpenAITTS", client =>
+        {
+            client.BaseAddress = new Uri("https://api.openai.com/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        // Register voice services
+        // Session manager is singleton to maintain state across requests
+        services.AddSingleton<IVoiceSessionManager, VoiceSessionManager>();
+
+        // Background service for cleaning up expired voice sessions (prevents memory leak)
+        services.AddHostedService<VoiceSessionCleanupService>();
+
+        // Register STT (Speech-to-Text) providers
+        services.AddScoped<DeepgramTranscriptionService>();
+
+        // Register TTS (Text-to-Speech) providers
+        services.AddScoped<ElevenLabsSynthesisService>();
+        services.AddScoped<OpenAITTSSynthesisService>();
+
+        // Register STT factory
+        services.AddScoped<IVoiceTranscriptionServiceFactory, VoiceTranscriptionServiceFactory>();
+
+        // Register TTS factory
+        services.AddScoped<IVoiceSynthesisServiceFactory, VoiceSynthesisServiceFactory>();
+
+        // Backward compatibility: Register default providers via factories
+        // This allows existing code that injects IVoiceTranscriptionService directly to still work
+        services.AddScoped<IVoiceTranscriptionService>(sp =>
+            sp.GetRequiredService<IVoiceTranscriptionServiceFactory>().GetDefaultProvider());
+        services.AddScoped<IVoiceSynthesisService>(sp =>
+            sp.GetRequiredService<IVoiceSynthesisServiceFactory>().GetDefaultProvider());
+
+        // Voice Orchestration services (refactored from VoiceController)
+        services.AddScoped<IVoiceOrchestrator, VoiceOrchestrator>();
+        services.AddScoped<IVoiceEventEmitter, VoiceEventEmitter>();
+
+        // Voice Response Processors (Strategy + Factory pattern)
+        services.AddScoped<IVoiceResponseProcessor, DirectAIResponseProcessor>();
+        services.AddScoped<IVoiceResponseProcessor, AgentResponseProcessor>();
+        services.AddScoped<IVoiceResponseProcessorFactory, VoiceResponseProcessorFactory>();
+
+        // TTS Orchestration
+        services.AddScoped<ITTSOrchestrator, TTSOrchestrator>();
+        services.AddScoped<ITTSBufferingStrategy, SentenceBufferingStrategy>();
+
+        // Transcription Orchestration
+        services.AddScoped<ITranscriptionOrchestrator, TranscriptionOrchestrator>();
+
+        // Formatting and Announcements
+        services.AddSingleton<IVoiceAnnouncementService, VoiceAnnouncementService>();
+
+        // Agent plugins for Grok Voice custom tools
+        // These are registered as IAgentPlugin so GrokVoiceHandler can discover them
+        services.AddScoped<IAgentPlugin, NoteCrudPlugin>();
+        services.AddScoped<IAgentPlugin, NoteSearchPlugin>();
+
+        // Grok Voice (xAI Realtime API) - unified speech-to-speech
+        services.AddScoped<IGrokRealtimeClient, GrokRealtimeClient>();
+        services.AddScoped<IGrokVoiceHandler, GrokVoiceHandler>();
 
         return services;
     }

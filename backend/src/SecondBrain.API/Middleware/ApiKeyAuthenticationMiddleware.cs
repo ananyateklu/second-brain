@@ -59,6 +59,32 @@ public class ApiKeyAuthenticationMiddleware
             return;
         }
 
+        // Handle WebSocket requests that pass token via query string (browsers can't send headers with WebSocket)
+        if (context.WebSockets.IsWebSocketRequest &&
+            context.Request.Path.StartsWithSegments("/api/voice/session"))
+        {
+            var queryToken = context.Request.Query["token"].ToString();
+            if (!string.IsNullOrEmpty(queryToken))
+            {
+                // Validate the JWT token from query string
+                var wsAuthResult = await ValidateJwtTokenAsync(context, queryToken, userRepository, jwtService);
+                if (wsAuthResult)
+                {
+                    await _next(context);
+                    return;
+                }
+                // If validation failed, the response is already set by ValidateJwtTokenAsync
+                return;
+            }
+            else
+            {
+                _logger.LogWarning("WebSocket request missing token query parameter");
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "Missing token parameter for WebSocket connection" });
+                return;
+            }
+        }
+
         // Require authentication for all other endpoints
         if (!context.Request.Headers.TryGetValue("Authorization", out var authHeader))
         {
@@ -196,6 +222,87 @@ public class ApiKeyAuthenticationMiddleware
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsJsonAsync(new { error = "Invalid Authorization header format. Use 'Bearer <token>' or 'ApiKey <key>'" });
             return;
+        }
+    }
+
+    /// <summary>
+    /// Validates a JWT token and sets up the user context if valid.
+    /// Returns true if authentication succeeded, false otherwise.
+    /// </summary>
+    private async Task<bool> ValidateJwtTokenAsync(
+        HttpContext context,
+        string token,
+        IUserRepository userRepository,
+        IJwtService jwtService)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _logger.LogWarning("Empty JWT token");
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new { error = "Empty token" });
+            return false;
+        }
+
+        try
+        {
+            // Validate JWT token
+            var principal = jwtService.ValidateToken(token);
+
+            if (principal == null)
+            {
+                _logger.LogWarning("Invalid JWT token");
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "Invalid or expired token" });
+                return false;
+            }
+
+            // Get user ID from token claims
+            var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                ?? principal.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                _logger.LogWarning("Token missing user ID claim");
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "Invalid token claims" });
+                return false;
+            }
+
+            // Get user from database to verify they still exist and are active
+            var user = await userRepository.GetByIdAsync(userIdClaim);
+
+            if (user == null)
+            {
+                _logger.LogWarning("User not found for token. UserId: {UserId}", userIdClaim);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "User not found" });
+                return false;
+            }
+
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Inactive user attempted to authenticate. UserId: {UserId}", user.Id);
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new { error = "User account is inactive" });
+                return false;
+            }
+
+            // Store user context
+            context.Items["UserId"] = user.Id;
+            context.Items["User"] = user;
+            context.Items["AuthMethod"] = "JWT";
+
+            _logger.LogDebug("User authenticated via JWT (WebSocket). UserId: {UserId}", user.Id);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during JWT authentication");
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await context.Response.WriteAsJsonAsync(new { error = "Authentication error" });
+            return false;
         }
     }
 }

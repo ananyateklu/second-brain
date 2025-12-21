@@ -13,3 +13,15 @@ export { agentService } from './agent.service';
 export { userPreferencesService, DEFAULT_PREFERENCES } from './user-preferences.service';
 export { gitService } from './git.service';
 
+// Voice services
+export { voiceService, VoiceWebSocketConnection, type VoiceWebSocketCallbacks } from './voice.service';
+export {
+  requestMicrophoneAccess,
+  AudioRecorder,
+  AudioPlayer,
+  VoiceActivityDetector,
+  getAudioLevel,
+  createAnalyser,
+  float32ToInt16,
+  int16ToArrayBuffer,
+} from './voice-audio.service';

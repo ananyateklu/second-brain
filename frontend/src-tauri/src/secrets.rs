@@ -37,6 +37,10 @@ pub struct Secrets {
     pub github_default_repo: Option<String>,
     pub git_allowed_repository_roots: Option<String>,
     pub git_require_user_scoped_root: Option<bool>,
+    // Voice provider credentials
+    pub deepgram_api_key: Option<String>,
+    pub elevenlabs_api_key: Option<String>,
+    pub openai_tts_api_key: Option<String>,
 }
 
 impl Secrets {
@@ -97,6 +101,10 @@ impl Secrets {
             github_default_repo: self.github_default_repo.clone(),
             git_allowed_repository_roots: self.git_allowed_repository_roots.clone(),
             git_require_user_scoped_root: self.git_require_user_scoped_root,
+            // Voice provider credentials
+            deepgram_api_key: redact_key(&self.deepgram_api_key),
+            elevenlabs_api_key: redact_key(&self.elevenlabs_api_key),
+            openai_tts_api_key: redact_key(&self.openai_tts_api_key),
         }
     }
 
@@ -154,6 +162,10 @@ pub struct RedactedSecrets {
     pub github_default_repo: Option<String>,
     pub git_allowed_repository_roots: Option<String>,
     pub git_require_user_scoped_root: Option<bool>,
+    // Voice provider credentials
+    pub deepgram_api_key: Option<String>,
+    pub elevenlabs_api_key: Option<String>,
+    pub openai_tts_api_key: Option<String>,
 }
 
 /// Redact a secret key, showing only first and last few characters

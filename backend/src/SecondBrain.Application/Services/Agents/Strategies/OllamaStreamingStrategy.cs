@@ -24,11 +24,10 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
         OllamaProvider? ollamaProvider,
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
         ILogger<OllamaStreamingStrategy> logger)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
         _ollamaProvider = ollamaProvider;
         _logger = logger;
@@ -94,15 +93,6 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
             }
         }
 
-        // RAG context injection
-        await foreach (var evt in TryInjectRagContextAsync(
-            context,
-            ctx => messages[0].Content += "\n\n" + ctx,
-            cancellationToken))
-        {
-            yield return evt;
-        }
-
         var fullResponse = new StringBuilder();
         var emittedThinkingBlocks = new HashSet<string>();
         var maxIterations = settings.Ollama.FunctionCalling.MaxIterations;
@@ -133,6 +123,7 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
             var pendingToolCalls = new List<Services.AI.Models.OllamaToolCallInfo>();
             var iterationText = new StringBuilder();
             var hasEmittedFirstToken = false;
+            var lastSpeakableLength = 0; // Track how much speakable content we've already yielded
 
             await foreach (var evt in _ollamaProvider.StreamWithToolsAsync(
                 messages, tools, aiSettings, cancellationToken))
@@ -161,7 +152,14 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
                                 yield return ThinkingEvent(thinkingContent);
                             }
 
-                            yield return TokenEvent(evt.Text);
+                            // Extract only new speakable (non-thinking) content from accumulated text
+                            // This properly handles thinking blocks that span multiple tokens
+                            var speakableContent = Helpers.ThinkingExtractor.ExtractNewSpeakableContent(
+                                currentContent, ref lastSpeakableLength);
+                            if (!string.IsNullOrEmpty(speakableContent))
+                            {
+                                yield return TokenEvent(speakableContent);
+                            }
                         }
                         break;
 

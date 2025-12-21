@@ -126,6 +126,13 @@ if (File.Exists(envPath))
 
     var githubRepo = Environment.GetEnvironmentVariable("GITHUB_DEFAULT_REPO");
     if (!string.IsNullOrEmpty(githubRepo)) Environment.SetEnvironmentVariable("GitHub__DefaultRepo", githubRepo);
+
+    // Voice Services (ElevenLabs and Deepgram)
+    var elevenLabsKey = Environment.GetEnvironmentVariable("ELEVEN_LABS_API_KEY");
+    if (!string.IsNullOrEmpty(elevenLabsKey)) Environment.SetEnvironmentVariable("Voice__ElevenLabs__ApiKey", elevenLabsKey);
+
+    var deepgramKey = Environment.GetEnvironmentVariable("ELEVEN_LABS_DEEPGRAM_API_KEY");
+    if (!string.IsNullOrEmpty(deepgramKey)) Environment.SetEnvironmentVariable("Voice__Deepgram__ApiKey", deepgramKey);
 }
 
 Console.WriteLine();
@@ -240,6 +247,7 @@ builder.Services.AddJwtAuth(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddAIServices(builder.Configuration);
 builder.Services.AddRagServices(builder.Configuration);
+builder.Services.AddVoiceServices(builder.Configuration);
 builder.Services.AddValidators();
 
 // Performance and observability
@@ -655,6 +663,12 @@ if (httpsPort.HasValue)
 app.UseResponseCompression();
 
 app.UseCors("AllowFrontend");
+
+// Enable WebSockets for voice agent
+app.UseWebSockets(new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromSeconds(30)
+});
 
 // Serilog request logging with enriched diagnostics
 app.UseSerilogRequestLogging(options =>

@@ -14,7 +14,6 @@ public class BaseAgentStreamingStrategyTests
 {
     private readonly Mock<IToolExecutor> _mockToolExecutor;
     private readonly Mock<IThinkingExtractor> _mockThinkingExtractor;
-    private readonly Mock<IRagContextInjector> _mockRagInjector;
     private readonly Mock<IPluginToolBuilder> _mockToolBuilder;
     private readonly Mock<IAgentRetryPolicy> _mockRetryPolicy;
     private readonly TestableAgentStreamingStrategy _sut;
@@ -23,14 +22,12 @@ public class BaseAgentStreamingStrategyTests
     {
         _mockToolExecutor = new Mock<IToolExecutor>();
         _mockThinkingExtractor = new Mock<IThinkingExtractor>();
-        _mockRagInjector = new Mock<IRagContextInjector>();
         _mockToolBuilder = new Mock<IPluginToolBuilder>();
         _mockRetryPolicy = new Mock<IAgentRetryPolicy>();
 
         _sut = new TestableAgentStreamingStrategy(
             _mockToolExecutor.Object,
             _mockThinkingExtractor.Object,
-            _mockRagInjector.Object,
             _mockToolBuilder.Object,
             _mockRetryPolicy.Object);
     }
@@ -400,7 +397,6 @@ public class BaseAgentStreamingStrategyTests
         var strategyWithoutPolicy = new TestableAgentStreamingStrategy(
             _mockToolExecutor.Object,
             _mockThinkingExtractor.Object,
-            _mockRagInjector.Object,
             _mockToolBuilder.Object,
             retryPolicy: null);
 
@@ -503,10 +499,9 @@ public class TestableAgentStreamingStrategy : BaseAgentStreamingStrategy
     public TestableAgentStreamingStrategy(
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy? retryPolicy = null)
-        : base(toolExecutor, thinkingExtractor, ragInjector, toolBuilder, retryPolicy)
+        : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
     }
 

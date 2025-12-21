@@ -115,9 +115,9 @@ export function TokenUsageDisplay({
     (reasoningTokens && reasoningTokens > 0) ||
     totalToolTokens > 0;
 
-  // Base text color based on role
+  // Base text color based on role and theme
   const baseTextColor = role === 'user'
-    ? 'rgba(255, 255, 255, 0.85)'
+    ? (isDarkMode ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.7)')
     : isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)';
 
   return (

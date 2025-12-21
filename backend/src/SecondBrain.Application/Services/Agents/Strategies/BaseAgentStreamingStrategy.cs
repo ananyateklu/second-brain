@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.Configuration;
@@ -14,20 +13,17 @@ public abstract partial class BaseAgentStreamingStrategy : IAgentStreamingStrate
 {
     protected readonly IToolExecutor ToolExecutor;
     protected readonly IThinkingExtractor ThinkingExtractor;
-    protected readonly IRagContextInjector RagInjector;
     protected readonly IPluginToolBuilder ToolBuilder;
     protected readonly IAgentRetryPolicy? RetryPolicy;
 
     protected BaseAgentStreamingStrategy(
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
-        IRagContextInjector ragInjector,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy? retryPolicy = null)
     {
         ToolExecutor = toolExecutor;
         ThinkingExtractor = thinkingExtractor;
-        RagInjector = ragInjector;
         ToolBuilder = toolBuilder;
         RetryPolicy = retryPolicy;
     }
@@ -231,43 +227,6 @@ public abstract partial class BaseAgentStreamingStrategy : IAgentStreamingStrate
 
     #endregion
 
-    #region RAG Context Injection
-
-    /// <summary>
-    /// Inject RAG context if enabled and appropriate for the query.
-    /// Yields status and context retrieval events.
-    /// </summary>
-    protected async IAsyncEnumerable<AgentStreamEvent> TryInjectRagContextAsync(
-        AgentStreamingContext context,
-        Action<string> onContextInjected,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        var lastUserMessage = GetLastUserMessage(context.Request);
-        if (!context.Request.AgentRagEnabled || string.IsNullOrEmpty(lastUserMessage))
-            yield break;
-
-        yield return StatusEvent("Searching your notes for relevant context...");
-
-        var result = await RagInjector.TryRetrieveContextAsync(
-            lastUserMessage,
-            context.Request.UserId,
-            context.RagSettings,
-            context.UserPreferencesService,
-            context.RagService,
-            cancellationToken);
-
-        if (result.ContextMessage != null && result.RetrievedNotes?.Count > 0)
-        {
-            yield return ContextRetrievalEvent(
-                result.RetrievedNotes.Count,
-                result.RetrievedNotes,
-                result.RagLogId?.ToString());
-
-            onContextInjected(result.ContextMessage);
-        }
-    }
-
-    #endregion
 
     #region Message Helpers
 

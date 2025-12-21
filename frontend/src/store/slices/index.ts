@@ -8,11 +8,11 @@ export { createSettingsSlice } from './settings-slice';
 export { createUISlice } from './ui-slice';
 export { createThemeSlice } from './theme-slice';
 export { createOllamaSlice, formatBytes, formatSpeed, formatTimeRemaining } from './ollama-slice';
-export { 
-  createIndexingSlice, 
-  selectIsIndexing, 
-  selectIsIndexingComplete, 
-  selectIsIndexingFailed, 
+export {
+  createIndexingSlice,
+  selectIsIndexing,
+  selectIsIndexingComplete,
+  selectIsIndexingFailed,
   selectIsIndexingCancelled,
   selectIndexingProgress,
   selectActiveJobs,
@@ -24,3 +24,4 @@ export {
   selectVectorStore,
   selectEmbeddingProvider,
 } from './indexing-slice';
+export { createVoiceSlice } from './voice-slice';

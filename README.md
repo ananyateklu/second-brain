@@ -34,12 +34,12 @@ docker-compose up -d          # Access at http://localhost:3000
 <div align="center">
 <table>
 <tr>
-<td align="center"><img src="frontend/src/assets/dashboard-screenshot.png" alt="Dashboard" width="400"/><br>**Dashboard**</td>
-<td align="center"><img src="frontend/src/assets/chat-screenshot.png" alt="Chat" width="400"/><br>**AI Chat**</td>
+<td align="center"><img src="frontend/src/assets/dashboard-screenshot.png" alt="Dashboard" width="400"/><br>Dashboard</td>
+<td align="center"><img src="frontend/src/assets/chat-screenshot.png" alt="Chat" width="400"/><br>AI Chat</td>
 </tr>
 <tr>
-<td align="center"><img src="frontend/src/assets/aisettings-screenshot.png" alt="Settings" width="400"/><br>**AI Settings**</td>
-<td align="center"><img src="frontend/src/assets/indexing-screenshot.png" alt="Indexing" width="400"/><br>**RAG Indexing**</td>
+<td align="center"><img src="frontend/src/assets/aisettings-screenshot.png" alt="Settings" width="400"/><br>AI Settings</td>
+<td align="center"><img src="frontend/src/assets/indexing-screenshot.png" alt="Indexing" width="400"/><br>RAG Indexing</td>
 </tr>
 </table>
 </div>

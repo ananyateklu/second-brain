@@ -117,8 +117,8 @@ export function ChatHeader({
   }, [agentCapabilities]);
 
   // Determine RAG active state based on mode
-  // When agent mode is ON: RAG button controls agentRagEnabled (auto-context for agents)
-  // When agent mode is OFF: RAG button controls ragEnabled (normal RAG search)
+  // When agent mode is ON: RAG button controls notes capability (SemanticSearch tool access)
+  // When agent mode is OFF: RAG button controls ragEnabled (traditional RAG context injection)
   const isRagActive = agentModeEnabled ? agentRagEnabled : ragEnabled;
 
   return (

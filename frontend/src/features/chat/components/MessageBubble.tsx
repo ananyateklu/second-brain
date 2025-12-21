@@ -384,10 +384,10 @@ export function MessageBubble({
         className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${isUser ? 'rounded-br-md' : 'rounded-bl-md'
           }`}
         style={{
-          backgroundColor: isUser ? 'var(--btn-primary-bg)' : 'var(--surface-card)',
-          color: isUser ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+          backgroundColor: isUser ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'var(--surface-card)',
+          color: 'var(--text-primary)',
           ...(isUser && {
-            border: '1px solid var(--btn-primary-border)',
+            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
           }),
         }}
       >
@@ -399,8 +399,8 @@ export function MessageBubble({
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                   style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(4px)',
+                    backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                    color: 'var(--color-primary)',
                   }}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -420,8 +420,12 @@ export function MessageBubble({
                 {message.images.map((image, index) => (
                   <div
                     key={index}
-                    className="relative rounded-lg overflow-hidden border border-white/20"
-                    style={{ width: '80px', height: '80px' }}
+                    className="relative rounded-lg overflow-hidden border"
+                    style={{
+                      borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                      width: '80px',
+                      height: '80px'
+                    }}
                   >
                     <img
                       src={`data:${image.mediaType};base64,${image.base64Data}`}

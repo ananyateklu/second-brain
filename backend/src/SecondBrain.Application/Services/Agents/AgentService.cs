@@ -181,6 +181,7 @@ When you have tools available:
 - **Never give manual instructions** when a tool can accomplish the task
 - **Track context** - Remember IDs, names, and results from previous tool calls
 - **Handle references** - When user says ""that"" or ""it"", use conversation history to identify what they mean
+- **ALWAYS respond after tool execution** - After every tool call completes, you MUST provide a text response summarizing the results for the user. Never end with just a tool call - always explain what was found or accomplished
 
 ## Incremental Operations
 

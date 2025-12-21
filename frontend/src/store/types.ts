@@ -394,10 +394,127 @@ export interface GitSliceActions {
 export type GitSlice = GitSliceState & GitSliceActions;
 
 // ============================================
+// Voice Types
+// ============================================
+
+export interface VoiceSliceState {
+  // Session state
+  sessionId: string | null;
+  sessionState: import('../features/voice/types/voice-types').VoiceSessionState;
+  isConnecting: boolean;
+  isConnected: boolean;
+
+  // Audio controls
+  isMicrophoneEnabled: boolean;
+  isMuted: boolean;
+  isAudioPlaying: boolean;
+  audioLevel: number;
+
+  // Transcript
+  currentTranscript: string;
+  currentAssistantTranscript: string;
+  isTranscribing: boolean;
+  transcriptHistory: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>;
+
+  // Settings
+  selectedProvider: string | null;
+  selectedModel: string | null;
+  selectedVoiceId: string | null;
+  availableVoices: import('../features/voice/types/voice-types').VoiceInfo[];
+
+  // Service status
+  isServiceAvailable: boolean;
+  deepgramAvailable: boolean;
+  elevenLabsAvailable: boolean;
+  grokVoiceAvailable: boolean;
+
+  // Voice provider type (standard vs grok)
+  voiceProviderType: import('../features/voice/types/voice-types').VoiceProviderType;
+
+  // Grok Voice settings
+  selectedGrokVoice: string;
+  availableGrokVoices: import('../features/voice/types/voice-types').GrokVoiceInfo[];
+  enableGrokWebSearch: boolean;
+  enableGrokXSearch: boolean;
+
+  // Errors
+  error: string | null;
+
+  // Agent mode state
+  agentEnabled: boolean;
+  capabilities: string[];
+  toolExecutions: import('../features/voice/types/voice-types').VoiceToolExecution[];
+  thinkingSteps: import('../features/voice/types/voice-types').VoiceThinkingStep[];
+  retrievedNotes: import('../features/voice/types/voice-types').VoiceRetrievedNote[];
+  ragLogId: string | null;
+  groundingSources: import('../features/voice/types/voice-types').VoiceGroundingSource[];
+  isToolExecuting: boolean;
+  currentToolName: string | null;
+}
+
+export interface VoiceSliceActions {
+  // Session actions
+  setSessionId: (sessionId: string | null) => void;
+  setSessionState: (state: import('../features/voice/types/voice-types').VoiceSessionState | number) => void;
+  setIsConnecting: (isConnecting: boolean) => void;
+  setIsConnected: (isConnected: boolean) => void;
+
+  // Audio control actions
+  setMicrophoneEnabled: (enabled: boolean) => void;
+  toggleMicrophone: () => void;
+  setMuted: (muted: boolean) => void;
+  toggleMute: () => void;
+  setAudioPlaying: (playing: boolean) => void;
+  setAudioLevel: (level: number) => void;
+
+  // Transcript actions
+  setCurrentTranscript: (transcript: string) => void;
+  setCurrentAssistantTranscript: (transcript: string) => void;
+  setIsTranscribing: (isTranscribing: boolean) => void;
+  addTranscriptEntry: (role: 'user' | 'assistant', content: string) => void;
+  clearTranscriptHistory: () => void;
+
+  // Settings actions
+  setSelectedProvider: (provider: string | null) => void;
+  setSelectedModel: (model: string | null) => void;
+  setSelectedVoiceId: (voiceId: string | null) => void;
+  setAvailableVoices: (voices: import('../features/voice/types/voice-types').VoiceInfo[]) => void;
+
+  // Service status actions
+  setServiceStatus: (status: { deepgramAvailable: boolean; elevenLabsAvailable: boolean; voiceAgentEnabled: boolean; grokVoiceAvailable?: boolean }) => void;
+
+  // Error actions
+  setError: (error: string | null) => void;
+  clearError: () => void;
+
+  // Reset action
+  resetVoiceState: () => void;
+
+  // Agent mode actions
+  setAgentEnabled: (enabled: boolean) => void;
+  setCapabilities: (capabilities: string[]) => void;
+  addToolExecution: (execution: import('../features/voice/types/voice-types').VoiceToolExecution) => void;
+  updateToolExecution: (toolId: string, updates: Partial<import('../features/voice/types/voice-types').VoiceToolExecution>) => void;
+  addThinkingStep: (step: import('../features/voice/types/voice-types').VoiceThinkingStep) => void;
+  setRetrievedNotes: (notes: import('../features/voice/types/voice-types').VoiceRetrievedNote[], ragLogId?: string) => void;
+  setGroundingSources: (sources: import('../features/voice/types/voice-types').VoiceGroundingSource[]) => void;
+  clearAgentState: () => void;
+
+  // Grok Voice actions
+  setVoiceProviderType: (providerType: import('../features/voice/types/voice-types').VoiceProviderType) => void;
+  setSelectedGrokVoice: (voice: string) => void;
+  setAvailableGrokVoices: (voices: import('../features/voice/types/voice-types').GrokVoiceInfo[]) => void;
+  setEnableGrokWebSearch: (enabled: boolean) => void;
+  setEnableGrokXSearch: (enabled: boolean) => void;
+}
+
+export type VoiceSlice = VoiceSliceState & VoiceSliceActions;
+
+// ============================================
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
 
 // ============================================
 // Slice Creator Type

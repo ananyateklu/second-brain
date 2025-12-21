@@ -754,6 +754,32 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
         );
     }
 
+    // Add Voice/STT/TTS API keys from secrets
+    if let Some(ref deepgram_key) = secrets.deepgram_api_key {
+        if !deepgram_key.is_empty() {
+            command.env("Voice__Deepgram__ApiKey", deepgram_key);
+            command.env("Voice__Deepgram__Enabled", "true");
+        }
+    }
+    if let Some(ref elevenlabs_key) = secrets.elevenlabs_api_key {
+        if !elevenlabs_key.is_empty() {
+            command.env("Voice__ElevenLabs__ApiKey", elevenlabs_key);
+            command.env("Voice__ElevenLabs__Enabled", "true");
+        }
+    }
+    if let Some(ref openai_tts_key) = secrets.openai_tts_api_key {
+        if !openai_tts_key.is_empty() {
+            command.env("Voice__OpenAITTS__ApiKey", openai_tts_key);
+            command.env("Voice__OpenAITTS__Enabled", "true");
+        }
+    }
+    // Grok Voice uses xai_api_key - enable if XAI key is present
+    if let Some(ref xai_key) = secrets.xai_api_key {
+        if !xai_key.is_empty() {
+            command.env("Voice__GrokVoice__Enabled", "true");
+        }
+    }
+
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     let mut child = command
@@ -1499,6 +1525,9 @@ mod tests {
             github_default_repo: None,
             git_allowed_repository_roots: None,
             git_require_user_scoped_root: None,
+            deepgram_api_key: None,
+            elevenlabs_api_key: None,
+            openai_tts_api_key: None,
         };
 
         let json = serde_json::to_string(&secrets).unwrap();
@@ -1672,6 +1701,9 @@ mod tests {
             github_default_repo: Some("my-repo".to_string()),
             git_allowed_repository_roots: Some("/home/user/repos".to_string()),
             git_require_user_scoped_root: Some(true),
+            deepgram_api_key: Some("deepgram-key".to_string()),
+            elevenlabs_api_key: Some("elevenlabs-key".to_string()),
+            openai_tts_api_key: Some("sk-tts-key".to_string()),
         };
 
         save_secrets(&temp_dir.path().to_path_buf(), &original).unwrap();

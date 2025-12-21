@@ -283,6 +283,16 @@ export const API_ENDPOINTS = {
     RERUN_WORKFLOW: (id: number) => `/github/actions/runs/${id}/rerun`,
     CANCEL_WORKFLOW: (id: number) => `/github/actions/runs/${id}/cancel`,
   },
+
+  // Voice Agent
+  VOICE: {
+    SESSIONS: '/voice/sessions',
+    SESSION_BY_ID: (sessionId: string) => `/voice/sessions/${sessionId}`,
+    WEBSOCKET: '/voice/session',
+    VOICES: '/voice/voices',
+    GROK_VOICES: '/voice/voices/grok',
+    STATUS: '/voice/status',
+  },
 } as const;
 
 // ============================================
