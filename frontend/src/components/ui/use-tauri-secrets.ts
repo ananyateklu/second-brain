@@ -6,13 +6,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { isTauri } from '../../lib/native-notifications';
 import { getSecrets, type Secrets } from '../../lib/tauri-bridge';
 
+// String-only secret keys (excludes boolean fields)
+type StringSecretKey =
+  | 'openai_api_key'
+  | 'anthropic_api_key'
+  | 'gemini_api_key'
+  | 'xai_api_key'
+  | 'ollama_base_url'
+  | 'deepgram_api_key'
+  | 'elevenlabs_api_key';
+
 // Map provider IDs to their secret keys
-const PROVIDER_SECRET_KEYS: Record<string, keyof Secrets> = {
+const PROVIDER_SECRET_KEYS: Record<string, StringSecretKey> = {
   openai: 'openai_api_key',
   anthropic: 'anthropic_api_key',
   google: 'gemini_api_key',
   xai: 'xai_api_key',
   ollama: 'ollama_base_url',
+  // Voice providers
+  deepgram: 'deepgram_api_key',
+  elevenlabs: 'elevenlabs_api_key',
 };
 
 export function useTauriSecrets() {

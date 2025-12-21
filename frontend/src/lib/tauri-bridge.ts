@@ -141,14 +141,31 @@ export async function waitForBackend(maxWaitMs = 30000): Promise<boolean> {
  * API secrets configuration for the desktop app
  */
 export interface Secrets {
+  // AI Providers
   openai_api_key?: string | null;
   anthropic_api_key?: string | null;
   gemini_api_key?: string | null;
   xai_api_key?: string | null;
   ollama_base_url?: string | null;
+
+  // Pinecone Vector Store
   pinecone_api_key?: string | null;
   pinecone_environment?: string | null;
   pinecone_index_name?: string | null;
+
+  // GitHub Integration
+  github_personal_access_token?: string | null;
+  github_default_owner?: string | null;
+  github_default_repo?: string | null;
+
+  // Git Integration
+  git_allowed_repository_roots?: string | null;
+  git_require_user_scoped_root?: boolean | null;
+
+  // Voice Providers
+  deepgram_api_key?: string | null;
+  elevenlabs_api_key?: string | null;
+  openai_tts_api_key?: string | null;
 }
 
 /**

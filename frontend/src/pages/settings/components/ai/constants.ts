@@ -13,6 +13,14 @@ export const AI_PROVIDERS = [
 
 export type AIProviderId = typeof AI_PROVIDERS[number]['id'];
 
+// Voice providers (STT/TTS)
+export const VOICE_PROVIDERS = [
+  { id: 'deepgram', name: 'Deepgram (STT)' },
+  { id: 'elevenlabs', name: 'ElevenLabs (TTS)' },
+] as const;
+
+export type VoiceProviderId = typeof VOICE_PROVIDERS[number]['id'];
+
 export interface ProviderDetails {
   tagline: string;
   description: string;
@@ -57,6 +65,21 @@ export const PROVIDER_DETAILS: Record<string, ProviderDetails> = {
     docsUrl: 'https://docs.x.ai/docs',
     billingNote: 'Subscription-based access; follow account quota.',
   },
+  // Voice providers
+  deepgram: {
+    tagline: 'Fast and accurate speech-to-text transcription.',
+    description: 'Enterprise-grade STT with real-time streaming, speaker diarization, and multi-language support.',
+    highlights: ['Real-time streaming', 'Nova-3 model', 'Multi-language', 'Punctuation & formatting'],
+    docsUrl: 'https://developers.deepgram.com/docs',
+    billingNote: 'Pay-per-minute pricing; free tier with 200 minutes/month.',
+  },
+  elevenlabs: {
+    tagline: 'Natural text-to-speech synthesis for voice agents.',
+    description: 'High-quality AI voices with emotional range, low latency streaming, and voice cloning capabilities.',
+    highlights: ['30+ natural voices', 'Low-latency streaming', 'Multi-language', 'Voice cloning'],
+    docsUrl: 'https://elevenlabs.io/docs',
+    billingNote: 'Pay-per-character pricing; free tier available.',
+  },
 };
 
 /** Map backend provider names to frontend IDs */
@@ -66,6 +89,9 @@ export const PROVIDER_NAME_TO_ID: Record<string, string> = {
   'Gemini': 'google',
   'Ollama': 'ollama',
   'Grok': 'xai',
+  // Voice providers
+  'Deepgram': 'deepgram',
+  'ElevenLabs': 'elevenlabs',
 };
 
 /** Map frontend IDs to config key names */
@@ -75,6 +101,9 @@ export const PROVIDER_ID_TO_CONFIG_KEY: Record<string, string> = {
   'google': 'Gemini',
   'ollama': 'Ollama',
   'xai': 'XAI',
+  // Voice providers
+  'deepgram': 'Deepgram',
+  'elevenlabs': 'ElevenLabs',
 };
 
 /** Model suggestions for troubleshooting */

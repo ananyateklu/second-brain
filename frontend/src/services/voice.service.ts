@@ -1,5 +1,5 @@
 import { apiClient } from '../lib/api-client';
-import { API_ENDPOINTS } from '../lib/constants';
+import { API_ENDPOINTS, getDirectBackendUrl } from '../lib/constants';
 import type {
   VoiceSession,
   VoiceSessionOptions,
@@ -134,24 +134,25 @@ export class VoiceWebSocketConnection {
 
       console.log('[VoiceWebSocket] Token found, length:', token.length);
 
-      // Get the backend URL for WebSocket connection
-      // In development, connect directly to the backend (port 5001)
-      // In production, use the same host as the page
-      let wsUrl: string;
-      const isDev = import.meta.env.DEV;
+      // Get the backend URL using the centralized helper (handles Tauri and web modes)
+      const backendUrl = getDirectBackendUrl();
 
-      if (isDev) {
-        // Development: connect directly to backend
-        wsUrl = `ws://localhost:5001/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+      // Convert HTTP URL to WebSocket URL
+      // Handle both http/https and the /api prefix
+      let wsUrl: string;
+      if (backendUrl.startsWith('http://')) {
+        wsUrl = `ws://${backendUrl.substring(7).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+      } else if (backendUrl.startsWith('https://')) {
+        wsUrl = `wss://${backendUrl.substring(8).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
       } else {
-        // Production: use same host with ws/wss based on protocol
+        // Fallback: use same protocol as the page for relative URLs
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
-        wsUrl = `${protocol}//${host}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+        wsUrl = `${protocol}//${host}${backendUrl.replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
       }
 
+      console.log('[VoiceWebSocket] Backend URL:', backendUrl);
       console.log('[VoiceWebSocket] Connecting to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
-      console.log('[VoiceWebSocket] isDev:', isDev);
 
       this.ws = new WebSocket(wsUrl);
 

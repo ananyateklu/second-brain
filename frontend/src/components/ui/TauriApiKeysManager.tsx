@@ -10,13 +10,26 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { getSecrets, saveSecrets, getSecretsPath, type Secrets } from '../../lib/tauri-bridge';
 import { toast } from '../../hooks/use-toast';
 
+// Provider secret key type (string keys only)
+type ProviderSecretKey =
+  | 'openai_api_key'
+  | 'anthropic_api_key'
+  | 'gemini_api_key'
+  | 'xai_api_key'
+  | 'ollama_base_url'
+  | 'deepgram_api_key'
+  | 'elevenlabs_api_key';
+
 // Map provider IDs to their secret keys
-const PROVIDER_SECRET_KEYS: Record<string, keyof Secrets> = {
+const PROVIDER_SECRET_KEYS: Record<string, ProviderSecretKey> = {
   openai: 'openai_api_key',
   anthropic: 'anthropic_api_key',
   google: 'gemini_api_key',
   xai: 'xai_api_key',
   ollama: 'ollama_base_url',
+  // Voice providers
+  deepgram: 'deepgram_api_key',
+  elevenlabs: 'elevenlabs_api_key',
 };
 
 const PROVIDER_KEY_INFO: Record<string, { label: string; placeholder: string; helpText?: string }> = {
@@ -25,15 +38,36 @@ const PROVIDER_KEY_INFO: Record<string, { label: string; placeholder: string; he
   google: { label: 'Google Gemini API Key', placeholder: 'AI...' },
   xai: { label: 'xAI (Grok) API Key', placeholder: 'xai-...' },
   ollama: { label: 'Ollama Base URL', placeholder: 'http://localhost:11434', helpText: 'Leave empty for default local Ollama' },
+  // Voice providers
+  deepgram: { label: 'Deepgram API Key', placeholder: 'Your Deepgram API key', helpText: 'Required for speech-to-text transcription' },
+  elevenlabs: { label: 'ElevenLabs API Key', placeholder: 'Your ElevenLabs API key', helpText: 'Required for text-to-speech synthesis' },
 };
 
+// String-only keys from Secrets (excludes boolean fields like git_require_user_scoped_root)
+type StringSecretKeys =
+  | 'openai_api_key'
+  | 'anthropic_api_key'
+  | 'gemini_api_key'
+  | 'xai_api_key'
+  | 'ollama_base_url'
+  | 'pinecone_api_key'
+  | 'pinecone_environment'
+  | 'pinecone_index_name'
+  | 'github_personal_access_token'
+  | 'github_default_owner'
+  | 'github_default_repo'
+  | 'git_allowed_repository_roots'
+  | 'deepgram_api_key'
+  | 'elevenlabs_api_key'
+  | 'openai_tts_api_key';
+
 interface ApiKeyField {
-  key: keyof Secrets;
+  key: StringSecretKeys;
   label: string;
   placeholder: string;
   type: 'password' | 'text';
   helpText?: string;
-  group: 'ai' | 'vectorstore';
+  group: 'ai' | 'vectorstore' | 'github' | 'git' | 'voice';
 }
 
 const API_KEY_FIELDS: ApiKeyField[] = [
@@ -48,6 +82,19 @@ const API_KEY_FIELDS: ApiKeyField[] = [
   { key: 'pinecone_api_key', label: 'Pinecone API Key', placeholder: 'pcsk_...', type: 'password', group: 'vectorstore' },
   { key: 'pinecone_environment', label: 'Pinecone Environment', placeholder: 'us-east-1', type: 'text', group: 'vectorstore' },
   { key: 'pinecone_index_name', label: 'Pinecone Index Name', placeholder: 'second-brain', type: 'text', group: 'vectorstore' },
+
+  // GitHub Integration
+  { key: 'github_personal_access_token', label: 'GitHub Personal Access Token', placeholder: 'ghp_...', type: 'password', group: 'github' },
+  { key: 'github_default_owner', label: 'GitHub Default Owner', placeholder: 'username or org', type: 'text', group: 'github', helpText: 'Default repository owner for GitHub operations' },
+  { key: 'github_default_repo', label: 'GitHub Default Repository', placeholder: 'repo-name', type: 'text', group: 'github', helpText: 'Default repository name for GitHub operations' },
+
+  // Git Integration
+  { key: 'git_allowed_repository_roots', label: 'Allowed Repository Roots', placeholder: '/path/to/repos, /another/path', type: 'text', group: 'git', helpText: 'Comma-separated list of allowed repository paths' },
+
+  // Voice Providers
+  { key: 'deepgram_api_key', label: 'Deepgram API Key (STT)', placeholder: 'Your Deepgram key', type: 'password', group: 'voice', helpText: 'Required for speech-to-text transcription' },
+  { key: 'elevenlabs_api_key', label: 'ElevenLabs API Key (TTS)', placeholder: 'Your ElevenLabs key', type: 'password', group: 'voice', helpText: 'Required for text-to-speech synthesis' },
+  { key: 'openai_tts_api_key', label: 'OpenAI TTS API Key', placeholder: 'sk-... (optional)', type: 'password', group: 'voice', helpText: 'Leave empty to use your main OpenAI API key' },
 ];
 
 // Single provider API key input for the modal
@@ -345,6 +392,9 @@ export function TauriApiKeysManager() {
 
   const aiProviderFields = API_KEY_FIELDS.filter(f => f.group === 'ai');
   const vectorStoreFields = API_KEY_FIELDS.filter(f => f.group === 'vectorstore');
+  const githubFields = API_KEY_FIELDS.filter(f => f.group === 'github');
+  const gitFields = API_KEY_FIELDS.filter(f => f.group === 'git');
+  const voiceFields = API_KEY_FIELDS.filter(f => f.group === 'voice');
 
   return (
     <div className="space-y-6">
@@ -355,6 +405,70 @@ export function TauriApiKeysManager() {
         </h4>
         <div className="space-y-3">
           {aiProviderFields.map(field => (
+            <ApiKeyInput
+              key={field.key}
+              field={field}
+              value={secrets[field.key]}
+              isVisible={visibleFields.has(field.key)}
+              onChange={handleChange}
+              onToggleVisibility={toggleVisibility}
+              maskValue={maskValue}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Voice Providers */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Voice Agent (STT/TTS)
+        </h4>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+          Configure speech-to-text and text-to-speech providers for voice conversations.
+          Grok Voice uses your xAI API key configured above.
+        </p>
+        <div className="space-y-3">
+          {voiceFields.map(field => (
+            <ApiKeyInput
+              key={field.key}
+              field={field}
+              value={secrets[field.key]}
+              isVisible={visibleFields.has(field.key)}
+              onChange={handleChange}
+              onToggleVisibility={toggleVisibility}
+              maskValue={maskValue}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* GitHub Integration */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+          GitHub Integration
+        </h4>
+        <div className="space-y-3">
+          {githubFields.map(field => (
+            <ApiKeyInput
+              key={field.key}
+              field={field}
+              value={secrets[field.key]}
+              isVisible={visibleFields.has(field.key)}
+              onChange={handleChange}
+              onToggleVisibility={toggleVisibility}
+              maskValue={maskValue}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Git Integration */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+          Git Integration
+        </h4>
+        <div className="space-y-3">
+          {gitFields.map(field => (
             <ApiKeyInput
               key={field.key}
               field={field}
