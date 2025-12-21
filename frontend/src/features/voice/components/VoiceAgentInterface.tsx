@@ -61,12 +61,6 @@ export function VoiceAgentInterface() {
   } = useVoiceSession({
     // Grok Voice uses 24kHz audio, standard voice uses 16kHz
     sampleRate: voiceProviderType === 'GrokVoice' ? 24000 : 16000,
-    onStateChange: (state) => {
-      console.log('Voice state changed:', state);
-    },
-    onError: (err) => {
-      console.error('Voice error:', err);
-    },
   });
 
   // Handle start session
@@ -100,9 +94,9 @@ export function VoiceAgentInterface() {
       }
       : {
         // Standard voice options
-        provider: selectedProvider!,
-        model: selectedModel!,
-        voiceId: selectedVoiceId!,
+        provider: selectedProvider ?? '',
+        model: selectedModel ?? '',
+        voiceId: selectedVoiceId ?? '',
         voiceProviderType: 'Standard',
         enableRag: false, // Don't auto-inject RAG context
         temperature: 0.7,

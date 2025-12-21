@@ -168,6 +168,9 @@ export function EditNoteModal() {
   // This prevents rendering RichNoteForm with stale form data
   const [formSyncedNoteId, setFormSyncedNoteId] = useState<string | null>(null);
 
+  // Check if form is synced with current note - prevents rendering with stale data
+  const isFormSynced = formSyncedNoteId === editingNote?.id;
+
   // Reset form when note changes (different note ID or after save when updatedAt changes)
   useEffect(() => {
     if (editingNote && isOpen) {
@@ -182,25 +185,22 @@ export function EditNoteModal() {
       if (shouldReset) {
         lastNoteStateRef.current = currentState;
         const formData = noteToFormData(editingNote);
-        // Defer state update to avoid cascading renders warning
-        queueMicrotask(() => setCurrentTitle(formData.title));
         reset(formData, {
           keepDefaultValues: false,
         });
-        // Mark form as synced with this note AFTER reset
+        /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync: signals form reset completion to prevent stale data rendering */
+        setCurrentTitle(formData.title);
         setFormSyncedNoteId(editingNote.id);
+        /* eslint-enable react-hooks/set-state-in-effect */
       }
     }
     // Clear state when modal closes so next open resets properly
     if (!isOpen) {
       lastNoteStateRef.current = null;
       setFormSyncedNoteId(null);
-      queueMicrotask(() => setCurrentTitle(''));
+      setCurrentTitle('');
     }
   }, [editingNote, isOpen, reset]);
-
-  // Check if form is synced with current note - prevents rendering with stale data
-  const isFormSynced = formSyncedNoteId === editingNote?.id;
 
   // Keyboard shortcut: Cmd/Ctrl + S to save
   useEffect(() => {

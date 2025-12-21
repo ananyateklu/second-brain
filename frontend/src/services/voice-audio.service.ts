@@ -248,7 +248,12 @@ export class AudioPlayer {
     }
 
     this.isPlaying = true;
-    const { data: audioData, sampleRate } = this.audioQueue.shift()!;
+    const queueItem = this.audioQueue.shift();
+    if (!queueItem) {
+      this.isPlaying = false;
+      return;
+    }
+    const { data: audioData, sampleRate } = queueItem;
 
     try {
       // Convert PCM int16 to float32 for Web Audio API
@@ -259,8 +264,15 @@ export class AudioPlayer {
         float32Data[i] = int16Data[i] / 32768.0;
       }
 
+      // AudioContext is guaranteed to exist after init() call above
+      const ctx = this.audioContext;
+      if (!ctx) {
+        void this.playNext();
+        return;
+      }
+
       // Create buffer with the source sample rate - browser will resample automatically
-      const audioBuffer = this.audioContext!.createBuffer(
+      const audioBuffer = ctx.createBuffer(
         this.options.channelCount,
         float32Data.length,
         sampleRate
@@ -268,9 +280,9 @@ export class AudioPlayer {
 
       audioBuffer.getChannelData(0).set(float32Data);
 
-      this.currentSource = this.audioContext!.createBufferSource();
+      this.currentSource = ctx.createBufferSource();
       this.currentSource.buffer = audioBuffer;
-      this.currentSource.connect(this.audioContext!.destination);
+      this.currentSource.connect(ctx.destination);
 
       this.currentSource.onended = () => {
         this.currentSource = null;

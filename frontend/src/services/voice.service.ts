@@ -132,7 +132,7 @@ export class VoiceWebSocketConnection {
         throw new Error('No authentication token available');
       }
 
-      console.log('[VoiceWebSocket] Token found, length:', token.length);
+      // Token found for WebSocket authentication
 
       // Get the backend URL using the centralized helper (handles Tauri and web modes)
       const backendUrl = getDirectBackendUrl();
@@ -151,8 +151,7 @@ export class VoiceWebSocketConnection {
         wsUrl = `${protocol}//${host}${backendUrl.replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
       }
 
-      console.log('[VoiceWebSocket] Backend URL:', backendUrl);
-      console.log('[VoiceWebSocket] Connecting to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
+      // Connecting to voice WebSocket endpoint
 
       this.ws = new WebSocket(wsUrl);
 
@@ -310,7 +309,7 @@ export class VoiceWebSocketConnection {
       // Store timeout ID so we can clear it on disconnect to prevent memory leaks
       this.reconnectTimeoutId = setTimeout(() => {
         this.reconnectTimeoutId = null;
-        console.log(`Reconnecting... attempt ${this.reconnectAttempts}`);
+        // Attempting reconnection
         this.connect().catch(console.error);
       }, this.reconnectDelay * this.reconnectAttempts);
     }

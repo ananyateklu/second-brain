@@ -202,7 +202,9 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
         setSessionState(state);
         onStateChangeRef.current?.(state);
         if (reason) {
-          console.log('State change reason:', reason);
+          // Debug: state change reasons are logged in development only
+          // eslint-disable-next-line no-console
+          if (import.meta.env.DEV) console.log('State change reason:', reason);
         }
       },
       onTranscript: (text, isFinal, _confidence) => {
@@ -228,7 +230,6 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
         }
       },
       onMetadata: (event, data) => {
-        console.log('Voice metadata:', event, data);
 
         switch (event) {
           // AI response streaming - show text as it's being generated
@@ -298,12 +299,12 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
 
           // Agent status update
           case MetadataEvents.AGENT_STATUS:
-            console.log('Agent status:', data?.message);
+            // Agent status updates are informational only
             break;
 
           default:
-            // Log unhandled events for debugging
-            console.log('Unhandled voice metadata event:', event, data);
+            // Unhandled events are silently ignored in production
+            break;
         }
       },
     };
