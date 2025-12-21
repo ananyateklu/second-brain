@@ -10,28 +10,36 @@ import { NOTES_FOLDERS } from '../../../lib/constants';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
 import { fileAttachmentsToNoteImages } from '../utils/note-image-utils';
 import type { FileAttachment } from '../../../utils/multimodal-models';
+import type { Note, NoteListItem } from '../../../types/notes';
 
-export function EditNoteModal() {
-  const isOpen = useBoundStore((state) => state.isEditModalOpen);
-  const editingNoteId = useBoundStore((state) => state.editingNoteId);
-  const closeModal = useBoundStore((state) => state.closeEditModal);
+// Props for the extracted form content component
+interface EditNoteFormContentProps {
+  note: Note;
+  allNotes: NoteListItem[] | undefined;
+}
 
-  // Fetch the full note with content when modal is open and we have an ID
-  const { data: fetchedNote, isLoading: isLoadingNote, error: noteError } = useNote(editingNoteId ?? '');
-
-  // The full note to edit (fetched from API)
-  const editingNote = fetchedNote ?? null;
-
-  const updateNoteMutation = useUpdateNote();
-  const archiveNoteMutation = useArchiveNote();
-  const unarchiveNoteMutation = useUnarchiveNote();
-  const moveToFolderMutation = useMoveToFolder();
-  const { data: allNotes } = useNotes();
+/**
+ * EditNoteFormContent - Contains all form logic and state.
+ *
+ * This component is keyed by `${noteId}-${updatedAt}` in the parent.
+ * When the key changes (different note OR same note with new updatedAt after save),
+ * React unmounts and remounts this component, automatically resetting all state
+ * to initial values derived from the new note prop.
+ *
+ * This eliminates the need for:
+ * - formSyncedNoteId state (sync guard)
+ * - lastNoteStateRef (change detection)
+ * - prevNoteIdRef (previous ID tracking)
+ * - useEffect with setState (state sync)
+ */
+function EditNoteFormContent({ note, allNotes }: EditNoteFormContentProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
-  const [isArchived, setIsArchived] = useState(editingNote?.isArchived ?? false);
-  const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);
+
+  // All state initializes from note - resets automatically on remount (key change)
+  const [isArchived, setIsArchived] = useState(note.isArchived);
+  const [currentFolder, setCurrentFolder] = useState<string | undefined>(note.folder);
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
@@ -39,110 +47,76 @@ export function EditNoteModal() {
   const [newImages, setNewImages] = useState<FileAttachment[]>([]);
   const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
-  // Track the note's updatedAt to detect when we need to reset the form
-  // This handles both: switching notes AND after a successful save (updatedAt changes)
-  const lastNoteStateRef = useRef<{ id: string; updatedAt: string } | null>(null);
+  // Mutations
+  const updateNoteMutation = useUpdateNote();
+  const archiveNoteMutation = useArchiveNote();
+  const unarchiveNoteMutation = useUnarchiveNote();
+  const moveToFolderMutation = useMoveToFolder();
 
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
     if (!allNotes) return [];
     const folders = allNotes
-      .map(note => note.folder)
+      .map(n => n.folder)
       .filter((folder): folder is string => !!folder);
     return Array.from(new Set(folders)).sort();
   }, [allNotes]);
 
-  // Sync local states with editingNote - use ref to track previous note ID
-  const prevNoteIdRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (editingNote && editingNote.id !== prevNoteIdRef.current) {
-      prevNoteIdRef.current = editingNote.id;
-      /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync from prop data */
-      setIsArchived(editingNote.isArchived);
-      setCurrentFolder(editingNote.folder);
-      /* eslint-enable react-hooks/set-state-in-effect */
-    }
-  }, [editingNote]);
+  // Compute the saved form baseline from note
+  const savedFormData = useMemo(() => noteToFormData(note), [note]);
 
-  const handleArchiveToggle = async () => {
-    if (!editingNote) return;
-
-    if (isArchived) {
-      await unarchiveNoteMutation.mutateAsync(editingNote.id);
-      setIsArchived(false);
-      // Remove from Archived folder (only if currently in Archived folder)
-      if (currentFolder === NOTES_FOLDERS.ARCHIVED) {
-        setCurrentFolder(undefined);
-      }
-    } else {
-      await archiveNoteMutation.mutateAsync(editingNote.id);
-      setIsArchived(true);
-      // Move to Archived folder
-      setCurrentFolder(NOTES_FOLDERS.ARCHIVED);
-    }
-  };
-
-  const handleFolderChange = async (folder: string | null) => {
-    if (!editingNote) return;
-    setCurrentFolder(folder || undefined);
-    setIsFolderDropdownOpen(false);
-    await moveToFolderMutation.mutateAsync({ id: editingNote.id, folder });
-  };
-
-  // Compute the saved form baseline from editingNote
-  // This is more reliable than react-hook-form's isDirty after reset()
-  const savedFormData = useMemo(() => {
-    if (!editingNote || !isOpen) return null;
-    return noteToFormData(editingNote);
-  }, [editingNote, isOpen]);
-
-  // Track current title separately to ensure re-renders on title changes
-  // This is needed because react-hook-form's register() doesn't always trigger re-renders
-  const [currentTitle, setCurrentTitle] = useState('');
-
-  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, reset, watchedValues } = useNoteForm({
-    defaultValues: editingNote ? noteToFormData(editingNote) : undefined,
+  // Form initialized with note data - no reset() needed, remount handles it
+  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, watchedValues } = useNoteForm({
+    defaultValues: savedFormData,
     onSubmit: async (data) => {
-      if (!editingNote) return;
-
       const noteData = formDataToNote(data);
       const images = fileAttachmentsToNoteImages(newImages);
-      const updatedNote = await updateNoteMutation.mutateAsync({
-        id: editingNote.id,
+      await updateNoteMutation.mutateAsync({
+        id: note.id,
         data: {
           ...noteData,
           images: images.length > 0 ? images : undefined,
           deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
         },
       });
-      // Clear new images after successful save
-      setNewImages([]);
-      setDeletedImageIds([]);
-      // Reset form with the updated note data as new baseline
-      if (updatedNote) {
-        const newFormData = noteToFormData(updatedNote);
-        setCurrentTitle(newFormData.title);
-        // Reset form to new values
-        reset(newFormData, { keepDefaultValues: false });
-        // Update the ref to prevent the useEffect from resetting again
-        lastNoteStateRef.current = { id: updatedNote.id, updatedAt: updatedNote.updatedAt };
-      }
+      // After save, the query invalidation triggers refetch.
+      // Parent's formKey changes due to new updatedAt.
+      // This component remounts with fresh data from server.
+      // No manual reset or state updates needed here.
     },
   });
 
-  // Compute dirty state by comparing current values to saved baseline
-  // Use currentTitle (React state) for title, watchedValues for content/tags
-  // Also include image changes (new uploads or deletions)
-  let isDirty = rhfIsDirty;
-  if (savedFormData && watchedValues) {
-    const titleDirty = currentTitle !== savedFormData.title;
+  // Compute dirty state from watched values vs saved baseline
+  const isDirty = useMemo(() => {
+    if (!watchedValues) return rhfIsDirty;
+    const titleDirty = (watchedValues.title ?? '') !== savedFormData.title;
     const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
     const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
     const hasImageChanges = newImages.length > 0 || deletedImageIds.length > 0;
-    isDirty = titleDirty || contentDirty || tagsDirty || hasImageChanges;
-  }
+    return titleDirty || contentDirty || tagsDirty || hasImageChanges;
+  }, [watchedValues, savedFormData, newImages, deletedImageIds, rhfIsDirty]);
 
-  // Image handlers
+  // Handlers
+  const handleArchiveToggle = async () => {
+    if (isArchived) {
+      await unarchiveNoteMutation.mutateAsync(note.id);
+      setIsArchived(false);
+      if (currentFolder === NOTES_FOLDERS.ARCHIVED) {
+        setCurrentFolder(undefined);
+      }
+    } else {
+      await archiveNoteMutation.mutateAsync(note.id);
+      setIsArchived(true);
+      setCurrentFolder(NOTES_FOLDERS.ARCHIVED);
+    }
+  };
+
+  const handleFolderChange = async (folder: string | null) => {
+    setCurrentFolder(folder || undefined);
+    setIsFolderDropdownOpen(false);
+    await moveToFolderMutation.mutateAsync({ id: note.id, folder });
+  };
+
   const handleAddImages = useCallback((images: FileAttachment[]) => {
     setNewImages(prev => [...prev, ...images]);
   }, []);
@@ -164,44 +138,6 @@ export function EditNoteModal() {
     void handleSubmit();
   };
 
-  // Track whether form is synced with the current note
-  // This prevents rendering RichNoteForm with stale form data
-  const [formSyncedNoteId, setFormSyncedNoteId] = useState<string | null>(null);
-
-  // Check if form is synced with current note - prevents rendering with stale data
-  const isFormSynced = formSyncedNoteId === editingNote?.id;
-
-  // Reset form when note changes (different note ID or after save when updatedAt changes)
-  useEffect(() => {
-    if (editingNote && isOpen) {
-      const currentState = { id: editingNote.id, updatedAt: editingNote.updatedAt };
-      const lastState = lastNoteStateRef.current;
-
-      // Reset if: different note, or same note but updatedAt changed (after save)
-      const shouldReset = !lastState ||
-        lastState.id !== currentState.id ||
-        lastState.updatedAt !== currentState.updatedAt;
-
-      if (shouldReset) {
-        lastNoteStateRef.current = currentState;
-        const formData = noteToFormData(editingNote);
-        reset(formData, {
-          keepDefaultValues: false,
-        });
-        /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync: signals form reset completion to prevent stale data rendering */
-        setCurrentTitle(formData.title);
-        setFormSyncedNoteId(editingNote.id);
-        /* eslint-enable react-hooks/set-state-in-effect */
-      }
-    }
-    // Clear state when modal closes so next open resets properly
-    if (!isOpen) {
-      lastNoteStateRef.current = null;
-      setFormSyncedNoteId(null);
-      setCurrentTitle('');
-    }
-  }, [editingNote, isOpen, reset]);
-
   // Keyboard shortcut: Cmd/Ctrl + S to save
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -213,111 +149,17 @@ export function EditNoteModal() {
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, isDirty, isSubmitting]);
-
-  // Handle modal close with form reset
-  const handleClose = useCallback(() => {
-    closeModal();
-    reset({
-      title: '',
-      content: '',
-      contentJson: null,
-      tags: '',
-    });
-    setNewImages([]);
-    setDeletedImageIds([]);
-  }, [closeModal, reset]);
-
-  // Don't render if modal is not open or no note ID
-  if (!isOpen || !editingNoteId) return null;
-
-  // Show loading state while fetching full note
-  if (isLoadingNote) {
-    return (
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Edit Note"
-        maxWidth="max-w-[80vw]"
-        className="h-[85vh] flex flex-col"
-        icon={
-          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        }
-      >
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className="w-8 h-8 border-2 rounded-full animate-spin"
-              style={{
-                borderColor: 'var(--border)',
-                borderTopColor: 'var(--color-brand-500)',
-              }}
-            />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading note...</p>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
-
-  // Show error state if note fetch failed
-  if (noteError || !editingNote) {
-    return (
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Edit Note"
-        maxWidth="max-w-[80vw]"
-        className="h-[85vh] flex flex-col"
-        icon={
-          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-        }
-      >
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-4">
-            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-error)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p style={{ color: 'var(--text-primary)' }}>Failed to load note</p>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {noteError instanceof Error ? noteError.message : 'The note could not be found'}
-            </p>
-            <Button variant="secondary" onClick={handleClose}>Close</Button>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
+  }, [isDirty, isSubmitting]);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={closeModal}
-      title="Edit Note"
-      maxWidth="max-w-[80vw]"
-      className="h-[85vh] flex flex-col"
-      icon={
-        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          {/* Fancy note/document with pen icon */}
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 3v4a1 1 0 001 1h4" opacity="0.6" />
-          {/* Pen/pencil overlay */}
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth={1.5} />
-        </svg>
-      }
-      subtitle={editingNote?.updatedAt ? formatRelativeDate(editingNote.updatedAt) : undefined}
-      headerAction={
+    <>
+      {/* Header action buttons - rendered via Modal's headerAction prop would require lifting state,
+          so we render them at the top of the body instead */}
+      <div className="flex items-center justify-between gap-2 mb-4 -mt-2">
         <div className="flex items-center gap-2">
           {/* Folder Selector */}
           <div className="relative">
@@ -353,7 +195,7 @@ export function EditNoteModal() {
             {/* Folder Dropdown */}
             {isFolderDropdownOpen && (
               <div
-                className="absolute top-full right-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto thin-scrollbar rounded-xl border shadow-xl z-50"
+                className="absolute top-full left-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto thin-scrollbar rounded-xl border shadow-xl z-50"
                 style={{
                   backgroundColor: 'var(--surface-card-solid)',
                   borderColor: 'var(--border)',
@@ -441,7 +283,7 @@ export function EditNoteModal() {
             )}
           </div>
 
-          {/* History Button - toggles panel */}
+          {/* History Button */}
           <Button
             type="button"
             variant={isHistoryOpen ? "primary" : "secondary"}
@@ -479,94 +321,191 @@ export function EditNoteModal() {
               </>
             )}
           </Button>
-          {/* Update Button */}
-          {isDirty && (
-            <Button
-              type="button"
-              variant="primary"
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-              onClick={() => {
-                if (formRef.current) {
-                  formRef.current.requestSubmit();
-                }
-              }}
-            >
-              {isSubmitting ? (
-                <>Saving...</>
-              ) : (
-                <>
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Update Note
-                </>
-              )}
-            </Button>
-          )}
         </div>
-      }
-    >
+
+        {/* Update Button - right side */}
+        {isDirty && (
+          <Button
+            type="button"
+            variant="primary"
+            isLoading={isSubmitting}
+            disabled={isSubmitting}
+            onClick={() => {
+              if (formRef.current) {
+                formRef.current.requestSubmit();
+              }
+            }}
+          >
+            {isSubmitting ? (
+              <>Saving...</>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Update Note
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
       {/* Main content area - flex row for form + history panel */}
-      {/* Use negative margins to break out of modal's p-6 padding for full-height sidebar */}
       <div
-        className="flex overflow-hidden -m-6 rounded-b-3xl"
+        className="flex overflow-hidden -mx-6 -mb-6 rounded-b-3xl"
         style={{
-          height: 'calc(100% + 48px)', /* Account for the negative margin (24px * 2) */
+          height: 'calc(100% - 40px)',
           backgroundColor: 'var(--surface-elevated)',
         }}
       >
-        {/* Form area - takes remaining space, restore padding */}
+        {/* Form area */}
         <form
           ref={formRef}
           onSubmit={handleFormSubmit}
           className="flex-1 flex flex-col min-w-0 overflow-hidden p-6"
         >
-          {isFormSynced ? (
-            <RichNoteForm
-              key={editingNote?.id}
-              register={register}
-              control={control}
-              setValue={setValue}
-              errors={errors}
-              isSubmitting={isSubmitting}
-              onTitleChange={setCurrentTitle}
-              initialTags={editingNote?.tags ?? []}
-              newImages={newImages}
-              existingImages={editingNote?.images}
-              deletedImageIds={deletedImageIds}
-              onAddImages={handleAddImages}
-              onRemoveNewImage={handleRemoveNewImage}
-              onDeleteExistingImage={handleDeleteExistingImage}
-              onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div
-                className="w-6 h-6 border-2 rounded-full animate-spin"
-                style={{
-                  borderColor: 'var(--border)',
-                  borderTopColor: 'var(--color-brand-500)',
-                }}
-              />
-            </div>
-          )}
+          <RichNoteForm
+            register={register}
+            control={control}
+            setValue={setValue}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            initialTags={note.tags ?? []}
+            newImages={newImages}
+            existingImages={note.images}
+            deletedImageIds={deletedImageIds}
+            onAddImages={handleAddImages}
+            onRemoveNewImage={handleRemoveNewImage}
+            onDeleteExistingImage={handleDeleteExistingImage}
+            onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
+          />
         </form>
 
-        {/* Version History Panel - inline sidebar, spans full height */}
-        {editingNote && (
-          <NoteVersionHistoryPanel
-            noteId={editingNote.id}
-            isOpen={isHistoryOpen}
-            onClose={() => { setIsHistoryOpen(false); }}
-            onRestore={() => {
-              // Note data will be refreshed via query invalidation
-              // Keep modal open - user can continue editing or close manually
-            }}
-          />
-        )}
+        {/* Version History Panel */}
+        <NoteVersionHistoryPanel
+          noteId={note.id}
+          isOpen={isHistoryOpen}
+          onClose={() => { setIsHistoryOpen(false); }}
+          onRestore={() => {
+            // Note data will be refreshed via query invalidation
+            // Component will remount with new data due to key change
+          }}
+        />
       </div>
-    </Modal>
+    </>
   );
 }
 
+/**
+ * EditNoteModal - Parent component that handles loading/error states
+ * and uses key-based reset for the form content.
+ */
+export function EditNoteModal() {
+  const isOpen = useBoundStore((state) => state.isEditModalOpen);
+  const editingNoteId = useBoundStore((state) => state.editingNoteId);
+  const closeModal = useBoundStore((state) => state.closeEditModal);
+
+  // Fetch the full note with content
+  const { data: editingNote, isLoading: isLoadingNote, error: noteError } = useNote(editingNoteId ?? '');
+  const { data: allNotes } = useNotes();
+
+  // Form key forces remount when note identity changes
+  // This handles both: switching notes AND after save (new updatedAt)
+  const formKey = editingNote
+    ? `${editingNote.id}-${editingNote.updatedAt}`
+    : 'empty';
+
+  const handleClose = useCallback(() => {
+    closeModal();
+  }, [closeModal]);
+
+  // Don't render if modal is not open or no note ID
+  if (!isOpen || !editingNoteId) return null;
+
+  // Show loading state while fetching full note
+  if (isLoadingNote) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="Edit Note"
+        maxWidth="max-w-[80vw]"
+        className="h-[85vh] flex flex-col"
+        icon={
+          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        }
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4">
+            <div
+              className="w-8 h-8 border-2 rounded-full animate-spin"
+              style={{
+                borderColor: 'var(--border)',
+                borderTopColor: 'var(--color-brand-500)',
+              }}
+            />
+            <p style={{ color: 'var(--text-secondary)' }}>Loading note...</p>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  // Show error state if note fetch failed
+  if (noteError || !editingNote) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="Edit Note"
+        maxWidth="max-w-[80vw]"
+        className="h-[85vh] flex flex-col"
+        icon={
+          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        }
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="flex flex-col items-center gap-4">
+            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-error)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p style={{ color: 'var(--text-primary)' }}>Failed to load note</p>
+            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+              {noteError instanceof Error ? noteError.message : 'The note could not be found'}
+            </p>
+            <Button variant="secondary" onClick={handleClose}>Close</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={closeModal}
+      title="Edit Note"
+      maxWidth="max-w-[80vw]"
+      className="h-[85vh] flex flex-col"
+      icon={
+        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 3v4a1 1 0 001 1h4" opacity="0.6" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth={1.5} />
+        </svg>
+      }
+      subtitle={editingNote.updatedAt ? formatRelativeDate(editingNote.updatedAt) : undefined}
+    >
+      {/* Key-based reset: when formKey changes, component remounts with fresh state */}
+      <EditNoteFormContent
+        key={formKey}
+        note={editingNote}
+        allNotes={allNotes}
+      />
+    </Modal>
+  );
+}

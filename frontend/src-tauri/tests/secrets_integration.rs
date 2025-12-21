@@ -28,6 +28,9 @@ fn test_secrets_persistence_workflow() {
         github_default_repo: None,
         git_allowed_repository_roots: None,
         git_require_user_scoped_root: None,
+        deepgram_api_key: None,
+        elevenlabs_api_key: None,
+        openai_tts_api_key: None,
     };
 
     let save_result = save_secrets(&app_data, &secrets);
@@ -90,6 +93,9 @@ fn test_secrets_full_roundtrip() {
         github_default_repo: Some("test-repo".to_string()),
         git_allowed_repository_roots: Some("/home/user/repos,/var/git".to_string()),
         git_require_user_scoped_root: Some(false),
+        deepgram_api_key: Some("deepgram-key".to_string()),
+        elevenlabs_api_key: Some("elevenlabs-key".to_string()),
+        openai_tts_api_key: Some("sk-openai-tts-key".to_string()),
     };
 
     // Save and load
