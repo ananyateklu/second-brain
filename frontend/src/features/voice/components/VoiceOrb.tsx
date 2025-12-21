@@ -91,20 +91,20 @@ function getStateColors(state: VoiceSessionState): StateColors {
 
   switch (state) {
     case 'Idle':
-      // Muted gray that blends with background
+      // Super light green - app's signature color
       if (isBlueTheme) {
         return {
-          color1: 'hsl(215, 25%, 35%)',
-          color2: 'hsl(215, 20%, 40%)',
-          color3: 'hsl(215, 25%, 38%)',
-          glow: 'hsla(215, 25%, 40%, 0.2)',
+          color1: 'hsl(150, 35%, 55%)',
+          color2: 'hsl(145, 30%, 60%)',
+          color3: 'hsl(148, 32%, 57%)',
+          glow: 'hsla(148, 35%, 55%, 0.25)',
         };
       }
       return {
-        color1: isLightTheme ? 'hsl(140, 8%, 55%)' : 'hsl(140, 10%, 35%)',
-        color2: isLightTheme ? 'hsl(140, 10%, 60%)' : 'hsl(140, 12%, 40%)',
-        color3: isLightTheme ? 'hsl(140, 8%, 58%)' : 'hsl(140, 10%, 38%)',
-        glow: isLightTheme ? 'hsla(140, 10%, 50%, 0.15)' : 'hsla(140, 12%, 40%, 0.2)',
+        color1: isLightTheme ? 'hsl(145, 30%, 60%)' : 'hsl(145, 28%, 42%)',
+        color2: isLightTheme ? 'hsl(150, 25%, 65%)' : 'hsl(150, 25%, 47%)',
+        color3: isLightTheme ? 'hsl(148, 28%, 62%)' : 'hsl(148, 26%, 45%)',
+        glow: isLightTheme ? 'hsla(148, 30%, 55%, 0.15)' : 'hsla(148, 28%, 45%, 0.2)',
       };
 
     case 'Listening':

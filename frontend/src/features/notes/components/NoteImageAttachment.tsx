@@ -146,7 +146,7 @@ export function NoteImageAttachment({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -161,7 +161,7 @@ export function NoteImageAttachment({
       {/* Image gallery */}
       {(newImages.length > 0 || existingImages.length > 0) && (
         <div
-          className="flex flex-wrap gap-3 p-3 rounded-xl transition-all duration-200"
+          className="flex flex-wrap gap-2 p-2 rounded-xl transition-all duration-200"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             border: '1px solid var(--border)',
@@ -356,7 +356,7 @@ export function NoteImageAttachment({
           <button
             type="button"
             onClick={handleButtonClick}
-            className="w-full py-4 px-4 flex items-center justify-center gap-3 transition-colors"
+            className="w-full py-3 px-3 flex items-center justify-center gap-2 transition-colors"
             style={{ color: 'var(--text-tertiary)' }}
             disabled={isSubmitting}
           >

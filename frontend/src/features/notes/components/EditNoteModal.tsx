@@ -142,7 +142,7 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
 
   return (
     <div
-      className="flex overflow-hidden -mx-6 -mb-6 rounded-b-3xl"
+      className="flex overflow-hidden -mx-6 -mt-6 -mb-6 rounded-b-3xl"
       style={{
         height: '100%',
         backgroundColor: 'var(--surface-elevated)',
@@ -152,7 +152,7 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
       <form
         ref={formRef}
         onSubmit={handleFormSubmit}
-        className="flex-1 flex flex-col min-w-0 overflow-hidden p-6"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden p-6 pb-0"
       >
         <RichNoteForm
           register={register}
