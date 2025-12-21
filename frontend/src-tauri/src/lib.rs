@@ -1525,6 +1525,9 @@ mod tests {
             github_default_repo: None,
             git_allowed_repository_roots: None,
             git_require_user_scoped_root: None,
+            deepgram_api_key: None,
+            elevenlabs_api_key: None,
+            openai_tts_api_key: None,
         };
 
         let json = serde_json::to_string(&secrets).unwrap();
@@ -1698,6 +1701,9 @@ mod tests {
             github_default_repo: Some("my-repo".to_string()),
             git_allowed_repository_roots: Some("/home/user/repos".to_string()),
             git_require_user_scoped_root: Some(true),
+            deepgram_api_key: Some("deepgram-key".to_string()),
+            elevenlabs_api_key: Some("elevenlabs-key".to_string()),
+            openai_tts_api_key: Some("sk-tts-key".to_string()),
         };
 
         save_secrets(&temp_dir.path().to_path_buf(), &original).unwrap();

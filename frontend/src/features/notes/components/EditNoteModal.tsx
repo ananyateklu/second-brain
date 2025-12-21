@@ -164,6 +164,10 @@ export function EditNoteModal() {
     void handleSubmit();
   };
 
+  // Track whether form is synced with the current note
+  // This prevents rendering RichNoteForm with stale form data
+  const [formSyncedNoteId, setFormSyncedNoteId] = useState<string | null>(null);
+
   // Reset form when note changes (different note ID or after save when updatedAt changes)
   useEffect(() => {
     if (editingNote && isOpen) {
@@ -183,14 +187,20 @@ export function EditNoteModal() {
         reset(formData, {
           keepDefaultValues: false,
         });
+        // Mark form as synced with this note AFTER reset
+        setFormSyncedNoteId(editingNote.id);
       }
     }
     // Clear state when modal closes so next open resets properly
     if (!isOpen) {
       lastNoteStateRef.current = null;
+      setFormSyncedNoteId(null);
       queueMicrotask(() => setCurrentTitle(''));
     }
   }, [editingNote, isOpen, reset]);
+
+  // Check if form is synced with current note - prevents rendering with stale data
+  const isFormSynced = formSyncedNoteId === editingNote?.id;
 
   // Keyboard shortcut: Cmd/Ctrl + S to save
   useEffect(() => {
@@ -512,22 +522,35 @@ export function EditNoteModal() {
           onSubmit={handleFormSubmit}
           className="flex-1 flex flex-col min-w-0 overflow-hidden p-6"
         >
-          <RichNoteForm
-            register={register}
-            control={control}
-            setValue={setValue}
-            errors={errors}
-            isSubmitting={isSubmitting}
-            onTitleChange={setCurrentTitle}
-            initialTags={editingNote?.tags ?? []}
-            newImages={newImages}
-            existingImages={editingNote?.images}
-            deletedImageIds={deletedImageIds}
-            onAddImages={handleAddImages}
-            onRemoveNewImage={handleRemoveNewImage}
-            onDeleteExistingImage={handleDeleteExistingImage}
-            onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
-          />
+          {isFormSynced ? (
+            <RichNoteForm
+              key={editingNote?.id}
+              register={register}
+              control={control}
+              setValue={setValue}
+              errors={errors}
+              isSubmitting={isSubmitting}
+              onTitleChange={setCurrentTitle}
+              initialTags={editingNote?.tags ?? []}
+              newImages={newImages}
+              existingImages={editingNote?.images}
+              deletedImageIds={deletedImageIds}
+              onAddImages={handleAddImages}
+              onRemoveNewImage={handleRemoveNewImage}
+              onDeleteExistingImage={handleDeleteExistingImage}
+              onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div
+                className="w-6 h-6 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: 'var(--border)',
+                  borderTopColor: 'var(--color-brand-500)',
+                }}
+              />
+            </div>
+          )}
         </form>
 
         {/* Version History Panel - inline sidebar, spans full height */}
