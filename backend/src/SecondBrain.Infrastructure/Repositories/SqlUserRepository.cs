@@ -207,6 +207,7 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.OllamaRemoteUrl = user.Preferences.OllamaRemoteUrl;
                     existingUser.Preferences.UseRemoteOllama = user.Preferences.UseRemoteOllama;
                     existingUser.Preferences.RerankingProvider = user.Preferences.RerankingProvider;
+                    existingUser.Preferences.RagRerankingModel = user.Preferences.RagRerankingModel;
                     existingUser.Preferences.NoteSummaryEnabled = user.Preferences.NoteSummaryEnabled;
                     existingUser.Preferences.NoteSummaryProvider = user.Preferences.NoteSummaryProvider;
                     existingUser.Preferences.NoteSummaryModel = user.Preferences.NoteSummaryModel;
@@ -217,6 +218,10 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.RagEnableHybridSearch = user.Preferences.RagEnableHybridSearch;
                     existingUser.Preferences.RagEnableReranking = user.Preferences.RagEnableReranking;
                     existingUser.Preferences.RagEnableAnalytics = user.Preferences.RagEnableAnalytics;
+
+                    // HyDE Provider Settings
+                    existingUser.Preferences.RagHydeProvider = user.Preferences.RagHydeProvider;
+                    existingUser.Preferences.RagHydeModel = user.Preferences.RagHydeModel;
 
                     // RAG Advanced Settings - Tier 1: Core Retrieval
                     existingUser.Preferences.RagTopK = user.Preferences.RagTopK;
@@ -229,6 +234,11 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.RagBm25Weight = user.Preferences.RagBm25Weight;
                     existingUser.Preferences.RagMultiQueryCount = user.Preferences.RagMultiQueryCount;
                     existingUser.Preferences.RagMaxContextLength = user.Preferences.RagMaxContextLength;
+
+                    // RAG Embedding Settings
+                    existingUser.Preferences.RagEmbeddingProvider = user.Preferences.RagEmbeddingProvider;
+                    existingUser.Preferences.RagEmbeddingModel = user.Preferences.RagEmbeddingModel;
+                    existingUser.Preferences.RagEmbeddingDimensions = user.Preferences.RagEmbeddingDimensions;
                 }
             }
 

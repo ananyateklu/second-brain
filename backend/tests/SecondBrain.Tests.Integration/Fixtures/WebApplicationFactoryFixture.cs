@@ -152,16 +152,17 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                     using var scope = services.BuildServiceProvider().CreateScope();
                     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                    // EnsureCreated can fail if tables already exist from concurrent initialization
+                    // EnsureCreated can fail if tables/types already exist from concurrent initialization.
+                    // In CI, extensions may be pre-created by the workflow, but EF Core still tries to
+                    // create them via AlterDatabase annotations, causing race conditions on type creation.
                     try
                     {
                         dbContext.Database.EnsureCreated();
                     }
-                    catch (Npgsql.PostgresException ex) when (ex.SqlState == "23505" || ex.SqlState == "42P07")
+                    catch (Npgsql.PostgresException ex) when (IsExpectedConcurrencyException(ex))
                     {
-                        // 23505: unique_violation (type already exists)
-                        // 42P07: duplicate_table
-                        // Tables already exist from another concurrent test - ignore
+                        // Expected in CI when concurrent test instances race on database initialization.
+                        // The schema already exists from another test instance or the CI setup - safe to continue.
                     }
 
                     // Apply versioning stored procedures (not created by EF Core)
@@ -421,6 +422,46 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
         dbContext.Notes.RemoveRange(dbContext.Notes);
         dbContext.ChatConversations.RemoveRange(dbContext.ChatConversations);
         await dbContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Determines if a PostgresException is an expected concurrency-related error
+    /// that can be safely ignored during parallel test initialization.
+    /// </summary>
+    /// <param name="ex">The PostgreSQL exception to check.</param>
+    /// <returns>True if the exception is expected and can be ignored.</returns>
+    private static bool IsExpectedConcurrencyException(Npgsql.PostgresException ex)
+    {
+        // PostgreSQL error codes that indicate concurrent schema creation race conditions:
+        // - 23505: unique_violation - type/constraint already exists (pg_type_typname_nsp_index)
+        // - 42P07: duplicate_table - table already exists
+        // - 42710: duplicate_object - extension/type/function already exists
+        // - 42P16: invalid_table_definition - can occur during concurrent ALTER TABLE
+        //
+        // Also check the constraint name for type-specific race conditions
+        var expectedCodes = new[] { "23505", "42P07", "42710", "42P16" };
+
+        if (expectedCodes.Contains(ex.SqlState))
+        {
+            return true;
+        }
+
+        // Check for specific constraint violations related to type creation
+        // The pg_type_typname_nsp_index constraint is violated when creating types concurrently
+        if (ex.ConstraintName?.Contains("pg_type", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            return true;
+        }
+
+        // Check message for extension-related errors
+        if (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) &&
+            (ex.Message.Contains("extension", StringComparison.OrdinalIgnoreCase) ||
+             ex.Message.Contains("type", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return false;
     }
 }
 

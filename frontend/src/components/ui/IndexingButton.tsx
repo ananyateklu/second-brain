@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useStartIndexing, useEmbeddingProviders } from '../../features/rag/hooks/use-indexing';
 import { useBoundStore } from '../../store/bound-store';
 import { toast } from '../../hooks/use-toast';
@@ -15,6 +15,8 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
   const [vectorStore, setVectorStore] = useState<string>('PostgreSQL');
   const [selectedProvider, setSelectedProvider] = useState<string>('OpenAI');
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [customDimensions, setCustomDimensions] = useState<number | null>(null);
+  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
 
   // Track when provider or model was last changed by user interaction
   const lastProviderChangeRef = useRef<string>('');
@@ -27,7 +29,42 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
     activeJobs,
     isRestoring,
     startIndexingJob,
+    // Saved embedding preferences
+    ragEmbeddingProvider,
+    ragEmbeddingModel,
+    ragEmbeddingDimensions,
+    setRagEmbeddingProvider,
+    setRagEmbeddingModel,
+    setRagEmbeddingDimensions,
   } = useBoundStore();
+
+  // Load saved preferences when providers are available
+  useEffect(() => {
+    if (!providers || providers.length === 0 || hasLoadedPreferences) return;
+
+    // Load saved provider if valid
+    if (ragEmbeddingProvider) {
+      const savedProvider = providers.find(p => p.name === ragEmbeddingProvider && p.isEnabled);
+      if (savedProvider) {
+        setSelectedProvider(ragEmbeddingProvider);
+        lastProviderChangeRef.current = ragEmbeddingProvider;
+
+        // Load saved model if valid for this provider
+        if (ragEmbeddingModel) {
+          const savedModel = savedProvider.availableModels.find(m => m.modelId === ragEmbeddingModel);
+          if (savedModel) {
+            setSelectedModel(ragEmbeddingModel);
+            // Load saved dimensions if model supports custom dimensions
+            if (savedModel.supportsCustomDimensions && ragEmbeddingDimensions !== null) {
+              setCustomDimensions(ragEmbeddingDimensions);
+            }
+          }
+        }
+      }
+    }
+
+    setHasLoadedPreferences(true);
+  }, [providers, ragEmbeddingProvider, ragEmbeddingModel, ragEmbeddingDimensions, hasLoadedPreferences]);
 
   // Get current provider info from API data
   const currentProviderData = useMemo(() => {
@@ -85,8 +122,24 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
     }
   }, []);
 
-  // Check if current model is compatible with Pinecone
-  const isPineconeCompatible = currentModelInfo?.supportsPinecone ?? false;
+  // Get effective dimensions (custom or default from model)
+  const effectiveDimensions = useMemo(() => {
+    if (currentModelInfo?.supportsCustomDimensions && customDimensions !== null) {
+      return customDimensions;
+    }
+    return currentModelInfo?.dimensions ?? 0;
+  }, [currentModelInfo, customDimensions]);
+
+  // Check if current model is compatible with Pinecone (considering custom dimensions)
+  const isPineconeCompatible = useMemo(() => {
+    if (!currentModelInfo) return false;
+    // If model supports custom dimensions and user selected 1536, it's compatible
+    if (currentModelInfo.supportsCustomDimensions && customDimensions === PINECONE_REQUIRED_DIMENSIONS) {
+      return true;
+    }
+    return currentModelInfo.supportsPinecone;
+  }, [currentModelInfo, customDimensions]);
+
   const needsPinecone = vectorStore === 'Pinecone' || vectorStore === 'Both';
 
   // Handle provider change with auto-switch logic (in event handler, not effect)
@@ -102,6 +155,15 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
 
     // Get default model for this provider
     const defaultModel = newProviderData.availableModels.find(m => m.isDefault) ?? newProviderData.availableModels[0];
+
+    // Save provider preference to store (will sync to backend)
+    void setRagEmbeddingProvider(newProvider);
+    // Save the default model for this provider
+    if (defaultModel) {
+      void setRagEmbeddingModel(defaultModel.modelId);
+      // Reset dimensions when provider changes
+      void setRagEmbeddingDimensions(null);
+    }
 
     // Auto-switch to PostgreSQL when selecting a non-Pinecone-compatible model
     if (needsPinecone && defaultModel && !defaultModel.supportsPinecone) {
@@ -119,6 +181,13 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
     if (!model) return;
 
     setSelectedModel(modelId);
+    // Reset custom dimensions when model changes
+    setCustomDimensions(null);
+
+    // Save model preference to store (will sync to backend)
+    void setRagEmbeddingModel(modelId);
+    // Reset dimensions when model changes
+    void setRagEmbeddingDimensions(null);
 
     // Auto-switch to PostgreSQL when selecting a non-Pinecone-compatible model
     if (needsPinecone && !model.supportsPinecone) {
@@ -126,6 +195,23 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
       toast.info(
         'Vector Store Changed',
         `${model.displayName} (${model.dimensions} dims) is not compatible with Pinecone. Switched to PostgreSQL.`
+      );
+    }
+  };
+
+  // Handle custom dimension change
+  const handleDimensionChange = (dims: number) => {
+    setCustomDimensions(dims);
+
+    // Save dimensions preference to store (will sync to backend)
+    void setRagEmbeddingDimensions(dims);
+
+    // Auto-switch vector store if dimensions affect Pinecone compatibility
+    if (needsPinecone && dims !== PINECONE_REQUIRED_DIMENSIONS) {
+      setVectorStore('PostgreSQL');
+      toast.info(
+        'Vector Store Changed',
+        `${dims} dimensions is not compatible with Pinecone (requires ${PINECONE_REQUIRED_DIMENSIONS}). Switched to PostgreSQL.`
       );
     }
   };
@@ -158,11 +244,16 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
     if (needsPinecone && !isPineconeCompatible) {
       toast.error(
         'Incompatible Selection',
-        `${currentModelInfo?.displayName ?? effectiveSelectedModel} (${currentModelInfo?.dimensions ?? '?'} dims) cannot be used with Pinecone. Please select PostgreSQL or choose a ${PINECONE_REQUIRED_DIMENSIONS}-dimension model.`
+        `${currentModelInfo?.displayName ?? effectiveSelectedModel} (${effectiveDimensions} dims) cannot be used with Pinecone. Please select PostgreSQL or choose a ${PINECONE_REQUIRED_DIMENSIONS}-dimension model.`
       );
       setVectorStore('PostgreSQL');
       return;
     }
+
+    // Only pass custom dimensions if the model supports it and user has set a value
+    const dimsToSend = currentModelInfo?.supportsCustomDimensions && customDimensions !== null
+      ? customDimensions
+      : undefined;
 
     try {
       if (vectorStore === 'Both') {
@@ -177,6 +268,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
               embeddingProvider: effectiveProvider as EmbeddingProvider,
               vectorStoreProvider: store as VectorStoreProvider,
               embeddingModel: effectiveSelectedModel,
+              customDimensions: dimsToSend,
             });
             // Start tracking each job separately in global store
             startIndexingJob(job, store, effectiveProvider as EmbeddingProvider, userId);
@@ -197,6 +289,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
           embeddingProvider: effectiveProvider as EmbeddingProvider,
           vectorStoreProvider: vectorStore as VectorStoreProvider,
           embeddingModel: effectiveSelectedModel,
+          customDimensions: dimsToSend,
         });
 
         // Start tracking in global store (this will show the notification)
@@ -480,9 +573,133 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
             {/* Dimension compatibility hint */}
             {!isPineconeCompatible && currentModelInfo && (
               <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-warning, #f59e0b)' }}>
-                {currentModelInfo.displayName} ({currentModelInfo.dimensions} dims) → PostgreSQL only
+                {currentModelInfo.displayName} ({effectiveDimensions} dims) → PostgreSQL only
               </p>
             )}
+          </div>
+        )}
+
+        {/* Custom Dimensions Slider - only for models that support it */}
+        {currentModelInfo?.supportsCustomDimensions && currentModelInfo.minDimensions && currentModelInfo.maxDimensions && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                className="text-[11px] font-semibold uppercase tracking-[0.2em]"
+                style={{ color: isDisabled ? 'var(--text-muted)' : 'var(--text-secondary)' }}
+              >
+                Output Dimensions
+              </label>
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-xs font-mono px-2 py-0.5 rounded-lg"
+                  style={{
+                    backgroundColor: effectiveDimensions === PINECONE_REQUIRED_DIMENSIONS
+                      ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
+                      : 'var(--surface-elevated)',
+                    color: effectiveDimensions === PINECONE_REQUIRED_DIMENSIONS
+                      ? 'var(--color-success)'
+                      : 'var(--text-primary)',
+                    border: '1px solid',
+                    borderColor: effectiveDimensions === PINECONE_REQUIRED_DIMENSIONS
+                      ? 'var(--color-success)'
+                      : 'var(--border)',
+                  }}
+                >
+                  {effectiveDimensions}d
+                </span>
+                {effectiveDimensions === PINECONE_REQUIRED_DIMENSIONS && (
+                  <span
+                    className="text-[9px] px-1.5 py-0.5 rounded-lg"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
+                      color: 'var(--color-success)',
+                    }}
+                  >
+                    Pinecone OK
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] opacity-60" style={{ minWidth: '32px' }}>
+                {currentModelInfo.minDimensions}
+              </span>
+              <input
+                type="range"
+                min={currentModelInfo.minDimensions}
+                max={currentModelInfo.maxDimensions}
+                step={256}
+                value={customDimensions ?? currentModelInfo.dimensions}
+                onChange={(e) => handleDimensionChange(parseInt(e.target.value, 10))}
+                disabled={isDisabled}
+                className="flex-1 h-2 rounded-full appearance-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  background: `linear-gradient(to right, var(--color-brand-500) 0%, var(--color-brand-500) ${((customDimensions ?? currentModelInfo.dimensions) - currentModelInfo.minDimensions) / (currentModelInfo.maxDimensions - currentModelInfo.minDimensions) * 100}%, var(--border) ${((customDimensions ?? currentModelInfo.dimensions) - currentModelInfo.minDimensions) / (currentModelInfo.maxDimensions - currentModelInfo.minDimensions) * 100}%, var(--border) 100%)`,
+                }}
+              />
+              <span className="text-[10px] opacity-60" style={{ minWidth: '32px', textAlign: 'right' }}>
+                {currentModelInfo.maxDimensions}
+              </span>
+            </div>
+            <div className="relative h-6 mt-1">
+              {/* Min - always at 0% */}
+              <button
+                type="button"
+                onClick={() => handleDimensionChange(currentModelInfo.minDimensions!)}
+                disabled={isDisabled}
+                className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+                style={{
+                  color: 'var(--text-secondary)',
+                  left: '0%',
+                  transform: 'translateX(0%)',
+                }}
+              >
+                Min
+              </button>
+              {/* 1024 - positioned at correct percentage */}
+              <button
+                type="button"
+                onClick={() => handleDimensionChange(1024)}
+                disabled={isDisabled}
+                className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+                style={{
+                  color: 'var(--text-secondary)',
+                  left: `${((1024 - currentModelInfo.minDimensions!) / (currentModelInfo.maxDimensions! - currentModelInfo.minDimensions!)) * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                1024
+              </button>
+              {/* 1536 - positioned at correct percentage */}
+              <button
+                type="button"
+                onClick={() => handleDimensionChange(PINECONE_REQUIRED_DIMENSIONS)}
+                disabled={isDisabled}
+                className="absolute text-[9px] px-1.5 py-0.5 rounded hover:opacity-100 transition-opacity disabled:opacity-30"
+                style={{
+                  color: 'var(--color-success)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-success) 10%, transparent)',
+                  left: `${((PINECONE_REQUIRED_DIMENSIONS - currentModelInfo.minDimensions!) / (currentModelInfo.maxDimensions! - currentModelInfo.minDimensions!)) * 100}%`,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                1536
+              </button>
+              {/* Max - always at 100% */}
+              <button
+                type="button"
+                onClick={() => handleDimensionChange(currentModelInfo.maxDimensions!)}
+                disabled={isDisabled}
+                className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
+                style={{
+                  color: 'var(--text-secondary)',
+                  right: '0%',
+                  transform: 'translateX(0%)',
+                }}
+              >
+                Max
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -523,7 +740,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
             {vectorStore} Indexing...
           </>
         ) : (
-          <>Start Indexing {currentModelInfo ? `(${currentModelInfo.displayName})` : ''}</>
+          <>Start Indexing {currentModelInfo ? `(${currentModelInfo.displayName}${currentModelInfo.supportsCustomDimensions ? ` @ ${effectiveDimensions}d` : ''})` : ''}</>
         )}
       </button>
 

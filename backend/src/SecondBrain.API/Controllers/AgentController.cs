@@ -115,6 +115,9 @@ public class AgentController : ControllerBase
                     enableReranking: userPrefs.RagEnableReranking,
                     enableAnalytics: userPrefs.RagEnableAnalytics,
                     rerankingProvider: userPrefs.RerankingProvider,
+                    rerankingModel: userPrefs.RagRerankingModel,
+                    hydeProvider: userPrefs.RagHydeProvider,
+                    hydeModel: userPrefs.RagHydeModel,
                     // Tier 1: Core Retrieval
                     topK: userPrefs.RagTopK,
                     similarityThreshold: userPrefs.RagSimilarityThreshold,

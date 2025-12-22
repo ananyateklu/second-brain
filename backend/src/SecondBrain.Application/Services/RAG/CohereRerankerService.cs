@@ -19,12 +19,25 @@ public interface ICohereRerankerService
     bool IsAvailable { get; }
 
     /// <summary>
+    /// Get the list of available Cohere rerank models
+    /// </summary>
+    IReadOnlyList<string> AvailableModels { get; }
+
+    /// <summary>
     /// Reranks hybrid search results using Cohere's native rerank API.
     /// </summary>
+    /// <param name="query">The search query</param>
+    /// <param name="results">Hybrid search results to rerank</param>
+    /// <param name="topK">Number of top results to return</param>
+    /// <param name="model">Optional model override (falls back to config default)</param>
+    /// <param name="minRerankScore">Optional minimum score threshold override</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<List<RerankedResult>> RerankAsync(
         string query,
         List<HybridSearchResult> results,
         int topK,
+        string? model = null,
+        float? minRerankScore = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -38,6 +51,18 @@ public class CohereRerankerService : ICohereRerankerService
     private readonly RagSettings _ragSettings;
     private readonly CohereSettings _cohereSettings;
     private readonly ILogger<CohereRerankerService> _logger;
+
+    /// <summary>
+    /// Available Cohere rerank models (ordered by recommendation)
+    /// </summary>
+    private static readonly List<string> _availableModels = new()
+    {
+        "rerank-v3.5",              // Multilingual, recommended - best balance of quality and speed
+        "rerank-v4.0-fast",         // Latest v4.0, optimized for low latency (32k context)
+        "rerank-v4.0-pro",          // Latest v4.0, highest quality for complex use-cases (32k context)
+        "rerank-english-v3.0",      // English-only, optimized for speed
+        "rerank-multilingual-v3.0", // Multilingual v3.0
+    };
 
     public CohereRerankerService(
         CohereProvider cohereProvider,
@@ -53,10 +78,14 @@ public class CohereRerankerService : ICohereRerankerService
 
     public bool IsAvailable => _cohereProvider.IsEnabled;
 
+    public IReadOnlyList<string> AvailableModels => _availableModels;
+
     public async Task<List<RerankedResult>> RerankAsync(
         string query,
         List<HybridSearchResult> results,
         int topK,
+        string? model = null,
+        float? minRerankScore = null,
         CancellationToken cancellationToken = default)
     {
         if (!results.Any())
@@ -64,11 +93,14 @@ public class CohereRerankerService : ICohereRerankerService
             return new List<RerankedResult>();
         }
 
+        // Use provided model or fall back to config default
+        var effectiveModel = !string.IsNullOrWhiteSpace(model) ? model : _cohereSettings.RerankModel;
+
         using var activity = ApplicationTelemetry.RAGPipelineSource.StartActivity("CohereReranker.Rerank", ActivityKind.Internal);
         activity?.SetTag("rag.rerank.provider", "Cohere");
         activity?.SetTag("rag.rerank.input_count", results.Count);
         activity?.SetTag("rag.rerank.top_k", topK);
-        activity?.SetTag("rag.rerank.model", _cohereSettings.RerankModel);
+        activity?.SetTag("rag.rerank.model", effectiveModel);
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -83,9 +115,10 @@ public class CohereRerankerService : ICohereRerankerService
                 .ToList();
         }
 
+        var effectiveMinScore = minRerankScore ?? _ragSettings.MinRerankScore;
         _logger.LogInformation(
-            "Starting Cohere reranking. Query: {Query}, Results: {Count}, TopK: {TopK}, Model: {Model}",
-            query.Substring(0, Math.Min(50, query.Length)), results.Count, topK, _cohereSettings.RerankModel);
+            "Starting Cohere reranking. Query: {Query}, Results: {Count}, TopK: {TopK}, Model: {Model}, MinScore: {MinScore}",
+            query.Substring(0, Math.Min(50, query.Length)), results.Count, topK, effectiveModel, effectiveMinScore);
 
         // Prepare documents for Cohere rerank API
         var documents = results.Select((r, i) => new CohereDocument
@@ -100,7 +133,7 @@ public class CohereRerankerService : ICohereRerankerService
             query,
             documents,
             Math.Min(topK * 2, results.Count), // Request more than needed for filtering
-            _cohereSettings.RerankModel,
+            effectiveModel,
             cancellationToken);
 
         stopwatch.Stop();
@@ -120,6 +153,13 @@ public class CohereRerankerService : ICohereRerankerService
         var resultById = results.ToDictionary(r => r.Id);
         var rerankedResults = new List<RerankedResult>();
 
+        // Debug: Log the IDs we're trying to match
+        _logger.LogWarning(
+            "Cohere rerank mapping debug. ResultIds: [{ResultIds}], RerankDocIds: [{RerankIds}]",
+            string.Join(", ", resultById.Keys.Take(5)),
+            string.Join(", ", rerankResponse.Results.Select(r => r.DocumentId).Take(5)));
+
+        var mappingFailures = 0;
         foreach (var rerankResult in rerankResponse.Results)
         {
             if (resultById.TryGetValue(rerankResult.DocumentId, out var originalResult))
@@ -135,10 +175,37 @@ public class CohereRerankerService : ICohereRerankerService
 
                 rerankedResults.Add(reranked);
             }
+            else
+            {
+                mappingFailures++;
+                if (mappingFailures <= 3)
+                {
+                    _logger.LogWarning(
+                        "Cohere rerank ID mismatch. DocumentId '{DocumentId}' not found in results. Score: {Score}",
+                        rerankResult.DocumentId, rerankResult.RelevanceScore);
+                }
+            }
+        }
+
+        if (mappingFailures > 0)
+        {
+            _logger.LogWarning(
+                "Cohere rerank had {MappingFailures} ID mapping failures out of {TotalResults} results",
+                mappingFailures, rerankResponse.Results.Count);
+        }
+
+        // Log scores BEFORE filtering
+        if (rerankedResults.Any())
+        {
+            var topScores = rerankedResults.OrderByDescending(r => r.RelevanceScore).Take(5)
+                .Select(r => $"{r.NoteTitle?.Substring(0, Math.Min(20, r.NoteTitle?.Length ?? 0))}:{r.RelevanceScore:F2}");
+            _logger.LogWarning(
+                "Cohere scores before filtering (top 5): [{Scores}], Count: {Count}",
+                string.Join(", ", topScores), rerankedResults.Count);
         }
 
         // Sort by relevance score (descending) and filter by minimum score threshold
-        var minScoreThreshold = _ragSettings.MinRerankScore;
+        var minScoreThreshold = minRerankScore ?? _ragSettings.MinRerankScore;
         var sortedResults = rerankedResults
             .OrderByDescending(r => r.RelevanceScore)
             .ThenByDescending(r => r.RRFScore) // Tie-breaker
@@ -225,9 +292,9 @@ public class CohereRerankerService : ICohereRerankerService
     {
         if (rerankedResults.Count == 0)
         {
-            _logger.LogInformation(
-                "Cohere reranking complete. All {OriginalCount} results filtered out (below minimum score threshold)",
-                originalResults.Count);
+            _logger.LogWarning(
+                "Cohere reranking complete. No results to rank. OriginalCount: {OriginalCount}, MappedCount: {MappedCount}, MinThreshold: {MinThreshold}",
+                originalResults.Count, rerankedResults.Count, _ragSettings.MinRerankScore);
             return;
         }
 

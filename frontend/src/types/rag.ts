@@ -11,7 +11,7 @@ export type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
 /**
  * Embedding provider options
  */
-export type EmbeddingProvider = 'OpenAI' | 'Gemini' | 'Ollama';
+export type EmbeddingProvider = 'OpenAI' | 'Gemini' | 'Ollama' | 'Cohere';
 
 /**
  * Embedding model information
@@ -23,6 +23,12 @@ export interface EmbeddingModelInfo {
   supportsPinecone: boolean;
   description?: string;
   isDefault: boolean;
+  /** Whether this model supports custom output dimensions */
+  supportsCustomDimensions?: boolean;
+  /** Minimum allowed dimensions (only set if supportsCustomDimensions is true) */
+  minDimensions?: number;
+  /** Maximum allowed dimensions (only set if supportsCustomDimensions is true) */
+  maxDimensions?: number;
 }
 
 /**
@@ -47,15 +53,17 @@ export interface EmbeddingProviderInfo {
 
 /**
  * Known embedding provider configurations (legacy fallback)
- * 
+ *
  * Note: Pinecone requires 1536 dimensions. Only OpenAI text-embedding-3-small
  * natively outputs 1536 dimensions. Gemini text-embedding-004 outputs 768 dims
  * and cannot be expanded to 1536 (outputDimensionality only supports truncation).
+ * Cohere embed-v4.0 supports 256-4096 dimensions (default 1024).
  */
 export const EMBEDDING_PROVIDERS: Record<EmbeddingProvider, EmbeddingProviderInfo> = {
   OpenAI: { name: 'OpenAI', dimensions: 1536, supportsPinecone: true },
   Gemini: { name: 'Gemini', dimensions: 768, supportsPinecone: false },
   Ollama: { name: 'Ollama', dimensions: 768, supportsPinecone: false },
+  Cohere: { name: 'Cohere', dimensions: 1024, supportsPinecone: false },
 };
 
 /**
@@ -141,6 +149,8 @@ export interface StartIndexingOptions {
   embeddingProvider?: EmbeddingProvider;
   vectorStoreProvider?: VectorStoreProvider;
   embeddingModel?: string;
+  /** Custom dimensions for models that support it (e.g., Cohere embed-v4.0) */
+  customDimensions?: number;
 }
 
 /**

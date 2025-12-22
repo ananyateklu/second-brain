@@ -51,7 +51,10 @@ public class GetEmbeddingProvidersQueryHandler : IRequestHandler<GetEmbeddingPro
                         Dimensions = m.Dimensions,
                         SupportsPinecone = m.SupportsPinecone,
                         Description = m.Description,
-                        IsDefault = m.IsDefault
+                        IsDefault = m.IsDefault,
+                        SupportsCustomDimensions = m.SupportsCustomDimensions,
+                        MinDimensions = m.MinDimensions,
+                        MaxDimensions = m.MaxDimensions
                     }).ToList()
                 });
             }

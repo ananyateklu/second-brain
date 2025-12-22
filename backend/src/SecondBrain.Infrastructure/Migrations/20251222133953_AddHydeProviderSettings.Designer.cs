@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -14,9 +15,11 @@ using SecondBrain.Infrastructure.Data;
 namespace SecondBrain.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251222133953_AddHydeProviderSettings")]
+    partial class AddHydeProviderSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1444,11 +1447,6 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<int>("RagMultiQueryCount")
                         .HasColumnType("integer")
                         .HasColumnName("rag_multi_query_count");
-
-                    b.Property<string>("RagRerankingModel")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("rag_reranking_model");
 
                     b.Property<float>("RagSimilarityThreshold")
                         .HasColumnType("real")

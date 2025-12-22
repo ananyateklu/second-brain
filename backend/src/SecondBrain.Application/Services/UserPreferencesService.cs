@@ -163,6 +163,10 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.RerankingProvider != null)
             user.Preferences.RerankingProvider = request.RerankingProvider;
 
+        // Reranking Model Setting
+        if (request.RagRerankingModel != null)
+            user.Preferences.RagRerankingModel = request.RagRerankingModel;
+
         // Note Summary settings
         if (request.NoteSummaryEnabled.HasValue)
             user.Preferences.NoteSummaryEnabled = request.NoteSummaryEnabled.Value;
@@ -189,6 +193,13 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.RagEnableAnalytics.HasValue)
             user.Preferences.RagEnableAnalytics = request.RagEnableAnalytics.Value;
 
+        // HyDE Provider Settings
+        if (request.RagHydeProvider != null)
+            user.Preferences.RagHydeProvider = request.RagHydeProvider;
+
+        if (request.RagHydeModel != null)
+            user.Preferences.RagHydeModel = request.RagHydeModel;
+
         // RAG Advanced Settings - Tier 1: Core Retrieval
         if (request.RagTopK.HasValue)
             user.Preferences.RagTopK = request.RagTopK.Value;
@@ -214,6 +225,16 @@ public class UserPreferencesService : IUserPreferencesService
 
         if (request.RagMaxContextLength.HasValue)
             user.Preferences.RagMaxContextLength = request.RagMaxContextLength.Value;
+
+        // RAG Embedding Settings
+        if (request.RagEmbeddingProvider != null)
+            user.Preferences.RagEmbeddingProvider = request.RagEmbeddingProvider;
+
+        if (request.RagEmbeddingModel != null)
+            user.Preferences.RagEmbeddingModel = request.RagEmbeddingModel;
+
+        if (request.RagEmbeddingDimensions.HasValue)
+            user.Preferences.RagEmbeddingDimensions = request.RagEmbeddingDimensions.Value;
 
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -297,6 +318,8 @@ public class UserPreferencesService : IUserPreferencesService
             OllamaRemoteUrl = preferences.OllamaRemoteUrl,
             UseRemoteOllama = preferences.UseRemoteOllama,
             RerankingProvider = preferences.RerankingProvider,
+            // Reranking Model Setting
+            RagRerankingModel = preferences.RagRerankingModel,
             NoteSummaryEnabled = preferences.NoteSummaryEnabled,
             NoteSummaryProvider = preferences.NoteSummaryProvider,
             NoteSummaryModel = preferences.NoteSummaryModel,
@@ -306,6 +329,9 @@ public class UserPreferencesService : IUserPreferencesService
             RagEnableHybridSearch = preferences.RagEnableHybridSearch,
             RagEnableReranking = preferences.RagEnableReranking,
             RagEnableAnalytics = preferences.RagEnableAnalytics,
+            // HyDE Provider Settings
+            RagHydeProvider = preferences.RagHydeProvider,
+            RagHydeModel = preferences.RagHydeModel,
             // RAG Advanced Settings - Tier 1: Core Retrieval
             RagTopK = preferences.RagTopK,
             RagSimilarityThreshold = preferences.RagSimilarityThreshold,
@@ -315,7 +341,11 @@ public class UserPreferencesService : IUserPreferencesService
             RagVectorWeight = preferences.RagVectorWeight,
             RagBm25Weight = preferences.RagBm25Weight,
             RagMultiQueryCount = preferences.RagMultiQueryCount,
-            RagMaxContextLength = preferences.RagMaxContextLength
+            RagMaxContextLength = preferences.RagMaxContextLength,
+            // RAG Embedding Settings
+            RagEmbeddingProvider = preferences.RagEmbeddingProvider,
+            RagEmbeddingModel = preferences.RagEmbeddingModel,
+            RagEmbeddingDimensions = preferences.RagEmbeddingDimensions
         };
     }
 }

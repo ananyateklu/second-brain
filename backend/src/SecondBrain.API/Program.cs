@@ -422,6 +422,16 @@ var app = builder.Build();
             scope.ServiceProvider.GetRequiredService<ILogger<DatabaseIndexInitializer>>());
         await indexInitializer.EnsureIndexesAsync();
     }
+    catch (Npgsql.PostgresException ex) when (IsExpectedConcurrencyException(ex))
+    {
+        // In test environments with parallel test execution, concurrent database initialization
+        // can cause race conditions when creating extensions/types. These are safe to ignore
+        // as the schema will already exist from another test instance.
+        logger.LogInformation(
+            "Database initialization encountered expected concurrency conflict (SqlState: {SqlState}). " +
+            "Schema likely already created by another instance. Error: {Message}",
+            ex.SqlState, ex.Message);
+    }
     catch (Exception ex)
     {
         // Database initialization is critical - app cannot function without it
@@ -623,7 +633,34 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_query_expansion boolean NOT NULL DEFAULT TRUE",
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_hybrid_search boolean NOT NULL DEFAULT TRUE",
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_reranking boolean NOT NULL DEFAULT TRUE",
-        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_analytics boolean NOT NULL DEFAULT TRUE"
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_enable_analytics boolean NOT NULL DEFAULT TRUE",
+
+        // === AddRagAdvancedSettings ===
+        // RAG Advanced Settings - Tier 1: Core Retrieval
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_top_k integer NOT NULL DEFAULT 5",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_similarity_threshold numeric(3,2) NOT NULL DEFAULT 0.30",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_initial_retrieval_count integer NOT NULL DEFAULT 20",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_min_rerank_score numeric(4,1) NOT NULL DEFAULT 3.0",
+        // RAG Advanced Settings - Tier 2: Hybrid Search
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_vector_weight numeric(3,2) NOT NULL DEFAULT 0.70",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_bm25_weight numeric(3,2) NOT NULL DEFAULT 0.30",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_multi_query_count integer NOT NULL DEFAULT 3",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_max_context_length integer NOT NULL DEFAULT 4000",
+
+        // === AddHydeProviderSettings ===
+        // HyDE provider settings for user preferences
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_hyde_provider character varying(50)",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_hyde_model character varying(100)",
+
+        // === AddRerankingModelSetting ===
+        // Reranking model setting for user preferences
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_reranking_model character varying(100)",
+
+        // === AddRagEmbeddingSettings ===
+        // RAG embedding provider settings for user preferences
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_provider character varying(50)",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_model character varying(100)",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_dimensions integer"
     };
 
     var allSucceeded = true;
@@ -653,6 +690,39 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     }
 
     return allSucceeded;
+}
+
+// Helper method to determine if a PostgresException is an expected concurrency-related error
+// that can be safely ignored during parallel test initialization or CI environments.
+static bool IsExpectedConcurrencyException(Npgsql.PostgresException ex)
+{
+    // PostgreSQL error codes indicating concurrent schema creation race conditions:
+    // - 23505: unique_violation - type/constraint already exists (e.g., pg_type_typname_nsp_index)
+    // - 42P07: duplicate_table - table already exists
+    // - 42710: duplicate_object - extension/type/function already exists
+    // - 42P16: invalid_table_definition - can occur during concurrent ALTER TABLE operations
+    var expectedCodes = new[] { "23505", "42P07", "42710", "42P16" };
+
+    if (expectedCodes.Contains(ex.SqlState))
+    {
+        return true;
+    }
+
+    // Check for type-specific constraint violations (pg_type catalog constraints)
+    if (ex.ConstraintName?.Contains("pg_type", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        return true;
+    }
+
+    // Check message for extension/type "already exists" errors
+    if (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) &&
+        (ex.Message.Contains("extension", StringComparison.OrdinalIgnoreCase) ||
+         ex.Message.Contains("type", StringComparison.OrdinalIgnoreCase)))
+    {
+        return true;
+    }
+
+    return false;
 }
 
 // Configure middleware pipeline

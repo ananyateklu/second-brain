@@ -119,6 +119,20 @@ public class UserPreferences
     [Column("rag_enable_analytics")]
     public bool RagEnableAnalytics { get; set; } = true;
 
+    // Reranking Model Setting
+    [Column("rag_reranking_model")]
+    [MaxLength(100)]
+    public string? RagRerankingModel { get; set; }
+
+    // HyDE Provider Settings
+    [Column("rag_hyde_provider")]
+    [MaxLength(50)]
+    public string? RagHydeProvider { get; set; }
+
+    [Column("rag_hyde_model")]
+    [MaxLength(100)]
+    public string? RagHydeModel { get; set; }
+
     // RAG Advanced Settings - Tier 1: Core Retrieval
     [Column("rag_top_k")]
     public int RagTopK { get; set; } = 5;
@@ -144,6 +158,18 @@ public class UserPreferences
 
     [Column("rag_max_context_length")]
     public int RagMaxContextLength { get; set; } = 4000;
+
+    // RAG Embedding Settings
+    [Column("rag_embedding_provider")]
+    [MaxLength(50)]
+    public string? RagEmbeddingProvider { get; set; }
+
+    [Column("rag_embedding_model")]
+    [MaxLength(100)]
+    public string? RagEmbeddingModel { get; set; }
+
+    [Column("rag_embedding_dimensions")]
+    public int? RagEmbeddingDimensions { get; set; }
 
     // Navigation property back to User
     [ForeignKey("UserId")]

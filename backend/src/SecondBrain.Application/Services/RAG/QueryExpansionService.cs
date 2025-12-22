@@ -157,15 +157,19 @@ Write a detailed paragraph as if it were found in a document that directly answe
 Be specific and include relevant details, facts, and terminology.
 Also identify the key concepts covered in your response.";
 
+            // Use HyDE-specific provider (defaults to OpenAI in settings)
+            var hydeProvider = _settings.HyDEProvider;
+
             var options = new StructuredOutputOptions
             {
                 Temperature = 0.7f,
                 MaxTokens = 600,
-                SystemInstruction = "You are a document generator. Create hypothetical documents that would contain information to answer the given question."
+                SystemInstruction = "You are a document generator. Create hypothetical documents that would contain information to answer the given question.",
+                Model = _settings.HyDEModel // Use HyDE-specific model if configured
             };
 
             var result = await _structuredOutputService!.GenerateAsync<HyDEDocumentResult>(
-                _settings.RerankingProvider,
+                hydeProvider,
                 prompt,
                 options,
                 cancellationToken);
@@ -196,18 +200,21 @@ Also identify the key concepts covered in your response.";
         QueryExpansionResult result,
         CancellationToken cancellationToken)
     {
-        var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
+        // Use HyDE-specific provider (defaults to OpenAI in settings)
+        var hydeProviderName = _settings.HyDEProvider;
+
+        var provider = _aiProviderFactory.GetProvider(hydeProviderName);
         if (provider == null)
         {
-            _logger.LogWarning("AI provider {Provider} not available for HyDE", _settings.RerankingProvider);
+            _logger.LogWarning("AI provider {Provider} not available for HyDE", hydeProviderName);
             result.Success = false;
-            result.Error = $"AI provider {_settings.RerankingProvider} not available";
+            result.Error = $"AI provider {hydeProviderName} not available";
             return result;
         }
 
         var hydePrompt = $@"You are a helpful assistant that generates hypothetical documents.
 
-Given the following question, write a detailed paragraph that would be found in a document that directly answers this question. 
+Given the following question, write a detailed paragraph that would be found in a document that directly answers this question.
 Write as if you are writing content from that document, not as if you are answering the question.
 Be specific and include relevant details, facts, and terminology that would appear in such a document.
 
@@ -215,7 +222,13 @@ Question: {query}
 
 Hypothetical document paragraph:";
 
-        var request = new AIRequest { Prompt = hydePrompt, MaxTokens = 500, Temperature = 0.7f };
+        var request = new AIRequest
+        {
+            Prompt = hydePrompt,
+            MaxTokens = 500,
+            Temperature = 0.7f,
+            Model = _settings.HyDEModel // Use HyDE-specific model if configured
+        };
         var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
         var response = aiResponse.Content;
 

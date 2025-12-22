@@ -965,12 +965,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<GeminiEmbeddingProvider>();
         services.AddSingleton<OllamaEmbeddingProvider>();
         services.AddSingleton<PineconeEmbeddingProvider>();
+        services.AddSingleton<CohereEmbeddingProvider>();
 
         // Register embedding providers in the collection for factory
         services.AddSingleton<IEmbeddingProvider, OpenAIEmbeddingProvider>(sp => sp.GetRequiredService<OpenAIEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, GeminiEmbeddingProvider>(sp => sp.GetRequiredService<GeminiEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, OllamaEmbeddingProvider>(sp => sp.GetRequiredService<OllamaEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, PineconeEmbeddingProvider>(sp => sp.GetRequiredService<PineconeEmbeddingProvider>());
+        services.AddSingleton<IEmbeddingProvider, CohereEmbeddingProvider>(sp => sp.GetRequiredService<CohereEmbeddingProvider>());
 
         // Register the base embedding provider factory
         services.AddSingleton<EmbeddingProviderFactory>();

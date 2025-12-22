@@ -59,7 +59,7 @@ function SkeletonManualIndexing() {
             <ShimmerBlock className="h-3.5 w-3.5" />
             <ShimmerBlock className="h-3 w-28" />
             <div className="flex gap-2">
-              {['OpenAI', 'Ollama'].map((_, i) => (
+              {['OpenAI', 'Gemini', 'Ollama', 'Cohere'].map((_, i) => (
                 <ShimmerBlock key={i} className="px-3 py-1.5 rounded-xl h-[30px] w-[70px]" />
               ))}
             </div>

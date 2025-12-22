@@ -25,6 +25,13 @@ public class UserPreferencesResponse
     public bool RagEnableReranking { get; set; } = true;
     public bool RagEnableAnalytics { get; set; } = true;
 
+    // Reranking Model Setting
+    public string? RagRerankingModel { get; set; }
+
+    // HyDE Provider Settings
+    public string? RagHydeProvider { get; set; }
+    public string? RagHydeModel { get; set; }
+
     // RAG Advanced Settings - Tier 1: Core Retrieval
     public int RagTopK { get; set; } = 5;
     public float RagSimilarityThreshold { get; set; } = 0.3f;
@@ -36,5 +43,10 @@ public class UserPreferencesResponse
     public float RagBm25Weight { get; set; } = 0.3f;
     public int RagMultiQueryCount { get; set; } = 3;
     public int RagMaxContextLength { get; set; } = 4000;
+
+    // RAG Embedding Settings
+    public string? RagEmbeddingProvider { get; set; }
+    public string? RagEmbeddingModel { get; set; }
+    public int? RagEmbeddingDimensions { get; set; }
 }
 

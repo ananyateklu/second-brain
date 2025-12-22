@@ -101,6 +101,7 @@ export interface SettingsSliceActions {
   setOllamaRemoteUrl: (url: string | null) => void;
   setUseRemoteOllama: (enabled: boolean) => void;
   setRerankingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setRagRerankingModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   // Note Summary settings
   setNoteSummaryEnabled: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setNoteSummaryProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
@@ -111,6 +112,9 @@ export interface SettingsSliceActions {
   setRagEnableHybridSearch: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setRagEnableReranking: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setRagEnableAnalytics: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  // HyDE Provider Settings
+  setRagHydeProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setRagHydeModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   setRagTopK: (value: number, syncToBackend?: boolean) => Promise<void>;
   setRagSimilarityThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
@@ -121,6 +125,10 @@ export interface SettingsSliceActions {
   setRagBm25Weight: (value: number, syncToBackend?: boolean) => Promise<void>;
   setRagMultiQueryCount: (value: number, syncToBackend?: boolean) => Promise<void>;
   setRagMaxContextLength: (value: number, syncToBackend?: boolean) => Promise<void>;
+  // RAG Embedding Settings
+  setRagEmbeddingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setRagEmbeddingModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
+  setRagEmbeddingDimensions: (dimensions: number | null, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;

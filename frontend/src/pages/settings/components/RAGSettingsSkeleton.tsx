@@ -35,7 +35,7 @@ function SkeletonRerankingProvider() {
             className="flex flex-wrap items-center gap-2 p-1 rounded-xl"
             style={{ backgroundColor: 'var(--surface-elevated)' }}
           >
-            {['OpenAI', 'Anthropic', 'Gemini', 'Grok'].map((_, i) => (
+            {['OpenAI', 'Anthropic', 'Gemini', 'Grok', 'Cohere'].map((_, i) => (
               <ShimmerBlock key={i} className="px-3 py-2 rounded-xl h-[36px] w-[90px]" />
             ))}
           </div>

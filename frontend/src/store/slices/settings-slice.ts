@@ -146,6 +146,14 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     }
   },
 
+  setRagRerankingModel: async (model: string | null, syncToBackend = true) => {
+    set({ ragRerankingModel: model });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragRerankingModel', model, 'RAG reranking model');
+    }
+  },
+
   // ============================================
   // Note Summary Settings
   // ============================================
@@ -215,6 +223,26 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
 
     if (syncToBackend) {
       await syncSettingImmediate(get, 'ragEnableAnalytics', enabled, 'RAG analytics setting');
+    }
+  },
+
+  // ============================================
+  // HyDE Provider Settings
+  // ============================================
+
+  setRagHydeProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ ragHydeProvider: provider });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragHydeProvider', provider, 'RAG HyDE provider');
+    }
+  },
+
+  setRagHydeModel: async (model: string | null, syncToBackend = true) => {
+    set({ ragHydeModel: model });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragHydeModel', model, 'RAG HyDE model');
     }
   },
 
@@ -298,6 +326,31 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     }
   },
 
+  // RAG Embedding Settings
+  setRagEmbeddingProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ ragEmbeddingProvider: provider });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragEmbeddingProvider', provider, 'RAG embedding provider');
+    }
+  },
+
+  setRagEmbeddingModel: async (model: string | null, syncToBackend = true) => {
+    set({ ragEmbeddingModel: model });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragEmbeddingModel', model, 'RAG embedding model');
+    }
+  },
+
+  setRagEmbeddingDimensions: async (dimensions: number | null, syncToBackend = true) => {
+    set({ ragEmbeddingDimensions: dimensions });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragEmbeddingDimensions', dimensions, 'RAG embedding dimensions');
+    }
+  },
+
   // ============================================
   // Sync Actions
   // ============================================
@@ -317,6 +370,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ollamaRemoteUrl: preferences.ollamaRemoteUrl,
         useRemoteOllama: preferences.useRemoteOllama,
         rerankingProvider: preferences.rerankingProvider,
+        ragRerankingModel: preferences.ragRerankingModel,
         noteSummaryEnabled: preferences.noteSummaryEnabled,
         noteSummaryProvider: preferences.noteSummaryProvider,
         noteSummaryModel: preferences.noteSummaryModel,
@@ -326,6 +380,9 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ragEnableHybridSearch: preferences.ragEnableHybridSearch,
         ragEnableReranking: preferences.ragEnableReranking,
         ragEnableAnalytics: preferences.ragEnableAnalytics,
+        // HyDE Provider Settings
+        ragHydeProvider: preferences.ragHydeProvider,
+        ragHydeModel: preferences.ragHydeModel,
         // RAG Advanced Settings - Tier 1: Core Retrieval
         ragTopK: preferences.ragTopK,
         ragSimilarityThreshold: preferences.ragSimilarityThreshold,
@@ -336,6 +393,10 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ragBm25Weight: preferences.ragBm25Weight,
         ragMultiQueryCount: preferences.ragMultiQueryCount,
         ragMaxContextLength: preferences.ragMaxContextLength,
+        // RAG Embedding Settings
+        ragEmbeddingProvider: preferences.ragEmbeddingProvider,
+        ragEmbeddingModel: preferences.ragEmbeddingModel,
+        ragEmbeddingDimensions: preferences.ragEmbeddingDimensions,
       });
     } catch (error) {
       loggers.store.error('Failed to load preferences from backend:', { error });
@@ -380,6 +441,7 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ollamaRemoteUrl: state.ollamaRemoteUrl,
     useRemoteOllama: state.useRemoteOllama,
     rerankingProvider: state.rerankingProvider,
+    ragRerankingModel: state.ragRerankingModel,
     noteSummaryEnabled: state.noteSummaryEnabled,
     noteSummaryProvider: state.noteSummaryProvider,
     noteSummaryModel: state.noteSummaryModel,
@@ -389,6 +451,9 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ragEnableHybridSearch: state.ragEnableHybridSearch,
     ragEnableReranking: state.ragEnableReranking,
     ragEnableAnalytics: state.ragEnableAnalytics,
+    // HyDE Provider Settings
+    ragHydeProvider: state.ragHydeProvider,
+    ragHydeModel: state.ragHydeModel,
     // RAG Advanced Settings - Tier 1: Core Retrieval
     ragTopK: state.ragTopK,
     ragSimilarityThreshold: state.ragSimilarityThreshold,
@@ -399,5 +464,9 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ragBm25Weight: state.ragBm25Weight,
     ragMultiQueryCount: state.ragMultiQueryCount,
     ragMaxContextLength: state.ragMaxContextLength,
+    // RAG Embedding Settings
+    ragEmbeddingProvider: state.ragEmbeddingProvider,
+    ragEmbeddingModel: state.ragEmbeddingModel,
+    ragEmbeddingDimensions: state.ragEmbeddingDimensions,
   };
 }

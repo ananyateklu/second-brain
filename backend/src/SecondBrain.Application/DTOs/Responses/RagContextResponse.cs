@@ -118,5 +118,20 @@ public class EmbeddingModelResponse
     public bool SupportsPinecone { get; set; }
     public string? Description { get; set; }
     public bool IsDefault { get; set; }
+
+    /// <summary>
+    /// Whether this model supports custom output dimensions
+    /// </summary>
+    public bool SupportsCustomDimensions { get; set; }
+
+    /// <summary>
+    /// Minimum allowed dimensions (only set if SupportsCustomDimensions is true)
+    /// </summary>
+    public int? MinDimensions { get; set; }
+
+    /// <summary>
+    /// Maximum allowed dimensions (only set if SupportsCustomDimensions is true)
+    /// </summary>
+    public int? MaxDimensions { get; set; }
 }
 
