@@ -11,5 +11,6 @@ public record StartIndexingCommand(
     string UserId,
     string? EmbeddingProvider = null,
     string? VectorStoreProvider = null,
-    string? EmbeddingModel = null
+    string? EmbeddingModel = null,
+    int? CustomDimensions = null
 ) : IRequest<Result<IndexingJobResponse>>;

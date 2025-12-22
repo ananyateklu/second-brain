@@ -1,10 +1,23 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useBoundStore } from '../../store/bound-store';
 import { toast } from '../../hooks/use-toast';
 import { isTauri } from '../../lib/native-notifications';
 import { usePineconeConfigured } from '../../components/ui/use-pinecone-configured';
 import { TauriPineconeSetupModal } from '../../components/ui/TauriPineconeSetupModal';
 import { Tooltip, InfoIcon } from '../../components/ui/Tooltip';
+import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
+import { formatModelName } from '../../utils/model-name-formatter';
+
+// Mapping from health data provider names to our provider IDs
+const PROVIDER_NAME_MAP: Record<string, string> = {
+  'OpenAI': 'OpenAI',
+  'Claude': 'Anthropic',
+  'Anthropic': 'Anthropic',
+  'Gemini': 'Gemini',
+  'Ollama': 'Ollama',
+  'Grok': 'Grok',
+  'Cohere': 'Cohere',
+};
 
 type VectorProvider = 'PostgreSQL' | 'Pinecone';
 
@@ -163,14 +176,60 @@ const RERANKING_PROVIDER_OPTIONS = [
   { id: 'Cohere', name: 'Cohere', description: 'Purpose-built Rerank API designed specifically for RAG. Fastest option with excellent accuracy. No prompt engineering needed - just send documents and query. Best choice for production workloads.', badge: 'Recommended' },
 ] as const;
 
+const HYDE_PROVIDER_OPTIONS = [
+  { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for HyDE document generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
+  { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced hypothetical documents. Best for complex or technical queries.' },
+  { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
+  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
+] as const;
+
+// Cohere rerank models with metadata for UI display
+const COHERE_RERANK_MODELS: { id: string; name: string; description: string; badge?: string }[] = [
+  {
+    id: 'rerank-v3.5',
+    name: 'Rerank v3.5',
+    description: '100+ languages, 4k context. Best balance of quality and speed.',
+    badge: 'Recommended'
+  },
+  {
+    id: 'rerank-v4.0-fast',
+    name: 'Rerank v4.0 Fast',
+    description: '100+ languages, 32k context. Optimized for low latency and high throughput.'
+  },
+  {
+    id: 'rerank-v4.0-pro',
+    name: 'Rerank v4.0 Pro',
+    description: '100+ languages, 32k context. Highest quality for complex use-cases.',
+    badge: 'Latest'
+  },
+  {
+    id: 'rerank-english-v3.0',
+    name: 'Rerank English v3.0',
+    description: 'English only, 4k context. Fast and optimized for English content.'
+  },
+  {
+    id: 'rerank-multilingual-v3.0',
+    name: 'Rerank Multilingual v3.0',
+    description: '100+ languages, 4k context. Legacy multilingual model.'
+  },
+];
+
 export function RAGSettings() {
   const user = useBoundStore((state) => state.user);
   const rerankingProvider = useBoundStore((state) => state.rerankingProvider);
+  const ragRerankingModel = useBoundStore((state) => state.ragRerankingModel);
   const setRerankingProvider = useBoundStore((state) => state.setRerankingProvider);
+  const setRagRerankingModel = useBoundStore((state) => state.setRagRerankingModel);
   const vectorStoreProvider = useBoundStore((state) => state.vectorStoreProvider);
   const setVectorStoreProvider = useBoundStore((state) => state.setVectorStoreProvider);
   const syncPreferencesToBackend = useBoundStore((state) => state.syncPreferencesToBackend);
   const loadPreferencesFromBackend = useBoundStore((state) => state.loadPreferencesFromBackend);
+  // HyDE Provider Settings
+  const ragHydeProvider = useBoundStore((state) => state.ragHydeProvider);
+  const ragHydeModel = useBoundStore((state) => state.ragHydeModel);
+  const setRagHydeProvider = useBoundStore((state) => state.setRagHydeProvider);
+  const setRagHydeModel = useBoundStore((state) => state.setRagHydeModel);
   // RAG Feature Toggles
   const ragEnableHyde = useBoundStore((state) => state.ragEnableHyde);
   const ragEnableQueryExpansion = useBoundStore((state) => state.ragEnableQueryExpansion);
@@ -202,11 +261,105 @@ export function RAGSettings() {
   const setRagMaxContextLength = useBoundStore((state) => state.setRagMaxContextLength);
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
   const [isSavingRerankingProvider, setIsSavingRerankingProvider] = useState(false);
+  const [isSavingHydeProvider, setIsSavingHydeProvider] = useState(false);
   const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
   const [showPineconeSetup, setShowPineconeSetup] = useState(false);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
-  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
+  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(true);
   const [savingAdvancedSetting, setSavingAdvancedSetting] = useState<string | null>(null);
+
+  // Model dropdown states
+  const [isRerankingModelOpen, setIsRerankingModelOpen] = useState(false);
+  const [isHydeModelOpen, setIsHydeModelOpen] = useState(false);
+  const rerankingModelDropdownRef = useRef<HTMLDivElement>(null);
+  const hydeModelDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Get AI health data for available models
+  const { data: healthData, isLoading: isHealthLoading } = useAIHealth();
+
+  // Get available models for reranking provider
+  const rerankingModels = useMemo(() => {
+    if (!rerankingProvider) return [];
+    // Cohere uses specialized rerank models - return IDs only for consistency
+    if (rerankingProvider === 'Cohere') return COHERE_RERANK_MODELS.map(m => m.id);
+    // Other providers use their LLM models
+    if (!healthData?.providers) return [];
+    const providerData = healthData.providers.find(p => {
+      const mappedName = PROVIDER_NAME_MAP[p.provider];
+      return mappedName === rerankingProvider || p.provider === rerankingProvider;
+    });
+    return providerData?.availableModels || [];
+  }, [healthData?.providers, rerankingProvider]);
+
+  // Get Cohere model info by ID for rich display
+  const getCohereModelInfo = (modelId: string) => {
+    return COHERE_RERANK_MODELS.find(m => m.id === modelId);
+  };
+
+  // Get available models for HyDE provider
+  const hydeModels = useMemo(() => {
+    if (!healthData?.providers || !ragHydeProvider) return [];
+    const providerData = healthData.providers.find(p => {
+      const mappedName = PROVIDER_NAME_MAP[p.provider];
+      return mappedName === ragHydeProvider || p.provider === ragHydeProvider;
+    });
+    return providerData?.availableModels || [];
+  }, [healthData?.providers, ragHydeProvider]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    if (!isRerankingModelOpen && !isHydeModelOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (rerankingModelDropdownRef.current && !rerankingModelDropdownRef.current.contains(event.target as Node)) {
+        setIsRerankingModelOpen(false);
+      }
+      if (hydeModelDropdownRef.current && !hydeModelDropdownRef.current.contains(event.target as Node)) {
+        setIsHydeModelOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isRerankingModelOpen, isHydeModelOpen]);
+
+  // Close dropdowns on Escape key
+  useEffect(() => {
+    if (!isRerankingModelOpen && !isHydeModelOpen) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsRerankingModelOpen(false);
+        setIsHydeModelOpen(false);
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isRerankingModelOpen, isHydeModelOpen]);
+
+  // Handle model selection
+  const handleRerankingModelSelect = async (model: string) => {
+    setIsRerankingModelOpen(false);
+    try {
+      await setRagRerankingModel(model, true);
+      toast.success('Reranking Model Updated', `Now using ${formatModelName(model)}`);
+    } catch (error) {
+      console.error('Failed to update reranking model:', { error });
+      toast.error('Failed to save reranking model', 'Please try again.');
+    }
+  };
+
+  const handleHydeModelSelect = async (model: string) => {
+    setIsHydeModelOpen(false);
+    try {
+      await setRagHydeModel(model, true);
+      toast.success('HyDE Model Updated', `Now using ${formatModelName(model)}`);
+    } catch (error) {
+      console.error('Failed to update HyDE model:', { error });
+      toast.error('Failed to save HyDE model', 'Please try again.');
+    }
+  };
 
   // Get current value for an advanced setting
   const getAdvancedSettingValue = useCallback((id: string): number => {
@@ -370,9 +523,9 @@ export function RAGSettings() {
 
   return (
     <div className="space-y-4">
-      {/* RAG Settings Grid - Side by Side Layout */}
+      {/* RAG AI Providers Grid - Reranking and HyDE side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left Side: Reranking Provider Selection */}
+        {/* Left Side: Reranking Provider + Model */}
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
@@ -395,83 +548,300 @@ export function RAGSettings() {
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-                    RAG Enhancement
-                  </span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Reranking Provider
-                  </h3>
-                </div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Reranking
+                </h3>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Choose which AI provider reranks search results for more relevant responses
+                  AI provider that reranks search results for relevance
                 </p>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
               {isSavingRerankingProvider && (
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Saving...
-                </span>
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Saving...</span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
-              {RERANKING_PROVIDER_OPTIONS.map((option) => {
-                const isActive = rerankingProvider === option.id;
-                return (
-                  <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void (async () => {
-                          if (!user?.userId) {
-                            console.error('User not authenticated');
-                            return;
-                          }
-
-                          setIsSavingRerankingProvider(true);
-                          try {
-                            await setRerankingProvider(option.id, false);
-                            await syncPreferencesToBackend(user.userId);
-                          } catch (error) {
-                            console.error('Failed to update reranking provider:', { error });
-                            toast.error('Failed to save reranking provider', 'Please try again.');
-                          } finally {
-                            setIsSavingRerankingProvider(false);
-                          }
-                        })();
-                      }}
-                      disabled={isSavingRerankingProvider}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                      style={{
-                        backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                        color: isActive ? 'white' : 'var(--text-primary)',
-                      }}
-                    >
-                      <span>{option.name}</span>
-                      {'badge' in option && option.badge && (
-                        <span
-                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md"
-                          style={{
+            {/* Provider + Model inline */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                {RERANKING_PROVIDER_OPTIONS.map((option) => {
+                  const isActive = rerankingProvider === option.id;
+                  return (
+                    <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void (async () => {
+                            if (!user?.userId) return;
+                            setIsSavingRerankingProvider(true);
+                            try {
+                              await setRerankingProvider(option.id, false);
+                              await syncPreferencesToBackend(user.userId);
+                            } catch (error) {
+                              console.error('Failed to update reranking provider:', { error });
+                              toast.error('Failed to save reranking provider', 'Please try again.');
+                            } finally {
+                              setIsSavingRerankingProvider(false);
+                            }
+                          })();
+                        }}
+                        disabled={isSavingRerankingProvider}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+                        style={{
+                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
+                          color: isActive ? 'white' : 'var(--text-primary)',
+                        }}
+                      >
+                        <span>{option.name}</span>
+                        {'badge' in option && option.badge && (
+                          <span className="text-[8px] font-semibold px-1 py-0.5 rounded" style={{
                             backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                             color: isActive ? 'white' : 'var(--color-brand-600)',
-                          }}
-                        >
-                          {option.badge}
-                        </span>
-                      )}
-                    </button>
-                  </Tooltip>
-                );
-              })}
+                          }}>{option.badge}</span>
+                        )}
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {/* Model Dropdown */}
+              <div className="relative" ref={rerankingModelDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => rerankingModels.length > 0 && setIsRerankingModelOpen(!isRerankingModelOpen)}
+                    disabled={rerankingModels.length === 0 || (rerankingProvider !== 'Cohere' && isHealthLoading)}
+                    className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      borderColor: isRerankingModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <span className="truncate">
+                      {rerankingProvider !== 'Cohere' && isHealthLoading
+                        ? 'Loading...'
+                        : rerankingModels.length === 0
+                          ? 'No models'
+                          : ragRerankingModel
+                            ? (rerankingProvider === 'Cohere' ? getCohereModelInfo(ragRerankingModel)?.name : null) ?? formatModelName(ragRerankingModel)
+                            : 'Select model'}
+                    </span>
+                    <svg
+                      className="w-3 h-3 flex-shrink-0 transition-transform"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      style={{ transform: isRerankingModelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isRerankingModelOpen && rerankingModels.length > 0 && (
+                    <div
+                      className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                      style={{
+                        backgroundColor: 'var(--surface-elevated)',
+                        borderColor: 'var(--border)',
+                        minWidth: '280px',
+                      }}
+                    >
+                      <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                        {rerankingModels.map((model) => {
+                          const isSelected = model === ragRerankingModel;
+                          const cohereInfo = rerankingProvider === 'Cohere' ? getCohereModelInfo(model) : null;
+                          return (
+                            <button
+                              key={model}
+                              type="button"
+                              onClick={() => void handleRerankingModelSelect(model)}
+                              className="w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]"
+                              style={{
+                                backgroundColor: isSelected ? 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)' : 'transparent',
+                              }}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-medium truncate" style={{ color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)' }}>
+                                    {cohereInfo ? cohereInfo.name : formatModelName(model)}
+                                  </span>
+                                  {cohereInfo?.badge && (
+                                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{
+                                      backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
+                                      color: 'var(--color-brand-600)',
+                                    }}>{cohereInfo.badge}</span>
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--color-brand-600)' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </div>
+                              {cohereInfo && (
+                                <span className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                                  {cohereInfo.description}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Right Side: Vector Store Provider Selection */}
+        {/* Right Side: HyDE Provider + Model */}
+        <section
+          className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                }}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  HyDE
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  AI provider for hypothetical document generation
+                </p>
+              </div>
+              {isSavingHydeProvider && (
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Saving...</span>
+              )}
+            </div>
+
+            {/* Provider + Model inline */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                {HYDE_PROVIDER_OPTIONS.map((option) => {
+                  const isActive = ragHydeProvider === option.id;
+                  return (
+                    <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void (async () => {
+                            if (!user?.userId) return;
+                            setIsSavingHydeProvider(true);
+                            try {
+                              await setRagHydeProvider(option.id, false);
+                              await syncPreferencesToBackend(user.userId);
+                            } catch (error) {
+                              console.error('Failed to update HyDE provider:', { error });
+                              toast.error('Failed to save HyDE provider', 'Please try again.');
+                            } finally {
+                              setIsSavingHydeProvider(false);
+                            }
+                          })();
+                        }}
+                        disabled={isSavingHydeProvider}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+                        style={{
+                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
+                          color: isActive ? 'white' : 'var(--text-primary)',
+                        }}
+                      >
+                        <span>{option.name}</span>
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {/* Model Dropdown */}
+              <div className="relative" ref={hydeModelDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => hydeModels.length > 0 && setIsHydeModelOpen(!isHydeModelOpen)}
+                  disabled={hydeModels.length === 0 || isHealthLoading}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderColor: isHydeModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <span className="truncate">
+                    {isHealthLoading
+                      ? 'Loading...'
+                      : hydeModels.length === 0
+                        ? 'No models'
+                        : ragHydeModel
+                          ? formatModelName(ragHydeModel)
+                          : 'Select model'}
+                  </span>
+                  <svg
+                    className="w-3 h-3 flex-shrink-0 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    style={{ transform: isHydeModelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isHydeModelOpen && hydeModels.length > 0 && (
+                  <div
+                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      borderColor: 'var(--border)',
+                      minWidth: '220px',
+                    }}
+                  >
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                      {hydeModels.map((model) => {
+                        const isSelected = model === ragHydeModel;
+                        return (
+                          <button
+                            key={model}
+                            type="button"
+                            onClick={() => void handleHydeModelSelect(model)}
+                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]"
+                            style={{
+                              backgroundColor: isSelected ? 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)' : 'transparent',
+                              color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                            }}
+                          >
+                            <span className="truncate">{formatModelName(model)}</span>
+                            {isSelected && (
+                              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--color-brand-600)' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Vector Store + Pipeline Features - Side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Left: Vector Store Provider */}
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
@@ -494,31 +864,22 @@ export function RAGSettings() {
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-                    Chat Preference
-                  </span>
-                  <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Vector Store Provider
-                  </h3>
-                </div>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Vector Store
+                </h3>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Choose which store powers Retrieval-Augmented responses in chat
+                  Database for note embeddings
                 </p>
               </div>
+              {isSavingVectorStore && (
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Saving...</span>
+              )}
             </div>
 
-            <div className="flex flex-col gap-2">
-              {isSavingVectorStore && (
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  Saving...
-                </span>
-              )}
-              <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
-                {VECTOR_STORE_OPTIONS.map((option) => {
-                  const isActive = vectorStoreProvider === option.id;
-                  const needsSetup = option.id === 'Pinecone' && isTauri() && !isPineconeConfigured;
+            <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              {VECTOR_STORE_OPTIONS.map((option) => {
+                const isActive = vectorStoreProvider === option.id;
+                const needsSetup = option.id === 'Pinecone' && isTauri() && !isPineconeConfigured;
 
                 return (
                   <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
@@ -529,13 +890,8 @@ export function RAGSettings() {
                           setShowPineconeSetup(true);
                           return;
                         }
-
                         void (async () => {
-                          if (!user?.userId) {
-                            console.error('User not authenticated');
-                            return;
-                          }
-
+                          if (!user?.userId) return;
                           setIsSavingVectorStore(true);
                           try {
                             await setVectorStoreProvider(option.id, false);
@@ -549,7 +905,7 @@ export function RAGSettings() {
                         })();
                       }}
                       disabled={isSavingVectorStore}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
                         color: isActive ? 'white' : 'var(--text-primary)',
@@ -566,24 +922,16 @@ export function RAGSettings() {
                       )}
                       <span>{option.label}</span>
                       {option.badge && (
-                        <span
-                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md"
-                          style={{
-                            backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                            color: isActive ? 'white' : 'var(--color-brand-600)',
-                          }}
-                        >
-                          {option.badge}
-                        </span>
+                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded-md" style={{
+                          backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                          color: isActive ? 'white' : 'var(--color-brand-600)',
+                        }}>{option.badge}</span>
                       )}
                       {needsSetup && (
-                        <span
-                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md flex items-center gap-0.5"
-                          style={{
-                            backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
-                            color: '#f59e0b',
-                          }}
-                        >
+                        <span className="text-[9px] font-semibold px-1 py-0.5 rounded-md flex items-center gap-0.5" style={{
+                          backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
+                          color: '#f59e0b',
+                        }}>
                           <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                           </svg>
@@ -593,130 +941,71 @@ export function RAGSettings() {
                     </button>
                   </Tooltip>
                 );
-                })}
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Right: Pipeline Features */}
+        <section
+          className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                }}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+                </svg>
               </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Pipeline Features
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  Toggle RAG pipeline components
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              {RAG_FEATURE_TOGGLES.map((feature) => {
+                const isEnabled = getFeatureValue(feature.key);
+                const isSaving = savingFeature === feature.id;
+
+                return (
+                  <Tooltip key={feature.id} content={feature.description} position="top" maxWidth={420}>
+                    <button
+                      type="button"
+                      onClick={() => void handleFeatureToggle(feature)}
+                      disabled={isSaving}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+                      style={{
+                        backgroundColor: isEnabled ? 'var(--color-brand-600)' : 'transparent',
+                        color: isEnabled ? 'white' : 'var(--text-primary)',
+                      }}
+                    >
+                      <span className={isEnabled ? '' : 'opacity-60'}>{feature.icon}</span>
+                      <span>{feature.name}</span>
+                      {isSaving && <span className="text-[9px] opacity-70">...</span>}
+                    </button>
+                  </Tooltip>
+                );
+              })}
             </div>
           </div>
         </section>
       </div>
-
-      {/* RAG Feature Toggles Section */}
-      <section
-        className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          {/* Section Header */}
-          <div className="flex items-start gap-3">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-              }}
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-              </svg>
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-                  RAG Pipeline
-                </span>
-                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
-                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                  Feature Toggles
-                </h3>
-              </div>
-              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                Enable or disable individual RAG pipeline features to balance speed vs. accuracy
-              </p>
-            </div>
-          </div>
-
-          {/* Feature Toggle Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-            {RAG_FEATURE_TOGGLES.map((feature) => {
-              const isEnabled = getFeatureValue(feature.key);
-              const isSaving = savingFeature === feature.id;
-
-              return (
-                <div
-                  key={feature.id}
-                  className="flex items-center gap-2 p-2.5 rounded-xl border transition-all duration-200"
-                  style={{
-                    backgroundColor: isEnabled
-                      ? 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)'
-                      : 'var(--surface-elevated)',
-                    borderColor: isEnabled
-                      ? 'color-mix(in srgb, var(--color-brand-600) 25%, transparent)'
-                      : 'var(--border)',
-                  }}
-                >
-                  {/* Feature Icon */}
-                  <div
-                    className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
-                    style={{
-                      backgroundColor: isEnabled
-                        ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
-                        : 'var(--surface-card)',
-                      color: isEnabled ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                    }}
-                  >
-                    {feature.icon}
-                  </div>
-
-                  {/* Feature Name + Info */}
-                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span
-                      className="text-xs font-medium truncate"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {feature.name}
-                    </span>
-                    <Tooltip content={feature.description} position="top" maxWidth={420}>
-                      <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
-                    </Tooltip>
-                  </div>
-
-                  {/* Toggle Switch */}
-                  <button
-                    type="button"
-                    onClick={() => void handleFeatureToggle(feature)}
-                    disabled={isSaving}
-                    className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      backgroundColor: isEnabled ? 'var(--color-brand-600)' : 'var(--border)',
-                      // @ts-expect-error CSS variable for focus ring
-                      '--tw-ring-color': 'var(--color-brand-600)',
-                    }}
-                    aria-pressed={isEnabled}
-                    aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${feature.name}`}
-                  >
-                    <span
-                      className="pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
-                      style={{
-                        backgroundColor: 'white',
-                        transform: isEnabled ? 'translateX(14px)' : 'translateX(2px)',
-                      }}
-                    />
-                  </button>
-                  {isSaving && (
-                    <span className="text-[10px] absolute -bottom-4" style={{ color: 'var(--text-secondary)' }}>
-                      Saving...
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* Advanced RAG Settings Section */}
       <section

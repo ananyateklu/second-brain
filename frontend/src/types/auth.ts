@@ -73,6 +73,7 @@ export interface UserPreferences {
   ollamaRemoteUrl: string | null;
   useRemoteOllama: boolean;
   rerankingProvider: string | null;
+  ragRerankingModel: string | null;
   // Note Summary settings
   noteSummaryEnabled: boolean;
   noteSummaryProvider: string | null;
@@ -83,6 +84,9 @@ export interface UserPreferences {
   ragEnableHybridSearch: boolean;
   ragEnableReranking: boolean;
   ragEnableAnalytics: boolean;
+  // HyDE Provider Settings
+  ragHydeProvider: string | null;
+  ragHydeModel: string | null;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: number;
   ragSimilarityThreshold: number;
@@ -93,6 +97,10 @@ export interface UserPreferences {
   ragBm25Weight: number;
   ragMultiQueryCount: number;
   ragMaxContextLength: number;
+  // RAG Embedding Settings
+  ragEmbeddingProvider: string | null;
+  ragEmbeddingModel: string | null;
+  ragEmbeddingDimensions: number | null;
 }
 
 /**
@@ -109,6 +117,7 @@ export interface UpdateUserPreferencesRequest {
   ollamaRemoteUrl?: string | null;
   useRemoteOllama?: boolean;
   rerankingProvider?: string | null;
+  ragRerankingModel?: string | null;
   // Note Summary settings
   noteSummaryEnabled?: boolean;
   noteSummaryProvider?: string | null;
@@ -119,6 +128,9 @@ export interface UpdateUserPreferencesRequest {
   ragEnableHybridSearch?: boolean;
   ragEnableReranking?: boolean;
   ragEnableAnalytics?: boolean;
+  // HyDE Provider Settings
+  ragHydeProvider?: string | null;
+  ragHydeModel?: string | null;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK?: number;
   ragSimilarityThreshold?: number;
@@ -129,5 +141,9 @@ export interface UpdateUserPreferencesRequest {
   ragBm25Weight?: number;
   ragMultiQueryCount?: number;
   ragMaxContextLength?: number;
+  // RAG Embedding Settings
+  ragEmbeddingProvider?: string | null;
+  ragEmbeddingModel?: string | null;
+  ragEmbeddingDimensions?: number | null;
 }
 

@@ -29,6 +29,7 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   ollamaRemoteUrl: null,
   useRemoteOllama: false,
   rerankingProvider: null,
+  ragRerankingModel: null,
   noteSummaryEnabled: true,
   noteSummaryProvider: 'OpenAI',
   noteSummaryModel: 'gpt-4o-mini',
@@ -37,6 +38,9 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   ragEnableHybridSearch: true,
   ragEnableReranking: true,
   ragEnableAnalytics: true,
+  // HyDE Provider Settings
+  ragHydeProvider: null,
+  ragHydeModel: null,
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: 5,
   ragSimilarityThreshold: 0.3,
@@ -47,6 +51,10 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   ragBm25Weight: 0.3,
   ragMultiQueryCount: 3,
   ragMaxContextLength: 4000,
+  // RAG Embedding Settings
+  ragEmbeddingProvider: null,
+  ragEmbeddingModel: null,
+  ragEmbeddingDimensions: null,
   ...overrides,
 });
 

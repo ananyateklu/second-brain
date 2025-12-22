@@ -118,6 +118,7 @@ export function mergePersistedState(
     chatModel: parsed.chatModel ?? currentState.chatModel,
     vectorStoreProvider: parsed.vectorStoreProvider ?? currentState.vectorStoreProvider,
     rerankingProvider: parsed.rerankingProvider ?? currentState.rerankingProvider,
+    ragRerankingModel: parsed.ragRerankingModel ?? currentState.ragRerankingModel,
     defaultNoteView: parsed.defaultNoteView ?? currentState.defaultNoteView,
     itemsPerPage: parsed.itemsPerPage ?? currentState.itemsPerPage,
     fontSize: parsed.fontSize ?? currentState.fontSize,
@@ -134,6 +135,9 @@ export function mergePersistedState(
     ragEnableHybridSearch: parsed.ragEnableHybridSearch ?? currentState.ragEnableHybridSearch,
     ragEnableReranking: parsed.ragEnableReranking ?? currentState.ragEnableReranking,
     ragEnableAnalytics: parsed.ragEnableAnalytics ?? currentState.ragEnableAnalytics,
+    // HyDE Provider Settings
+    ragHydeProvider: parsed.ragHydeProvider ?? currentState.ragHydeProvider,
+    ragHydeModel: parsed.ragHydeModel ?? currentState.ragHydeModel,
     // RAG Advanced Settings - Tier 1: Core Retrieval
     ragTopK: parsed.ragTopK ?? currentState.ragTopK,
     ragSimilarityThreshold: parsed.ragSimilarityThreshold ?? currentState.ragSimilarityThreshold,
@@ -144,6 +148,10 @@ export function mergePersistedState(
     ragBm25Weight: parsed.ragBm25Weight ?? currentState.ragBm25Weight,
     ragMultiQueryCount: parsed.ragMultiQueryCount ?? currentState.ragMultiQueryCount,
     ragMaxContextLength: parsed.ragMaxContextLength ?? currentState.ragMaxContextLength,
+    // RAG Embedding Settings
+    ragEmbeddingProvider: parsed.ragEmbeddingProvider ?? currentState.ragEmbeddingProvider,
+    ragEmbeddingModel: parsed.ragEmbeddingModel ?? currentState.ragEmbeddingModel,
+    ragEmbeddingDimensions: parsed.ragEmbeddingDimensions ?? currentState.ragEmbeddingDimensions,
     // Merge theme
     theme: parsed.theme ?? currentState.theme,
     // Merge notes state
@@ -189,6 +197,7 @@ const _useBoundStore = create<BoundStore>()(
         chatModel: state.chatModel,
         vectorStoreProvider: state.vectorStoreProvider,
         rerankingProvider: state.rerankingProvider,
+        ragRerankingModel: state.ragRerankingModel,
         defaultNoteView: state.defaultNoteView,
         itemsPerPage: state.itemsPerPage,
         fontSize: state.fontSize,
@@ -205,6 +214,9 @@ const _useBoundStore = create<BoundStore>()(
         ragEnableHybridSearch: state.ragEnableHybridSearch,
         ragEnableReranking: state.ragEnableReranking,
         ragEnableAnalytics: state.ragEnableAnalytics,
+        // HyDE Provider Settings
+        ragHydeProvider: state.ragHydeProvider,
+        ragHydeModel: state.ragHydeModel,
         // RAG Advanced Settings - Tier 1: Core Retrieval
         ragTopK: state.ragTopK,
         ragSimilarityThreshold: state.ragSimilarityThreshold,
@@ -215,6 +227,10 @@ const _useBoundStore = create<BoundStore>()(
         ragBm25Weight: state.ragBm25Weight,
         ragMultiQueryCount: state.ragMultiQueryCount,
         ragMaxContextLength: state.ragMaxContextLength,
+        // RAG Embedding Settings
+        ragEmbeddingProvider: state.ragEmbeddingProvider,
+        ragEmbeddingModel: state.ragEmbeddingModel,
+        ragEmbeddingDimensions: state.ragEmbeddingDimensions,
         // Theme state
         theme: state.theme,
         // Notes state

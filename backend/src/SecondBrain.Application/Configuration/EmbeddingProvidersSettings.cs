@@ -10,6 +10,7 @@ public class EmbeddingProvidersSettings
     public OpenAIEmbeddingSettings OpenAI { get; set; } = new();
     public GeminiEmbeddingSettings Gemini { get; set; } = new();
     public OllamaEmbeddingSettings Ollama { get; set; } = new();
+    public CohereEmbeddingSettings Cohere { get; set; } = new();
     // We can include Pinecone here if we want to configure it under EmbeddingProviders,
     // but currently it uses the main PineconeSettings.
 }
@@ -70,6 +71,31 @@ public class OllamaEmbeddingSettings
     public int TimeoutSeconds { get; set; } = 120;
 }
 
+public class CohereEmbeddingSettings
+{
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Cohere embedding model. Options:
+    /// - embed-v4.0: Latest, most capable (256-4096 dims, default 1024)
+    /// - embed-english-v3.0: English-only (1024 dims)
+    /// - embed-multilingual-v3.0: 100+ languages (1024 dims)
+    /// - embed-english-light-v3.0: Lightweight English (384 dims)
+    /// - embed-multilingual-light-v3.0: Lightweight multilingual (384 dims)
+    /// </summary>
+    public string Model { get; set; } = "embed-v4.0";
+
+    /// <summary>
+    /// Output dimensions for embeddings.
+    /// embed-v4.0 supports 256-4096 (default 1024).
+    /// Other models have fixed dimensions.
+    /// Note: Cohere cannot achieve 1536 dimensions required for Pinecone compatibility.
+    /// </summary>
+    public int Dimensions { get; set; } = 1024;
+
+    public int TimeoutSeconds { get; set; } = 30;
+}
+
 public class RagSettings
 {
     public const string SectionName = "RAG";
@@ -102,6 +128,18 @@ public class RagSettings
     public bool EnableQueryExpansion { get; set; } = true;
     public bool EnableHyDE { get; set; } = true; // Hypothetical Document Embeddings
     public int MultiQueryCount { get; set; } = 3; // Number of query variations to generate
+
+    /// <summary>
+    /// Which LLM provider to use for HyDE (Hypothetical Document Embeddings) generation.
+    /// Defaults to "OpenAI". Valid values: OpenAI, Anthropic, Gemini, Grok, Ollama.
+    /// </summary>
+    public string HyDEProvider { get; set; } = "OpenAI";
+
+    /// <summary>
+    /// Specific model to use for HyDE generation.
+    /// If null or empty, uses the provider's default model.
+    /// </summary>
+    public string? HyDEModel { get; set; }
 
     // Reranking Settings
     public bool EnableReranking { get; set; } = true;

@@ -42,9 +42,9 @@ export const useEmbeddingProviders = () => {
 export const useStartIndexing = () => {
   const queryClient = useQueryClient();
 
-  return useApiMutation<IndexingJobResponse, { userId?: string; embeddingProvider?: EmbeddingProvider; vectorStoreProvider?: VectorStoreProvider; embeddingModel?: string }>(
-    async ({ userId, embeddingProvider, vectorStoreProvider, embeddingModel }) => {
-      const job = await ragService.startIndexing({ userId, embeddingProvider, vectorStoreProvider, embeddingModel });
+  return useApiMutation<IndexingJobResponse, { userId?: string; embeddingProvider?: EmbeddingProvider; vectorStoreProvider?: VectorStoreProvider; embeddingModel?: string; customDimensions?: number }>(
+    async ({ userId, embeddingProvider, vectorStoreProvider, embeddingModel, customDimensions }) => {
+      const job = await ragService.startIndexing({ userId, embeddingProvider, vectorStoreProvider, embeddingModel, customDimensions });
 
       // Store the vector store provider for this job in localStorage so we can track it
       if (job.id && vectorStoreProvider) {

@@ -110,7 +110,7 @@ export const ragService = {
    */
   async startIndexing(options: StartIndexingOptions = {}): Promise<IndexingJobResponse> {
     const params = new URLSearchParams({ userId: options.userId || DEFAULT_USER_ID });
-    
+
     if (options.embeddingProvider) {
       params.append('embeddingProvider', options.embeddingProvider);
     }
@@ -120,7 +120,10 @@ export const ragService = {
     if (options.embeddingModel) {
       params.append('embeddingModel', options.embeddingModel);
     }
-    
+    if (options.customDimensions) {
+      params.append('customDimensions', options.customDimensions.toString());
+    }
+
     return apiClient.post<IndexingJobResponse>(`${API_ENDPOINTS.INDEXING.START}?${params}`);
   },
 

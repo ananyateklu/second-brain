@@ -44,6 +44,26 @@ public class RagOptions
     /// </summary>
     public string? RerankingProvider { get; set; }
 
+    /// <summary>
+    /// Reranking model override.
+    /// For Cohere: rerank-v3.5, rerank-english-v3.0, rerank-multilingual-v3.0
+    /// For LLM providers: uses the specified model for scoring
+    /// When null, uses the provider's default model.
+    /// </summary>
+    public string? RerankingModel { get; set; }
+
+    /// <summary>
+    /// HyDE provider override for generating hypothetical documents.
+    /// When null, uses the default HyDEProvider from RagSettings.
+    /// </summary>
+    public string? HyDEProvider { get; set; }
+
+    /// <summary>
+    /// HyDE model override for generating hypothetical documents.
+    /// When null, uses the provider's default model.
+    /// </summary>
+    public string? HyDEModel { get; set; }
+
     // === Tier 1: Core Retrieval Settings ===
 
     /// <summary>
@@ -98,6 +118,9 @@ public class RagOptions
         bool? enableReranking = null,
         bool? enableAnalytics = null,
         string? rerankingProvider = null,
+        string? rerankingModel = null,
+        string? hydeProvider = null,
+        string? hydeModel = null,
         // Tier 1: Core Retrieval
         int? topK = null,
         float? similarityThreshold = null,
@@ -117,6 +140,9 @@ public class RagOptions
             EnableReranking = enableReranking,
             EnableAnalytics = enableAnalytics,
             RerankingProvider = rerankingProvider,
+            RerankingModel = rerankingModel,
+            HyDEProvider = hydeProvider,
+            HyDEModel = hydeModel,
             // Tier 1
             TopK = topK,
             SimilarityThreshold = similarityThreshold,

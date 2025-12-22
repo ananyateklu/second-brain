@@ -172,9 +172,10 @@ public class RagService : IRagService
 
                     if (useCohereReranker)
                     {
-                        _logger.LogDebug("Using Cohere native rerank API");
+                        _logger.LogDebug("Using Cohere native rerank API with model: {Model}, MinScore: {MinScore}",
+                            options?.RerankingModel ?? "default", effectiveMinRerankScore);
                         rerankedResults = await _cohereRerankerService!.RerankAsync(
-                            query, hybridResults, effectiveTopK, cancellationToken);
+                            query, hybridResults, effectiveTopK, options?.RerankingModel, effectiveMinRerankScore, cancellationToken);
                         rerankActivity?.SetTag("rag.rerank.provider", "Cohere");
                     }
                     else

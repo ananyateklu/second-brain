@@ -185,6 +185,17 @@ services:
       - ./database/34_database_optimizations.sql:/docker-entrypoint-initdb.d/34_database_optimizations.sql:ro
       - ./database/35_table_partitioning.sql:/docker-entrypoint-initdb.d/35_table_partitioning.sql:ro
       - ./database/36_advanced_optimizations.sql:/docker-entrypoint-initdb.d/36_advanced_optimizations.sql:ro
+      - ./database/38_note_version_source.sql:/docker-entrypoint-initdb.d/38_note_version_source.sql:ro
+      - ./database/39_backfill_initial_note_versions.sql:/docker-entrypoint-initdb.d/39_backfill_initial_note_versions.sql:ro
+      - ./database/40_thinking_steps.sql:/docker-entrypoint-initdb.d/40_thinking_steps.sql:ro
+      - ./database/41_content_json_format.sql:/docker-entrypoint-initdb.d/41_content_json_format.sql:ro
+      - ./database/42_note_version_content_json.sql:/docker-entrypoint-initdb.d/42_note_version_content_json.sql:ro
+      - ./database/43_note_version_image_ids.sql:/docker-entrypoint-initdb.d/43_note_version_image_ids.sql:ro
+      - ./database/44_voice_sessions.sql:/docker-entrypoint-initdb.d/44_voice_sessions.sql:ro
+      - ./database/45_rag_advanced_settings.sql:/docker-entrypoint-initdb.d/45_rag_advanced_settings.sql:ro
+      - ./database/46_hyde_provider_settings.sql:/docker-entrypoint-initdb.d/46_hyde_provider_settings.sql:ro
+      - ./database/47_reranking_model_setting.sql:/docker-entrypoint-initdb.d/47_reranking_model_setting.sql:ro
+      - ./database/48_rag_embedding_settings.sql:/docker-entrypoint-initdb.d/48_rag_embedding_settings.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

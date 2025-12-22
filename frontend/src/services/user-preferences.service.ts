@@ -25,6 +25,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ollamaRemoteUrl: null,
   useRemoteOllama: false,
   rerankingProvider: null,
+  ragRerankingModel: null,
   noteSummaryEnabled: true,
   noteSummaryProvider: 'OpenAI',
   noteSummaryModel: 'gpt-4o-mini',
@@ -34,6 +35,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ragEnableHybridSearch: true,
   ragEnableReranking: true,
   ragEnableAnalytics: true,
+  // HyDE Provider Settings
+  ragHydeProvider: null,
+  ragHydeModel: null,
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: 5,
   ragSimilarityThreshold: 0.3,
@@ -44,6 +48,10 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ragBm25Weight: 0.3,
   ragMultiQueryCount: 3,
   ragMaxContextLength: 4000,
+  // RAG Embedding Settings
+  ragEmbeddingProvider: null,
+  ragEmbeddingModel: null,
+  ragEmbeddingDimensions: null,
 };
 
 /**
@@ -143,6 +151,7 @@ export const userPreferencesService = {
           ? preferences.useRemoteOllama
           : currentPreferences.useRemoteOllama,
       rerankingProvider: preferences.rerankingProvider ?? currentPreferences.rerankingProvider,
+      ragRerankingModel: preferences.ragRerankingModel ?? currentPreferences.ragRerankingModel,
       noteSummaryEnabled:
         typeof preferences.noteSummaryEnabled === 'boolean'
           ? preferences.noteSummaryEnabled
@@ -170,6 +179,9 @@ export const userPreferencesService = {
         typeof preferences.ragEnableAnalytics === 'boolean'
           ? preferences.ragEnableAnalytics
           : currentPreferences.ragEnableAnalytics,
+      // HyDE Provider Settings
+      ragHydeProvider: preferences.ragHydeProvider ?? currentPreferences.ragHydeProvider,
+      ragHydeModel: preferences.ragHydeModel ?? currentPreferences.ragHydeModel,
       // RAG Advanced Settings - Tier 1: Core Retrieval
       ragTopK: this.validateRagTopK(preferences.ragTopK ?? currentPreferences.ragTopK),
       ragSimilarityThreshold: this.validateRagSimilarityThreshold(
@@ -194,6 +206,10 @@ export const userPreferencesService = {
       ragMaxContextLength: this.validateRagMaxContextLength(
         preferences.ragMaxContextLength ?? currentPreferences.ragMaxContextLength
       ),
+      // RAG Embedding Settings
+      ragEmbeddingProvider: preferences.ragEmbeddingProvider ?? currentPreferences.ragEmbeddingProvider,
+      ragEmbeddingModel: preferences.ragEmbeddingModel ?? currentPreferences.ragEmbeddingModel,
+      ragEmbeddingDimensions: preferences.ragEmbeddingDimensions ?? currentPreferences.ragEmbeddingDimensions,
     };
   },
 

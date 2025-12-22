@@ -39,9 +39,10 @@ public class IndexingController : ControllerBase
         [FromQuery] string? embeddingProvider = null,
         [FromQuery] string? vectorStoreProvider = null,
         [FromQuery] string? embeddingModel = null,
+        [FromQuery] int? customDimensions = null,
         CancellationToken cancellationToken = default)
     {
-        var command = new StartIndexingCommand(userId, embeddingProvider, vectorStoreProvider, embeddingModel);
+        var command = new StartIndexingCommand(userId, embeddingProvider, vectorStoreProvider, embeddingModel, customDimensions);
         var result = await _mediator.Send(command, cancellationToken);
 
         return result.Match<ActionResult<IndexingJobResponse>>(

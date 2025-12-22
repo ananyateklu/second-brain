@@ -30,6 +30,7 @@ vi.mock('../../../services/user-preferences.service', () => ({
     ragEnableHybridSearch: true,
     ragEnableReranking: true,
     ragEnableAnalytics: true,
+    ragRerankingModel: null,
   },
   userPreferencesService: {
     getUserIdFromStorage: vi.fn(),
@@ -402,6 +403,11 @@ describe('settingsSlice', () => {
         ragEnableHybridSearch: true,
         ragEnableReranking: true,
         ragEnableAnalytics: false,
+        // Reranking Model Setting
+        ragRerankingModel: null,
+        // HyDE Provider Settings
+        ragHydeProvider: null,
+        ragHydeModel: null,
         // RAG Advanced Settings - Tier 1: Core Retrieval
         ragTopK: 5,
         ragSimilarityThreshold: 0.3,
@@ -412,6 +418,10 @@ describe('settingsSlice', () => {
         ragBm25Weight: 0.3,
         ragMultiQueryCount: 3,
         ragMaxContextLength: 4000,
+        // RAG Embedding Settings
+        ragEmbeddingProvider: null,
+        ragEmbeddingModel: null,
+        ragEmbeddingDimensions: null,
       };
 
       vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue(mockPreferences);

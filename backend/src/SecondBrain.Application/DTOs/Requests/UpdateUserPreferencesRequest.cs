@@ -25,6 +25,13 @@ public class UpdateUserPreferencesRequest
     public bool? RagEnableReranking { get; set; }
     public bool? RagEnableAnalytics { get; set; }
 
+    // Reranking Model Setting
+    public string? RagRerankingModel { get; set; }
+
+    // HyDE Provider Settings
+    public string? RagHydeProvider { get; set; }
+    public string? RagHydeModel { get; set; }
+
     // RAG Advanced Settings - Tier 1: Core Retrieval
     public int? RagTopK { get; set; }
     public float? RagSimilarityThreshold { get; set; }
@@ -36,5 +43,10 @@ public class UpdateUserPreferencesRequest
     public float? RagBm25Weight { get; set; }
     public int? RagMultiQueryCount { get; set; }
     public int? RagMaxContextLength { get; set; }
+
+    // RAG Embedding Settings
+    public string? RagEmbeddingProvider { get; set; }
+    public string? RagEmbeddingModel { get; set; }
+    public int? RagEmbeddingDimensions { get; set; }
 }
 

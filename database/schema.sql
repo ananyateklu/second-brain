@@ -285,13 +285,31 @@
 \echo ''
 
 -- Step 45: RAG advanced settings
-\echo 'Step 45/46: Adding RAG advanced settings to user_preferences...'
+\echo 'Step 45/49: Adding RAG advanced settings to user_preferences...'
 \i 45_rag_advanced_settings.sql
 \echo 'RAG advanced settings added successfully.'
 \echo ''
 
--- Step 46: Final statistics update
-\echo 'Step 46/46: Updating statistics...'
+-- Step 46: HyDE provider settings
+\echo 'Step 46/49: Adding HyDE provider settings to user_preferences...'
+\i 46_hyde_provider_settings.sql
+\echo 'HyDE provider settings added successfully.'
+\echo ''
+
+-- Step 47: Reranking model setting
+\echo 'Step 47/49: Adding reranking model setting to user_preferences...'
+\i 47_reranking_model_setting.sql
+\echo 'Reranking model setting added successfully.'
+\echo ''
+
+-- Step 48: RAG embedding settings
+\echo 'Step 48/49: Adding RAG embedding settings to user_preferences...'
+\i 48_rag_embedding_settings.sql
+\echo 'RAG embedding settings added successfully.'
+\echo ''
+
+-- Step 49: Final statistics update
+\echo 'Step 49/49: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''
