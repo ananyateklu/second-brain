@@ -371,12 +371,21 @@ var app = builder.Build();
                     if (schemaUpdatesSucceeded)
                     {
                         // Create the migrations history table manually
-                        await dbContext.Database.ExecuteSqlRawAsync(@"
-                            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
-                                ""MigrationId"" character varying(150) NOT NULL,
-                                ""ProductVersion"" character varying(32) NOT NULL,
-                                CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
-                            )");
+                        // Use try-catch to handle race condition when multiple processes try to create simultaneously
+                        try
+                        {
+                            await dbContext.Database.ExecuteSqlRawAsync(@"
+                                CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                                    ""MigrationId"" character varying(150) NOT NULL,
+                                    ""ProductVersion"" character varying(32) NOT NULL,
+                                    CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
+                                )");
+                        }
+                        catch (Npgsql.PostgresException pgEx) when (pgEx.SqlState == "42P07")
+                        {
+                            // Table already exists due to race condition - this is fine, continue
+                            logger.LogDebug("Migrations history table already created by another process.");
+                        }
 
                         // Mark all migrations as applied since tables already exist
                         var allMigrations = dbContext.Database.GetMigrations().ToList();
