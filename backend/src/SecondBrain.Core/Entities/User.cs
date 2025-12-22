@@ -119,6 +119,32 @@ public class UserPreferences
     [Column("rag_enable_analytics")]
     public bool RagEnableAnalytics { get; set; } = true;
 
+    // RAG Advanced Settings - Tier 1: Core Retrieval
+    [Column("rag_top_k")]
+    public int RagTopK { get; set; } = 5;
+
+    [Column("rag_similarity_threshold")]
+    public float RagSimilarityThreshold { get; set; } = 0.3f;
+
+    [Column("rag_initial_retrieval_count")]
+    public int RagInitialRetrievalCount { get; set; } = 20;
+
+    [Column("rag_min_rerank_score")]
+    public float RagMinRerankScore { get; set; } = 3.0f;
+
+    // RAG Advanced Settings - Tier 2: Hybrid Search
+    [Column("rag_vector_weight")]
+    public float RagVectorWeight { get; set; } = 0.7f;
+
+    [Column("rag_bm25_weight")]
+    public float RagBm25Weight { get; set; } = 0.3f;
+
+    [Column("rag_multi_query_count")]
+    public int RagMultiQueryCount { get; set; } = 3;
+
+    [Column("rag_max_context_length")]
+    public int RagMaxContextLength { get; set; } = 4000;
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

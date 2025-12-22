@@ -92,8 +92,8 @@ public class DeleteConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Conversation.NotFound");
-        result.Error.Message.Should().Contain(command.ConversationId);
+        result.Error!.Code.Should().Be("Conversation.NotFound");
+        result.Error!.Message.Should().Contain(command.ConversationId);
     }
 
     [Fact]
@@ -138,8 +138,8 @@ public class DeleteConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Conversation.AccessDenied");
-        result.Error.Message.Should().Contain("Access denied");
+        result.Error!.Code.Should().Be("Conversation.AccessDenied");
+        result.Error!.Message.Should().Contain("Access denied");
     }
 
     #endregion
@@ -164,8 +164,8 @@ public class DeleteConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to delete conversation");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to delete conversation");
     }
 
     #endregion

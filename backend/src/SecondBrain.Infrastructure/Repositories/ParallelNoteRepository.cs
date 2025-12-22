@@ -50,11 +50,12 @@ public class ParallelNoteRepository : IParallelNoteRepository
         }
     }
 
+    [Obsolete("Use GetByIdForUserAsync for secure user-scoped access")]
     public async Task<Note?> GetByIdAsync(string id)
     {
         try
         {
-            _logger.LogDebug("ParallelRepo: Retrieving note by ID. NoteId: {NoteId}", id);
+            _logger.LogDebug("ParallelRepo: Retrieving note by ID (no user check). NoteId: {NoteId}", id);
 
             await using var context = await _contextFactory.CreateDbContextAsync();
 
@@ -75,6 +76,35 @@ public class ParallelNoteRepository : IParallelNoteRepository
         {
             _logger.LogError(ex, "ParallelRepo: Error retrieving note by ID. NoteId: {NoteId}", id);
             throw new RepositoryException($"Failed to retrieve note with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<Note?> GetByIdForUserAsync(string id, string userId)
+    {
+        try
+        {
+            _logger.LogDebug("ParallelRepo: Retrieving note by ID with user check. NoteId: {NoteId}, UserId: {UserId}", id, userId);
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            // User authorization check: only return notes belonging to the specified user
+            var note = await context.Notes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+
+            if (note == null)
+            {
+                _logger.LogDebug("ParallelRepo: Note not found or access denied. NoteId: {NoteId}, UserId: {UserId}", id, userId);
+                return null;
+            }
+
+            _logger.LogDebug("ParallelRepo: Note retrieved successfully. NoteId: {NoteId}, UserId: {UserId}", id, userId);
+            return note;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ParallelRepo: Error retrieving note by ID for user. NoteId: {NoteId}, UserId: {UserId}", id, userId);
+            throw new RepositoryException($"Failed to retrieve note with ID '{id}' for user '{userId}'", ex);
         }
     }
 

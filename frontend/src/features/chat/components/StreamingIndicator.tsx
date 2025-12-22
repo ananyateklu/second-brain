@@ -4,6 +4,7 @@ import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownM
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { TimelineItem } from '../../agents/components/TimelineItem';
 import { GroundingSourcesCard } from '../../agents/components/GroundingSourcesCard';
 import { GrokSearchSourcesCard } from '../../agents/components/GrokSearchSourcesCard';
 import { CodeExecutionCard } from '../../agents/components/CodeExecutionCard';
@@ -25,11 +26,7 @@ function TimelineTextCard({ content, agentModeEnabled = false }: { content: stri
   if (!strippedContent) return null;
 
   return (
-    <div className="relative pl-10 py-2">
-      <div
-        className="absolute left-[15px] top-7 w-2.5 h-2.5 rounded-full"
-        style={{ backgroundColor: 'var(--color-brand-500)' }}
-      />
+    <TimelineItem variant="dot">
       <div
         className="rounded-xl px-4 py-3 text-sm"
         style={{
@@ -42,7 +39,7 @@ function TimelineTextCard({ content, agentModeEnabled = false }: { content: stri
           <MarkdownMessage content={strippedContent} />
         )}
       </div>
-    </div>
+    </TimelineItem>
   );
 }
 

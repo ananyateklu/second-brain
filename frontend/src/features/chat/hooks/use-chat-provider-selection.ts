@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { useBoundStore } from '../../../store/bound-store';
 import { getDefaultModelForProvider } from '../../../utils/default-models';
@@ -29,21 +29,19 @@ export interface ProviderSelectionActions {
 
 /**
  * Manages provider and model selection with persistence to settings store.
+ * Uses Zustand store as single source of truth (no local state duplication).
  */
 export function useChatProviderSelection(): ProviderSelectionState & ProviderSelectionActions {
   const { data: healthData, isLoading: isHealthLoading, isFetching, refreshProviders } = useAIHealth();
-  const {
-    chatProvider: savedChatProvider,
-    chatModel: savedChatModel,
-    setChatProvider,
-    setChatModel,
-    loadPreferencesFromBackend,
-    syncPreferencesToBackend,
-  } = useBoundStore();
-  const user = useBoundStore((state) => state.user);
 
-  const [selectedProvider, setSelectedProvider] = useState<string>(savedChatProvider || '');
-  const [selectedModel, setSelectedModel] = useState<string>(savedChatModel || '');
+  // Read directly from Zustand store - this IS our state
+  const selectedProvider = useBoundStore((state) => state.chatProvider) || '';
+  const selectedModel = useBoundStore((state) => state.chatModel) || '';
+  const setChatProvider = useBoundStore((state) => state.setChatProvider);
+  const setChatModel = useBoundStore((state) => state.setChatModel);
+  const loadPreferencesFromBackend = useBoundStore((state) => state.loadPreferencesFromBackend);
+  const syncPreferencesToBackend = useBoundStore((state) => state.syncPreferencesToBackend);
+  const user = useBoundStore((state) => state.user);
 
   // Load preferences from backend on mount
   useEffect(() => {
@@ -51,25 +49,6 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
       void loadPreferencesFromBackend(user.userId);
     }
   }, [user?.userId, loadPreferencesFromBackend]);
-
-  // Sync selected provider/model with settings store using refs to track previous values
-  const prevSavedProviderRef = useRef(savedChatProvider);
-  useEffect(() => {
-    if (savedChatProvider && savedChatProvider !== selectedProvider && savedChatProvider !== prevSavedProviderRef.current) {
-      prevSavedProviderRef.current = savedChatProvider;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid sync from external store
-      setSelectedProvider(savedChatProvider);
-    }
-  }, [savedChatProvider, selectedProvider]);
-
-  const prevSavedModelRef = useRef(savedChatModel);
-  useEffect(() => {
-    if (savedChatModel && savedChatModel !== selectedModel && savedChatModel !== prevSavedModelRef.current) {
-      prevSavedModelRef.current = savedChatModel;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid sync from external store
-      setSelectedModel(savedChatModel);
-    }
-  }, [savedChatModel, selectedModel]);
 
   // Get available providers from health data
   const availableProviders = useMemo(() => (
@@ -102,12 +81,7 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
       const providerModels = firstProvider.availableModels || [];
       const newModel = getDefaultModelForProvider(newProvider, providerModels);
 
-      /* eslint-disable react-hooks/set-state-in-effect -- Valid initial state sync from external data */
-      setSelectedProvider(newProvider);
-      setSelectedModel(newModel);
-      /* eslint-enable react-hooks/set-state-in-effect */
-
-      // Save to settings store (local only, no backend sync for auto-init)
+      // Update store directly (no backend sync for auto-init)
       setChatProvider(newProvider);
       setChatModel(newModel);
     }
@@ -116,24 +90,18 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   // Auto-correct model if it's invalid for the current provider
   // This handles: 1) provider change via dropdown, 2) invalid saved preferences
   // When loading a conversation via setProviderAndModel, the model will be valid, so no correction occurs
-  const prevSelectedProviderRef = useRef(selectedProvider);
   useEffect(() => {
-    // Only auto-correct when provider changes or model is invalid
-    if (availableModels.length > 0 && !availableModels.includes(selectedModel)) {
+    // Only auto-correct when models are available and current model is invalid
+    if (availableModels.length > 0 && selectedModel && !availableModels.includes(selectedModel)) {
       // Use preferred default model for the provider, fallback to first available
       const newModel = getDefaultModelForProvider(selectedProvider, availableModels);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid state correction for invalid model
-      setSelectedModel(newModel);
-
-      // Save to settings store (local only, no backend sync for auto-correction)
+      // Update store directly (no backend sync for auto-correction)
       setChatModel(newModel);
     }
-    prevSelectedProviderRef.current = selectedProvider;
   }, [selectedProvider, availableModels, selectedModel, setChatModel]);
 
   // Handle provider change with persistence
   const handleProviderChange = useCallback((provider: string) => {
-    setSelectedProvider(provider);
     setChatProvider(provider);
 
     // Sync to backend
@@ -144,7 +112,6 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
 
   // Handle model change with persistence
   const handleModelChange = useCallback((model: string) => {
-    setSelectedModel(model);
     setChatModel(model);
 
     // Sync to backend
@@ -155,16 +122,14 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
 
   // Set both provider and model (used when selecting a conversation)
   const setProviderAndModel = useCallback((provider: string, model: string) => {
-    setSelectedProvider(provider);
-    setSelectedModel(model);
-    // Also update settings store so useEffect hooks don't override
+    // Update store directly
     // Don't sync to backend - this is just for displaying the conversation's model
     setChatProvider(provider);
     setChatModel(model);
   }, [setChatProvider, setChatModel]);
 
   return {
-    // State
+    // State (read from Zustand store)
     selectedProvider,
     selectedModel,
     availableProviders,
@@ -172,10 +137,9 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     isHealthLoading,
     refreshProviders,
     isRefreshing: isFetching && !isHealthLoading, // Refreshing = fetching but not initial load
-    // Actions
+    // Actions (update Zustand store directly)
     handleProviderChange,
     handleModelChange,
     setProviderAndModel,
   };
 }
-

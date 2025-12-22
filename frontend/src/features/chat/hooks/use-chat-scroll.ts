@@ -24,6 +24,8 @@ export function useChatScroll(options: ChatScrollOptions): ChatScrollRefs {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousScrollHeightRef = useRef<number>(0);
   const wasAtBottomRef = useRef<boolean>(true);
+  // Timeout ref for cleanup on unmount (prevents memory leaks)
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper function to scroll to bottom with proper padding respect
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
@@ -59,8 +61,13 @@ export function useChatScroll(options: ChatScrollOptions): ChatScrollRefs {
   // Scroll to bottom when a new pending message appears (user sends a message)
   useEffect(() => {
     if (pendingMessage) {
+      // Clear any pending scroll timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
       // Small delay to ensure DOM is updated
-      setTimeout(() => {
+      scrollTimeoutRef.current = setTimeout(() => {
+        scrollTimeoutRef.current = null;
         scrollToBottom('smooth');
       }, 50);
     }
@@ -90,12 +97,27 @@ export function useChatScroll(options: ChatScrollOptions): ChatScrollRefs {
   // Initial scroll to bottom on mount or when conversation changes
   useEffect(() => {
     if (messagesLength > 0 && !isStreaming) {
+      // Clear any pending scroll timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
       // Use a longer delay for initial load to ensure layout is fully settled
-      setTimeout(() => {
+      scrollTimeoutRef.current = setTimeout(() => {
+        scrollTimeoutRef.current = null;
         scrollToBottom('auto');
       }, 100);
     }
   }, [messagesLength, isStreaming]);
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     messagesEndRef,

@@ -114,6 +114,10 @@ export class VoiceWebSocketConnection {
     this.intentionalDisconnect = false;
     this.reconnectAttempts = 0;
 
+    // Clean up any existing WebSocket before creating a new one
+    // This prevents memory leaks from orphaned event handlers
+    this.cleanupWebSocket();
+
     try {
       // Get token from Zustand persisted auth store
       const authStorage = localStorage.getItem('auth-storage');
@@ -205,6 +209,27 @@ export class VoiceWebSocketConnection {
 
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
+    }
+  }
+
+  /**
+   * Clean up existing WebSocket connection and its event handlers
+   * to prevent memory leaks from orphaned listeners
+   */
+  private cleanupWebSocket(): void {
+    if (this.ws) {
+      // Clear all event handlers to prevent memory leaks
+      this.ws.onopen = null;
+      this.ws.onclose = null;
+      this.ws.onerror = null;
+      this.ws.onmessage = null;
+
+      // Close the connection if it's still open or connecting
+      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+        this.ws.close(1000, 'Reconnecting');
+      }
+
       this.ws = null;
     }
   }

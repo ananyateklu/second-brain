@@ -37,6 +37,16 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   ragEnableHybridSearch: true,
   ragEnableReranking: true,
   ragEnableAnalytics: true,
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  ragTopK: 5,
+  ragSimilarityThreshold: 0.3,
+  ragInitialRetrievalCount: 20,
+  ragMinRerankScore: 3.0,
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  ragVectorWeight: 0.7,
+  ragBm25Weight: 0.3,
+  ragMultiQueryCount: 3,
+  ragMaxContextLength: 4000,
   ...overrides,
 });
 

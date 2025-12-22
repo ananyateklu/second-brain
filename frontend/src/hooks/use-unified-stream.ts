@@ -82,6 +82,10 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
   const processorRef = useRef<StreamEventProcessor | null>(null);
   const queryClient = useQueryClient();
 
+  // Timeout refs for cleanup on unmount (prevents memory leaks)
+  const handleCompleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imageGenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Track the effective conversationId for the current request
   const currentConversationIdRef = useRef<string>(conversationId);
 
@@ -173,8 +177,14 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
     // Use the tracked conversationId from the current request
     const effectiveConversationId = currentConversationIdRef.current;
 
+    // Clear any previous timeout to avoid stacking
+    if (handleCompleteTimeoutRef.current) {
+      clearTimeout(handleCompleteTimeoutRef.current);
+    }
+
     // Invalidate queries to refresh conversation data
-    setTimeout(() => {
+    handleCompleteTimeoutRef.current = setTimeout(() => {
+      handleCompleteTimeoutRef.current = null;
       if (effectiveConversationId) {
         void queryClient.invalidateQueries({ queryKey: conversationKeys.detail(effectiveConversationId) });
       }
@@ -463,8 +473,14 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
         },
       });
 
+      // Clear any previous timeout to avoid stacking
+      if (imageGenTimeoutRef.current) {
+        clearTimeout(imageGenTimeoutRef.current);
+      }
+
       // Invalidate queries to refresh conversation data
-      setTimeout(() => {
+      imageGenTimeoutRef.current = setTimeout(() => {
+        imageGenTimeoutRef.current = null;
         void queryClient.invalidateQueries({ queryKey: conversationKeys.detail(effectiveConversationId) });
         void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       }, 150);
@@ -497,6 +513,15 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
+      }
+      // Clear pending timeouts to prevent memory leaks
+      if (handleCompleteTimeoutRef.current) {
+        clearTimeout(handleCompleteTimeoutRef.current);
+        handleCompleteTimeoutRef.current = null;
+      }
+      if (imageGenTimeoutRef.current) {
+        clearTimeout(imageGenTimeoutRef.current);
+        imageGenTimeoutRef.current = null;
       }
     };
   }, []);

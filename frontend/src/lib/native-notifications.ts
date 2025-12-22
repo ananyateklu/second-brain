@@ -35,17 +35,27 @@ export async function requestNotificationPermission(): Promise<boolean> {
  */
 export async function notify(title: string, body: string): Promise<void> {
   if (!isTauri()) {
-    // Fall back to web notifications
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
+    // Fall back to web notifications with error handling
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body });
+      }
+    } catch (error) {
+      // Silently fail for web notifications - they're not critical
+      console.warn('Failed to show web notification:', error);
     }
     return;
   }
-  
-  const permissionGranted = await isPermissionGranted();
-  
-  if (permissionGranted) {
-    sendNotification({ title, body });
+
+  try {
+    const permissionGranted = await isPermissionGranted();
+
+    if (permissionGranted) {
+      sendNotification({ title, body });
+    }
+  } catch (error) {
+    // Log error but don't throw - notifications are not critical to app function
+    console.warn('Failed to send native notification:', error);
   }
 }
 

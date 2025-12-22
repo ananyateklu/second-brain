@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.RAG.Models;
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
 using OllamaTool = OllamaSharp.Models.Chat.Tool;
 using OpenAIChatTool = OpenAI.Chat.ChatTool;
@@ -21,7 +22,8 @@ public interface IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled);
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null);
 
     /// <summary>
     /// Build Gemini function declarations from plugins.
@@ -31,7 +33,8 @@ public interface IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled);
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null);
 
     /// <summary>
     /// Build OpenAI chat tools from plugins.
@@ -41,13 +44,15 @@ public interface IPluginToolBuilder
     /// <param name="userId">Current user ID.</param>
     /// <param name="agentRagEnabled">Whether RAG is enabled.</param>
     /// <param name="useStrictMode">When true, enables strict mode with additionalProperties: false (for GPT-4o models).</param>
+    /// <param name="ragOptions">User-specific RAG options for semantic search customization.</param>
     (List<OpenAIChatTool> Tools, Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> Methods)
         BuildOpenAITools(
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
-            bool useStrictMode = false);
+            bool useStrictMode = false,
+            RagOptions? ragOptions = null);
 
     /// <summary>
     /// Build Ollama tools from plugins.
@@ -57,7 +62,8 @@ public interface IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled);
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null);
 
     /// <summary>
     /// Get JSON schema type string for a .NET type.

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { ChatConversation } from '../types/chat';
 import { VirtualizedConversationList } from './VirtualizedConversationList';
 import styles from '@styles/components/selection.module.css';
@@ -30,19 +30,32 @@ export function ChatSidebar({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [toggleAnimation, setToggleAnimation] = useState<'in' | 'out' | null>(null);
-  const prevSelectionModeRef = useRef(isSelectionMode);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Track selection mode changes for animation - valid UI state sync
-  useEffect(() => {
-    if (prevSelectionModeRef.current !== isSelectionMode) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToggleAnimation(isSelectionMode ? 'in' : 'out');
-      const timer = setTimeout(() => { setToggleAnimation(null); }, 300);
-      prevSelectionModeRef.current = isSelectionMode;
-      return () => { clearTimeout(timer); };
+  // Helper to set selection mode with animation (avoids useEffect setState)
+  const setSelectionModeWithAnimation = useCallback((newMode: boolean) => {
+    // Clear any pending animation timer
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
     }
-    return undefined;
+    // Only animate if mode is actually changing
+    if (newMode !== isSelectionMode) {
+      setToggleAnimation(newMode ? 'in' : 'out');
+      animationTimerRef.current = setTimeout(() => {
+        setToggleAnimation(null);
+      }, 300);
+    }
+    setIsSelectionMode(newMode);
   }, [isSelectionMode]);
+
+  // Cleanup animation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+    };
+  }, []);
 
   // Filter out placeholder conversations for selection
   const selectableConversations = useMemo(() => {
@@ -77,11 +90,11 @@ export function ChatSidebar({
     const idsToDelete = Array.from(selectedIds);
     await onBulkDeleteConversations(idsToDelete);
     setSelectedIds(new Set());
-    setIsSelectionMode(false);
+    setSelectionModeWithAnimation(false);
   };
 
   const handleExitSelectionMode = () => {
-    setIsSelectionMode(false);
+    setSelectionModeWithAnimation(false);
     setSelectedIds(new Set());
   };
 
@@ -114,7 +127,7 @@ export function ChatSidebar({
           {/* Selection Mode Toggle */}
           {selectableConversations.length > 0 && (
             <button
-              onClick={() => { setIsSelectionMode(!isSelectionMode); }}
+              onClick={() => { setSelectionModeWithAnimation(!isSelectionMode); }}
               className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${getToggleAnimationClass()}`}
               style={{
                 backgroundColor: isSelectionMode

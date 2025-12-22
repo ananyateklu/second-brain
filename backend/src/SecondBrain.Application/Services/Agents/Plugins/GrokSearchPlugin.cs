@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Services.AI.Search;
+using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
 
@@ -33,6 +34,11 @@ public class GrokSearchPlugin : IAgentPlugin
     public void SetAgentRagEnabled(bool enabled)
     {
         // Search tools don't depend on RAG state
+    }
+
+    public void SetRagOptions(RagOptions? options)
+    {
+        // Search tools don't use RAG options
     }
 
     public object GetPluginInstance() => this;

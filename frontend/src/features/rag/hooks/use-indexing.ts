@@ -6,6 +6,24 @@ import { indexingKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
+// Store active timers for cleanup on unmount
+const activeTimers = new Map<string, { interval: ReturnType<typeof setInterval>; timeout: ReturnType<typeof setTimeout> }>();
+
+// Cleanup function to clear timers for a specific job
+function clearJobTimers(jobId: string): void {
+  const timers = activeTimers.get(jobId);
+  if (timers) {
+    clearInterval(timers.interval);
+    clearTimeout(timers.timeout);
+    activeTimers.delete(jobId);
+  }
+}
+
+// Export cleanup function for all active timers (for component unmount)
+export function clearAllIndexingTimers(): void {
+  activeTimers.forEach((_, jobId) => clearJobTimers(jobId));
+}
+
 /**
  * Hook to fetch available embedding providers and their models.
  * Models are fetched dynamically from provider APIs.
@@ -43,20 +61,26 @@ export const useStartIndexing = () => {
         // Invalidate stats query for the specific user to refresh after indexing starts
         void queryClient.invalidateQueries({ queryKey: indexingKeys.stats({ userId: variables.userId }) });
 
+        // Clear any existing timers for this job (in case of retry)
+        clearJobTimers(job.id);
+
         // Set up cleanup for when job completes
-        const cleanup = setInterval(() => {
+        const interval = setInterval(() => {
           const jobData = queryClient.getQueryData<IndexingJobResponse>(indexingKeys.job(job.id));
           if (jobData && (jobData.status === 'completed' || jobData.status === 'failed')) {
             localStorage.removeItem(`indexing_job_${job.id}`);
-            clearInterval(cleanup);
+            clearJobTimers(job.id);
           }
         }, 2000);
 
         // Also clean up after 5 minutes as a safety measure
-        setTimeout(() => {
-          clearInterval(cleanup);
+        const timeout = setTimeout(() => {
+          clearJobTimers(job.id);
           localStorage.removeItem(`indexing_job_${job.id}`);
         }, 5 * 60 * 1000);
+
+        // Store timers for cleanup on unmount
+        activeTimers.set(job.id, { interval, timeout });
       },
     }
   );

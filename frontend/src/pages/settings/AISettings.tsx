@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useBoundStore } from '../../store/bound-store';
 import { useTauriSecrets } from '../../components/ui/use-tauri-secrets';
 import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
+import { useVoiceStatus } from '../../features/voice/hooks';
 import { NoteSummarySettings } from './components/NoteSummarySettings';
 import {
   ProviderCard,
@@ -21,14 +22,35 @@ import openaiLight from '../../assets/openai-light.svg';
 import openaiDark from '../../assets/openai-dark.svg';
 import xaiLight from '../../assets/xai-light.svg';
 import xaiDark from '../../assets/xai-dark.svg';
+// Voice provider logos
+import deepgramLogo from '../../assets/deepgram-light.jpeg';
+import elevenlabsLogo from '../../assets/elevenlabs-light.svg';
 
 export function AISettings() {
   const theme = useBoundStore((state) => state.theme);
   const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth } = useAIHealth();
-  const { isProviderConfigured, refetch: refetchSecrets } = useTauriSecrets();
+  const { isProviderConfigured: isTauriProviderConfigured, refetch: refetchSecrets } = useTauriSecrets();
+  const { data: voiceStatus, refetch: refetchVoiceStatus } = useVoiceStatus();
   const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
 
   const isDarkMode = theme === 'dark' || theme === 'blue';
+
+  // Check if a provider is configured - uses voice status for voice providers, Tauri secrets for AI providers
+  const isProviderConfigured = useCallback((providerId: string): boolean => {
+    if (providerId === 'deepgram') {
+      return voiceStatus?.deepgramAvailable ?? false;
+    }
+    if (providerId === 'elevenlabs') {
+      return voiceStatus?.elevenLabsAvailable ?? false;
+    }
+    return isTauriProviderConfigured(providerId);
+  }, [voiceStatus, isTauriProviderConfigured]);
+
+  // Combined refetch for all secrets and voice status
+  const handleRefreshSecrets = useCallback(() => {
+    void refetchSecrets();
+    void refetchVoiceStatus();
+  }, [refetchSecrets, refetchVoiceStatus]);
 
   // Get health status for a provider by its ID
   const getProviderHealth = (providerId: string): ProviderHealth | null => {
@@ -38,7 +60,7 @@ export function AISettings() {
     ) || null;
   };
 
-  // Get provider logo based on theme (returns null for voice providers which use inline SVGs)
+  // Get provider logo based on theme
   const getProviderLogo = (providerId: string): string | null => {
     switch (providerId) {
       case 'openai':
@@ -52,8 +74,9 @@ export function AISettings() {
       case 'xai':
         return isDarkMode ? xaiDark : xaiLight;
       case 'deepgram':
+        return deepgramLogo;
       case 'elevenlabs':
-        return null; // Voice providers use inline SVG icons
+        return elevenlabsLogo;
       default:
         return null;
     }
@@ -149,11 +172,11 @@ export function AISettings() {
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
                   style={{
-                    backgroundColor: 'color-mix(in srgb, #8b5cf6 12%, transparent)',
-                    borderColor: 'color-mix(in srgb, #8b5cf6 30%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
                   }}
                 >
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#8b5cf6' }}>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
@@ -180,6 +203,7 @@ export function AISettings() {
                 <VoiceProviderCard
                   key={provider.id}
                   provider={provider}
+                  logo={getProviderLogo(provider.id)}
                   isProviderConfigured={isProviderConfigured}
                   onClick={() => setSelectedProvider({ id: provider.id, name: provider.name })}
                 />
@@ -197,7 +221,8 @@ export function AISettings() {
         getProviderLogo={getProviderLogo}
         downloadedModels={downloadedModels}
         onRefreshHealth={() => { void refetchHealth(); }}
-        onRefreshSecrets={() => { void refetchSecrets(); }}
+        onRefreshSecrets={handleRefreshSecrets}
+        voiceStatus={voiceStatus}
       />
 
       {/* Note Summary Settings */}
@@ -239,31 +264,14 @@ const HealthBadge = ({ isLoading, healthyCount, totalProviders }: HealthBadgePro
 // Voice provider card component
 interface VoiceProviderCardProps {
   provider: { id: string; name: string };
+  logo: string | null;
   isProviderConfigured: (providerId: string) => boolean;
   onClick: () => void;
 }
 
-const VoiceProviderCard = ({ provider, isProviderConfigured, onClick }: VoiceProviderCardProps) => {
+const VoiceProviderCard = ({ provider, logo, isProviderConfigured, onClick }: VoiceProviderCardProps) => {
   const isConfigured = isProviderConfigured(provider.id);
   const isDeepgram = provider.id === 'deepgram';
-
-  // Get icon based on provider
-  const getProviderIcon = () => {
-    if (isDeepgram) {
-      // Microphone icon for STT
-      return (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#8b5cf6' }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-        </svg>
-      );
-    }
-    // Speaker icon for TTS
-    return (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#8b5cf6' }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-      </svg>
-    );
-  };
 
   return (
     <div className="group">
@@ -276,9 +284,9 @@ const VoiceProviderCard = ({ provider, isProviderConfigured, onClick }: VoicePro
           borderColor: 'var(--border)',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, #8b5cf6 8%, var(--surface-elevated))';
-          e.currentTarget.style.borderColor = 'color-mix(in srgb, #8b5cf6 40%, var(--border))';
-          e.currentTarget.style.boxShadow = '0 8px 20px color-mix(in srgb, #8b5cf6 12%, transparent)';
+          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
+          e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 40%, var(--border))';
+          e.currentTarget.style.boxShadow = '0 8px 20px color-mix(in srgb, var(--color-brand-600) 12%, transparent)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
@@ -288,14 +296,26 @@ const VoiceProviderCard = ({ provider, isProviderConfigured, onClick }: VoicePro
       >
         <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
           <div className="flex items-center gap-2 min-w-0">
-            <div
-              className="relative flex h-12 w-12 items-center justify-center rounded-xl border"
-              style={{
-                borderColor: 'color-mix(in srgb, var(--border) 70%, transparent)',
-                backgroundColor: 'color-mix(in srgb, #8b5cf6 8%, transparent)',
-              }}
-            >
-              {getProviderIcon()}
+            <div className="relative">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-xl border overflow-hidden"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--border) 70%, transparent)',
+                  backgroundColor: provider.id === 'elevenlabs' ? '#ffffff' : 'var(--surface-card)',
+                }}
+              >
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt={provider.name}
+                    className={provider.id === 'elevenlabs' ? 'h-8 w-8 object-contain' : 'h-6 w-6 object-contain'}
+                  />
+                ) : (
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                )}
+              </div>
               <span
                 className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full border-2"
                 style={{
@@ -332,7 +352,7 @@ const VoiceProviderCard = ({ provider, isProviderConfigured, onClick }: VoicePro
             </span>
           </div>
 
-          <div className="text-xs font-semibold text-right whitespace-nowrap flex items-center gap-1" style={{ color: '#8b5cf6' }}>
+          <div className="text-xs font-semibold text-right whitespace-nowrap flex items-center gap-1" style={{ color: 'var(--color-brand-600)' }}>
             {!isConfigured ? (
               <>
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

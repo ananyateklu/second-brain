@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+ 
 import { lazy, Suspense, useEffect } from 'react';
 import { createBrowserRouter, createHashRouter, Navigate } from 'react-router-dom';
 import { useBoundStore } from '../store/bound-store';

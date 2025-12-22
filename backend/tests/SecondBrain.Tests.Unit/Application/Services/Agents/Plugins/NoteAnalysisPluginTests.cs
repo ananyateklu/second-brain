@@ -109,7 +109,7 @@ public class NoteAnalysisPluginTests
     public async Task AnalyzeNoteAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -120,18 +120,18 @@ public class NoteAnalysisPluginTests
     }
 
     [Fact]
-    public async Task AnalyzeNoteAsync_WhenNoteNotOwnedByUser_ReturnsPermissionError()
+    public async Task AnalyzeNoteAsync_WhenNoteNotOwnedByUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Other's Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.AnalyzeNoteAsync("note-1");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<NoteAnalysis>(
                 It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -157,7 +157,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", tags: new List<string> { "existing-tag" });
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         var analysis = new NoteAnalysis
@@ -187,7 +187,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<NoteAnalysis>(
                 It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -219,7 +219,7 @@ public class NoteAnalysisPluginTests
     public async Task SuggestTagsAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -234,7 +234,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         var analysis = new NoteAnalysis { Tags = new List<string>() };
@@ -254,7 +254,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", tags: new List<string> { "existing" });
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         var analysis = new NoteAnalysis
@@ -279,7 +279,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         var analysis = new NoteAnalysis
@@ -317,7 +317,7 @@ public class NoteAnalysisPluginTests
     public async Task SummarizeNoteAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -332,7 +332,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<ContentSummary>(
                 It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -350,7 +350,7 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         var summary = new ContentSummary
@@ -392,7 +392,7 @@ public class NoteAnalysisPluginTests
     public async Task CompareNotesAsync_WhenFirstNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -408,9 +408,9 @@ public class NoteAnalysisPluginTests
     {
         // Arrange
         var note1 = CreateNote("note-1", "First Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -422,21 +422,22 @@ public class NoteAnalysisPluginTests
     }
 
     [Fact]
-    public async Task CompareNotesAsync_WhenNoteNotOwnedByUser_ReturnsPermissionError()
+    public async Task CompareNotesAsync_WhenNoteNotOwnedByUser_ReturnsNotFound()
     {
         // Arrange
         var note1 = CreateNote("note-1", "First Note");
-        var note2 = CreateNote("note-2", "Second Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
-            .ReturnsAsync(note2);
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.CompareNotesAsync("note-1", "note-2");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("note-2");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -445,9 +446,9 @@ public class NoteAnalysisPluginTests
         // Arrange
         var note1 = CreateNote("note-1", "First Note");
         var note2 = CreateNote("note-2", "Second Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync(note2);
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<ComparisonResult>(
                 It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -466,9 +467,9 @@ public class NoteAnalysisPluginTests
         // Arrange
         var note1 = CreateNote("note-1", "First Note");
         var note2 = CreateNote("note-2", "Second Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync(note2);
 
         var comparison = new ComparisonResult
@@ -499,9 +500,9 @@ public class NoteAnalysisPluginTests
         var longContent = new string('x', 3000);
         var note1 = CreateNote("note-1", "First Note", content: longContent);
         var note2 = CreateNote("note-2", "Second Note", content: longContent);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync(note2);
 
         var comparison = new ComparisonResult
@@ -533,9 +534,9 @@ public class NoteAnalysisPluginTests
         // Arrange
         var note1 = CreateNote("note-1", "First Note");
         var note2 = CreateNote("note-2", "Second Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(note1);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync(note2);
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<ComparisonResult>(
                 It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))

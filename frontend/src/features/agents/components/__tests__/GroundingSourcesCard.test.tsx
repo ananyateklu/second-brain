@@ -48,16 +48,17 @@ describe('GroundingSourcesCard', () => {
 
     it('should render timeline icon', () => {
       const { container } = render(<GroundingSourcesCard sources={[createMockSource()]} />);
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });
 
     it('should render search icon in timeline', () => {
       const { container } = render(<GroundingSourcesCard sources={[createMockSource()]} />);
-      // Check for the search icon (magnifying glass)
-      const svg = container.querySelector('.absolute svg');
-      expect(svg).toHaveStyle({ color: 'var(--color-accent-blue)' });
+      // Check for the timeline icon container
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      expect(iconContainer).toBeInTheDocument();
+      expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });
   });
 

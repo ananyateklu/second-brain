@@ -9,12 +9,19 @@ namespace SecondBrain.Tests.Unit.Application.Services.AI;
 public class GrokImageProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<ILogger<GrokImageProvider>> _mockLogger;
 
     public GrokImageProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockLogger = new Mock<ILogger<GrokImageProvider>>();
+
+        // Setup default HttpClient mock
+        _mockHttpClientFactory
+            .Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient());
     }
 
     #region Constructor and Properties Tests
@@ -251,6 +258,7 @@ public class GrokImageProviderTests
     {
         return new GrokImageProvider(
             _mockSettings.Object,
+            _mockHttpClientFactory.Object,
             _mockLogger.Object
         );
     }

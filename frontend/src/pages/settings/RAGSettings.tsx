@@ -1,11 +1,77 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useBoundStore } from '../../store/bound-store';
 import { toast } from '../../hooks/use-toast';
 import { isTauri } from '../../lib/native-notifications';
 import { usePineconeConfigured } from '../../components/ui/use-pinecone-configured';
 import { TauriPineconeSetupModal } from '../../components/ui/TauriPineconeSetupModal';
+import { Tooltip, InfoIcon } from '../../components/ui/Tooltip';
 
 type VectorProvider = 'PostgreSQL' | 'Pinecone';
+
+// Advanced RAG Settings configuration
+const RAG_ADVANCED_SETTINGS = {
+  tier1: [
+    {
+      id: 'ragTopK',
+      name: 'Results to Return (TopK)',
+      description: 'The final number of notes included in the AI\'s context after all filtering and reranking. Lower values (1-3) give focused, precise answers. Higher values (5-10) provide broader context but may include less relevant content. Increase if answers seem incomplete; decrease if responses contain irrelevant information.',
+      min: 1,
+      max: 20,
+      step: 1,
+      default: 5,
+    },
+    {
+      id: 'ragSimilarityThreshold',
+      name: 'Similarity Threshold',
+      description: 'Minimum semantic similarity score (0-1) required to consider a note relevant. Lower values (0.1-0.2) cast a wider net, returning more results but potentially including loosely related content. Higher values (0.5-0.7) are stricter, only returning highly relevant matches. Decrease if you\'re missing relevant notes; increase if getting too many unrelated results.',
+      min: 0.1,
+      max: 0.9,
+      step: 0.05,
+      default: 0.3,
+      format: (v: number) => v.toFixed(2),
+    },
+    {
+      id: 'ragInitialRetrievalCount',
+      name: 'Initial Retrieval Count',
+      description: 'Number of candidate notes to fetch from the vector store before reranking filters them down. Higher values (30-50) give the reranker more options to find the best matches but increase processing time. Lower values (10-15) are faster but may miss relevant notes. Increase for better accuracy on large note collections; decrease for faster responses.',
+      min: 10,
+      max: 50,
+      step: 5,
+      default: 20,
+    },
+    {
+      id: 'ragMinRerankScore',
+      name: 'Min Rerank Score',
+      description: 'Minimum relevance score (0-10) from the AI reranker to include a result. The reranker evaluates each candidate and scores how well it answers your query. Lower values (1-2) include more results with loose relevance. Higher values (5-7) only keep highly relevant matches. Adjust based on answer quality - increase if getting off-topic content, decrease if missing relevant notes.',
+      min: 0,
+      max: 10,
+      step: 0.5,
+      default: 3.0,
+      format: (v: number) => v.toFixed(1),
+    },
+  ],
+  tier2: [
+    {
+      id: 'ragMultiQueryCount',
+      name: 'Query Variations',
+      description: 'When Query Expansion is enabled, this sets how many alternative phrasings of your question are generated. Each variation searches separately, then results are merged. More variations (4-5) find notes that match different wordings of your intent but use more API calls. Fewer variations (1-2) are faster and cheaper. Increase for complex or ambiguous queries; decrease for simple, direct questions.',
+      min: 1,
+      max: 5,
+      step: 1,
+      default: 3,
+    },
+    {
+      id: 'ragMaxContextLength',
+      name: 'Max Context Length',
+      description: 'Maximum total characters from retrieved notes to include in the AI\'s context window. Larger values (8000-16000) allow more note content but increase token costs and may hit model limits. Smaller values (2000-4000) are cheaper and faster but may truncate important information. Balance based on your typical note length and budget - longer technical notes may need higher limits.',
+      min: 1000,
+      max: 16000,
+      step: 500,
+      default: 4000,
+      format: (v: number) => `${v.toLocaleString()} chars`,
+    },
+  ],
+} as const;
 
 // RAG Feature Toggle definitions
 const RAG_FEATURE_TOGGLES = [
@@ -13,7 +79,7 @@ const RAG_FEATURE_TOGGLES = [
     id: 'hyde',
     key: 'ragEnableHyde' as const,
     name: 'HyDE',
-    description: 'Hypothetical Document Embeddings - generates a hypothetical answer to improve semantic search',
+    description: 'Hypothetical Document Embeddings: Before searching, the AI generates a hypothetical "ideal answer" to your question, then searches for notes similar to that answer instead of your raw query. This dramatically improves results for questions where the answer phrasing differs from how you asked. Best for Q&A style queries. Adds one LLM call per search but significantly boosts relevance for complex questions.',
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -24,7 +90,7 @@ const RAG_FEATURE_TOGGLES = [
     id: 'queryExpansion',
     key: 'ragEnableQueryExpansion' as const,
     name: 'Query Expansion',
-    description: 'Generate multiple query variations to improve recall and find more relevant results',
+    description: 'Automatically generates multiple variations of your question using synonyms, related terms, and alternative phrasings. Each variation runs a separate search, and results are merged using Reciprocal Rank Fusion (RRF). This catches notes you might miss due to vocabulary mismatch - e.g., searching "car" also finds notes about "automobile" or "vehicle". Increases API usage proportionally to Query Variations setting.',
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
@@ -35,7 +101,7 @@ const RAG_FEATURE_TOGGLES = [
     id: 'hybridSearch',
     key: 'ragEnableHybridSearch' as const,
     name: 'Hybrid Search',
-    description: 'Combine vector similarity with BM25 keyword search for better coverage',
+    description: 'Combines two search strategies: Vector search finds semantically similar content (understanding meaning), while BM25 keyword search finds exact term matches. Results are merged using RRF fusion. This ensures you find notes whether they match conceptually OR contain specific keywords. Essential for technical content with specific terminology. Use the Search Balance slider to tune the weight between semantic vs keyword matching.',
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6" />
@@ -46,7 +112,7 @@ const RAG_FEATURE_TOGGLES = [
     id: 'reranking',
     key: 'ragEnableReranking' as const,
     name: 'Reranking',
-    description: 'Use LLM to score and reorder results for higher relevance accuracy',
+    description: 'After initial retrieval, an AI model re-evaluates each candidate note against your specific query and assigns a relevance score (0-10). Notes are then reordered by this score, pushing the most relevant to the top. This is the most impactful quality improvement - vector search finds candidates, but reranking ensures the best ones are selected. Adds latency and API cost but dramatically improves answer relevance.',
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
@@ -57,7 +123,7 @@ const RAG_FEATURE_TOGGLES = [
     id: 'analytics',
     key: 'ragEnableAnalytics' as const,
     name: 'Analytics',
-    description: 'Log RAG query metrics for performance monitoring and optimization',
+    description: 'Records detailed metrics for each RAG query including: retrieval time, number of candidates, rerank scores, final selections, and token usage. View analytics in the RAG Analytics dashboard to identify slow queries, tune thresholds, and understand which notes are being retrieved. Essential for optimizing your RAG pipeline. Minimal performance impact - data is logged asynchronously.',
     icon: (
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
@@ -77,24 +143,24 @@ const VECTOR_STORE_OPTIONS: {
       id: 'PostgreSQL',
       label: 'PostgreSQL',
       badge: 'Default',
-      description: 'Local PostgreSQL database with pgvector extension for fast, efficient vector similarity search.',
+      description: 'Uses your local PostgreSQL database with the pgvector extension. All embeddings stay on your machine - no external API calls for search. Best for privacy-conscious users, offline access, and when you have fewer than 100K notes. Supports both vector similarity and BM25 full-text search natively.',
       features: ['Local storage', 'Fast queries', 'Full control'],
     },
     {
       id: 'Pinecone',
       label: 'Pinecone',
       badge: 'Scalable',
-      description: 'Vector database tuned for high-volume and multi-tenant knowledge bases.',
+      description: 'Cloud-hosted vector database optimized for massive scale. Handles millions of embeddings with consistent low-latency queries. Best for large note collections, multi-device sync, or when you need advanced filtering. Requires Pinecone API key and sends embeddings to Pinecone servers.',
       features: ['Billions of vectors', 'Metadata filters', 'Hybrid search ready'],
     },
   ];
 
 const RERANKING_PROVIDER_OPTIONS = [
-  { id: 'OpenAI', name: 'OpenAI', description: 'Fast and reliable reranking with GPT models' },
-  { id: 'Anthropic', name: 'Anthropic', description: 'High-quality reranking with Claude models' },
-  { id: 'Gemini', name: 'Gemini', description: 'Cost-effective reranking with Gemini models' },
-  { id: 'Grok', name: 'Grok (xAI)', description: 'Reranking with xAI Grok models' },
-  { id: 'Cohere', name: 'Cohere', description: 'Native rerank API - fast and optimized for RAG', badge: 'Recommended' },
+  { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models to score relevance. Fast response times, good accuracy, competitive pricing. Best all-around choice if you already use OpenAI for chat.' },
+  { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models for reranking. Excellent at understanding nuanced queries and context. Slightly higher latency but often more accurate for complex questions.' },
+  { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Very cost-effective with good performance. Best choice for budget-conscious users or high-volume usage.' },
+  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries. Newer option with competitive performance.' },
+  { id: 'Cohere', name: 'Cohere', description: 'Purpose-built Rerank API designed specifically for RAG. Fastest option with excellent accuracy. No prompt engineering needed - just send documents and query. Best choice for production workloads.', badge: 'Recommended' },
 ] as const;
 
 export function RAGSettings() {
@@ -116,11 +182,127 @@ export function RAGSettings() {
   const setRagEnableHybridSearch = useBoundStore((state) => state.setRagEnableHybridSearch);
   const setRagEnableReranking = useBoundStore((state) => state.setRagEnableReranking);
   const setRagEnableAnalytics = useBoundStore((state) => state.setRagEnableAnalytics);
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  const ragTopK = useBoundStore((state) => state.ragTopK);
+  const ragSimilarityThreshold = useBoundStore((state) => state.ragSimilarityThreshold);
+  const ragInitialRetrievalCount = useBoundStore((state) => state.ragInitialRetrievalCount);
+  const ragMinRerankScore = useBoundStore((state) => state.ragMinRerankScore);
+  const setRagTopK = useBoundStore((state) => state.setRagTopK);
+  const setRagSimilarityThreshold = useBoundStore((state) => state.setRagSimilarityThreshold);
+  const setRagInitialRetrievalCount = useBoundStore((state) => state.setRagInitialRetrievalCount);
+  const setRagMinRerankScore = useBoundStore((state) => state.setRagMinRerankScore);
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  const ragVectorWeight = useBoundStore((state) => state.ragVectorWeight);
+  const ragBm25Weight = useBoundStore((state) => state.ragBm25Weight);
+  const ragMultiQueryCount = useBoundStore((state) => state.ragMultiQueryCount);
+  const ragMaxContextLength = useBoundStore((state) => state.ragMaxContextLength);
+  const setRagVectorWeight = useBoundStore((state) => state.setRagVectorWeight);
+  const setRagBm25Weight = useBoundStore((state) => state.setRagBm25Weight);
+  const setRagMultiQueryCount = useBoundStore((state) => state.setRagMultiQueryCount);
+  const setRagMaxContextLength = useBoundStore((state) => state.setRagMaxContextLength);
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
   const [isSavingRerankingProvider, setIsSavingRerankingProvider] = useState(false);
   const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
   const [showPineconeSetup, setShowPineconeSetup] = useState(false);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
+  const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
+  const [savingAdvancedSetting, setSavingAdvancedSetting] = useState<string | null>(null);
+
+  // Get current value for an advanced setting
+  const getAdvancedSettingValue = useCallback((id: string): number => {
+    switch (id) {
+      case 'ragTopK': return ragTopK;
+      case 'ragSimilarityThreshold': return ragSimilarityThreshold;
+      case 'ragInitialRetrievalCount': return ragInitialRetrievalCount;
+      case 'ragMinRerankScore': return ragMinRerankScore;
+      case 'ragVectorWeight': return ragVectorWeight;
+      case 'ragBm25Weight': return ragBm25Weight;
+      case 'ragMultiQueryCount': return ragMultiQueryCount;
+      case 'ragMaxContextLength': return ragMaxContextLength;
+      default: return 0;
+    }
+  }, [ragTopK, ragSimilarityThreshold, ragInitialRetrievalCount, ragMinRerankScore, ragVectorWeight, ragBm25Weight, ragMultiQueryCount, ragMaxContextLength]);
+
+  // Handle advanced setting change
+  const handleAdvancedSettingChange = useCallback(async (id: string, value: number) => {
+    if (!user?.userId) return;
+
+    setSavingAdvancedSetting(id);
+    try {
+      switch (id) {
+        case 'ragTopK':
+          await setRagTopK(value);
+          break;
+        case 'ragSimilarityThreshold':
+          await setRagSimilarityThreshold(value);
+          break;
+        case 'ragInitialRetrievalCount':
+          await setRagInitialRetrievalCount(value);
+          break;
+        case 'ragMinRerankScore':
+          await setRagMinRerankScore(value);
+          break;
+        case 'ragVectorWeight':
+          await setRagVectorWeight(value);
+          // Auto-adjust BM25 weight to complement vector weight
+          await setRagBm25Weight(Math.round((1 - value) * 100) / 100);
+          break;
+        case 'ragBm25Weight':
+          await setRagBm25Weight(value);
+          // Auto-adjust vector weight to complement BM25 weight
+          await setRagVectorWeight(Math.round((1 - value) * 100) / 100);
+          break;
+        case 'ragMultiQueryCount':
+          await setRagMultiQueryCount(value);
+          break;
+        case 'ragMaxContextLength':
+          await setRagMaxContextLength(value);
+          break;
+      }
+    } catch (error) {
+      console.error('Failed to update advanced RAG setting:', { id, error });
+      toast.error('Failed to save setting', 'Please try again.');
+    } finally {
+      setSavingAdvancedSetting(null);
+    }
+  }, [user?.userId, setRagTopK, setRagSimilarityThreshold, setRagInitialRetrievalCount, setRagMinRerankScore, setRagVectorWeight, setRagBm25Weight, setRagMultiQueryCount, setRagMaxContextLength]);
+
+  // Reset to defaults
+  const handleResetAdvancedSettings = useCallback(async () => {
+    if (!user?.userId) return;
+
+    setSavingAdvancedSetting('reset');
+    try {
+      await Promise.all([
+        setRagTopK(5),
+        setRagSimilarityThreshold(0.3),
+        setRagInitialRetrievalCount(20),
+        setRagMinRerankScore(3.0),
+        setRagVectorWeight(0.7),
+        setRagBm25Weight(0.3),
+        setRagMultiQueryCount(3),
+        setRagMaxContextLength(4000),
+      ]);
+      toast.success('Settings reset', 'Advanced RAG settings have been reset to defaults.');
+    } catch (error) {
+      console.error('Failed to reset advanced RAG settings:', { error });
+      toast.error('Failed to reset settings', 'Please try again.');
+    } finally {
+      setSavingAdvancedSetting(null);
+    }
+  }, [user?.userId, setRagTopK, setRagSimilarityThreshold, setRagInitialRetrievalCount, setRagMinRerankScore, setRagVectorWeight, setRagBm25Weight, setRagMultiQueryCount, setRagMaxContextLength]);
+
+  // Check if any setting differs from default
+  const hasNonDefaultSettings = useMemo(() => {
+    return ragTopK !== 5 ||
+           ragSimilarityThreshold !== 0.3 ||
+           ragInitialRetrievalCount !== 20 ||
+           ragMinRerankScore !== 3.0 ||
+           ragVectorWeight !== 0.7 ||
+           ragBm25Weight !== 0.3 ||
+           ragMultiQueryCount !== 3 ||
+           ragMaxContextLength !== 4000;
+  }, [ragTopK, ragSimilarityThreshold, ragInitialRetrievalCount, ragMinRerankScore, ragVectorWeight, ragBm25Weight, ragMultiQueryCount, ragMaxContextLength]);
 
   // Load preferences from backend when component mounts
   useEffect(() => {
@@ -219,7 +401,7 @@ export function RAGSettings() {
                   </span>
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
                   <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Reranking provider
+                    Reranking Provider
                   </h3>
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -234,13 +416,15 @@ export function RAGSettings() {
                   Saving...
                 </span>
               )}
-              <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
-                {RERANKING_PROVIDER_OPTIONS.map((option) => {
-                  const isActive = rerankingProvider === option.id;
-                  return (
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              {RERANKING_PROVIDER_OPTIONS.map((option) => {
+                const isActive = rerankingProvider === option.id;
+                return (
+                  <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
                     <button
                       type="button"
-                      key={option.id}
                       onClick={() => {
                         void (async () => {
                           if (!user?.userId) {
@@ -261,19 +445,16 @@ export function RAGSettings() {
                         })();
                       }}
                       disabled={isSavingRerankingProvider}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
                         color: isActive ? 'white' : 'var(--text-primary)',
                       }}
                     >
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                      </svg>
                       <span>{option.name}</span>
                       {'badge' in option && option.badge && (
                         <span
-                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xl"
+                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md"
                           style={{
                             backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                             color: isActive ? 'white' : 'var(--color-brand-600)',
@@ -283,9 +464,9 @@ export function RAGSettings() {
                         </span>
                       )}
                     </button>
-                  );
-                })}
-              </div>
+                  </Tooltip>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -319,7 +500,7 @@ export function RAGSettings() {
                   </span>
                   <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
                   <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                    Vector store provider
+                    Vector Store Provider
                   </h3>
                 </div>
                 <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
@@ -339,10 +520,10 @@ export function RAGSettings() {
                   const isActive = vectorStoreProvider === option.id;
                   const needsSetup = option.id === 'Pinecone' && isTauri() && !isPineconeConfigured;
 
-                  return (
+                return (
+                  <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
                     <button
                       type="button"
-                      key={option.id}
                       onClick={() => {
                         if (needsSetup) {
                           setShowPineconeSetup(true);
@@ -368,25 +549,25 @@ export function RAGSettings() {
                         })();
                       }}
                       disabled={isSavingVectorStore}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
                         color: isActive ? 'white' : 'var(--text-primary)',
                       }}
                     >
                       {option.id === 'PostgreSQL' ? (
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                         </svg>
                       ) : (
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                       )}
                       <span>{option.label}</span>
                       {option.badge && (
                         <span
-                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xl"
+                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md"
                           style={{
                             backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
                             color: isActive ? 'white' : 'var(--color-brand-600)',
@@ -397,20 +578,21 @@ export function RAGSettings() {
                       )}
                       {needsSetup && (
                         <span
-                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xl flex items-center gap-1"
+                          className="text-[9px] font-semibold px-1 py-0.5 rounded-md flex items-center gap-0.5"
                           style={{
                             backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
                             color: '#f59e0b',
                           }}
                         >
-                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                           </svg>
                           Setup
                         </span>
                       )}
                     </button>
-                  );
+                  </Tooltip>
+                );
                 })}
               </div>
             </div>
@@ -458,7 +640,7 @@ export function RAGSettings() {
           </div>
 
           {/* Feature Toggle Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
             {RAG_FEATURE_TOGGLES.map((feature) => {
               const isEnabled = getFeatureValue(feature.key);
               const isSaving = savingFeature === feature.id;
@@ -466,7 +648,7 @@ export function RAGSettings() {
               return (
                 <div
                   key={feature.id}
-                  className="flex items-start gap-3 p-3 rounded-2xl border transition-all duration-200"
+                  className="flex items-center gap-2 p-2.5 rounded-xl border transition-all duration-200"
                   style={{
                     backgroundColor: isEnabled
                       ? 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)'
@@ -478,7 +660,7 @@ export function RAGSettings() {
                 >
                   {/* Feature Icon */}
                   <div
-                    className="flex h-8 w-8 items-center justify-center rounded-xl flex-shrink-0"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
                     style={{
                       backgroundColor: isEnabled
                         ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
@@ -489,56 +671,385 @@ export function RAGSettings() {
                     {feature.icon}
                   </div>
 
-                  {/* Feature Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span
-                        className="text-sm font-medium truncate"
-                        style={{ color: 'var(--text-primary)' }}
-                      >
-                        {feature.name}
-                      </span>
-
-                      {/* Toggle Switch */}
-                      <button
-                        type="button"
-                        onClick={() => void handleFeatureToggle(feature)}
-                        disabled={isSaving}
-                        className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{
-                          backgroundColor: isEnabled ? 'var(--color-brand-600)' : 'var(--border)',
-                          // @ts-expect-error CSS variable for focus ring
-                          '--tw-ring-color': 'var(--color-brand-600)',
-                        }}
-                        aria-pressed={isEnabled}
-                        aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${feature.name}`}
-                      >
-                        <span
-                          className="pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
-                          style={{
-                            backgroundColor: 'white',
-                            // Keep a small inset so the thumb doesn't sit flush against the inside edge
-                            transform: isEnabled ? 'translateX(14px)' : 'translateX(2px)',
-                          }}
-                        />
-                      </button>
-                    </div>
-                    <p
-                      className="text-[11px] leading-tight"
-                      style={{ color: 'var(--text-secondary)' }}
+                  {/* Feature Name + Info */}
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span
+                      className="text-xs font-medium truncate"
+                      style={{ color: 'var(--text-primary)' }}
                     >
-                      {feature.description}
-                    </p>
-                    {isSaving && (
-                      <span className="text-[10px] mt-1 inline-block" style={{ color: 'var(--text-secondary)' }}>
-                        Saving...
-                      </span>
-                    )}
+                      {feature.name}
+                    </span>
+                    <Tooltip content={feature.description} position="top" maxWidth={420}>
+                      <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
+                    </Tooltip>
                   </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    onClick={() => void handleFeatureToggle(feature)}
+                    disabled={isSaving}
+                    className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: isEnabled ? 'var(--color-brand-600)' : 'var(--border)',
+                      // @ts-expect-error CSS variable for focus ring
+                      '--tw-ring-color': 'var(--color-brand-600)',
+                    }}
+                    aria-pressed={isEnabled}
+                    aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${feature.name}`}
+                  >
+                    <span
+                      className="pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                      style={{
+                        backgroundColor: 'white',
+                        transform: isEnabled ? 'translateX(14px)' : 'translateX(2px)',
+                      }}
+                    />
+                  </button>
+                  {isSaving && (
+                    <span className="text-[10px] absolute -bottom-4" style={{ color: 'var(--text-secondary)' }}>
+                      Saving...
+                    </span>
+                  )}
                 </div>
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Advanced RAG Settings Section */}
+      <section
+        className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
+        style={{
+          backgroundColor: 'var(--surface-card)',
+          borderColor: 'var(--border)',
+          boxShadow: 'var(--shadow-lg)',
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          {/* Section Header with Collapse Toggle */}
+          <button
+            type="button"
+            onClick={() => setIsAdvancedExpanded(!isAdvancedExpanded)}
+            className="flex items-start gap-3 w-full text-left"
+          >
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+              }}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] uppercase tracking-wider leading-none whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+                  RAG Pipeline
+                </span>
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>•</span>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Advanced Settings
+                </h3>
+                {hasNonDefaultSettings && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-xl"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                      color: 'var(--color-brand-600)',
+                    }}
+                  >
+                    Modified
+                  </span>
+                )}
+              </div>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                Fine-tune RAG retrieval parameters for your specific use case
+              </p>
+            </div>
+            <div className="flex items-center">
+              <svg
+                className={`h-5 w-5 transition-transform duration-200 ${isAdvancedExpanded ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          {/* Collapsible Content */}
+          {isAdvancedExpanded && (
+            <div className="flex flex-col gap-4 pt-2">
+              {/* Tier 1: Core Retrieval Settings */}
+              <div className="flex flex-col gap-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                  Retrieval Settings
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {RAG_ADVANCED_SETTINGS.tier1.map((setting) => {
+                    const value = getAdvancedSettingValue(setting.id);
+                    const isSaving = savingAdvancedSetting === setting.id;
+                    const displayValue = 'format' in setting ? setting.format(value) : value.toString();
+                    const minDisplay = 'format' in setting ? setting.format(setting.min) : setting.min.toString();
+                    const maxDisplay = 'format' in setting ? setting.format(setting.max) : setting.max.toString();
+
+                    return (
+                      <div
+                        key={setting.id}
+                        className="flex flex-col gap-2 p-3 rounded-xl border"
+                        style={{
+                          backgroundColor: 'var(--surface-elevated)',
+                          borderColor: 'var(--border)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                            {setting.name}
+                          </span>
+                          <Tooltip content={setting.description} position="top" maxWidth={420}>
+                            <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
+                          </Tooltip>
+                        </div>
+                        {/* Slider with Min/Max Labels and Value Below */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] font-mono w-8 text-right flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {minDisplay}
+                          </span>
+                          <div className="flex-1 flex flex-col">
+                            <input
+                              type="range"
+                              min={setting.min}
+                              max={setting.max}
+                              step={setting.step}
+                              value={value}
+                              onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
+                              disabled={isSaving}
+                              className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              style={{
+                                background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) 100%)`,
+                              }}
+                            />
+                            {/* Current Value - Positioned below thumb */}
+                            <div className="relative h-5 mt-1">
+                              <span
+                                className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
+                                style={{
+                                  left: `calc(${((value - setting.min) / (setting.max - setting.min)) * 100}% + ${(50 - ((value - setting.min) / (setting.max - setting.min)) * 100) * 0.12}px)`,
+                                  transform: 'translateX(-50%)',
+                                  backgroundColor: 'var(--surface-card)',
+                                  color: 'var(--color-brand-600)',
+                                }}
+                              >
+                                {displayValue}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono w-8 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {maxDisplay}
+                          </span>
+                        </div>
+                        {isSaving && (
+                          <span className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>
+                            Saving...
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Tier 2: Hybrid Search Settings */}
+              <div className="flex flex-col gap-3">
+                <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>
+                  Hybrid Search Settings
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* Vector/BM25 Weight Balance */}
+                  <div
+                    className="flex flex-col gap-2 p-3 rounded-xl border"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      borderColor: 'var(--border)',
+                    }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                        Search Balance
+                      </span>
+                      <Tooltip content="Controls the blend between Vector (V) semantic search and Keyword (K) BM25 search. Vector search understands meaning and finds conceptually similar content even with different words. Keyword search finds exact term matches. Slide toward V (0.7-0.9) for conceptual queries like 'how to improve productivity'. Slide toward K (0.3-0.5) for specific terms like error codes, names, or technical jargon. Default 0.7/0.3 works well for most mixed content." position="top" maxWidth={420}>
+                        <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
+                      </Tooltip>
+                    </div>
+                    {/* Slider with Min/Max Labels and Values Below */}
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-mono flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        0
+                      </span>
+                      <div className="flex-1 flex flex-col">
+                        <div className="relative">
+                          <input
+                            type="range"
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={ragVectorWeight}
+                            onChange={(e) => void handleAdvancedSettingChange('ragVectorWeight', parseFloat(e.target.value))}
+                            disabled={savingAdvancedSetting === 'ragVectorWeight' || savingAdvancedSetting === 'ragBm25Weight'}
+                            className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-10"
+                            style={{
+                              background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${ragVectorWeight * 100}%, var(--text-secondary) ${ragVectorWeight * 100}%, var(--text-secondary) 100%)`,
+                            }}
+                          />
+                          {/* Vertical line indicator for Keyword (BM25) position */}
+                          <div
+                            className="absolute top-1/2 w-0.5 pointer-events-none z-20 rounded-full"
+                            style={{
+                              left: `calc(${ragBm25Weight * 100}% + ${(50 - ragBm25Weight * 100) * 0.12}px)`,
+                              transform: 'translate(-50%, -50%)',
+                              height: '7px',
+                              backgroundColor: 'white',
+                            }}
+                          />
+                        </div>
+                        {/* Values positioned below their respective positions */}
+                        <div className="relative h-5 mt-1">
+                          <span
+                            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
+                            style={{
+                              left: `calc(${ragVectorWeight * 100}% + ${(50 - ragVectorWeight * 100) * 0.12}px)`,
+                              transform: 'translateX(-50%)',
+                              backgroundColor: 'var(--surface-card)',
+                              color: 'var(--color-brand-600)',
+                            }}
+                          >
+                            V:{ragVectorWeight.toFixed(2)}
+                          </span>
+                          <span
+                            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
+                            style={{
+                              left: `calc(${ragBm25Weight * 100}% + ${(50 - ragBm25Weight * 100) * 0.12}px)`,
+                              transform: 'translateX(-50%)',
+                              backgroundColor: 'var(--surface-card)',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            K:{ragBm25Weight.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        1
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Other Tier 2 Settings */}
+                  {RAG_ADVANCED_SETTINGS.tier2.map((setting) => {
+                    const value = getAdvancedSettingValue(setting.id);
+                    const isSaving = savingAdvancedSetting === setting.id;
+                    const displayValue = 'format' in setting ? setting.format(value) : value.toString();
+                    const minDisplay = 'format' in setting ? setting.format(setting.min) : setting.min.toString();
+                    const maxDisplay = 'format' in setting ? setting.format(setting.max) : setting.max.toString();
+                    const percentage = ((value - setting.min) / (setting.max - setting.min)) * 100;
+
+                    return (
+                      <div
+                        key={setting.id}
+                        className="flex flex-col gap-2 p-3 rounded-xl border"
+                        style={{
+                          backgroundColor: 'var(--surface-elevated)',
+                          borderColor: 'var(--border)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                            {setting.name}
+                          </span>
+                          <Tooltip content={setting.description} position="top" maxWidth={420}>
+                            <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
+                          </Tooltip>
+                        </div>
+                        {/* Slider with Min/Max Labels and Value Below */}
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] font-mono w-12 text-right flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {minDisplay}
+                          </span>
+                          <div className="flex-1 flex flex-col">
+                            <input
+                              type="range"
+                              min={setting.min}
+                              max={setting.max}
+                              step={setting.step}
+                              value={value}
+                              onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
+                              disabled={isSaving}
+                              className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                              style={{
+                                background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`,
+                              }}
+                            />
+                            {/* Current Value - Positioned below thumb */}
+                            <div className="relative h-5 mt-1">
+                              <span
+                                className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
+                                style={{
+                                  left: `calc(${percentage}% + ${(50 - percentage) * 0.12}px)`,
+                                  transform: 'translateX(-50%)',
+                                  backgroundColor: 'var(--surface-card)',
+                                  color: 'var(--color-brand-600)',
+                                }}
+                              >
+                                {displayValue}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono w-12 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {maxDisplay}
+                          </span>
+                        </div>
+                        {isSaving && (
+                          <span className="text-[10px] text-center" style={{ color: 'var(--text-secondary)' }}>
+                            Saving...
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reset Button */}
+              {hasNonDefaultSettings && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleResetAdvancedSettings()}
+                    disabled={savingAdvancedSetting === 'reset'}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {savingAdvancedSetting === 'reset' ? 'Resetting...' : 'Reset to Defaults'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

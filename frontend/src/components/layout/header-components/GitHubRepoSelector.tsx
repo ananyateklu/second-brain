@@ -80,7 +80,6 @@ export const GitHubRepoSelector = () => {
         repo: githubRepo,
         fullName: currentFullName,
       };
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecentRepos((prev) => {
         const filtered = prev.filter((r) => r.fullName !== newRepo.fullName);
         const updated = [newRepo, ...filtered].slice(0, 5);

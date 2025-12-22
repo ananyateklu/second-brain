@@ -55,7 +55,7 @@ public class GrokDeepSearchTool
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             // Parse focus areas
             var areas = string.IsNullOrEmpty(focusAreas)

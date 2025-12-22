@@ -6,7 +6,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls } from './header-components';
+import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -182,6 +182,9 @@ export function Header() {
 
             {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
             {showGitControls && <GitNavControls />}
+
+            {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
+            {isGitHubPage && <GitHubRepoSelector />}
 
             {/* GitHub Navigation - Only on GitHub page */}
             {isGitHubPage && <GitHubNavTabs />}

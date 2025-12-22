@@ -48,7 +48,7 @@ public class GetIndexingStatusQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value.Id.Should().Be(jobId);
+        result.Value!.Id.Should().Be(jobId);
     }
 
     [Fact]
@@ -84,15 +84,15 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Status.Should().Be(IndexingStatus.Running);
-        result.Value.TotalNotes.Should().Be(100);
-        result.Value.ProcessedNotes.Should().Be(75);
-        result.Value.SkippedNotes.Should().Be(3);
-        result.Value.DeletedNotes.Should().Be(2);
-        result.Value.TotalChunks.Should().Be(500);
-        result.Value.ProcessedChunks.Should().Be(375);
-        result.Value.EmbeddingProvider.Should().Be("OpenAI");
-        result.Value.EmbeddingModel.Should().Be("text-embedding-3-small");
+        result.Value!.Status.Should().Be(IndexingStatus.Running);
+        result.Value!.TotalNotes.Should().Be(100);
+        result.Value!.ProcessedNotes.Should().Be(75);
+        result.Value!.SkippedNotes.Should().Be(3);
+        result.Value!.DeletedNotes.Should().Be(2);
+        result.Value!.TotalChunks.Should().Be(500);
+        result.Value!.ProcessedChunks.Should().Be(375);
+        result.Value!.EmbeddingProvider.Should().Be("OpenAI");
+        result.Value!.EmbeddingModel.Should().Be("text-embedding-3-small");
     }
 
     [Fact]
@@ -117,8 +117,8 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Status.Should().Be(IndexingStatus.Completed);
-        result.Value.CompletedAt.Should().NotBeNull();
+        result.Value!.Status.Should().Be(IndexingStatus.Completed);
+        result.Value!.CompletedAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -141,9 +141,9 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Status.Should().Be(IndexingStatus.Failed);
-        result.Value.Errors.Should().HaveCount(2);
-        result.Value.Errors.Should().Contain("Connection timeout");
+        result.Value!.Status.Should().Be(IndexingStatus.Failed);
+        result.Value!.Errors.Should().HaveCount(2);
+        result.Value!.Errors.Should().Contain("Connection timeout");
     }
 
     [Theory]
@@ -171,7 +171,7 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Status.Should().Be(expectedStatus);
+        result.Value!.Status.Should().Be(expectedStatus);
     }
 
     #endregion
@@ -193,8 +193,8 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NotFound");
-        result.Error.Message.Should().Contain("non-existent-job");
+        result.Error!.Code.Should().Be("NotFound");
+        result.Error!.Message.Should().Contain("non-existent-job");
     }
 
     [Fact]
@@ -233,8 +233,8 @@ public class GetIndexingStatusQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to get indexing status");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to get indexing status");
     }
 
     #endregion

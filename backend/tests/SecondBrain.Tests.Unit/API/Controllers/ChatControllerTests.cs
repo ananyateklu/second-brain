@@ -65,7 +65,11 @@ public class ChatControllerTests
         SetupUnauthenticatedUser();
     }
 
-    #region GetConversations Tests
+    #region GetConversations Tests (Deprecated - kept for backward compatibility)
+
+    // Suppress obsolete warning for testing the deprecated endpoint
+    // These tests ensure the deprecated API continues to work until removal
+#pragma warning disable CS0618
 
     [Fact]
     public async Task GetConversations_WhenAuthenticated_ReturnsOkWithConversations()
@@ -120,6 +124,8 @@ public class ChatControllerTests
         var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
         statusResult.StatusCode.Should().Be(500);
     }
+
+#pragma warning restore CS0618
 
     #endregion
 

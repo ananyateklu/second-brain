@@ -3,6 +3,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -30,6 +31,7 @@ public abstract class NotePluginBase : IAgentPlugin
 
     protected string CurrentUserId = string.Empty;
     protected bool AgentRagEnabled = false;
+    protected RagOptions? UserRagOptions;
 
     /// <summary>
     /// Maximum length for content preview in list operations.
@@ -64,6 +66,11 @@ public abstract class NotePluginBase : IAgentPlugin
     public void SetAgentRagEnabled(bool enabled)
     {
         AgentRagEnabled = enabled;
+    }
+
+    public void SetRagOptions(RagOptions? options)
+    {
+        UserRagOptions = options;
     }
 
     public virtual object GetPluginInstance() => this;

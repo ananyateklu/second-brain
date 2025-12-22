@@ -11,8 +11,11 @@ namespace SecondBrain.Application.Services.GitHub;
 
 /// <summary>
 /// Service for interacting with the GitHub API.
+/// Note: This service does NOT implement IDisposable because the HttpClient
+/// is obtained from IHttpClientFactory and should NOT be disposed by the consumer.
+/// The factory manages the HttpClient lifecycle and connection pooling.
 /// </summary>
-public sealed class GitHubService : IGitHubService, IDisposable
+public sealed class GitHubService : IGitHubService
 {
     private readonly HttpClient _httpClient;
     private readonly GitHubSettings _settings;
@@ -1128,8 +1131,4 @@ public sealed class GitHubService : IGitHubService, IDisposable
         };
     }
 
-    public void Dispose()
-    {
-        _httpClient.Dispose();
-    }
 }

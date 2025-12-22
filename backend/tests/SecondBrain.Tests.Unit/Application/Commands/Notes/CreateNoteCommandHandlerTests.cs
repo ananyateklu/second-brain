@@ -90,7 +90,7 @@ public class CreateNoteCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Title.Should().Be("Minimal Note");
+        result.Value!.Title.Should().Be("Minimal Note");
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class CreateNoteCommandHandlerTests
         // Assert
         capturedRequest.Should().NotBeNull();
         capturedRequest!.IsArchived.Should().BeTrue();
-        result.Value.IsArchived.Should().BeTrue();
+        result.Value!.IsArchived.Should().BeTrue();
     }
 
     [Fact]
@@ -224,8 +224,8 @@ public class CreateNoteCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("CreateFailed");
-        result.Error.Message.Should().Contain("Database connection failed");
+        result.Error!.Code.Should().Be("CreateFailed");
+        result.Error!.Message.Should().Contain("Database connection failed");
     }
 
     [Fact]

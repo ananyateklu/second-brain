@@ -85,7 +85,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         var mockAIProvider = new Mock<IAIProvider>();
         mockAIProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
@@ -165,7 +165,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         var mockAIProvider = new Mock<IAIProvider>();
         mockAIProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
@@ -199,7 +199,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         var mockAIProvider = new Mock<IAIProvider>();
         mockAIProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
@@ -227,7 +227,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         var mockAIProvider = new Mock<IAIProvider>();
         mockAIProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
@@ -282,7 +282,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<TopicLabelResult>(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -308,7 +308,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<TopicLabelResult>(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
@@ -340,14 +340,14 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         _mockStructuredOutputService.Setup(s => s.GenerateAsync<TopicLabelResult>(
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<StructuredOutputOptions>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("API error"));
 
         _mockAIProviderFactory.Setup(f => f.GetProvider(_settings.RerankingProvider))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
 
         // Act
         var result = await _sut.ClusterQueriesAsync(userId, 3);
@@ -600,7 +600,7 @@ public class TopicClusteringServiceTests
         _mockEmbeddingFactory.Setup(f => f.GetDefaultProvider())
             .Returns(mockEmbeddingProvider.Object);
         _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Guid>(), It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         var mockAIProvider = new Mock<IAIProvider>();
         mockAIProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))

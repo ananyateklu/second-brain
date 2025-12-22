@@ -78,7 +78,6 @@ export function PageTransition({
 
     // If reduce motion is preferred, just swap content immediately
     if (reduceMotion) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayChildren(children);
       previousPathRef.current = location.pathname;
       return;
@@ -109,7 +108,6 @@ export function PageTransition({
   // Update children if already on same page (for content changes)
   useEffect(() => {
     if (location.pathname === previousPathRef.current && transitionState === 'entered') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayChildren(children);
     }
   }, [children, location.pathname, transitionState]);

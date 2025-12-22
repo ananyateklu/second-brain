@@ -74,7 +74,6 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
       const agentRagEnabled = conversation.agentRagEnabled ?? true;
       const capabilities = parseAgentCapabilities(conversation.agentCapabilities);
 
-      /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync from conversation data */
       setRagEnabledLocal(ragEnabled);
       if (vectorStore) {
         setSelectedVectorStoreLocal(vectorStore);
@@ -85,7 +84,6 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
       // Otherwise use the stored value
       const hasStoredCapabilities = conversation.agentCapabilities && conversation.agentCapabilities !== '[]';
       setNotesCapabilityEnabledLocal(hasStoredCapabilities ? capabilities.includes('notes') : true);
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [conversation]);
 
@@ -95,13 +93,11 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
     // Only reset when transitioning to new chat state
     if (!conversationId && isNewChat && !prevIsNewChatRef.current) {
       lastLoadedConversationId.current = null; // Reset the ref for new chats
-      /* eslint-disable react-hooks/set-state-in-effect -- Valid state reset for new chat */
       setRagEnabledLocal(false);
       setSelectedVectorStoreLocal(defaultVectorStore);
       setAgentModeEnabledLocal(false);
       setAgentRagEnabledLocal(false); // Default to false - agent uses tools explicitly
       setNotesCapabilityEnabledLocal(true); // Default to true - primary agent capability
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
     prevIsNewChatRef.current = isNewChat;
   }, [conversationId, isNewChat, defaultVectorStore]);

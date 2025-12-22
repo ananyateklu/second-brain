@@ -31,6 +31,7 @@ fn test_secrets_persistence_workflow() {
         deepgram_api_key: None,
         elevenlabs_api_key: None,
         openai_tts_api_key: None,
+        jwt_secret: None,
     };
 
     let save_result = save_secrets(&app_data, &secrets);
@@ -96,6 +97,7 @@ fn test_secrets_full_roundtrip() {
         deepgram_api_key: Some("deepgram-key".to_string()),
         elevenlabs_api_key: Some("elevenlabs-key".to_string()),
         openai_tts_api_key: Some("sk-openai-tts-key".to_string()),
+        jwt_secret: Some("test-jwt-secret-key".to_string()),
     };
 
     // Save and load

@@ -63,7 +63,8 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
             request.Capabilities ?? new List<string>(),
             context.Plugins,
             request.UserId,
-            request.AgentRagEnabled);
+            request.AgentRagEnabled,
+            request.RagOptions);
 
         _logger.LogInformation("Registered {Count} tools for Ollama", tools.Count);
 

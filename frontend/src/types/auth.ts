@@ -83,6 +83,16 @@ export interface UserPreferences {
   ragEnableHybridSearch: boolean;
   ragEnableReranking: boolean;
   ragEnableAnalytics: boolean;
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  ragTopK: number;
+  ragSimilarityThreshold: number;
+  ragInitialRetrievalCount: number;
+  ragMinRerankScore: number;
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  ragVectorWeight: number;
+  ragBm25Weight: number;
+  ragMultiQueryCount: number;
+  ragMaxContextLength: number;
 }
 
 /**
@@ -109,5 +119,15 @@ export interface UpdateUserPreferencesRequest {
   ragEnableHybridSearch?: boolean;
   ragEnableReranking?: boolean;
   ragEnableAnalytics?: boolean;
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  ragTopK?: number;
+  ragSimilarityThreshold?: number;
+  ragInitialRetrievalCount?: number;
+  ragMinRerankScore?: number;
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  ragVectorWeight?: number;
+  ragBm25Weight?: number;
+  ragMultiQueryCount?: number;
+  ragMaxContextLength?: number;
 }
 

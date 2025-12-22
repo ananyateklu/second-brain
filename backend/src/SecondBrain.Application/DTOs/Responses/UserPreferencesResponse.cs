@@ -24,5 +24,17 @@ public class UserPreferencesResponse
     public bool RagEnableHybridSearch { get; set; } = true;
     public bool RagEnableReranking { get; set; } = true;
     public bool RagEnableAnalytics { get; set; } = true;
+
+    // RAG Advanced Settings - Tier 1: Core Retrieval
+    public int RagTopK { get; set; } = 5;
+    public float RagSimilarityThreshold { get; set; } = 0.3f;
+    public int RagInitialRetrievalCount { get; set; } = 20;
+    public float RagMinRerankScore { get; set; } = 3.0f;
+
+    // RAG Advanced Settings - Tier 2: Hybrid Search
+    public float RagVectorWeight { get; set; } = 0.7f;
+    public float RagBm25Weight { get; set; } = 0.3f;
+    public int RagMultiQueryCount { get; set; } = 3;
+    public int RagMaxContextLength { get; set; } = 4000;
 }
 

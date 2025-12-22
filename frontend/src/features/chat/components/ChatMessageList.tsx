@@ -7,6 +7,7 @@ import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingI
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { TimelineItem } from '../../agents/components/TimelineItem';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
@@ -32,13 +33,7 @@ const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ cont
   }
 
   return (
-    <div className="relative pl-10 py-2">
-      {/* Timeline dot */}
-      <div
-        className="absolute left-[15px] top-7 w-2.5 h-2.5 rounded-full"
-        style={{ backgroundColor: 'var(--color-brand-500)' }}
-      />
-      {/* Text content card */}
+    <TimelineItem variant="dot">
       <div
         className="rounded-xl px-4 py-3 text-sm"
         style={{
@@ -51,7 +46,7 @@ const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ cont
           <MarkdownMessage content={strippedContent} />
         )}
       </div>
-    </div>
+    </TimelineItem>
   );
 });
 

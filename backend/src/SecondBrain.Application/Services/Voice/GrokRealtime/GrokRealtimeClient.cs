@@ -85,8 +85,26 @@ public class GrokRealtimeClient : IGrokRealtimeClient
             }
             catch (Exception)
             {
-                // Clean up _receiveCts if SendSessionUpdateAsync fails
+                // Clean up properly if SendSessionUpdateAsync fails
+                // Must await _receiveTask before disposing _receiveCts to avoid race condition (B4 fix)
                 _receiveCts.Cancel();
+
+                if (_receiveTask != null)
+                {
+                    try
+                    {
+                        await _receiveTask.WaitAsync(TimeSpan.FromSeconds(2));
+                    }
+                    catch (TimeoutException)
+                    {
+                        _logger.LogWarning("Receive task did not complete in time during cleanup");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Expected
+                    }
+                }
+
                 _receiveCts.Dispose();
                 _receiveCts = null;
                 throw;

@@ -320,9 +320,10 @@ describe('ThinkingStepCard', () => {
     it('should have timeline icon container', () => {
       const { container } = render(<ThinkingStepCard step={createMockThinkingStep()} />);
 
-      const iconContainer = container.querySelector('.absolute.left-2\\.5.top-2\\.5');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
       expect(iconContainer).toBeInTheDocument();
-      expect(iconContainer).toHaveClass('rounded-full');
+      // TimelineStatusIcon has rounded-full inside
+      expect(iconContainer?.querySelector('.rounded-full')).toBeInTheDocument();
     });
   });
 });

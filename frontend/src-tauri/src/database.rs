@@ -348,6 +348,12 @@ host    all             all             ::1/128                 trust
 
         // Attempt to start with retries
         loop {
+            // T3 fix: Ensure any previous process is properly terminated before retry
+            // This prevents process leaks when retrying after failed startup attempts
+            self.kill_process();
+            // Also kill any orphaned postgres processes on our port
+            Self::kill_process_on_port(port);
+
             match self.attempt_start(&postgres_path, port) {
                 Ok(()) => {
                     // Wait for PostgreSQL to be ready with backoff
@@ -365,13 +371,14 @@ host    all             all             ::1/128                 trust
                         }
                         Err(e) => {
                             log::warn!("PostgreSQL not ready: {}", e);
-                            // Kill the process and retry
-                            self.kill_process();
+                            // Kill the process before retry (will happen at start of next iteration)
                         }
                     }
                 }
                 Err(e) => {
                     log::warn!("Failed to start PostgreSQL: {}", e);
+                    // Kill any partially started process before retry
+                    self.kill_process();
                 }
             }
 
@@ -385,12 +392,46 @@ host    all             all             ::1/128                 trust
                 );
                 std::thread::sleep(delay);
             } else {
+                // Final cleanup before returning error
+                self.kill_process();
+                Self::kill_process_on_port(port);
                 return Err(PostgresError::Timeout(format!(
                     "PostgreSQL failed to start after {} attempts",
                     backoff.max_attempts()
                 )));
             }
         }
+    }
+
+    /// Kill any process using the specified port (Unix only)
+    /// This is a fallback cleanup mechanism for orphaned processes
+    #[cfg(unix)]
+    fn kill_process_on_port(port: u16) {
+        use std::process::Command;
+
+        if let Ok(output) = Command::new("lsof")
+            .args(["-ti", &format!(":{}", port)])
+            .output()
+        {
+            let pids = String::from_utf8_lossy(&output.stdout);
+            for pid in pids.lines() {
+                if let Ok(pid_num) = pid.trim().parse::<i32>() {
+                    log::info!(
+                        "Killing orphaned PostgreSQL process {} on port {}",
+                        pid_num,
+                        port
+                    );
+                    let _ = Command::new("kill")
+                        .args(["-9", &pid_num.to_string()])
+                        .output();
+                }
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    fn kill_process_on_port(_port: u16) {
+        // No-op on non-Unix platforms
     }
 
     /// Single attempt to start PostgreSQL
@@ -423,13 +464,28 @@ host    all             all             ::1/128                 trust
 
         // Spawn a thread to consume stderr to prevent blocking
         // This also logs any PostgreSQL errors
+        // Use panic handling to prevent silent thread failures (consistent with T2 fix in lib.rs)
         if let Some(stderr) = child.stderr.take() {
-            std::thread::spawn(move || {
-                let reader = BufReader::new(stderr);
-                for line in reader.lines().map_while(Result::ok) {
-                    log::info!("[PostgreSQL] {}", line);
-                }
-            });
+            std::thread::Builder::new()
+                .name("postgres-stderr-monitor".to_string())
+                .spawn(move || {
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        let reader = BufReader::new(stderr);
+                        for line in reader.lines().map_while(Result::ok) {
+                            log::info!("[PostgreSQL] {}", line);
+                        }
+                    }));
+
+                    if let Err(e) = result {
+                        log::error!("[PostgreSQL stderr monitor] Thread panicked: {:?}", e);
+                    }
+                })
+                .map_err(|e| {
+                    PostgresError::StartFailed(format!(
+                        "Failed to spawn stderr monitor thread: {}",
+                        e
+                    ))
+                })?;
         }
 
         *self.process.lock().unwrap() = Some(child);

@@ -73,7 +73,6 @@ export function useChatConversationManager(
       const mostRecent = conversations.reduce((prev, current) =>
         new Date(current.updatedAt) > new Date(prev.updatedAt) ? current : prev
       );
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid initial state sync from external data
       setConversationIdState(mostRecent.id);
     }
     // Reset the ref when starting a new chat

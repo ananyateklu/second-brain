@@ -85,7 +85,7 @@ public class GetAllNotesQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        var response = result.Value.First();
+        var response = result.Value!.First();
         response.Id.Should().Be("note-1");
         response.Title.Should().Be("Test Note");
         response.Summary.Should().Be("This is the summary");
@@ -187,7 +187,7 @@ public class GetAllNotesQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        var responses = result.Value.ToList();
+        var responses = result.Value!.ToList();
         responses.Should().ContainSingle(n => n.Title == "Active" && !n.IsArchived);
         responses.Should().ContainSingle(n => n.Title == "Archived" && n.IsArchived);
     }
@@ -221,7 +221,7 @@ public class GetAllNotesQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        var response = result.Value.First();
+        var response = result.Value!.First();
         response.CreatedAt.Should().BeCloseTo(createdAt, TimeSpan.FromSeconds(1));
         response.UpdatedAt.Should().BeCloseTo(updatedAt, TimeSpan.FromSeconds(1));
     }
@@ -253,7 +253,7 @@ public class GetAllNotesQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.First().Tags.Should().BeEquivalentTo(new[] { "work", "important", "todo" });
+        result.Value!.First().Tags.Should().BeEquivalentTo(new[] { "work", "important", "todo" });
     }
 
     [Fact]
@@ -275,7 +275,7 @@ public class GetAllNotesQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.First().Folder.Should().BeNull();
+        result.Value!.First().Folder.Should().BeNull();
     }
 
     #endregion

@@ -300,7 +300,18 @@ public class ChatController : ControllerBase
                         enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
                         enableHybridSearch: userPrefs.RagEnableHybridSearch,
                         enableReranking: userPrefs.RagEnableReranking,
-                        enableAnalytics: userPrefs.RagEnableAnalytics);
+                        enableAnalytics: userPrefs.RagEnableAnalytics,
+                        rerankingProvider: userPrefs.RerankingProvider,
+                        // Tier 1: Core Retrieval
+                        topK: userPrefs.RagTopK,
+                        similarityThreshold: userPrefs.RagSimilarityThreshold,
+                        initialRetrievalCount: userPrefs.RagInitialRetrievalCount,
+                        minRerankScore: userPrefs.RagMinRerankScore,
+                        // Tier 2: Hybrid Search
+                        vectorWeight: userPrefs.RagVectorWeight,
+                        bm25Weight: userPrefs.RagBm25Weight,
+                        multiQueryCount: userPrefs.RagMultiQueryCount,
+                        maxContextLength: userPrefs.RagMaxContextLength);
                 }
                 catch (Exception ex)
                 {
@@ -686,7 +697,18 @@ public class ChatController : ControllerBase
                         enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
                         enableHybridSearch: userPrefs.RagEnableHybridSearch,
                         enableReranking: userPrefs.RagEnableReranking,
-                        enableAnalytics: userPrefs.RagEnableAnalytics);
+                        enableAnalytics: userPrefs.RagEnableAnalytics,
+                        rerankingProvider: userPrefs.RerankingProvider,
+                        // Tier 1: Core Retrieval
+                        topK: userPrefs.RagTopK,
+                        similarityThreshold: userPrefs.RagSimilarityThreshold,
+                        initialRetrievalCount: userPrefs.RagInitialRetrievalCount,
+                        minRerankScore: userPrefs.RagMinRerankScore,
+                        // Tier 2: Hybrid Search
+                        vectorWeight: userPrefs.RagVectorWeight,
+                        bm25Weight: userPrefs.RagBm25Weight,
+                        multiQueryCount: userPrefs.RagMultiQueryCount,
+                        maxContextLength: userPrefs.RagMaxContextLength);
                 }
                 catch (Exception ex)
                 {

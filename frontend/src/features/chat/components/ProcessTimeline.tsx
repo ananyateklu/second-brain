@@ -1,4 +1,11 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
+
+// Centralized timeline positioning - line centered at 15px (14.5px + 0.5px half of 1px line)
+const TIMELINE_LINE = {
+    LEFT: 'left-[13.8px]',
+    TOP: 'top-[18px]',  // Aligns with first icon center (10px top + 8px half of 16px)
+    BOTTOM: 'bottom-3',
+} as const;
 
 interface ProcessTimelineProps {
     children: ReactNode;
@@ -13,15 +20,11 @@ export function ProcessTimeline({
     isStreaming = false,
     hasContent = true
 }: ProcessTimelineProps) {
-    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    // Track user's manual expansion preference
+    const [userExpanded, setUserExpanded] = useState(defaultExpanded);
 
-    // Auto-expand when streaming starts - valid prop sync for UI state
-    useEffect(() => {
-        if (isStreaming) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setIsExpanded(true);
-        }
-    }, [isStreaming]);
+    // Derive actual expanded state: streaming always expands, otherwise use user preference
+    const isExpanded = isStreaming || userExpanded;
 
     if (!hasContent) return null;
 
@@ -31,7 +34,7 @@ export function ProcessTimeline({
             {!isStreaming && (
                 <div className="flex items-center gap-2 mb-2">
                     <button
-                        onClick={() => { setIsExpanded(!isExpanded); }}
+                        onClick={() => { setUserExpanded(!userExpanded); }}
                         className="text-xs font-medium flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-elevated)] transition-colors"
                         style={{ color: 'var(--text-secondary)' }}
                     >
@@ -40,7 +43,7 @@ export function ProcessTimeline({
                             style={{ backgroundColor: 'var(--surface-card)' }}
                         >
                             <svg
-                                className="w-2.5 h-2.5"
+                                className="w-2 h-2"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -58,9 +61,9 @@ export function ProcessTimeline({
                 className={`relative transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'
                     }`}
             >
-                {/* Vertical Line */}
+                {/* Vertical Line - centered at 15px to align with icon/dot centers */}
                 <div
-                    className="absolute left-[19px] top-2 bottom-2 w-px"
+                    className={`absolute ${TIMELINE_LINE.LEFT} ${TIMELINE_LINE.TOP} ${TIMELINE_LINE.BOTTOM} w-px`}
                     style={{ backgroundColor: 'var(--border)' }}
                 />
 

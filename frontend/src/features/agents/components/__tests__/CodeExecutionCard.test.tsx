@@ -50,21 +50,21 @@ describe('CodeExecutionCard', () => {
 
     it('should render timeline icon', () => {
       const { container } = render(<CodeExecutionCard result={createMockResult()} />);
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });
 
-    it('should use success color for icon when successful', () => {
-      const { container } = render(<CodeExecutionCard result={createMockResult({ success: true })} />);
-      const svg = container.querySelector('.absolute svg');
-      expect(svg).toHaveStyle({ color: 'var(--color-success)' });
+    it('should show success badge when successful', () => {
+      render(<CodeExecutionCard result={createMockResult({ success: true })} />);
+      const successBadge = screen.getByText('Success');
+      expect(successBadge).toBeInTheDocument();
     });
 
-    it('should use error color for icon when failed', () => {
-      const { container } = render(<CodeExecutionCard result={createMockResult({ success: false })} />);
-      const svg = container.querySelector('.absolute svg');
-      expect(svg).toHaveStyle({ color: 'var(--color-error)' });
+    it('should show failed badge when failed', () => {
+      render(<CodeExecutionCard result={createMockResult({ success: false })} />);
+      const failedBadge = screen.getByText('Failed');
+      expect(failedBadge).toBeInTheDocument();
     });
   });
 

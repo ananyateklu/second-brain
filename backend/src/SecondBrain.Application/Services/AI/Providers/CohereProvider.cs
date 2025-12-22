@@ -74,7 +74,7 @@ public class CohereProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             // Cohere v2 chat endpoint
             var requestBody = new
@@ -167,7 +167,7 @@ public class CohereProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             var cohereMessages = messageList.Select(m => new
             {
@@ -283,7 +283,7 @@ public class CohereProvider : IAIProvider
             };
 
             var jsonContent = JsonSerializer.Serialize(requestBody, CohereJsonOptions.Default);
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat")
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat")
             {
                 Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
             };
@@ -413,7 +413,7 @@ public class CohereProvider : IAIProvider
             };
 
             var jsonContent = JsonSerializer.Serialize(requestBody, CohereJsonOptions.Default);
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat")
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat")
             {
                 Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
             };
@@ -499,7 +499,7 @@ public class CohereProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             // Simple test with minimal tokens
             var requestBody = new
@@ -623,7 +623,7 @@ public class CohereProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             var requestBody = new
             {

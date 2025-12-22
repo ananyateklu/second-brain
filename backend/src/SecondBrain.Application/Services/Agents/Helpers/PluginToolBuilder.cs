@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.AI.FunctionCalling;
+using SecondBrain.Application.Services.RAG.Models;
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
 using OllamaTool = OllamaSharp.Models.Chat.Tool;
 using OpenAIChatTool = OpenAI.Chat.ChatTool;
@@ -28,7 +29,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled)
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null)
     {
         var tools = new List<Anthropic.SDK.Common.Tool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>();
@@ -40,6 +42,7 @@ public class PluginToolBuilder : IPluginToolBuilder
 
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
+            plugin.SetRagOptions(ragOptions);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -105,7 +108,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled)
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null)
     {
         var functionDeclarations = new List<GeminiFunctionDeclaration>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -117,6 +121,7 @@ public class PluginToolBuilder : IPluginToolBuilder
 
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
+            plugin.SetRagOptions(ragOptions);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -148,7 +153,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
-            bool useStrictMode = false)
+            bool useStrictMode = false,
+            RagOptions? ragOptions = null)
     {
         var tools = new List<OpenAIChatTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -160,6 +166,7 @@ public class PluginToolBuilder : IPluginToolBuilder
 
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
+            plugin.SetRagOptions(ragOptions);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -190,7 +197,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IEnumerable<string> capabilities,
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
-            bool agentRagEnabled)
+            bool agentRagEnabled,
+            RagOptions? ragOptions = null)
     {
         var tools = new List<OllamaTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -202,6 +210,7 @@ public class PluginToolBuilder : IPluginToolBuilder
 
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
+            plugin.SetRagOptions(ragOptions);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()

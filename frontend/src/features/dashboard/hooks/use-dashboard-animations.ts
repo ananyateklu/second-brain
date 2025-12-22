@@ -120,7 +120,6 @@ export function useDashboardAnimations(
   // Trigger animations on mount and when data loads
   useEffect(() => {
     if (!isDataLoaded) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsReady(false);
       return;
     }
@@ -252,7 +251,6 @@ export function useAnimatedVisibility(
 
   useEffect(() => {
     if (!isVisible) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasAppeared(false);
       return;
     }

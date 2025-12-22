@@ -1,4 +1,5 @@
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.Agents.Models;
 
@@ -62,6 +63,12 @@ public class AgentRequest
     /// When true, Gemini can run Python code in a secure sandbox.
     /// </summary>
     public bool EnableCodeExecution { get; set; }
+
+    /// <summary>
+    /// User-specific RAG options to customize RAG pipeline behavior.
+    /// When set, these options override default RAG settings for semantic search operations.
+    /// </summary>
+    public RagOptions? RagOptions { get; set; }
 }
 
 /// <summary>

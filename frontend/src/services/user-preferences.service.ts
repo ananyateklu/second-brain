@@ -34,6 +34,16 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ragEnableHybridSearch: true,
   ragEnableReranking: true,
   ragEnableAnalytics: true,
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  ragTopK: 5,
+  ragSimilarityThreshold: 0.3,
+  ragInitialRetrievalCount: 20,
+  ragMinRerankScore: 3.0,
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  ragVectorWeight: 0.7,
+  ragBm25Weight: 0.3,
+  ragMultiQueryCount: 3,
+  ragMaxContextLength: 4000,
 };
 
 /**
@@ -160,7 +170,105 @@ export const userPreferencesService = {
         typeof preferences.ragEnableAnalytics === 'boolean'
           ? preferences.ragEnableAnalytics
           : currentPreferences.ragEnableAnalytics,
+      // RAG Advanced Settings - Tier 1: Core Retrieval
+      ragTopK: this.validateRagTopK(preferences.ragTopK ?? currentPreferences.ragTopK),
+      ragSimilarityThreshold: this.validateRagSimilarityThreshold(
+        preferences.ragSimilarityThreshold ?? currentPreferences.ragSimilarityThreshold
+      ),
+      ragInitialRetrievalCount: this.validateRagInitialRetrievalCount(
+        preferences.ragInitialRetrievalCount ?? currentPreferences.ragInitialRetrievalCount
+      ),
+      ragMinRerankScore: this.validateRagMinRerankScore(
+        preferences.ragMinRerankScore ?? currentPreferences.ragMinRerankScore
+      ),
+      // RAG Advanced Settings - Tier 2: Hybrid Search
+      ragVectorWeight: this.validateRagWeight(
+        preferences.ragVectorWeight ?? currentPreferences.ragVectorWeight
+      ),
+      ragBm25Weight: this.validateRagWeight(
+        preferences.ragBm25Weight ?? currentPreferences.ragBm25Weight
+      ),
+      ragMultiQueryCount: this.validateRagMultiQueryCount(
+        preferences.ragMultiQueryCount ?? currentPreferences.ragMultiQueryCount
+      ),
+      ragMaxContextLength: this.validateRagMaxContextLength(
+        preferences.ragMaxContextLength ?? currentPreferences.ragMaxContextLength
+      ),
     };
+  },
+
+  // ============================================
+  // RAG Advanced Settings Validation
+  // ============================================
+
+  /**
+   * Validate RAG TopK (1-20)
+   */
+  validateRagTopK(value: number): number {
+    if (typeof value === 'number' && value >= 1 && value <= 20) {
+      return Math.round(value);
+    }
+    return 5;
+  },
+
+  /**
+   * Validate RAG Similarity Threshold (0.1-0.9)
+   */
+  validateRagSimilarityThreshold(value: number): number {
+    if (typeof value === 'number' && value >= 0.1 && value <= 0.9) {
+      return Math.round(value * 100) / 100; // 2 decimal places
+    }
+    return 0.3;
+  },
+
+  /**
+   * Validate RAG Initial Retrieval Count (10-50)
+   */
+  validateRagInitialRetrievalCount(value: number): number {
+    if (typeof value === 'number' && value >= 10 && value <= 50) {
+      return Math.round(value);
+    }
+    return 20;
+  },
+
+  /**
+   * Validate RAG Min Rerank Score (0-10)
+   */
+  validateRagMinRerankScore(value: number): number {
+    if (typeof value === 'number' && value >= 0 && value <= 10) {
+      return Math.round(value * 10) / 10; // 1 decimal place
+    }
+    return 3.0;
+  },
+
+  /**
+   * Validate RAG Weight (0-1)
+   */
+  validateRagWeight(value: number): number {
+    if (typeof value === 'number' && value >= 0 && value <= 1) {
+      return Math.round(value * 100) / 100; // 2 decimal places
+    }
+    return 0.5;
+  },
+
+  /**
+   * Validate RAG Multi-Query Count (1-5)
+   */
+  validateRagMultiQueryCount(value: number): number {
+    if (typeof value === 'number' && value >= 1 && value <= 5) {
+      return Math.round(value);
+    }
+    return 3;
+  },
+
+  /**
+   * Validate RAG Max Context Length (1000-16000)
+   */
+  validateRagMaxContextLength(value: number): number {
+    if (typeof value === 'number' && value >= 1000 && value <= 16000) {
+      return Math.round(value);
+    }
+    return 4000;
   },
 
   // ============================================

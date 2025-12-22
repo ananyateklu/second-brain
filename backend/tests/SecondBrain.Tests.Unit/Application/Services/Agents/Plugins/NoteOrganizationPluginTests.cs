@@ -311,7 +311,7 @@ public class NoteOrganizationPluginTests
     public async Task ArchiveNoteAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -322,18 +322,18 @@ public class NoteOrganizationPluginTests
     }
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenNoteNotOwnedByUser_ReturnsPermissionError()
+    public async Task ArchiveNoteAsync_WhenNoteNotOwnedByUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Other's Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.ArchiveNoteAsync("note-1");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -341,7 +341,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Already Archived", isArchived: true);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         // Act
@@ -356,7 +356,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "To Archive", isArchived: false);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
             .ReturnsAsync(note);
@@ -378,7 +378,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Active Note", isArchived: false);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         // Act
@@ -393,7 +393,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Archived Note", isArchived: true, folder: "Archived");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
             .ReturnsAsync(note);
@@ -414,7 +414,7 @@ public class NoteOrganizationPluginTests
     public async Task MoveToFolderAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -429,7 +429,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
             .ReturnsAsync(note);
@@ -448,7 +448,7 @@ public class NoteOrganizationPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", folder: "Work");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
         _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
             .ReturnsAsync(note);

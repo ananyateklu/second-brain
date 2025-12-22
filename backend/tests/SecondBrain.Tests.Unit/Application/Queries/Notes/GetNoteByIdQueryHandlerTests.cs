@@ -85,11 +85,11 @@ public class GetNoteByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Tags.Should().BeEquivalentTo(new[] { "tag1", "tag2", "tag3" });
-        result.Value.IsArchived.Should().BeTrue();
-        result.Value.Folder.Should().Be("Work/Projects");
-        result.Value.Source.Should().Be("web");
-        result.Value.Summary.Should().Be("AI-generated summary");
+        result.Value!.Tags.Should().BeEquivalentTo(new[] { "tag1", "tag2", "tag3" });
+        result.Value!.IsArchived.Should().BeTrue();
+        result.Value!.Folder.Should().Be("Work/Projects");
+        result.Value!.Source.Should().Be("web");
+        result.Value!.Summary.Should().Be("AI-generated summary");
     }
 
     [Fact]
@@ -122,9 +122,9 @@ public class GetNoteByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Folder.Should().BeNull();
-        result.Value.Summary.Should().BeNull();
-        result.Value.Tags.Should().BeEmpty();
+        result.Value!.Folder.Should().BeNull();
+        result.Value!.Summary.Should().BeNull();
+        result.Value!.Tags.Should().BeEmpty();
     }
 
     #endregion
@@ -148,8 +148,8 @@ public class GetNoteByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NotFound");
-        result.Error.Message.Should().Contain(noteId);
+        result.Error!.Code.Should().Be("NotFound");
+        result.Error!.Message.Should().Contain(noteId);
     }
 
     [Fact]
@@ -193,8 +193,8 @@ public class GetNoteByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Forbidden");
-        result.Error.Message.Should().Contain("Access denied");
+        result.Error!.Code.Should().Be("Forbidden");
+        result.Error!.Message.Should().Contain("Access denied");
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class GetNoteByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be(userId);
+        result.Value!.UserId.Should().Be(userId);
     }
 
     #endregion

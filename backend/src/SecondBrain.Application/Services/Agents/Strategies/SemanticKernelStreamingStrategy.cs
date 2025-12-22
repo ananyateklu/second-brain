@@ -266,6 +266,7 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
                 {
                     plugin.SetCurrentUserId(request.UserId);
                     plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+                    plugin.SetRagOptions(request.RagOptions);
                     builder.Plugins.AddFromObject(plugin.GetPluginInstance(), plugin.GetPluginName());
                     _logger.LogDebug("Registered plugin {PluginName} for capability {CapabilityId}",
                         plugin.GetPluginName(), capabilityId);

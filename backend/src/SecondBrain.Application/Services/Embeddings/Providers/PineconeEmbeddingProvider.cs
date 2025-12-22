@@ -139,12 +139,12 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
 
     private async Task<PineconeEmbedResponse> SendRequestAsync(object payload, CancellationToken cancellationToken)
     {
-        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://api.pinecone.io/embed");
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "https://api.pinecone.io/embed");
         requestMessage.Headers.Add("Api-Key", _settings.ApiKey);
         requestMessage.Headers.Add("X-Pinecone-API-Version", "2024-10");
         requestMessage.Content = JsonContent.Create(payload);
 
-        var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
+        using var response = await _httpClient.SendAsync(requestMessage, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {

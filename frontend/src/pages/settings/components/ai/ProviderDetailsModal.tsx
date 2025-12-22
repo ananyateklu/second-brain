@@ -9,6 +9,7 @@ import {
   getProviderConfigKey,
 } from './constants';
 import type { ProviderHealth } from './ProviderCard';
+import type { VoiceServiceStatus } from '../../../../features/voice/types/voice-types';
 
 interface ProviderDetailsModalProps {
   selectedProvider: { id: string; name: string } | null;
@@ -18,6 +19,7 @@ interface ProviderDetailsModalProps {
   downloadedModels: string[];
   onRefreshHealth: () => void;
   onRefreshSecrets: () => void;
+  voiceStatus?: VoiceServiceStatus;
 }
 
 /**
@@ -31,10 +33,32 @@ export const ProviderDetailsModal = ({
   downloadedModels,
   onRefreshHealth,
   onRefreshSecrets,
+  voiceStatus,
 }: ProviderDetailsModalProps) => {
   if (!selectedProvider) return null;
 
-  const isDisabled = health?.status === 'Disabled';
+  // Check if this is a voice provider
+  const isVoiceProvider = selectedProvider.id === 'deepgram' || selectedProvider.id === 'elevenlabs';
+
+  // For voice providers, determine status from voiceStatus
+  const getVoiceProviderStatus = (): { isConfigured: boolean; error?: string } => {
+    if (selectedProvider.id === 'deepgram') {
+      return {
+        isConfigured: voiceStatus?.deepgramAvailable ?? false,
+        error: voiceStatus?.deepgramError,
+      };
+    }
+    if (selectedProvider.id === 'elevenlabs') {
+      return {
+        isConfigured: voiceStatus?.elevenLabsAvailable ?? false,
+        error: voiceStatus?.elevenLabsError,
+      };
+    }
+    return { isConfigured: false };
+  };
+
+  const voiceProviderStatus = isVoiceProvider ? getVoiceProviderStatus() : null;
+  const isDisabled = isVoiceProvider ? !voiceProviderStatus?.isConfigured : health?.status === 'Disabled';
   const configKey = getProviderConfigKey(selectedProvider.id);
   const configPath = 'backend/src/SecondBrain.API/appsettings.json';
   const devConfigPath = 'backend/src/SecondBrain.API/appsettings.Development.json';
@@ -65,7 +89,12 @@ export const ProviderDetailsModal = ({
         )}
 
         {/* Health Status & Available Models */}
-        <HealthStatusSection health={health} isDisabled={isDisabled} />
+        <HealthStatusSection
+          health={health}
+          isDisabled={isDisabled}
+          isVoiceProvider={isVoiceProvider}
+          voiceProviderStatus={voiceProviderStatus}
+        />
 
         {/* Ollama Configuration - Only shown for Ollama provider */}
         {selectedProvider.id === 'ollama' && (
@@ -140,9 +169,17 @@ const ProviderOverviewSection = ({
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div className="flex items-center gap-2">
         {logo && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
-            {selectedProvider.id === 'ollama' ? (
-              <img src={logo} alt={selectedProvider.name} className="h-4 w-4 object-contain" />
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0 overflow-hidden"
+            style={{
+              backgroundColor: selectedProvider.id === 'elevenlabs' ? '#ffffff' : 'var(--surface-card)',
+              borderColor: 'var(--border)',
+            }}
+          >
+            {selectedProvider.id === 'ollama' || selectedProvider.id === 'deepgram' ? (
+              <img src={logo} alt={selectedProvider.name} className="h-5 w-5 object-contain" />
+            ) : selectedProvider.id === 'elevenlabs' ? (
+              <img src={logo} alt={selectedProvider.name} className="h-6 w-6 object-contain" />
             ) : (
               <img src={logo} alt={selectedProvider.name} className="h-4 w-auto object-contain" />
             )}
@@ -222,72 +259,90 @@ const ProviderOverviewSection = ({
 interface HealthStatusSectionProps {
   health: ProviderHealth | null;
   isDisabled: boolean;
+  isVoiceProvider?: boolean;
+  voiceProviderStatus?: { isConfigured: boolean; error?: string } | null;
 }
 
-const HealthStatusSection = ({ health, isDisabled }: HealthStatusSectionProps) => (
-  <div
-    className="p-2.5 rounded-xl border"
-    style={{
-      backgroundColor: 'var(--surface-elevated)',
-      borderColor: 'var(--border)',
-    }}
-  >
-    <div className="flex items-center justify-between gap-2 mb-2">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div
-          className="w-2 h-2 rounded-full flex-shrink-0"
-          style={{
-            backgroundColor: isDisabled ? '#f59e0b' : health?.isHealthy ? '#10b981' : '#ef4444',
-            boxShadow: `0 0 0 2px ${isDisabled ? 'rgba(245, 158, 11, 0.2)' : health?.isHealthy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-          }}
-        />
-        <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
-          {health?.status || 'Unknown'}
-        </p>
-        {health?.responseTimeMs && health.responseTimeMs > 0 && (
-          <p className="text-[9px] flex items-center gap-0.5" style={{ color: 'var(--text-secondary)' }}>
-            <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            {health.responseTimeMs}ms
+const HealthStatusSection = ({ health, isDisabled, isVoiceProvider, voiceProviderStatus }: HealthStatusSectionProps) => {
+  // Determine status text and color for voice providers
+  const getStatusDisplay = () => {
+    if (isVoiceProvider && voiceProviderStatus) {
+      if (voiceProviderStatus.isConfigured) {
+        return { text: 'Configured', isHealthy: true };
+      }
+      return { text: 'Not Configured', isHealthy: false };
+    }
+    return { text: health?.status || 'Unknown', isHealthy: health?.isHealthy ?? false };
+  };
+
+  const { text: statusText, isHealthy } = getStatusDisplay();
+  const errorMessage = isVoiceProvider ? voiceProviderStatus?.error : health?.errorMessage;
+
+  return (
+    <div
+      className="p-2.5 rounded-xl border"
+      style={{
+        backgroundColor: 'var(--surface-elevated)',
+        borderColor: 'var(--border)',
+      }}
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{
+              backgroundColor: isDisabled ? '#f59e0b' : isHealthy ? '#10b981' : '#ef4444',
+              boxShadow: `0 0 0 2px ${isDisabled ? 'rgba(245, 158, 11, 0.2)' : isHealthy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+            }}
+          />
+          <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+            {statusText}
           </p>
+          {health?.responseTimeMs && health.responseTimeMs > 0 && (
+            <p className="text-[9px] flex items-center gap-0.5" style={{ color: 'var(--text-secondary)' }}>
+              <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {health.responseTimeMs}ms
+            </p>
+          )}
+        </div>
+        {health?.availableModels && health.availableModels.length > 0 && (
+          <div className="flex items-center gap-1">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {health.availableModels.length} models
+            </p>
+          </div>
         )}
       </div>
+      {errorMessage && (
+        <p className="text-[9px] truncate mb-2" style={{ color: '#ef4444' }}>
+          {errorMessage}
+        </p>
+      )}
       {health?.availableModels && health.availableModels.length > 0 && (
-        <div className="flex items-center gap-1">
-          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {health.availableModels.length} models
-          </p>
+        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto thin-scrollbar pr-1">
+          {health.availableModels.map((model: string) => (
+            <code
+              key={model}
+              className="px-1.5 py-0.5 rounded-xl text-[9px] font-medium whitespace-nowrap"
+              style={{
+                backgroundColor: 'var(--surface-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              {formatModelName(model)}
+            </code>
+          ))}
         </div>
       )}
     </div>
-    {health?.errorMessage && (
-      <p className="text-[9px] truncate mb-2" style={{ color: '#ef4444' }}>
-        {health.errorMessage}
-      </p>
-    )}
-    {health?.availableModels && health.availableModels.length > 0 && (
-      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto thin-scrollbar pr-1">
-        {health.availableModels.map((model: string) => (
-          <code
-            key={model}
-            className="px-1.5 py-0.5 rounded-xl text-[9px] font-medium whitespace-nowrap"
-            style={{
-              backgroundColor: 'var(--surface-card)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            {formatModelName(model)}
-          </code>
-        ))}
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 interface WebConfigInstructionsProps {
   providerName: string;

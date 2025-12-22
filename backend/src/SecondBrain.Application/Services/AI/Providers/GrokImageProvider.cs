@@ -15,17 +15,19 @@ namespace SecondBrain.Application.Services.AI.Providers;
 /// </summary>
 public class GrokImageProvider : IImageGenerationProvider
 {
+    public const string HttpClientName = "GrokImage";
+
     private readonly XAISettings _settings;
     private readonly ILogger<GrokImageProvider> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     // Grok image generation models (Aurora)
-    private static readonly string[] SupportedModels = 
-    { 
+    private static readonly string[] SupportedModels =
+    {
         "grok-2-image",
         "grok-2-image-1212"
     };
-    
+
     // Note: Grok API does NOT support size parameter - images are generated at default resolution
     // Keeping this for UI display purposes only
     private static readonly string[] SupportedSizes =
@@ -38,21 +40,27 @@ public class GrokImageProvider : IImageGenerationProvider
 
     public GrokImageProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<GrokImageProvider> logger)
     {
         _settings = settings.Value.XAI;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri(_settings.BaseUrl.TrimEnd('/') + "/"),
-            Timeout = TimeSpan.FromSeconds(120)
-        };
+    }
 
-        if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient(HttpClientName);
+        client.BaseAddress = new Uri(_settings.BaseUrl.TrimEnd('/') + "/");
+        client.Timeout = TimeSpan.FromSeconds(120);
+
+        if (!string.IsNullOrWhiteSpace(_settings.ApiKey) &&
+            !client.DefaultRequestHeaders.Contains("Authorization"))
         {
-            _httpClient.DefaultRequestHeaders.Authorization = 
+            client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
         }
+        return client;
     }
 
     public async Task<ImageGenerationResponse> GenerateImageAsync(
@@ -102,7 +110,8 @@ public class GrokImageProvider : IImageGenerationProvider
             _logger.LogInformation("Generating image with Grok Aurora. Model: {Model}, Count: {Count}",
                 model, Math.Min(request.Count, 10));
 
-            var response = await _httpClient.PostAsync("images/generations", httpContent, cancellationToken);
+            var httpClient = CreateHttpClient();
+            var response = await httpClient.PostAsync("images/generations", httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -193,7 +202,8 @@ public class GrokImageProvider : IImageGenerationProvider
 
         try
         {
-            var response = await _httpClient.GetAsync("models", cancellationToken);
+            var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync("models", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)

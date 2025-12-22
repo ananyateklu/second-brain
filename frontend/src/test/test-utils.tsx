@@ -3,7 +3,7 @@
  * Custom render function with providers and testing helpers
  */
 
-/* eslint-disable react-refresh/only-export-components */
+ 
 
 import { ReactElement, ReactNode } from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';

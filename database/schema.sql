@@ -255,13 +255,43 @@
 \echo ''
 
 -- Step 40: Thinking steps table
-\echo 'Step 40/41: Creating thinking_steps table...'
+\echo 'Step 40/46: Creating thinking_steps table...'
 \i 40_thinking_steps.sql
 \echo 'Thinking steps table created successfully.'
 \echo ''
 
--- Step 41: Final statistics update
-\echo 'Step 41/41: Updating statistics...'
+-- Step 41: Content JSON format migration
+\echo 'Step 41/46: Migrating content to JSON format...'
+\i 41_content_json_format.sql
+\echo 'Content JSON format migration complete.'
+\echo ''
+
+-- Step 42: Note version content JSON
+\echo 'Step 42/46: Adding note version content JSON...'
+\i 42_note_version_content_json.sql
+\echo 'Note version content JSON added successfully.'
+\echo ''
+
+-- Step 43: Note version image IDs
+\echo 'Step 43/46: Adding note version image IDs...'
+\i 43_note_version_image_ids.sql
+\echo 'Note version image IDs added successfully.'
+\echo ''
+
+-- Step 44: Voice sessions table
+\echo 'Step 44/46: Creating voice_sessions table...'
+\i 44_voice_sessions.sql
+\echo 'Voice sessions table created successfully.'
+\echo ''
+
+-- Step 45: RAG advanced settings
+\echo 'Step 45/46: Adding RAG advanced settings to user_preferences...'
+\i 45_rag_advanced_settings.sql
+\echo 'RAG advanced settings added successfully.'
+\echo ''
+
+-- Step 46: Final statistics update
+\echo 'Step 46/46: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

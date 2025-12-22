@@ -221,7 +221,7 @@ public class NoteCrudPluginTests
     public async Task GetNoteAsync_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -232,18 +232,18 @@ public class NoteCrudPluginTests
     }
 
     [Fact]
-    public async Task GetNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
+    public async Task GetNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Test Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.GetNoteAsync("note-1");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class NoteCrudPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", content: "Note content here");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         // Act
@@ -298,7 +298,7 @@ public class NoteCrudPluginTests
     public async Task UpdateNoteAsync_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -309,18 +309,18 @@ public class NoteCrudPluginTests
     }
 
     [Fact]
-    public async Task UpdateNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
+    public async Task UpdateNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Test Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.UpdateNoteAsync("note-1", "New Title");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class NoteCrudPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Updated Title");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         _mockNoteOperationService.Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
@@ -347,7 +347,7 @@ public class NoteCrudPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         _mockNoteOperationService.Setup(s => s.UpdateAsync(It.IsAny<UpdateNoteOperationRequest>(), It.IsAny<CancellationToken>()))
@@ -397,7 +397,7 @@ public class NoteCrudPluginTests
     public async Task DeleteNoteAsync_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -408,18 +408,18 @@ public class NoteCrudPluginTests
     }
 
     [Fact]
-    public async Task DeleteNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
+    public async Task DeleteNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Test Note", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.DeleteNoteAsync("note-1");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -427,7 +427,7 @@ public class NoteCrudPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         _mockNoteOperationService.Setup(s => s.DeleteAsync(It.IsAny<DeleteNoteOperationRequest>(), It.IsAny<CancellationToken>()))
@@ -507,7 +507,7 @@ public class NoteCrudPluginTests
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", content: "Original content");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         _mockNoteOperationService.Setup(s => s.AppendAsync(It.IsAny<AppendToNoteOperationRequest>(), It.IsAny<CancellationToken>()))

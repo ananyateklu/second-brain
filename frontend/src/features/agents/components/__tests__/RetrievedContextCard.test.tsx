@@ -133,7 +133,7 @@ describe('RetrievedContextCard', () => {
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} />,
         { wrapper: createWrapper() }
       );
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });
@@ -337,18 +337,24 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
-      expect(iconContainer).toHaveClass('animate-pulse');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      expect(iconContainer).toBeInTheDocument();
+      // TimelineStatusIcon shows spinner when isLoading=true
+      const spinnerPath = iconContainer?.querySelector('.animate-spin');
+      expect(spinnerPath).toBeInTheDocument();
     });
 
-    it('should not show pulsing animation when not streaming', () => {
+    it('should not show spinner animation when not streaming', () => {
       const { container } = render(
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} isStreaming={false} />,
         { wrapper: createWrapper() }
       );
 
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
-      expect(iconContainer).not.toHaveClass('animate-pulse');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      expect(iconContainer).toBeInTheDocument();
+      // TimelineStatusIcon shows checkmark when isLoading=false
+      const spinnerPath = iconContainer?.querySelector('.animate-spin');
+      expect(spinnerPath).not.toBeInTheDocument();
     });
   });
 

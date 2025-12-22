@@ -109,6 +109,16 @@ export interface AgentNoteResult {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+  /** Similarity score (0-1) for semantic search results */
+  similarityScore?: number;
+  /** Reranking score (0-1) if reranking is enabled */
+  rerankScore?: number;
+  /** The specific content chunk that matched the search query */
+  matchedContent?: string;
+  /** Preview of the note content */
+  preview?: string;
+  /** Index of the matched chunk */
+  chunkIndex?: number;
 }
 
 /**

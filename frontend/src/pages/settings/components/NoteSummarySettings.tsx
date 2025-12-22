@@ -6,6 +6,7 @@ import { toast } from '../../../hooks/use-toast';
 import { useNotes } from '../../../features/notes/hooks/use-notes-query';
 import { useStartSummaryGeneration } from '../../../features/notes/hooks/use-summary-generation';
 import type { NoteListItem } from '../../../types/notes';
+import { Tooltip, InfoIcon } from '../../../components/ui/Tooltip';
 
 // Mapping from health data provider names to display names
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -411,41 +412,13 @@ export function NoteSummarySettings() {
                             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                                 Note Summaries
                             </h3>
-                            <div className="relative group">
-                                <button
-                                    type="button"
-                                    className="flex items-center justify-center w-4 h-4 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-success)]"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--color-success) 12%, transparent)',
-                                        color: 'var(--color-success)',
-                                    }}
-                                    aria-label="How note summaries work"
-                                >
-                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </button>
-                                <div
-                                    className="absolute left-0 top-full mt-2 w-64 p-3 rounded-2xl border text-xs opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10"
-                                    style={{
-                                        backgroundColor: 'var(--surface-elevated)',
-                                        borderColor: 'var(--color-success)',
-                                        color: 'var(--text-secondary)',
-                                        boxShadow: 'var(--shadow-lg)',
-                                    }}
-                                >
-                                    <p>
-                                        When enabled, AI will automatically generate a concise summary of each note based on its title, tags, and content.
-                                        Summaries are displayed in the notes list for quick reference without loading full content.
-                                    </p>
-                                    <div
-                                        className="absolute left-4 -top-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent"
-                                        style={{
-                                            borderBottomColor: 'var(--color-success)',
-                                        }}
-                                    />
-                                </div>
-                            </div>
+                            <Tooltip
+                                content="When enabled, AI will automatically generate a concise summary of each note based on its title, tags, and content. Summaries are displayed in the notes list for quick reference without loading full content. You can choose which AI provider and model to use for generating summaries, and backfill summaries for existing notes."
+                                position="bottom"
+                                maxWidth={420}
+                            >
+                                <InfoIcon className="flex-shrink-0 cursor-help ml-1" />
+                            </Tooltip>
                         </div>
                         <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                             Automatically generate AI summaries for your notes
