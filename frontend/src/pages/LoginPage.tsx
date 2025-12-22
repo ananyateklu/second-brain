@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBoundStore } from '../store/bound-store';
 import brainLogo from '../assets/brain-top-tab.png';
@@ -23,21 +23,9 @@ export function LoginPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
     }
   }, [isAuthenticated, navigate]);
-
-  // Clear errors on mode change - use ref to track previous mode
-  const prevIsRegisterModeRef = useRef(isRegisterMode);
-  useEffect(() => {
-    if (prevIsRegisterModeRef.current !== isRegisterMode) {
-      prevIsRegisterModeRef.current = isRegisterMode;
-      clearError();
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid state reset on mode change
-      setValidationError(null);
-    }
-  }, [isRegisterMode, clearError]);
 
   useEffect(() => {
     // Clear error on unmount
@@ -93,8 +81,7 @@ export function LoginPage() {
       } else {
         await login(identifier, password);
       }
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
     } catch {
       // Error is already handled in the store
     }
@@ -393,6 +380,8 @@ export function LoginPage() {
                   setIsRegisterMode(!isRegisterMode);
                   setPassword('');
                   setConfirmPassword('');
+                  setValidationError(null);
+                  clearError();
                 }}
                 className="font-medium hover:underline"
                 style={{ color: 'var(--color-brand-600)' }}

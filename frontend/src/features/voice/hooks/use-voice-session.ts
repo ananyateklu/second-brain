@@ -11,6 +11,7 @@ import { requestMicrophoneAccess } from '../../../services/voice-audio.service';
 import { useAudioRecorder } from './use-audio-recorder';
 import { useAudioPlayer } from './use-audio-player';
 import { useVoiceActivity } from './use-voice-activity';
+import { logger } from '../../../utils/logger';
 import type {
   VoiceSessionOptions,
   VoiceSessionState,
@@ -202,9 +203,7 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
         setSessionState(state);
         onStateChangeRef.current?.(state);
         if (reason) {
-          // Debug: state change reasons are logged in development only
-          // eslint-disable-next-line no-console
-          if (import.meta.env.DEV) console.log('State change reason:', reason);
+          logger.debug('State change reason:', reason);
         }
       },
       onTranscript: (text, isFinal, _confidence) => {

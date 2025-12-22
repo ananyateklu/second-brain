@@ -4,8 +4,7 @@
  * Processes audio in a separate thread for better performance
  */
 
-// eslint-disable-next-line @typescript-eslint/triple-slash-reference
-/// <reference path="./audio-worklet.d.ts" />
+// Types are provided by src/workers/audio-worklet.d.ts (included in tsconfig)
 
 class AudioProcessor extends AudioWorkletProcessor {
   /**

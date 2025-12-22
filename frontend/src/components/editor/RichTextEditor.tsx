@@ -55,7 +55,6 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
 
   // Reset selected index when items change - this is a valid prop sync pattern
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIndex(0);
   }, [props.items]);
 

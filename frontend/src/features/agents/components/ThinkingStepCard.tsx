@@ -180,7 +180,6 @@ export const ThinkingStepCard = memo(function ThinkingStepCard({ step, isStreami
   // Auto-expand when streaming starts - valid prop sync for UI state
   useEffect(() => {
     if (isStreaming) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsExpanded(true);
     }
   }, [isStreaming]);

@@ -1,10 +1,10 @@
-/* eslint-disable react-refresh/only-export-components */
+ 
 /**
  * ChatInput Context
  * Provides shared state and handlers for compound ChatInput components
- * 
+ *
  * This file exports context and hooks, not components.
- * The eslint-disable is intentional as this is a context provider file.
+ * ESLint react-refresh rule is disabled via config for Context files.
  */
 
 import { createContext, useContext, type RefObject } from 'react';

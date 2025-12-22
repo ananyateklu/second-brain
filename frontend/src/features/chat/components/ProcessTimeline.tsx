@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 
 interface ProcessTimelineProps {
     children: ReactNode;
@@ -13,15 +13,11 @@ export function ProcessTimeline({
     isStreaming = false,
     hasContent = true
 }: ProcessTimelineProps) {
-    const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+    // Track user's manual expansion preference
+    const [userExpanded, setUserExpanded] = useState(defaultExpanded);
 
-    // Auto-expand when streaming starts - valid prop sync for UI state
-    useEffect(() => {
-        if (isStreaming) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setIsExpanded(true);
-        }
-    }, [isStreaming]);
+    // Derive actual expanded state: streaming always expands, otherwise use user preference
+    const isExpanded = isStreaming || userExpanded;
 
     if (!hasContent) return null;
 
@@ -31,7 +27,7 @@ export function ProcessTimeline({
             {!isStreaming && (
                 <div className="flex items-center gap-2 mb-2">
                     <button
-                        onClick={() => { setIsExpanded(!isExpanded); }}
+                        onClick={() => { setUserExpanded(!userExpanded); }}
                         className="text-xs font-medium flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-elevated)] transition-colors"
                         style={{ color: 'var(--text-secondary)' }}
                     >

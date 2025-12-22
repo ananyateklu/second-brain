@@ -41,7 +41,7 @@ export const VirtualizedConversationList = memo(({
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   );
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is safe to use here
+   
   const virtualizer = useVirtualizer({
     count: sortedConversations.length,
     getScrollElement: () => parentRef.current,

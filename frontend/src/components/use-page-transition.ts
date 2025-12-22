@@ -12,7 +12,6 @@ export function usePageTransition() {
 
   useEffect(() => {
     if (location.pathname !== previousPathRef.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsTransitioning(true);
       previousPathRef.current = location.pathname;
 

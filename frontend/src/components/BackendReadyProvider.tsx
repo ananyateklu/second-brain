@@ -4,6 +4,7 @@ import { waitForBackend, isBackendReady, waitForTauriReady } from '../lib/tauri-
 import { setBackendReady } from '../lib/constants';
 import { AppLoadingScreen } from './ui/AppLoadingScreen';
 import { BackendReadyContext, type BackendReadyContextValue } from './backend-ready-context';
+import { loggers } from '../utils/logger';
 
 interface BackendReadyProviderProps {
     children: ReactNode;
@@ -49,13 +50,11 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
 
         // In Tauri mode, use the built-in wait function
         if (inTauri) {
-            // eslint-disable-next-line no-console
-            console.log('[BackendReadyProvider] Waiting for backend via Tauri bridge...');
+            loggers.tauri.info('Waiting for backend via Tauri bridge...');
             const ready = await waitForBackend(60000); // 60 second timeout
 
             if (ready) {
-                // eslint-disable-next-line no-console
-                console.log('[BackendReadyProvider] Backend is ready (Tauri)');
+                loggers.tauri.info('Backend is ready (Tauri)');
                 setBackendReady(true); // Set global flag BEFORE updating React state
                 setIsReady(true);
             } else {
@@ -65,8 +64,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
         }
 
         // In web/dev mode, poll the health endpoint
-        // eslint-disable-next-line no-console
-        console.log('[BackendReadyProvider] Polling backend health endpoint...');
+        loggers.tauri.info('Polling backend health endpoint...');
         const maxAttempts = 30;
         const pollInterval = 1000;
 
@@ -75,8 +73,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
 
             const healthy = await checkBackendHealth();
             if (healthy) {
-                // eslint-disable-next-line no-console
-                console.log(`[BackendReadyProvider] Backend is ready after ${attempt} attempt(s)`);
+                loggers.tauri.info(`Backend is ready after ${attempt} attempt(s)`);
                 setBackendReady(true); // Set global flag BEFORE updating React state
                 setIsReady(true);
                 return;

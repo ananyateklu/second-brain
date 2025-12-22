@@ -155,7 +155,6 @@ export function useTokenValue(tokenValue: string): string {
     // Re-compute when theme changes - valid external state sync
     if (isCSSVariable(tokenValue)) {
       const newValue = getComputedValue(tokenValue);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(prev => prev !== newValue ? newValue : prev);
     }
   }, [tokenValue, theme, getComputedValue]);

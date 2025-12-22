@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
@@ -19,19 +19,31 @@ function CircularCheckbox({
   staggerIndex?: number;
 }) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const prevCheckedRef = useRef(checked);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (prevCheckedRef.current !== checked) {
-      // Trigger animation for checkbox state change - valid UI animation
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsAnimating(true);
-      const timer = setTimeout(() => { setIsAnimating(false); }, 250);
-      prevCheckedRef.current = checked;
-      return () => { clearTimeout(timer); };
+  // Handle click with animation trigger
+  const handleClick = useCallback(() => {
+    // Clear any pending animation timer
+    if (animationTimerRef.current) {
+      clearTimeout(animationTimerRef.current);
     }
-    return undefined;
-  }, [checked]);
+    // Trigger animation
+    setIsAnimating(true);
+    animationTimerRef.current = setTimeout(() => {
+      setIsAnimating(false);
+    }, 250);
+    // Call parent onChange
+    onChange();
+  }, [onChange]);
+
+  // Cleanup animation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <button
@@ -40,7 +52,7 @@ function CircularCheckbox({
       aria-checked={checked}
       onClick={(e) => {
         e.stopPropagation();
-        onChange();
+        handleClick();
       }}
       className={`${styles.checkbox} flex-shrink-0 relative w-5 h-5 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`}
       style={{

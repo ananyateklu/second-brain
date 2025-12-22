@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import {
   IMAGE_GENERATION_CONFIGS,
   getImageGenerationConfig,
@@ -51,36 +51,27 @@ export function ImageGenerationPanel({
   const providerConfig = getImageGenerationConfig(provider);
   const modelInfo = getImageModelInfo(provider, model);
 
-  // Update model when provider changes - valid prop sync for cascading selects
-  const prevProviderRef = useRef(provider);
-  useEffect(() => {
-    if (prevProviderRef.current !== provider) {
-      prevProviderRef.current = provider;
-      const config = getImageGenerationConfig(provider);
-      if (config) {
-        /* eslint-disable react-hooks/set-state-in-effect */
-        setModel(config.defaultModel);
-        const defaultModelInfo = getImageModelInfo(provider, config.defaultModel);
-        if (defaultModelInfo) {
-          setSize(defaultModelInfo.defaultSize);
-        }
-        /* eslint-enable react-hooks/set-state-in-effect */
+  // Handle provider change with cascading model/size updates
+  const handleProviderChange = useCallback((newProvider: string) => {
+    setProvider(newProvider);
+    const config = getImageGenerationConfig(newProvider);
+    if (config) {
+      setModel(config.defaultModel);
+      const defaultModelInfo = getImageModelInfo(newProvider, config.defaultModel);
+      if (defaultModelInfo) {
+        setSize(defaultModelInfo.defaultSize);
       }
+    }
+  }, []);
+
+  // Handle model change with cascading size update
+  const handleModelChange = useCallback((newModel: string) => {
+    setModel(newModel);
+    const info = getImageModelInfo(provider, newModel);
+    if (info) {
+      setSize(info.defaultSize);
     }
   }, [provider]);
-
-  // Update size when model changes - valid prop sync for cascading selects
-  const prevModelRef = useRef(model);
-  useEffect(() => {
-    if (prevModelRef.current !== model) {
-      prevModelRef.current = model;
-      const info = getImageModelInfo(provider, model);
-      if (info) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSize(info.defaultSize);
-      }
-    }
-  }, [provider, model]);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
@@ -202,7 +193,7 @@ export function ImageGenerationPanel({
           </label>
           <select
             value={provider}
-            onChange={(e) => { setProvider(e.target.value); }}
+            onChange={(e) => { handleProviderChange(e.target.value); }}
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
@@ -229,7 +220,7 @@ export function ImageGenerationPanel({
           </label>
           <select
             value={model}
-            onChange={(e) => { setModel(e.target.value); }}
+            onChange={(e) => { handleModelChange(e.target.value); }}
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{

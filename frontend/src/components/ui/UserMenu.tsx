@@ -33,8 +33,7 @@ export function UserMenu() {
   const handleSignOut = () => {
     try {
       signOut();
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
-      navigate('/login');
+      void navigate('/login');
     } catch (error) {
       console.error('Sign out error:', error);
       toast.error('Failed to sign out');

@@ -57,22 +57,20 @@ export const GitHubPage = () => {
   const { data: gitStatus } = useGitStatus();
   const { data: selectedDiff, isLoading: isDiffLoading } = useSelectedDiff();
 
-  // Sync repo info to store when it loads
+  // Sync repo info to store when it loads (only when store is empty)
   useEffect(() => {
     if (repoInfo?.owner && repoInfo?.repo && !githubOwner && !githubRepo) {
       setGitHubRepo(repoInfo.owner, repoInfo.repo);
     }
   }, [repoInfo?.owner, repoInfo?.repo, githubOwner, githubRepo, setGitHubRepo]);
 
-  // Clear selections when repo changes
+  // Clear selections when repo changes - legitimate external state sync
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
     setSelectedPR(null);
     setSelectedRun(null);
     setSelectedIssue(null);
     setSelectedCommit(null);
     setSelectedBranch(null);
-    /* eslint-enable react-hooks/set-state-in-effect */
   }, [githubOwner, githubRepo]);
 
   const handleSelectPR = (pr: PullRequestSummary) => {
