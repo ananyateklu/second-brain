@@ -119,7 +119,7 @@ public class QueryExpansionServiceTests
     public async Task ExpandQueryWithHyDEAsync_WhenProviderUnavailable_ReturnsFailure()
     {
         // Arrange
-        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider?)null);
+        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider)null!);
         var sut = CreateService();
 
         // Act
@@ -272,7 +272,7 @@ public class QueryExpansionServiceTests
     public async Task GenerateMultiQueryAsync_WhenProviderUnavailable_ReturnsOnlyOriginal()
     {
         // Arrange
-        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider?)null);
+        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider)null!);
         var sut = CreateService();
 
         // Act

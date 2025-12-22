@@ -51,7 +51,7 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.ApiKey.Should().NotBeNullOrEmpty();
+        result.Value!.ApiKey.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -76,8 +76,8 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.ApiKey.Should().HaveLength(32); // GUID without dashes
-        result.Value.ApiKey.Should().MatchRegex("^[a-f0-9]{32}$"); // Hex format
+        result.Value!.ApiKey.Should().HaveLength(32); // GUID without dashes
+        result.Value!.ApiKey.Should().MatchRegex("^[a-f0-9]{32}$"); // Hex format
     }
 
     [Fact]
@@ -104,8 +104,8 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.GeneratedAt.Should().BeOnOrAfter(beforeCall);
-        result.Value.GeneratedAt.Should().BeOnOrBefore(afterCall);
+        result.Value!.GeneratedAt.Should().BeOnOrAfter(beforeCall);
+        result.Value!.GeneratedAt.Should().BeOnOrBefore(afterCall);
     }
 
     [Fact]
@@ -193,7 +193,7 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.ApiKey.Should().NotBe(oldApiKey);
+        result.Value!.ApiKey.Should().NotBe(oldApiKey);
     }
 
     #endregion
@@ -215,7 +215,7 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NotFound");
+        result.Error!.Code.Should().Be("NotFound");
     }
 
     #endregion
@@ -278,8 +278,8 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to generate API key");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to generate API key");
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public class GenerateApiKeyCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
+        result.Error!.Code.Should().Be("InternalError");
     }
 
     #endregion

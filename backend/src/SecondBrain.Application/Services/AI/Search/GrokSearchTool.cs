@@ -58,7 +58,7 @@ public class GrokSearchTool
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             // Parse sources (deduplicate to avoid X.AI API error)
             var rawSources = string.IsNullOrEmpty(sources)

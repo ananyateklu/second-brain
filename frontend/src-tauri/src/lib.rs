@@ -19,7 +19,7 @@ pub mod startup;
 use config::ServiceConfig;
 use database::PostgresManager;
 use port_utils::{find_available_port, is_port_available};
-pub use secrets::Secrets;
+pub use secrets::{generate_jwt_secret, Secrets};
 use startup::{StartupConfig, StartupEvent, StartupMetrics, StartupTimer};
 
 /// Load secrets from file (synchronous, for use during startup)
@@ -663,11 +663,23 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
         postgres_port
     );
 
-    // Generate a secure JWT secret key for the desktop app
-    let jwt_secret = "SecondBrainDesktopAppSecretKey2024!@#$%";
-
     // Load API secrets from config file
-    let secrets = load_secrets(&app_data_dir);
+    let mut secrets = load_secrets(&app_data_dir);
+
+    // Ensure we have a JWT secret - generate one if not present
+    let jwt_secret = if let Some(ref existing_secret) = secrets.jwt_secret {
+        log::info!("Using existing JWT secret from secrets.json");
+        existing_secret.clone()
+    } else {
+        log::info!("Generating new JWT secret for desktop app");
+        let new_secret = generate_jwt_secret();
+        secrets.jwt_secret = Some(new_secret.clone());
+        // Save the updated secrets with the new JWT secret
+        if let Err(e) = save_secrets(&app_data_dir, &secrets) {
+            log::warn!("Failed to save JWT secret to secrets.json: {}. Secret will be regenerated on next start.", e);
+        }
+        new_secret
+    };
 
     // Find the backend executable
     let backend_path = find_backend_path(app)?;
@@ -791,35 +803,65 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
     let stderr = child.stderr.take();
     let app_handle = app.clone();
 
-    // Monitor stdout
+    // Monitor stdout with panic handling (T2 fix)
     if let Some(stdout) = stdout {
         let app_clone = app_handle.clone();
-        std::thread::spawn(move || {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines().map_while(Result::ok) {
-                log::info!("[Backend] {}", line);
-            }
-            let _ = app_clone.emit("backend-terminated", ());
-        });
+        std::thread::Builder::new()
+            .name("backend-stdout-monitor".to_string())
+            .spawn(move || {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let reader = BufReader::new(stdout);
+                    for line in reader.lines().map_while(Result::ok) {
+                        log::info!("[Backend] {}", line);
+                    }
+                }));
+
+                if let Err(e) = result {
+                    log::error!("[Backend stdout monitor] Thread panicked: {:?}", e);
+                }
+
+                let _ = app_clone.emit("backend-terminated", ());
+            })
+            .map_err(|e| format!("Failed to spawn stdout monitor thread: {}", e))?;
     }
 
-    // Monitor stderr
+    // Monitor stderr with panic handling (T2 fix)
     if let Some(stderr) = stderr {
-        std::thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines().map_while(Result::ok) {
-                log::warn!("[Backend] {}", line);
-            }
-        });
+        std::thread::Builder::new()
+            .name("backend-stderr-monitor".to_string())
+            .spawn(move || {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let reader = BufReader::new(stderr);
+                    for line in reader.lines().map_while(Result::ok) {
+                        log::warn!("[Backend] {}", line);
+                    }
+                }));
+
+                if let Err(e) = result {
+                    log::error!("[Backend stderr monitor] Thread panicked: {:?}", e);
+                }
+            })
+            .map_err(|e| format!("Failed to spawn stderr monitor thread: {}", e))?;
     }
 
-    // Store the child process
-    *state.backend_process.lock().unwrap() = Some(child);
-
-    // Wait for backend to be ready
-    wait_for_backend_ready(app, backend_port).await?;
-
-    Ok(())
+    // Wait for backend to be ready BEFORE storing the process (T1 fix)
+    // This prevents storing a stale process reference if startup fails
+    match wait_for_backend_ready(app, backend_port).await {
+        Ok(()) => {
+            // Only store the process after confirming it's ready
+            *state.backend_process.lock().unwrap() = Some(child);
+            Ok(())
+        }
+        Err(e) => {
+            // Startup failed - kill the process and don't store it
+            log::error!("Backend failed to become ready, killing process: {}", e);
+            let _ = child.kill();
+            let _ = child.wait();
+            // Also try to kill any orphaned process on the port
+            kill_process_on_port(backend_port);
+            Err(e)
+        }
+    }
 }
 
 /// Find the backend executable path
@@ -1528,6 +1570,7 @@ mod tests {
             deepgram_api_key: None,
             elevenlabs_api_key: None,
             openai_tts_api_key: None,
+            jwt_secret: None,
         };
 
         let json = serde_json::to_string(&secrets).unwrap();
@@ -1704,6 +1747,7 @@ mod tests {
             deepgram_api_key: Some("deepgram-key".to_string()),
             elevenlabs_api_key: Some("elevenlabs-key".to_string()),
             openai_tts_api_key: Some("sk-tts-key".to_string()),
+            jwt_secret: Some("test-jwt-secret".to_string()),
         };
 
         save_secrets(&temp_dir.path().to_path_buf(), &original).unwrap();

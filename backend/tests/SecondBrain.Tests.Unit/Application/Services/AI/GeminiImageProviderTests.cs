@@ -9,12 +9,19 @@ namespace SecondBrain.Tests.Unit.Application.Services.AI;
 public class GeminiImageProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<ILogger<GeminiImageProvider>> _mockLogger;
 
     public GeminiImageProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockLogger = new Mock<ILogger<GeminiImageProvider>>();
+
+        // Setup default HttpClient mock
+        _mockHttpClientFactory
+            .Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns(new HttpClient());
     }
 
     #region Constructor and Properties Tests
@@ -255,6 +262,7 @@ public class GeminiImageProviderTests
     {
         return new GeminiImageProvider(
             _mockSettings.Object,
+            _mockHttpClientFactory.Object,
             _mockLogger.Object
         );
     }

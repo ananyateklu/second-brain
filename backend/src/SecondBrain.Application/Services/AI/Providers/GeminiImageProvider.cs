@@ -16,9 +16,11 @@ namespace SecondBrain.Application.Services.AI.Providers;
 /// </summary>
 public class GeminiImageProvider : IImageGenerationProvider
 {
+    public const string HttpClientName = "GeminiImage";
+
     private readonly GeminiSettings _settings;
     private readonly ILogger<GeminiImageProvider> _logger;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly Client? _client;
 
     // Gemini image generation models
@@ -47,14 +49,12 @@ public class GeminiImageProvider : IImageGenerationProvider
 
     public GeminiImageProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<GeminiImageProvider> logger)
     {
         _settings = settings.Value.Gemini;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient
-        {
-            Timeout = TimeSpan.FromSeconds(120)
-        };
 
         // Initialize SDK client for Imagen models
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
@@ -68,6 +68,13 @@ public class GeminiImageProvider : IImageGenerationProvider
                 _logger.LogError(ex, "Failed to initialize Google Gemini client for image generation");
             }
         }
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient(HttpClientName);
+        client.Timeout = TimeSpan.FromSeconds(120);
+        return client;
     }
 
     public async Task<ImageGenerationResponse> GenerateImageAsync(
@@ -155,7 +162,8 @@ public class GeminiImageProvider : IImageGenerationProvider
 
         _logger.LogInformation("Generating image with Gemini. Model: {Model}", model);
 
-        var response = await _httpClient.PostAsync(endpoint, httpContent, cancellationToken);
+        var httpClient = CreateHttpClient();
+        var response = await httpClient.PostAsync(endpoint, httpContent, cancellationToken);
         var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -361,7 +369,8 @@ public class GeminiImageProvider : IImageGenerationProvider
         _logger.LogInformation("Generating image with Imagen HTTP. Model: {Model}, AspectRatio: {AspectRatio}",
             model, aspectRatio);
 
-        var response = await _httpClient.PostAsync(endpoint, httpContent, cancellationToken);
+        var httpClient = CreateHttpClient();
+        var response = await httpClient.PostAsync(endpoint, httpContent, cancellationToken);
         var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -413,7 +422,8 @@ public class GeminiImageProvider : IImageGenerationProvider
         try
         {
             var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models?key={_settings.ApiKey}";
-            var response = await _httpClient.GetAsync(endpoint, cancellationToken);
+            var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync(endpoint, cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch (Exception ex)

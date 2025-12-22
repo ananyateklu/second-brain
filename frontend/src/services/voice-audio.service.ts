@@ -413,7 +413,11 @@ export class VoiceActivityDetector {
       }
     }
 
-    this.rafId = requestAnimationFrame(() => this.detect());
+    // Only schedule next frame if we're still active (analyser not null)
+    // This prevents RAF from being scheduled after stop() is called
+    if (this.analyser) {
+      this.rafId = requestAnimationFrame(() => this.detect());
+    }
   }
 }
 

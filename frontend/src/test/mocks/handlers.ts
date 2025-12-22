@@ -518,6 +518,10 @@ export const handlers = [
     return new HttpResponse(null, { status: 404 });
   }),
 
+  // Note: /api/ai/ollama/pull is intentionally NOT handled here
+  // The ai.service tests mock fetch directly for fine-grained control over pull responses
+  // MSW warning for unhandled requests is acceptable
+
   // ============================================
   // Indexing Endpoints
   // ============================================

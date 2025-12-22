@@ -838,7 +838,7 @@ public class ClaudeProvider : IAIProvider
     {
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
             var response = await httpClient.GetAsync("https://api.anthropic.com/v1/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {

@@ -61,7 +61,12 @@ export async function restartBackend(): Promise<void> {
     return;
   }
 
-  await invoke('restart_backend');
+  try {
+    await invoke('restart_backend');
+  } catch (e) {
+    loggers.tauri.error('Failed to restart backend:', e);
+    throw e; // Re-throw so callers can handle the error
+  }
 }
 
 /**
@@ -73,7 +78,12 @@ export async function openDataDirectory(): Promise<void> {
     return;
   }
 
-  await invoke('open_data_directory');
+  try {
+    await invoke('open_data_directory');
+  } catch (e) {
+    loggers.tauri.error('Failed to open data directory:', e);
+    throw e;
+  }
 }
 
 /**
@@ -85,7 +95,12 @@ export async function openLogDirectory(): Promise<void> {
     return;
   }
 
-  await invoke('open_log_directory');
+  try {
+    await invoke('open_log_directory');
+  } catch (e) {
+    loggers.tauri.error('Failed to open log directory:', e);
+    throw e;
+  }
 }
 
 /**
@@ -194,7 +209,12 @@ export async function saveSecrets(secrets: Secrets, restart = true): Promise<voi
     return;
   }
 
-  await invoke('save_secrets_cmd', { secrets, restart });
+  try {
+    await invoke('save_secrets_cmd', { secrets, restart });
+  } catch (e) {
+    loggers.tauri.error('Failed to save secrets:', e);
+    throw e;
+  }
 }
 
 /**

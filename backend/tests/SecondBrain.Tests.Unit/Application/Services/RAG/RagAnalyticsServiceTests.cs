@@ -38,7 +38,7 @@ public class RagAnalyticsServiceTests
         Guid? capturedLogId = null;
         _mockRepository.Setup(r => r.CreateAsync(It.IsAny<RagQueryLog>()))
             .Callback<RagQueryLog>(log => capturedLogId = log.Id)
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         var result = await _sut.LogQueryAsync(metrics);
@@ -78,7 +78,7 @@ public class RagAnalyticsServiceTests
         RagQueryLog? capturedLog = null;
         _mockRepository.Setup(r => r.CreateAsync(It.IsAny<RagQueryLog>()))
             .Callback<RagQueryLog>(log => capturedLog = log)
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         await _sut.LogQueryAsync(metrics);
@@ -135,7 +135,7 @@ public class RagAnalyticsServiceTests
         // Arrange
         var metrics = CreateTestMetrics();
         _mockRepository.Setup(r => r.CreateAsync(It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         await _sut.LogQueryAsync(metrics);
@@ -164,7 +164,7 @@ public class RagAnalyticsServiceTests
         _mockRepository.Setup(r => r.GetByIdAsync(logId))
             .ReturnsAsync(existingLog);
         _mockRepository.Setup(r => r.UpdateAsync(logId, It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         await _sut.UpdateFeedbackAsync(logId, "thumbs_up", "helpful", "Great answer!");
@@ -230,7 +230,7 @@ public class RagAnalyticsServiceTests
         _mockRepository.Setup(r => r.GetByIdAsync(logId))
             .ReturnsAsync(existingLog);
         _mockRepository.Setup(r => r.UpdateAsync(logId, It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         await _sut.UpdateFeedbackAsync(logId, "thumbs_up", null, null);
@@ -251,7 +251,7 @@ public class RagAnalyticsServiceTests
         _mockRepository.Setup(r => r.GetByIdAsync(logId))
             .ReturnsAsync(existingLog);
         _mockRepository.Setup(r => r.UpdateAsync(logId, It.IsAny<RagQueryLog>()))
-            .ReturnsAsync((RagQueryLog?)null);
+            .ReturnsAsync((RagQueryLog)null!);
 
         // Act
         await _sut.UpdateFeedbackAsync(logId, "thumbs_up");

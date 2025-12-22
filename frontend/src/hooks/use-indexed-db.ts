@@ -73,6 +73,7 @@ async function saveDraftToIndexedDB(draft: DraftEntry): Promise<void> {
     const request = store.put(draft);
 
     request.onerror = () => {
+      db.close(); // Ensure db is closed on request error
       reject(new Error('Failed to save draft to IndexedDB'));
     };
 
@@ -82,6 +83,14 @@ async function saveDraftToIndexedDB(draft: DraftEntry): Promise<void> {
 
     transaction.oncomplete = () => {
       db.close();
+    };
+
+    transaction.onerror = () => {
+      db.close(); // Ensure db is closed on transaction error
+    };
+
+    transaction.onabort = () => {
+      db.close(); // Ensure db is closed on transaction abort
     };
   });
 }
@@ -98,6 +107,7 @@ async function loadDraftFromIndexedDB(conversationId: string): Promise<DraftEntr
     const request = store.get(conversationId);
 
     request.onerror = () => {
+      db.close(); // Ensure db is closed on request error
       reject(new Error('Failed to load draft from IndexedDB'));
     };
 
@@ -107,6 +117,14 @@ async function loadDraftFromIndexedDB(conversationId: string): Promise<DraftEntr
 
     transaction.oncomplete = () => {
       db.close();
+    };
+
+    transaction.onerror = () => {
+      db.close(); // Ensure db is closed on transaction error
+    };
+
+    transaction.onabort = () => {
+      db.close(); // Ensure db is closed on transaction abort
     };
   });
 }
@@ -123,6 +141,7 @@ async function deleteDraftFromIndexedDB(conversationId: string): Promise<void> {
     const request = store.delete(conversationId);
 
     request.onerror = () => {
+      db.close(); // Ensure db is closed on request error
       reject(new Error('Failed to delete draft from IndexedDB'));
     };
 
@@ -132,6 +151,14 @@ async function deleteDraftFromIndexedDB(conversationId: string): Promise<void> {
 
     transaction.oncomplete = () => {
       db.close();
+    };
+
+    transaction.onerror = () => {
+      db.close(); // Ensure db is closed on transaction error
+    };
+
+    transaction.onabort = () => {
+      db.close(); // Ensure db is closed on transaction abort
     };
   });
 }
@@ -148,6 +175,7 @@ async function getAllDraftsFromIndexedDB(): Promise<DraftEntry[]> {
     const request = store.getAll();
 
     request.onerror = () => {
+      db.close(); // Ensure db is closed on request error
       reject(new Error('Failed to get all drafts from IndexedDB'));
     };
 
@@ -157,6 +185,14 @@ async function getAllDraftsFromIndexedDB(): Promise<DraftEntry[]> {
 
     transaction.oncomplete = () => {
       db.close();
+    };
+
+    transaction.onerror = () => {
+      db.close(); // Ensure db is closed on transaction error
+    };
+
+    transaction.onabort = () => {
+      db.close(); // Ensure db is closed on transaction abort
     };
   });
 }

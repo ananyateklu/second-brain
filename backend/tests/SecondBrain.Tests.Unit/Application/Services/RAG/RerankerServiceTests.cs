@@ -84,7 +84,7 @@ public class RerankerServiceTests
     public async Task RerankAsync_WhenProviderUnavailable_ReturnsUnrankedResults()
     {
         // Arrange
-        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider?)null);
+        _mockAIProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>())).Returns((IAIProvider)null!);
         var sut = CreateService();
         var hybridResults = CreateHybridSearchResults(3);
 

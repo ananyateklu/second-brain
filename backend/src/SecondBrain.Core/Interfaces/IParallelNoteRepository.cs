@@ -16,8 +16,16 @@ public interface IParallelNoteRepository
 
     /// <summary>
     /// Gets a note by ID with an isolated DbContext (thread-safe).
+    /// WARNING: This method does NOT verify user ownership. Use GetByIdForUserAsync for secure access.
     /// </summary>
+    [Obsolete("Use GetByIdForUserAsync for secure user-scoped access")]
     Task<Note?> GetByIdAsync(string id);
+
+    /// <summary>
+    /// Gets a note by ID with user ownership verification (thread-safe and secure).
+    /// Returns null if the note doesn't exist or doesn't belong to the specified user.
+    /// </summary>
+    Task<Note?> GetByIdForUserAsync(string id, string userId);
 
     /// <summary>
     /// Creates a note with an isolated DbContext (thread-safe).

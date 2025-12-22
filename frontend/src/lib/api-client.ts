@@ -339,9 +339,16 @@ async function fetchWithRetry<T>(
 }
 
 /**
- * Merge multiple abort signals
+ * Merge multiple abort signals into one.
+ * Uses AbortSignal.any() if available, otherwise falls back to manual listener management.
  */
 function mergeAbortSignals(...signals: AbortSignal[]): AbortSignal {
+  // Use native AbortSignal.any() if available (modern browsers)
+  if ('any' in AbortSignal && typeof AbortSignal.any === 'function') {
+    return AbortSignal.any(signals);
+  }
+
+  // Fallback for older browsers
   const controller = new AbortController();
 
   for (const signal of signals) {
@@ -349,7 +356,9 @@ function mergeAbortSignals(...signals: AbortSignal[]): AbortSignal {
       controller.abort();
       break;
     }
-    signal.addEventListener('abort', () => { controller.abort(); });
+    // Use { once: true } to auto-remove the listener after it fires,
+    // preventing memory leaks from lingering event listeners
+    signal.addEventListener('abort', () => { controller.abort(); }, { once: true });
   }
 
   return controller.signal;

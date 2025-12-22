@@ -290,17 +290,26 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     // Only act if the conversation actually changed
     if (currentKey !== previousKey) {
       // Save current draft before switching (if there was a previous conversation)
-      const currentInputValue = inputValueRef.current;
-      if (previousKey && currentInputValue.trim()) {
-        saveDraft(previousKey, currentInputValue);
+      // Capture the value synchronously before any async operations
+      const draftToSave = inputValueRef.current;
+      if (previousKey && draftToSave.trim()) {
+        saveDraft(previousKey, draftToSave);
       }
 
-      // Load draft for the new conversation
-      void loadDraft(currentKey).then((draftContent) => {
-        setInputValueInternal(draftContent);
-      });
-
+      // Update the ref BEFORE the async load to prevent race conditions
+      // This ensures rapid switches don't cause incorrect saves
       previousConversationIdForDraftsRef.current = currentKey;
+
+      // Load draft for the new conversation
+      // Store the key we're loading for to check against stale closures
+      const loadingForKey = currentKey;
+      void loadDraft(currentKey).then((draftContent) => {
+        // Only update if we're still on the same conversation
+        // This prevents stale promise resolution from overwriting current state
+        if (previousConversationIdForDraftsRef.current === loadingForKey) {
+          setInputValueInternal(draftContent);
+        }
+      });
     }
   }, [conversationId, loadDraft, saveDraft]);
 

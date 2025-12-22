@@ -154,8 +154,8 @@ public class CreateConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.AgentEnabled.Should().BeTrue();
-        result.Value.AgentCapabilities.Should().Be("search,calculate");
+        result.Value!.AgentEnabled.Should().BeTrue();
+        result.Value!.AgentCapabilities.Should().Be("search,calculate");
     }
 
     [Fact]
@@ -194,7 +194,7 @@ public class CreateConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.VectorStoreProvider.Should().Be("Pinecone");
+        result.Value!.VectorStoreProvider.Should().Be("Pinecone");
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class CreateConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.ImageGenerationEnabled.Should().BeTrue();
+        result.Value!.ImageGenerationEnabled.Should().BeTrue();
     }
 
     #endregion
@@ -270,8 +270,8 @@ public class CreateConversationCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to create conversation");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to create conversation");
     }
 
     #endregion

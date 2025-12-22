@@ -47,7 +47,7 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be(userId);
+        result.Value!.UserId.Should().Be(userId);
     }
 
     [Fact]
@@ -76,11 +76,11 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be(userId);
-        result.Value.Email.Should().Be("test@example.com");
-        result.Value.Username.Should().Be("testuser");
-        result.Value.DisplayName.Should().Be("Test User");
-        result.Value.ApiKey.Should().Be("api-key-123");
+        result.Value!.UserId.Should().Be(userId);
+        result.Value!.Email.Should().Be("test@example.com");
+        result.Value!.Username.Should().Be("testuser");
+        result.Value!.DisplayName.Should().Be("Test User");
+        result.Value!.ApiKey.Should().Be("api-key-123");
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.IsNewUser.Should().BeFalse();
+        result.Value!.IsNewUser.Should().BeFalse();
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Token.Should().BeNull();
+        result.Value!.Token.Should().BeNull();
     }
 
     [Fact]
@@ -151,8 +151,8 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Username.Should().BeNull();
-        result.Value.ApiKey.Should().BeNull();
+        result.Value!.Username.Should().BeNull();
+        result.Value!.ApiKey.Should().BeNull();
     }
 
     #endregion
@@ -174,8 +174,8 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("NotFound");
-        result.Error.Message.Should().Contain("User not found");
+        result.Error!.Code.Should().Be("NotFound");
+        result.Error!.Message.Should().Contain("User not found");
     }
 
     [Fact]
@@ -276,8 +276,8 @@ public class GetCurrentUserQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to retrieve user information");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to retrieve user information");
     }
 
     #endregion

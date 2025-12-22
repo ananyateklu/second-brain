@@ -502,25 +502,37 @@ internal class DeepgramTranscriptionSession : ITranscriptionSession
             if (root.TryGetProperty("type", out var typeElement) &&
                 typeElement.GetString() == "Results")
             {
-                var channel = root.GetProperty("channel");
-                var alternatives = channel.GetProperty("alternatives");
+                // Use TryGetProperty for safe access to nested properties
+                if (!root.TryGetProperty("channel", out var channel))
+                    return null;
+
+                if (!channel.TryGetProperty("alternatives", out var alternatives))
+                    return null;
 
                 if (alternatives.GetArrayLength() > 0)
                 {
                     var alternative = alternatives[0];
-                    var transcript = alternative.GetProperty("transcript").GetString();
+
+                    if (!alternative.TryGetProperty("transcript", out var transcriptElement))
+                        return null;
+
+                    var transcript = transcriptElement.GetString();
 
                     if (!string.IsNullOrEmpty(transcript))
                     {
+                        // Get optional timing properties with proper null handling
+                        double? startTime = root.TryGetProperty("start", out var start) ? start.GetDouble() : null;
+                        double? endTime = startTime.HasValue && root.TryGetProperty("duration", out var duration)
+                            ? startTime.Value + duration.GetDouble()
+                            : null;
+
                         return new TranscriptionResult
                         {
                             Text = transcript,
-                            IsFinal = root.GetProperty("is_final").GetBoolean(),
-                            Confidence = alternative.GetProperty("confidence").GetDouble(),
-                            Start = root.TryGetProperty("start", out var start) ? start.GetDouble() : null,
-                            End = root.TryGetProperty("start", out var startVal) && root.TryGetProperty("duration", out var duration)
-                                ? startVal.GetDouble() + duration.GetDouble()
-                                : null
+                            IsFinal = root.TryGetProperty("is_final", out var isFinal) && isFinal.GetBoolean(),
+                            Confidence = alternative.TryGetProperty("confidence", out var confidence) ? confidence.GetDouble() : 0.0,
+                            Start = startTime,
+                            End = endTime
                         };
                     }
                 }

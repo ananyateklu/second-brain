@@ -1624,7 +1624,7 @@ public class GeminiProvider : IAIProvider
     {
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
             var response = await httpClient.GetAsync(
                 $"https://generativelanguage.googleapis.com/v1beta/models?key={_settings.ApiKey}",
                 cancellationToken);

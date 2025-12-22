@@ -362,7 +362,7 @@ public class RagServiceTests
     {
         // Arrange
         var sut = CreateService();
-        var context = new RagContext { FormattedContext = null };
+        var context = new RagContext { FormattedContext = null! };
 
         // Act
         var result = sut.EnhancePromptWithContext("What is machine learning?", context);

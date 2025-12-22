@@ -672,7 +672,7 @@ public class OpenAIProvider : IAIProvider
     {
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
             var response = await httpClient.GetAsync("https://api.openai.com/v1/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {

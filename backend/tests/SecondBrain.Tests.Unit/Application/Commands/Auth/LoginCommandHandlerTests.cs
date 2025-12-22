@@ -63,10 +63,10 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.UserId.Should().Be("user-123");
-        result.Value.Email.Should().Be(email);
-        result.Value.Token.Should().Be("test-jwt-token");
-        result.Value.IsNewUser.Should().BeFalse();
+        result.Value!.UserId.Should().Be("user-123");
+        result.Value!.Email.Should().Be(email);
+        result.Value!.Token.Should().Be("test-jwt-token");
+        result.Value!.IsNewUser.Should().BeFalse();
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Username.Should().Be(username);
+        result.Value!.Username.Should().Be(username);
     }
 
     [Fact]
@@ -128,8 +128,8 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.DisplayName.Should().Be("Test User");
-        result.Value.ApiKey.Should().Be("api-key-123");
+        result.Value!.DisplayName.Should().Be("Test User");
+        result.Value!.ApiKey.Should().Be("api-key-123");
     }
 
     #endregion
@@ -147,7 +147,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     [Fact]
@@ -175,7 +175,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
+        result.Error!.Code.Should().Be("ValidationFailed");
     }
 
     #endregion
@@ -197,8 +197,8 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Unauthorized");
-        result.Error.Message.Should().Contain("Invalid credentials");
+        result.Error!.Code.Should().Be("Unauthorized");
+        result.Error!.Message.Should().Contain("Invalid credentials");
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Unauthorized");
+        result.Error!.Code.Should().Be("Unauthorized");
     }
 
     [Fact]
@@ -241,8 +241,8 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Unauthorized");
-        result.Error.Message.Should().Contain("Invalid credentials");
+        result.Error!.Code.Should().Be("Unauthorized");
+        result.Error!.Message.Should().Contain("Invalid credentials");
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Unauthorized");
+        result.Error!.Code.Should().Be("Unauthorized");
     }
 
     [Fact]
@@ -290,8 +290,8 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Unauthorized");
-        result.Error.Message.Should().Contain("inactive");
+        result.Error!.Code.Should().Be("Unauthorized");
+        result.Error!.Message.Should().Contain("inactive");
     }
 
     #endregion
@@ -355,7 +355,7 @@ public class LoginCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
+        result.Error!.Code.Should().Be("InternalError");
     }
 
     #endregion

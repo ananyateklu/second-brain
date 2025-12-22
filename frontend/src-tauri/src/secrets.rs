@@ -41,6 +41,8 @@ pub struct Secrets {
     pub deepgram_api_key: Option<String>,
     pub elevenlabs_api_key: Option<String>,
     pub openai_tts_api_key: Option<String>,
+    // Internal JWT secret (auto-generated if not present)
+    pub jwt_secret: Option<String>,
 }
 
 impl Secrets {
@@ -105,6 +107,8 @@ impl Secrets {
             deepgram_api_key: redact_key(&self.deepgram_api_key),
             elevenlabs_api_key: redact_key(&self.elevenlabs_api_key),
             openai_tts_api_key: redact_key(&self.openai_tts_api_key),
+            // JWT secret (always fully redacted for security)
+            jwt_secret: self.jwt_secret.as_ref().map(|_| "[REDACTED]".to_string()),
         }
     }
 
@@ -166,6 +170,8 @@ pub struct RedactedSecrets {
     pub deepgram_api_key: Option<String>,
     pub elevenlabs_api_key: Option<String>,
     pub openai_tts_api_key: Option<String>,
+    // Internal JWT secret (always redacted)
+    pub jwt_secret: Option<String>,
 }
 
 /// Redact a secret key, showing only first and last few characters
@@ -184,6 +190,27 @@ fn redact_key(key: &Option<String>) -> Option<String> {
 /// Simple URL validation
 fn is_valid_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
+}
+
+/// Generate a cryptographically secure JWT secret
+/// Uses the OS's secure random number generator via getrandom
+pub fn generate_jwt_secret() -> String {
+    let mut bytes = [0u8; 32]; // 256 bits of entropy
+    if let Err(e) = getrandom::fill(&mut bytes) {
+        // Fallback to a timestamp-based secret if random generation fails
+        // This should never happen on modern systems
+        log::warn!("Failed to generate random JWT secret: {}. Using fallback.", e);
+        return format!(
+            "SecondBrainDesktop-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        );
+    }
+    // Convert to URL-safe base64-like string (hex for simplicity and debuggability)
+    bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
 }
 
 /// Load secrets from file with validation

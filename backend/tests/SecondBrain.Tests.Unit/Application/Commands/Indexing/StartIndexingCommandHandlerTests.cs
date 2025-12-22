@@ -85,8 +85,8 @@ public class StartIndexingCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.EmbeddingProvider.Should().Be("OpenAI");
-        result.Value.EmbeddingModel.Should().Be("text-embedding-ada-002");
+        result.Value!.EmbeddingProvider.Should().Be("OpenAI");
+        result.Value!.EmbeddingModel.Should().Be("text-embedding-ada-002");
     }
 
     [Fact]
@@ -126,12 +126,12 @@ public class StartIndexingCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.TotalNotes.Should().Be(100);
-        result.Value.ProcessedNotes.Should().Be(50);
-        result.Value.SkippedNotes.Should().Be(5);
-        result.Value.DeletedNotes.Should().Be(2);
-        result.Value.TotalChunks.Should().Be(300);
-        result.Value.ProcessedChunks.Should().Be(150);
+        result.Value!.TotalNotes.Should().Be(100);
+        result.Value!.ProcessedNotes.Should().Be(50);
+        result.Value!.SkippedNotes.Should().Be(5);
+        result.Value!.DeletedNotes.Should().Be(2);
+        result.Value!.TotalChunks.Should().Be(300);
+        result.Value!.ProcessedChunks.Should().Be(150);
     }
 
     #endregion
@@ -158,8 +158,8 @@ public class StartIndexingCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
-        result.Error.Message.Should().Contain("Indexing already in progress");
+        result.Error!.Code.Should().Be("ValidationFailed");
+        result.Error!.Message.Should().Contain("Indexing already in progress");
     }
 
     [Fact]
@@ -185,8 +185,8 @@ public class StartIndexingCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("ValidationFailed");
-        result.Error.Message.Should().Contain("Invalid embedding model");
+        result.Error!.Code.Should().Be("ValidationFailed");
+        result.Error!.Message.Should().Contain("Invalid embedding model");
     }
 
     #endregion
@@ -213,8 +213,8 @@ public class StartIndexingCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to start indexing");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to start indexing");
     }
 
     #endregion

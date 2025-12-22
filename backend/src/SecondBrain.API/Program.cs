@@ -415,7 +415,9 @@ var app = builder.Build();
     }
     catch (Exception ex)
     {
-        logger.LogWarning(ex, "Database initialization failed. Error: {Message}", ex.Message);
+        // Database initialization is critical - app cannot function without it
+        logger.LogCritical(ex, "Database initialization failed. Application cannot start. Error: {Message}", ex.Message);
+        throw; // Re-throw to prevent app from starting in broken state
     }
 }
 

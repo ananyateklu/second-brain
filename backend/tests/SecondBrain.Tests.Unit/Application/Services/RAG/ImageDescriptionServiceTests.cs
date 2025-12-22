@@ -58,7 +58,7 @@ public class ImageDescriptionServiceTests
     {
         // Arrange
         _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(p => p.IsEnabled).Returns(true);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
@@ -76,9 +76,9 @@ public class ImageDescriptionServiceTests
     {
         // Arrange
         _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(p => p.IsEnabled).Returns(true);
         _mockProviderFactory.Setup(f => f.GetProvider("claude"))
@@ -96,7 +96,7 @@ public class ImageDescriptionServiceTests
     {
         // Arrange
         _mockProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>()))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
 
         // Act
         var result = _sut.IsAvailable;
@@ -181,7 +181,7 @@ public class ImageDescriptionServiceTests
         var base64Data = "dGVzdA==";
         var mediaType = "image/png";
         _mockProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>()))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
 
         // Act
         var result = await _sut.ExtractDescriptionAsync(base64Data, mediaType);
@@ -291,7 +291,7 @@ public class ImageDescriptionServiceTests
         var openAIProvider = CreateMockVisionProvider("OpenAI description");
 
         _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns(openAIProvider.Object);
 
@@ -311,9 +311,9 @@ public class ImageDescriptionServiceTests
         var claudeProvider = CreateMockVisionProvider("Claude description");
 
         _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("claude"))
             .Returns(claudeProvider.Object);
 
@@ -518,7 +518,7 @@ public class ImageDescriptionServiceTests
         };
 
         _mockProviderFactory.Setup(f => f.GetProvider(It.IsAny<string>()))
-            .Returns((IAIProvider?)null);
+            .Returns((IAIProvider)null!);
 
         // Act
         var result = await _sut.ExtractDescriptionsBatchAsync(images);

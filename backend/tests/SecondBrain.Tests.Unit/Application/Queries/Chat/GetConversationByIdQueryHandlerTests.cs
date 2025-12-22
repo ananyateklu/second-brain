@@ -49,9 +49,9 @@ public class GetConversationByIdQueryHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
-        result.Value.Id.Should().Be(conversationId);
-        result.Value.UserId.Should().Be(userId);
-        result.Value.Title.Should().Be("Test Conversation");
+        result.Value!.Id.Should().Be(conversationId);
+        result.Value!.UserId.Should().Be(userId);
+        result.Value!.Title.Should().Be("Test Conversation");
     }
 
     [Fact]
@@ -88,14 +88,14 @@ public class GetConversationByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Provider.Should().Be("OpenAI");
-        result.Value.Model.Should().Be("gpt-4");
-        result.Value.RagEnabled.Should().BeTrue();
-        result.Value.AgentEnabled.Should().BeTrue();
-        result.Value.AgentRagEnabled.Should().BeFalse();
-        result.Value.ImageGenerationEnabled.Should().BeTrue();
-        result.Value.AgentCapabilities.Should().Be("search,calculate");
-        result.Value.VectorStoreProvider.Should().Be("Pinecone");
+        result.Value!.Provider.Should().Be("OpenAI");
+        result.Value!.Model.Should().Be("gpt-4");
+        result.Value!.RagEnabled.Should().BeTrue();
+        result.Value!.AgentEnabled.Should().BeTrue();
+        result.Value!.AgentRagEnabled.Should().BeFalse();
+        result.Value!.ImageGenerationEnabled.Should().BeTrue();
+        result.Value!.AgentCapabilities.Should().Be("search,calculate");
+        result.Value!.VectorStoreProvider.Should().Be("Pinecone");
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class GetConversationByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Messages.Should().HaveCount(2);
+        result.Value!.Messages.Should().HaveCount(2);
     }
 
     #endregion
@@ -147,8 +147,8 @@ public class GetConversationByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("Conversation.NotFound");
-        result.Error.Message.Should().Contain(query.ConversationId);
+        result.Error!.Code.Should().Be("Conversation.NotFound");
+        result.Error!.Message.Should().Contain(query.ConversationId);
     }
 
     [Fact]
@@ -193,8 +193,8 @@ public class GetConversationByIdQueryHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeFalse();
-        result.Error.Code.Should().Be("InternalError");
-        result.Error.Message.Should().Contain("Failed to retrieve conversation");
+        result.Error!.Code.Should().Be("InternalError");
+        result.Error!.Message.Should().Contain("Failed to retrieve conversation");
     }
 
     #endregion

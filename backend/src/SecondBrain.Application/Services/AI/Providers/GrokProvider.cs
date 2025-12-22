@@ -559,7 +559,7 @@ public class GrokProvider : IAIProvider
     {
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
             var response = await httpClient.GetAsync($"{_settings.BaseUrl}/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
@@ -679,7 +679,7 @@ public class GrokProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             // Build request body for Think Mode (via HTTP since SDK may not support it)
             var requestBody = new
@@ -705,8 +705,8 @@ public class GrokProvider : IAIProvider
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             });
 
-            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-            var response = await httpClient.PostAsync("chat/completions", httpContent, cancellationToken);
+            using var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+            using var response = await httpClient.PostAsync("chat/completions", httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
             stopwatch.Stop();
@@ -789,7 +789,7 @@ public class GrokProvider : IAIProvider
 
         try
         {
-            using var httpClient = CreateHttpClient();
+            var httpClient = CreateHttpClient();
 
             var requestBody = new
             {
@@ -815,7 +815,7 @@ public class GrokProvider : IAIProvider
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             });
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+            using var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
             {
                 Content = new StringContent(jsonContent, Encoding.UTF8, "application/json")
             };
