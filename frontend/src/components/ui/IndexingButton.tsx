@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useStartIndexing, useEmbeddingProviders } from '../../features/rag/hooks/use-indexing';
 import { useBoundStore } from '../../store/bound-store';
 import { toast } from '../../hooks/use-toast';
@@ -12,18 +12,6 @@ interface IndexingButtonProps {
 const PINECONE_REQUIRED_DIMENSIONS = 1536;
 
 export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps) {
-  const [vectorStore, setVectorStore] = useState<string>('PostgreSQL');
-  const [selectedProvider, setSelectedProvider] = useState<string>('OpenAI');
-  const [selectedModel, setSelectedModel] = useState<string>('');
-  const [customDimensions, setCustomDimensions] = useState<number | null>(null);
-  const [hasLoadedPreferences, setHasLoadedPreferences] = useState(false);
-
-  // Track when provider or model was last changed by user interaction
-  const lastProviderChangeRef = useRef<string>('');
-
-  const startIndexing = useStartIndexing();
-  const { data: providers, isLoading: isLoadingProviders } = useEmbeddingProviders();
-
   // Global indexing state from store - supports multiple jobs
   const {
     activeJobs,
@@ -38,33 +26,59 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
     setRagEmbeddingDimensions,
   } = useBoundStore();
 
-  // Load saved preferences when providers are available
-  useEffect(() => {
-    if (!providers || providers.length === 0 || hasLoadedPreferences) return;
+  const startIndexing = useStartIndexing();
+  const { data: providers, isLoading: isLoadingProviders } = useEmbeddingProviders();
 
-    // Load saved provider if valid
+  const [vectorStore, setVectorStore] = useState<string>('PostgreSQL');
+  // Track user overrides - null means use saved preference
+  const [providerOverride, setProviderOverride] = useState<string | null>(null);
+  const [modelOverride, setModelOverride] = useState<string | null>(null);
+  const [dimensionsOverride, setDimensionsOverride] = useState<number | null>(null);
+
+  // Compute effective values from saved preferences or user overrides
+  const selectedProvider = useMemo(() => {
+    if (providerOverride !== null) return providerOverride;
+    if (!providers || providers.length === 0) return 'OpenAI';
     if (ragEmbeddingProvider) {
       const savedProvider = providers.find(p => p.name === ragEmbeddingProvider && p.isEnabled);
-      if (savedProvider) {
-        setSelectedProvider(ragEmbeddingProvider);
-        lastProviderChangeRef.current = ragEmbeddingProvider;
+      if (savedProvider) return ragEmbeddingProvider;
+    }
+    return 'OpenAI';
+  }, [providerOverride, providers, ragEmbeddingProvider]);
 
-        // Load saved model if valid for this provider
-        if (ragEmbeddingModel) {
-          const savedModel = savedProvider.availableModels.find(m => m.modelId === ragEmbeddingModel);
-          if (savedModel) {
-            setSelectedModel(ragEmbeddingModel);
-            // Load saved dimensions if model supports custom dimensions
-            if (savedModel.supportsCustomDimensions && ragEmbeddingDimensions !== null) {
-              setCustomDimensions(ragEmbeddingDimensions);
-            }
-          }
-        }
+  const selectedModel = useMemo(() => {
+    if (modelOverride !== null) return modelOverride;
+    if (!providers || providers.length === 0) return '';
+    if (ragEmbeddingProvider && ragEmbeddingModel) {
+      const savedProvider = providers.find(p => p.name === ragEmbeddingProvider && p.isEnabled);
+      if (savedProvider) {
+        const savedModel = savedProvider.availableModels.find(m => m.modelId === ragEmbeddingModel);
+        if (savedModel) return ragEmbeddingModel;
       }
     }
+    return '';
+  }, [modelOverride, providers, ragEmbeddingProvider, ragEmbeddingModel]);
 
-    setHasLoadedPreferences(true);
-  }, [providers, ragEmbeddingProvider, ragEmbeddingModel, ragEmbeddingDimensions, hasLoadedPreferences]);
+  const customDimensions = useMemo(() => {
+    if (dimensionsOverride !== null) return dimensionsOverride;
+    if (!providers || providers.length === 0) return null;
+    if (ragEmbeddingProvider && ragEmbeddingModel && ragEmbeddingDimensions !== null) {
+      const savedProvider = providers.find(p => p.name === ragEmbeddingProvider && p.isEnabled);
+      if (savedProvider) {
+        const savedModel = savedProvider.availableModels.find(m => m.modelId === ragEmbeddingModel);
+        if (savedModel?.supportsCustomDimensions) return ragEmbeddingDimensions;
+      }
+    }
+    return null;
+  }, [dimensionsOverride, providers, ragEmbeddingProvider, ragEmbeddingModel, ragEmbeddingDimensions]);
+
+  // Wrapper functions to update state via overrides
+  const setSelectedProvider = useCallback((value: string) => setProviderOverride(value), []);
+  const setSelectedModel = useCallback((value: string) => setModelOverride(value), []);
+  const setCustomDimensions = useCallback((value: number | null) => setDimensionsOverride(value), []);
+
+  // Track when provider was last changed by user interaction
+  const lastProviderChangeRef = useRef<string>('');
 
   // Get current provider info from API data
   const currentProviderData = useMemo(() => {
@@ -120,7 +134,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
       const defaultModel = models.find(m => m.isDefault) ?? models[0];
       setSelectedModel(defaultModel.modelId);
     }
-  }, []);
+  }, [setSelectedModel]);
 
   // Get effective dimensions (custom or default from model)
   const effectiveDimensions = useMemo(() => {
@@ -149,6 +163,9 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
 
     setSelectedProvider(newProvider);
     lastProviderChangeRef.current = newProvider;
+
+    // Reset dimensions override when provider changes
+    setCustomDimensions(null);
 
     // Sync model selection for the new provider
     syncModelForProvider(newProvider, newProviderData.availableModels);
@@ -645,7 +662,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
               {/* Min - always at 0% */}
               <button
                 type="button"
-                onClick={() => handleDimensionChange(currentModelInfo.minDimensions!)}
+                onClick={() => handleDimensionChange(currentModelInfo.minDimensions ?? 0)}
                 disabled={isDisabled}
                 className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
                 style={{
@@ -664,7 +681,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                 className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
                 style={{
                   color: 'var(--text-secondary)',
-                  left: `${((1024 - currentModelInfo.minDimensions!) / (currentModelInfo.maxDimensions! - currentModelInfo.minDimensions!)) * 100}%`,
+                  left: `${((1024 - currentModelInfo.minDimensions) / (currentModelInfo.maxDimensions - currentModelInfo.minDimensions)) * 100}%`,
                   transform: 'translateX(-50%)',
                 }}
               >
@@ -679,7 +696,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
                 style={{
                   color: 'var(--color-success)',
                   backgroundColor: 'color-mix(in srgb, var(--color-success) 10%, transparent)',
-                  left: `${((PINECONE_REQUIRED_DIMENSIONS - currentModelInfo.minDimensions!) / (currentModelInfo.maxDimensions! - currentModelInfo.minDimensions!)) * 100}%`,
+                  left: `${((PINECONE_REQUIRED_DIMENSIONS - currentModelInfo.minDimensions) / (currentModelInfo.maxDimensions - currentModelInfo.minDimensions)) * 100}%`,
                   transform: 'translateX(-50%)',
                 }}
               >
@@ -688,7 +705,7 @@ export function IndexingButton({ userId = 'default-user' }: IndexingButtonProps)
               {/* Max - always at 100% */}
               <button
                 type="button"
-                onClick={() => handleDimensionChange(currentModelInfo.maxDimensions!)}
+                onClick={() => handleDimensionChange(currentModelInfo.maxDimensions ?? 0)}
                 disabled={isDisabled}
                 className="absolute text-[9px] px-1.5 py-0.5 rounded opacity-60 hover:opacity-100 transition-opacity disabled:opacity-30"
                 style={{
