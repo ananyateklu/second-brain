@@ -81,8 +81,15 @@ public class RagService : IRagService
 
         try
         {
-            var effectiveTopK = topK ?? _settings.TopK;
-            var effectiveThreshold = similarityThreshold ?? _settings.SimilarityThreshold;
+            // Resolve effective settings: method params > RagOptions > appsettings defaults
+            var effectiveTopK = topK ?? options?.TopK ?? _settings.TopK;
+            var effectiveThreshold = similarityThreshold ?? options?.SimilarityThreshold ?? _settings.SimilarityThreshold;
+            var effectiveInitialRetrievalCount = options?.InitialRetrievalCount ?? _settings.InitialRetrievalCount;
+            var effectiveMinRerankScore = options?.MinRerankScore ?? _settings.MinRerankScore;
+            var effectiveVectorWeight = options?.VectorWeight ?? _settings.VectorWeight;
+            var effectiveBm25Weight = options?.BM25Weight ?? _settings.BM25Weight;
+            var effectiveMultiQueryCount = options?.MultiQueryCount ?? _settings.MultiQueryCount;
+            var effectiveMaxContextLength = options?.MaxContextLength ?? _settings.MaxContextLength;
 
             activity?.SetTag("rag.top_k", effectiveTopK);
             activity?.SetTag("rag.threshold", effectiveThreshold);
@@ -129,7 +136,8 @@ public class RagService : IRagService
             using (var searchActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.HybridSearch"))
             {
                 hybridResults = await ExecuteHybridSearchAsync(
-                    query, expandedEmbeddings, userId, effectiveThreshold, enableReranking, enableHybridSearch, cancellationToken);
+                    query, expandedEmbeddings, userId, effectiveThreshold, enableReranking, enableHybridSearch,
+                    effectiveTopK, effectiveInitialRetrievalCount, cancellationToken);
                 searchActivity?.SetTag("rag.search.results", hybridResults.Count);
             }
             searchStopwatch.Stop();
@@ -250,7 +258,7 @@ public class RagService : IRagService
             }
 
             // Format context for AI prompt
-            context.FormattedContext = FormatContextForPrompt(finalResults, rerankedResults);
+            context.FormattedContext = FormatContextForPrompt(finalResults, rerankedResults, effectiveTopK, effectiveMaxContextLength);
 
             _logger.LogInformation(
                 "RAG pipeline complete. Results: {Count}, TopScore: {TopScore:F4}, " +
@@ -324,12 +332,14 @@ public class RagService : IRagService
         float similarityThreshold,
         bool enableReranking,
         bool enableHybridSearch,
+        int effectiveTopK,
+        int effectiveInitialRetrievalCount,
         CancellationToken cancellationToken)
     {
         var allResults = new List<HybridSearchResult>();
         var retrievalCount = enableReranking
-            ? _settings.InitialRetrievalCount
-            : _settings.TopK;
+            ? effectiveInitialRetrievalCount
+            : effectiveTopK;
 
         // Use native hybrid search if enabled and available (PostgreSQL 18 optimized)
         var useNativeHybrid = enableHybridSearch && _settings.EnableNativeHybridSearch && _nativeHybridSearchService != null;
@@ -514,7 +524,9 @@ ANSWER:";
 
     private string FormatContextForPrompt(
         List<VectorSearchResult> searchResults,
-        List<RerankedResult> rerankedResults)
+        List<RerankedResult> rerankedResults,
+        int effectiveTopK,
+        int effectiveMaxContextLength)
     {
         var contextParts = new List<string>();
 
@@ -545,7 +557,7 @@ ANSWER:";
                 };
             })
             .OrderByDescending(g => g.BestScore)
-            .Take(_settings.TopK)
+            .Take(effectiveTopK)
             .ToList();
 
         for (int i = 0; i < groupedNotes.Count; i++)
@@ -594,9 +606,9 @@ Content:
         var formattedContext = string.Join("\n", contextParts);
 
         // Truncate if context exceeds max length
-        if (formattedContext.Length > _settings.MaxContextLength)
+        if (formattedContext.Length > effectiveMaxContextLength)
         {
-            formattedContext = formattedContext.Substring(0, _settings.MaxContextLength) + "\n... (context truncated)";
+            formattedContext = formattedContext.Substring(0, effectiveMaxContextLength) + "\n... (context truncated)";
         }
 
         return formattedContext;

@@ -5,6 +5,7 @@ using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using System.Text;
@@ -102,6 +103,34 @@ public class AgentController : ControllerBase
                 return;
             }
 
+            // Fetch user RAG preferences for agent semantic search
+            RagOptions? ragOptions = null;
+            try
+            {
+                var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                ragOptions = RagOptions.FromUserPreferences(
+                    enableHyde: userPrefs.RagEnableHyde,
+                    enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                    enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                    enableReranking: userPrefs.RagEnableReranking,
+                    enableAnalytics: userPrefs.RagEnableAnalytics,
+                    rerankingProvider: userPrefs.RerankingProvider,
+                    // Tier 1: Core Retrieval
+                    topK: userPrefs.RagTopK,
+                    similarityThreshold: userPrefs.RagSimilarityThreshold,
+                    initialRetrievalCount: userPrefs.RagInitialRetrievalCount,
+                    minRerankScore: userPrefs.RagMinRerankScore,
+                    // Tier 2: Hybrid Search
+                    vectorWeight: userPrefs.RagVectorWeight,
+                    bm25Weight: userPrefs.RagBm25Weight,
+                    multiQueryCount: userPrefs.RagMultiQueryCount,
+                    maxContextLength: userPrefs.RagMaxContextLength);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user RAG preferences for agent, using defaults");
+            }
+
             // Build agent request with tool call history for proper multi-turn context
             var agentRequest = new AgentRequest
             {
@@ -123,7 +152,8 @@ public class AgentController : ControllerBase
                 Temperature = request.Temperature,
                 MaxTokens = request.MaxTokens,
                 Capabilities = request.Capabilities,
-                AgentRagEnabled = conversation.AgentRagEnabled
+                AgentRagEnabled = conversation.AgentRagEnabled,
+                RagOptions = ragOptions
             };
 
             // Set Ollama remote URL if configured for this user

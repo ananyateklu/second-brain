@@ -44,6 +44,50 @@ public class RagOptions
     /// </summary>
     public string? RerankingProvider { get; set; }
 
+    // === Tier 1: Core Retrieval Settings ===
+
+    /// <summary>
+    /// Number of top results to return after all processing.
+    /// </summary>
+    public int? TopK { get; set; }
+
+    /// <summary>
+    /// Minimum similarity threshold (0-1) for vector search results.
+    /// </summary>
+    public float? SimilarityThreshold { get; set; }
+
+    /// <summary>
+    /// Number of candidates to retrieve before reranking.
+    /// </summary>
+    public int? InitialRetrievalCount { get; set; }
+
+    /// <summary>
+    /// Minimum rerank score (0-10) required to include a result.
+    /// </summary>
+    public float? MinRerankScore { get; set; }
+
+    // === Tier 2: Hybrid Search Settings ===
+
+    /// <summary>
+    /// Weight for vector (semantic) search in hybrid search (0-1).
+    /// </summary>
+    public float? VectorWeight { get; set; }
+
+    /// <summary>
+    /// Weight for BM25 (keyword) search in hybrid search (0-1).
+    /// </summary>
+    public float? BM25Weight { get; set; }
+
+    /// <summary>
+    /// Number of query variations to generate for multi-query expansion.
+    /// </summary>
+    public int? MultiQueryCount { get; set; }
+
+    /// <summary>
+    /// Maximum context length (chars) to assemble for LLM.
+    /// </summary>
+    public int? MaxContextLength { get; set; }
+
     /// <summary>
     /// Creates RagOptions from user preferences.
     /// </summary>
@@ -53,7 +97,17 @@ public class RagOptions
         bool? enableHybridSearch = null,
         bool? enableReranking = null,
         bool? enableAnalytics = null,
-        string? rerankingProvider = null)
+        string? rerankingProvider = null,
+        // Tier 1: Core Retrieval
+        int? topK = null,
+        float? similarityThreshold = null,
+        int? initialRetrievalCount = null,
+        float? minRerankScore = null,
+        // Tier 2: Hybrid Search
+        float? vectorWeight = null,
+        float? bm25Weight = null,
+        int? multiQueryCount = null,
+        int? maxContextLength = null)
     {
         return new RagOptions
         {
@@ -62,7 +116,17 @@ public class RagOptions
             EnableHybridSearch = enableHybridSearch,
             EnableReranking = enableReranking,
             EnableAnalytics = enableAnalytics,
-            RerankingProvider = rerankingProvider
+            RerankingProvider = rerankingProvider,
+            // Tier 1
+            TopK = topK,
+            SimilarityThreshold = similarityThreshold,
+            InitialRetrievalCount = initialRetrievalCount,
+            MinRerankScore = minRerankScore,
+            // Tier 2
+            VectorWeight = vectorWeight,
+            BM25Weight = bm25Weight,
+            MultiQueryCount = multiQueryCount,
+            MaxContextLength = maxContextLength
         };
     }
 }

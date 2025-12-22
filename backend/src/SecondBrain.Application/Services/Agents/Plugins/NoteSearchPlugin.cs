@@ -154,7 +154,8 @@ Automatic context retrieval is disabled for this conversation. You should:
                 query,
                 CurrentUserId,
                 topK: maxResults,
-                similarityThreshold: similarityThreshold);
+                similarityThreshold: similarityThreshold,
+                options: UserRagOptions);
 
             if (!ragContext.RetrievedNotes.Any())
             {
@@ -171,8 +172,8 @@ Automatic context retrieval is disabled for this conversation. You should:
             var noteData = new List<object>();
             foreach (var result in uniqueNoteResults)
             {
-                var note = await NoteRepository.GetByIdAsync(result.NoteId);
-                if (note != null && note.UserId == CurrentUserId)
+                var note = await NoteRepository.GetByIdForUserAsync(result.NoteId, CurrentUserId);
+                if (note != null)
                 {
                     var parsedChunk = Utilities.NoteContentParser.Parse(result.Content);
                     var chunkContent = parsedChunk.Content;
@@ -371,16 +372,11 @@ Automatic context retrieval is disabled for this conversation. You should:
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to access this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             // If RAG service is available, use semantic search
@@ -391,7 +387,8 @@ Automatic context retrieval is disabled for this conversation. You should:
                     searchQuery,
                     CurrentUserId,
                     topK: maxResults + 1,
-                    similarityThreshold: 0.3f);
+                    similarityThreshold: 0.3f,
+                    options: UserRagOptions);
 
                 var uniqueNoteResults = ragContext.RetrievedNotes
                     .Where(r => r.NoteId != noteId)
@@ -402,8 +399,8 @@ Automatic context retrieval is disabled for this conversation. You should:
                 var relatedNotes = new List<object>();
                 foreach (var result in uniqueNoteResults)
                 {
-                    var relatedNote = await NoteRepository.GetByIdAsync(result.NoteId);
-                    if (relatedNote != null && relatedNote.UserId == CurrentUserId && !relatedNote.IsArchived)
+                    var relatedNote = await NoteRepository.GetByIdForUserAsync(result.NoteId, CurrentUserId);
+                    if (relatedNote != null && !relatedNote.IsArchived)
                     {
                         relatedNotes.Add(new
                         {

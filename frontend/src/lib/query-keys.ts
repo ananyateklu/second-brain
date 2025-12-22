@@ -332,6 +332,23 @@ export const agentKeys = {
 } as const;
 
 /**
+ * Query keys for voice services
+ */
+export const voiceKeys = {
+  /** Root key for all voice queries */
+  all: ['voice'] as const,
+
+  /** Key for voice service status */
+  status: () => [...voiceKeys.all, 'status'] as const,
+
+  /** Key for available voices */
+  voices: (provider?: string) => [...voiceKeys.all, 'voices', provider] as const,
+
+  /** Key for Grok voices */
+  grokVoices: () => [...voiceKeys.all, 'grok-voices'] as const,
+} as const;
+
+/**
  * Query keys for Git integration
  */
 export const gitKeys = {
@@ -565,6 +582,7 @@ export const queryKeys = {
   userPreferences: userPreferencesKeys,
   imageGeneration: imageGenerationKeys,
   agent: agentKeys,
+  voice: voiceKeys,
   git: gitKeys,
   github: githubKeys,
   // PostgreSQL 18 Temporal Features
@@ -613,6 +631,9 @@ export type ImageGenerationQueryKey = typeof imageGenerationKeys['all'] | Exclud
 
 /** Type for agent query keys */
 export type AgentQueryKey = typeof agentKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof agentKeys>>, never>;
+
+/** Type for voice query keys */
+export type VoiceQueryKey = typeof voiceKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof voiceKeys>>, never>;
 
 /** Type for note version query keys */
  

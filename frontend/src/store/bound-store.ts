@@ -69,6 +69,17 @@ export function validatePersistedState(parsed: Partial<BoundStore> | undefined):
     throw new Error(`Invalid persisted autoSaveInterval type: ${typeof parsed.autoSaveInterval}`);
   }
 
+  // Validate RAG advanced settings numeric types
+  const ragNumericFields = [
+    'ragTopK', 'ragSimilarityThreshold', 'ragInitialRetrievalCount', 'ragMinRerankScore',
+    'ragVectorWeight', 'ragBm25Weight', 'ragMultiQueryCount', 'ragMaxContextLength'
+  ] as const;
+  for (const field of ragNumericFields) {
+    if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
+      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
+    }
+  }
+
   // Validate boolean types
   const booleanFields = [
     'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
@@ -123,6 +134,16 @@ export function mergePersistedState(
     ragEnableHybridSearch: parsed.ragEnableHybridSearch ?? currentState.ragEnableHybridSearch,
     ragEnableReranking: parsed.ragEnableReranking ?? currentState.ragEnableReranking,
     ragEnableAnalytics: parsed.ragEnableAnalytics ?? currentState.ragEnableAnalytics,
+    // RAG Advanced Settings - Tier 1: Core Retrieval
+    ragTopK: parsed.ragTopK ?? currentState.ragTopK,
+    ragSimilarityThreshold: parsed.ragSimilarityThreshold ?? currentState.ragSimilarityThreshold,
+    ragInitialRetrievalCount: parsed.ragInitialRetrievalCount ?? currentState.ragInitialRetrievalCount,
+    ragMinRerankScore: parsed.ragMinRerankScore ?? currentState.ragMinRerankScore,
+    // RAG Advanced Settings - Tier 2: Hybrid Search
+    ragVectorWeight: parsed.ragVectorWeight ?? currentState.ragVectorWeight,
+    ragBm25Weight: parsed.ragBm25Weight ?? currentState.ragBm25Weight,
+    ragMultiQueryCount: parsed.ragMultiQueryCount ?? currentState.ragMultiQueryCount,
+    ragMaxContextLength: parsed.ragMaxContextLength ?? currentState.ragMaxContextLength,
     // Merge theme
     theme: parsed.theme ?? currentState.theme,
     // Merge notes state
@@ -184,6 +205,16 @@ const _useBoundStore = create<BoundStore>()(
         ragEnableHybridSearch: state.ragEnableHybridSearch,
         ragEnableReranking: state.ragEnableReranking,
         ragEnableAnalytics: state.ragEnableAnalytics,
+        // RAG Advanced Settings - Tier 1: Core Retrieval
+        ragTopK: state.ragTopK,
+        ragSimilarityThreshold: state.ragSimilarityThreshold,
+        ragInitialRetrievalCount: state.ragInitialRetrievalCount,
+        ragMinRerankScore: state.ragMinRerankScore,
+        // RAG Advanced Settings - Tier 2: Hybrid Search
+        ragVectorWeight: state.ragVectorWeight,
+        ragBm25Weight: state.ragBm25Weight,
+        ragMultiQueryCount: state.ragMultiQueryCount,
+        ragMaxContextLength: state.ragMaxContextLength,
         // Theme state
         theme: state.theme,
         // Notes state

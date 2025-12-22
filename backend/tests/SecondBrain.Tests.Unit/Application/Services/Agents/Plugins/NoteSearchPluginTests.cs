@@ -335,7 +335,7 @@ public class NoteSearchPluginTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ragContext);
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         // Act
@@ -372,7 +372,7 @@ public class NoteSearchPluginTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ragContext);
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
 
         // Act
@@ -699,7 +699,7 @@ public class NoteSearchPluginTests
     public async Task FindRelatedNotesAsync_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
@@ -710,18 +710,18 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
+    public async Task FindRelatedNotesAsync_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
     {
         // Arrange
-        var note = CreateNote("note-1", "Test Note", "Content", userId: "other-user");
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
-            .ReturnsAsync(note);
+        // GetByIdForUserAsync returns null when note belongs to different user
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((Note?)null);
 
         // Act
         var result = await _sut.FindRelatedNotesAsync("note-1");
 
         // Assert
-        result.Should().Contain("permission");
+        result.Should().Contain("not found");
     }
 
     [Fact]
@@ -740,9 +740,9 @@ public class NoteSearchPluginTests
             }
         };
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-1", It.IsAny<string>()))
             .ReturnsAsync(sourceNote);
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-2"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync("note-2", It.IsAny<string>()))
             .ReturnsAsync(relatedNote);
 
         _mockRagService.Setup(r => r.RetrieveContextAsync(
@@ -776,7 +776,7 @@ public class NoteSearchPluginTests
         var relatedNote = CreateNote("note-2", "Related Note", "Content", tags: new[] { "work", "important" });
         var unrelatedNote = CreateNote("note-3", "Unrelated Note", "Content", tags: new[] { "personal" });
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(sourceNote);
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note> { sourceNote, relatedNote, unrelatedNote });
@@ -800,7 +800,7 @@ public class NoteSearchPluginTests
         var sourceNote = CreateNote("note-1", "Source Note", "Content", tags: new[] { "unique" });
         var otherNote = CreateNote("note-2", "Other Note", "Content", tags: new[] { "different" });
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(sourceNote);
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note> { sourceNote, otherNote });
@@ -823,7 +823,7 @@ public class NoteSearchPluginTests
         var sourceNote = CreateNote("note-1", "Source Note", "Content", tags: new[] { "work" });
         var archivedNote = CreateNote("note-2", "Archived Note", "Content", tags: new[] { "work" }, isArchived: true);
 
-        _mockNoteRepository.Setup(r => r.GetByIdAsync("note-1"))
+        _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(sourceNote);
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note> { sourceNote, archivedNote });

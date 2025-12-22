@@ -72,7 +72,8 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             context.Plugins,
             request.UserId,
             request.AgentRagEnabled,
-            useStrictMode);
+            useStrictMode,
+            request.RagOptions);
 
         _logger.LogInformation("Registered {Count} tools for OpenAI (strict: {Strict})", tools.Count, useStrictMode);
 

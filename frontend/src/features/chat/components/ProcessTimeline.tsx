@@ -1,5 +1,12 @@
 import { ReactNode, useState } from 'react';
 
+// Centralized timeline positioning - line centered at 15px (14.5px + 0.5px half of 1px line)
+const TIMELINE_LINE = {
+    LEFT: 'left-[13.8px]',
+    TOP: 'top-[18px]',  // Aligns with first icon center (10px top + 8px half of 16px)
+    BOTTOM: 'bottom-3',
+} as const;
+
 interface ProcessTimelineProps {
     children: ReactNode;
     defaultExpanded?: boolean;
@@ -36,7 +43,7 @@ export function ProcessTimeline({
                             style={{ backgroundColor: 'var(--surface-card)' }}
                         >
                             <svg
-                                className="w-2.5 h-2.5"
+                                className="w-2 h-2"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -54,9 +61,9 @@ export function ProcessTimeline({
                 className={`relative transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 max-h-[5000px]' : 'opacity-0 max-h-0 overflow-hidden'
                     }`}
             >
-                {/* Vertical Line */}
+                {/* Vertical Line - centered at 15px to align with icon/dot centers */}
                 <div
-                    className="absolute left-[19px] top-2 bottom-2 w-px"
+                    className={`absolute ${TIMELINE_LINE.LEFT} ${TIMELINE_LINE.TOP} ${TIMELINE_LINE.BOTTOM} w-px`}
                     style={{ backgroundColor: 'var(--border)' }}
                 />
 

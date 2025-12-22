@@ -50,7 +50,7 @@ describe('GrokSearchSourcesCard', () => {
     it('should render X icon in timeline', () => {
       const { container } = render(<GrokSearchSourcesCard sources={[createMockSource()]} />);
       // Check for the X icon in timeline
-      const iconContainer = container.querySelector('.absolute.left-2\\.5');
+      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });

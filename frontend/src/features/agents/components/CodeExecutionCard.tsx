@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CodeExecutionResult } from '../../../types/chat';
+import { TimelineItem } from './TimelineItem';
 
 interface CodeExecutionCardProps {
   result: CodeExecutionResult;
@@ -15,21 +16,7 @@ export function CodeExecutionCard({ result, isStreaming = false }: CodeExecution
   const [showCode, setShowCode] = useState(true);
 
   return (
-    <div className="relative pl-12 py-2 group">
-      {/* Icon on the timeline */}
-      <div
-        className="absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)'
-        }}
-      >
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: result.success ? 'var(--color-success)' : 'var(--color-error)' }}>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
-      </div>
-
-      {/* Content */}
+    <TimelineItem isLoading={isStreaming}>
       <div className="text-sm">
         <button
           onClick={() => { setIsExpanded(!isExpanded); }}
@@ -141,6 +128,6 @@ export function CodeExecutionCard({ result, isStreaming = false }: CodeExecution
           </div>
         )}
       </div>
-    </div>
+    </TimelineItem>
   );
 }

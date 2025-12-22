@@ -111,6 +111,16 @@ export interface SettingsSliceActions {
   setRagEnableHybridSearch: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setRagEnableReranking: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
   setRagEnableAnalytics: (enabled: boolean, syncToBackend?: boolean) => Promise<void>;
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  setRagTopK: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagSimilarityThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagInitialRetrievalCount: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagMinRerankScore: (value: number, syncToBackend?: boolean) => Promise<void>;
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  setRagVectorWeight: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagBm25Weight: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagMultiQueryCount: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setRagMaxContextLength: (value: number, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;

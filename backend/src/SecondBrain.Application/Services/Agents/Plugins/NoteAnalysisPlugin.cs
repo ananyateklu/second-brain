@@ -69,16 +69,11 @@ public class NoteAnalysisPlugin : NotePluginBase
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to analyze this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             var prompt = $@"Analyze the following note and extract structured information.
@@ -155,16 +150,11 @@ Provide a comprehensive analysis including:
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to access this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             var prompt = $@"Suggest {maxTags} relevant tags for categorizing this note.
@@ -236,16 +226,11 @@ Suggest tags that:
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to access this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             var prompt = $@"Create a comprehensive summary of this note.
@@ -325,22 +310,17 @@ Do NOT leave any field empty. Every field must have meaningful content.";
 
         try
         {
-            var note1 = await NoteRepository.GetByIdAsync(noteId1);
-            var note2 = await NoteRepository.GetByIdAsync(noteId2);
+            var note1 = await NoteRepository.GetByIdForUserAsync(noteId1, CurrentUserId);
+            var note2 = await NoteRepository.GetByIdForUserAsync(noteId2, CurrentUserId);
 
             if (note1 == null)
             {
-                return $"Note with ID \"{noteId1}\" not found.";
+                return $"Note with ID \"{noteId1}\" not found or you don't have permission to access it.";
             }
 
             if (note2 == null)
             {
-                return $"Note with ID \"{noteId2}\" not found.";
-            }
-
-            if (note1.UserId != CurrentUserId || note2.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to access one or both notes.";
+                return $"Note with ID \"{noteId2}\" not found or you don't have permission to access it.";
             }
 
             // Truncate content if too long

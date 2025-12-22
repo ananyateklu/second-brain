@@ -480,10 +480,12 @@ host    all             all             ::1/128                 trust
                         log::error!("[PostgreSQL stderr monitor] Thread panicked: {:?}", e);
                     }
                 })
-                .map_err(|e| PostgresError::StartFailed(format!(
-                    "Failed to spawn stderr monitor thread: {}",
-                    e
-                )))?;
+                .map_err(|e| {
+                    PostgresError::StartFailed(format!(
+                        "Failed to spawn stderr monitor thread: {}",
+                        e
+                    ))
+                })?;
         }
 
         *self.process.lock().unwrap() = Some(child);

@@ -245,16 +245,11 @@ public class NoteOrganizationPlugin : NotePluginBase
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to archive this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             if (note.IsArchived)
@@ -285,16 +280,11 @@ public class NoteOrganizationPlugin : NotePluginBase
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to unarchive this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             if (!note.IsArchived)
@@ -329,16 +319,11 @@ public class NoteOrganizationPlugin : NotePluginBase
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to move this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             var previousFolder = note.Folder;

@@ -219,6 +219,86 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // RAG Advanced Settings - Tier 1: Core Retrieval
+  // ============================================
+
+  setRagTopK: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagTopK(value);
+    set({ ragTopK: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragTopK', validated, 'RAG TopK setting');
+    }
+  },
+
+  setRagSimilarityThreshold: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagSimilarityThreshold(value);
+    set({ ragSimilarityThreshold: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragSimilarityThreshold', validated, 'RAG similarity threshold');
+    }
+  },
+
+  setRagInitialRetrievalCount: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagInitialRetrievalCount(value);
+    set({ ragInitialRetrievalCount: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragInitialRetrievalCount', validated, 'RAG initial retrieval count');
+    }
+  },
+
+  setRagMinRerankScore: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagMinRerankScore(value);
+    set({ ragMinRerankScore: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragMinRerankScore', validated, 'RAG min rerank score');
+    }
+  },
+
+  // ============================================
+  // RAG Advanced Settings - Tier 2: Hybrid Search
+  // ============================================
+
+  setRagVectorWeight: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagWeight(value);
+    set({ ragVectorWeight: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragVectorWeight', validated, 'RAG vector weight');
+    }
+  },
+
+  setRagBm25Weight: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagWeight(value);
+    set({ ragBm25Weight: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragBm25Weight', validated, 'RAG BM25 weight');
+    }
+  },
+
+  setRagMultiQueryCount: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagMultiQueryCount(value);
+    set({ ragMultiQueryCount: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragMultiQueryCount', validated, 'RAG multi-query count');
+    }
+  },
+
+  setRagMaxContextLength: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateRagMaxContextLength(value);
+    set({ ragMaxContextLength: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragMaxContextLength', validated, 'RAG max context length');
+    }
+  },
+
+  // ============================================
   // Sync Actions
   // ============================================
 
@@ -246,6 +326,16 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ragEnableHybridSearch: preferences.ragEnableHybridSearch,
         ragEnableReranking: preferences.ragEnableReranking,
         ragEnableAnalytics: preferences.ragEnableAnalytics,
+        // RAG Advanced Settings - Tier 1: Core Retrieval
+        ragTopK: preferences.ragTopK,
+        ragSimilarityThreshold: preferences.ragSimilarityThreshold,
+        ragInitialRetrievalCount: preferences.ragInitialRetrievalCount,
+        ragMinRerankScore: preferences.ragMinRerankScore,
+        // RAG Advanced Settings - Tier 2: Hybrid Search
+        ragVectorWeight: preferences.ragVectorWeight,
+        ragBm25Weight: preferences.ragBm25Weight,
+        ragMultiQueryCount: preferences.ragMultiQueryCount,
+        ragMaxContextLength: preferences.ragMaxContextLength,
       });
     } catch (error) {
       loggers.store.error('Failed to load preferences from backend:', { error });
@@ -299,5 +389,15 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ragEnableHybridSearch: state.ragEnableHybridSearch,
     ragEnableReranking: state.ragEnableReranking,
     ragEnableAnalytics: state.ragEnableAnalytics,
+    // RAG Advanced Settings - Tier 1: Core Retrieval
+    ragTopK: state.ragTopK,
+    ragSimilarityThreshold: state.ragSimilarityThreshold,
+    ragInitialRetrievalCount: state.ragInitialRetrievalCount,
+    ragMinRerankScore: state.ragMinRerankScore,
+    // RAG Advanced Settings - Tier 2: Hybrid Search
+    ragVectorWeight: state.ragVectorWeight,
+    ragBm25Weight: state.ragBm25Weight,
+    ragMultiQueryCount: state.ragMultiQueryCount,
+    ragMaxContextLength: state.ragMaxContextLength,
   };
 }

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ragService } from '../../../services';
 import { IndexingJobResponse, IndexStatsResponse, VectorStoreProvider, EmbeddingProvider, EmbeddingProviderResponse } from '../../../types/rag';
 import { indexingKeys } from '../../../lib/query-keys';

@@ -7,6 +7,7 @@ using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Strategies;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Tests.Unit.Application.Services;
@@ -660,6 +661,7 @@ public class TestPlugin : SecondBrain.Application.Services.Agents.Plugins.IAgent
 
     public void SetCurrentUserId(string userId) => _currentUserId = userId;
     public void SetAgentRagEnabled(bool enabled) => _agentRagEnabled = enabled;
+    public void SetRagOptions(RagOptions? options) { }
     public object GetPluginInstance() => this;
     public string GetPluginName() => "Test";
     public string GetSystemPromptAddition() => "";

@@ -217,6 +217,18 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.RagEnableHybridSearch = user.Preferences.RagEnableHybridSearch;
                     existingUser.Preferences.RagEnableReranking = user.Preferences.RagEnableReranking;
                     existingUser.Preferences.RagEnableAnalytics = user.Preferences.RagEnableAnalytics;
+
+                    // RAG Advanced Settings - Tier 1: Core Retrieval
+                    existingUser.Preferences.RagTopK = user.Preferences.RagTopK;
+                    existingUser.Preferences.RagSimilarityThreshold = user.Preferences.RagSimilarityThreshold;
+                    existingUser.Preferences.RagInitialRetrievalCount = user.Preferences.RagInitialRetrievalCount;
+                    existingUser.Preferences.RagMinRerankScore = user.Preferences.RagMinRerankScore;
+
+                    // RAG Advanced Settings - Tier 2: Hybrid Search
+                    existingUser.Preferences.RagVectorWeight = user.Preferences.RagVectorWeight;
+                    existingUser.Preferences.RagBm25Weight = user.Preferences.RagBm25Weight;
+                    existingUser.Preferences.RagMultiQueryCount = user.Preferences.RagMultiQueryCount;
+                    existingUser.Preferences.RagMaxContextLength = user.Preferences.RagMaxContextLength;
                 }
             }
 

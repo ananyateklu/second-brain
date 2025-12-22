@@ -199,7 +199,10 @@ pub fn generate_jwt_secret() -> String {
     if let Err(e) = getrandom::fill(&mut bytes) {
         // Fallback to a timestamp-based secret if random generation fails
         // This should never happen on modern systems
-        log::warn!("Failed to generate random JWT secret: {}. Using fallback.", e);
+        log::warn!(
+            "Failed to generate random JWT secret: {}. Using fallback.",
+            e
+        );
         return format!(
             "SecondBrainDesktop-{}-{}",
             std::process::id(),
@@ -210,7 +213,10 @@ pub fn generate_jwt_secret() -> String {
         );
     }
     // Convert to URL-safe base64-like string (hex for simplicity and debuggability)
-    bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
+    bytes
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>()
 }
 
 /// Load secrets from file with validation

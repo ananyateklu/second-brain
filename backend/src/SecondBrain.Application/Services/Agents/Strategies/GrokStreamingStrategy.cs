@@ -86,6 +86,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
 
             plugin.SetCurrentUserId(request.UserId);
             plugin.SetAgentRagEnabled(request.AgentRagEnabled);
+            plugin.SetRagOptions(request.RagOptions);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()

@@ -189,6 +189,32 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.RagEnableAnalytics.HasValue)
             user.Preferences.RagEnableAnalytics = request.RagEnableAnalytics.Value;
 
+        // RAG Advanced Settings - Tier 1: Core Retrieval
+        if (request.RagTopK.HasValue)
+            user.Preferences.RagTopK = request.RagTopK.Value;
+
+        if (request.RagSimilarityThreshold.HasValue)
+            user.Preferences.RagSimilarityThreshold = request.RagSimilarityThreshold.Value;
+
+        if (request.RagInitialRetrievalCount.HasValue)
+            user.Preferences.RagInitialRetrievalCount = request.RagInitialRetrievalCount.Value;
+
+        if (request.RagMinRerankScore.HasValue)
+            user.Preferences.RagMinRerankScore = request.RagMinRerankScore.Value;
+
+        // RAG Advanced Settings - Tier 2: Hybrid Search
+        if (request.RagVectorWeight.HasValue)
+            user.Preferences.RagVectorWeight = request.RagVectorWeight.Value;
+
+        if (request.RagBm25Weight.HasValue)
+            user.Preferences.RagBm25Weight = request.RagBm25Weight.Value;
+
+        if (request.RagMultiQueryCount.HasValue)
+            user.Preferences.RagMultiQueryCount = request.RagMultiQueryCount.Value;
+
+        if (request.RagMaxContextLength.HasValue)
+            user.Preferences.RagMaxContextLength = request.RagMaxContextLength.Value;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -279,7 +305,17 @@ public class UserPreferencesService : IUserPreferencesService
             RagEnableQueryExpansion = preferences.RagEnableQueryExpansion,
             RagEnableHybridSearch = preferences.RagEnableHybridSearch,
             RagEnableReranking = preferences.RagEnableReranking,
-            RagEnableAnalytics = preferences.RagEnableAnalytics
+            RagEnableAnalytics = preferences.RagEnableAnalytics,
+            // RAG Advanced Settings - Tier 1: Core Retrieval
+            RagTopK = preferences.RagTopK,
+            RagSimilarityThreshold = preferences.RagSimilarityThreshold,
+            RagInitialRetrievalCount = preferences.RagInitialRetrievalCount,
+            RagMinRerankScore = preferences.RagMinRerankScore,
+            // RAG Advanced Settings - Tier 2: Hybrid Search
+            RagVectorWeight = preferences.RagVectorWeight,
+            RagBm25Weight = preferences.RagBm25Weight,
+            RagMultiQueryCount = preferences.RagMultiQueryCount,
+            RagMaxContextLength = preferences.RagMaxContextLength
         };
     }
 }

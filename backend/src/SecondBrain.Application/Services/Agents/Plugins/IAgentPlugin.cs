@@ -1,4 +1,5 @@
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
 
@@ -33,6 +34,12 @@ public interface IAgentPlugin
     /// When disabled, the system prompt should not include instructions about automatically retrieved context.
     /// </summary>
     void SetAgentRagEnabled(bool enabled);
+
+    /// <summary>
+    /// Set user-specific RAG options to customize RAG pipeline behavior.
+    /// These options override default settings for HyDE, hybrid search, reranking, etc.
+    /// </summary>
+    void SetRagOptions(RagOptions? options);
 
     /// <summary>
     /// Get the plugin object to register with Semantic Kernel

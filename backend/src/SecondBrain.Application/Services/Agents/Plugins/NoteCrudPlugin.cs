@@ -160,16 +160,11 @@ For simple additions, use AppendToNote instead.";
 
         try
         {
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to access this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
             var response = new
@@ -206,15 +201,10 @@ For simple additions, use AppendToNote instead.";
         try
         {
             // First get the note to verify it exists and get current state for feedback
-            var existingNote = await NoteRepository.GetByIdAsync(noteId);
+            var existingNote = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
             if (existingNote == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (existingNote.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to update this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to update it.";
             }
 
             var previousTags = existingNote.Tags.ToList();
@@ -288,15 +278,10 @@ For simple additions, use AppendToNote instead.";
         try
         {
             // Get note first to capture title for feedback
-            var note = await NoteRepository.GetByIdAsync(noteId);
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
             if (note == null)
             {
-                return $"Note with ID \"{noteId}\" not found.";
-            }
-
-            if (note.UserId != CurrentUserId)
-            {
-                return "Error: You don't have permission to delete this note.";
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to delete it.";
             }
 
             var noteTitle = note.Title;

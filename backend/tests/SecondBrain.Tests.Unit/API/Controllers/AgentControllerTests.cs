@@ -450,8 +450,8 @@ public class AgentControllerTests
         // Act
         await _sut.StreamAgentMessage("conv-1", request);
 
-        // Assert
-        _mockUserPreferencesService.Verify(s => s.GetPreferencesAsync(userId), Times.Once);
+        // Assert - GetPreferencesAsync is called twice: once for Ollama URL, once for RAG options
+        _mockUserPreferencesService.Verify(s => s.GetPreferencesAsync(userId), Times.Exactly(2));
     }
 
     [Fact]

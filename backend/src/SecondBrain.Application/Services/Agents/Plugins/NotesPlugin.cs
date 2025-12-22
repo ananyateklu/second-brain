@@ -4,6 +4,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -64,6 +65,14 @@ public class NotesPlugin : IAgentPlugin
         _searchPlugin.SetAgentRagEnabled(enabled);
         _organizationPlugin.SetAgentRagEnabled(enabled);
         _analysisPlugin.SetAgentRagEnabled(enabled);
+    }
+
+    public void SetRagOptions(RagOptions? options)
+    {
+        _crudPlugin.SetRagOptions(options);
+        _searchPlugin.SetRagOptions(options);
+        _organizationPlugin.SetRagOptions(options);
+        _analysisPlugin.SetRagOptions(options);
     }
 
     public object GetPluginInstance() => this;
