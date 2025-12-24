@@ -87,6 +87,17 @@ public class NotesPlugin : IAgentPlugin
 
 You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
 
+### CRITICAL: Note Reference Format
+
+When referencing notes, use: [[noteId|Note Title]]
+
+Example: ""I found [[019b26fb-042c-7037-80db-3184e5e37c0c|Garden Planning]] which covers your spring planting.""
+
+Rules:
+- Do NOT wrap [[...]] in markdown formatting (no **, __, etc.)
+- The [[...]] automatically renders as a styled clickable chip in the UI
+- You can use lists, but keep note references and descriptions together on the same line
+
 ### IMPORTANT: Content Preview vs Full Content
 
 **List and search operations return only a PREVIEW (first ~200 characters) of note content to save context.**

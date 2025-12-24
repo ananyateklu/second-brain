@@ -69,17 +69,28 @@ export function MarkdownMessage({ content, showCursor = false }: MarkdownMessage
   const processedContent = useMemo(() => {
     // Decode Unicode escape sequences (e.g., \uD83D\uDC4B -> 👋)
     // Replace all \uXXXX patterns with their actual Unicode characters
-    const decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match: string, code: string) => {
+    let result = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match: string, code: string) => {
       return String.fromCharCode(parseInt(code, 16));
     });
 
+    // Replace [[noteId|title]] with a special link format for inline note references
+    // UUID pattern: 8-4-4-4-12 hex characters with dashes
+    result = result.replace(
+      /\[\[([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\|([^\]]+)\]\]/gi,
+      (_match: string, noteId: string, title: string) => {
+        return `[${title}](#noteref?id=${noteId}&title=${encodeURIComponent(title)})`;
+      }
+    );
+
     // Replace [Note Name] with custom link, avoiding checkboxes [x] [ ] and existing links
-    return decoded.replace(/\[([^\]]+)\](?!\()/g, (match: string, name: string) => {
+    result = result.replace(/\[([^\]]+)\](?!\()/g, (match: string, name: string) => {
       const trimmed = name.trim();
       // Avoid matching checkboxes
       if (trimmed === 'x' || trimmed === 'X' || trimmed === '') return match;
       return `[${name}](#note?name=${encodeURIComponent(name)})`;
     });
+
+    return result;
   }, [content]);
 
   return (
@@ -276,6 +287,49 @@ export function MarkdownMessage({ content, showCursor = false }: MarkdownMessage
           ),
           // Links
           a: ({ node: _node, ...props }) => {
+            // Handle [[noteId|title]] references (converted to #noteref?id=xxx&title=yyy)
+            if (props.href?.startsWith('#noteref?')) {
+              const params = new URLSearchParams(props.href.replace('#noteref?', ''));
+              const noteId = params.get('id');
+              const noteTitle = params.get('title');
+
+              if (!noteId) {
+                return <span style={{ color: 'var(--text-primary)' }}>{props.children}</span>;
+              }
+
+              const opacity = '12%';
+              return (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openEditModal(noteId);
+                  }}
+                  title={noteTitle || undefined}
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 mx-0.5 my-0.5 rounded-md text-xs font-medium transition-all hover:shadow-sm hover:scale-[1.02] active:scale-[0.98] align-baseline"
+                  style={{
+                    backgroundColor: `color-mix(in srgb, var(--color-brand-500) ${opacity}, transparent)`,
+                    border: `1px solid color-mix(in srgb, var(--color-brand-500) ${opacity}, transparent)`,
+                    color: `color-mix(in srgb, var(--color-brand-500) 70%, var(--text-secondary))`,
+                    cursor: 'pointer',
+                    maxWidth: '200px',
+                    verticalAlign: 'baseline',
+                  }}
+                >
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="truncate">{noteTitle || 'Note'}</span>
+                </button>
+              );
+            }
+
+            // Handle [Note Name] references (converted to #note?name=xxx)
             if (props.href?.startsWith('#note?name=')) {
               const noteName = decodeURIComponent(props.href.replace('#note?name=', ''));
               const note = notes?.find(n => n.title === noteName);

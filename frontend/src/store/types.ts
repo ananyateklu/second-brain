@@ -195,6 +195,7 @@ export interface UISliceActions {
   toggleSearchMode: () => void;
   toggleSidebar: () => void;
   closeSidebar: () => void;
+  expandSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
   setDirectoryViewMode: (mode: NotesViewMode) => void;
   toggleFullscreenChat: () => void;

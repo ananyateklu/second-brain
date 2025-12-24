@@ -19,6 +19,7 @@ export interface MessageBubbleProps {
   streamingOutputTokens?: number;
   streamingDuration?: number;
   agentModeEnabled?: boolean;
+  ragEnabled?: boolean;
   isLastMessage?: boolean;
   // RAG feedback
   ragLogId?: string;
@@ -342,6 +343,7 @@ export function MessageBubble({
   streamingOutputTokens,
   streamingDuration,
   agentModeEnabled = false,
+  ragEnabled = false,
   isLastMessage = false,
   ragLogId,
   showFeedback = true,
@@ -467,7 +469,7 @@ export function MessageBubble({
 
             {/* Regular message content (may be empty for pure image generation) */}
             {mainBubbleContent && !message.content.startsWith('[Generated Image]') && (
-              agentModeEnabled ? (
+              (agentModeEnabled || ragEnabled) ? (
                 <MarkdownMessageWithNoteReferences content={mainBubbleContent} />
               ) : (
                 <MarkdownMessage content={mainBubbleContent} />

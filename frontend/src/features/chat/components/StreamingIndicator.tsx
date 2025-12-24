@@ -21,7 +21,7 @@ import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming
  * Renders text content within the process timeline.
  * Used for interleaved text that appears between thinking/tool events.
  */
-function TimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+function TimelineTextCard({ content, showInlineNoteRefs = false }: { content: string; showInlineNoteRefs?: boolean }) {
   const strippedContent = stripAllThinkingTags(content);
   if (!strippedContent) return null;
 
@@ -33,7 +33,7 @@ function TimelineTextCard({ content, agentModeEnabled = false }: { content: stri
           backgroundColor: 'var(--surface-card)',
         }}
       >
-        {agentModeEnabled ? (
+        {showInlineNoteRefs ? (
           <MarkdownMessageWithNoteReferences content={strippedContent} />
         ) : (
           <MarkdownMessage content={strippedContent} />
@@ -218,7 +218,7 @@ export function StreamingIndicator({
             );
           }
           if (event.type === 'text') {
-            return <TimelineTextCard key={event.id} content={event.content} agentModeEnabled={agentModeEnabled} />;
+            return <TimelineTextCard key={event.id} content={event.content} showInlineNoteRefs={agentModeEnabled || ragEnabled} />;
           }
           return null;
         })}
@@ -300,7 +300,7 @@ export function StreamingIndicator({
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
           >
-            {agentModeEnabled ? (
+            {(agentModeEnabled || ragEnabled) ? (
               <MarkdownMessageWithNoteReferences content={displayContent} showCursor={isStreaming} />
             ) : (
               <MarkdownMessage content={displayContent} showCursor={isStreaming} />
