@@ -141,6 +141,18 @@ public class RagSettings
     /// </summary>
     public string? HyDEModel { get; set; }
 
+    /// <summary>
+    /// Which LLM provider to use for Query Expansion (multi-query generation).
+    /// Defaults to "OpenAI". Valid values: OpenAI, Anthropic, Gemini, Grok, Ollama.
+    /// </summary>
+    public string QueryExpansionProvider { get; set; } = "OpenAI";
+
+    /// <summary>
+    /// Specific model to use for Query Expansion.
+    /// If null or empty, uses the provider's default model.
+    /// </summary>
+    public string? QueryExpansionModel { get; set; }
+
     // Reranking Settings
     public bool EnableReranking { get; set; } = true;
     public int InitialRetrievalCount { get; set; } = 20; // Retrieve more, then rerank to TopK

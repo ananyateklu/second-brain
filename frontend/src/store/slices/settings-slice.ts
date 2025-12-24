@@ -247,6 +247,26 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // Query Expansion Provider Settings
+  // ============================================
+
+  setRagQueryExpansionProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ ragQueryExpansionProvider: provider });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragQueryExpansionProvider', provider, 'RAG query expansion provider');
+    }
+  },
+
+  setRagQueryExpansionModel: async (model: string | null, syncToBackend = true) => {
+    set({ ragQueryExpansionModel: model });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'ragQueryExpansionModel', model, 'RAG query expansion model');
+    }
+  },
+
+  // ============================================
   // RAG Advanced Settings - Tier 1: Core Retrieval
   // ============================================
 
@@ -383,6 +403,9 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         // HyDE Provider Settings
         ragHydeProvider: preferences.ragHydeProvider,
         ragHydeModel: preferences.ragHydeModel,
+        // Query Expansion Provider Settings
+        ragQueryExpansionProvider: preferences.ragQueryExpansionProvider,
+        ragQueryExpansionModel: preferences.ragQueryExpansionModel,
         // RAG Advanced Settings - Tier 1: Core Retrieval
         ragTopK: preferences.ragTopK,
         ragSimilarityThreshold: preferences.ragSimilarityThreshold,
@@ -454,6 +477,9 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     // HyDE Provider Settings
     ragHydeProvider: state.ragHydeProvider,
     ragHydeModel: state.ragHydeModel,
+    // Query Expansion Provider Settings
+    ragQueryExpansionProvider: state.ragQueryExpansionProvider,
+    ragQueryExpansionModel: state.ragQueryExpansionModel,
     // RAG Advanced Settings - Tier 1: Core Retrieval
     ragTopK: state.ragTopK,
     ragSimilarityThreshold: state.ragSimilarityThreshold,

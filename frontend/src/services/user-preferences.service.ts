@@ -38,6 +38,9 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   // HyDE Provider Settings
   ragHydeProvider: null,
   ragHydeModel: null,
+  // Query Expansion Provider Settings
+  ragQueryExpansionProvider: null,
+  ragQueryExpansionModel: null,
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: 5,
   ragSimilarityThreshold: 0.3,
@@ -182,6 +185,9 @@ export const userPreferencesService = {
       // HyDE Provider Settings
       ragHydeProvider: preferences.ragHydeProvider ?? currentPreferences.ragHydeProvider,
       ragHydeModel: preferences.ragHydeModel ?? currentPreferences.ragHydeModel,
+      // Query Expansion Provider Settings
+      ragQueryExpansionProvider: preferences.ragQueryExpansionProvider ?? currentPreferences.ragQueryExpansionProvider,
+      ragQueryExpansionModel: preferences.ragQueryExpansionModel ?? currentPreferences.ragQueryExpansionModel,
       // RAG Advanced Settings - Tier 1: Core Retrieval
       ragTopK: this.validateRagTopK(preferences.ragTopK ?? currentPreferences.ragTopK),
       ragSimilarityThreshold: this.validateRagSimilarityThreshold(

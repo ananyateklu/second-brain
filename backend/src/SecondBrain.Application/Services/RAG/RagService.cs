@@ -113,7 +113,7 @@ public class RagService : IRagService
             ExpandedQueryEmbeddings expandedEmbeddings;
             using (var embeddingActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.QueryExpansion"))
             {
-                expandedEmbeddings = await GetQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, cancellationToken);
+                expandedEmbeddings = await GetQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, options, cancellationToken);
                 embeddingActivity?.SetTag("rag.expansion.hyde_used", expandedEmbeddings.HyDEEmbedding?.Any() == true);
                 embeddingActivity?.SetTag("rag.expansion.multi_query_count", expandedEmbeddings.MultiQueryEmbeddings.Count);
             }
@@ -307,11 +307,11 @@ public class RagService : IRagService
     }
 
     private async Task<ExpandedQueryEmbeddings> GetQueryEmbeddingsAsync(
-        string query, bool enableQueryExpansion, bool enableHyDE, CancellationToken cancellationToken)
+        string query, bool enableQueryExpansion, bool enableHyDE, RagOptions? options, CancellationToken cancellationToken)
     {
         if (enableQueryExpansion || enableHyDE)
         {
-            return await _queryExpansionService.GetExpandedQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, cancellationToken);
+            return await _queryExpansionService.GetExpandedQueryEmbeddingsAsync(query, enableQueryExpansion, enableHyDE, options, cancellationToken);
         }
 
         // Fall back to simple embedding generation
@@ -321,7 +321,7 @@ public class RagService : IRagService
         return new ExpandedQueryEmbeddings
         {
             OriginalQuery = query,
-            OriginalEmbedding = embeddingResponse.Success ? embeddingResponse.Embedding : new List<double>(),
+            OriginalEmbedding = embeddingResponse.Success ? embeddingResponse.Embedding : [],
             TotalTokensUsed = embeddingResponse.TokensUsed
         };
     }

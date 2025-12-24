@@ -32,6 +32,10 @@ public class UpdateUserPreferencesRequest
     public string? RagHydeProvider { get; set; }
     public string? RagHydeModel { get; set; }
 
+    // Query Expansion Provider Settings
+    public string? RagQueryExpansionProvider { get; set; }
+    public string? RagQueryExpansionModel { get; set; }
+
     // RAG Advanced Settings - Tier 1: Core Retrieval
     public int? RagTopK { get; set; }
     public float? RagSimilarityThreshold { get; set; }

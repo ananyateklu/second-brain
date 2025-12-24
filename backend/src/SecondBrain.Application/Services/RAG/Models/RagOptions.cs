@@ -64,6 +64,18 @@ public class RagOptions
     /// </summary>
     public string? HyDEModel { get; set; }
 
+    /// <summary>
+    /// Query Expansion provider override for generating query variations.
+    /// When null, uses the default QueryExpansionProvider from RagSettings.
+    /// </summary>
+    public string? QueryExpansionProvider { get; set; }
+
+    /// <summary>
+    /// Query Expansion model override for generating query variations.
+    /// When null, uses the provider's default model.
+    /// </summary>
+    public string? QueryExpansionModel { get; set; }
+
     // === Tier 1: Core Retrieval Settings ===
 
     /// <summary>
@@ -121,6 +133,8 @@ public class RagOptions
         string? rerankingModel = null,
         string? hydeProvider = null,
         string? hydeModel = null,
+        string? queryExpansionProvider = null,
+        string? queryExpansionModel = null,
         // Tier 1: Core Retrieval
         int? topK = null,
         float? similarityThreshold = null,
@@ -143,6 +157,8 @@ public class RagOptions
             RerankingModel = rerankingModel,
             HyDEProvider = hydeProvider,
             HyDEModel = hydeModel,
+            QueryExpansionProvider = queryExpansionProvider,
+            QueryExpansionModel = queryExpansionModel,
             // Tier 1
             TopK = topK,
             SimilarityThreshold = similarityThreshold,

@@ -76,7 +76,7 @@ public class RagServiceTests
         // Arrange
         var sut = CreateService();
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExpandedQueryEmbeddings
             {
                 OriginalQuery = "test query",
@@ -118,7 +118,7 @@ public class RagServiceTests
 
         // Setup mocks to return results through the pipeline
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExpandedQueryEmbeddings
             {
                 OriginalQuery = "test query",
@@ -183,7 +183,7 @@ public class RagServiceTests
 
         // Assert - QueryExpansionService should be called with the override values
         _mockQueryExpansion.Verify(q => q.GetExpandedQueryEmbeddingsAsync(
-            "test query", true, true, It.IsAny<CancellationToken>()), Times.Once);
+            "test query", true, true, It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -281,7 +281,7 @@ public class RagServiceTests
         // Arrange
         var sut = CreateService();
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Test exception"));
 
         // Act
@@ -301,7 +301,7 @@ public class RagServiceTests
 
         var hydeEmbedding = Enumerable.Range(0, 1536).Select(i => (double)i * 0.001).ToList();
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExpandedQueryEmbeddings
             {
                 OriginalQuery = "test query",
@@ -330,7 +330,7 @@ public class RagServiceTests
         // Arrange
         var sut = CreateService();
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExpandedQueryEmbeddings
             {
                 OriginalQuery = "test query",
@@ -494,7 +494,7 @@ public class RagServiceTests
     {
         var embedding = Enumerable.Range(0, 1536).Select(i => (double)i * 0.001).ToList();
         _mockQueryExpansion.Setup(q => q.GetExpandedQueryEmbeddingsAsync(
-            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            It.IsAny<string>(), It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ExpandedQueryEmbeddings
             {
                 OriginalQuery = "test query",

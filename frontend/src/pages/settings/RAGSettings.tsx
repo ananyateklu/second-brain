@@ -184,6 +184,14 @@ const HYDE_PROVIDER_OPTIONS = [
   { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
 ] as const;
 
+const QUERY_EXPANSION_PROVIDER_OPTIONS = [
+  { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for query variation generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
+  { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced query variations. Best for complex or technical queries.' },
+  { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
+  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
+] as const;
+
 // Cohere rerank models with metadata for UI display
 const COHERE_RERANK_MODELS: { id: string; name: string; description: string; badge?: string }[] = [
   {
@@ -230,6 +238,11 @@ export function RAGSettings() {
   const ragHydeModel = useBoundStore((state) => state.ragHydeModel);
   const setRagHydeProvider = useBoundStore((state) => state.setRagHydeProvider);
   const setRagHydeModel = useBoundStore((state) => state.setRagHydeModel);
+  // Query Expansion Provider Settings
+  const ragQueryExpansionProvider = useBoundStore((state) => state.ragQueryExpansionProvider);
+  const ragQueryExpansionModel = useBoundStore((state) => state.ragQueryExpansionModel);
+  const setRagQueryExpansionProvider = useBoundStore((state) => state.setRagQueryExpansionProvider);
+  const setRagQueryExpansionModel = useBoundStore((state) => state.setRagQueryExpansionModel);
   // RAG Feature Toggles
   const ragEnableHyde = useBoundStore((state) => state.ragEnableHyde);
   const ragEnableQueryExpansion = useBoundStore((state) => state.ragEnableQueryExpansion);
@@ -262,6 +275,7 @@ export function RAGSettings() {
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
   const [isSavingRerankingProvider, setIsSavingRerankingProvider] = useState(false);
   const [isSavingHydeProvider, setIsSavingHydeProvider] = useState(false);
+  const [isSavingQueryExpansionProvider, setIsSavingQueryExpansionProvider] = useState(false);
   const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
   const [showPineconeSetup, setShowPineconeSetup] = useState(false);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
@@ -271,8 +285,10 @@ export function RAGSettings() {
   // Model dropdown states
   const [isRerankingModelOpen, setIsRerankingModelOpen] = useState(false);
   const [isHydeModelOpen, setIsHydeModelOpen] = useState(false);
+  const [isQueryExpansionModelOpen, setIsQueryExpansionModelOpen] = useState(false);
   const rerankingModelDropdownRef = useRef<HTMLDivElement>(null);
   const hydeModelDropdownRef = useRef<HTMLDivElement>(null);
+  const queryExpansionModelDropdownRef = useRef<HTMLDivElement>(null);
 
   // Get AI health data for available models
   const { data: healthData, isLoading: isHealthLoading } = useAIHealth();
@@ -306,9 +322,19 @@ export function RAGSettings() {
     return providerData?.availableModels || [];
   }, [healthData?.providers, ragHydeProvider]);
 
+  // Get available models for Query Expansion provider
+  const queryExpansionModels = useMemo(() => {
+    if (!healthData?.providers || !ragQueryExpansionProvider) return [];
+    const providerData = healthData.providers.find(p => {
+      const mappedName = PROVIDER_NAME_MAP[p.provider];
+      return mappedName === ragQueryExpansionProvider || p.provider === ragQueryExpansionProvider;
+    });
+    return providerData?.availableModels || [];
+  }, [healthData?.providers, ragQueryExpansionProvider]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
-    if (!isRerankingModelOpen && !isHydeModelOpen) return;
+    if (!isRerankingModelOpen && !isHydeModelOpen && !isQueryExpansionModelOpen) return;
 
     function handleClickOutside(event: MouseEvent) {
       if (rerankingModelDropdownRef.current && !rerankingModelDropdownRef.current.contains(event.target as Node)) {
@@ -317,26 +343,30 @@ export function RAGSettings() {
       if (hydeModelDropdownRef.current && !hydeModelDropdownRef.current.contains(event.target as Node)) {
         setIsHydeModelOpen(false);
       }
+      if (queryExpansionModelDropdownRef.current && !queryExpansionModelDropdownRef.current.contains(event.target as Node)) {
+        setIsQueryExpansionModelOpen(false);
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isRerankingModelOpen, isHydeModelOpen]);
+  }, [isRerankingModelOpen, isHydeModelOpen, isQueryExpansionModelOpen]);
 
   // Close dropdowns on Escape key
   useEffect(() => {
-    if (!isRerankingModelOpen && !isHydeModelOpen) return;
+    if (!isRerankingModelOpen && !isHydeModelOpen && !isQueryExpansionModelOpen) return;
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setIsRerankingModelOpen(false);
         setIsHydeModelOpen(false);
+        setIsQueryExpansionModelOpen(false);
       }
     }
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isRerankingModelOpen, isHydeModelOpen]);
+  }, [isRerankingModelOpen, isHydeModelOpen, isQueryExpansionModelOpen]);
 
   // Handle model selection
   const handleRerankingModelSelect = async (model: string) => {
@@ -358,6 +388,17 @@ export function RAGSettings() {
     } catch (error) {
       console.error('Failed to update HyDE model:', { error });
       toast.error('Failed to save HyDE model', 'Please try again.');
+    }
+  };
+
+  const handleQueryExpansionModelSelect = async (model: string) => {
+    setIsQueryExpansionModelOpen(false);
+    try {
+      await setRagQueryExpansionModel(model, true);
+      toast.success('Query Expansion Model Updated', `Now using ${formatModelName(model)}`);
+    } catch (error) {
+      console.error('Failed to update Query Expansion model:', { error });
+      toast.error('Failed to save Query Expansion model', 'Please try again.');
     }
   };
 
@@ -523,8 +564,8 @@ export function RAGSettings() {
 
   return (
     <div className="space-y-4">
-      {/* RAG AI Providers Grid - Reranking and HyDE side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* RAG AI Providers Grid - Reranking, HyDE, and Query Expansion */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left Side: Reranking Provider + Model */}
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
@@ -654,10 +695,11 @@ export function RAGSettings() {
                               key={model}
                               type="button"
                               onClick={() => void handleRerankingModelSelect(model)}
-                              className="w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]"
-                              style={{
-                                backgroundColor: isSelected ? 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)' : 'transparent',
-                              }}
+                              className={`w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all ${
+                                isSelected
+                                  ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
+                                  : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                              }`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5">
@@ -815,9 +857,160 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleHydeModelSelect(model)}
-                            className="w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]"
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${
+                              isSelected
+                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
+                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                            }`}
                             style={{
-                              backgroundColor: isSelected ? 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)' : 'transparent',
+                              color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                            }}
+                          >
+                            <span className="truncate">{formatModelName(model)}</span>
+                            {isSelected && (
+                              <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--color-brand-600)' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Query Expansion Provider + Model */}
+        <section
+          className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-xl border flex-shrink-0"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                }}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Query Expansion
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  AI provider for generating query variations
+                </p>
+              </div>
+              {isSavingQueryExpansionProvider && (
+                <span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Saving...</span>
+              )}
+            </div>
+
+            {/* Provider + Model inline */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                {QUERY_EXPANSION_PROVIDER_OPTIONS.map((option) => {
+                  const isActive = ragQueryExpansionProvider === option.id;
+                  return (
+                    <Tooltip key={option.id} content={option.description} position="bottom" maxWidth={420} delay={300}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void (async () => {
+                            if (!user?.userId) return;
+                            setIsSavingQueryExpansionProvider(true);
+                            try {
+                              await setRagQueryExpansionProvider(option.id, false);
+                              await syncPreferencesToBackend(user.userId);
+                            } catch (error) {
+                              console.error('Failed to update Query Expansion provider:', { error });
+                              toast.error('Failed to save Query Expansion provider', 'Please try again.');
+                            } finally {
+                              setIsSavingQueryExpansionProvider(false);
+                            }
+                          })();
+                        }}
+                        disabled={isSavingQueryExpansionProvider}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
+                        style={{
+                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
+                          color: isActive ? 'white' : 'var(--text-primary)',
+                        }}
+                      >
+                        <span>{option.name}</span>
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {/* Model Dropdown */}
+              <div className="relative" ref={queryExpansionModelDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => queryExpansionModels.length > 0 && setIsQueryExpansionModelOpen(!isQueryExpansionModelOpen)}
+                  disabled={queryExpansionModels.length === 0 || isHealthLoading}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderColor: isQueryExpansionModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <span className="truncate">
+                    {isHealthLoading
+                      ? 'Loading...'
+                      : queryExpansionModels.length === 0
+                        ? 'No models'
+                        : ragQueryExpansionModel
+                          ? formatModelName(ragQueryExpansionModel)
+                          : 'Select model'}
+                  </span>
+                  <svg
+                    className="w-3 h-3 flex-shrink-0 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    style={{ transform: isQueryExpansionModelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isQueryExpansionModelOpen && queryExpansionModels.length > 0 && (
+                  <div
+                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                    style={{
+                      backgroundColor: 'var(--surface-elevated)',
+                      borderColor: 'var(--border)',
+                      minWidth: '220px',
+                    }}
+                  >
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                      {queryExpansionModels.map((model) => {
+                        const isSelected = model === ragQueryExpansionModel;
+                        return (
+                          <button
+                            key={model}
+                            type="button"
+                            onClick={() => void handleQueryExpansionModelSelect(model)}
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${
+                              isSelected
+                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
+                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                            }`}
+                            style={{
                               color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
                             }}
                           >
@@ -1195,7 +1388,7 @@ export function RAGSettings() {
                             disabled={savingAdvancedSetting === 'ragVectorWeight' || savingAdvancedSetting === 'ragBm25Weight'}
                             className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-10"
                             style={{
-                              background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${ragVectorWeight * 100}%, var(--text-secondary) ${ragVectorWeight * 100}%, var(--text-secondary) 100%)`,
+                              background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${ragVectorWeight * 100}%, var(--border) ${ragVectorWeight * 100}%, var(--border) 100%)`,
                             }}
                           />
                           {/* Vertical line indicator for Keyword (BM25) position */}

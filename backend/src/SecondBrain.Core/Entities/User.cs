@@ -133,6 +133,15 @@ public class UserPreferences
     [MaxLength(100)]
     public string? RagHydeModel { get; set; }
 
+    // Query Expansion Provider Settings
+    [Column("rag_query_expansion_provider")]
+    [MaxLength(50)]
+    public string? RagQueryExpansionProvider { get; set; }
+
+    [Column("rag_query_expansion_model")]
+    [MaxLength(100)]
+    public string? RagQueryExpansionModel { get; set; }
+
     // RAG Advanced Settings - Tier 1: Core Retrieval
     [Column("rag_top_k")]
     public int RagTopK { get; set; } = 5;

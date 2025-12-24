@@ -138,6 +138,9 @@ export function mergePersistedState(
     // HyDE Provider Settings
     ragHydeProvider: parsed.ragHydeProvider ?? currentState.ragHydeProvider,
     ragHydeModel: parsed.ragHydeModel ?? currentState.ragHydeModel,
+    // Query Expansion Provider Settings
+    ragQueryExpansionProvider: parsed.ragQueryExpansionProvider ?? currentState.ragQueryExpansionProvider,
+    ragQueryExpansionModel: parsed.ragQueryExpansionModel ?? currentState.ragQueryExpansionModel,
     // RAG Advanced Settings - Tier 1: Core Retrieval
     ragTopK: parsed.ragTopK ?? currentState.ragTopK,
     ragSimilarityThreshold: parsed.ragSimilarityThreshold ?? currentState.ragSimilarityThreshold,
@@ -217,6 +220,9 @@ const _useBoundStore = create<BoundStore>()(
         // HyDE Provider Settings
         ragHydeProvider: state.ragHydeProvider,
         ragHydeModel: state.ragHydeModel,
+        // Query Expansion Provider Settings
+        ragQueryExpansionProvider: state.ragQueryExpansionProvider,
+        ragQueryExpansionModel: state.ragQueryExpansionModel,
         // RAG Advanced Settings - Tier 1: Core Retrieval
         ragTopK: state.ragTopK,
         ragSimilarityThreshold: state.ragSimilarityThreshold,

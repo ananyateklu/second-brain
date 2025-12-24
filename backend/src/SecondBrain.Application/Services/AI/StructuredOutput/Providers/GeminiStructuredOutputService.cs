@@ -114,10 +114,49 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
                 typeof(T).Name, modelName);
 
             // Generate content
-            var response = await _client!.Models.GenerateContentAsync(
-                model: modelName,
-                contents: prompt,
-                config: config);
+            GenerateContentResponse? response;
+            try
+            {
+                response = await _client!.Models.GenerateContentAsync(
+                    model: modelName,
+                    contents: prompt,
+                    config: config);
+            }
+            catch (Exception apiEx)
+            {
+                _logger.LogError(apiEx, "Gemini API error during structured output generation. Model: {Model}, Error: {Error}",
+                    modelName, apiEx.Message);
+                throw;
+            }
+
+            // Log detailed response info for debugging (use Information level to ensure visibility)
+            if (response == null)
+            {
+                _logger.LogWarning("Gemini structured output: response is null for model {Model}", modelName);
+            }
+            else if (response.Candidates == null || response.Candidates.Count == 0)
+            {
+                _logger.LogWarning("Gemini structured output: no candidates returned for model {Model}. " +
+                    "PromptFeedback: {Feedback}, BlockReason: {BlockReason}",
+                    modelName,
+                    response.PromptFeedback?.ToString() ?? "null",
+                    response.PromptFeedback?.BlockReason?.ToString() ?? "null");
+            }
+            else
+            {
+                var firstCandidate = response.Candidates[0];
+                var outputTokens = response.UsageMetadata?.CandidatesTokenCount ?? 0;
+                var totalTokens = response.UsageMetadata?.TotalTokenCount ?? 0;
+
+                // Log at Information level to ensure visibility - FinishReason is critical for debugging truncation
+                _logger.LogInformation("Gemini structured output response. Model: {Model}, FinishReason: {FinishReason}, " +
+                    "OutputTokens: {OutputTokens}, TotalTokens: {TotalTokens}, MaxConfigured: {MaxTokens}",
+                    modelName,
+                    firstCandidate.FinishReason?.ToString() ?? "null",
+                    outputTokens,
+                    totalTokens,
+                    options.MaxTokens ?? _providerSettings.MaxTokens);
+            }
 
             // Extract text from response
             var responseText = ExtractText(response);
@@ -318,7 +357,8 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
     }
 
     /// <summary>
-    /// Repairs truncated JSON by adding missing closing brackets/braces.
+    /// Repairs truncated JSON by closing unclosed strings, arrays, and objects.
+    /// Handles cases where the model output is cut off mid-response.
     /// </summary>
     private static string RepairTruncatedJson(string json)
     {
@@ -332,16 +372,22 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
         cleaned = Regex.Replace(cleaned, @",\s*$", ""); // Remove trailing comma
         cleaned = Regex.Replace(cleaned, @":\s*\d+\.?\d*\s*$", ": 0"); // Replace incomplete number value at end
 
-        // Count opening and closing brackets/braces
+        // Count opening and closing brackets/braces, track if we're in an unclosed string
         int openBraces = 0;
         int openBrackets = 0;
         bool inString = false;
         char prevChar = '\0';
+        int lastStringStart = -1;
 
-        foreach (char c in cleaned)
+        for (int i = 0; i < cleaned.Length; i++)
         {
+            char c = cleaned[i];
             if (c == '"' && prevChar != '\\')
             {
+                if (!inString)
+                {
+                    lastStringStart = i;
+                }
                 inString = !inString;
             }
             else if (!inString)
@@ -352,6 +398,42 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
                 else if (c == ']') openBrackets--;
             }
             prevChar = c;
+        }
+
+        // If we're still in an unclosed string, we need to close it
+        if (inString)
+        {
+            // The string was truncated mid-value - close it with a placeholder
+            // First, remove any trailing partial escape sequence
+            if (cleaned.EndsWith("\\"))
+            {
+                cleaned = cleaned.Substring(0, cleaned.Length - 1);
+            }
+
+            // Close the string
+            cleaned += "...[truncated]\"";
+
+            // Re-analyze to get correct brace/bracket counts after string closure
+            openBraces = 0;
+            openBrackets = 0;
+            inString = false;
+            prevChar = '\0';
+
+            foreach (char c in cleaned)
+            {
+                if (c == '"' && prevChar != '\\')
+                {
+                    inString = !inString;
+                }
+                else if (!inString)
+                {
+                    if (c == '{') openBraces++;
+                    else if (c == '}') openBraces--;
+                    else if (c == '[') openBrackets++;
+                    else if (c == ']') openBrackets--;
+                }
+                prevChar = c;
+            }
         }
 
         // Add missing closing brackets and braces
