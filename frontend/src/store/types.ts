@@ -139,11 +139,23 @@ export interface SettingsSliceActions {
 
 export type SettingsSlice = SettingsSliceState & SettingsSliceActions;
 
+/** Source rect for modal morph animation */
+export interface ModalSourceRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
 export interface UISliceState {
   isCreateModalOpen: boolean;
+  /** Source element rect for create modal morph animation */
+  createModalSourceRect: ModalSourceRect | null;
   isEditModalOpen: boolean;
   /** ID of the note being edited - full note is fetched in the modal */
   editingNoteId: string | null;
+  /** Source element rect for edit modal morph animation */
+  editModalSourceRect: ModalSourceRect | null;
   isMobileMenuOpen: boolean;
   isSearchOpen: boolean;
   searchQuery: string;
@@ -167,10 +179,11 @@ export interface UISliceState {
 }
 
 export interface UISliceActions {
-  openCreateModal: () => void;
+  /** Opens create modal with optional source rect for morph animation */
+  openCreateModal: (sourceRect?: ModalSourceRect | null) => void;
   closeCreateModal: () => void;
-  /** Opens edit modal - accepts full Note, NoteListItem, or just the note ID */
-  openEditModal: (noteOrId: Note | NoteListItem | string) => void;
+  /** Opens edit modal - accepts full Note, NoteListItem, or just the note ID, plus optional source rect for animation */
+  openEditModal: (noteOrId: Note | NoteListItem | string, sourceRect?: ModalSourceRect | null) => void;
   closeEditModal: () => void;
   openMobileMenu: () => void;
   closeMobileMenu: () => void;

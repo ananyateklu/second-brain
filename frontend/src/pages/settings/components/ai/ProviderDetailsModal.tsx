@@ -1,5 +1,11 @@
-import { Modal } from '../../../../components/ui/Modal';
-import { TauriProviderApiKeyInput } from '../../../../components/ui/TauriApiKeysManager';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from '../../../../components/ui/Dialog';
+import { TauriProviderApiKeyInput } from '../../../../components/composite/api-keys-manager';
 import { isTauri } from '../../../../lib/native-notifications';
 import { formatModelName } from '../../../../utils/model-name-formatter';
 import { OllamaConfigSection } from './OllamaConfigSection';
@@ -66,19 +72,22 @@ export const ProviderDetailsModal = ({
   const logo = getProviderLogo(selectedProvider.id);
 
   return (
-    <Modal
-      isOpen={!!selectedProvider}
-      onClose={onClose}
-      title={`Configure ${selectedProvider.name}`}
-      maxWidth="max-w-7xl"
-      icon={
-        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      }
-    >
-      <div className="space-y-4">
+    <Dialog open={!!selectedProvider} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-7xl p-0">
+        <DialogHeader className="rounded-t-3xl">
+          <DialogTitle
+            icon={
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            }
+          >
+            Configure {selectedProvider.name}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <div className="space-y-4">
         {/* Provider Overview */}
         {providerDetails && (
           <ProviderOverviewSection
@@ -135,8 +144,10 @@ export const ProviderDetailsModal = ({
             onRefreshSecrets={onRefreshSecrets}
           />
         )}
-      </div>
-    </Modal>
+          </div>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -199,21 +210,7 @@ const ProviderOverviewSection = ({
           href={providerDetails.docsUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-[10px] font-semibold whitespace-nowrap px-2.5 py-1 rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:scale-105 flex items-center gap-1"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--color-brand-500) 35%, transparent)',
-            color: 'var(--color-brand-600)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)';
-            e.currentTarget.style.borderColor = 'var(--color-brand-600)';
-            e.currentTarget.style.color = 'var(--color-brand-700)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 35%, transparent)';
-            e.currentTarget.style.color = 'var(--color-brand-600)';
-          }}
+          className="text-[10px] font-semibold whitespace-nowrap px-2.5 py-1 rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:scale-105 flex items-center gap-1 border-[color-mix(in_srgb,var(--color-brand-500)_35%,transparent)] text-[var(--color-brand-600)] bg-transparent hover:bg-[color-mix(in_srgb,var(--color-brand-600)_15%,transparent)] hover:border-[var(--color-brand-600)] hover:text-[var(--color-brand-700)]"
         >
           View docs
           <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -52,10 +52,10 @@ export const ProviderCard = ({
 
   // Determine status color
   const getStatusColor = () => {
-    if (isHealthLoading) return { bg: '#9ca3af', shadow: 'rgba(156, 163, 175, 0.2)' };
-    if (isHealthy) return { bg: '#10b981', shadow: 'rgba(16, 185, 129, 0.2)' };
-    if (isDisabled) return { bg: '#f59e0b', shadow: 'rgba(245, 158, 11, 0.2)' };
-    return { bg: '#ef4444', shadow: 'rgba(239, 68, 68, 0.2)' };
+    if (isHealthLoading) return { bg: 'var(--color-gray-400, #9ca3af)', shadow: 'color-mix(in srgb, var(--color-gray-400, #9ca3af) 20%, transparent)' };
+    if (isHealthy) return { bg: 'var(--color-success, #10b981)', shadow: 'color-mix(in srgb, var(--color-success, #10b981) 20%, transparent)' };
+    if (isDisabled) return { bg: 'var(--color-warning, #f59e0b)', shadow: 'color-mix(in srgb, var(--color-warning, #f59e0b) 20%, transparent)' };
+    return { bg: 'var(--color-error)', shadow: 'color-mix(in srgb, var(--color-error) 20%, transparent)' };
   };
 
   const statusColor = getStatusColor();
@@ -65,21 +65,7 @@ export const ProviderCard = ({
       <button
         type="button"
         onClick={onClick}
-        className="w-full rounded-3xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] focus-visible:ring-offset-[color:var(--surface-card)] hover:-translate-y-1 hover:shadow-lg"
-        style={{
-          backgroundColor: 'var(--surface-elevated)',
-          borderColor: 'var(--border)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-elevated))';
-          e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-600) 40%, var(--border))';
-          e.currentTarget.style.boxShadow = '0 8px 20px color-mix(in srgb, var(--color-brand-900) 12%, transparent)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-          e.currentTarget.style.borderColor = 'var(--border)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
+        className="w-full rounded-3xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] focus-visible:ring-offset-[color:var(--surface-card)] hover:-translate-y-1 hover:shadow-lg bg-[var(--surface-elevated)] border-[var(--border)] hover:bg-[color-mix(in_srgb,var(--color-brand-600)_8%,var(--surface-elevated))] hover:border-[color-mix(in_srgb,var(--color-brand-600)_40%,var(--border))] hover:shadow-[0_8px_20px_color-mix(in_srgb,var(--color-brand-900)_12%,transparent)]"
       >
         <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
           <div className="flex items-center gap-2 min-w-0">

@@ -121,14 +121,16 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
-      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
     });
 
     it('should not highlight unselected buttons', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
-      expect(button7D).toHaveStyle({ backgroundColor: 'var(--surface-elevated)' });
+      // Unselected buttons use CSS classes for styling
+      expect(button7D.className).toContain('bg-[var(--surface-elevated)]');
     });
 
     it('should call onTimeRangeChange when button clicked', () => {
@@ -318,14 +320,16 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={365} />);
 
       const button1Y = screen.getByText('1Y');
-      expect(button1Y).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(button1Y.className).toContain('bg-[var(--color-brand-600)]');
     });
 
     it('should handle "All" time range (0 days)', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={0} />);
 
       const buttonAll = screen.getByText('All');
-      expect(buttonAll).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(buttonAll.className).toContain('bg-[var(--color-brand-600)]');
     });
   });
 
@@ -333,31 +337,23 @@ describe('NotesChart', () => {
   // Button Interaction Tests
   // ============================================
   describe('button interactions', () => {
-    it('should change button style on hover for unselected buttons', () => {
+    it('should have hover classes on unselected buttons', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
 
-      // Simulate hover
-      fireEvent.mouseEnter(button7D);
-      expect(button7D).toHaveStyle({ backgroundColor: 'var(--surface-hover)' });
-
-      fireEvent.mouseLeave(button7D);
-      expect(button7D).toHaveStyle({ backgroundColor: 'var(--surface-elevated)' });
+      // Unselected buttons have hover classes defined in CSS
+      expect(button7D.className).toContain('hover:bg-[var(--surface-hover)]');
     });
 
-    it('should not change style on hover for selected button', () => {
+    it('should not have hover background classes on selected button', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
 
-      // Simulate hover
-      fireEvent.mouseEnter(button30D);
-      // Selected button should maintain its style
-      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
-
-      fireEvent.mouseLeave(button30D);
-      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected button has brand color background and no hover:bg class for changing background
+      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
+      expect(button30D.className).not.toContain('hover:bg-[var(--surface-hover)]');
     });
   });
 });

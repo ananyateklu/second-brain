@@ -194,7 +194,7 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
                     <button
                       key={branch.name}
                       onClick={() => handleBranchSelect(branch)}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-all duration-150"
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-all duration-150 ${!isSelected ? 'hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]' : ''}`}
                       style={{
                         backgroundColor: isSelected
                           ? 'var(--color-primary-alpha)'
@@ -205,16 +205,6 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
                         borderLeft: isSelected
                           ? '3px solid var(--color-brand-500)'
                           : '3px solid transparent',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--foreground) 5%, transparent)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
                       }}
                     >
                       <GitBranch className="h-4 w-4 flex-shrink-0" />

@@ -81,32 +81,32 @@ describe('uiSlice', () => {
     it('should open create modal', () => {
       slice.openCreateModal();
 
-      expect(mockSet).toHaveBeenCalledWith({ isCreateModalOpen: true });
+      expect(mockSet).toHaveBeenCalledWith({ isCreateModalOpen: true, createModalSourceRect: null });
     });
 
     it('should close create modal', () => {
       slice.closeCreateModal();
 
-      expect(mockSet).toHaveBeenCalledWith({ isCreateModalOpen: false });
+      expect(mockSet).toHaveBeenCalledWith({ isCreateModalOpen: false, createModalSourceRect: null });
     });
 
     it('should open edit modal with note ID string', () => {
       slice.openEditModal('note-123');
 
-      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: true, editingNoteId: 'note-123' });
+      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: true, editingNoteId: 'note-123', editModalSourceRect: null });
     });
 
     it('should open edit modal with Note object', () => {
       const note = { id: 'note-456', title: 'Test Note', content: 'Test content' };
       slice.openEditModal(note as Parameters<typeof slice.openEditModal>[0]);
 
-      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: true, editingNoteId: 'note-456' });
+      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: true, editingNoteId: 'note-456', editModalSourceRect: null });
     });
 
     it('should close edit modal and clear editingNoteId', () => {
       slice.closeEditModal();
 
-      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: false, editingNoteId: null });
+      expect(mockSet).toHaveBeenCalledWith({ isEditModalOpen: false, editingNoteId: null, editModalSourceRect: null });
     });
   });
 

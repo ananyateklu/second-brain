@@ -1,0 +1,155 @@
+/* =============================================================================
+   shadcn/ui Theme Token Bridge
+   Maps existing Second Brain CSS variables to shadcn/ui expected tokens.
+   This enables gradual migration to shadcn components while preserving
+   the existing 3-theme system (dark, light, blue).
+   ============================================================================= */
+
+:root {
+  /* Border radius - shadcn uses this for all rounded corners */
+  --radius: 0.75rem;
+
+  /* -------------------------------------------------------------------------
+     Core shadcn tokens mapped from existing theme
+     ------------------------------------------------------------------------- */
+
+  /* Card - maps to our surface-card */
+  --card: var(--surface-card);
+  --card-foreground: var(--text-primary);
+
+  /* Popover - maps to our surface-elevated */
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--text-primary);
+
+  /* Primary - maps to our brand color */
+  --primary: var(--color-brand-600);
+  --primary-foreground: #ffffff;
+
+  /* Secondary - transparent with text */
+  --secondary: transparent;
+  --secondary-foreground: var(--text-secondary);
+
+  /* Muted - subtle backgrounds and text */
+  --muted: var(--surface-elevated);
+  --muted-foreground: var(--text-tertiary);
+
+  /* Accent - hover states and highlights */
+  --accent: var(--color-primary-alpha);
+  --accent-foreground: var(--color-brand-300);
+
+  /* Destructive - error/danger states */
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  /* Input - form elements */
+  --input: var(--border);
+  --ring: var(--color-brand-500);
+
+  /* -------------------------------------------------------------------------
+     Overlay colors for modals, lightboxes, etc.
+     Using CSS variables instead of hard-coded rgba values
+     ------------------------------------------------------------------------- */
+  --overlay: color-mix(in srgb, #000000 50%, transparent);
+  --overlay-heavy: color-mix(in srgb, #000000 70%, transparent);
+  --overlay-light: color-mix(in srgb, #000000 30%, transparent);
+
+  /* -------------------------------------------------------------------------
+     Chart colors (for data visualization)
+     ------------------------------------------------------------------------- */
+  --chart-1: var(--color-brand-500);
+  --chart-2: var(--color-accent-blue);
+  --chart-3: var(--color-accent-purple);
+  --chart-4: var(--color-warning);
+  --chart-5: var(--color-error);
+}
+
+/* =============================================================================
+   Light Theme shadcn Overrides
+   ============================================================================= */
+[data-theme="light"] {
+  --primary: var(--color-brand-600);
+  --primary-foreground: #ffffff;
+
+  --secondary: color-mix(in srgb, var(--color-brand-100) 50%, transparent);
+  --secondary-foreground: var(--color-brand-800);
+
+  --accent: var(--color-primary-alpha);
+  --accent-foreground: var(--color-brand-900);
+
+  --muted: color-mix(in srgb, var(--color-brand-100) 30%, transparent);
+  --muted-foreground: var(--color-brand-700);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  --ring: var(--color-brand-600);
+
+  /* Lighter overlays for light theme */
+  --overlay: color-mix(in srgb, #000000 40%, transparent);
+  --overlay-heavy: color-mix(in srgb, #000000 60%, transparent);
+  --overlay-light: color-mix(in srgb, #000000 20%, transparent);
+}
+
+/* =============================================================================
+   Dark Theme shadcn Overrides
+   ============================================================================= */
+[data-theme="dark"] {
+  --primary: var(--color-brand-500);
+  --primary-foreground: #ffffff;
+
+  --secondary: color-mix(in srgb, var(--color-brand-800) 30%, transparent);
+  --secondary-foreground: var(--color-brand-200);
+
+  --accent: var(--color-primary-alpha);
+  --accent-foreground: var(--color-brand-300);
+
+  --muted: var(--surface-elevated);
+  --muted-foreground: var(--text-tertiary);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  --ring: var(--color-brand-500);
+}
+
+/* =============================================================================
+   Blue Theme shadcn Overrides
+   ============================================================================= */
+[data-theme="blue"] {
+  /* Blue theme uses blue palette for UI, but keeps green brand for primary actions */
+  --primary: var(--color-brand-500);
+  --primary-foreground: #ffffff;
+
+  --secondary: color-mix(in srgb, var(--color-blue-700) 30%, transparent);
+  --secondary-foreground: var(--color-blue-200);
+
+  --accent: color-mix(in srgb, var(--color-blue-500) 20%, transparent);
+  --accent-foreground: var(--color-blue-200);
+
+  --muted: var(--surface-elevated);
+  --muted-foreground: var(--text-tertiary);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  --ring: var(--color-blue-400);
+
+  /* Blue-tinted overlays for blue theme */
+  --overlay: color-mix(in srgb, var(--color-blue-950) 70%, transparent);
+  --overlay-heavy: color-mix(in srgb, var(--color-blue-950) 85%, transparent);
+  --overlay-light: color-mix(in srgb, var(--color-blue-950) 50%, transparent);
+}
+
+/* =============================================================================
+   Sidebar tokens (for shadcn sidebar component if used)
+   ============================================================================= */
+:root {
+  --sidebar-background: var(--surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+}

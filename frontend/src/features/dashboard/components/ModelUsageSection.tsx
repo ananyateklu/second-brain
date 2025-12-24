@@ -53,29 +53,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${isSelected ? 'scale-105' : 'hover:scale-105'
-      }`}
-    style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
-      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-      border: `1px solid ${isSelected ? 'var(--color-brand-600)' : 'var(--border)'}`,
-      // GPU-accelerated transitions on specific properties only
-      transitionProperty: 'transform, background-color, color, border-color',
-      transitionDuration: '200ms',
-      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    }}
-    onMouseEnter={(e) => {
-      if (!isSelected) {
-        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-        e.currentTarget.style.color = 'var(--text-primary)';
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!isSelected) {
-        e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-        e.currentTarget.style.color = 'var(--text-secondary)';
-      }
-    }}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-[transform,background-color,color,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+      isSelected
+        ? 'scale-105 bg-[var(--color-brand-600)] text-white border border-[var(--color-brand-600)]'
+        : 'hover:scale-105 bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+    }`}
   >
     {option.label}
   </button>
@@ -95,42 +77,20 @@ const LegendButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap"
-    style={{
-      backgroundColor: isHidden ? 'var(--surface-hover)' : 'transparent',
-      opacity: isHidden ? 0.5 : 1,
-      border: `1px solid ${isHidden ? 'var(--border)' : 'transparent'}`,
-      cursor: 'pointer',
-      // GPU-accelerated transitions
-      transitionProperty: 'transform, background-color, opacity, border-color',
-      transitionDuration: '200ms',
-      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-      e.currentTarget.style.transform = 'scale(1.05)';
-    }}
-    onMouseLeave={(e) => {
-      if (!isHidden) {
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }
-      e.currentTarget.style.transform = 'scale(1)';
-    }}
+    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-[transform,background-color,opacity,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--surface-hover)] hover:scale-105 ${
+      isHidden
+        ? 'bg-[var(--surface-hover)] opacity-50 border border-[var(--border)]'
+        : 'bg-transparent opacity-100 border border-transparent'
+    }`}
   >
     <div
       className="w-3 h-3 rounded-full flex-shrink-0"
       style={{ backgroundColor: entry.color }}
     />
-    <span
-      className="text-xs font-medium"
-      style={{ color: 'var(--text-primary)' }}
-    >
+    <span className="text-xs font-medium text-[var(--text-primary)]">
       {entry.name}
     </span>
-    <span
-      className="text-xs"
-      style={{ color: 'var(--text-secondary)' }}
-    >
+    <span className="text-xs text-[var(--text-secondary)]">
       ({entry.value} msgs)
     </span>
   </button>

@@ -90,19 +90,11 @@ export const GitEmptyState = memo(function GitEmptyState({
         {/* CTA Button */}
         <button
           onClick={onOpenSettings}
-          className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden"
+          className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)]"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
             boxShadow: 'var(--btn-primary-shadow)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--btn-primary-hover-bg)';
-            e.currentTarget.style.boxShadow = 'var(--btn-primary-hover-shadow)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--btn-primary-bg)';
-            e.currentTarget.style.boxShadow = 'var(--btn-primary-shadow)';
           }}
         >
           {/* Shimmer effect */}

@@ -3,7 +3,7 @@ import { useBoundStore } from '../../../store/bound-store';
 import { useDeleteNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
-import { useState, memo, useMemo } from 'react';
+import { useState, memo, useMemo, useRef, useCallback } from 'react';
 
 interface NoteListItemProps {
   note: NoteListItemType;
@@ -23,17 +23,26 @@ export const NoteListItem = memo(({
 }: NoteListItemProps) => {
   const openEditModal = useBoundStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
+  const itemRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
-  const handleItemClick = () => {
+  const handleItemClick = useCallback(() => {
     if (isBulkMode && onSelect) {
       onSelect(note.id);
     } else {
-      openEditModal(note);
+      // Capture the item's bounding rect for morph animation
+      const rect = itemRef.current?.getBoundingClientRect();
+      const sourceRect = rect ? {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      } : null;
+      openEditModal(note, sourceRect);
     }
-  };
+  }, [isBulkMode, onSelect, note, openEditModal]);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -97,6 +106,7 @@ export const NoteListItem = memo(({
 
   return (
     <div
+      ref={itemRef}
       className="group relative border rounded-xl transition-all duration-200 cursor-pointer overflow-hidden"
       style={{
         backgroundColor: getBackgroundStyle(),
@@ -211,21 +221,11 @@ export const NoteListItem = memo(({
         {showDeleteButton && !isBulkMode && (
           <button
             onClick={(e) => { void handleDelete(e); }}
-            className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'
+            className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)] ${isHovered ? 'opacity-100' : 'opacity-0'
               }`}
             style={{
               backgroundColor: 'var(--surface-hover)',
               color: 'var(--text-tertiary)',
-            }}
-            onMouseEnter={(e) => {
-              if (!deleteNoteMutation.isPending) {
-                e.currentTarget.style.backgroundColor = 'var(--color-error-light)';
-                e.currentTarget.style.color = 'var(--color-error-text)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-              e.currentTarget.style.color = 'var(--text-tertiary)';
             }}
             aria-label="Delete note"
             disabled={deleteNoteMutation.isPending}

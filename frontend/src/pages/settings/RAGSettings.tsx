@@ -172,7 +172,7 @@ const RERANKING_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models to score relevance. Fast response times, good accuracy, competitive pricing. Best all-around choice if you already use OpenAI for chat.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models for reranking. Excellent at understanding nuanced queries and context. Slightly higher latency but often more accurate for complex questions.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Very cost-effective with good performance. Best choice for budget-conscious users or high-volume usage.' },
-  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries. Newer option with competitive performance.' },
+  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries. Newer option with competitive performance.' },
   { id: 'Cohere', name: 'Cohere', description: 'Purpose-built Rerank API designed specifically for RAG. Fastest option with excellent accuracy. No prompt engineering needed - just send documents and query. Best choice for production workloads.', badge: 'Recommended' },
 ] as const;
 
@@ -180,7 +180,7 @@ const HYDE_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for HyDE document generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced hypothetical documents. Best for complex or technical queries.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
-  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
   { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
 ] as const;
 
@@ -188,7 +188,7 @@ const QUERY_EXPANSION_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for query variation generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced query variations. Best for complex or technical queries.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
-  { id: 'Grok', name: 'Grok (xAI)', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
   { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
 ] as const;
 
@@ -489,13 +489,13 @@ export function RAGSettings() {
   // Check if any setting differs from default
   const hasNonDefaultSettings = useMemo(() => {
     return ragTopK !== 5 ||
-           ragSimilarityThreshold !== 0.3 ||
-           ragInitialRetrievalCount !== 20 ||
-           ragMinRerankScore !== 3.0 ||
-           ragVectorWeight !== 0.7 ||
-           ragBm25Weight !== 0.3 ||
-           ragMultiQueryCount !== 3 ||
-           ragMaxContextLength !== 4000;
+      ragSimilarityThreshold !== 0.3 ||
+      ragInitialRetrievalCount !== 20 ||
+      ragMinRerankScore !== 3.0 ||
+      ragVectorWeight !== 0.7 ||
+      ragBm25Weight !== 0.3 ||
+      ragMultiQueryCount !== 3 ||
+      ragMaxContextLength !== 4000;
   }, [ragTopK, ragSimilarityThreshold, ragInitialRetrievalCount, ragMinRerankScore, ragVectorWeight, ragBm25Weight, ragMultiQueryCount, ragMaxContextLength]);
 
   // Load preferences from backend when component mounts
@@ -646,90 +646,89 @@ export function RAGSettings() {
               </div>
               {/* Model Dropdown */}
               <div className="relative" ref={rerankingModelDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => rerankingModels.length > 0 && setIsRerankingModelOpen(!isRerankingModelOpen)}
-                    disabled={rerankingModels.length === 0 || (rerankingProvider !== 'Cohere' && isHealthLoading)}
-                    className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
+                <button
+                  type="button"
+                  onClick={() => rerankingModels.length > 0 && setIsRerankingModelOpen(!isRerankingModelOpen)}
+                  disabled={rerankingModels.length === 0 || (rerankingProvider !== 'Cohere' && isHealthLoading)}
+                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderColor: isRerankingModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <span className="truncate">
+                    {rerankingProvider !== 'Cohere' && isHealthLoading
+                      ? 'Loading...'
+                      : rerankingModels.length === 0
+                        ? 'No models'
+                        : ragRerankingModel
+                          ? (rerankingProvider === 'Cohere' ? getCohereModelInfo(ragRerankingModel)?.name : null) ?? formatModelName(ragRerankingModel)
+                          : 'Select model'}
+                  </span>
+                  <svg
+                    className="w-3 h-3 flex-shrink-0 transition-transform"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    style={{ transform: isRerankingModelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isRerankingModelOpen && rerankingModels.length > 0 && (
+                  <div
+                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
                     style={{
                       backgroundColor: 'var(--surface-elevated)',
-                      borderColor: isRerankingModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
-                      color: 'var(--text-primary)',
+                      borderColor: 'var(--border)',
+                      minWidth: '280px',
                     }}
                   >
-                    <span className="truncate">
-                      {rerankingProvider !== 'Cohere' && isHealthLoading
-                        ? 'Loading...'
-                        : rerankingModels.length === 0
-                          ? 'No models'
-                          : ragRerankingModel
-                            ? (rerankingProvider === 'Cohere' ? getCohereModelInfo(ragRerankingModel)?.name : null) ?? formatModelName(ragRerankingModel)
-                            : 'Select model'}
-                    </span>
-                    <svg
-                      className="w-3 h-3 flex-shrink-0 transition-transform"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      style={{ transform: isRerankingModelOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {isRerankingModelOpen && rerankingModels.length > 0 && (
-                    <div
-                      className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
-                      style={{
-                        backgroundColor: 'var(--surface-elevated)',
-                        borderColor: 'var(--border)',
-                        minWidth: '280px',
-                      }}
-                    >
-                      <div className="max-h-64 overflow-y-auto thin-scrollbar">
-                        {rerankingModels.map((model) => {
-                          const isSelected = model === ragRerankingModel;
-                          const cohereInfo = rerankingProvider === 'Cohere' ? getCohereModelInfo(model) : null;
-                          return (
-                            <button
-                              key={model}
-                              type="button"
-                              onClick={() => void handleRerankingModelSelect(model)}
-                              className={`w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all ${
-                                isSelected
-                                  ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
-                                  : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                      {rerankingModels.map((model) => {
+                        const isSelected = model === ragRerankingModel;
+                        const cohereInfo = rerankingProvider === 'Cohere' ? getCohereModelInfo(model) : null;
+                        return (
+                          <button
+                            key={model}
+                            type="button"
+                            onClick={() => void handleRerankingModelSelect(model)}
+                            className={`w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all ${isSelected
+                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
+                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
                               }`}
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-medium truncate" style={{ color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)' }}>
-                                    {cohereInfo ? cohereInfo.name : formatModelName(model)}
-                                  </span>
-                                  {cohereInfo?.badge && (
-                                    <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{
-                                      backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
-                                      color: 'var(--color-brand-600)',
-                                    }}>{cohereInfo.badge}</span>
-                                  )}
-                                </div>
-                                {isSelected && (
-                                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--color-brand-600)' }}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-medium truncate" style={{ color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)' }}>
+                                  {cohereInfo ? cohereInfo.name : formatModelName(model)}
+                                </span>
+                                {cohereInfo?.badge && (
+                                  <span className="text-[9px] font-semibold px-1 py-0.5 rounded" style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
+                                    color: 'var(--color-brand-600)',
+                                  }}>{cohereInfo.badge}</span>
                                 )}
                               </div>
-                              {cohereInfo && (
-                                <span className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
-                                  {cohereInfo.description}
-                                </span>
+                              {isSelected && (
+                                <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--color-brand-600)' }}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
                               )}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            </div>
+                            {cohereInfo && (
+                              <span className="text-[10px] leading-tight" style={{ color: 'var(--text-secondary)' }}>
+                                {cohereInfo.description}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -857,11 +856,10 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleHydeModelSelect(model)}
-                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${
-                              isSelected
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${isSelected
                                 ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
                                 : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
-                            }`}
+                              }`}
                             style={{
                               color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
                             }}
@@ -1005,11 +1003,10 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleQueryExpansionModelSelect(model)}
-                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${
-                              isSelected
+                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${isSelected
                                 ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
                                 : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
-                            }`}
+                              }`}
                             style={{
                               color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
                             }}

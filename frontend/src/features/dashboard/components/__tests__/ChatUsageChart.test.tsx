@@ -129,7 +129,8 @@ describe('ChatUsageChart', () => {
       render(<ChatUsageChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
-      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
     });
 
     it('should call onTimeRangeChange when button clicked', () => {
@@ -292,7 +293,8 @@ describe('ChatUsageChart', () => {
       render(<ChatUsageChart {...defaultProps} selectedTimeRange={365} />);
 
       const button1Y = screen.getByText('1Y');
-      expect(button1Y).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(button1Y.className).toContain('bg-[var(--color-brand-600)]');
     });
   });
 });

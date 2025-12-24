@@ -254,10 +254,10 @@ export function ChatSidebar({
             className={`${styles.deleteShake} flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${selectedIds.size > 0 ? styles.deletePulse : ''}`}
             style={{
               background: selectedIds.size > 0
-                ? 'linear-gradient(135deg, rgb(239, 68, 68), rgb(185, 28, 28))'
+                ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
                 : 'color-mix(in srgb, var(--surface-elevated) 90%, transparent)',
               color: selectedIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedIds.size > 0 ? '0 4px 12px -2px rgba(239, 68, 68, 0.4)' : 'none',
+              boxShadow: selectedIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
               border: selectedIds.size > 0 ? 'none' : '1px solid var(--border)',
               opacity: selectedIds.size === 0 ? 0.6 : 1,
               cursor: selectedIds.size === 0 ? 'not-allowed' : 'pointer',

@@ -195,14 +195,8 @@ export function CodeViewer({
               href={content.htmlUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs flex items-center gap-1 transition-all duration-200"
+              className="text-xs flex items-center gap-1 transition-all duration-200 hover:text-[var(--color-brand-400)]"
               style={{ color: 'var(--text-tertiary)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--color-brand-400)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-tertiary)';
-              }}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               GitHub

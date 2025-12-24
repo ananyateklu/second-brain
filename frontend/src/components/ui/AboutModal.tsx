@@ -3,6 +3,11 @@ import { useBoundStore } from '../../store/bound-store';
 import { getAppVersion } from '../../lib/tauri-bridge';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+} from './Dialog';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -24,41 +29,11 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
     }
   }, [isOpen]);
 
-  // Handle escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => { document.removeEventListener('keydown', handleEscape); };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 backdrop-blur-sm animate-fade-in"
-        style={{
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        }}
-      />
-
-      {/* Modal */}
-      <div
-        className="relative z-10 w-[360px] rounded-2xl border shadow-2xl animate-scale-in"
-        style={{
-          backgroundColor: 'var(--surface-card-solid)',
-          borderColor: 'var(--border)',
-        }}
-        onClick={(e) => { e.stopPropagation(); }}
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="w-[360px] p-0 border shadow-2xl"
+        hideCloseButton
       >
         {/* Content */}
         <div className="flex flex-col items-center p-8 pt-10">
@@ -162,22 +137,16 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
         </div>
 
         {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
-          style={{
-            backgroundColor: 'var(--surface-elevated)',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
-          }}
+        <DialogClose
+          className="absolute top-3 right-3 p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
           aria-label="Close"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
-      </div>
-    </div>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -205,4 +174,3 @@ function FeatureItem({ icon, text }: { icon: React.ReactNode; text: string }) {
     </div>
   );
 }
-
