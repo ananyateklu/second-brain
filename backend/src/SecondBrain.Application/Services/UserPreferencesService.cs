@@ -200,6 +200,13 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.RagHydeModel != null)
             user.Preferences.RagHydeModel = request.RagHydeModel;
 
+        // Query Expansion Provider Settings
+        if (request.RagQueryExpansionProvider != null)
+            user.Preferences.RagQueryExpansionProvider = request.RagQueryExpansionProvider;
+
+        if (request.RagQueryExpansionModel != null)
+            user.Preferences.RagQueryExpansionModel = request.RagQueryExpansionModel;
+
         // RAG Advanced Settings - Tier 1: Core Retrieval
         if (request.RagTopK.HasValue)
             user.Preferences.RagTopK = request.RagTopK.Value;
@@ -332,6 +339,9 @@ public class UserPreferencesService : IUserPreferencesService
             // HyDE Provider Settings
             RagHydeProvider = preferences.RagHydeProvider,
             RagHydeModel = preferences.RagHydeModel,
+            // Query Expansion Provider Settings
+            RagQueryExpansionProvider = preferences.RagQueryExpansionProvider,
+            RagQueryExpansionModel = preferences.RagQueryExpansionModel,
             // RAG Advanced Settings - Tier 1: Core Retrieval
             RagTopK = preferences.RagTopK,
             RagSimilarityThreshold = preferences.RagSimilarityThreshold,

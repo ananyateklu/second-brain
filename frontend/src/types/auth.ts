@@ -87,6 +87,9 @@ export interface UserPreferences {
   // HyDE Provider Settings
   ragHydeProvider: string | null;
   ragHydeModel: string | null;
+  // Query Expansion Provider Settings
+  ragQueryExpansionProvider: string | null;
+  ragQueryExpansionModel: string | null;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: number;
   ragSimilarityThreshold: number;
@@ -131,6 +134,9 @@ export interface UpdateUserPreferencesRequest {
   // HyDE Provider Settings
   ragHydeProvider?: string | null;
   ragHydeModel?: string | null;
+  // Query Expansion Provider Settings
+  ragQueryExpansionProvider?: string | null;
+  ragQueryExpansionModel?: string | null;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK?: number;
   ragSimilarityThreshold?: number;

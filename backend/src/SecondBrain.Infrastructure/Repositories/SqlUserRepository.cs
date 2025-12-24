@@ -223,6 +223,10 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.RagHydeProvider = user.Preferences.RagHydeProvider;
                     existingUser.Preferences.RagHydeModel = user.Preferences.RagHydeModel;
 
+                    // Query Expansion Provider Settings
+                    existingUser.Preferences.RagQueryExpansionProvider = user.Preferences.RagQueryExpansionProvider;
+                    existingUser.Preferences.RagQueryExpansionModel = user.Preferences.RagQueryExpansionModel;
+
                     // RAG Advanced Settings - Tier 1: Core Retrieval
                     existingUser.Preferences.RagTopK = user.Preferences.RagTopK;
                     existingUser.Preferences.RagSimilarityThreshold = user.Preferences.RagSimilarityThreshold;

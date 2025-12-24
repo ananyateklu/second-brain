@@ -8,11 +8,12 @@ using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.AI.StructuredOutput.Models;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.Embeddings.Models;
+using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.RAG;
 
 /// <summary>
-/// Service for query expansion using HyDE (Hypothetical Document Embeddings) 
+/// Service for query expansion using HyDE (Hypothetical Document Embeddings)
 /// and multi-query generation to improve retrieval recall
 /// </summary>
 public interface IQueryExpansionService
@@ -20,16 +21,25 @@ public interface IQueryExpansionService
     /// <summary>
     /// Expands a user query using HyDE - generates a hypothetical document that would answer the query
     /// </summary>
+    /// <param name="query">The user's search query</param>
+    /// <param name="options">Optional RagOptions with provider/model overrides from user preferences</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<QueryExpansionResult> ExpandQueryWithHyDEAsync(
         string query,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Generates multiple query variations to capture different phrasings
     /// </summary>
+    /// <param name="query">The user's search query</param>
+    /// <param name="count">Number of variations to generate</param>
+    /// <param name="options">Optional RagOptions with provider/model overrides from user preferences</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<List<string>> GenerateMultiQueryAsync(
         string query,
         int count = 3,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -38,11 +48,13 @@ public interface IQueryExpansionService
     /// <param name="query">The user's search query</param>
     /// <param name="enableQueryExpansion">Whether to generate multi-query variations (null uses default setting)</param>
     /// <param name="enableHyDE">Whether to use HyDE (Hypothetical Document Embeddings) (null uses default setting)</param>
+    /// <param name="options">Optional RagOptions with provider/model overrides from user preferences</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task<ExpandedQueryEmbeddings> GetExpandedQueryEmbeddingsAsync(
         string query,
         bool? enableQueryExpansion = null,
         bool? enableHyDE = null,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -95,6 +107,7 @@ public class QueryExpansionService : IQueryExpansionService
 
     public async Task<QueryExpansionResult> ExpandQueryWithHyDEAsync(
         string query,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         var result = new QueryExpansionResult { OriginalQuery = query };
@@ -106,15 +119,21 @@ public class QueryExpansionService : IQueryExpansionService
             return result;
         }
 
+        // Resolve effective provider/model: user preferences > global defaults
+        var effectiveProvider = options?.HyDEProvider ?? _settings.HyDEProvider;
+        var effectiveModel = options?.HyDEModel ?? _settings.HyDEModel;
+
         try
         {
-            _logger.LogInformation("Generating hypothetical document for query: {Query}",
-                query.Substring(0, Math.Min(50, query.Length)));
+            _logger.LogInformation("Generating hypothetical document for query: {Query}. Provider: {Provider}, Model: {Model}",
+                query.Substring(0, Math.Min(50, query.Length)),
+                effectiveProvider,
+                effectiveModel ?? "default");
 
             // Try structured output first for reliable document extraction
             if (_structuredOutputService != null)
             {
-                var structuredResult = await GenerateStructuredHyDEDocumentAsync(query, cancellationToken);
+                var structuredResult = await GenerateStructuredHyDEDocumentAsync(query, effectiveProvider, effectiveModel, cancellationToken);
                 if (structuredResult != null)
                 {
                     result.HypotheticalDocument = structuredResult;
@@ -128,7 +147,7 @@ public class QueryExpansionService : IQueryExpansionService
             }
 
             // Fallback to text-based generation
-            return await GenerateTextBasedHyDEDocumentAsync(query, result, cancellationToken);
+            return await GenerateTextBasedHyDEDocumentAsync(query, result, effectiveProvider, effectiveModel, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -145,6 +164,8 @@ public class QueryExpansionService : IQueryExpansionService
     /// </summary>
     private async Task<string?> GenerateStructuredHyDEDocumentAsync(
         string query,
+        string provider,
+        string? model,
         CancellationToken cancellationToken)
     {
         try
@@ -157,26 +178,23 @@ Write a detailed paragraph as if it were found in a document that directly answe
 Be specific and include relevant details, facts, and terminology.
 Also identify the key concepts covered in your response.";
 
-            // Use HyDE-specific provider (defaults to OpenAI in settings)
-            var hydeProvider = _settings.HyDEProvider;
-
-            var options = new StructuredOutputOptions
+            var structuredOptions = new StructuredOutputOptions
             {
                 Temperature = 0.7f,
-                MaxTokens = 600,
+                MaxTokens = 2048,  // Increased from 600 - structured output needs room for JSON schema overhead
                 SystemInstruction = "You are a document generator. Create hypothetical documents that would contain information to answer the given question.",
-                Model = _settings.HyDEModel // Use HyDE-specific model if configured
+                Model = model
             };
 
             var result = await _structuredOutputService!.GenerateAsync<HyDEDocumentResult>(
-                hydeProvider,
+                provider,
                 prompt,
-                options,
+                structuredOptions,
                 cancellationToken);
 
             if (result != null && !string.IsNullOrWhiteSpace(result.Document))
             {
-                if (result.KeyConcepts.Any())
+                if (result.KeyConcepts.Count > 0)
                 {
                     _logger.LogDebug("HyDE key concepts: {Concepts}", string.Join(", ", result.KeyConcepts));
                 }
@@ -198,17 +216,16 @@ Also identify the key concepts covered in your response.";
     private async Task<QueryExpansionResult> GenerateTextBasedHyDEDocumentAsync(
         string query,
         QueryExpansionResult result,
+        string providerName,
+        string? modelName,
         CancellationToken cancellationToken)
     {
-        // Use HyDE-specific provider (defaults to OpenAI in settings)
-        var hydeProviderName = _settings.HyDEProvider;
-
-        var provider = _aiProviderFactory.GetProvider(hydeProviderName);
+        var provider = _aiProviderFactory.GetProvider(providerName);
         if (provider == null)
         {
-            _logger.LogWarning("AI provider {Provider} not available for HyDE", hydeProviderName);
+            _logger.LogWarning("AI provider {Provider} not available for HyDE", providerName);
             result.Success = false;
-            result.Error = $"AI provider {hydeProviderName} not available";
+            result.Error = $"AI provider {providerName} not available";
             return result;
         }
 
@@ -227,7 +244,7 @@ Hypothetical document paragraph:";
             Prompt = hydePrompt,
             MaxTokens = 500,
             Temperature = 0.7f,
-            Model = _settings.HyDEModel // Use HyDE-specific model if configured
+            Model = modelName
         };
         var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
         var response = aiResponse.Content;
@@ -251,6 +268,7 @@ Hypothetical document paragraph:";
     public async Task<List<string>> GenerateMultiQueryAsync(
         string query,
         int count = 3,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         var variations = new List<string> { query }; // Always include original
@@ -260,16 +278,22 @@ Hypothetical document paragraph:";
             return variations;
         }
 
+        // Resolve effective provider/model: user preferences > global defaults
+        var effectiveProvider = options?.QueryExpansionProvider ?? _settings.QueryExpansionProvider;
+        var effectiveModel = options?.QueryExpansionModel ?? _settings.QueryExpansionModel;
+
         try
         {
-            _logger.LogInformation("Generating {Count} query variations for: {Query}",
-                count, query.Substring(0, Math.Min(50, query.Length)));
+            _logger.LogInformation("Generating {Count} query variations for: {Query}. Provider: {Provider}, Model: {Model}",
+                count, query.Substring(0, Math.Min(50, query.Length)),
+                effectiveProvider,
+                effectiveModel ?? "default");
 
             // Try structured output first for reliable query list extraction
             if (_structuredOutputService != null)
             {
-                var structuredQueries = await GenerateStructuredMultiQueryAsync(query, count - 1, cancellationToken);
-                if (structuredQueries != null && structuredQueries.Any())
+                var structuredQueries = await GenerateStructuredMultiQueryAsync(query, count - 1, effectiveProvider, effectiveModel, cancellationToken);
+                if (structuredQueries != null && structuredQueries.Count > 0)
                 {
                     variations.AddRange(structuredQueries);
                     _logger.LogDebug("Generated {Count} structured query variations: {Queries}",
@@ -281,7 +305,7 @@ Hypothetical document paragraph:";
             }
 
             // Fallback to text-based generation
-            var textQueries = await GenerateTextBasedMultiQueryAsync(query, count - 1, cancellationToken);
+            var textQueries = await GenerateTextBasedMultiQueryAsync(query, count - 1, effectiveProvider, effectiveModel, cancellationToken);
             variations.AddRange(textQueries);
         }
         catch (Exception ex)
@@ -298,6 +322,8 @@ Hypothetical document paragraph:";
     private async Task<List<string>?> GenerateStructuredMultiQueryAsync(
         string query,
         int count,
+        string provider,
+        string? model,
         CancellationToken cancellationToken)
     {
         try
@@ -313,20 +339,21 @@ Generate variations that:
 
 Provide exactly {count} alternative queries.";
 
-            var options = new StructuredOutputOptions
+            var structuredOptions = new StructuredOutputOptions
             {
                 Temperature = 0.8f,
-                MaxTokens = 400,
-                SystemInstruction = "You are a search query generator. Create alternative phrasings of user queries to improve search recall."
+                MaxTokens = 1024,  // Increased from 400 - structured output needs room for JSON schema overhead
+                SystemInstruction = "You are a search query generator. Create alternative phrasings of user queries to improve search recall.",
+                Model = model
             };
 
             var result = await _structuredOutputService!.GenerateAsync<MultiQueryResult>(
-                _settings.RerankingProvider,
+                provider,
                 prompt,
-                options,
+                structuredOptions,
                 cancellationToken);
 
-            if (result != null && result.Queries.Any())
+            if (result != null && result.Queries.Count > 0)
             {
                 // Filter and clean queries
                 var cleanedQueries = result.Queries
@@ -357,18 +384,20 @@ Provide exactly {count} alternative queries.";
     private async Task<List<string>> GenerateTextBasedMultiQueryAsync(
         string query,
         int count,
+        string providerName,
+        string? modelName,
         CancellationToken cancellationToken)
     {
-        var provider = _aiProviderFactory.GetProvider(_settings.RerankingProvider);
-        if (provider == null)
+        var aiProvider = _aiProviderFactory.GetProvider(providerName);
+        if (aiProvider == null)
         {
-            _logger.LogWarning("AI provider not available for multi-query generation");
-            return new List<string>();
+            _logger.LogWarning("AI provider {Provider} not available for multi-query generation", providerName);
+            return [];
         }
 
         var multiQueryPrompt = $@"You are a helpful assistant that generates search query variations.
 
-Given the following question, generate {count} alternative phrasings or related queries that would help find relevant information. 
+Given the following question, generate {count} alternative phrasings or related queries that would help find relevant information.
 Each variation should capture a different aspect or phrasing of the original question.
 Return ONLY the queries, one per line, without numbering or bullets.
 
@@ -376,8 +405,8 @@ Original question: {query}
 
 Alternative queries:";
 
-        var request = new AIRequest { Prompt = multiQueryPrompt, MaxTokens = 300, Temperature = 0.8f };
-        var aiResponse = await provider.GenerateCompletionAsync(request, cancellationToken);
+        var request = new AIRequest { Prompt = multiQueryPrompt, MaxTokens = 300, Temperature = 0.8f, Model = modelName };
+        var aiResponse = await aiProvider.GenerateCompletionAsync(request, cancellationToken);
         var response = aiResponse.Content;
 
         if (!string.IsNullOrWhiteSpace(response))
@@ -395,13 +424,14 @@ Alternative queries:";
             return generatedQueries;
         }
 
-        return new List<string>();
+        return [];
     }
 
     public async Task<ExpandedQueryEmbeddings> GetExpandedQueryEmbeddingsAsync(
         string query,
         bool? enableQueryExpansion = null,
         bool? enableHyDE = null,
+        RagOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         var result = new ExpandedQueryEmbeddings { OriginalQuery = query };
@@ -433,7 +463,7 @@ Alternative queries:";
             // 2. Generate HyDE embedding if enabled
             if (effectiveEnableHyDE)
             {
-                var hydeResult = await ExpandQueryWithHyDEAsync(query, cancellationToken);
+                var hydeResult = await ExpandQueryWithHyDEAsync(query, options, cancellationToken);
                 if (hydeResult.Success && !string.IsNullOrWhiteSpace(hydeResult.HypotheticalDocument))
                 {
                     result.HypotheticalDocument = hydeResult.HypotheticalDocument;
@@ -453,7 +483,7 @@ Alternative queries:";
             if (effectiveEnableQueryExpansion && _settings.MultiQueryCount > 1)
             {
                 var queryVariations = await GenerateMultiQueryAsync(
-                    query, _settings.MultiQueryCount, cancellationToken);
+                    query, _settings.MultiQueryCount, options, cancellationToken);
 
                 result.QueryVariations = queryVariations;
 

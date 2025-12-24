@@ -305,6 +305,8 @@ public class ChatController : ControllerBase
                         rerankingModel: userPrefs.RagRerankingModel,
                         hydeProvider: userPrefs.RagHydeProvider,
                         hydeModel: userPrefs.RagHydeModel,
+                        queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
+                        queryExpansionModel: userPrefs.RagQueryExpansionModel,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,
@@ -705,6 +707,8 @@ public class ChatController : ControllerBase
                         rerankingModel: userPrefs.RagRerankingModel,
                         hydeProvider: userPrefs.RagHydeProvider,
                         hydeModel: userPrefs.RagHydeModel,
+                        queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
+                        queryExpansionModel: userPrefs.RagQueryExpansionModel,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,

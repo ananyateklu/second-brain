@@ -115,6 +115,9 @@ export interface SettingsSliceActions {
   // HyDE Provider Settings
   setRagHydeProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
   setRagHydeModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
+  // Query Expansion Provider Settings
+  setRagQueryExpansionProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setRagQueryExpansionModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   // RAG Advanced Settings - Tier 1: Core Retrieval
   setRagTopK: (value: number, syncToBackend?: boolean) => Promise<void>;
   setRagSimilarityThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;

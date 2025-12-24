@@ -41,6 +41,9 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   // HyDE Provider Settings
   ragHydeProvider: null,
   ragHydeModel: null,
+  // Query Expansion Provider Settings
+  ragQueryExpansionProvider: null,
+  ragQueryExpansionModel: null,
   // RAG Advanced Settings - Tier 1: Core Retrieval
   ragTopK: 5,
   ragSimilarityThreshold: 0.3,

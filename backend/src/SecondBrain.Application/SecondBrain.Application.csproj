@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="10.0.0" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.68.0" />
-    <PackageReference Include="Google.GenAI" Version="0.8.0" />
+    <PackageReference Include="Google.GenAI" Version="0.9.0" />
     <PackageReference Include="OllamaSharp" Version="5.4.12" />
     <PackageReference Include="OpenAI" Version="2.7.0" />
     <PackageReference Include="Pinecone.Client" Version="4.0.2" />

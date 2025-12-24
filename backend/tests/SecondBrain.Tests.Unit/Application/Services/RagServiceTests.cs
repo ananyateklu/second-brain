@@ -140,7 +140,7 @@ public class RagServiceTests
             }
         };
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expandedEmbeddings);
 
         _mockHybridSearchService.Setup(s => s.SearchAsync(
@@ -175,7 +175,7 @@ public class RagServiceTests
             TotalTokensUsed = 0
         };
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expandedEmbeddings);
 
         // Act
@@ -205,7 +205,7 @@ public class RagServiceTests
             TotalTokensUsed = 5
         };
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expandedEmbeddings);
 
         _mockHybridSearchService.Setup(s => s.SearchAsync(
@@ -238,7 +238,7 @@ public class RagServiceTests
             TotalTokensUsed = 0
         };
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expandedEmbeddings);
 
         _mockHybridSearchService.Setup(s => s.SearchAsync(
@@ -265,7 +265,7 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "Test";
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Unexpected error"));
 
         // Act
@@ -324,7 +324,7 @@ public class RagServiceTests
             }
         };
 
-        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<RagOptions?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expandedEmbeddings);
 
         _mockHybridSearchService.Setup(s => s.SearchAsync(
