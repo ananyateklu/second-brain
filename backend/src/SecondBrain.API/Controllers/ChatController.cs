@@ -307,6 +307,8 @@ public class ChatController : ControllerBase
                         hydeModel: userPrefs.RagHydeModel,
                         queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                         queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                        embeddingProvider: userPrefs.RagEmbeddingProvider,
+                        embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,
@@ -709,6 +711,8 @@ public class ChatController : ControllerBase
                         hydeModel: userPrefs.RagHydeModel,
                         queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                         queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                        embeddingProvider: userPrefs.RagEmbeddingProvider,
+                        embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,

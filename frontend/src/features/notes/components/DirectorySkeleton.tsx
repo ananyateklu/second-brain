@@ -37,7 +37,7 @@ export function DirectoryContentSkeleton() {
 /**
  * DirectorySkeleton - Full page skeleton with sidebar and content
  * Used for initial page load before layout renders
- * Height matches NotesDirectoryPage: calc(100vh - titleBarHeight - 2rem)
+ * Height matches NotesDirectoryPage: calc(100vh - titleBarHeight - 21px)
  */
 export function DirectorySkeleton() {
   const titleBarHeight = useTitleBarHeight();
@@ -49,8 +49,8 @@ export function DirectorySkeleton() {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+        height: `calc(100vh - ${titleBarHeight}px - 21px)`,
+        maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
       }}
     >
       <ShimmerStyles />
@@ -103,7 +103,7 @@ export function DirectorySkeleton() {
           className="flex-shrink-0 px-4 border-b flex items-center justify-between h-16"
           style={{ borderColor: 'var(--border)' }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <ShimmerBlock className="w-5 h-5 rounded" />
             <ShimmerBlock className="h-5 w-24" />
           </div>

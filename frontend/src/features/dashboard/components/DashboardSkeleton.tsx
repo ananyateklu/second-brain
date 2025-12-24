@@ -9,7 +9,7 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonCard() {
   return (
     <div
-      className="rounded-2xl border p-3 flex flex-col h-full relative overflow-hidden"
+      className="rounded-2xl border p-4 flex flex-col h-full relative overflow-hidden"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -75,7 +75,7 @@ function SkeletonModelUsage() {
   return (
     <div className="space-y-3">
       <div
-        className="rounded-3xl border p-5 relative overflow-hidden"
+        className="rounded-3xl border p-[19px] relative overflow-hidden"
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
@@ -194,12 +194,12 @@ function SkeletonModelUsage() {
 
 export function DashboardSkeleton() {
   return (
-    <div className="space-y-6 dashboard-container">
+    <div className="space-y-3 dashboard-container">
       <ShimmerStyles />
 
       {/* Stats Cards Grid - matches StatCardsGrid flex layout */}
       <div
-        className="flex gap-2 dashboard-stats-grid"
+        className="flex gap-3 dashboard-stats-grid"
         style={{
           flexWrap: 'wrap',
         }}
@@ -219,7 +219,7 @@ export function DashboardSkeleton() {
       </div>
 
       {/* Charts Section - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <SkeletonChart />
         <SkeletonChart />
       </div>

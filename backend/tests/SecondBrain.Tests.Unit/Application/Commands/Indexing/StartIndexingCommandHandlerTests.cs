@@ -43,6 +43,7 @@ public class StartIndexingCommandHandlerTests
                 command.EmbeddingProvider,
                 command.VectorStoreProvider,
                 command.EmbeddingModel,
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
@@ -77,6 +78,7 @@ public class StartIndexingCommandHandlerTests
                 "OpenAI",
                 "Pinecone",
                 "text-embedding-ada-002",
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
@@ -118,6 +120,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
@@ -150,6 +153,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Indexing already in progress"));
 
@@ -177,6 +181,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new ArgumentException("Invalid embedding model"));
 
@@ -205,6 +210,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database error"));
 
@@ -240,6 +246,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(job);
 
@@ -252,6 +259,7 @@ public class StartIndexingCommandHandlerTests
             "Gemini",
             "PostgreSQL",
             "embedding-001",
+            It.IsAny<int?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -271,6 +279,7 @@ public class StartIndexingCommandHandlerTests
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
+                It.IsAny<int?>(),
                 token))
             .ReturnsAsync(job);
 
@@ -283,6 +292,7 @@ public class StartIndexingCommandHandlerTests
             command.EmbeddingProvider,
             command.VectorStoreProvider,
             command.EmbeddingModel,
+            It.IsAny<int?>(),
             token), Times.Once);
     }
 

@@ -174,18 +174,23 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
     /// <summary>
     /// Performs native PostgreSQL hybrid search combining vector similarity and BM25 full-text search
     /// using Reciprocal Rank Fusion (RRF) in a single database query.
-    /// 
+    ///
     /// This leverages PostgreSQL 18 optimizations:
     /// - Async I/O for parallel CTE execution
     /// - HNSW index for fast vector search
     /// - GIN index for fast full-text search
     /// - Single round-trip to database
+    ///
+    /// Supports variable embedding dimensions (768, 1024, 1536, 3072) for different providers:
+    /// - 1536 dims: Uses halfvec quantization for 50% memory savings (OpenAI)
+    /// - Other dims: Uses full-precision vectors (Gemini 768, Ollama 768/1024, Cohere 1024)
     /// </summary>
     public async Task<List<NativeHybridSearchResult>> SearchWithNativeHybridAsync(
         string query,
         List<double> queryEmbedding,
         string userId,
         int topK,
+        int embeddingDimensions = 1536,
         int initialRetrievalCount = 20,
         float vectorWeight = 0.7f,
         float bm25Weight = 0.3f,
@@ -205,20 +210,31 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
             {
                 _logger.LogWarning("Query sanitization resulted in empty string. Original: {Query}", query);
                 // Fall back to vector-only search if query sanitizes to empty
-                return await VectorOnlySearchAsync(queryEmbedding, userId, topK, cancellationToken);
+                return await VectorOnlySearchAsync(queryEmbedding, userId, topK, embeddingDimensions, cancellationToken);
             }
 
             _logger.LogInformation(
-                "Starting native hybrid search. UserId: {UserId}, Query: {Query}, TopK: {TopK}, VectorWeight: {VectorWeight}, BM25Weight: {BM25Weight}",
-                userId, query.Substring(0, Math.Min(50, query.Length)), topK, vectorWeight, bm25Weight);
+                "Starting native hybrid search. UserId: {UserId}, Query: {Query}, TopK: {TopK}, Dimensions: {Dimensions}, VectorWeight: {VectorWeight}, BM25Weight: {BM25Weight}",
+                userId, query.Substring(0, Math.Min(50, query.Length)), topK, embeddingDimensions, vectorWeight, bm25Weight);
 
             // Convert embedding to PostgreSQL vector string format
             var embeddingString = "[" + string.Join(",", queryEmbedding) + "]";
 
+            // Build dimension-aware vector comparison SQL
+            // For 1536 dims: use halfvec quantization for 50% memory savings (pgvector 0.7+)
+            // For other dims: use full-precision vector comparison
+            var vectorDistanceExpr = embeddingDimensions == 1536
+                ? "embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)"
+                : "embedding <=> @queryEmbedding::vector";
+
+            var vectorScoreExpr = embeddingDimensions == 1536
+                ? "1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536))"
+                : "1 - (embedding <=> @queryEmbedding::vector)";
+
             // Native hybrid search SQL using CTEs and RRF
             // This executes both searches and fuses results in a single query
-            // Uses halfvec quantization (pgvector 0.7+) for 50% memory savings on vector index
-            var sql = @"
+            // Filters by embedding_dimensions to only compare vectors of matching size
+            var sql = $@"
                 WITH vector_results AS (
                     SELECT
                         id,
@@ -228,16 +244,17 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                         note_tags,
                         note_summary,
                         chunk_index,
-                        1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_score,
-                        ROW_NUMBER() OVER (ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_rank
+                        {vectorScoreExpr} AS vector_score,
+                        ROW_NUMBER() OVER (ORDER BY {vectorDistanceExpr}) AS vector_rank
                     FROM note_embeddings
                     WHERE user_id = @userId
                       AND embedding IS NOT NULL
-                    ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)
+                      AND embedding_dimensions = @embeddingDimensions
+                    ORDER BY {vectorDistanceExpr}
                     LIMIT @initialK
                 ),
                 bm25_results AS (
-                    SELECT 
+                    SELECT
                         id,
                         note_id,
                         content,
@@ -253,6 +270,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     WHERE user_id = @userId
                       AND search_vector IS NOT NULL
                       AND search_vector @@ plainto_tsquery('english', @query)
+                      AND embedding_dimensions = @embeddingDimensions
                     ORDER BY bm25_score DESC
                     LIMIT @initialK
                 )
@@ -284,6 +302,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
             command.Parameters.Add(new NpgsqlParameter("@queryEmbedding", NpgsqlDbType.Text) { Value = embeddingString });
             command.Parameters.Add(new NpgsqlParameter("@query", NpgsqlDbType.Text) { Value = sanitizedQuery });
             command.Parameters.Add(new NpgsqlParameter("@userId", NpgsqlDbType.Text) { Value = userId });
+            command.Parameters.Add(new NpgsqlParameter("@embeddingDimensions", NpgsqlDbType.Integer) { Value = embeddingDimensions });
             command.Parameters.Add(new NpgsqlParameter("@initialK", NpgsqlDbType.Integer) { Value = initialRetrievalCount });
             command.Parameters.Add(new NpgsqlParameter("@topK", NpgsqlDbType.Integer) { Value = topK });
             command.Parameters.Add(new NpgsqlParameter("@rrfK", NpgsqlDbType.Integer) { Value = rrfConstant });
@@ -348,21 +367,33 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
     }
 
     /// <summary>
-    /// Fallback to vector-only search when BM25 query is empty
-    /// Uses halfvec quantization for memory efficiency
+    /// Fallback to vector-only search when BM25 query is empty.
+    /// Supports variable embedding dimensions (768, 1024, 1536, 3072).
+    /// Uses halfvec quantization for 1536 dims, full-precision for others.
     /// </summary>
     private async Task<List<NativeHybridSearchResult>> VectorOnlySearchAsync(
         List<double> queryEmbedding,
         string userId,
         int topK,
+        int embeddingDimensions,
         CancellationToken cancellationToken)
     {
         try
         {
             var embeddingString = "[" + string.Join(",", queryEmbedding) + "]";
 
-            // Uses halfvec quantization (pgvector 0.7+) for 50% memory savings
-            var sql = @"
+            // Build dimension-aware vector comparison SQL
+            // For 1536 dims: use halfvec quantization for 50% memory savings
+            // For other dims: use full-precision vector comparison
+            var vectorDistanceExpr = embeddingDimensions == 1536
+                ? "embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)"
+                : "embedding <=> @queryEmbedding::vector";
+
+            var vectorScoreExpr = embeddingDimensions == 1536
+                ? "1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536))"
+                : "1 - (embedding <=> @queryEmbedding::vector)";
+
+            var sql = $@"
                 SELECT
                     id,
                     note_id,
@@ -371,12 +402,13 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
                     note_tags,
                     note_summary,
                     chunk_index,
-                    1 - (embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_score,
-                    ROW_NUMBER() OVER (ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)) AS vector_rank
+                    {vectorScoreExpr} AS vector_score,
+                    ROW_NUMBER() OVER (ORDER BY {vectorDistanceExpr}) AS vector_rank
                 FROM note_embeddings
                 WHERE user_id = @userId
                   AND embedding IS NOT NULL
-                ORDER BY embedding::halfvec(1536) <=> @queryEmbedding::halfvec(1536)
+                  AND embedding_dimensions = @embeddingDimensions
+                ORDER BY {vectorDistanceExpr}
                 LIMIT @topK";
 
             var connection = _context.Database.GetDbConnection();
@@ -384,6 +416,7 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
             command.CommandText = sql;
             command.Parameters.Add(new NpgsqlParameter("@queryEmbedding", NpgsqlDbType.Text) { Value = embeddingString });
             command.Parameters.Add(new NpgsqlParameter("@userId", NpgsqlDbType.Text) { Value = userId });
+            command.Parameters.Add(new NpgsqlParameter("@embeddingDimensions", NpgsqlDbType.Integer) { Value = embeddingDimensions });
             command.Parameters.Add(new NpgsqlParameter("@topK", NpgsqlDbType.Integer) { Value = topK });
 
             if (connection.State != System.Data.ConnectionState.Open)
@@ -431,6 +464,66 @@ public class SqlNoteEmbeddingSearchRepository : INoteEmbeddingSearchRepository
         {
             _logger.LogError(ex, "Vector-only search fallback failed. UserId: {UserId}", userId);
             return new List<NativeHybridSearchResult>();
+        }
+    }
+
+    /// <summary>
+    /// Gets the embedding dimensions and model info for a user's stored embeddings.
+    /// Returns the most common dimensions/model combination if multiple exist.
+    /// This allows RAG search to use matching dimensions for query embeddings.
+    /// </summary>
+    public async Task<(int Dimensions, string? Model)?> GetUserEmbeddingInfoAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get the most common (dimensions, model) combination for this user
+            // This handles cases where a user re-indexes with a different model
+            var sql = @"
+                SELECT
+                    embedding_dimensions,
+                    embedding_model,
+                    COUNT(*) as count
+                FROM note_embeddings
+                WHERE user_id = @userId
+                  AND embedding IS NOT NULL
+                  AND embedding_dimensions IS NOT NULL
+                GROUP BY embedding_dimensions, embedding_model
+                ORDER BY count DESC
+                LIMIT 1";
+
+            var connection = _context.Database.GetDbConnection();
+            await using var command = (NpgsqlCommand)connection.CreateCommand();
+            command.CommandText = sql;
+            command.Parameters.Add(new NpgsqlParameter("@userId", NpgsqlDbType.Text) { Value = userId });
+
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                var dimensions = reader.GetInt32(0);
+                var model = reader.IsDBNull(1) ? null : reader.GetString(1);
+
+                _logger.LogDebug(
+                    "User embedding info retrieved. UserId: {UserId}, Dimensions: {Dimensions}, Model: {Model}",
+                    userId, dimensions, model ?? "unknown");
+
+                return (dimensions, model);
+            }
+
+            _logger.LogDebug("No embeddings found for user. UserId: {UserId}", userId);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get user embedding info. UserId: {UserId}", userId);
+            return null;
         }
     }
 

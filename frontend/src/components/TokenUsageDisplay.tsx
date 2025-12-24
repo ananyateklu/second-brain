@@ -189,10 +189,11 @@ export function TokenUsageDisplay({
             {/* RAG context */}
             {ragContextTokens && ragContextTokens > 0 && (
               <span
-                className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px]"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
-                  color: 'var(--color-accent-blue-text)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 8%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-brand-500) 20%, transparent)',
+                  color: 'var(--color-brand-500)',
                 }}
               >
                 <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

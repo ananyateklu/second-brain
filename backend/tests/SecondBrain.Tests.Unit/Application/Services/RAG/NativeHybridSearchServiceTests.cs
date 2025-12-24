@@ -52,7 +52,7 @@ public class NativeHybridSearchServiceTests
         var topK = 5;
         var nativeResults = CreateNativeHybridResults(3);
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 _settings.VectorWeight, _settings.BM25Weight, _settings.RRFConstant,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(nativeResults);
@@ -81,7 +81,7 @@ public class NativeHybridSearchServiceTests
         result.Should().BeEmpty();
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
             It.IsAny<string>(), It.IsAny<List<double>>(), It.IsAny<string>(),
-            It.IsAny<int>(), It.IsAny<int>(), It.IsAny<float>(), It.IsAny<float>(),
+            It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<float>(), It.IsAny<float>(),
             It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -160,7 +160,7 @@ public class NativeHybridSearchServiceTests
         var topK = 5;
         var nativeResults = CreateNativeHybridResults(2);
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                "", embedding, userId, topK, topK,
+                "", embedding, userId, topK, 1536, topK,
                 1.0f, 0.0f, It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(nativeResults);
@@ -171,7 +171,7 @@ public class NativeHybridSearchServiceTests
         // Assert
         result.Should().HaveCount(2);
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
-            "", embedding, userId, topK, topK,
+            "", embedding, userId, topK, 1536, topK,
             1.0f, 0.0f, It.IsAny<int>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -206,7 +206,7 @@ public class NativeHybridSearchServiceTests
             FoundInBM25Search = true
         };
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult> { nativeResult });
@@ -258,7 +258,7 @@ public class NativeHybridSearchServiceTests
             FoundInBM25Search = true
         };
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult> { nativeResult });
@@ -287,7 +287,7 @@ public class NativeHybridSearchServiceTests
         var expectedInitialCount = Math.Max(topK * 3, _settings.InitialRetrievalCount);
 
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, expectedInitialCount,
+                query, embedding, userId, topK, 1536, expectedInitialCount,
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
@@ -297,7 +297,7 @@ public class NativeHybridSearchServiceTests
 
         // Assert
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
-            query, embedding, userId, topK, expectedInitialCount,
+            query, embedding, userId, topK, 1536, expectedInitialCount,
             It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -326,7 +326,7 @@ public class NativeHybridSearchServiceTests
         var topK = 5;
 
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, 100,
+                query, embedding, userId, topK, 1536, 100,
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
@@ -336,7 +336,7 @@ public class NativeHybridSearchServiceTests
 
         // Assert
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
-            query, embedding, userId, topK, 100,
+            query, embedding, userId, topK, 1536, 100,
             It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -369,7 +369,7 @@ public class NativeHybridSearchServiceTests
         var topK = 5;
 
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 0.8f, 0.2f, 70,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
@@ -379,7 +379,7 @@ public class NativeHybridSearchServiceTests
 
         // Assert
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
-            query, embedding, userId, topK, It.IsAny<int>(),
+            query, embedding, userId, topK, 1536, It.IsAny<int>(),
             0.8f, 0.2f, 70,
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -394,7 +394,7 @@ public class NativeHybridSearchServiceTests
         // Arrange
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
                 "test", It.IsAny<List<double>>(), "test-availability-check",
-                1, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
+                1, 1536, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
 
@@ -411,7 +411,7 @@ public class NativeHybridSearchServiceTests
         // Arrange
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
                 "test", It.IsAny<List<double>>(), "test-availability-check",
-                1, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
+                1, 1536, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Database unavailable"));
 
@@ -429,7 +429,7 @@ public class NativeHybridSearchServiceTests
         var cts = new CancellationTokenSource();
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
                 "test", It.IsAny<List<double>>(), "test-availability-check",
-                1, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
+                1, 1536, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 cts.Token))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
 
@@ -439,7 +439,7 @@ public class NativeHybridSearchServiceTests
         // Assert
         _mockRepository.Verify(r => r.SearchWithNativeHybridAsync(
             "test", It.IsAny<List<double>>(), "test-availability-check",
-            1, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
+            1, 1536, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
             cts.Token), Times.Once);
     }
 
@@ -450,10 +450,10 @@ public class NativeHybridSearchServiceTests
         List<double>? capturedEmbedding = null;
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
                 "test", It.IsAny<List<double>>(), "test-availability-check",
-                1, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
+                1, 1536, 1, It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<string, List<double>, string, int, int, float, float, int, CancellationToken>(
-                (q, e, u, t, i, vw, bw, rrf, ct) => capturedEmbedding = e)
+            .Callback<string, List<double>, string, int, int, int, float, float, int, CancellationToken>(
+                (q, e, u, t, d, i, vw, bw, rrf, ct) => capturedEmbedding = e)
             .ReturnsAsync(new List<NativeHybridSearchResult>());
 
         // Act
@@ -478,7 +478,7 @@ public class NativeHybridSearchServiceTests
         var userId = "user-123";
         var topK = 5;
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
@@ -507,7 +507,7 @@ public class NativeHybridSearchServiceTests
         var topK = 5;
         var nativeResults = CreateNativeHybridResults(3);
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(nativeResults);
@@ -585,7 +585,7 @@ public class NativeHybridSearchServiceTests
         var userId = "user-123";
         var topK = 5;
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());
@@ -603,7 +603,7 @@ public class NativeHybridSearchServiceTests
         var userId = "user-123";
         var topK = 5;
         _mockRepository.Setup(r => r.SearchWithNativeHybridAsync(
-                query, embedding, userId, topK, It.IsAny<int>(),
+                query, embedding, userId, topK, 1536, It.IsAny<int>(),
                 It.IsAny<float>(), It.IsAny<float>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<NativeHybridSearchResult>());

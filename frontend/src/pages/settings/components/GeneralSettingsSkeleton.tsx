@@ -9,7 +9,7 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonDisplaySettings() {
   return (
     <section
-      className="rounded-3xl border p-4"
+      className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -79,7 +79,7 @@ function SkeletonDisplaySettings() {
 function SkeletonNotificationTesting() {
   return (
     <section
-      className="rounded-3xl border p-4"
+      className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -135,7 +135,7 @@ function SkeletonNotificationTesting() {
 function SkeletonAutoSave() {
   return (
     <section
-      className="rounded-3xl border p-4"
+      className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

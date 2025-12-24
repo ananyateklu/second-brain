@@ -152,7 +152,7 @@ export const OllamaConfigSection = ({ downloadedModels, onRefreshHealth }: Ollam
           type="button"
           onClick={handleToggleRemote}
           disabled={isSavingOllama}
-          className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
+          className="relative inline-flex items-center h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:opacity-50"
           style={{
             backgroundColor: useRemoteOllama ? 'var(--color-brand-600)' : 'var(--border)',
           }}

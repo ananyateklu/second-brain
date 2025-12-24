@@ -11,7 +11,7 @@ namespace SecondBrain.Application.Services.Embeddings.Providers;
 
 /// <summary>
 /// Cohere embedding provider using the v2 Embed API.
-/// Supports embed-v4.0 with configurable output dimensions (256-4096).
+/// Supports embed-v4.0 with configurable output dimensions (256, 512, 1024, 1536).
 /// See: https://docs.cohere.com/reference/embed
 /// </summary>
 public class CohereEmbeddingProvider : IEmbeddingProvider
@@ -29,11 +29,16 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
     private static readonly TimeSpan ModelsCacheDuration = TimeSpan.FromMinutes(30);
 
     /// <summary>
+    /// Valid output dimensions for Cohere embed-v4.0
+    /// </summary>
+    private static readonly int[] ValidEmbedV4Dimensions = [256, 512, 1024, 1536];
+
+    /// <summary>
     /// Known Cohere embedding models with their dimension info
     /// </summary>
     private static readonly Dictionary<string, (int DefaultDims, int MinDims, int MaxDims, string Description)> KnownModels = new(StringComparer.OrdinalIgnoreCase)
     {
-        { "embed-v4.0", (1024, 256, 4096, "Latest and most capable model, 100+ languages. Supports custom dimensions (256-4096).") },
+        { "embed-v4.0", (1024, 256, 1536, "Latest and most capable model, 100+ languages. Supports custom dimensions (256, 512, 1024, 1536).") },
         { "embed-english-v3.0", (1024, 1024, 1024, "English-only, optimized for speed") },
         { "embed-multilingual-v3.0", (1024, 1024, 1024, "100+ languages, v3 generation") },
         { "embed-english-light-v3.0", (384, 384, 384, "Lightweight English model, fastest") },
@@ -50,11 +55,11 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
             ModelId = "embed-v4.0",
             DisplayName = "Embed v4.0",
             Dimensions = 1024,
-            Description = "Latest and most capable model, 100+ languages. Supports custom dimensions (256-4096).",
+            Description = "Latest and most capable model, 100+ languages. Supports custom dimensions (256, 512, 1024, 1536).",
             IsDefault = true,
             SupportsCustomDimensions = true,
             MinDimensions = 256,
-            MaxDimensions = 4096
+            MaxDimensions = 1536
         },
         new EmbeddingModelInfo
         {
@@ -162,7 +167,9 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
 
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -188,14 +195,17 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
         {
             var httpClient = CreateHttpClient();
 
-            // Cohere v2 Embed API request format
-            var requestBody = BuildEmbedRequest(new[] { text }, CohereInputType.SearchDocument);
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _embeddingSettings.Model;
+
+            // Cohere v2 Embed API request format - use customDimensions if provided
+            var requestBody = BuildEmbedRequest(new[] { text }, CohereInputType.SearchDocument, effectiveModel, customDimensions);
 
             var jsonContent = JsonSerializer.Serialize(requestBody, CohereEmbedJsonOptions.Default);
             var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
             _logger.LogDebug("Generating Cohere embedding. Model: {Model}, TextLength: {Length}",
-                _embeddingSettings.Model, text.Length);
+                effectiveModel, text.Length);
 
             var response = await httpClient.PostAsync("embed", httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -234,7 +244,7 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
                 Embedding = result.Embeddings[0],
                 TokensUsed = result.TokensUsed,
                 Provider = ProviderName,
-                Model = _embeddingSettings.Model
+                Model = effectiveModel
             };
         }
         catch (Exception ex)
@@ -251,7 +261,9 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -278,14 +290,17 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
         {
             var httpClient = CreateHttpClient();
 
-            // Cohere v2 Embed API request format
-            var requestBody = BuildEmbedRequest(textList, CohereInputType.SearchDocument);
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _embeddingSettings.Model;
+
+            // Cohere v2 Embed API request format - use customDimensions if provided
+            var requestBody = BuildEmbedRequest(textList, CohereInputType.SearchDocument, effectiveModel, customDimensions);
 
             var jsonContent = JsonSerializer.Serialize(requestBody, CohereEmbedJsonOptions.Default);
             var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
             _logger.LogDebug("Generating Cohere batch embeddings. Model: {Model}, Count: {Count}",
-                _embeddingSettings.Model, textList.Count);
+                effectiveModel, textList.Count);
 
             var response = await httpClient.PostAsync("embed", httpContent, cancellationToken);
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -327,7 +342,7 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
                 Embeddings = result.Embeddings,
                 TotalTokensUsed = result.TokensUsed,
                 Provider = ProviderName,
-                Model = _embeddingSettings.Model
+                Model = effectiveModel
             };
         }
         catch (Exception ex)
@@ -363,7 +378,11 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
     /// <summary>
     /// Builds a Cohere v2 Embed API request object
     /// </summary>
-    private object BuildEmbedRequest(IEnumerable<string> texts, CohereInputType inputType)
+    /// <param name="texts">Texts to embed</param>
+    /// <param name="inputType">Input type for embedding</param>
+    /// <param name="model">Model to use (effective model after override)</param>
+    /// <param name="customDimensions">Optional runtime custom dimensions (takes priority over config)</param>
+    private object BuildEmbedRequest(IEnumerable<string> texts, CohereInputType inputType, string model, int? customDimensions = null)
     {
         var textList = texts.ToList();
 
@@ -378,16 +397,34 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
 
         var request = new CohereEmbedRequest
         {
-            Model = _embeddingSettings.Model,
+            Model = model,
             InputType = inputType.ToApiString(),
             EmbeddingTypes = new[] { "float" },
             Inputs = inputs
         };
 
         // Only set output_dimension for embed-v4.0 which supports custom dimensions
-        if (SupportsCustomDimensions(_embeddingSettings.Model) && _embeddingSettings.Dimensions > 0)
+        // Runtime customDimensions takes priority over config settings
+        if (SupportsCustomDimensions(model))
         {
-            request.OutputDimension = _embeddingSettings.Dimensions;
+            var dimsToUse = customDimensions ?? (_embeddingSettings.Dimensions > 0 ? _embeddingSettings.Dimensions : null);
+            if (dimsToUse.HasValue)
+            {
+                // Snap to valid Cohere dimension [256, 512, 1024, 1536]
+                var validDim = SnapToValidDimension(dimsToUse.Value);
+                request.OutputDimension = validDim;
+
+                if (validDim != dimsToUse.Value)
+                {
+                    _logger.LogWarning("Requested dimension {Requested} is not valid for Cohere embed-v4.0. " +
+                        "Snapped to nearest valid dimension: {Valid}. Valid options: [256, 512, 1024, 1536]",
+                        dimsToUse.Value, validDim);
+                }
+                else
+                {
+                    _logger.LogDebug("Using custom dimensions for Cohere embed-v4.0: {Dimensions}", validDim);
+                }
+            }
         }
 
         return request;
@@ -442,8 +479,31 @@ public class CohereEmbeddingProvider : IEmbeddingProvider
     /// </summary>
     private static bool SupportsCustomDimensions(string model)
     {
-        // Only embed-v4.0 supports custom dimensions (256-4096)
+        // Only embed-v4.0 supports custom dimensions
         return model.Equals("embed-v4.0", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Snaps the requested dimension to the nearest valid Cohere dimension.
+    /// Cohere embed-v4.0 only accepts [256, 512, 1024, 1536].
+    /// </summary>
+    private static int SnapToValidDimension(int requestedDimension)
+    {
+        // Find the valid dimension closest to the requested value
+        var closestDim = ValidEmbedV4Dimensions[0];
+        var minDistance = Math.Abs(requestedDimension - closestDim);
+
+        foreach (var validDim in ValidEmbedV4Dimensions)
+        {
+            var distance = Math.Abs(requestedDimension - validDim);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closestDim = validDim;
+            }
+        }
+
+        return closestDim;
     }
 
     private static string FormatModelDisplayName(string modelId)

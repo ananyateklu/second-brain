@@ -35,6 +35,7 @@ public class StartIndexingCommandHandler : IRequestHandler<StartIndexingCommand,
                 request.EmbeddingProvider,
                 request.VectorStoreProvider,
                 request.EmbeddingModel,
+                request.CustomDimensions,
                 cancellationToken);
 
             var response = new IndexingJobResponse

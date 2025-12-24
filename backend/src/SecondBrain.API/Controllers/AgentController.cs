@@ -120,6 +120,8 @@ public class AgentController : ControllerBase
                     hydeModel: userPrefs.RagHydeModel,
                     queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                     queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                    embeddingProvider: userPrefs.RagEmbeddingProvider,
+                    embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                     // Tier 1: Core Retrieval
                     topK: userPrefs.RagTopK,
                     similarityThreshold: userPrefs.RagSimilarityThreshold,

@@ -1283,7 +1283,7 @@ export function RAGSettings() {
                     return (
                       <div
                         key={setting.id}
-                        className="flex flex-col gap-2 p-3 rounded-xl border"
+                        className="flex flex-col gap-3 p-4 rounded-2xl border"
                         style={{
                           backgroundColor: 'var(--surface-elevated)',
                           borderColor: 'var(--border)',
@@ -1298,24 +1298,26 @@ export function RAGSettings() {
                           </Tooltip>
                         </div>
                         {/* Slider with Min/Max Labels and Value Below */}
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] font-mono w-8 text-right flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono w-8 text-right flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                             {minDisplay}
                           </span>
                           <div className="flex-1 flex flex-col">
-                            <input
-                              type="range"
-                              min={setting.min}
-                              max={setting.max}
-                              step={setting.step}
-                              value={value}
-                              onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
-                              disabled={isSaving}
-                              className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                              style={{
-                                background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) 100%)`,
-                              }}
-                            />
+                            <div className="relative">
+                              <input
+                                type="range"
+                                min={setting.min}
+                                max={setting.max}
+                                step={setting.step}
+                                value={value}
+                                onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
+                                disabled={isSaving}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                  background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) 100%)`,
+                                }}
+                              />
+                            </div>
                             {/* Current Value - Positioned below thumb */}
                             <div className="relative h-5 mt-1">
                               <span
@@ -1331,7 +1333,7 @@ export function RAGSettings() {
                               </span>
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono w-8 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                          <span className="text-[10px] font-mono w-8 text-left flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                             {maxDisplay}
                           </span>
                         </div>
@@ -1354,7 +1356,7 @@ export function RAGSettings() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* Vector/BM25 Weight Balance */}
                   <div
-                    className="flex flex-col gap-2 p-3 rounded-xl border"
+                    className="flex flex-col gap-3 p-4 rounded-2xl border"
                     style={{
                       backgroundColor: 'var(--surface-elevated)',
                       borderColor: 'var(--border)',
@@ -1369,8 +1371,8 @@ export function RAGSettings() {
                       </Tooltip>
                     </div>
                     {/* Slider with Min/Max Labels and Values Below */}
-                    <div className="flex items-start gap-2">
-                      <span className="text-[10px] font-mono flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono w-8 text-right flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                         0
                       </span>
                       <div className="flex-1 flex flex-col">
@@ -1404,17 +1406,6 @@ export function RAGSettings() {
                           <span
                             className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
                             style={{
-                              left: `calc(${ragVectorWeight * 100}% + ${(50 - ragVectorWeight * 100) * 0.12}px)`,
-                              transform: 'translateX(-50%)',
-                              backgroundColor: 'var(--surface-card)',
-                              color: 'var(--color-brand-600)',
-                            }}
-                          >
-                            V:{ragVectorWeight.toFixed(2)}
-                          </span>
-                          <span
-                            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
-                            style={{
                               left: `calc(${ragBm25Weight * 100}% + ${(50 - ragBm25Weight * 100) * 0.12}px)`,
                               transform: 'translateX(-50%)',
                               backgroundColor: 'var(--surface-card)',
@@ -1423,9 +1414,20 @@ export function RAGSettings() {
                           >
                             K:{ragBm25Weight.toFixed(2)}
                           </span>
+                          <span
+                            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap"
+                            style={{
+                              left: `calc(${ragVectorWeight * 100}% + ${(50 - ragVectorWeight * 100) * 0.12}px)`,
+                              transform: 'translateX(-50%)',
+                              backgroundColor: 'var(--surface-card)',
+                              color: 'var(--color-brand-600)',
+                            }}
+                          >
+                            V:{ragVectorWeight.toFixed(2)}
+                          </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                      <span className="text-[10px] font-mono w-8 text-left flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                         1
                       </span>
                     </div>
@@ -1443,7 +1445,7 @@ export function RAGSettings() {
                     return (
                       <div
                         key={setting.id}
-                        className="flex flex-col gap-2 p-3 rounded-xl border"
+                        className="flex flex-col gap-3 p-4 rounded-2xl border"
                         style={{
                           backgroundColor: 'var(--surface-elevated)',
                           borderColor: 'var(--border)',
@@ -1458,24 +1460,26 @@ export function RAGSettings() {
                           </Tooltip>
                         </div>
                         {/* Slider with Min/Max Labels and Value Below */}
-                        <div className="flex items-start gap-2">
-                          <span className="text-[10px] font-mono w-12 text-right flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono w-12 text-right flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                             {minDisplay}
                           </span>
                           <div className="flex-1 flex flex-col">
-                            <input
-                              type="range"
-                              min={setting.min}
-                              max={setting.max}
-                              step={setting.step}
-                              value={value}
-                              onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
-                              disabled={isSaving}
-                              className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                              style={{
-                                background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`,
-                              }}
-                            />
+                            <div className="relative">
+                              <input
+                                type="range"
+                                min={setting.min}
+                                max={setting.max}
+                                step={setting.step}
+                                value={value}
+                                onChange={(e) => void handleAdvancedSettingChange(setting.id, parseFloat(e.target.value))}
+                                disabled={isSaving}
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                  background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`,
+                                }}
+                              />
+                            </div>
                             {/* Current Value - Positioned below thumb */}
                             <div className="relative h-5 mt-1">
                               <span
@@ -1491,7 +1495,7 @@ export function RAGSettings() {
                               </span>
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono w-12 flex-shrink-0 pt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                          <span className="text-[10px] font-mono w-12 text-left flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
                             {maxDisplay}
                           </span>
                         </div>

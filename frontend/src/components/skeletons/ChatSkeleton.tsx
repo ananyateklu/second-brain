@@ -1,7 +1,7 @@
 /**
  * ChatSkeleton Component
  * Full page skeleton for the chat page including sidebar, header, messages, and input
- * Matches ChatPage layout exactly: calc(100vh - titleBarHeight - 2rem)
+ * Matches ChatPage layout exactly: calc(100vh - titleBarHeight - 21px)
  * In browser titleBarHeight=0, in Tauri it's 16px
  */
 
@@ -64,8 +64,8 @@ export function ChatSkeleton() {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+        height: `calc(100vh - ${titleBarHeight}px - 21px)`,
+        maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
       }}
     >
       <ShimmerStyles />

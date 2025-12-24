@@ -29,6 +29,7 @@ public class RagServiceTests
     private readonly Mock<IRerankerService> _mockReranker;
     private readonly Mock<ICohereRerankerService> _mockCohereReranker;
     private readonly Mock<IRagAnalyticsService> _mockAnalytics;
+    private readonly Mock<INoteEmbeddingSearchRepository> _mockEmbeddingSearchRepository;
     private readonly Mock<IOptions<RagSettings>> _mockSettings;
     private readonly Mock<ILogger<RagService>> _mockLogger;
 
@@ -45,6 +46,7 @@ public class RagServiceTests
         _mockReranker = new Mock<IRerankerService>();
         _mockCohereReranker = new Mock<ICohereRerankerService>();
         _mockAnalytics = new Mock<IRagAnalyticsService>();
+        _mockEmbeddingSearchRepository = new Mock<INoteEmbeddingSearchRepository>();
         _mockSettings = new Mock<IOptions<RagSettings>>();
         _mockLogger = new Mock<ILogger<RagService>>();
 
@@ -237,7 +239,7 @@ public class RagServiceTests
         // Set up both services - pipeline may use either
         _mockNativeHybridSearch.Setup(h => h.SearchAsync(
             It.IsAny<string>(), It.IsAny<List<double>>(), It.IsAny<string>(),
-            It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
+            It.IsAny<int>(), 1536, It.IsAny<float>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(hybridResults);
         _mockHybridSearch.Setup(h => h.SearchAsync(
             It.IsAny<string>(), It.IsAny<List<double>>(), It.IsAny<string>(),
@@ -486,6 +488,7 @@ public class RagServiceTests
             _mockReranker.Object,
             _mockCohereReranker.Object,
             _mockAnalytics.Object,
+            _mockEmbeddingSearchRepository.Object,
             _mockSettings.Object,
             _mockLogger.Object);
     }

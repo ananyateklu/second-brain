@@ -17,6 +17,10 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
     private readonly EmbeddingClient? _client;
     private readonly OpenAIClient? _openAIClient;
 
+    // Cache for dynamically created clients (for model overrides)
+    private readonly Dictionary<string, EmbeddingClient> _modelClientCache = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _clientCacheLock = new();
+
     // Cache for available models (models don't change frequently)
     private List<EmbeddingModelInfo>? _cachedModels;
     private DateTime _modelsCacheExpiry = DateTime.MinValue;
@@ -182,16 +186,66 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
         };
     }
 
+    /// <summary>
+    /// Gets or creates an embedding client for the specified model.
+    /// Uses caching to avoid creating new clients for repeated requests with the same model.
+    /// </summary>
+    private EmbeddingClient? GetClientForModel(string? modelOverride)
+    {
+        // If no override, use the default client
+        if (string.IsNullOrEmpty(modelOverride) || modelOverride.Equals(_settings.Model, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("Using default embedding client for model: {Model}", _settings.Model);
+            return _client;
+        }
+
+        // Check cache first
+        lock (_clientCacheLock)
+        {
+            if (_modelClientCache.TryGetValue(modelOverride, out var cachedClient))
+            {
+                _logger.LogInformation("Using cached embedding client for override model: {Model}", modelOverride);
+                return cachedClient;
+            }
+        }
+
+        // Create new client for this model
+        _logger.LogInformation("Creating new embedding client for override model: {Model}", modelOverride);
+        var newClient = _clientFactory.CreateClient(_settings.ApiKey!, modelOverride);
+        if (newClient != null)
+        {
+            lock (_clientCacheLock)
+            {
+                _modelClientCache[modelOverride] = newClient;
+            }
+        }
+
+        return newClient;
+    }
+
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
-        if (!IsEnabled || _client == null)
+        if (!IsEnabled)
         {
             return new EmbeddingResponse
             {
                 Success = false,
                 Error = "OpenAI embedding provider is not enabled or configured",
+                Provider = ProviderName
+            };
+        }
+
+        var client = GetClientForModel(modelOverride);
+        if (client == null)
+        {
+            return new EmbeddingResponse
+            {
+                Success = false,
+                Error = $"Failed to create embedding client for model: {modelOverride ?? _settings.Model}",
                 Provider = ProviderName
             };
         }
@@ -209,11 +263,17 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
         try
         {
             // Create options with custom dimensions support for text-embedding-3 models
-            var options = CreateEmbeddingOptions();
+            var effectiveModel = modelOverride ?? _settings.Model;
+            var options = CreateEmbeddingOptions(effectiveModel, customDimensions);
+
+            _logger.LogInformation(
+                "OpenAI embedding request - Model: {Model}, ModelOverride: {Override}, CustomDims: {CustomDims}, OptionsSet: {HasOptions}, OptionsDims: {OptionsDims}",
+                effectiveModel, modelOverride ?? "none", customDimensions?.ToString() ?? "none",
+                options != null, options?.Dimensions?.ToString() ?? "native");
 
             // Use batch method to get token usage (single embedding doesn't provide usage in SDK)
             var textList = new List<string> { text };
-            var response = await _client.GenerateEmbeddingsAsync(textList, options, cancellationToken);
+            var response = await client.GenerateEmbeddingsAsync(textList, options, cancellationToken);
 
             if (response.Value.Count == 0)
             {
@@ -235,11 +295,9 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
             // Extract token usage from the batch response (available on EmbeddingCollection)
             var tokensUsed = response.Value.Usage?.InputTokenCount ?? 0;
 
-            if (tokensUsed > 0)
-            {
-                _logger.LogDebug("OpenAI embedding generated: {Dimensions} dimensions, {Tokens} tokens used",
-                    embedding.Count, tokensUsed);
-            }
+            _logger.LogInformation(
+                "OpenAI embedding result - Dimensions: {Dimensions}, Tokens: {Tokens}, Model: {Model}",
+                embedding.Count, tokensUsed, effectiveModel);
 
             return new EmbeddingResponse
             {
@@ -263,14 +321,27 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
-        if (!IsEnabled || _client == null)
+        if (!IsEnabled)
         {
             return new BatchEmbeddingResponse
             {
                 Success = false,
                 Error = "OpenAI embedding provider is not enabled or configured",
+                Provider = ProviderName
+            };
+        }
+
+        var client = GetClientForModel(modelOverride);
+        if (client == null)
+        {
+            return new BatchEmbeddingResponse
+            {
+                Success = false,
+                Error = $"Failed to create embedding client for model: {modelOverride ?? _settings.Model}",
                 Provider = ProviderName
             };
         }
@@ -289,9 +360,10 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
         try
         {
             // Create options with custom dimensions support for text-embedding-3 models
-            var options = CreateEmbeddingOptions();
+            var effectiveModel = modelOverride ?? _settings.Model;
+            var options = CreateEmbeddingOptions(effectiveModel, customDimensions);
 
-            var response = await _client.GenerateEmbeddingsAsync(textList, options, cancellationToken);
+            var response = await client.GenerateEmbeddingsAsync(textList, options, cancellationToken);
             var embeddings = new List<List<double>>();
 
             foreach (var embeddingItem in response.Value)
@@ -356,21 +428,44 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
     /// Creates embedding generation options with custom dimensions support.
     /// Only text-embedding-3-small and text-embedding-3-large support custom dimensions (256-3072).
     /// </summary>
-    private EmbeddingGenerationOptions? CreateEmbeddingOptions()
+    /// <param name="model">The model being used (for dimension validation)</param>
+    /// <param name="customDimensions">Optional runtime dimension override</param>
+    private EmbeddingGenerationOptions? CreateEmbeddingOptions(string model, int? customDimensions = null)
     {
+        // Determine effective dimensions:
+        // 1. Runtime override (customDimensions) - highest priority
+        // 2. Settings dimensions - only if using the configured model (not a runtime override)
+        // 3. None - let the model use its native dimensions (for overridden models)
+
+        int? effectiveDimensions = customDimensions;
+
+        // Only apply settings dimensions if we're using the configured model (not a runtime override)
+        // This ensures text-embedding-3-large uses 3072 dims when selected, not the configured 1536
+        bool isModelOverride = !model.Equals(_settings.Model, StringComparison.OrdinalIgnoreCase);
+        if (!effectiveDimensions.HasValue && !isModelOverride && _settings.Dimensions > 0)
+        {
+            effectiveDimensions = _settings.Dimensions;
+        }
+
         // Only set custom dimensions for models that support it
-        if (_settings.Dimensions > 0 &&
-            ModelsWithCustomDimensions.Contains(_settings.Model))
+        if (effectiveDimensions.HasValue && ModelsWithCustomDimensions.Contains(model))
         {
             var options = new EmbeddingGenerationOptions
             {
-                Dimensions = _settings.Dimensions
+                Dimensions = effectiveDimensions.Value
             };
 
             _logger.LogDebug("Using custom embedding dimensions: {Dimensions} for model {Model}",
-                _settings.Dimensions, _settings.Model);
+                effectiveDimensions.Value, model);
 
             return options;
+        }
+
+        // Log when using native dimensions for an overridden model
+        if (isModelOverride && !effectiveDimensions.HasValue)
+        {
+            var nativeDims = KnownModelDimensions.TryGetValue(model, out var dims) ? dims : 0;
+            _logger.LogDebug("Using native dimensions ({NativeDims}) for overridden model {Model}", nativeDims, model);
         }
 
         return null;

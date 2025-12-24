@@ -80,7 +80,7 @@ export function CreateNoteModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={createModalSourceRect} hideCloseButton>
+      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={createModalSourceRect} hideCloseButton description="Create a new note with title, content, and tags">
         <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
           <DialogTitle
             icon={

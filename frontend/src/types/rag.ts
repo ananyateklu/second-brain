@@ -57,7 +57,7 @@ export interface EmbeddingProviderInfo {
  * Note: Pinecone requires 1536 dimensions. Only OpenAI text-embedding-3-small
  * natively outputs 1536 dimensions. Gemini text-embedding-004 outputs 768 dims
  * and cannot be expanded to 1536 (outputDimensionality only supports truncation).
- * Cohere embed-v4.0 supports 256-4096 dimensions (default 1024).
+ * Cohere embed-v4.0 supports dimensions: [256, 512, 1024, 1536] (default 1024).
  */
 export const EMBEDDING_PROVIDERS: Record<EmbeddingProvider, EmbeddingProviderInfo> = {
   OpenAI: { name: 'OpenAI', dimensions: 1536, supportsPinecone: true },
