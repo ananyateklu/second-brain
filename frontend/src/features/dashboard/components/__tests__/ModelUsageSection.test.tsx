@@ -190,7 +190,8 @@ describe('ModelUsageSection', () => {
       render(<ModelUsageSection {...defaultProps} />);
 
       const button30D = screen.getByText('30D');
-      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
+      // Selected buttons use CSS classes for styling
+      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
     });
 
     it('should call getFilteredModelUsageData with selected time range', () => {
@@ -231,8 +232,8 @@ describe('ModelUsageSection', () => {
       if (firstLegendButton) {
         fireEvent.click(firstLegendButton);
 
-        // Button should be visually dimmed (opacity: 0.5)
-        expect(firstLegendButton).toHaveStyle({ opacity: '0.5' });
+        // Button should be visually dimmed via CSS class (opacity-50)
+        expect(firstLegendButton.className).toContain('opacity-50');
       }
     });
 
@@ -363,13 +364,13 @@ describe('ModelUsageSection', () => {
 
       if (firstLegendButton) {
         fireEvent.click(firstLegendButton);
-        expect(firstLegendButton).toHaveStyle({ opacity: '0.5' });
+        expect(firstLegendButton.className).toContain('opacity-50');
 
         // Change time range
         fireEvent.click(screen.getByText('7D'));
 
         // Hidden models should be reset (re-render clears the state)
-        expect(firstLegendButton).toHaveStyle({ opacity: '1' });
+        expect(firstLegendButton.className).toContain('opacity-100');
       }
     });
   });

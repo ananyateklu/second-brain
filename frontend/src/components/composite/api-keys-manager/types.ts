@@ -60,7 +60,7 @@ export interface ApiKeyInputProps {
 export interface SaveButtonsProps {
   hasChanges: boolean;
   isSaving: boolean;
-  onSave: (restart: boolean) => void;
+  onSave: (restart: boolean) => void | Promise<void>;
   variant?: 'compact' | 'full';
 }
 

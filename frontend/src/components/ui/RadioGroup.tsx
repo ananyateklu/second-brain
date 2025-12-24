@@ -33,7 +33,8 @@ const RadioGroupItem = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Item>,
   RadioGroupItemProps
 >(({ className, label, id, ...props }, ref) => {
-  const radioId = id || React.useId();
+  const generatedId = React.useId();
+  const radioId = id ?? generatedId;
 
   const radioElement = (
     <RadioGroupPrimitive.Item

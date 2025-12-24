@@ -113,8 +113,8 @@ describe('GrokSearchSourcesCard', () => {
       render(<GrokSearchSourcesCard sources={[createMockSource({ sourceType: 'news' })]} />);
 
       const badge = screen.getByText('News');
-      // Red for news
-      expect(badge).toHaveStyle({ backgroundColor: 'rgba(239, 68, 68, 0.1)' });
+      // Red for news - using CSS variable
+      expect(badge).toHaveStyle({ backgroundColor: 'var(--color-error-light)' });
     });
   });
 

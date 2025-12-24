@@ -160,7 +160,8 @@ describe('Button', () => {
 
             // Assert
             const button = screen.getByRole('button');
-            expect(button).toHaveClass('disabled:opacity-50', 'disabled:cursor-not-allowed');
+            // CVA applies disabled:opacity-50 via disabled:pointer-events-none disabled:opacity-50
+            expect(button.className).toContain('disabled:opacity-50');
         });
     });
 
@@ -277,194 +278,76 @@ describe('Button', () => {
     });
 
     // ============================================
-    // Inline Styles Tests (getVariantStyles)
+    // Variant CSS Classes Tests (CVA)
     // ============================================
-    describe('inline styles', () => {
-        it('should apply primary variant inline styles', () => {
+    describe('variant CSS classes', () => {
+        it('should apply primary variant CSS classes', () => {
             render(<Button variant="primary">Primary</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--btn-primary-bg)',
-                color: 'var(--btn-primary-text)',
-                borderColor: 'var(--btn-primary-border)',
-                boxShadow: 'var(--btn-primary-shadow)',
-            });
+            expect(button.className).toContain('bg-[var(--btn-primary-bg)]');
+            expect(button.className).toContain('text-[var(--btn-primary-text)]');
+            expect(button.className).toContain('border-[var(--btn-primary-border)]');
         });
 
-        it('should apply secondary variant inline styles', () => {
+        it('should apply secondary variant CSS classes', () => {
             render(<Button variant="secondary">Secondary</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveStyle({
-                color: 'var(--btn-secondary-text)',
-                borderColor: 'var(--btn-secondary-border)',
-                boxShadow: 'var(--btn-secondary-shadow)',
-            });
+            expect(button.className).toContain('text-[var(--btn-secondary-text)]');
+            expect(button.className).toContain('border-[var(--btn-secondary-border)]');
         });
 
-        it('should apply danger variant inline styles', () => {
+        it('should apply danger variant CSS classes', () => {
             render(<Button variant="danger">Danger</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--color-error)',
-                color: '#ffffff',
-                borderColor: 'transparent',
-                boxShadow: 'var(--shadow-lg)',
-            });
+            expect(button.className).toContain('bg-[var(--destructive)]');
+            expect(button.className).toContain('text-[var(--destructive-foreground)]');
         });
 
-        it('should apply ghost variant inline styles', () => {
+        it('should apply ghost variant CSS classes', () => {
             render(<Button variant="ghost">Ghost</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveStyle({
-                color: 'var(--text-secondary)',
-                boxShadow: 'none',
-            });
+            expect(button.className).toContain('text-[var(--text-secondary)]');
+            expect(button.className).toContain('bg-transparent');
         });
     });
 
     // ============================================
-    // Hover Interaction Tests
+    // Hover CSS Classes Tests (CSS-driven hover)
     // ============================================
-    describe('hover interactions', () => {
-        it('should apply primary hover styles on mouseEnter', () => {
+    describe('hover CSS classes', () => {
+        it('should have primary hover classes', () => {
             render(<Button variant="primary">Primary</Button>);
             const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--btn-primary-hover-bg)',
-                borderColor: 'var(--btn-primary-hover-border)',
-                boxShadow: 'var(--btn-primary-hover-shadow)',
-            });
+            // Hover styles are now CSS classes, not JS-driven
+            expect(button.className).toContain('hover:bg-[var(--btn-primary-hover-bg)]');
+            expect(button.className).toContain('hover:border-[var(--btn-primary-hover-border)]');
         });
 
-        it('should apply secondary hover styles on mouseEnter', () => {
+        it('should have secondary hover classes', () => {
             render(<Button variant="secondary">Secondary</Button>);
             const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--btn-secondary-hover-bg)',
-                color: 'var(--btn-secondary-hover-text)',
-                borderColor: 'var(--btn-secondary-hover-border)',
-                boxShadow: 'var(--btn-secondary-hover-shadow)',
-            });
+            expect(button.className).toContain('hover:bg-[var(--btn-secondary-hover-bg)]');
+            expect(button.className).toContain('hover:text-[var(--btn-secondary-hover-text)]');
         });
 
-        it('should apply danger hover styles on mouseEnter', () => {
+        it('should have danger hover classes', () => {
             render(<Button variant="danger">Danger</Button>);
             const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--color-error-text)',
-                boxShadow: 'var(--shadow-xl)',
-            });
+            expect(button.className).toContain('hover:bg-[var(--color-error-text)]');
         });
 
-        it('should apply ghost hover styles on mouseEnter', () => {
+        it('should have ghost hover classes', () => {
             render(<Button variant="ghost">Ghost</Button>);
             const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--surface-elevated)',
-                color: 'var(--text-primary)',
-            });
+            expect(button.className).toContain('hover:bg-[var(--surface-elevated)]');
+            expect(button.className).toContain('hover:text-[var(--text-primary)]');
         });
 
-        it('should reset primary styles on mouseLeave', () => {
-            render(<Button variant="primary">Primary</Button>);
-            const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-            fireEvent.mouseLeave(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--btn-primary-bg)',
-                color: 'var(--btn-primary-text)',
-            });
-        });
-
-        it('should reset secondary styles on mouseLeave', () => {
-            render(<Button variant="secondary">Secondary</Button>);
-            const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-            fireEvent.mouseLeave(button);
-
-            expect(button).toHaveStyle({
-                color: 'var(--btn-secondary-text)',
-            });
-        });
-
-        it('should reset danger styles on mouseLeave', () => {
-            render(<Button variant="danger">Danger</Button>);
-            const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-            fireEvent.mouseLeave(button);
-
-            expect(button).toHaveStyle({
-                backgroundColor: 'var(--color-error)',
-                color: '#ffffff',
-            });
-        });
-
-        it('should reset ghost styles on mouseLeave', () => {
-            render(<Button variant="ghost">Ghost</Button>);
-            const button = screen.getByRole('button');
-
-            fireEvent.mouseEnter(button);
-            fireEvent.mouseLeave(button);
-
-            expect(button).toHaveStyle({
-                color: 'var(--text-secondary)',
-            });
-        });
-
-        it('should not apply hover styles when disabled', () => {
+        it('should have disabled:pointer-events-none to prevent hover when disabled', () => {
             render(<Button variant="primary" disabled>Disabled</Button>);
             const button = screen.getByRole('button');
-            const originalStyle = button.style.backgroundColor;
-
-            fireEvent.mouseEnter(button);
-
-            expect(button.style.backgroundColor).toBe(originalStyle);
-        });
-
-        it('should not apply hover styles when loading', () => {
-            render(<Button variant="primary" isLoading>Loading</Button>);
-            const button = screen.getByRole('button');
-            const originalStyle = button.style.backgroundColor;
-
-            fireEvent.mouseEnter(button);
-
-            expect(button.style.backgroundColor).toBe(originalStyle);
-        });
-
-        it('should not reset styles on mouseLeave when disabled', () => {
-            render(<Button variant="primary" disabled>Disabled</Button>);
-            const button = screen.getByRole('button');
-            const originalStyle = button.style.backgroundColor;
-
-            fireEvent.mouseLeave(button);
-
-            expect(button.style.backgroundColor).toBe(originalStyle);
-        });
-
-        it('should not reset styles on mouseLeave when loading', () => {
-            render(<Button variant="primary" isLoading>Loading</Button>);
-            const button = screen.getByRole('button');
-            const originalStyle = button.style.backgroundColor;
-
-            fireEvent.mouseLeave(button);
-
-            expect(button.style.backgroundColor).toBe(originalStyle);
+            // CSS handles disabled state by preventing pointer events
+            expect(button.className).toContain('disabled:pointer-events-none');
         });
     });
 
@@ -472,28 +355,28 @@ describe('Button', () => {
     // Variant Class Tests
     // ============================================
     describe('variant classes', () => {
-        it('should apply hover:scale-105 for primary', () => {
+        it('should apply active:scale-[0.98] for primary', () => {
             render(<Button variant="primary">Primary</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+            expect(button.className).toContain('active:scale-[0.98]');
         });
 
-        it('should apply hover:scale-105 for secondary', () => {
+        it('should apply active:scale-[0.98] for secondary', () => {
             render(<Button variant="secondary">Secondary</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+            expect(button.className).toContain('active:scale-[0.98]');
         });
 
-        it('should apply hover:scale-105 for danger', () => {
+        it('should apply active:scale-[0.98] for danger', () => {
             render(<Button variant="danger">Danger</Button>);
             const button = screen.getByRole('button');
-            expect(button).toHaveClass('hover:scale-105', 'active:scale-95');
+            expect(button.className).toContain('active:scale-[0.98]');
         });
 
-        it('should not apply hover:scale-105 for ghost', () => {
+        it('should not apply active:scale for ghost', () => {
             render(<Button variant="ghost">Ghost</Button>);
             const button = screen.getByRole('button');
-            expect(button).not.toHaveClass('hover:scale-105');
+            expect(button.className).not.toContain('active:scale');
         });
     });
 

@@ -3,7 +3,6 @@
  * Manages UI state like modals, sidebar, search
  */
 
-import type { Note, NoteListItem } from '../../features/notes/types/note';
 import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode, GitHubTabType } from '../types';
 
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';

@@ -12,7 +12,7 @@ export function SaveButtons({ hasChanges, isSaving, onSave, variant = 'full' }: 
     <div className="flex gap-2">
       <button
         type="button"
-        onClick={() => onSave(false)}
+        onClick={() => void onSave(false)}
         disabled={!hasChanges || isSaving}
         className={cn(
           buttonSize,
@@ -26,7 +26,7 @@ export function SaveButtons({ hasChanges, isSaving, onSave, variant = 'full' }: 
       </button>
       <button
         type="button"
-        onClick={() => onSave(true)}
+        onClick={() => void onSave(true)}
         disabled={!hasChanges || isSaving}
         className={cn(
           buttonSize,
