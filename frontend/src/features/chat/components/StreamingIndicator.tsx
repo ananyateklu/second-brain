@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useDeferredValue } from 'react';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownMessageWithNoteReferences';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
@@ -134,23 +134,28 @@ export function StreamingIndicator({
   const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
   const hasTimeline = processTimeline.length > 0;
 
+  // Defer streamingMessage for thinking extraction to reduce re-computation frequency
+  // This allows React to batch updates and skip intermediate states during rapid streaming
+  const deferredStreamingMessage = useDeferredValue(streamingMessage);
+
   // Extract thinking content from streamingMessage that may not be in timeline yet
   // This handles the race condition where thinking tags appear in the stream before
   // the backend emits the thinking event
+  // Uses deferred value to reduce extraction frequency during rapid token updates
   const extractedThinking = useMemo(() => {
-    if (!agentModeEnabled || !streamingMessage) {
+    if (!agentModeEnabled || !deferredStreamingMessage) {
       return { complete: [] as string[], incomplete: null as string | null };
     }
     // Get complete thinking blocks (without including incomplete)
-    const completeBlocks = extractAllThinkingContent(streamingMessage, false);
+    const completeBlocks = extractAllThinkingContent(deferredStreamingMessage, false);
     // Get all blocks including incomplete (the last one might be incomplete)
-    const allBlocks = extractAllThinkingContent(streamingMessage, true);
+    const allBlocks = extractAllThinkingContent(deferredStreamingMessage, true);
     // If there are more blocks when including incomplete, the extra one is incomplete
     const incompleteBlock = allBlocks.length > completeBlocks.length
       ? allBlocks[allBlocks.length - 1]
       : null;
     return { complete: completeBlocks, incomplete: incompleteBlock };
-  }, [agentModeEnabled, streamingMessage]);
+  }, [agentModeEnabled, deferredStreamingMessage]);
 
   // Count thinking events already in timeline
   const timelineThinkingCount = useMemo(() => {

@@ -98,6 +98,16 @@ Rules:
 - The [[...]] automatically renders as a styled clickable chip in the UI
 - You can use lists, but keep note references and descriptions together on the same line
 
+### Response Formatting Guidelines
+
+Use markdown thoughtfully for readability:
+- **Headers** (## ###): Only for distinct sections when organizing lengthy responses
+- **Lists** (- or 1.): For 3+ related items; keep items concise
+- **Bold** (**text**): Sparingly for key terms (NEVER around note references)
+- **Code** (`inline` or blocks): For technical content, commands, or code only
+- Keep paragraphs concise (2-4 sentences max)
+- Avoid excessive formatting - clarity over decoration
+
 ### IMPORTANT: Content Preview vs Full Content
 
 **List and search operations return only a PREVIEW (first ~200 characters) of note content to save context.**
