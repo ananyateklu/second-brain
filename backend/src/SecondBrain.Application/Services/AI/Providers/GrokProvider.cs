@@ -555,7 +555,7 @@ public class GrokProvider : IAIProvider
         }
     }
 
-    private async Task<IEnumerable<string>> FetchAvailableModelsAsync(CancellationToken cancellationToken = default)
+    private async Task<IEnumerable<AIModelInfo>> FetchAvailableModelsWithInfoAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -573,6 +573,8 @@ public class GrokProvider : IAIProvider
                         .Select(model => model.GetProperty("id").GetString() ?? string.Empty)
                         .Where(id => !string.IsNullOrEmpty(id))
                         .OrderByDescending(id => id)
+                        // xAI API doesn't return context info, use fallback database
+                        .Select(id => ModelContextDatabase.CreateModelInfo(id))
                         .ToList();
                 }
             }
@@ -589,7 +591,7 @@ public class GrokProvider : IAIProvider
             "grok-2-1212",
             "grok-2-vision-1212",
             "grok-beta"
-        };
+        }.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
     }
 
     public async Task<AIProviderHealth> GetHealthStatusAsync(
@@ -621,14 +623,16 @@ public class GrokProvider : IAIProvider
         try
         {
             var isAvailable = await IsAvailableAsync(cancellationToken);
-            var availableModels = await FetchAvailableModelsAsync(cancellationToken);
+            var modelInfoList = await FetchAvailableModelsWithInfoAsync(cancellationToken);
             stopwatch.Stop();
 
             health.IsHealthy = isAvailable;
             health.Status = isAvailable ? "Healthy" : "Unavailable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = "v1";
-            health.AvailableModels = availableModels;
+            // Populate both for backward compatibility
+            health.AvailableModels = modelInfoList.Select(m => m.Id);
+            health.Models = modelInfoList;
 
             if (!isAvailable)
             {

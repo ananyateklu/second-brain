@@ -668,7 +668,7 @@ public class OpenAIProvider : IAIProvider
         }
     }
 
-    private async Task<IEnumerable<string>> FetchAvailableModelsAsync(CancellationToken cancellationToken = default)
+    private async Task<IEnumerable<AIModelInfo>> FetchAvailableModelsWithInfoAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -686,6 +686,8 @@ public class OpenAIProvider : IAIProvider
                         .Select(model => model.GetProperty("id").GetString() ?? string.Empty)
                         .Where(id => !string.IsNullOrEmpty(id))
                         .OrderByDescending(id => id)
+                        // OpenAI API doesn't return context info, use fallback database
+                        .Select(id => ModelContextDatabase.CreateModelInfo(id))
                         .ToList();
                 }
             }
@@ -704,7 +706,7 @@ public class OpenAIProvider : IAIProvider
             "gpt-4",
             "gpt-3.5-turbo",
             "gpt-4-turbo-preview"
-        };
+        }.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
     }
 
     public async Task<AIProviderHealth> GetHealthStatusAsync(
@@ -736,14 +738,16 @@ public class OpenAIProvider : IAIProvider
         try
         {
             var isAvailable = await IsAvailableAsync(cancellationToken);
-            var availableModels = await FetchAvailableModelsAsync(cancellationToken);
+            var modelInfoList = await FetchAvailableModelsWithInfoAsync(cancellationToken);
             stopwatch.Stop();
 
             health.IsHealthy = isAvailable;
             health.Status = isAvailable ? "Healthy" : "Unavailable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = "v1";
-            health.AvailableModels = availableModels;
+            // Populate both for backward compatibility
+            health.AvailableModels = modelInfoList.Select(m => m.Id);
+            health.Models = modelInfoList;
 
             if (!isAvailable)
             {

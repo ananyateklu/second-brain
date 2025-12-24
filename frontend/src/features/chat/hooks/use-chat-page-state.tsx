@@ -195,6 +195,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleProviderChange,
     handleModelChange,
     setProviderAndModel,
+    selectedModelContextWindow,
   } = providerSelection;
 
   // Check if current model is an image generation model
@@ -404,6 +405,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   const contextUsage = useContextUsage({
     conversation,
     model: selectedModel,
+    provider: selectedProvider,
     agentModeEnabled,
     agentCapabilities: enabledAgentCapabilities,
     ragEnabled,
@@ -412,6 +414,8 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     streamingRetrievedNotes: retrievedNotes,
     isStreaming,
     streamingMessage,
+    // Pass context window from API health data (preferred over hardcoded values)
+    apiContextWindow: selectedModelContextWindow,
   });
 
   // Clear pending message when it appears in the conversation

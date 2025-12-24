@@ -1058,7 +1058,14 @@ public class OllamaProvider : IAIProvider
             health.Status = isHealthy ? "Healthy" : "No Models Available";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = "0.1.0";
-            health.AvailableModels = models?.Select(m => m.Name) ?? Enumerable.Empty<string>();
+
+            // Create model info with context limits from fallback database
+            var modelNames = models?.Select(m => m.Name) ?? Enumerable.Empty<string>();
+            var modelInfoList = modelNames.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
+
+            // Populate both for backward compatibility
+            health.AvailableModels = modelNames;
+            health.Models = modelInfoList;
 
             if (!isHealthy)
             {
