@@ -71,16 +71,8 @@ export function FileSearchInput({
         {localValue && (
           <button
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all duration-150"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all duration-150 hover:text-[var(--text-secondary)] hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"
             style={{ color: 'var(--text-tertiary)' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--foreground) 5%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-tertiary)';
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
             aria-label="Clear search"
           >
             <X className="h-3.5 w-3.5" />

@@ -188,7 +188,7 @@ export const ConversationListItem = memo(function ConversationListItem({
         }
       `}</style>
       <div
-        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''}`}
+        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}`}
         style={{
           backgroundColor: getBackgroundColor(),
           borderLeftWidth: leftBorder.width,
@@ -203,16 +203,6 @@ export const ConversationListItem = memo(function ConversationListItem({
           boxShadow: 'none',
         }}
         onClick={handleClick}
-        onMouseEnter={(e) => {
-          if (!isSelected && !(isSelectionMode && isChecked)) {
-            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-card) 50%, transparent)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isSelected && !(isSelectionMode && isChecked)) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-          }
-        }}
       >
         {/* Hover indicator - faded green bar on the left */}
         {!isPlaceholder && (
@@ -252,18 +242,12 @@ export const ConversationListItem = memo(function ConversationListItem({
                   e.stopPropagation();
                   onDelete(conversation.id);
                 }}
-                className="absolute right-0 p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                className="absolute right-0 p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
                 style={{
                   color: 'rgb(239, 68, 68)',
                   backgroundColor: 'transparent',
                   width: '28px',
                   height: '28px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
                 title="Delete conversation"
               >

@@ -102,17 +102,9 @@ export function NoteVersionHistoryPanel({
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105"
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[var(--surface-card)] hover:text-[var(--text-primary)]"
             style={{
               color: 'var(--text-tertiary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--surface-card)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-tertiary)';
             }}
             aria-label="Close version history"
           >

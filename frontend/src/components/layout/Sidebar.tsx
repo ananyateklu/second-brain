@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useBoundStore } from '../../store/bound-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -48,14 +48,24 @@ export function Sidebar() {
     };
   }, [isMobileMenuOpen, closeMobileMenu]);
 
+  // Ref for create button morph animation
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+
   // Handle nav link click - close mobile menu
   const handleNavClick = useCallback(() => {
     closeMobileMenu();
   }, [closeMobileMenu]);
 
-  // Handle create button click
+  // Handle create button click with morph animation
   const handleCreateClick = useCallback(() => {
-    openCreateModal();
+    const rect = createButtonRef.current?.getBoundingClientRect();
+    const sourceRect = rect ? {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    } : null;
+    openCreateModal(sourceRect);
     closeMobileMenu();
   }, [openCreateModal, closeMobileMenu]);
 
@@ -309,26 +319,12 @@ export function Sidebar() {
         {/* Create Button */}
         <div className="pt-3 pb-3 px-4 transition-all duration-500">
           <button
+            ref={createButtonRef}
             onClick={handleCreateClick}
-            className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] active:scale-95 overflow-hidden shadow-lg ${isCollapsed && !isMobileMenuOpen ? 'md:px-3.5 md:py-3.5' : ''} px-6 py-4`}
+            className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] ${isCollapsed && !isMobileMenuOpen ? 'md:px-3.5 md:py-3.5' : ''} px-6 py-4`}
             style={{
-              backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
-              borderColor: 'var(--btn-primary-border)',
               boxShadow: 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)',
-              border: '1px solid transparent',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--btn-primary-hover-bg)';
-              e.currentTarget.style.borderColor = 'var(--btn-primary-hover-border)';
-              e.currentTarget.style.boxShadow = 'var(--btn-primary-hover-shadow), 0 0 40px -10px var(--color-primary)';
-              e.currentTarget.style.transform = 'scale(1.03) translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--btn-primary-bg)';
-              e.currentTarget.style.borderColor = 'var(--btn-primary-border)';
-              e.currentTarget.style.boxShadow = 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)';
-              e.currentTarget.style.transform = 'scale(1) translateY(0)';
             }}
             title={isCollapsed ? 'Create New Note' : undefined}
           >
@@ -439,12 +435,7 @@ export function Sidebar() {
           {/* Desktop toggle button */}
           <button
             onClick={toggleSidebar}
-            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 2px 8px -2px var(--color-primary-alpha)',
-            }}
+            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border)] shadow-[0_2px_8px_-2px_var(--color-primary-alpha)] hover:shadow-[0_6px_16px_-4px_var(--color-primary-alpha)] hover:border-[var(--color-primary)]"
             aria-label={
               isExpanded
                 ? 'Collapse sidebar'
@@ -452,14 +443,6 @@ export function Sidebar() {
                   ? 'Close sidebar'
                   : 'Expand sidebar'
             }
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 16px -4px var(--color-primary-alpha)';
-              e.currentTarget.style.borderColor = 'var(--color-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 8px -2px var(--color-primary-alpha)';
-              e.currentTarget.style.borderColor = 'var(--border)';
-            }}
           >
             {/* Ripple effect on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -514,22 +497,12 @@ export function Sidebar() {
         {/* Desktop closed state button */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-8 h-16 items-center justify-center rounded-r-2xl transition-all duration-500 hover:w-10 hover:shadow-2xl active:scale-95 group overflow-hidden"
+          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-8 h-16 items-center justify-center rounded-r-2xl transition-all duration-500 hover:w-10 hover:shadow-2xl active:scale-95 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)]"
           style={{
             top: centerOffset,
-            backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
-            boxShadow: 'var(--btn-primary-shadow)',
           }}
           aria-label="Open sidebar"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--btn-primary-hover-bg)';
-            e.currentTarget.style.boxShadow = 'var(--btn-primary-hover-shadow)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--btn-primary-bg)';
-            e.currentTarget.style.boxShadow = 'var(--btn-primary-shadow)';
-          }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <svg

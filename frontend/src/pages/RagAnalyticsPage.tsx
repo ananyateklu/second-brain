@@ -81,7 +81,7 @@ export function RagAnalyticsPage() {
           style={{
             backgroundColor: 'var(--color-error-light)',
             border: '1px solid var(--color-error-border)',
-            boxShadow: '0 0 40px -15px rgba(239, 68, 68, 0.3)',
+            boxShadow: '0 0 40px -15px color-mix(in srgb, var(--color-error) 30%, transparent)',
           }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">

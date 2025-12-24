@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react';
-import { Modal } from '../../../components/ui/Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from '../../../components/ui/Dialog';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
 import { useBoundStore } from '../../../store/bound-store';
@@ -192,9 +198,8 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
 export function EditNoteModal() {
   const isOpen = useBoundStore((state) => state.isEditModalOpen);
   const editingNoteId = useBoundStore((state) => state.editingNoteId);
+  const editModalSourceRect = useBoundStore((state) => state.editModalSourceRect);
   const closeModal = useBoundStore((state) => state.closeEditModal);
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
 
   // Header action UI state only
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -269,118 +274,117 @@ export function EditNoteModal() {
     <div className="flex items-center gap-2">
       {/* Folder Selector */}
       <div className="relative">
-        <button
+        <Button
           type="button"
+          variant={currentFolder ? "primary" : "secondary"}
           onClick={() => { setIsFolderDropdownOpen(!isFolderDropdownOpen); }}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
-          style={{
-            backgroundColor: currentFolder
-              ? isDarkMode
-                ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)'
-              : 'var(--surface-elevated)',
-            color: currentFolder ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-            border: `1px solid ${currentFolder ? 'var(--color-brand-400)' : 'var(--border)'}`,
-          }}
           disabled={moveToFolderMutation.isPending}
+          className="!px-2.5 !py-1.5 !text-xs"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
           <span className="max-w-[80px] truncate">{currentFolder || 'Folder'}</span>
           <svg
-            className={`w-3 h-3 transition-transform duration-200 ${isFolderDropdownOpen ? 'rotate-180' : ''}`}
+            className={`h-3 w-3 transition-transform duration-200 ${isFolderDropdownOpen ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
-        </button>
+        </Button>
 
         {/* Folder Dropdown */}
         {isFolderDropdownOpen && (
           <div
-            className="absolute top-full right-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto thin-scrollbar rounded-xl border shadow-xl z-50"
+            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border border-[var(--border)] shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             style={{
               backgroundColor: 'var(--surface-card-solid)',
-              borderColor: 'var(--border)',
             }}
           >
-            <div className="p-1">
+            {/* Search/Create input at top */}
+            <div className="p-2 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] focus-within:border-[var(--color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--color-brand-500)]/20 transition-all duration-150">
+                <svg className="w-4 h-4 text-[var(--text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search or create folder..."
+                  className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const value = e.currentTarget.value.trim();
+                      if (value) {
+                        void handleFolderChange(value);
+                        e.currentTarget.value = '';
+                      }
+                    }
+                  }}
+                  onClick={(e) => { e.stopPropagation(); }}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Scrollable list */}
+            <div className="max-h-48 overflow-y-auto thin-scrollbar p-1.5">
+              {/* No folder option */}
               <button
                 type="button"
                 onClick={() => { void handleFolderChange(null); }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-                style={{
-                  backgroundColor: !currentFolder ? 'var(--color-brand-600)' : 'transparent',
-                  color: !currentFolder ? '#ffffff' : 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (currentFolder) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  if (currentFolder) e.currentTarget.style.backgroundColor = 'transparent';
-                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                style={{ color: 'var(--text-primary)' }}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                No folder
+                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-elevated)]">
+                  <svg className="w-4 h-4 text-[var(--text-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <span className="flex-1 text-left">No folder</span>
+                {!currentFolder && (
+                  <svg className="w-4 h-4 text-[var(--color-brand-500)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </button>
 
-              {availableFolders.length > 0 && (
-                <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
-              )}
-
+              {/* Existing folders */}
               {availableFolders.map((folder) => (
                 <button
                   key={folder}
                   type="button"
                   onClick={() => { void handleFolderChange(folder); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-                  style={{
-                    backgroundColor: currentFolder === folder ? 'var(--color-brand-600)' : 'transparent',
-                    color: currentFolder === folder ? '#ffffff' : 'var(--text-primary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentFolder !== folder) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentFolder !== folder) e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                  style={{ color: 'var(--text-primary)' }}
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                  </svg>
-                  <span className="truncate">{folder}</span>
+                  <div
+                    className="flex items-center justify-center w-7 h-7 rounded-lg"
+                    style={{
+                      backgroundColor: currentFolder === folder
+                        ? 'var(--color-brand-500)'
+                        : 'var(--surface-elevated)',
+                    }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      style={{ color: currentFolder === folder ? 'white' : 'var(--text-tertiary)' }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                  </div>
+                  <span className="flex-1 text-left truncate">{folder}</span>
+                  {currentFolder === folder && (
+                    <svg className="w-4 h-4 text-[var(--color-brand-500)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
                 </button>
               ))}
-
-              <div className="border-t mt-1 pt-1" style={{ borderColor: 'var(--border)' }}>
-                <div className="px-2 py-1">
-                  <input
-                    type="text"
-                    placeholder="New folder name..."
-                    className="w-full px-2 py-1.5 rounded-md text-sm"
-                    style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border)',
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const value = e.currentTarget.value.trim();
-                        if (value) {
-                          void handleFolderChange(value);
-                          e.currentTarget.value = '';
-                        }
-                      }
-                    }}
-                    onClick={(e) => { e.stopPropagation(); }}
-                  />
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -449,83 +453,120 @@ export function EditNoteModal() {
           )}
         </Button>
       )}
+
+      {/* Close Button */}
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={handleClose}
+        className="!p-1.5 !rounded-lg"
+        title="Close"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </Button>
     </div>
   ) : undefined;
 
   // Show loading state while fetching full note
   if (isLoadingNote) {
     return (
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Edit Note"
-        maxWidth="max-w-[80vw]"
-        className="h-[85vh] flex flex-col"
-        icon={modalIcon}
-      >
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-4">
-            <div
-              className="w-8 h-8 border-2 rounded-full animate-spin"
-              style={{
-                borderColor: 'var(--border)',
-                borderTopColor: 'var(--color-brand-500)',
-              }}
-            />
-            <p style={{ color: 'var(--text-secondary)' }}>Loading note...</p>
-          </div>
-        </div>
-      </Modal>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+          <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
+            <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClose}
+              className="!p-1.5 !rounded-lg"
+              title="Close"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </Button>
+          </DialogHeader>
+          <DialogBody className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <div
+                className="w-8 h-8 border-2 rounded-full animate-spin"
+                style={{
+                  borderColor: 'var(--border)',
+                  borderTopColor: 'var(--color-brand-500)',
+                }}
+              />
+              <p style={{ color: 'var(--text-secondary)' }}>Loading note...</p>
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   // Show error state if note fetch failed
   if (noteError || !editingNote) {
     return (
-      <Modal
-        isOpen={isOpen}
-        onClose={handleClose}
-        title="Edit Note"
-        maxWidth="max-w-[80vw]"
-        className="h-[85vh] flex flex-col"
-        icon={modalIcon}
-      >
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-4">
-            <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-error)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <p style={{ color: 'var(--text-primary)' }}>Failed to load note</p>
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {noteError instanceof Error ? noteError.message : 'The note could not be found'}
-            </p>
-            <Button variant="secondary" onClick={handleClose}>Close</Button>
-          </div>
-        </div>
-      </Modal>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+          <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
+            <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleClose}
+              className="!p-1.5 !rounded-lg"
+              title="Close"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </Button>
+          </DialogHeader>
+          <DialogBody className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--color-error)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p style={{ color: 'var(--text-primary)' }}>Failed to load note</p>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                {noteError instanceof Error ? noteError.message : 'The note could not be found'}
+              </p>
+              <Button variant="secondary" onClick={handleClose}>Close</Button>
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={closeModal}
-      title="Edit Note"
-      maxWidth="max-w-[80vw]"
-      className="h-[85vh] flex flex-col"
-      icon={modalIcon}
-      subtitle={editingNote.updatedAt ? formatRelativeDate(editingNote.updatedAt) : undefined}
-      headerAction={headerActions}
-    >
-      {/* Key-based reset: when formKey changes, component remounts with fresh state */}
-      <EditNoteFormContent
-        key={formKey}
-        ref={formRef}
-        note={editingNote}
-        isHistoryOpen={isHistoryOpen}
-        onHistoryClose={() => { setIsHistoryOpen(false); }}
-        onFormStateChange={handleFormStateChange}
-      />
-    </Modal>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
+      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+        <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
+          <div className="flex items-center gap-3">
+            <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
+            {editingNote.updatedAt && (
+              <span className="text-xs text-[var(--text-tertiary)]">
+                · {formatRelativeDate(editingNote.updatedAt)}
+              </span>
+            )}
+          </div>
+          {headerActions}
+        </DialogHeader>
+        <DialogBody className="flex-1 overflow-hidden">
+          {/* Key-based reset: when formKey changes, component remounts with fresh state */}
+          <EditNoteFormContent
+            key={formKey}
+            ref={formRef}
+            note={editingNote}
+            isHistoryOpen={isHistoryOpen}
+            onHistoryClose={() => { setIsHistoryOpen(false); }}
+            onFormStateChange={handleFormStateChange}
+          />
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }

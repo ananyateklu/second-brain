@@ -18,7 +18,7 @@ import { isTauri } from './lib/native-notifications';
 // Lazy load notification components - they're not needed immediately
 const AboutModal = lazy(() => import('./components/ui/AboutModal').then(m => ({ default: m.AboutModal })));
 const IndexingNotification = lazy(() => import('./components/ui/IndexingNotification').then(m => ({ default: m.IndexingNotification })));
-const SummaryNotification = lazy(() => import('./components/ui/SummaryNotification').then(m => ({ default: m.SummaryNotification })));
+const SummaryNotification = lazy(() => import('./components/composite/summary-notification').then(m => ({ default: m.SummaryNotification })));
 
 function App() {
   const [showAboutModal, setShowAboutModal] = useState(false);

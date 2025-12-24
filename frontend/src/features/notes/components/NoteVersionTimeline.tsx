@@ -421,19 +421,11 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => { onCompare(version.versionNumber, currentVersion); }}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-[var(--surface-card)] hover:border-[var(--border-strong)]"
                       style={{
                         backgroundColor: 'var(--surface-elevated)',
                         color: 'var(--text-secondary)',
                         border: '1px solid var(--border)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--surface-card)';
-                        e.currentTarget.style.borderColor = 'var(--border-strong)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                        e.currentTarget.style.borderColor = 'var(--border)';
                       }}
                     >
                       <svg
@@ -454,18 +446,10 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     <button
                       onClick={() => { onRestore(version.versionNumber); }}
                       disabled={isRestoring}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:bg-[var(--color-brand-700)]"
                       style={{
                         backgroundColor: 'var(--color-brand-600)',
                         color: 'white',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isRestoring) {
-                          e.currentTarget.style.backgroundColor = 'var(--color-brand-700)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--color-brand-600)';
                       }}
                     >
                       {isRestoring ? (

@@ -8,6 +8,7 @@
 @import './theme/surfaces.css';
 @import './theme/effects.css';
 @import './theme/buttons.css';
+@import './theme/shadcn-bridge.css';
 
 /* Animations */
 @import './animations/core.css';

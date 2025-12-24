@@ -4,7 +4,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Modal } from './Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from './Dialog';
 import { LoadingSpinner } from './LoadingSpinner';
 import { isTauri } from '../../lib/native-notifications';
 import { getSecrets, saveSecrets, type Secrets } from '../../lib/tauri-bridge';
@@ -91,17 +97,20 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Setup Pinecone"
-      maxWidth="max-w-lg"
-      icon={
-        <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-      }
-    >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-lg p-0">
+        <DialogHeader className="rounded-t-3xl">
+          <DialogTitle
+            icon={
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            }
+          >
+            Setup Pinecone
+          </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
       {isLoading ? (
         <LoadingSpinner message="Loading Pinecone settings..." />
       ) : (
@@ -267,7 +276,9 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
           </div>
         </div>
       )}
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 

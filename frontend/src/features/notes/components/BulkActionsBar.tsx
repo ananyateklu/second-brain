@@ -116,8 +116,8 @@ export const BulkActionsBar = memo(({
         className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         style={{
           backgroundColor: selectedCount > 0 ? 'var(--color-error-text)' : 'var(--surface-hover)',
-          color: selectedCount > 0 ? '#ffffff' : 'var(--text-tertiary)',
-          boxShadow: selectedCount > 0 ? '0 4px 14px -4px rgba(239, 68, 68, 0.4)' : 'none',
+          color: selectedCount > 0 ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
+          boxShadow: selectedCount > 0 ? '0 4px 14px -4px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
         }}
       >
         {isProcessing ? (

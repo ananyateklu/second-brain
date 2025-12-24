@@ -71,7 +71,14 @@ const TagMention = Mention.extend({
 });
 
 import { useNoteVersionDiff } from '../hooks/use-note-versions';
-import { Modal } from '../../../components/ui/Modal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+} from '../../../components/ui/Dialog';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
 import type { NoteVersion } from '../../../types/notes';
 
@@ -427,23 +434,26 @@ export function NoteVersionDiffViewer({
     : 0;
 
   return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Compare Versions"
-      subtitle={`v${fromVersion} → v${toVersion}`}
-      maxWidth="max-w-4xl"
-      icon={
-        <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-          />
-        </svg>
-      }
-    >
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl p-0">
+        <DialogHeader className="rounded-t-3xl">
+          <DialogTitle
+            icon={
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            }
+          >
+            Compare Versions
+          </DialogTitle>
+          <DialogDescription>v{fromVersion} → v{toVersion}</DialogDescription>
+        </DialogHeader>
+        <DialogBody>
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <LoadingSpinner message="Loading diff..." />
@@ -662,6 +672,8 @@ export function NoteVersionDiffViewer({
           </p>
         </div>
       )}
-    </Modal>
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }

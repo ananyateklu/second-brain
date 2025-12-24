@@ -52,29 +52,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${isSelected ? 'scale-105' : 'hover:scale-105'
-      }`}
-    style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
-      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-      border: `1px solid ${isSelected ? 'var(--color-brand-600)' : 'var(--border)'}`,
-      // GPU-accelerated transitions on specific properties only
-      transitionProperty: 'transform, background-color, color, border-color',
-      transitionDuration: '200ms',
-      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    }}
-    onMouseEnter={(e) => {
-      if (!isSelected) {
-        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-        e.currentTarget.style.color = 'var(--text-primary)';
-      }
-    }}
-    onMouseLeave={(e) => {
-      if (!isSelected) {
-        e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-        e.currentTarget.style.color = 'var(--text-secondary)';
-      }
-    }}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-[transform,background-color,color,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+      isSelected
+        ? 'scale-105 bg-[var(--color-brand-600)] text-white border border-[var(--color-brand-600)]'
+        : 'hover:scale-105 bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+    }`}
   >
     {option.label}
   </button>

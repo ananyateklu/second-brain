@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
+import { useRef, useCallback } from 'react';
 import { useBoundStore } from '../../store/bound-store';
-import { UserMenu } from '../ui/UserMenu';
+import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
@@ -43,6 +44,21 @@ export function Header() {
   const setNotesViewMode = useBoundStore((state) => state.setNotesViewMode);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const toggleBulkMode = useBoundStore((state) => state.toggleBulkMode);
+
+  // Ref for create button morph animation
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Handle create button click with morph animation
+  const handleCreateClick = useCallback(() => {
+    const rect = createButtonRef.current?.getBoundingClientRect();
+    const sourceRect = rect ? {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    } : null;
+    openCreateModal(sourceRect);
+  }, [openCreateModal]);
 
   const pageTitle = getPageTitle(location.pathname);
   const isNotesPage = location.pathname === '/notes';
@@ -119,23 +135,11 @@ export function Header() {
 
             {/* Right side - Create Button (compact) */}
             <button
-              onClick={openCreateModal}
-              className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+              ref={createButtonRef}
+              onClick={handleCreateClick}
+              className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] hover:shadow-[var(--btn-primary-hover-shadow)]"
               style={{
-                backgroundColor: 'var(--btn-primary-bg)',
                 color: 'var(--btn-primary-text)',
-                borderColor: 'var(--btn-primary-border)',
-                boxShadow: 'var(--btn-primary-shadow)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--btn-primary-hover-bg)';
-                e.currentTarget.style.borderColor = 'var(--btn-primary-hover-border)';
-                e.currentTarget.style.boxShadow = 'var(--btn-primary-hover-shadow)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--btn-primary-bg)';
-                e.currentTarget.style.borderColor = 'var(--btn-primary-border)';
-                e.currentTarget.style.boxShadow = 'var(--btn-primary-shadow)';
               }}
               aria-label="Create new note"
             >

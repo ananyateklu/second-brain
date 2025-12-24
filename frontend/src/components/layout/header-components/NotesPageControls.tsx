@@ -81,20 +81,10 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
           // Prevent input blur when clicking toggle button
           e.preventDefault();
         }}
-        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95"
+        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95 bg-[var(--color-brand-600)] border-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] hover:border-[var(--color-brand-700)]"
         style={{
-          backgroundColor: 'var(--color-brand-600)',
-          borderColor: 'var(--color-brand-600)',
           color: '#ffffff',
           boxShadow: 'none',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-brand-700)';
-          e.currentTarget.style.borderColor = 'var(--color-brand-700)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-brand-600)';
-          e.currentTarget.style.borderColor = 'var(--color-brand-600)';
         }}
         title={`Search mode: ${getSearchModeTitle()}`}
         aria-label={`Search mode: ${getSearchModeTitle()}`}

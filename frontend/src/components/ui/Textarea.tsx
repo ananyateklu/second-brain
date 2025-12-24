@@ -1,64 +1,83 @@
-import { TextareaHTMLAttributes, forwardRef } from 'react';
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+/**
+ * Textarea component with support for labels, error states, and helper text.
+ * Uses CSS classes for all states including focus, eliminating inline handlers.
+ */
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Label text displayed above the textarea */
   label?: string;
+  /** Error message - triggers error styling when present */
   error?: string;
+  /** Helper text displayed below the textarea */
   helperText?: string;
 }
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, helperText, className = '', required, ...props }, ref) => {
+export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ label, error, helperText, className, required, id, ...props }, ref) => {
+    // Generate a stable ID if not provided
+    const textareaId = id || React.useId();
+
     return (
       <div className="w-full">
         {label && (
           <label
-            htmlFor={props.id}
-            className="block text-sm font-semibold mb-2.5"
-            style={{ color: 'var(--text-primary)' }}
+            htmlFor={textareaId}
+            className="block text-sm font-semibold mb-2.5 text-[var(--text-primary)]"
           >
-            {label} {required && <span style={{ color: 'var(--color-error-text)' }}>*</span>}
+            {label}
+            {required && <span className="text-[var(--color-error-text)] ml-0.5">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
-          className={`w-full rounded-xl border px-4 py-3 focus:outline-none transition-all resize-none ${className}`}
-          style={{
-            color: 'var(--text-primary)',
-            backgroundColor: error ? 'var(--color-error-light)' : 'var(--surface-elevated)',
-            borderColor: error ? 'var(--color-error-border)' : 'var(--border)',
-            boxShadow: 'none',
-          }}
-          onFocus={(e) => {
-            if (error) {
-              e.currentTarget.style.borderColor = 'var(--color-error-text)';
-              e.currentTarget.style.boxShadow = `0 0 0 2px color-mix(in srgb, var(--color-error-text) 20%, transparent)`;
-            } else {
-              e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-              e.currentTarget.style.boxShadow = `0 0 0 2px var(--input-focus-ring)`;
-            }
-          }}
-          onBlur={(e) => {
-            if (error) {
-              e.currentTarget.style.borderColor = 'var(--color-error-border)';
-            } else {
-              e.currentTarget.style.borderColor = 'var(--border)';
-            }
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-          aria-invalid={error ? 'true' : 'false'}
-          aria-describedby={error ? `${props.id}-error` : helperText ? `${props.id}-helper` : undefined}
+          id={textareaId}
+          className={cn(
+            // Base styles
+            "flex min-h-[80px] w-full rounded-xl border px-4 py-3 text-sm",
+            "text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]",
+            "transition-all duration-200 resize-none",
+            // Focus styles using CSS (no inline handlers)
+            "focus:outline-none focus:ring-2",
+            // Normal state
+            !error && [
+              "bg-[var(--surface-elevated)] border-[var(--border)]",
+              "focus:border-[var(--input-focus-border)] focus:ring-[var(--input-focus-ring)]",
+            ],
+            // Error state
+            error && [
+              "bg-[var(--color-error-light)] border-[var(--color-error-border)]",
+              "focus:border-[var(--color-error-text)] focus:ring-[color-mix(in_srgb,var(--color-error-text)_20%,transparent)]",
+            ],
+            // Disabled state
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            className
+          )}
+          aria-invalid={error ? "true" : "false"}
+          aria-describedby={
+            error
+              ? `${textareaId}-error`
+              : helperText
+                ? `${textareaId}-helper`
+                : undefined
+          }
           {...props}
         />
         {error && (
-          <p id={`${props.id}-error`} className="mt-1.5 text-sm" style={{ color: 'var(--color-error-text)' }}>
+          <p
+            id={`${textareaId}-error`}
+            className="mt-1.5 text-sm text-[var(--color-error-text)]"
+            role="alert"
+          >
             {error}
           </p>
         )}
         {helperText && !error && (
           <p
-            id={`${props.id}-helper`}
-            className="mt-1.5 text-xs"
-            style={{ color: 'var(--text-tertiary)' }}
+            id={`${textareaId}-helper`}
+            className="mt-1.5 text-xs text-[var(--text-tertiary)]"
           >
             {helperText}
           </p>
@@ -68,5 +87,5 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   }
 );
 
-Textarea.displayName = 'Textarea';
+Textarea.displayName = "Textarea";
 

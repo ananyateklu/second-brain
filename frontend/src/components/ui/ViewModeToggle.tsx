@@ -33,22 +33,14 @@ export const ViewModeToggle = memo(({
       <button
         type="button"
         onClick={() => onViewModeChange('card')}
-        className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
+        className={`flex items-center justify-center ${buttonSize} transition-all duration-200 ${
+          viewMode === 'card'
+            ? ''
+            : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+        }`}
         style={{
           backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
           color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
-        }}
-        onMouseEnter={(e) => {
-          if (viewMode !== 'card') {
-            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (viewMode !== 'card') {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }
         }}
         title="Grid view"
         aria-label="Grid view"
@@ -66,22 +58,14 @@ export const ViewModeToggle = memo(({
       <button
         type="button"
         onClick={() => onViewModeChange('list')}
-        className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
+        className={`flex items-center justify-center ${buttonSize} transition-all duration-200 ${
+          viewMode === 'list'
+            ? ''
+            : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
+        }`}
         style={{
           backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',
           color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
-        }}
-        onMouseEnter={(e) => {
-          if (viewMode !== 'list') {
-            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (viewMode !== 'list') {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }
         }}
         title="List view"
         aria-label="List view"

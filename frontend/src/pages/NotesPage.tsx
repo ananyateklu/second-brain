@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useDeferredValue, useEffect } from 'react';
+import { useMemo, useState, useCallback, useDeferredValue, useEffect, useRef } from 'react';
 import { useNotesPaged, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { NotesSkeleton } from '../features/notes/components/NotesSkeleton';
@@ -100,6 +100,21 @@ export function NotesPage() {
   // Local selection state (transient)
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Ref for create button morph animation
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Handle create button click with morph animation
+  const handleCreateClick = useCallback(() => {
+    const rect = createButtonRef.current?.getBoundingClientRect();
+    const sourceRect = rect ? {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    } : null;
+    openCreateModal(sourceRect);
+  }, [openCreateModal]);
 
   // Determine if we have client-side-only filters that backend doesn't support
   const hasClientSideOnlyFilters = useMemo(() => {
@@ -330,7 +345,7 @@ export function NotesPage() {
           title="No notes yet"
           description="Start capturing your thoughts and ideas by creating your first note!"
           action={
-            <Button onClick={openCreateModal} variant="primary">
+            <Button ref={createButtonRef} onClick={handleCreateClick} variant="primary">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>

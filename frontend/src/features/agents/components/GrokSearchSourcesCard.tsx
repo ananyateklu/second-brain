@@ -68,9 +68,9 @@ function getSourceTypeColor(sourceType: GrokSearchSource['sourceType']) {
       };
     case 'news':
       return {
-        bg: 'rgba(239, 68, 68, 0.1)',
-        text: 'rgb(239, 68, 68)',
-        border: 'rgba(239, 68, 68, 0.3)',
+        bg: 'var(--color-error-light)',
+        text: 'var(--color-error)',
+        border: 'var(--color-error-border)',
       };
     case 'web':
     default:

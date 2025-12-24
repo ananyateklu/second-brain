@@ -1,13 +1,49 @@
-import { type ReactNode, useState, useRef, useLayoutEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import * as React from "react";
+import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+import { cn } from "@/lib/utils";
 
+const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipRoot = TooltipPrimitive.Root;
+const TooltipTrigger = TooltipPrimitive.Trigger;
+const TooltipPortal = TooltipPrimitive.Portal;
+
+/**
+ * Tooltip content with proper styling and animations.
+ */
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Content
+    ref={ref}
+    sideOffset={sideOffset}
+    className={cn(
+      "z-50 overflow-hidden rounded-xl px-3 py-2 text-xs",
+      "bg-[var(--primary)] text-[var(--primary-foreground)]",
+      "border border-[var(--color-brand-700)]",
+      "shadow-lg",
+      "animate-in fade-in-0 zoom-in-95",
+      "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+      "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
+      "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      className
+    )}
+    {...props}
+  />
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+/**
+ * Legacy-compatible Tooltip wrapper component.
+ * Maintains the same API as the previous custom implementation.
+ */
 export interface TooltipProps {
   /** The content to display in the tooltip */
-  content: ReactNode;
+  content: React.ReactNode;
   /** The element that triggers the tooltip */
-  children: ReactNode;
+  children: React.ReactNode;
   /** Position of the tooltip relative to the trigger */
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
   /** Maximum width of the tooltip */
   maxWidth?: number;
   /** Delay before showing tooltip (ms) */
@@ -19,138 +55,27 @@ export interface TooltipProps {
 export function Tooltip({
   content,
   children,
-  position = 'top',
+  position = "top",
   maxWidth = 250,
   delay = 200,
-  className = '',
+  className = "",
 }: TooltipProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const calculatePosition = useCallback(() => {
-    if (!triggerRef.current || !tooltipRef.current) return;
-
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const tooltipRect = tooltipRef.current.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
-    const padding = 8;
-
-    let top = 0;
-    let left = 0;
-
-    switch (position) {
-      case 'top':
-        top = triggerRect.top + scrollY - tooltipRect.height - padding;
-        left = triggerRect.left + scrollX + (triggerRect.width - tooltipRect.width) / 2;
-        break;
-      case 'bottom':
-        top = triggerRect.bottom + scrollY + padding;
-        left = triggerRect.left + scrollX + (triggerRect.width - tooltipRect.width) / 2;
-        break;
-      case 'left':
-        top = triggerRect.top + scrollY + (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.left + scrollX - tooltipRect.width - padding;
-        break;
-      case 'right':
-        top = triggerRect.top + scrollY + (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.right + scrollX + padding;
-        break;
-    }
-
-    // Keep tooltip within viewport
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    if (left < padding) left = padding;
-    if (left + tooltipRect.width > viewportWidth - padding) {
-      left = viewportWidth - tooltipRect.width - padding;
-    }
-    if (top < scrollY + padding) top = scrollY + padding;
-    if (top + tooltipRect.height > scrollY + viewportHeight - padding) {
-      top = scrollY + viewportHeight - tooltipRect.height - padding;
-    }
-
-    setCoords({ top, left });
-  }, [position]);
-
-  // Use layout effect to calculate position before paint
-  useLayoutEffect(() => {
-    if (!isVisible) return;
-
-    // Use requestAnimationFrame to ensure DOM is ready
-    const rafId = requestAnimationFrame(() => {
-      calculatePosition();
-    });
-
-    // Add scroll/resize listeners
-    window.addEventListener('scroll', calculatePosition, true);
-    window.addEventListener('resize', calculatePosition);
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', calculatePosition, true);
-      window.removeEventListener('resize', calculatePosition);
-    };
-  }, [isVisible, calculatePosition]);
-
-  const handleMouseEnter = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-  };
-
-  const handleMouseLeave = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setIsVisible(false);
-  };
-
-  // Cleanup timeout on unmount
-  useLayoutEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <>
-      <div
-        ref={triggerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`inline-flex ${className}`}
-      >
-        {children}
-      </div>
-      {isVisible &&
-        createPortal(
-          <div
-            ref={tooltipRef}
-            className="fixed z-[9999] px-3 py-2 text-xs rounded-xl shadow-lg animate-in fade-in-0 zoom-in-95 duration-150"
-            style={{
-              top: coords.top,
-              left: coords.left,
-              maxWidth,
-              backgroundColor: 'var(--color-brand-600)',
-              color: 'white',
-              border: '1px solid var(--color-brand-700)',
-              boxShadow: 'var(--shadow-lg)',
-              lineHeight: 1.5,
-            }}
+    <TooltipProvider delayDuration={delay}>
+      <TooltipRoot>
+        <TooltipTrigger asChild>
+          <span className={cn("inline-flex", className)}>{children}</span>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent
+            side={position}
+            style={{ maxWidth }}
           >
             {content}
-          </div>,
-          document.body
-        )}
-    </>
+          </TooltipContent>
+        </TooltipPortal>
+      </TooltipRoot>
+    </TooltipProvider>
   );
 }
 

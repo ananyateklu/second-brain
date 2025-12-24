@@ -84,3 +84,41 @@
     transform: rotate(360deg);
   }
 }
+
+/* Dialog morph animation - expands from source element to center */
+@keyframes dialogMorphIn {
+  0% {
+    opacity: 0;
+    transform: translate(
+      calc(-50% + var(--morph-start-x, 0px)),
+      calc(-50% + var(--morph-start-y, 0px))
+    ) scale(var(--morph-start-scale, 0.3));
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogMorphOut {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+      calc(-50% + var(--morph-start-x, 0px)),
+      calc(-50% + var(--morph-start-y, 0px))
+    ) scale(var(--morph-start-scale, 0.3));
+  }
+}
+
+/* Animation utility classes for dialog morph */
+.animate-dialog-morph-in {
+  animation: dialogMorphIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-dialog-morph-out {
+  animation: dialogMorphOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

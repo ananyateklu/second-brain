@@ -78,8 +78,10 @@ const initialDirectoryViewMode = loadDirectoryViewMode();
 export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Initial state
   isCreateModalOpen: false,
+  createModalSourceRect: null,
   isEditModalOpen: false,
   editingNoteId: null,
+  editModalSourceRect: null,
   isMobileMenuOpen: false,
   isSearchOpen: true,
   searchQuery: '',
@@ -99,13 +101,13 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Modal Actions
   // ============================================
 
-  openCreateModal: () => set({ isCreateModalOpen: true }),
-  closeCreateModal: () => set({ isCreateModalOpen: false }),
-  openEditModal: (noteOrId: Note | NoteListItem | string) => {
+  openCreateModal: (sourceRect) => set({ isCreateModalOpen: true, createModalSourceRect: sourceRect ?? null }),
+  closeCreateModal: () => set({ isCreateModalOpen: false, createModalSourceRect: null }),
+  openEditModal: (noteOrId, sourceRect) => {
     const noteId = typeof noteOrId === 'string' ? noteOrId : noteOrId.id;
-    set({ isEditModalOpen: true, editingNoteId: noteId });
+    set({ isEditModalOpen: true, editingNoteId: noteId, editModalSourceRect: sourceRect ?? null });
   },
-  closeEditModal: () => set({ isEditModalOpen: false, editingNoteId: null }),
+  closeEditModal: () => set({ isEditModalOpen: false, editingNoteId: null, editModalSourceRect: null }),
 
   // ============================================
   // Mobile Menu Actions

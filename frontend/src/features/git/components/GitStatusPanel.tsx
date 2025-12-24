@@ -56,14 +56,8 @@ const FileSection = memo(function FileSection({
     <div>
       {/* Section Header */}
       <div
-        className="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150"
+        className="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"
         onClick={onToggle}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--foreground) 5%, transparent)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
       >
         <div className="flex items-center gap-2">
           <div

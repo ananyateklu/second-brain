@@ -5,7 +5,7 @@ import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, memo, useMemo } from 'react';
+import { useState, memo, useMemo, useRef, useCallback } from 'react';
 
 interface NoteCardProps {
   /** Note data - can be NoteListItem (summary only) or full Note (with content) */
@@ -97,17 +97,26 @@ export const NoteCard = memo(({
   const isMicro = variant === 'micro';
   const isSmall = isCompact || isMicro;
 
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const theme = useBoundStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     if (isBulkMode && onSelect) {
       onSelect(note.id);
     } else {
-      openEditModal(note);
+      // Capture the card's bounding rect for morph animation
+      const rect = cardRef.current?.getBoundingClientRect();
+      const sourceRect = rect ? {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      } : null;
+      openEditModal(note, sourceRect);
     }
-  };
+  }, [isBulkMode, onSelect, note, openEditModal]);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking delete button
@@ -211,6 +220,7 @@ export const NoteCard = memo(({
 
   return (
     <div
+      ref={cardRef}
       className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
       style={{
         backgroundColor: getBackgroundStyle(),
@@ -296,24 +306,14 @@ export const NoteCard = memo(({
                 {/* Archive/Unarchive Button */}
                 <button
                   onClick={handleArchiveToggle}
-                  className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
+                  className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
+                    note.isArchived
+                      ? 'hover:bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] hover:text-[var(--color-success)]'
+                      : 'hover:bg-[color-mix(in_srgb,var(--color-warning)_15%,transparent)] hover:text-[var(--color-warning)]'
+                  }`}
                   style={{
                     backgroundColor: 'var(--surface-hover)',
                     color: 'var(--text-tertiary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!archiveNoteMutation.isPending && !unarchiveNoteMutation.isPending) {
-                      e.currentTarget.style.backgroundColor = note.isArchived
-                        ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
-                        : 'color-mix(in srgb, var(--color-warning) 15%, transparent)';
-                      e.currentTarget.style.color = note.isArchived
-                        ? 'var(--color-success)'
-                        : 'var(--color-warning)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                    e.currentTarget.style.color = 'var(--text-tertiary)';
                   }}
                   aria-label={note.isArchived ? 'Restore note' : 'Archive note'}
                   title={note.isArchived ? 'Restore from archive' : 'Archive note'}
@@ -334,20 +334,10 @@ export const NoteCard = memo(({
                 {/* Delete Button */}
                 <button
                   onClick={(e) => { void handleDelete(e); }}
-                  className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
+                  className="flex items-center justify-center w-7 h-7 rounded-full transition-colors hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)]"
                   style={{
                     backgroundColor: 'var(--surface-hover)',
                     color: 'var(--text-tertiary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!deleteNoteMutation.isPending) {
-                      e.currentTarget.style.backgroundColor = 'var(--color-error-light)';
-                      e.currentTarget.style.color = 'var(--color-error-text)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                    e.currentTarget.style.color = 'var(--text-tertiary)';
                   }}
                   aria-label="Delete note"
                   disabled={deleteNoteMutation.isPending}

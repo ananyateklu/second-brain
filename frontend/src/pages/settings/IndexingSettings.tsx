@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { IndexingButton } from '../../components/ui/IndexingButton';
+import { IndexingButton } from '../../features/rag/components/indexing';
 import { IndexingStats } from '../../components/ui/IndexingStats';
 import { useBoundStore } from '../../store/bound-store';
 import { indexingKeys } from '../../lib/query-keys';
@@ -119,24 +119,7 @@ export function IndexingSettings() {
               void queryClient.invalidateQueries({ queryKey: statsQueryKey });
               void queryClient.refetchQueries({ queryKey: statsQueryKey });
             }}
-            className="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
-            style={{
-              borderColor: 'var(--color-brand-600)',
-              color: 'var(--color-brand-600)',
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)';
-              e.currentTarget.style.borderColor = 'var(--color-brand-700)';
-              e.currentTarget.style.color = 'var(--color-brand-700)';
-              e.currentTarget.style.boxShadow = '0 4px 12px color-mix(in srgb, var(--color-brand-900) 15%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)';
-              e.currentTarget.style.borderColor = 'var(--color-brand-600)';
-              e.currentTarget.style.color = 'var(--color-brand-600)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            className="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] border-[var(--color-brand-600)] text-[var(--color-brand-600)] bg-[color-mix(in_srgb,var(--color-brand-600)_12%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-brand-600)_20%,transparent)] hover:border-[var(--color-brand-700)] hover:text-[var(--color-brand-700)] hover:shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand-900)_15%,transparent)]"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

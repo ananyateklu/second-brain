@@ -323,7 +323,7 @@ export const QueryLogsTable = memo(({
                 logs.map((log, index) => (
                   <Fragment key={log.id}>
                     <tr
-                      className="cursor-pointer transition-colors duration-150"
+                      className={`cursor-pointer transition-colors duration-150 ${expandedRow !== log.id ? 'hover:bg-[color-mix(in_srgb,var(--surface-elevated)_30%,transparent)]' : ''}`}
                       style={{
                         borderTop: index > 0 ? '1px solid var(--border)' : undefined,
                         backgroundColor: expandedRow === log.id
@@ -331,16 +331,6 @@ export const QueryLogsTable = memo(({
                           : 'transparent',
                       }}
                       onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
-                      onMouseEnter={(e) => {
-                        if (expandedRow !== log.id) {
-                          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-elevated) 30%, transparent)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (expandedRow !== log.id) {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }
-                      }}
                     >
                       <td className="px-4 py-1.5">
                         <div>

@@ -351,7 +351,7 @@ export function NotesFilter({
                 key={filter}
                 type="button"
                 onClick={() => { handleDateFilterChange(filter); }}
-                className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.dateFilter !== filter ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                 style={{
                   backgroundColor: filterState.dateFilter === filter
                     ? 'var(--color-brand-600)'
@@ -359,16 +359,6 @@ export function NotesFilter({
                   color: filterState.dateFilter === filter
                     ? '#ffffff'
                     : 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (filterState.dateFilter !== filter) {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (filterState.dateFilter !== filter) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
                 }}
               >
                 {filter === 'all' ? 'All time' :
@@ -385,7 +375,7 @@ export function NotesFilter({
                 onFilterChange({ ...filterState, dateFilter: 'custom' });
                 setIsDateDropdownOpen(false);
               }}
-              className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm mt-1 border-t"
+              className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm mt-1 border-t ${filterState.dateFilter !== 'custom' ? 'hover:bg-[var(--surface-hover)]' : ''}`}
               style={{
                 backgroundColor: filterState.dateFilter === 'custom'
                   ? 'var(--color-brand-600)'
@@ -394,16 +384,6 @@ export function NotesFilter({
                   ? '#ffffff'
                   : 'var(--text-primary)',
                 borderColor: 'var(--border)',
-              }}
-              onMouseEnter={(e) => {
-                if (filterState.dateFilter !== 'custom') {
-                  e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (filterState.dateFilter !== 'custom') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
               }}
             >
               Custom range
@@ -455,7 +435,7 @@ export function NotesFilter({
               {allTags.map((tag) => (
                 <label
                   key={tag}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-150 text-sm cursor-pointer hover:bg-opacity-50"
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-150 text-sm cursor-pointer ${!filterState.selectedTags.includes(tag) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedTags.includes(tag)
                       ? 'var(--color-brand-600)'
@@ -463,16 +443,6 @@ export function NotesFilter({
                     color: filterState.selectedTags.includes(tag)
                       ? '#ffffff'
                       : 'var(--text-primary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!filterState.selectedTags.includes(tag)) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!filterState.selectedTags.includes(tag)) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
                   }}
                 >
                   <input
@@ -506,7 +476,7 @@ export function NotesFilter({
                 key={sort}
                 type="button"
                 onClick={() => { handleSortChange(sort); }}
-                className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.sortBy !== sort ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                 style={{
                   backgroundColor: filterState.sortBy === sort
                     ? 'var(--color-brand-600)'
@@ -514,16 +484,6 @@ export function NotesFilter({
                   color: filterState.sortBy === sort
                     ? '#ffffff'
                     : 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (filterState.sortBy !== sort) {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (filterState.sortBy !== sort) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
                 }}
               >
                 {sort === 'newest' ? 'Newest first' :
@@ -550,7 +510,7 @@ export function NotesFilter({
                 key={filter}
                 type="button"
                 onClick={() => { handleArchiveFilterChange(filter); }}
-                className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.archiveFilter !== filter ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                 style={{
                   backgroundColor: filterState.archiveFilter === filter
                     ? 'var(--color-brand-600)'
@@ -558,16 +518,6 @@ export function NotesFilter({
                   color: filterState.archiveFilter === filter
                     ? '#ffffff'
                     : 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (filterState.archiveFilter !== filter) {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (filterState.archiveFilter !== filter) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
                 }}
               >
                 {filter === 'all' ? 'All notes' :
@@ -593,7 +543,7 @@ export function NotesFilter({
               <button
                 type="button"
                 onClick={() => { handleFolderFilterChange(null); }}
-                className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== null && filterState.selectedFolder !== undefined ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                 style={{
                   backgroundColor: filterState.selectedFolder === null || filterState.selectedFolder === undefined
                     ? 'var(--color-brand-600)'
@@ -601,16 +551,6 @@ export function NotesFilter({
                   color: filterState.selectedFolder === null || filterState.selectedFolder === undefined
                     ? '#ffffff'
                     : 'var(--text-primary)',
-                }}
-                onMouseEnter={(e) => {
-                  if (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) {
-                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
                 }}
               >
                 <span className="flex items-center gap-2">
@@ -627,7 +567,7 @@ export function NotesFilter({
                 <button
                   type="button"
                   onClick={() => { handleFolderFilterChange(''); }}
-                  className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== '' ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedFolder === ''
                       ? 'var(--color-brand-600)'
@@ -635,16 +575,6 @@ export function NotesFilter({
                     color: filterState.selectedFolder === ''
                       ? '#ffffff'
                       : 'var(--text-primary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (filterState.selectedFolder !== '') {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (filterState.selectedFolder !== '') {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
                   }}
                 >
                   <span className="flex items-center gap-2">
@@ -668,7 +598,7 @@ export function NotesFilter({
                   key={folder}
                   type="button"
                   onClick={() => { handleFolderFilterChange(folder); }}
-                  className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== folder ? 'hover:bg-[var(--surface-hover)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedFolder === folder
                       ? 'var(--color-brand-600)'
@@ -676,16 +606,6 @@ export function NotesFilter({
                     color: filterState.selectedFolder === folder
                       ? '#ffffff'
                       : 'var(--text-primary)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (filterState.selectedFolder !== folder) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (filterState.selectedFolder !== folder) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
                   }}
                 >
                   <span className="flex items-center gap-2">
@@ -707,19 +627,11 @@ export function NotesFilter({
         <button
           type="button"
           onClick={clearFilters}
-          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
           style={{
             backgroundColor: 'transparent',
             color: 'var(--text-secondary)',
             border: '1px solid var(--border)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = 'var(--text-secondary)';
           }}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -741,22 +653,10 @@ export function NotesFilter({
           <button
             type="button"
             onClick={() => { onViewModeChange('card'); }}
-            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
+            className={`flex items-center justify-center w-9 h-9 transition-all duration-200 ${viewMode !== 'card' ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
             style={{
               backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
               color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              if (viewMode !== 'card') {
-                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (viewMode !== 'card') {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }
             }}
             title="Card view"
             aria-label="Card view"
@@ -773,22 +673,10 @@ export function NotesFilter({
           <button
             type="button"
             onClick={() => { onViewModeChange('list'); }}
-            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
+            className={`flex items-center justify-center w-9 h-9 transition-all duration-200 ${viewMode !== 'list' ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
             style={{
               backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',
               color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              if (viewMode !== 'list') {
-                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (viewMode !== 'list') {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }
             }}
             title="List view"
             aria-label="List view"
@@ -806,24 +694,12 @@ export function NotesFilter({
         <button
           type="button"
           onClick={onBulkModeToggle}
-          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ${!isBulkMode ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
           style={{
             backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'transparent',
             color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',
             border: `1px solid ${isBulkMode ? 'var(--color-brand-600)' : 'var(--border)'}`,
             boxShadow: isBulkMode ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (!isBulkMode) {
-              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isBulkMode) {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }
           }}
         >
           {isBulkMode ? (

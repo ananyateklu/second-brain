@@ -323,15 +323,15 @@ export function StreamingIndicator({
           <div
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              backgroundColor: 'var(--color-error-light)',
               color: 'var(--text-primary)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              border: '1px solid var(--color-error-border)',
             }}
           >
             <div className="flex items-start gap-3">
               <svg
                 className="w-5 h-5 flex-shrink-0 mt-0.5"
-                style={{ color: 'rgb(239, 68, 68)' }}
+                style={{ color: 'var(--color-error)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -339,7 +339,7 @@ export function StreamingIndicator({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium" style={{ color: 'rgb(239, 68, 68)' }}>Streaming Error</p>
+                <p className="font-medium" style={{ color: 'var(--color-error)' }}>Streaming Error</p>
                 <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{streamingError.message}</p>
                 {streamingMessage && (
                   <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>Partial response received before error.</p>
