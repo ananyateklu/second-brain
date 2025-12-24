@@ -4,6 +4,17 @@
  */
 
 /**
+ * Model information from provider health check.
+ * Includes context window and output limits for accurate context tracking.
+ */
+export interface AIModelInfo {
+  id: string;
+  displayName?: string;
+  contextWindow?: number;
+  maxOutputTokens?: number;
+}
+
+/**
  * AI Provider health status
  */
 export interface AIProviderHealth {
@@ -13,7 +24,10 @@ export interface AIProviderHealth {
   status: string;
   responseTimeMs: number;
   version?: string;
+  /** @deprecated Use models instead for richer model information */
   availableModels?: string[];
+  /** Detailed model information including context window limits */
+  models?: AIModelInfo[];
   errorMessage?: string;
 }
 

@@ -2,11 +2,14 @@ import { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { useBoundStore } from '../../../store/bound-store';
 import { getDefaultModelForProvider } from '../../../utils/default-models';
+import type { AIModelInfo } from '../../../types/ai';
 
 export interface ProviderInfo {
   provider: string;
   isHealthy: boolean;
   availableModels: string[];
+  /** Detailed model information including context windows (from API) */
+  models?: AIModelInfo[];
 }
 
 export interface ProviderSelectionState {
@@ -19,6 +22,11 @@ export interface ProviderSelectionState {
   refreshProviders: () => Promise<void>;
   /** Whether providers are currently being refreshed */
   isRefreshing: boolean;
+  /**
+   * Context window for the currently selected model (from API health data).
+   * Undefined if not available from API.
+   */
+  selectedModelContextWindow?: number;
 }
 
 export interface ProviderSelectionActions {
@@ -51,16 +59,18 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   }, [user?.userId, loadPreferencesFromBackend]);
 
   // Get available providers from health data
-  const availableProviders = useMemo(() => (
+  const availableProviders = useMemo((): ProviderInfo[] => (
     Array.isArray(healthData?.providers)
       ? healthData.providers
         .filter((p) => p?.isHealthy)
         .map((p) => ({
-          ...p,
           provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),
+          isHealthy: p.isHealthy,
           availableModels: Array.isArray(p.availableModels)
             ? p.availableModels.filter((m): m is string => typeof m === 'string')
             : [],
+          // Include detailed model info with context windows
+          models: Array.isArray(p.models) ? p.models : undefined,
         }))
       : []
   ), [healthData]);
@@ -70,6 +80,14 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     availableProviders.find((p) => p.provider === selectedProvider)?.availableModels || [],
     [availableProviders, selectedProvider]
   );
+
+  // Get context window for selected model from API health data
+  const selectedModelContextWindow = useMemo(() => {
+    const providerData = availableProviders.find((p) => p.provider === selectedProvider);
+    if (!providerData?.models) return undefined;
+    const modelInfo = providerData.models.find((m) => m.id === selectedModel);
+    return modelInfo?.contextWindow;
+  }, [availableProviders, selectedProvider, selectedModel]);
 
   // Auto-select first provider and preferred default model (only if no saved preferences)
   const hasAutoSelectedRef = useRef(false);
@@ -137,6 +155,8 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     isHealthLoading,
     refreshProviders,
     isRefreshing: isFetching && !isHealthLoading, // Refreshing = fetching but not initial load
+    // Context window from API (for accurate context tracking)
+    selectedModelContextWindow,
     // Actions (update Zustand store directly)
     handleProviderChange,
     handleModelChange,

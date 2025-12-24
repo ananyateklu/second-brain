@@ -19,6 +19,8 @@ export interface UseContextUsageOptions {
   conversation: ChatConversation | undefined;
   /** Current model name */
   model: string;
+  /** Current provider name (for looking up model info) */
+  provider?: string;
   /** Whether agent mode is enabled */
   agentModeEnabled: boolean;
   /** Enabled agent capabilities */
@@ -35,6 +37,11 @@ export interface UseContextUsageOptions {
   isStreaming?: boolean;
   /** Current streaming message */
   streamingMessage?: string;
+  /**
+   * Context window from API health data (preferred over hardcoded values).
+   * If provided, this takes priority over the hardcoded model-context-limits.
+   */
+  apiContextWindow?: number;
 }
 
 /**
@@ -69,6 +76,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     streamingRetrievedNotes = [],
     isStreaming = false,
     streamingMessage = '',
+    apiContextWindow,
   } = options;
 
   // Derive agent settings from conversation as fallback for when UI state hasn't synced yet
@@ -237,7 +245,13 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
   ]);
 
   // Get model context limit
-  const maxTokens = useMemo(() => getModelContextLimit(model), [model]);
+  // Priority: API-provided context window > hardcoded fallback
+  const maxTokens = useMemo(() => {
+    if (apiContextWindow && apiContextWindow > 0) {
+      return apiContextWindow;
+    }
+    return getModelContextLimit(model);
+  }, [model, apiContextWindow]);
 
   // Calculate percentage and warning level
   const percentUsed = useMemo(() => {

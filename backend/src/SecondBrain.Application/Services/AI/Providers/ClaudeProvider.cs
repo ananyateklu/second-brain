@@ -834,7 +834,7 @@ public class ClaudeProvider : IAIProvider
         }
     }
 
-    private async Task<IEnumerable<string>> FetchAvailableModelsAsync(CancellationToken cancellationToken = default)
+    private async Task<IEnumerable<AIModelInfo>> FetchAvailableModelsWithInfoAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -849,8 +849,25 @@ public class ClaudeProvider : IAIProvider
                 {
                     return dataElement.EnumerateArray()
                         .Where(model => model.TryGetProperty("id", out _))
-                        .Select(model => model.GetProperty("id").GetString() ?? string.Empty)
-                        .Where(id => !string.IsNullOrEmpty(id))
+                        .Select(model =>
+                        {
+                            var id = model.GetProperty("id").GetString() ?? string.Empty;
+                            string? displayName = null;
+                            if (model.TryGetProperty("display_name", out var displayNameProp))
+                            {
+                                displayName = displayNameProp.GetString();
+                            }
+                            // Anthropic API doesn't return context info, use fallback database
+                            var limits = ModelContextDatabase.GetModelLimits(id);
+                            return new AIModelInfo
+                            {
+                                Id = id,
+                                DisplayName = displayName,
+                                ContextWindow = limits.ContextWindow,
+                                MaxOutputTokens = limits.MaxOutput
+                            };
+                        })
+                        .Where(m => !string.IsNullOrEmpty(m.Id))
                         .ToList();
                 }
             }
@@ -876,7 +893,7 @@ public class ClaudeProvider : IAIProvider
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"
-        };
+        }.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
     }
 
     public async Task<AIProviderHealth> GetHealthStatusAsync(
@@ -908,14 +925,16 @@ public class ClaudeProvider : IAIProvider
         try
         {
             var isAvailable = await IsAvailableAsync(cancellationToken);
-            var availableModels = await FetchAvailableModelsAsync(cancellationToken);
+            var modelInfoList = await FetchAvailableModelsWithInfoAsync(cancellationToken);
             stopwatch.Stop();
 
             health.IsHealthy = isAvailable;
             health.Status = isAvailable ? "Healthy" : "Unavailable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = _settings.Version;
-            health.AvailableModels = availableModels;
+            // Populate both for backward compatibility
+            health.AvailableModels = modelInfoList.Select(m => m.Id);
+            health.Models = modelInfoList;
 
             if (!isAvailable)
             {

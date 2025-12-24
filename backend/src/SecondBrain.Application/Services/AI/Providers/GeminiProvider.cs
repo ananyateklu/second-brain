@@ -1620,7 +1620,7 @@ public class GeminiProvider : IAIProvider
         }
     }
 
-    private async Task<IEnumerable<string>> FetchAvailableModelsAsync(CancellationToken cancellationToken = default)
+    private async Task<IEnumerable<AIModelInfo>> FetchAvailableModelsWithInfoAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -1641,10 +1641,36 @@ public class GeminiProvider : IAIProvider
                         .Select(model =>
                         {
                             var name = model.GetProperty("name").GetString() ?? string.Empty;
-                            return name.Replace("models/", "");
+                            var modelId = name.Replace("models/", "");
+
+                            // Extract context window (inputTokenLimit) and max output (outputTokenLimit)
+                            int? contextWindow = null;
+                            int? maxOutputTokens = null;
+                            string? displayName = null;
+
+                            if (model.TryGetProperty("inputTokenLimit", out var inputLimit))
+                            {
+                                contextWindow = inputLimit.GetInt32();
+                            }
+                            if (model.TryGetProperty("outputTokenLimit", out var outputLimit))
+                            {
+                                maxOutputTokens = outputLimit.GetInt32();
+                            }
+                            if (model.TryGetProperty("displayName", out var displayNameProp))
+                            {
+                                displayName = displayNameProp.GetString();
+                            }
+
+                            return new AIModelInfo
+                            {
+                                Id = modelId,
+                                DisplayName = displayName,
+                                ContextWindow = contextWindow,
+                                MaxOutputTokens = maxOutputTokens
+                            };
                         })
-                        .Where(name => !string.IsNullOrEmpty(name) && name.StartsWith("gemini"))
-                        .OrderByDescending(name => name)
+                        .Where(m => !string.IsNullOrEmpty(m.Id) && m.Id.StartsWith("gemini"))
+                        .OrderByDescending(m => m.Id)
                         .ToList();
                 }
             }
@@ -1654,7 +1680,7 @@ public class GeminiProvider : IAIProvider
             _logger.LogWarning(ex, "Failed to fetch available models from Gemini API");
         }
 
-        // Fallback to known models if API call fails
+        // Fallback to known models with context info from database
         return new[]
         {
             "gemini-2.0-flash-exp",
@@ -1662,7 +1688,7 @@ public class GeminiProvider : IAIProvider
             "gemini-1.5-flash-8b",
             "gemini-1.5-pro",
             "gemini-1.0-pro"
-        };
+        }.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
     }
 
     public async Task<AIProviderHealth> GetHealthStatusAsync(
@@ -1694,14 +1720,16 @@ public class GeminiProvider : IAIProvider
         try
         {
             var isAvailable = await IsAvailableAsync(cancellationToken);
-            var availableModels = await FetchAvailableModelsAsync(cancellationToken);
+            var modelInfoList = await FetchAvailableModelsWithInfoAsync(cancellationToken);
             stopwatch.Stop();
 
             health.IsHealthy = isAvailable;
             health.Status = isAvailable ? "Healthy" : "Unavailable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = "v1";
-            health.AvailableModels = availableModels;
+            // Populate both for backward compatibility
+            health.AvailableModels = modelInfoList.Select(m => m.Id);
+            health.Models = modelInfoList;
 
             if (!isAvailable)
             {
