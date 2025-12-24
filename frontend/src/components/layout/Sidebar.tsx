@@ -497,7 +497,7 @@ export function Sidebar() {
         {/* Desktop closed state button */}
         <button
           onClick={toggleSidebar}
-          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-8 h-16 items-center justify-center rounded-r-2xl transition-all duration-500 hover:w-10 hover:shadow-2xl active:scale-95 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)]"
+          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-5 h-10 items-center justify-center rounded-r-xl transition-all duration-500 hover:w-7 hover:shadow-2xl active:scale-95 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)]"
           style={{
             top: centerOffset,
             color: 'var(--btn-primary-text)',
@@ -506,7 +506,7 @@ export function Sidebar() {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <svg
-            className="h-5 w-5 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 relative z-10"
+            className="h-3.5 w-3.5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
             style={{ color: 'var(--btn-primary-text)' }}
             fill="none"
             viewBox="0 0 24 24"
