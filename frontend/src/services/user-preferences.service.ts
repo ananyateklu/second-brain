@@ -8,6 +8,7 @@ import { API_ENDPOINTS, STORAGE_KEYS } from '../lib/constants';
 import type {
   UserPreferences,
   UpdateUserPreferencesRequest,
+  MarkdownRendererType,
 } from '../types/auth';
 import type { VectorStoreProvider } from '../types/rag';
 
@@ -21,6 +22,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   defaultNoteView: 'list',
   itemsPerPage: 20,
   fontSize: 'medium',
+  markdownRenderer: 'custom' as MarkdownRendererType,
   enableNotifications: true,
   ollamaRemoteUrl: null,
   useRemoteOllama: false,
@@ -113,6 +115,13 @@ export const userPreferencesService = {
   },
 
   /**
+   * Validate markdown renderer preference
+   */
+  validateMarkdownRenderer(renderer: string): MarkdownRendererType {
+    return renderer === 'llm-ui' ? 'llm-ui' : 'custom';
+  },
+
+  /**
    * Validate items per page
    */
   validateItemsPerPage(count: number): number {
@@ -143,6 +152,9 @@ export const userPreferencesService = {
       ),
       fontSize: this.validateFontSize(
         preferences.fontSize || currentPreferences.fontSize
+      ),
+      markdownRenderer: this.validateMarkdownRenderer(
+        preferences.markdownRenderer || currentPreferences.markdownRenderer
       ),
       enableNotifications:
         typeof preferences.enableNotifications === 'boolean'

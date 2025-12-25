@@ -529,6 +529,7 @@ export function MessageBubble({
               toolDefinitionTokens={message.toolDefinitionTokens}
               toolArgumentTokens={message.toolArgumentTokens}
               toolResultTokens={message.toolResultTokens}
+              messageMarkdownRenderer={message.markdownRenderer}
             />
 
             {/* RAG Feedback buttons */}

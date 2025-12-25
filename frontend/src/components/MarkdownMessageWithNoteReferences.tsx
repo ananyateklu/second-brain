@@ -1,20 +1,27 @@
-import { MarkdownMessage } from './MarkdownMessage';
+import { UnifiedMarkdownRenderer } from './UnifiedMarkdownRenderer';
 
 interface MarkdownMessageWithNoteReferencesProps {
   content: string;
   showCursor?: boolean;
+  isStreaming?: boolean;
 }
 
 /**
  * Markdown message component that handles [[noteId|title]] note references.
- * Note: The actual rendering is now handled in MarkdownMessage.tsx directly,
- * which converts [[id|title]] to links and renders them inline within markdown.
- * This component is kept for backwards compatibility.
+ * Uses UnifiedMarkdownRenderer to switch between custom and llm-ui renderers
+ * based on user preference.
  */
 export function MarkdownMessageWithNoteReferences({
   content,
   showCursor = false,
+  isStreaming = false,
 }: MarkdownMessageWithNoteReferencesProps) {
-  return <MarkdownMessage content={content} showCursor={showCursor} />;
+  return (
+    <UnifiedMarkdownRenderer
+      content={content}
+      showCursor={showCursor}
+      isStreaming={isStreaming}
+    />
+  );
 }
 

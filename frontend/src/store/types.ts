@@ -5,7 +5,7 @@
 
 import type { StateCreator } from 'zustand';
 import type { Note, NoteListItem } from '../features/notes/types/note';
-import type { User, UserPreferences } from '../types/auth';
+import type { User, UserPreferences, MarkdownRendererType } from '../types/auth';
 import type { VectorStoreProvider } from '../types/rag';
 import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
 
@@ -95,6 +95,7 @@ export interface SettingsSliceActions {
   setAutoSaveInterval: (interval: number) => void;
   setEnableNotifications: (enabled: boolean) => void;
   setFontSize: (size: FontSize) => void;
+  setMarkdownRenderer: (renderer: MarkdownRendererType, syncToBackend?: boolean) => Promise<void>;
   setVectorStoreProvider: (provider: VectorStoreProvider, syncToBackend?: boolean) => Promise<void>;
   setChatProvider: (provider: string | null) => void;
   setChatModel: (model: string | null) => void;

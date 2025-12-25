@@ -2,6 +2,20 @@ import { formatModelName } from '../utils/model-name-formatter';
 import { useProviderLogo } from '../utils/provider-logos';
 import { useBoundStore } from '../store/bound-store';
 
+// Renderer icon for LLM-UI
+const LlmUiIcon = () => (
+  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+  </svg>
+);
+
+// Renderer icon for Custom (react-markdown)
+const CustomRendererIcon = () => (
+  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+  </svg>
+);
+
 // Theme-aware user icon
 const UserIcon = () => {
   const theme = useBoundStore((state) => state.theme);
@@ -64,6 +78,8 @@ interface TokenUsageDisplayProps {
   toolDefinitionTokens?: number;
   toolArgumentTokens?: number;
   toolResultTokens?: number;
+  /** Markdown renderer used for this specific message (from database) */
+  messageMarkdownRenderer?: string;
 }
 
 export function TokenUsageDisplay({
@@ -82,10 +98,15 @@ export function TokenUsageDisplay({
   toolDefinitionTokens,
   toolArgumentTokens,
   toolResultTokens,
+  messageMarkdownRenderer,
 }: TokenUsageDisplayProps) {
   const theme = useBoundStore((state) => state.theme);
+  const globalMarkdownRenderer = useBoundStore((state) => state.markdownRenderer);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const providerLogo = useProviderLogo(provider || '');
+
+  // Use message-specific renderer if available, otherwise fall back to global setting
+  const effectiveRenderer = messageMarkdownRenderer || globalMarkdownRenderer;
 
   if (!inputTokens && !outputTokens) {
     return null;
@@ -235,6 +256,28 @@ export function TokenUsageDisplay({
               </span>
             )}
           </div>
+        </>
+      )}
+
+      {/* Markdown Renderer indicator (assistant only) */}
+      {role === 'assistant' && (
+        <>
+          <span className="opacity-30 select-none">•</span>
+          <span
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
+            style={{
+              backgroundColor: effectiveRenderer === 'llm-ui'
+                ? (isDarkMode ? 'rgba(168, 85, 247, 0.15)' : 'rgba(168, 85, 247, 0.1)')
+                : (isDarkMode ? 'rgba(107, 114, 128, 0.2)' : 'rgba(107, 114, 128, 0.1)'),
+              color: effectiveRenderer === 'llm-ui'
+                ? (isDarkMode ? 'rgb(216, 180, 254)' : 'rgb(126, 34, 206)')
+                : (isDarkMode ? 'rgb(156, 163, 175)' : 'rgb(75, 85, 99)'),
+            }}
+            title={effectiveRenderer === 'llm-ui' ? 'Using LLM-UI renderer (optimized for streaming)' : 'Using Custom renderer (react-markdown)'}
+          >
+            {effectiveRenderer === 'llm-ui' ? <LlmUiIcon /> : <CustomRendererIcon />}
+            <span>{effectiveRenderer === 'llm-ui' ? 'LLM-UI' : 'Custom'}</span>
+          </span>
         </>
       )}
     </div>

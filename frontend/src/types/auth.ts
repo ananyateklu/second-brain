@@ -4,6 +4,11 @@
  */
 
 /**
+ * Markdown renderer type for display settings
+ */
+export type MarkdownRendererType = 'custom' | 'llm-ui';
+
+/**
  * User entity (aligned with backend UserResponse)
  */
 export interface User {
@@ -69,6 +74,7 @@ export interface UserPreferences {
   defaultNoteView: 'list' | 'grid';
   itemsPerPage: number;
   fontSize: 'small' | 'medium' | 'large';
+  markdownRenderer: MarkdownRendererType;
   enableNotifications: boolean;
   ollamaRemoteUrl: string | null;
   useRemoteOllama: boolean;
@@ -116,6 +122,7 @@ export interface UpdateUserPreferencesRequest {
   defaultNoteView?: 'list' | 'grid';
   itemsPerPage?: number;
   fontSize?: 'small' | 'medium' | 'large';
+  markdownRenderer?: MarkdownRendererType;
   enableNotifications?: boolean;
   ollamaRemoteUrl?: string | null;
   useRemoteOllama?: boolean;

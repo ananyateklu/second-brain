@@ -77,6 +77,10 @@ public class UserPreferences
     [MaxLength(20)]
     public string FontSize { get; set; } = "medium";
 
+    [Column("markdown_renderer")]
+    [MaxLength(20)]
+    public string MarkdownRenderer { get; set; } = "custom";
+
     [Column("enable_notifications")]
     public bool EnableNotifications { get; set; } = true;
 

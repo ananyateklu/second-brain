@@ -6,7 +6,7 @@
 // Import directly to avoid circular deps through services barrel export
 import { userPreferencesService, DEFAULT_PREFERENCES } from '../../services/user-preferences.service';
 import { loggers } from '../../utils/logger';
-import type { UserPreferences } from '../../types/auth';
+import type { UserPreferences, MarkdownRendererType } from '../../types/auth';
 import type { VectorStoreProvider } from '../../types/rag';
 import type { SettingsSlice, SliceCreator, FontSize, NoteView } from '../types';
 
@@ -93,6 +93,15 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     const validSize = userPreferencesService.validateFontSize(size);
     set({ fontSize: validSize });
     syncSettingDebounced(get, 'fontSize', validSize);
+  },
+
+  setMarkdownRenderer: async (renderer: MarkdownRendererType, syncToBackend = true) => {
+    const validRenderer = userPreferencesService.validateMarkdownRenderer(renderer);
+    set({ markdownRenderer: validRenderer });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'markdownRenderer', validRenderer, 'markdown renderer');
+    }
   },
 
   // ============================================
@@ -386,6 +395,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         defaultNoteView: preferences.defaultNoteView,
         itemsPerPage: preferences.itemsPerPage,
         fontSize: preferences.fontSize,
+        markdownRenderer: preferences.markdownRenderer,
         enableNotifications: preferences.enableNotifications,
         ollamaRemoteUrl: preferences.ollamaRemoteUrl,
         useRemoteOllama: preferences.useRemoteOllama,
@@ -460,6 +470,7 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     defaultNoteView: state.defaultNoteView,
     itemsPerPage: state.itemsPerPage,
     fontSize: state.fontSize,
+    markdownRenderer: state.markdownRenderer,
     enableNotifications: state.enableNotifications,
     ollamaRemoteUrl: state.ollamaRemoteUrl,
     useRemoteOllama: state.useRemoteOllama,

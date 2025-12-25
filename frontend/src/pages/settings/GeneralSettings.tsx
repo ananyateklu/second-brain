@@ -2,11 +2,14 @@
 import { toast } from '../../hooks/use-toast';
 import { useBoundStore } from '../../store/bound-store';
 import type { FontSize, NoteView } from '../../store/types';
+import type { MarkdownRendererType } from '../../types/auth';
 
 export function GeneralSettings() {
     const {
         fontSize,
         setFontSize,
+        markdownRenderer,
+        setMarkdownRenderer,
         defaultNoteView,
         setDefaultNoteView,
         itemsPerPage,
@@ -18,6 +21,12 @@ export function GeneralSettings() {
     const handleFontSizeChange = (size: FontSize) => {
         setFontSize(size);
         toast.success('Font Size Updated', `Font size set to ${size}.`);
+    };
+
+    const handleMarkdownRendererChange = (renderer: MarkdownRendererType) => {
+        void setMarkdownRenderer(renderer);
+        const rendererLabels = { custom: 'Custom (React-Markdown)', 'llm-ui': 'LLM-UI' };
+        toast.success('Markdown Renderer Updated', `Switched to ${rendererLabels[renderer]}.`);
     };
 
     const handleNoteViewChange = (view: NoteView) => {
@@ -110,6 +119,51 @@ export function GeneralSettings() {
                                             }}
                                         >
                                             {sizeLabels[size]}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Markdown Renderer */}
+                        <div>
+                            <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h8m-8 6h16" />
+                                </svg>
+                                Markdown Renderer
+                            </label>
+                            <div className="flex gap-2">
+                                {(['custom', 'llm-ui'] as const).map((renderer) => {
+                                    const isActive = markdownRenderer === renderer;
+                                    return (
+                                        <button
+                                            key={renderer}
+                                            type="button"
+                                            onClick={() => handleMarkdownRendererChange(renderer)}
+                                            className="px-4 py-2 rounded-2xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
+                                            style={{
+                                                backgroundColor: isActive
+                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    : 'var(--surface-elevated)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                boxShadow: isActive
+                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    : 'none',
+                                                transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+                                            }}
+                                        >
+                                            {renderer === 'custom' ? (
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                                </svg>
+                                            )}
+                                            {renderer === 'custom' ? 'Custom' : 'LLM-UI'}
                                         </button>
                                     );
                                 })}

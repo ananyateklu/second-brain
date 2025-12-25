@@ -588,6 +588,7 @@ public class ChatController : ControllerBase
                 CacheReadTokens = actualUsage?.CacheReadTokens,
                 RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
                 RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
+                MarkdownRenderer = request.MarkdownRenderer,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,
@@ -901,6 +902,7 @@ public class ChatController : ControllerBase
                 RagLogId = ragLogId?.ToString(),
                 RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
                 RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
+                MarkdownRenderer = request.MarkdownRenderer,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,

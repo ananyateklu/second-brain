@@ -203,6 +203,7 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.DefaultNoteView = user.Preferences.DefaultNoteView;
                     existingUser.Preferences.ItemsPerPage = user.Preferences.ItemsPerPage;
                     existingUser.Preferences.FontSize = user.Preferences.FontSize;
+                    existingUser.Preferences.MarkdownRenderer = user.Preferences.MarkdownRenderer;
                     existingUser.Preferences.EnableNotifications = user.Preferences.EnableNotifications;
                     existingUser.Preferences.OllamaRemoteUrl = user.Preferences.OllamaRemoteUrl;
                     existingUser.Preferences.UseRemoteOllama = user.Preferences.UseRemoteOllama;
