@@ -8,6 +8,7 @@ public class UpdateUserPreferencesRequest
     public string? DefaultNoteView { get; set; }
     public int? ItemsPerPage { get; set; }
     public string? FontSize { get; set; }
+    public string? MarkdownRenderer { get; set; }
     public bool? EnableNotifications { get; set; }
     public string? OllamaRemoteUrl { get; set; }
     public bool? UseRemoteOllama { get; set; }

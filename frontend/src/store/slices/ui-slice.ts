@@ -136,19 +136,15 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Sidebar Actions
   // ============================================
 
+  // Quick click: Toggle between closed ↔ collapsed (or expanded → collapsed)
   toggleSidebar: () =>
     set((state) => {
       let newState: SidebarState;
       if (state.sidebarState === 'closed') {
         newState = 'collapsed';
-      } else if (state.sidebarState === 'collapsed') {
-        if (state.previousSidebarState === 'expanded') {
-          newState = 'closed';
-        } else {
-          newState = 'expanded';
-        }
       } else {
-        newState = 'collapsed';
+        // From collapsed or expanded, go to closed
+        newState = 'closed';
       }
       saveSidebarState(newState);
       return {
@@ -162,6 +158,16 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
       saveSidebarState('closed');
       return {
         sidebarState: 'closed' as const,
+        previousSidebarState: state.sidebarState,
+      };
+    }),
+
+  // Long press (2 seconds): Expand to full sidebar
+  expandSidebar: () =>
+    set((state) => {
+      saveSidebarState('expanded');
+      return {
+        sidebarState: 'expanded' as const,
         previousSidebarState: state.sidebarState,
       };
     }),

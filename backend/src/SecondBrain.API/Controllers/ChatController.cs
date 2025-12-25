@@ -307,6 +307,8 @@ public class ChatController : ControllerBase
                         hydeModel: userPrefs.RagHydeModel,
                         queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                         queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                        embeddingProvider: userPrefs.RagEmbeddingProvider,
+                        embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,
@@ -586,6 +588,7 @@ public class ChatController : ControllerBase
                 CacheReadTokens = actualUsage?.CacheReadTokens,
                 RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
                 RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
+                MarkdownRenderer = request.MarkdownRenderer,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,
@@ -709,6 +712,8 @@ public class ChatController : ControllerBase
                         hydeModel: userPrefs.RagHydeModel,
                         queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                         queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                        embeddingProvider: userPrefs.RagEmbeddingProvider,
+                        embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                         // Tier 1: Core Retrieval
                         topK: userPrefs.RagTopK,
                         similarityThreshold: userPrefs.RagSimilarityThreshold,
@@ -897,6 +902,7 @@ public class ChatController : ControllerBase
                 RagLogId = ragLogId?.ToString(),
                 RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
                 RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
+                MarkdownRenderer = request.MarkdownRenderer,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,

@@ -81,6 +81,12 @@ public class ExpandedQueryEmbeddings
     public List<string> QueryVariations { get; set; } = new();
     public string? HypotheticalDocument { get; set; }
     public int TotalTokensUsed { get; set; }
+
+    /// <summary>
+    /// The dimension of the embeddings (768, 1024, 1536, or 3072).
+    /// Used to filter stored embeddings to matching dimensions during search.
+    /// </summary>
+    public int EmbeddingDimensions { get; set; } = 1536;
 }
 
 public class QueryExpansionService : IQueryExpansionService
@@ -435,7 +441,17 @@ Alternative queries:";
         CancellationToken cancellationToken = default)
     {
         var result = new ExpandedQueryEmbeddings { OriginalQuery = query };
-        var embeddingProvider = _embeddingProviderFactory.GetDefaultProvider();
+
+        // Use specified embedding provider if provided, otherwise use default
+        // IMPORTANT: For RAG search to work correctly, this must match the provider used during indexing
+        var embeddingProvider = !string.IsNullOrEmpty(options?.EmbeddingProvider)
+            ? _embeddingProviderFactory.GetProvider(options.EmbeddingProvider)
+            : _embeddingProviderFactory.GetDefaultProvider();
+
+        _logger.LogDebug(
+            "Using embedding provider: {Provider} (dimensions: {Dims}) for query expansion",
+            embeddingProvider.ProviderName, embeddingProvider.Dimensions);
+
         var totalTokens = 0;
 
         // Resolve effective settings: passed parameters override defaults from config
@@ -448,11 +464,20 @@ Alternative queries:";
                 query.Substring(0, Math.Min(50, query.Length)));
 
             // 1. Generate embedding for original query
-            var originalEmbedding = await embeddingProvider.GenerateEmbeddingAsync(query, cancellationToken);
+            // Pass custom dimensions AND model from RagOptions to ensure query embedding matches stored embedding dimensions
+            _logger.LogInformation(
+                "Generating query embedding with override. Dimensions: {Dimensions}, Model: {Model}, Provider: {Provider}",
+                options?.EmbeddingDimensions, options?.EmbeddingModel ?? "default", embeddingProvider.ProviderName);
+            var originalEmbedding = await embeddingProvider.GenerateEmbeddingAsync(query, cancellationToken, options?.EmbeddingDimensions, options?.EmbeddingModel);
             if (originalEmbedding.Success)
             {
                 result.OriginalEmbedding = originalEmbedding.Embedding;
                 totalTokens += originalEmbedding.TokensUsed;
+
+                // Set embedding dimensions from actual embedding or provider configuration
+                result.EmbeddingDimensions = originalEmbedding.Embedding.Any()
+                    ? originalEmbedding.Embedding.Count
+                    : embeddingProvider.Dimensions;
             }
             else
             {
@@ -469,7 +494,7 @@ Alternative queries:";
                     result.HypotheticalDocument = hydeResult.HypotheticalDocument;
 
                     var hydeEmbedding = await embeddingProvider.GenerateEmbeddingAsync(
-                        hydeResult.HypotheticalDocument, cancellationToken);
+                        hydeResult.HypotheticalDocument, cancellationToken, options?.EmbeddingDimensions, options?.EmbeddingModel);
 
                     if (hydeEmbedding.Success)
                     {
@@ -491,7 +516,7 @@ Alternative queries:";
                 foreach (var variation in queryVariations.Skip(1))
                 {
                     var variationEmbedding = await embeddingProvider.GenerateEmbeddingAsync(
-                        variation, cancellationToken);
+                        variation, cancellationToken, options?.EmbeddingDimensions, options?.EmbeddingModel);
 
                     if (variationEmbedding.Success)
                     {

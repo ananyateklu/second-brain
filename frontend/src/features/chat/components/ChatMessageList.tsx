@@ -24,7 +24,7 @@ import type { ProcessEvent } from '../../../core/streaming/types';
  * Returns null if content is empty after stripping.
  * Memoized to prevent unnecessary re-renders.
  */
-const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ content, showInlineNoteRefs = false }: { content: string; showInlineNoteRefs?: boolean }) {
   const strippedContent = stripAllThinkingTags(content);
 
   // Don't render if content is empty after stripping thinking tags
@@ -40,7 +40,7 @@ const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ cont
           backgroundColor: 'var(--surface-card)',
         }}
       >
-        {agentModeEnabled ? (
+        {showInlineNoteRefs ? (
           <MarkdownMessageWithNoteReferences content={strippedContent} />
         ) : (
           <MarkdownMessage content={strippedContent} />
@@ -187,6 +187,7 @@ export function ChatMessageList({
                 streamingMessage={streamingMessage}
                 isStreaming={isStreaming}
                 agentModeEnabled={agentModeEnabled}
+                ragEnabled={ragEnabled}
                 userName={userName}
                 inputTokens={inputTokens}
                 outputTokens={outputTokens}
@@ -247,6 +248,7 @@ interface MessageWithContextProps {
   streamingMessage: string;
   isStreaming: boolean;
   agentModeEnabled: boolean;
+  ragEnabled: boolean;
   userName?: string;
   inputTokens?: number;
   outputTokens?: number;
@@ -267,6 +269,7 @@ const MessageWithContext = memo(function MessageWithContext({
   streamingMessage,
   isStreaming,
   agentModeEnabled,
+  ragEnabled,
   userName,
   inputTokens,
   outputTokens,
@@ -379,7 +382,7 @@ const MessageWithContext = memo(function MessageWithContext({
           <div key={`${index}-tool-group-${toolIndex}`}>
             {/* Show pre-tool text if available (text streamed before this tool was invoked) */}
             {toolCall.preToolText && (
-              <PersistedTimelineTextCard content={toolCall.preToolText} agentModeEnabled={agentModeEnabled} />
+              <PersistedTimelineTextCard content={toolCall.preToolText} showInlineNoteRefs={agentModeEnabled || ragEnabled} />
             )}
             <ToolExecutionCard
               execution={convertToolCallToExecution(toolCall)}
@@ -402,6 +405,7 @@ const MessageWithContext = memo(function MessageWithContext({
           streamingOutputTokens={outputTokens}
           streamingDuration={streamDuration}
           agentModeEnabled={agentModeEnabled}
+          ragEnabled={ragEnabled}
           isLastMessage={isLastMessage}
           ragLogId={isLastMessage && isAssistantMessage ? streamingRagLogId : undefined}
         />

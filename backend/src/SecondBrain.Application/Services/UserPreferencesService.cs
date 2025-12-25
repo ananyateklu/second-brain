@@ -151,6 +151,9 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.FontSize != null)
             user.Preferences.FontSize = request.FontSize;
 
+        if (request.MarkdownRenderer != null)
+            user.Preferences.MarkdownRenderer = request.MarkdownRenderer;
+
         if (request.EnableNotifications.HasValue)
             user.Preferences.EnableNotifications = request.EnableNotifications.Value;
 
@@ -321,6 +324,7 @@ public class UserPreferencesService : IUserPreferencesService
             DefaultNoteView = preferences.DefaultNoteView,
             ItemsPerPage = preferences.ItemsPerPage,
             FontSize = preferences.FontSize,
+            MarkdownRenderer = preferences.MarkdownRenderer,
             EnableNotifications = preferences.EnableNotifications,
             OllamaRemoteUrl = preferences.OllamaRemoteUrl,
             UseRemoteOllama = preferences.UseRemoteOllama,

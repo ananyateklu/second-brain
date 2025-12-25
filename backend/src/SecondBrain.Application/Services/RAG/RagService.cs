@@ -22,6 +22,7 @@ public class RagService : IRagService
     private readonly IRerankerService _rerankerService;
     private readonly ICohereRerankerService? _cohereRerankerService;
     private readonly IRagAnalyticsService? _analyticsService;
+    private readonly INoteEmbeddingSearchRepository _embeddingSearchRepository;
     private readonly RagSettings _settings;
     private readonly ILogger<RagService> _logger;
 
@@ -34,6 +35,7 @@ public class RagService : IRagService
         IRerankerService rerankerService,
         ICohereRerankerService? cohereRerankerService,
         IRagAnalyticsService? analyticsService,
+        INoteEmbeddingSearchRepository embeddingSearchRepository,
         IOptions<RagSettings> settings,
         ILogger<RagService> logger)
     {
@@ -45,6 +47,7 @@ public class RagService : IRagService
         _rerankerService = rerankerService;
         _cohereRerankerService = cohereRerankerService;
         _analyticsService = analyticsService;
+        _embeddingSearchRepository = embeddingSearchRepository;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -106,6 +109,30 @@ public class RagService : IRagService
             {
                 compositeStore.SetProviderOverride(vectorStoreProvider);
                 activity?.SetTag("rag.vector_store", vectorStoreProvider);
+            }
+
+            // Step 0: Detect user's embedding dimensions and model for correct query embedding
+            // CRITICAL: Query embeddings MUST match stored embeddings for vector comparison to work.
+            // We ALWAYS override with stored dimensions/model, regardless of user preferences.
+            var userEmbeddingInfo = await _embeddingSearchRepository.GetUserEmbeddingInfoAsync(userId, cancellationToken);
+            if (userEmbeddingInfo.HasValue)
+            {
+                var (storedDimensions, storedModel) = userEmbeddingInfo.Value;
+                _logger.LogInformation(
+                    "User embedding info detected. UserId: {UserId}, Dimensions: {Dimensions}, Model: {Model}",
+                    userId, storedDimensions, storedModel ?? "unknown");
+
+                // ALWAYS use stored dimensions and model for query embedding - they MUST match stored embeddings
+                // User preferences for dimensions are ignored here because mismatched dimensions cause search to fail
+                options ??= new RagOptions();
+                options.EmbeddingDimensions = storedDimensions;
+                if (!string.IsNullOrEmpty(storedModel))
+                {
+                    options.EmbeddingModel = storedModel;
+                }
+
+                activity?.SetTag("rag.stored_dimensions", storedDimensions);
+                activity?.SetTag("rag.stored_model", storedModel);
             }
 
             // Step 1: Query Expansion (HyDE + Multi-Query)
@@ -315,14 +342,33 @@ public class RagService : IRagService
         }
 
         // Fall back to simple embedding generation
-        var embeddingProvider = _embeddingProviderFactory.GetDefaultProvider();
-        var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(query, cancellationToken);
+        // Use specified embedding provider if provided, otherwise use default
+        // IMPORTANT: For RAG search to work correctly, this must match the provider used during indexing
+        var embeddingProvider = !string.IsNullOrEmpty(options?.EmbeddingProvider)
+            ? _embeddingProviderFactory.GetProvider(options.EmbeddingProvider)
+            : _embeddingProviderFactory.GetDefaultProvider();
+
+        _logger.LogDebug(
+            "Using embedding provider: {Provider} (dimensions: {Dims}, customDims: {CustomDims}, modelOverride: {Model}) for query embedding",
+            embeddingProvider.ProviderName, embeddingProvider.Dimensions, options?.EmbeddingDimensions, options?.EmbeddingModel);
+
+        // Pass custom dimensions and model override from RagOptions to ensure query embedding matches stored embedding dimensions
+        // The model override is critical when user indexed with a different model than the default (e.g., text-embedding-3-large)
+        var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(
+            query,
+            cancellationToken,
+            options?.EmbeddingDimensions,
+            options?.EmbeddingModel);
 
         return new ExpandedQueryEmbeddings
         {
             OriginalQuery = query,
             OriginalEmbedding = embeddingResponse.Success ? embeddingResponse.Embedding : [],
-            TotalTokensUsed = embeddingResponse.TokensUsed
+            TotalTokensUsed = embeddingResponse.TokensUsed,
+            // Set embedding dimensions from actual embedding or custom dimensions or provider default
+            EmbeddingDimensions = embeddingResponse.Success && embeddingResponse.Embedding.Any()
+                ? embeddingResponse.Embedding.Count
+                : options?.EmbeddingDimensions ?? embeddingProvider.Dimensions
         };
     }
 
@@ -350,11 +396,11 @@ public class RagService : IRagService
             _logger.LogDebug("Using native PostgreSQL 18 hybrid search (single-query RRF)");
         }
 
-        // Search with original embedding
+        // Search with original embedding (pass embedding dimensions for correct vector comparison)
         var originalResults = useNativeHybrid
             ? await _nativeHybridSearchService!.SearchAsync(
                 query, embeddings.OriginalEmbedding, userId, retrievalCount,
-                similarityThreshold, cancellationToken)
+                embeddings.EmbeddingDimensions, similarityThreshold, cancellationToken)
             : await _hybridSearchService.SearchAsync(
                 query, embeddings.OriginalEmbedding, userId, retrievalCount,
                 similarityThreshold, cancellationToken);
@@ -368,7 +414,7 @@ public class RagService : IRagService
                 ? await _nativeHybridSearchService!.SearchAsync(
                     embeddings.HypotheticalDocument ?? query,
                     embeddings.HyDEEmbedding, userId, retrievalCount,
-                    similarityThreshold, cancellationToken)
+                    embeddings.EmbeddingDimensions, similarityThreshold, cancellationToken)
                 : await _hybridSearchService.SearchAsync(
                     embeddings.HypotheticalDocument ?? query,
                     embeddings.HyDEEmbedding, userId, retrievalCount,
@@ -407,7 +453,7 @@ public class RagService : IRagService
                 var variationResults = useNativeHybrid
                     ? await _nativeHybridSearchService!.SearchAsync(
                         variationQuery, variationEmbedding, userId, retrievalCount / 2,
-                        similarityThreshold, cancellationToken)
+                        embeddings.EmbeddingDimensions, similarityThreshold, cancellationToken)
                     : await _hybridSearchService.SearchAsync(
                         variationQuery, variationEmbedding, userId, retrievalCount / 2,
                         similarityThreshold, cancellationToken);

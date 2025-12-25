@@ -26,7 +26,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-[var(--overlay)] backdrop-blur-sm",
+      "fixed inset-0 z-50 backdrop-blur-sm",
       "data-[state=open]:animate-in data-[state=closed]:animate-out",
       "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
@@ -47,8 +47,10 @@ const DialogContent = React.forwardRef<
     hideCloseButton?: boolean;
     /** Source element rect for morph animation */
     sourceRect?: DialogSourceRect | null;
+    /** Accessible description for screen readers (visually hidden) */
+    description?: string;
   }
->(({ className, children, hideCloseButton = false, sourceRect, style, ...props }, ref) => {
+>(({ className, children, hideCloseButton = false, sourceRect, style, description, ...props }, ref) => {
   // Calculate animation starting values based on sourceRect
   const morphStyles = React.useMemo(() => {
     if (!sourceRect) return {};
@@ -100,14 +102,20 @@ const DialogContent = React.forwardRef<
         style={{ ...morphStyles, ...style }}
         {...props}
       >
+        {/* Visually hidden description for accessibility when description prop is provided */}
+        {description && (
+          <DialogPrimitive.Description className="sr-only">
+            {description}
+          </DialogPrimitive.Description>
+        )}
         {children}
         {!hideCloseButton && (
           <DialogPrimitive.Close
             className={cn(
               "absolute right-4 top-2.5 rounded-lg p-2 z-50",
               "text-[var(--text-tertiary)] transition-colors",
-              "hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]",
-              "focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2",
+              "hover:text-[var(--text-primary)] hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
               "disabled:pointer-events-none"
             )}
           >

@@ -53,13 +53,18 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
 
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         try
         {
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
             var request = new
             {
-                model = _settings.Model,
+                model = effectiveModel,
                 inputs = new[] { new { text = text } },
                 parameters = new { input_type = "passage", truncate = "END" }
             };
@@ -77,7 +82,8 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
                 Success = true,
                 Embedding = firstEmbedding.Values,
                 Provider = ProviderName,
-                TokensUsed = response.Usage?.TotalTokens ?? 0
+                TokensUsed = response.Usage?.TotalTokens ?? 0,
+                Model = effectiveModel
             };
         }
         catch (Exception ex)
@@ -89,14 +95,19 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         try
         {
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
             var inputs = texts.Select(t => new { text = t }).ToArray();
             var request = new
             {
-                model = _settings.Model,
+                model = effectiveModel,
                 inputs = inputs,
                 parameters = new { input_type = "passage", truncate = "END" }
             };
@@ -113,7 +124,8 @@ public class PineconeEmbeddingProvider : IEmbeddingProvider
                 Success = true,
                 Embeddings = embeddings,
                 TotalTokensUsed = response.Usage?.TotalTokens ?? 0,
-                Provider = ProviderName
+                Provider = ProviderName,
+                Model = effectiveModel
             };
         }
         catch (Exception ex)

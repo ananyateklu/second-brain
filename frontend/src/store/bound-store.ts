@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '../lib/constants';
 import type { BoundStore, NoteView, FontSize, Theme } from './types';
+import type { MarkdownRendererType } from '../types/auth';
 import { registerStore } from './store-registry';
 
 // Import slice creators directly to avoid circular deps through services/index
@@ -46,6 +47,12 @@ export function validatePersistedState(parsed: Partial<BoundStore> | undefined):
   const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
   if (parsed.fontSize !== undefined && !validFontSizes.includes(parsed.fontSize)) {
     throw new Error(`Invalid persisted fontSize: ${parsed.fontSize}`);
+  }
+
+  // Validate MarkdownRenderer
+  const validMarkdownRenderers: MarkdownRendererType[] = ['custom', 'llm-ui'];
+  if (parsed.markdownRenderer !== undefined && !validMarkdownRenderers.includes(parsed.markdownRenderer)) {
+    throw new Error(`Invalid persisted markdownRenderer: ${parsed.markdownRenderer}`);
   }
 
   // Validate VectorStoreProvider
@@ -122,6 +129,7 @@ export function mergePersistedState(
     defaultNoteView: parsed.defaultNoteView ?? currentState.defaultNoteView,
     itemsPerPage: parsed.itemsPerPage ?? currentState.itemsPerPage,
     fontSize: parsed.fontSize ?? currentState.fontSize,
+    markdownRenderer: parsed.markdownRenderer ?? currentState.markdownRenderer,
     enableNotifications: parsed.enableNotifications ?? currentState.enableNotifications,
     ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? currentState.ollamaRemoteUrl,
     useRemoteOllama: parsed.useRemoteOllama ?? currentState.useRemoteOllama,
@@ -204,6 +212,7 @@ const _useBoundStore = create<BoundStore>()(
         defaultNoteView: state.defaultNoteView,
         itemsPerPage: state.itemsPerPage,
         fontSize: state.fontSize,
+        markdownRenderer: state.markdownRenderer,
         enableNotifications: state.enableNotifications,
         ollamaRemoteUrl: state.ollamaRemoteUrl,
         useRemoteOllama: state.useRemoteOllama,

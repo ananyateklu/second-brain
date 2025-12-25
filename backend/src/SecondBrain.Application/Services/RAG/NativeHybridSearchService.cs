@@ -8,12 +8,13 @@ namespace SecondBrain.Application.Services.RAG;
 /// <summary>
 /// Native PostgreSQL hybrid search service that combines vector search and BM25 full-text search
 /// using Reciprocal Rank Fusion (RRF) in a single database query.
-/// 
+///
 /// This is optimized for PostgreSQL 18 and provides:
 /// - Single round-trip to database (vs 2 queries in standard HybridSearchService)
 /// - RRF calculation in SQL for efficiency
 /// - Leverages PostgreSQL 18 Async I/O for parallel CTE execution
 /// - Uses HNSW index for vector search and GIN index for full-text search
+/// - Supports variable embedding dimensions (768, 1024, 1536, 3072) for different providers
 /// </summary>
 public interface INativeHybridSearchService
 {
@@ -21,11 +22,19 @@ public interface INativeHybridSearchService
     /// Performs native hybrid search combining vector similarity and BM25 full-text search
     /// using RRF in a single database query.
     /// </summary>
+    /// <param name="query">Text query for BM25 search</param>
+    /// <param name="queryEmbedding">Embedding vector for similarity search</param>
+    /// <param name="userId">User ID to filter results</param>
+    /// <param name="topK">Number of results to return</param>
+    /// <param name="embeddingDimensions">Dimension of the query embedding (768, 1024, 1536, or 3072)</param>
+    /// <param name="similarityThreshold">Minimum similarity score threshold</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     Task<List<HybridSearchResult>> SearchAsync(
         string query,
         List<double> queryEmbedding,
         string userId,
         int topK,
+        int embeddingDimensions = 1536,
         float similarityThreshold = 0.3f,
         CancellationToken cancellationToken = default);
 
@@ -59,6 +68,7 @@ public class NativeHybridSearchService : INativeHybridSearchService
         List<double> queryEmbedding,
         string userId,
         int topK,
+        int embeddingDimensions = 1536,
         float similarityThreshold = 0.3f,
         CancellationToken cancellationToken = default)
     {
@@ -74,9 +84,12 @@ public class NativeHybridSearchService : INativeHybridSearchService
             return new List<HybridSearchResult>();
         }
 
+        // Auto-detect dimensions from embedding if not explicitly specified
+        var actualDimensions = embeddingDimensions > 0 ? embeddingDimensions : queryEmbedding.Count;
+
         _logger.LogInformation(
-            "Starting native hybrid search. UserId: {UserId}, Query: {Query}, TopK: {TopK}, HybridEnabled: {HybridEnabled}",
-            userId, query.Substring(0, Math.Min(50, query.Length)), topK, _settings.EnableHybridSearch);
+            "Starting native hybrid search. UserId: {UserId}, Query: {Query}, TopK: {TopK}, Dimensions: {Dimensions}, HybridEnabled: {HybridEnabled}",
+            userId, query.Substring(0, Math.Min(50, query.Length)), topK, actualDimensions, _settings.EnableHybridSearch);
 
         // If hybrid search is disabled, delegate to vector-only via repository
         if (!_settings.EnableHybridSearch)
@@ -87,6 +100,7 @@ public class NativeHybridSearchService : INativeHybridSearchService
                 queryEmbedding: queryEmbedding,
                 userId: userId,
                 topK: topK,
+                embeddingDimensions: actualDimensions,
                 initialRetrievalCount: topK,
                 vectorWeight: 1.0f,
                 bm25Weight: 0.0f,
@@ -106,6 +120,7 @@ public class NativeHybridSearchService : INativeHybridSearchService
             queryEmbedding: queryEmbedding,
             userId: userId,
             topK: topK,
+            embeddingDimensions: actualDimensions,
             initialRetrievalCount: initialRetrievalCount,
             vectorWeight: _settings.VectorWeight,
             bm25Weight: _settings.BM25Weight,
@@ -115,8 +130,8 @@ public class NativeHybridSearchService : INativeHybridSearchService
         var results = MapToHybridSearchResults(nativeResults);
 
         _logger.LogInformation(
-            "Native hybrid search completed. FinalResults: {Count}, TopRRFScore: {TopScore:F4}",
-            results.Count, results.FirstOrDefault()?.RRFScore ?? 0);
+            "Native hybrid search completed. FinalResults: {Count}, Dimensions: {Dimensions}, TopRRFScore: {TopScore:F4}",
+            results.Count, actualDimensions, results.FirstOrDefault()?.RRFScore ?? 0);
 
         return results;
     }
@@ -127,11 +142,13 @@ public class NativeHybridSearchService : INativeHybridSearchService
         {
             // Simple check - if we can query the repository, native hybrid search is available
             // A more robust check could verify PostgreSQL version and index existence
+            // Uses 1536 dimensions (most common) for the availability test
             var testResults = await _repository.SearchWithNativeHybridAsync(
                 query: "test",
                 queryEmbedding: Enumerable.Repeat(0.0, 1536).ToList(), // Zero vector
                 userId: "test-availability-check",
                 topK: 1,
+                embeddingDimensions: 1536,
                 initialRetrievalCount: 1,
                 cancellationToken: cancellationToken);
 

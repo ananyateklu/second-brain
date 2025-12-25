@@ -1,8 +1,8 @@
 /**
- * Utilities for parsing and handling note references in agent responses.
- * 
- * The agent outputs note IDs in the format: (ID: note-id)
- * We parse these and render them as interactive note cards.
+ * Utilities for parsing note references in agent responses.
+ *
+ * All AI models are instructed to use the format: [[noteId|Note Title]]
+ * This is a simple, unambiguous format that's easy to parse.
  */
 
 export interface NoteReference {
@@ -13,35 +13,27 @@ export interface NoteReference {
   fullMatch: string;
 }
 
-/**
- * Regex to match note ID patterns in agent responses.
- * Matches: (ID: xxx), (Note ID: xxx), or "Note Title" (ID: xxx) or "Note Title" (Note ID: xxx)
- * Updated to match any non-whitespace characters as note IDs (more flexible than just hex UUIDs)
- */
-const NOTE_ID_PATTERN = /(?:"([^"]+)")?\s*\((?:Note\s+)?ID:\s*([^\s)]+)\)/gi;
+// UUID pattern (hex with dashes)
+const UUID_PATTERN = '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
+
+// Standard format: [[noteId|Note Title]]
+const NOTE_REF_PATTERN = new RegExp(`\\[\\[(${UUID_PATTERN})\\|([^\\]]+)\\]\\]`, 'gi');
 
 /**
  * Parse note references from text.
- * 
- * @param text - The text to parse
- * @returns Array of note references found
  */
 export function parseNoteReferences(text: string): NoteReference[] {
   const references: NoteReference[] = [];
-  const regex = new RegExp(NOTE_ID_PATTERN.source, 'gi');
+  const regex = new RegExp(NOTE_REF_PATTERN.source, 'gi');
   let match;
 
   while ((match = regex.exec(text)) !== null) {
-    const fullMatch = match[0];
-    const noteTitle = match[1]; // Captured title (if present)
-    const noteId = match[2]; // Captured ID
-
     references.push({
-      noteId,
-      noteTitle,
+      noteId: match[1],
+      noteTitle: match[2],
       startIndex: match.index,
-      endIndex: match.index + fullMatch.length,
-      fullMatch,
+      endIndex: match.index + match[0].length,
+      fullMatch: match[0],
     });
   }
 
@@ -50,12 +42,9 @@ export function parseNoteReferences(text: string): NoteReference[] {
 
 /**
  * Check if text contains note references.
- * 
- * @param text - The text to check
- * @returns True if note references are found
  */
 export function hasNoteReferences(text: string): boolean {
-  return NOTE_ID_PATTERN.test(text);
+  return NOTE_REF_PATTERN.test(text);
 }
 
 /**

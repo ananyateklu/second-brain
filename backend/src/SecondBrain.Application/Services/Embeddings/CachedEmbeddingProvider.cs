@@ -50,7 +50,9 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
 
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -61,9 +63,11 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             };
         }
 
-        var cacheKey = GenerateCacheKey(text);
+        // Include customDimensions and modelOverride in cache key to differentiate embeddings
+        var cacheKey = GenerateCacheKey(text, customDimensions, modelOverride);
         var cacheHit = true;
         var stopwatch = Stopwatch.StartNew();
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : ModelName;
 
         // HybridCache.GetOrCreateAsync handles stampede protection automatically
         // Multiple concurrent requests for the same key will share a single factory execution
@@ -73,17 +77,17 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             {
                 cacheHit = false;
                 _logger.LogDebug(
-                    "Embedding cache miss. Provider: {Provider}, Model: {Model}, TextLength: {Length}",
-                    ProviderName, ModelName, text.Length);
+                    "Embedding cache miss. Provider: {Provider}, Model: {Model}, TextLength: {Length}, CustomDims: {Dims}",
+                    ProviderName, effectiveModel, text.Length, customDimensions?.ToString() ?? "default");
 
-                // Generate embedding from provider
-                var result = await _innerProvider.GenerateEmbeddingAsync(text, ct);
+                // Generate embedding from provider - pass customDimensions and modelOverride
+                var result = await _innerProvider.GenerateEmbeddingAsync(text, ct, customDimensions, modelOverride);
 
                 if (result.Success)
                 {
                     _logger.LogDebug(
                         "Embedding cached. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}, TokensUsed: {Tokens}",
-                        ProviderName, ModelName, result.Embedding.Count, result.TokensUsed);
+                        ProviderName, effectiveModel, result.Embedding.Count, result.TokensUsed);
                 }
 
                 return result;
@@ -103,7 +107,7 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             ApplicationTelemetry.RecordCacheHit("embedding");
             _logger.LogDebug(
                 "Embedding cache hit. Provider: {Provider}, Model: {Model}, TextLength: {Length}",
-                ProviderName, ModelName, text.Length);
+                ProviderName, effectiveModel, text.Length);
 
             // Return a copy with zero tokens since no API call was made
             return new EmbeddingResponse
@@ -112,7 +116,8 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
                 Embedding = new List<double>(response.Embedding),
                 Error = response.Error,
                 TokensUsed = 0, // No tokens used for cached response
-                Provider = response.Provider
+                Provider = response.Provider,
+                Model = response.Model
             };
         }
         else
@@ -126,7 +131,9 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         var textList = texts.ToList();
         if (!textList.Any())
@@ -139,6 +146,7 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             };
         }
 
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : ModelName;
         var results = new List<List<double>>(textList.Count);
         var uncachedTexts = new List<(int Index, string Text)>();
         var totalTokensUsed = 0;
@@ -148,7 +156,7 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
         for (int i = 0; i < textList.Count; i++)
         {
             var text = textList[i];
-            var cacheKey = GenerateCacheKey(text);
+            var cacheKey = GenerateCacheKey(text, customDimensions, modelOverride);
             var index = i; // Capture for closure
 
             // Use a local flag to track cache hits
@@ -173,8 +181,8 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
                 results.Add(new List<double>(cachedResponse.Embedding));
                 cacheHits++;
                 _logger.LogDebug(
-                    "Batch embedding cache hit for item {Index}. Provider: {Provider}",
-                    i, ProviderName);
+                    "Batch embedding cache hit for item {Index}. Provider: {Provider}, Model: {Model}",
+                    i, ProviderName, effectiveModel);
             }
             else
             {
@@ -193,26 +201,27 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
         if (!uncachedTexts.Any())
         {
             _logger.LogInformation(
-                "All {Count} embeddings served from cache. Provider: {Provider}",
-                textList.Count, ProviderName);
+                "All {Count} embeddings served from cache. Provider: {Provider}, Model: {Model}",
+                textList.Count, ProviderName, effectiveModel);
 
             return new BatchEmbeddingResponse
             {
                 Success = true,
                 Embeddings = results,
                 TotalTokensUsed = 0,
-                Provider = ProviderName
+                Provider = ProviderName,
+                Model = effectiveModel
             };
         }
 
         _logger.LogDebug(
-            "Batch embedding: {CachedCount} cached, {UncachedCount} need generation. Provider: {Provider}",
-            textList.Count - uncachedTexts.Count, uncachedTexts.Count, ProviderName);
+            "Batch embedding: {CachedCount} cached, {UncachedCount} need generation. Provider: {Provider}, Model: {Model}",
+            textList.Count - uncachedTexts.Count, uncachedTexts.Count, ProviderName, effectiveModel);
 
-        // Generate embeddings for uncached texts
+        // Generate embeddings for uncached texts - pass customDimensions and modelOverride
         var stopwatch = Stopwatch.StartNew();
         var uncachedTextsList = uncachedTexts.Select(x => x.Text).ToList();
-        var batchResponse = await _innerProvider.GenerateEmbeddingsAsync(uncachedTextsList, cancellationToken);
+        var batchResponse = await _innerProvider.GenerateEmbeddingsAsync(uncachedTextsList, cancellationToken, customDimensions, modelOverride);
         stopwatch.Stop();
 
         ApplicationTelemetry.RecordEmbeddingGeneration(ProviderName, stopwatch.ElapsedMilliseconds, uncachedTextsList.Count);
@@ -248,13 +257,14 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             // Update result
             results[originalIndex] = embedding;
 
-            // Cache individual embedding using SetAsync
-            var cacheKey = GenerateCacheKey(text);
+            // Cache individual embedding using SetAsync - include customDimensions and modelOverride in key
+            var cacheKey = GenerateCacheKey(text, customDimensions, modelOverride);
             var embeddingResponse = new EmbeddingResponse
             {
                 Success = true,
                 Embedding = embedding,
                 Provider = ProviderName,
+                Model = batchResponse.Model ?? effectiveModel,
                 TokensUsed = 0 // Token count is for the batch, not individual
             };
 
@@ -274,7 +284,8 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             Success = true,
             Embeddings = results,
             TotalTokensUsed = totalTokensUsed,
-            Provider = ProviderName
+            Provider = ProviderName,
+            Model = batchResponse.Model ?? effectiveModel
         };
     }
 
@@ -284,12 +295,15 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
     }
 
     /// <summary>
-    /// Generates a cache key based on text content, provider, and model.
+    /// Generates a cache key based on text content, provider, model, custom dimensions, and model override.
     /// Uses SHA256 hash to ensure consistent, safe cache keys.
     /// </summary>
-    private string GenerateCacheKey(string text)
+    private string GenerateCacheKey(string text, int? customDimensions = null, string? modelOverride = null)
     {
-        var keyInput = $"{ProviderName}:{ModelName}:{text}";
+        // Include customDimensions and modelOverride in key to differentiate embeddings
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : ModelName;
+        var dimsKey = customDimensions?.ToString() ?? "default";
+        var keyInput = $"{ProviderName}:{effectiveModel}:{dimsKey}:{text}";
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(keyInput));
         var hashString = Convert.ToBase64String(hashBytes);
 

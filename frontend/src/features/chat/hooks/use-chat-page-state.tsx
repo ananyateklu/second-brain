@@ -170,6 +170,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
 
   // Auth
   const user = useBoundStore((state) => state.user);
+  const markdownRenderer = useBoundStore((state) => state.markdownRenderer);
   const queryClient = useQueryClient();
 
   // Draft management from store - select each individually to avoid infinite loops
@@ -556,6 +557,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
           vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
           capabilities: capabilities.length > 0 ? capabilities : undefined,
           images,
+          markdownRenderer,
         });
       } catch (error) {
         console.error('Error sending message:', { error });

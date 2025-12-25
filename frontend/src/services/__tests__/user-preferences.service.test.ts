@@ -25,6 +25,7 @@ const createMockPreferences = (overrides: Partial<UserPreferences> = {}): UserPr
   defaultNoteView: 'list',
   itemsPerPage: 20,
   fontSize: 'medium',
+  markdownRenderer: 'custom',
   enableNotifications: true,
   ollamaRemoteUrl: null,
   useRemoteOllama: false,

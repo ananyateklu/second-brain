@@ -18,8 +18,7 @@ export function ChatMessagesSkeleton() {
 
   return (
     <div
-      className="flex-1 overflow-hidden px-4 pt-4 min-h-0"
-      style={{ backgroundColor: 'var(--surface-card)' }}
+      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] thin-scrollbar"
     >
       {/* Inner container matching ChatMessageList */}
       <div className="max-w-4xl mx-auto space-y-4 pb-34">
@@ -30,13 +29,16 @@ export function ChatMessagesSkeleton() {
           >
             <div
               className={`
-                rounded-2xl p-4 space-y-2
-                ${msg.isUser ? 'max-w-[60%]' : 'max-w-[75%]'}
+                space-y-2
+                ${msg.isUser
+                  ? 'max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-md'
+                  : 'w-full rounded-2xl rounded-bl-md'}
               `}
               style={{
                 backgroundColor: msg.isUser
-                  ? 'var(--color-primary-light)'
-                  : 'var(--surface-secondary)',
+                  ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
+                  : 'var(--surface-card)',
+                border: msg.isUser ? '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)' : undefined,
               }}
             >
               {/* Message content lines */}

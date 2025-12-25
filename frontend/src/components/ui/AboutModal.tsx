@@ -34,6 +34,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
       <DialogContent
         className="w-[360px] p-0 border shadow-2xl"
         hideCloseButton
+        description="About Second Brain application - version and copyright information"
       >
         {/* Content */}
         <div className="flex flex-col items-center p-8 pt-10">

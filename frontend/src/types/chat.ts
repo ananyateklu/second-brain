@@ -266,6 +266,8 @@ export interface ChatMessage {
   grokThinkingSteps?: GrokThinkingStep[];
   /** Persisted thinking steps with individual timestamps (agent mode) */
   thinkingSteps?: PersistedThinkingStep[];
+  /** Markdown renderer used to display this message ('custom' or 'llm-ui') */
+  markdownRenderer?: string;
 }
 
 /**
@@ -388,6 +390,8 @@ export interface SendMessageRequest {
   enableGrokDeepSearch?: boolean;
   /** Grok DeepSearch options (Grok only) */
   grokDeepSearchOptions?: GrokDeepSearchOptions;
+  /** Markdown renderer preference used to display the response */
+  markdownRenderer?: string;
 }
 
 /**
