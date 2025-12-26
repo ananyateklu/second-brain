@@ -31,31 +31,15 @@ public class ToolCallAnalyticsService : IToolCallAnalyticsService
 
         var (startDate, endDate) = GetDateRange(request);
 
-        // Execute all queries in parallel for better performance
-        var overallStatsTask = _repository.GetOverallStatsAsync(userId, startDate, endDate);
-        var toolUsageByNameTask = _repository.GetToolUsageByNameAsync(userId, startDate, endDate);
-        var toolUsageByActionTask = _repository.GetToolUsageByActionAsync(userId, startDate, endDate);
-        var dailyToolCallsTask = _repository.GetDailyToolCallsAsync(userId, startDate, endDate);
-        var dailySuccessRatesTask = _repository.GetDailySuccessRatesAsync(userId, startDate, endDate);
-        var topErrorsTask = _repository.GetTopErrorsAsync(userId, 10, startDate, endDate);
-        var hourlyDistributionTask = _repository.GetHourlyDistributionAsync(userId, startDate, endDate);
-
-        await Task.WhenAll(
-            overallStatsTask,
-            toolUsageByNameTask,
-            toolUsageByActionTask,
-            dailyToolCallsTask,
-            dailySuccessRatesTask,
-            topErrorsTask,
-            hourlyDistributionTask);
-
-        var overallStats = await overallStatsTask;
-        var toolUsageByName = await toolUsageByNameTask;
-        var toolUsageByAction = await toolUsageByActionTask;
-        var dailyToolCalls = await dailyToolCallsTask;
-        var dailySuccessRates = await dailySuccessRatesTask;
-        var topErrors = await topErrorsTask;
-        var hourlyDistribution = await hourlyDistributionTask;
+        // Execute queries sequentially - Npgsql doesn't support parallel queries on the same connection
+        // Each query must complete before the next one starts to avoid "command already in progress" errors
+        var overallStats = await _repository.GetOverallStatsAsync(userId, startDate, endDate);
+        var toolUsageByName = await _repository.GetToolUsageByNameAsync(userId, startDate, endDate);
+        var toolUsageByAction = await _repository.GetToolUsageByActionAsync(userId, startDate, endDate);
+        var dailyToolCalls = await _repository.GetDailyToolCallsAsync(userId, startDate, endDate);
+        var dailySuccessRates = await _repository.GetDailySuccessRatesAsync(userId, startDate, endDate);
+        var topErrors = await _repository.GetTopErrorsAsync(userId, 10, startDate, endDate);
+        var hourlyDistribution = await _repository.GetHourlyDistributionAsync(userId, startDate, endDate);
 
         // Calculate percentages for tool usage
         var totalCalls = overallStats.TotalCalls;

@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '../lib/constants';
-import type { BoundStore, NoteView, FontSize, Theme } from './types';
+import type { BoundStore, NoteView, FontSize, Theme, InsightsTabType } from './types';
 import type { MarkdownRendererType } from '../types/auth';
 import { registerStore } from './store-registry';
 
@@ -19,6 +19,7 @@ import { createThemeSlice } from './slices/theme-slice';
 import { createOllamaSlice } from './slices/ollama-slice';
 import { createNotesSlice } from './slices/notes-slice';
 import { createRagAnalyticsSlice } from './slices/rag-analytics-slice';
+import { createInsightsSlice } from './slices/insights-slice';
 import { createIndexingSlice } from './slices/indexing-slice';
 import { createSummarySlice } from './slices/summary-slice';
 import { createDraftSlice } from './slices/draft-slice';
@@ -66,6 +67,12 @@ export function validatePersistedState(parsed: Partial<BoundStore> | undefined):
   const validThemes: Theme[] = ['light', 'dark', 'blue'];
   if (parsed.theme !== undefined && !validThemes.includes(parsed.theme)) {
     throw new Error(`Invalid persisted theme: ${parsed.theme}`);
+  }
+
+  // Validate InsightsTab
+  const validInsightsTabs: InsightsTabType[] = ['overview', 'rag', 'chat', 'agent'];
+  if (parsed.activeInsightsTab !== undefined && !validInsightsTabs.includes(parsed.activeInsightsTab)) {
+    throw new Error(`Invalid persisted activeInsightsTab: ${parsed.activeInsightsTab}`);
   }
 
   // Validate numeric types
@@ -173,6 +180,8 @@ export function mergePersistedState(
     selectedProvider: parsed.selectedProvider ?? currentState.selectedProvider,
     selectedModel: parsed.selectedModel ?? currentState.selectedModel,
     selectedVoiceId: parsed.selectedVoiceId ?? currentState.selectedVoiceId,
+    // Merge insights state
+    activeInsightsTab: parsed.activeInsightsTab ?? currentState.activeInsightsTab,
   };
 }
 
@@ -190,6 +199,7 @@ const _useBoundStore = create<BoundStore>()(
       ...createOllamaSlice(...args),
       ...createNotesSlice(...args),
       ...createRagAnalyticsSlice(...args),
+      ...createInsightsSlice(...args),
       ...createIndexingSlice(...args),
       ...createSummarySlice(...args),
       ...createDraftSlice(...args),
@@ -256,6 +266,8 @@ const _useBoundStore = create<BoundStore>()(
         selectedProvider: state.selectedProvider,
         selectedModel: state.selectedModel,
         selectedVoiceId: state.selectedVoiceId,
+        // Insights state
+        activeInsightsTab: state.activeInsightsTab,
       }),
       merge: mergePersistedState,
     }

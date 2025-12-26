@@ -261,6 +261,27 @@ export interface RagAnalyticsSlice {
 }
 
 // ============================================
+// Insights Types
+// ============================================
+
+export type InsightsTabType = 'overview' | 'rag' | 'chat' | 'agent';
+export type RagSubTabType = 'performance' | 'topics' | 'logs';
+
+export interface InsightsSliceState {
+  activeInsightsTab: InsightsTabType;
+  ragSubTab: RagSubTabType;
+  insightsTimeRange: number | null;
+}
+
+export interface InsightsSliceActions {
+  setActiveInsightsTab: (tab: InsightsTabType) => void;
+  setRagSubTab: (tab: RagSubTabType) => void;
+  setInsightsTimeRange: (days: number | null) => void;
+}
+
+export type InsightsSlice = InsightsSliceState & InsightsSliceActions;
+
+// ============================================
 // Indexing Types (for background indexing notifications)
 // Supports multiple simultaneous jobs (one per vector store)
 // ============================================
@@ -550,7 +571,7 @@ export type VoiceSlice = VoiceSliceState & VoiceSliceActions;
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
 
 // ============================================
 // Slice Creator Type

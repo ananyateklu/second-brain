@@ -7,7 +7,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector } from './header-components';
+import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -19,6 +19,7 @@ const getPageTitle = (pathname: string): string => {
     '/notes': 'Notes',
     '/directory': 'Directory',
     '/chat': 'Chat',
+    '/insights': 'Insights',
     '/analytics': 'RAG Analytics',
     '/github': 'GitHub',
   };
@@ -64,15 +65,20 @@ export function Header() {
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
   const isRagAnalyticsPage = location.pathname === '/analytics';
+  const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
   const showGitControls = isGitHubPage && githubActiveTab === 'local-changes';
 
-  // RAG Analytics state
+  // RAG Analytics state (legacy)
   const activeTab = useBoundStore((state) => state.activeTab);
   const setActiveTab = useBoundStore((state) => state.setActiveTab);
+
+  // Insights state
+  const activeInsightsTab = useBoundStore((state) => state.activeInsightsTab);
+  const setActiveInsightsTab = useBoundStore((state) => state.setActiveInsightsTab);
 
   return (
     <>
@@ -173,7 +179,12 @@ export function Header() {
 
           {/* Right side - Search/Tabs and User */}
           <div className="flex items-center gap-4 h-12">
-            {/* RAG Analytics Tab Bar - Only on Analytics page */}
+            {/* Insights Tab Bar - Only on Insights page */}
+            {isInsightsPage && (
+              <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+            )}
+
+            {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
             {isRagAnalyticsPage && (
               <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
             )}
@@ -220,8 +231,8 @@ export function Header() {
           </div>
         )}
 
-        {/* RAG Analytics Time Range Selector - Only on Analytics page */}
-        {isRagAnalyticsPage && <TimeRangeSelector />}
+        {/* RAG Analytics Time Range Selector - Only on Analytics page or Insights RAG tab */}
+        {(isRagAnalyticsPage || (isInsightsPage && activeInsightsTab === 'rag')) && <TimeRangeSelector />}
       </header>
     </>
   );
