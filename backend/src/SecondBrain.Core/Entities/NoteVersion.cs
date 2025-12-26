@@ -110,6 +110,22 @@ public class NoteVersion
     public string Source { get; set; } = "web";
 
     /// <summary>
+    /// AI provider name when created by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// Null for non-agent sources.
+    /// </summary>
+    [Column("ai_provider")]
+    [MaxLength(50)]
+    public string? AiProvider { get; set; }
+
+    /// <summary>
+    /// AI model identifier when created by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// Null for non-agent sources.
+    /// </summary>
+    [Column("ai_model")]
+    [MaxLength(100)]
+    public string? AiModel { get; set; }
+
+    /// <summary>
     /// IDs of images attached to the note at this version.
     /// Tracks which images existed when this version was created.
     /// </summary>
@@ -151,7 +167,21 @@ public class NoteVersion
     /// <summary>
     /// Creates a new NoteVersion from a Note entity.
     /// </summary>
-    public static NoteVersion FromNote(Note note, string modifiedBy, int versionNumber, string? changeSummary = null, string? source = null)
+    /// <param name="note">The note to create a version from.</param>
+    /// <param name="modifiedBy">User who made this version change.</param>
+    /// <param name="versionNumber">Sequential version number.</param>
+    /// <param name="changeSummary">Optional description of what changed.</param>
+    /// <param name="source">Source of the change (web, agent, etc.).</param>
+    /// <param name="aiProvider">AI provider name when created by an agent.</param>
+    /// <param name="aiModel">AI model identifier when created by an agent.</param>
+    public static NoteVersion FromNote(
+        Note note,
+        string modifiedBy,
+        int versionNumber,
+        string? changeSummary = null,
+        string? source = null,
+        string? aiProvider = null,
+        string? aiModel = null)
     {
         return new NoteVersion
         {
@@ -169,6 +199,8 @@ public class NoteVersion
             VersionNumber = versionNumber,
             ChangeSummary = changeSummary,
             Source = source ?? note.Source ?? "web",
+            AiProvider = aiProvider,
+            AiModel = aiModel,
             ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
             CreatedAt = DateTime.UtcNow
         };

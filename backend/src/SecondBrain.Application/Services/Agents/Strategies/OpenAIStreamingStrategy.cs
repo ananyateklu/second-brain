@@ -72,6 +72,8 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             context.Plugins,
             request.UserId,
             request.AgentRagEnabled,
+            request.Provider,
+            request.Model,
             useStrictMode,
             request.RagOptions);
 

@@ -23,6 +23,8 @@ public interface IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null);
 
     /// <summary>
@@ -34,6 +36,8 @@ public interface IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null);
 
     /// <summary>
@@ -43,6 +47,8 @@ public interface IPluginToolBuilder
     /// <param name="plugins">Dictionary of available plugins.</param>
     /// <param name="userId">Current user ID.</param>
     /// <param name="agentRagEnabled">Whether RAG is enabled.</param>
+    /// <param name="provider">AI provider name for agent context.</param>
+    /// <param name="model">Model identifier for agent context.</param>
     /// <param name="useStrictMode">When true, enables strict mode with additionalProperties: false (for GPT-4o models).</param>
     /// <param name="ragOptions">User-specific RAG options for semantic search customization.</param>
     (List<OpenAIChatTool> Tools, Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> Methods)
@@ -51,6 +57,8 @@ public interface IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             bool useStrictMode = false,
             RagOptions? ragOptions = null);
 
@@ -63,6 +71,8 @@ public interface IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null);
 
     /// <summary>

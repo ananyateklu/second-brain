@@ -22,7 +22,7 @@ public class ToolExecutor : IToolExecutor
         { "query", new[] { "search", "searchQuery", "search_query", "q" } },
         { "tags", new[] { "labels", "categories", "tag" } },
         { "noteId", new[] { "note_id", "id", "noteID" } },
-        { "contentToAppend", new[] { "content_to_append", "appendContent", "append_content", "newContent", "new_content" } }
+        { "contentToAppend", new[] { "content", "content_to_append", "appendContent", "append_content", "newContent", "new_content" } }
     };
 
     public ToolExecutor(ILogger<ToolExecutor> logger)

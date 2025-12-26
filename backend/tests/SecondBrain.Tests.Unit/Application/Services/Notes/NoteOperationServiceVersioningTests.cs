@@ -78,13 +78,15 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateInitialVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<Note, string, CancellationToken>((note, userId, ct) =>
+            .Callback<Note, string, string?, string?, CancellationToken>((note, userId, aiProvider, aiModel, ct) =>
             {
                 // Note's Source field should be set to "agent"
                 note.Source.Should().Be("agent");
             })
-            .ReturnsAsync((Note n, string userId, CancellationToken ct) => new NoteVersionResponse
+            .ReturnsAsync((Note n, string userId, string? aiProvider, string? aiModel, CancellationToken ct) => new NoteVersionResponse
             {
                 NoteId = n.Id,
                 VersionNumber = 1,
@@ -106,6 +108,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "agent"),
             TestUserId,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -126,6 +130,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
@@ -153,6 +159,8 @@ public class NoteOperationServiceVersioningTests
             It.Is<Note>(n => n.Source == "agent"),
             TestUserId,
             It.Is<string>(s => s.Contains("Agent", StringComparison.OrdinalIgnoreCase)),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -173,6 +181,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
@@ -254,13 +264,15 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateInitialVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<Note, string, CancellationToken>((note, userId, ct) =>
+            .Callback<Note, string, string?, string?, CancellationToken>((note, userId, aiProvider, aiModel, ct) =>
             {
                 // Note's Source field should be set to "web"
                 note.Source.Should().Be("web");
             })
-            .ReturnsAsync((Note n, string userId, CancellationToken ct) => new NoteVersionResponse
+            .ReturnsAsync((Note n, string userId, string? aiProvider, string? aiModel, CancellationToken ct) => new NoteVersionResponse
             {
                 NoteId = n.Id,
                 VersionNumber = 1,
@@ -278,6 +290,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "web"),
             TestUserId,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -308,13 +322,15 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateInitialVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<Note, string, CancellationToken>((note, userId, ct) =>
+            .Callback<Note, string, string?, string?, CancellationToken>((note, userId, aiProvider, aiModel, ct) =>
             {
                 // Note's Source field should be set to "ios_notes"
                 note.Source.Should().Be("ios_notes");
             })
-            .ReturnsAsync((Note n, string userId, CancellationToken ct) => new NoteVersionResponse
+            .ReturnsAsync((Note n, string userId, string? aiProvider, string? aiModel, CancellationToken ct) => new NoteVersionResponse
             {
                 NoteId = n.Id,
                 VersionNumber = 1,
@@ -332,6 +348,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "ios_notes"),
             TestUserId,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -358,13 +376,15 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateInitialVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<Note, string, CancellationToken>((note, userId, ct) =>
+            .Callback<Note, string, string?, string?, CancellationToken>((note, userId, aiProvider, aiModel, ct) =>
             {
                 // Note's Source field should be set to "import"
                 note.Source.Should().Be("import");
             })
-            .ReturnsAsync((Note n, string userId, CancellationToken ct) => new NoteVersionResponse
+            .ReturnsAsync((Note n, string userId, string? aiProvider, string? aiModel, CancellationToken ct) => new NoteVersionResponse
             {
                 NoteId = n.Id,
                 VersionNumber = 1,
@@ -382,6 +402,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Verify(v => v.CreateInitialVersionAsync(
             It.Is<Note>(n => n.Source == "import"),
             TestUserId,
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -483,6 +505,8 @@ public class NoteOperationServiceVersioningTests
             It.IsAny<Note>(),
             It.IsAny<string>(),
             It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -511,6 +535,8 @@ public class NoteOperationServiceVersioningTests
         _mockVersionService.Setup(v => v.CreateVersionAsync(
                 It.IsAny<Note>(),
                 It.IsAny<string>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);

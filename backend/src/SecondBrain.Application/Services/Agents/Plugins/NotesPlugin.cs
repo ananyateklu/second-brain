@@ -75,6 +75,14 @@ public class NotesPlugin : IAgentPlugin
         _analysisPlugin.SetRagOptions(options);
     }
 
+    public void SetAgentContext(string provider, string model)
+    {
+        _crudPlugin.SetAgentContext(provider, model);
+        _searchPlugin.SetAgentContext(provider, model);
+        _organizationPlugin.SetAgentContext(provider, model);
+        _analysisPlugin.SetAgentContext(provider, model);
+    }
+
     public object GetPluginInstance() => this;
 
     public string GetPluginName() => "Notes";

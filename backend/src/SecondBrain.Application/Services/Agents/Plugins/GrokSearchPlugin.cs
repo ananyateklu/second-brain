@@ -41,6 +41,11 @@ public class GrokSearchPlugin : IAgentPlugin
         // Search tools don't use RAG options
     }
 
+    public void SetAgentContext(string provider, string model)
+    {
+        // Search tools don't need agent context
+    }
+
     public object GetPluginInstance() => this;
 
     public string GetPluginName() => "GrokSearch";

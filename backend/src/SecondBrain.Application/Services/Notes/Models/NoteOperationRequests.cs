@@ -51,6 +51,16 @@ public sealed record CreateNoteOperationRequest
     public required NoteSource Source { get; init; }
 
     /// <summary>
+    /// AI provider name when created by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when created by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// </summary>
+    public string? AiModel { get; init; }
+
+    /// <summary>
     /// External ID for imported notes (iOS Notes, etc.).
     /// Used to detect duplicates during import.
     /// </summary>
@@ -94,6 +104,16 @@ public sealed record UpdateNoteOperationRequest
     /// Source of the operation (required for audit trail).
     /// </summary>
     public required NoteSource Source { get; init; }
+
+    /// <summary>
+    /// AI provider name when updated by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when updated by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// </summary>
+    public string? AiModel { get; init; }
 
     /// <summary>
     /// New title (null = no change).
@@ -176,6 +196,16 @@ public sealed record AppendToNoteOperationRequest
     public required NoteSource Source { get; init; }
 
     /// <summary>
+    /// AI provider name when appended by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when appended by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// </summary>
+    public string? AiModel { get; init; }
+
+    /// <summary>
     /// Whether to add a newline before the appended content.
     /// </summary>
     public bool AddNewline { get; init; } = true;
@@ -252,6 +282,16 @@ public sealed record DuplicateNoteOperationRequest
     /// Source of the operation (required for audit trail).
     /// </summary>
     public required NoteSource Source { get; init; }
+
+    /// <summary>
+    /// AI provider name when duplicated by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when duplicated by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// </summary>
+    public string? AiModel { get; init; }
 }
 
 /// <summary>

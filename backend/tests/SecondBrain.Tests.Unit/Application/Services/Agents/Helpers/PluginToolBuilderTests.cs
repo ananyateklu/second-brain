@@ -98,7 +98,7 @@ public class PluginToolBuilderTests
         var plugins = new Dictionary<string, IAgentPlugin>();
 
         // Act
-        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false);
+        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false, "Anthropic", "claude-3-5-sonnet");
 
         // Assert
         tools.Should().BeEmpty();
@@ -113,7 +113,7 @@ public class PluginToolBuilderTests
         var plugins = new Dictionary<string, IAgentPlugin>();
 
         // Act
-        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false);
+        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false, "Anthropic", "claude-3-5-sonnet");
 
         // Assert
         tools.Should().BeEmpty();
@@ -132,7 +132,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", true);
+        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", true, "Anthropic", "claude-3-5-sonnet");
 
         // Assert
         tools.Should().NotBeEmpty();
@@ -151,7 +151,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        _sut.BuildAnthropicTools(capabilities, plugins, "user123", false);
+        _sut.BuildAnthropicTools(capabilities, plugins, "user123", false, "Anthropic", "claude-3-5-sonnet");
 
         // Assert
         mockPlugin.Verify(p => p.SetCurrentUserId("user123"), Times.Once);
@@ -169,7 +169,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        _sut.BuildAnthropicTools(capabilities, plugins, "user1", agentRagEnabled: true);
+        _sut.BuildAnthropicTools(capabilities, plugins, "user1", agentRagEnabled: true, provider: "Anthropic", model: "claude-3-5-sonnet");
 
         // Assert
         mockPlugin.Verify(p => p.SetAgentRagEnabled(true), Times.Once);
@@ -187,7 +187,7 @@ public class PluginToolBuilderTests
         var plugins = new Dictionary<string, IAgentPlugin>();
 
         // Act
-        var (tools, methods) = _sut.BuildOpenAITools(capabilities, plugins, "user1", false);
+        var (tools, methods) = _sut.BuildOpenAITools(capabilities, plugins, "user1", false, "OpenAI", "gpt-4o");
 
         // Assert
         tools.Should().BeEmpty();
@@ -206,7 +206,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        var (tools, methods) = _sut.BuildOpenAITools(capabilities, plugins, "user1", true);
+        var (tools, methods) = _sut.BuildOpenAITools(capabilities, plugins, "user1", true, "OpenAI", "gpt-4o");
 
         // Assert
         tools.Should().NotBeEmpty();
@@ -226,7 +226,7 @@ public class PluginToolBuilderTests
 
         // Act
         var (tools, methods) = _sut.BuildOpenAITools(
-            capabilities, plugins, "user1", true, useStrictMode: true);
+            capabilities, plugins, "user1", true, "OpenAI", "gpt-4o", useStrictMode: true);
 
         // Assert
         tools.Should().NotBeEmpty();
@@ -244,7 +244,7 @@ public class PluginToolBuilderTests
         var plugins = new Dictionary<string, IAgentPlugin>();
 
         // Act
-        var (declarations, methods) = _sut.BuildGeminiTools(capabilities, plugins, "user1", false);
+        var (declarations, methods) = _sut.BuildGeminiTools(capabilities, plugins, "user1", false, "Google", "gemini-2.0-flash");
 
         // Assert
         declarations.Should().BeEmpty();
@@ -263,7 +263,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        var (declarations, methods) = _sut.BuildGeminiTools(capabilities, plugins, "user1", true);
+        var (declarations, methods) = _sut.BuildGeminiTools(capabilities, plugins, "user1", true, "Google", "gemini-2.0-flash");
 
         // Assert
         declarations.Should().NotBeEmpty();
@@ -282,7 +282,7 @@ public class PluginToolBuilderTests
         var plugins = new Dictionary<string, IAgentPlugin>();
 
         // Act
-        var (tools, methods) = _sut.BuildOllamaTools(capabilities, plugins, "user1", false);
+        var (tools, methods) = _sut.BuildOllamaTools(capabilities, plugins, "user1", false, "Ollama", "llama3");
 
         // Assert
         tools.Should().BeEmpty();
@@ -301,7 +301,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        var (tools, methods) = _sut.BuildOllamaTools(capabilities, plugins, "user1", true);
+        var (tools, methods) = _sut.BuildOllamaTools(capabilities, plugins, "user1", true, "Ollama", "llama3");
 
         // Assert
         tools.Should().NotBeEmpty();
@@ -326,7 +326,7 @@ public class PluginToolBuilderTests
         };
 
         // Act
-        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false);
+        var (tools, methods) = _sut.BuildAnthropicTools(capabilities, plugins, "user1", false, "Anthropic", "claude-3-5-sonnet");
 
         // Assert
         tools.Should().HaveCountGreaterThanOrEqualTo(2); // At least 2 tools (1 per plugin)
