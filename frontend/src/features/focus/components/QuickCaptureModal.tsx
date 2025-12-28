@@ -213,7 +213,7 @@ export const QuickCaptureModal = memo(function QuickCaptureModal({
                 'w-full px-4 py-3 rounded-xl',
                 'text-base font-medium',
                 'transition-all duration-150',
-                'focus:outline-none focus:ring-2',
+                'focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]',
                 'placeholder:text-[var(--text-tertiary)]'
               )}
               style={{
