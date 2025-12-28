@@ -163,7 +163,7 @@ export function ChatPage() {
   }, [isAllSelected, selectableConversations]);
 
   const handleBulkDeleteFromHeader = useCallback(async () => {
-    if (selectedConversationIds.size === 0) return;
+    if (selectedConversationIds.size === 0 || !handleBulkDeleteConversations) return;
     const idsToDelete = Array.from(selectedConversationIds);
     await handleBulkDeleteConversations(idsToDelete);
     setSelectedConversationIds(new Set());
