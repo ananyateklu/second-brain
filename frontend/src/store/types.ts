@@ -284,6 +284,36 @@ export interface InsightsSliceActions {
 export type InsightsSlice = InsightsSliceState & InsightsSliceActions;
 
 // ============================================
+// Focus/Productivity Types
+// ============================================
+
+export type FocusViewMode = 'timeline' | 'kanban';
+export type FocusPriority = 1 | 2 | 3;
+
+export interface ModalSourceRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+export interface FocusSliceState {
+  isQuickCaptureOpen: boolean;
+  quickCaptureSourceRect: ModalSourceRect | null;
+  selectedBacklogPriority: FocusPriority | null;
+  focusViewMode: FocusViewMode;
+}
+
+export interface FocusSliceActions {
+  openQuickCapture: (sourceRect?: ModalSourceRect | null) => void;
+  closeQuickCapture: () => void;
+  setSelectedBacklogPriority: (priority: FocusPriority | null) => void;
+  setFocusViewMode: (mode: FocusViewMode) => void;
+}
+
+export type FocusSlice = FocusSliceState & FocusSliceActions;
+
+// ============================================
 // Indexing Types (for background indexing notifications)
 // Supports multiple simultaneous jobs (one per vector store)
 // ============================================
@@ -573,7 +603,7 @@ export type VoiceSlice = VoiceSliceState & VoiceSliceActions;
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & FocusSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
 
 // ============================================
 // Slice Creator Type

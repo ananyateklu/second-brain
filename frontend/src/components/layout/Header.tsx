@@ -7,7 +7,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar } from './header-components';
+import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -62,6 +62,7 @@ export function Header() {
   }, [openCreateModal]);
 
   const pageTitle = getPageTitle(location.pathname);
+  const isDashboardPage = location.pathname === '/';
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
   const isRagAnalyticsPage = location.pathname === '/analytics';
@@ -203,6 +204,9 @@ export function Header() {
 
             {/* GitHub Navigation - Only on GitHub page */}
             {isGitHubPage && <GitHubNavTabs />}
+
+            {/* Focus Dashboard Controls - Only on Dashboard page */}
+            {isDashboardPage && <FocusDashboardControls />}
 
             {/* Summary Generation Indicator */}
             <SummaryIndicator />

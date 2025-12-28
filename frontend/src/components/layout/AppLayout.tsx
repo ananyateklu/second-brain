@@ -6,6 +6,7 @@ import { TitleBar } from './TitleBar';
 import { useTitleBarHeight } from './use-title-bar-height';
 import { PageTransition } from '../PageTransition';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
+import { QuickCaptureButton, QuickCaptureModal } from '../../features/focus/components';
 import { useBoundStore } from '../../store/bound-store';
 import { isTauri } from '../../lib/native-notifications';
 
@@ -113,6 +114,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Global modals available on all pages */}
       <CreateNoteModal />
+
+      {/* Quick Capture - floating button + modal */}
+      <QuickCaptureButton />
+      <QuickCaptureModal />
     </div>
   );
 }

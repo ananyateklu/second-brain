@@ -25,6 +25,7 @@ import { createSummarySlice } from './slices/summary-slice';
 import { createDraftSlice } from './slices/draft-slice';
 import { createGitSlice } from './slices/git-slice';
 import { createVoiceSlice } from './slices/voice-slice';
+import { createFocusSlice } from './slices/focus-slice';
 
 // ============================================
 // Persist Config - Exported for Testing
@@ -205,6 +206,7 @@ const _useBoundStore = create<BoundStore>()(
       ...createDraftSlice(...args),
       ...createGitSlice(...args),
       ...createVoiceSlice(...args),
+      ...createFocusSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility

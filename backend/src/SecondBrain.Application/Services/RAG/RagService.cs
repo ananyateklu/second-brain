@@ -129,10 +129,21 @@ public class RagService : IRagService
                 if (!string.IsNullOrEmpty(storedModel))
                 {
                     options.EmbeddingModel = storedModel;
+
+                    // Infer the correct embedding provider from the stored model name
+                    // This is critical - using the wrong provider will fail (e.g., embed-v4.0 is Cohere, not OpenAI)
+                    var inferredProvider = InferEmbeddingProviderFromModel(storedModel);
+                    if (!string.IsNullOrEmpty(inferredProvider))
+                    {
+                        options.EmbeddingProvider = inferredProvider;
+                        _logger.LogDebug("Inferred embedding provider {Provider} from model {Model}",
+                            inferredProvider, storedModel);
+                    }
                 }
 
                 activity?.SetTag("rag.stored_dimensions", storedDimensions);
                 activity?.SetTag("rag.stored_model", storedModel);
+                activity?.SetTag("rag.inferred_provider", options.EmbeddingProvider ?? "default");
             }
 
             // Step 1: Query Expansion (HyDE + Multi-Query)
@@ -736,6 +747,39 @@ Content:
         }
 
         return string.Join("\n", contentLines).Trim();
+    }
+
+    /// <summary>
+    /// Infers the embedding provider from the model name.
+    /// This is necessary because stored embeddings only save the model name, not the provider.
+    /// </summary>
+    private string? InferEmbeddingProviderFromModel(string modelName)
+    {
+        if (string.IsNullOrEmpty(modelName))
+            return null;
+
+        var lowerModel = modelName.ToLowerInvariant();
+
+        // Cohere models (embed-v4.0, embed-english-v3.0, embed-multilingual-v3.0, etc.)
+        if (lowerModel.StartsWith("embed-") && (lowerModel.Contains("v3") || lowerModel.Contains("v4")))
+            return "Cohere";
+
+        // OpenAI models (text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002)
+        if (lowerModel.StartsWith("text-embedding"))
+            return "OpenAI";
+
+        // Gemini models (text-embedding-004, textembedding-gecko)
+        if (lowerModel.Contains("embedding-004") || lowerModel.Contains("textembedding-gecko"))
+            return "Gemini";
+
+        // Ollama models (common embedding model names)
+        if (lowerModel.Contains("nomic-embed") || lowerModel.Contains("mxbai-embed") ||
+            lowerModel.Contains("all-minilm") || lowerModel.Contains("snowflake-arctic"))
+            return "Ollama";
+
+        // If we can't infer, return null to use default provider
+        _logger.LogWarning("Could not infer embedding provider from model name: {Model}. Using default provider.", modelName);
+        return null;
     }
 }
 

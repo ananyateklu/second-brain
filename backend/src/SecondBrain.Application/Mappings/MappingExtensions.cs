@@ -259,5 +259,42 @@ public static class MappingExtensions
             IsActive = user.IsActive
         };
     }
+
+    /// <summary>
+    /// Maps a FocusItem entity to a FocusItemResponse DTO
+    /// </summary>
+    public static FocusItemResponse ToResponse(this FocusItem item)
+    {
+        return new FocusItemResponse
+        {
+            Id = item.Id,
+            UserId = item.UserId,
+            NoteId = item.NoteId,
+            Title = item.Title,
+            Description = item.Description,
+            IsCurrentFocus = item.IsCurrentFocus,
+            Priority = item.Priority,
+            Status = item.Status,
+            ScheduledDate = item.ScheduledDate,
+            EstimatedMinutes = item.EstimatedMinutes,
+            ActualMinutes = item.ActualMinutes,
+            CompletedAt = item.CompletedAt,
+            DeferredTo = item.DeferredTo,
+            AiSuggested = item.AiSuggested,
+            AiSuggestionReason = item.AiSuggestionReason,
+            AiConfidence = item.AiConfidence,
+            SortOrder = item.SortOrder,
+            FocusStartedAt = item.FocusStartedAt,
+            AccumulatedMinutes = item.AccumulatedMinutes,
+            CreatedAt = item.CreatedAt,
+            UpdatedAt = item.UpdatedAt,
+            LinkedNote = item.Note != null ? new FocusItemNoteInfo
+            {
+                Id = item.Note.Id,
+                Title = item.Note.Title,
+                Tags = item.Note.Tags
+            } : null
+        };
+    }
 }
 

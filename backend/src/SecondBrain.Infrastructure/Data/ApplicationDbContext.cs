@@ -37,6 +37,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<VoiceSession> VoiceSessions { get; set; } = null!;
     public DbSet<VoiceTurn> VoiceTurns { get; set; } = null!;
 
+    // Focus/Productivity
+    public DbSet<FocusItem> FocusItems { get; set; } = null!;
+    public DbSet<FocusSuggestion> FocusSuggestions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -419,6 +423,90 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.Timestamp).HasDatabaseName("ix_voice_turns_timestamp");
             entity.HasIndex(e => new { e.SessionId, e.Timestamp })
                 .HasDatabaseName("ix_voice_turns_session_timestamp");
+        });
+
+        // =========================================================================
+        // Focus/Productivity Configuration
+        // =========================================================================
+
+        modelBuilder.Entity<FocusItem>(entity =>
+        {
+            // Global query filter for soft deletes
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasKey(e => e.Id);
+
+            // Indexes matching SQL schema
+            entity.HasIndex(e => new { e.UserId, e.ScheduledDate, e.Priority, e.SortOrder })
+                .HasFilter("is_deleted = false")
+                .HasDatabaseName("ix_focus_items_scheduled");
+
+            entity.HasIndex(e => new { e.UserId, e.Priority, e.SortOrder })
+                .HasFilter("scheduled_date IS NULL AND is_deleted = false AND status != 'completed'")
+                .HasDatabaseName("ix_focus_items_backlog");
+
+            entity.HasIndex(e => new { e.UserId, e.Status, e.UpdatedAt })
+                .IsDescending(false, false, true)
+                .HasFilter("is_deleted = false")
+                .HasDatabaseName("ix_focus_items_status");
+
+            // Navigation to Note (optional)
+            entity.HasOne(f => f.Note)
+                .WithMany()
+                .HasForeignKey(f => f.NoteId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // FocusSuggestion Configuration
+        modelBuilder.Entity<FocusSuggestion>(entity =>
+        {
+            // Global query filter for soft deletes
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasKey(e => e.Id);
+
+            // Vector column configuration (variable dimensions)
+            // Supports different embedding providers: OpenAI (1536), Cohere (1024), Gemini (768), etc.
+            entity.Property(e => e.Embedding)
+                .HasColumnType("vector");
+
+            entity.Property(e => e.EmbeddingDimensions)
+                .IsRequired()
+                .HasDefaultValue(1536);
+
+            // Indexes matching SQL schema
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt })
+                .IsDescending(false, true)
+                .HasFilter("is_deleted = false")
+                .HasDatabaseName("ix_focus_suggestions_user");
+
+            entity.HasIndex(e => e.UserId)
+                .HasFilter("is_deleted = false AND accepted_at IS NULL")
+                .HasDatabaseName("ix_focus_suggestions_pending");
+
+            entity.HasIndex(e => e.SourceNoteId)
+                .HasFilter("source_note_id IS NOT NULL AND is_deleted = false")
+                .HasDatabaseName("ix_focus_suggestions_source_note");
+
+            entity.HasIndex(e => new { e.UserId, e.AcceptedAt })
+                .IsDescending(false, true)
+                .HasFilter("is_deleted = false AND accepted_at IS NOT NULL")
+                .HasDatabaseName("ix_focus_suggestions_accepted");
+
+            // Navigation to SourceNote (optional)
+            entity.HasOne(s => s.SourceNote)
+                .WithMany()
+                .HasForeignKey(s => s.SourceNoteId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Navigation to AcceptedFocusItem (optional)
+            entity.HasOne(s => s.AcceptedFocusItem)
+                .WithMany()
+                .HasForeignKey(s => s.AcceptedFocusItemId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
