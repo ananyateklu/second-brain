@@ -135,7 +135,7 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     <div
       className="flex flex-col h-full overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Repo & Branch selector header */}
@@ -237,16 +237,8 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
 
       {/* Main content area - two pane layout */}
       <div className="flex flex-1 min-h-0">
-        {/* File tree sidebar with glassmorphism */}
-        <div
-          className="w-90 flex-shrink-0 overflow-hidden"
-          style={{
-            background: 'var(--glass-bg)',
-            backdropFilter: 'blur(var(--glass-blur))',
-            WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            borderRight: '1px solid var(--border)',
-          }}
-        >
+        {/* File tree sidebar */}
+        <div className="w-90 flex-shrink-0 overflow-hidden">
           <FileTreeView
             entries={treeData?.entries ?? []}
             truncated={treeData?.truncated ?? false}

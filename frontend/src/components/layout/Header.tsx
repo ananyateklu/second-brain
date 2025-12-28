@@ -17,8 +17,8 @@ const getPageTitle = (pathname: string): string => {
   const titleMap: Record<string, string> = {
     '/': 'Dashboard',
     '/notes': 'Notes',
-    '/directory': 'Notes',
     '/chat': 'Chat',
+    '/voice': 'Voice Agent',
     '/insights': 'Insights',
     '/analytics': 'RAG Analytics',
     '/github': 'GitHub',
@@ -69,7 +69,7 @@ export function Header() {
   const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
   const isChatPage = location.pathname === '/chat';
-  const isDirectoryPage = location.pathname === '/directory';
+  const isDirectoryPage = location.pathname === '/notes';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);

@@ -96,7 +96,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
 
   // Fixed width left section to align separator with sidebar border position
   // Sidebar width is w-72 (18rem) on mobile, md:w-[23rem] on desktop
-  const leftSectionWidth = 'w-[18rem] md:w-[19.4rem] justify-end';
+  const leftSectionWidth = 'w-[18rem] md:w-[18rem] justify-end';
 
   // Render selection mode controls
   if (isSelectionMode) {

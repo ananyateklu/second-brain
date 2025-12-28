@@ -99,11 +99,11 @@ const routes = [
     ),
   },
   {
-    path: '/notes',
-    element: <Navigate to="/directory" replace />,
+    path: '/directory',
+    element: <Navigate to="/notes" replace />,
   },
   {
-    path: '/directory',
+    path: '/notes',
     loader: async () => {
       // Prefetch notes while route loads for instant display
       await queryClient.prefetchQuery({

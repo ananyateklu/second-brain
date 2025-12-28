@@ -164,16 +164,8 @@ export function VoiceAgentInterface() {
       {!isConnected ? (
         // Pre-session: Split layout (orb left, settings right)
         <div className="flex-1 flex min-h-0">
-          {/* Left: Orb Section (40%) - glassmorphism background */}
-          <div
-            className="w-2/5 flex flex-col items-center justify-center px-6"
-            style={{
-              background: 'var(--glass-bg)',
-              backdropFilter: 'blur(var(--glass-blur))',
-              WebkitBackdropFilter: 'blur(var(--glass-blur))',
-              borderRight: '1px solid var(--border)',
-            }}
-          >
+          {/* Left: Orb Section (40%) */}
+          <div className="w-2/5 flex flex-col items-center justify-center px-6">
             {/* Status indicator */}
             <VoiceStatusIndicator
               state={sessionState}
@@ -224,14 +216,7 @@ export function VoiceAgentInterface() {
           </div>
 
           {/* Right: Settings Section (60%) */}
-          <div
-            className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto"
-            style={{
-              background: 'var(--glass-bg)',
-              backdropFilter: 'blur(var(--glass-blur))',
-              WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            }}
-          >
+          <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
             {/* Settings */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -262,16 +247,8 @@ export function VoiceAgentInterface() {
       ) : (
         // Active session: Split layout (orb left, content right)
         <div className="flex-1 flex min-h-0">
-          {/* Left: Orb Section (40%) - glassmorphism background */}
-          <div
-            className="w-2/5 flex flex-col items-center justify-center px-6"
-            style={{
-              background: 'var(--glass-bg)',
-              backdropFilter: 'blur(var(--glass-blur))',
-              WebkitBackdropFilter: 'blur(var(--glass-blur))',
-              borderRight: '1px solid var(--border)',
-            }}
-          >
+          {/* Left: Orb Section (40%) */}
+          <div className="w-2/5 flex flex-col items-center justify-center px-6">
             {/* Status indicator */}
             <VoiceStatusIndicator
               state={sessionState}
@@ -336,14 +313,7 @@ export function VoiceAgentInterface() {
           </div>
 
           {/* Right: Content Section (60%) */}
-          <div
-            className="flex-1 flex flex-col min-h-0 p-4 gap-4 overflow-hidden"
-            style={{
-              background: 'var(--glass-bg)',
-              backdropFilter: 'blur(var(--glass-blur))',
-              WebkitBackdropFilter: 'blur(var(--glass-blur))',
-            }}
-          >
+          <div className="flex-1 flex flex-col min-h-0 p-4 gap-4 overflow-hidden">
             {/* Transcript - takes available space */}
             <VoiceTranscript
               className="flex-1 min-h-0"

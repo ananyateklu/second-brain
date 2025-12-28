@@ -256,9 +256,7 @@ export const GitStatusPanel = memo(function GitStatusPanel({
     <div
       className="h-full flex flex-col overflow-hidden"
       style={{
-        background: 'var(--glass-bg)',
-        backdropFilter: 'blur(var(--glass-blur))',
-        WebkitBackdropFilter: 'blur(var(--glass-blur))',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Commit Input Section */}

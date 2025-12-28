@@ -103,18 +103,17 @@ function SkeletonContentArea() {
 
 export function GitHubPageSkeleton() {
   const titleBarHeight = useTitleBarHeight();
+  const headerHeight = 80; // Match GitHubPage header height
 
   return (
     <>
       <ShimmerStyles />
       <div
-        className="flex flex-col rounded-3xl border overflow-hidden"
+        className="flex flex-col overflow-hidden"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-2xl)',
-          height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
-          maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+          backgroundColor: 'transparent',
+          height: `calc(100vh - ${titleBarHeight}px - ${headerHeight}px)`,
+          maxHeight: `calc(100vh - ${titleBarHeight}px - ${headerHeight}px)`,
         }}
       >
         {/* Header with tabs - Fixed */}

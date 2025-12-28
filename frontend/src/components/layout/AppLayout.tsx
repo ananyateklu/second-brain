@@ -18,7 +18,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const titleBarHeight = useTitleBarHeight();
   const isChatPage = location.pathname === '/chat';
-  const isDirectoryPage = location.pathname === '/directory';
+  const isDirectoryPage = location.pathname === '/notes';
   const isGitHubPage = location.pathname === '/github';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
@@ -37,8 +37,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   const mainClasses = useMemo(() => {
     const classes = ['flex-1'];
 
-    // Padding classes
-    if (isPageFullscreen) {
+    // Padding classes - remove padding for full-width pages
+    if (isPageFullscreen || isGitHubPage || isChatPage || isDirectoryPage) {
       classes.push('px-0', 'pt-0');
     } else {
       classes.push('px-4', 'md:px-6');
@@ -64,7 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     return classes.join(' ');
-  }, [isChatPage, isGitHubPage, isSettingsPage, isPageFullscreen]);
+  }, [isChatPage, isGitHubPage, isSettingsPage, isPageFullscreen, isDirectoryPage]);
 
   return (
     <div

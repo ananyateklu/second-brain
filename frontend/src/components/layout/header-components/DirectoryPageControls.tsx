@@ -168,7 +168,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const noteCount = headerState?.noteCount ?? 0;
 
   // Fixed width left section to align with sidebar border position
-  const leftSectionWidth = 'w-[18rem] md:w-[14rem] justify-end';
+  const leftSectionWidth = 'w-[18rem] md:w-[12.5rem] justify-end';
 
   const renderDropdownMenu = (isOpen: boolean, children: React.ReactNode) => {
     if (!isOpen) return null;
@@ -230,13 +230,13 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           type="text"
           value={searchQuery}
           onChange={handleSearchChange}
-          placeholder="Search..."
-          className="px-3 py-1.5 rounded-lg border text-sm transition-all focus:outline-none"
+          placeholder="Search notes..."
+          className="px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             borderColor: 'var(--border)',
             color: 'var(--text-primary)',
-            width: '180px',
+            width: '280px',
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = 'var(--input-focus-border)';

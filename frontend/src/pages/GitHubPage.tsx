@@ -36,10 +36,9 @@ export const GitHubPage = () => {
   const openGitSettings = useBoundStore((state) => state.openGitSettings);
   const closeGitSettings = useBoundStore((state) => state.closeGitSettings);
 
-  // Calculate height similar to sidebar - accounts for title bar, header, and bottom padding
+  // Calculate height - accounts for title bar and header
   const headerHeight = 80; // Approximate header height
-  const bottomPadding = 10; // 0.625rem bottom padding
-  const containerHeight = `calc(100vh - ${titleBarHeight}px - ${headerHeight}px - ${bottomPadding}px)`;
+  const containerHeight = `calc(100vh - ${titleBarHeight}px - ${headerHeight}px)`;
 
   const [selectedPR, setSelectedPR] = useState<PullRequestSummary | null>(null);
   const [selectedRun, setSelectedRun] = useState<WorkflowRunSummary | null>(null);
@@ -134,11 +133,9 @@ export const GitHubPage = () => {
 
   return (
     <div
-      className="flex flex-col rounded-3xl border overflow-hidden"
+      className="flex flex-col overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
+        backgroundColor: 'transparent',
         height: containerHeight,
         maxHeight: containerHeight,
       }}
@@ -154,15 +151,7 @@ export const GitHubPage = () => {
         ) : (
           <div className="flex flex-1 min-h-0">
             {/* Left panel: File status - matches FileTreeView sidebar */}
-            <div
-              className="w-120 flex-shrink-0 overflow-hidden"
-              style={{
-                background: 'var(--glass-bg)',
-                backdropFilter: 'blur(var(--glass-blur))',
-                WebkitBackdropFilter: 'blur(var(--glass-blur))',
-                borderRight: '1px solid var(--border)',
-              }}
-            >
+            <div className="w-120 flex-shrink-0 overflow-hidden">
               {gitStatus && (
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}
