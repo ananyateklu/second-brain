@@ -42,6 +42,14 @@ public interface IAgentPlugin
     void SetRagOptions(RagOptions? options);
 
     /// <summary>
+    /// Set the AI agent context (provider and model) for operations.
+    /// This allows plugins to track which AI model performed note operations.
+    /// </summary>
+    /// <param name="provider">The AI provider name (e.g., "Anthropic", "Google", "OpenAI")</param>
+    /// <param name="model">The model identifier (e.g., "claude-3-5-sonnet", "gemini-2.0-flash")</param>
+    void SetAgentContext(string provider, string model);
+
+    /// <summary>
     /// Get the plugin object to register with Semantic Kernel
     /// </summary>
     object GetPluginInstance();

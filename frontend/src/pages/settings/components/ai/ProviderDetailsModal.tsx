@@ -73,7 +73,7 @@ export const ProviderDetailsModal = ({
 
   return (
     <Dialog open={!!selectedProvider} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-7xl p-0">
+      <DialogContent className="max-w-7xl p-0" description="View and configure AI provider settings, models, and API configuration">
         <DialogHeader className="rounded-t-3xl">
           <DialogTitle
             icon={

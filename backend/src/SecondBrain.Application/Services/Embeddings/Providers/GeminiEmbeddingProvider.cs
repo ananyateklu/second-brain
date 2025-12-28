@@ -174,7 +174,9 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
 
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -201,11 +203,14 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             using var httpClient = _httpClientFactory.CreateClient();
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds);
 
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
             // Build the request URL
             // Use the model name directly - it should be in format "models/text-embedding-004" or "text-embedding-004"
-            var modelPath = _settings.Model.StartsWith("models/")
-                ? _settings.Model
-                : $"models/{_settings.Model}";
+            var modelPath = effectiveModel.StartsWith("models/")
+                ? effectiveModel
+                : $"models/{effectiveModel}";
 
             var url = $"{_settings.BaseUrl}/{modelPath}:embedContent?key={_settings.ApiKey}";
 
@@ -249,15 +254,15 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             }
 
             _logger.LogDebug(
-                "Generated Gemini embedding. Dimensions: {Dimensions}",
-                embedResponse.Embedding.Values.Length);
+                "Generated Gemini embedding. Model: {Model}, Dimensions: {Dimensions}",
+                effectiveModel, embedResponse.Embedding.Values.Length);
 
             return new EmbeddingResponse
             {
                 Success = true,
                 Embedding = embedResponse.Embedding.Values.Select(v => (double)v).ToList(),
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (TaskCanceledException)
@@ -283,7 +288,9 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -311,10 +318,13 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             using var httpClient = _httpClientFactory.CreateClient();
             httpClient.Timeout = TimeSpan.FromSeconds(_settings.TimeoutSeconds * 2); // Longer timeout for batch
 
+            // Determine effective model (override takes priority)
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
             // Build the request URL for batch embedding
-            var modelPath = _settings.Model.StartsWith("models/")
-                ? _settings.Model
-                : $"models/{_settings.Model}";
+            var modelPath = effectiveModel.StartsWith("models/")
+                ? effectiveModel
+                : $"models/{effectiveModel}";
 
             var url = $"{_settings.BaseUrl}/{modelPath}:batchEmbedContents?key={_settings.ApiKey}";
 
@@ -365,15 +375,15 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
                 .ToList();
 
             _logger.LogDebug(
-                "Generated {Count} Gemini embeddings. Dimensions: {Dimensions}",
-                embeddings.Count, embeddings.FirstOrDefault()?.Count ?? 0);
+                "Generated {Count} Gemini embeddings. Model: {Model}, Dimensions: {Dimensions}",
+                embeddings.Count, effectiveModel, embeddings.FirstOrDefault()?.Count ?? 0);
 
             return new BatchEmbeddingResponse
             {
                 Success = true,
                 Embeddings = embeddings,
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (TaskCanceledException)

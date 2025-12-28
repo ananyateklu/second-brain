@@ -473,7 +473,7 @@ export function EditNoteModal() {
   if (isLoadingNote) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - loading">
           <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
             <Button
@@ -509,7 +509,7 @@ export function EditNoteModal() {
   if (noteError || !editingNote) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - error loading note">
           <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
             <Button
@@ -543,7 +543,7 @@ export function EditNoteModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
-      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton>
+      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note title, content, and tags">
         <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
           <div className="flex items-center gap-3">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>

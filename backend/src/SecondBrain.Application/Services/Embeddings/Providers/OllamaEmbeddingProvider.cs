@@ -278,7 +278,9 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
     public async Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -300,14 +302,17 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             };
         }
 
+        // Determine effective model (override takes priority)
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
         // Try SDK-based embedding first
         if (_useSdkEmbeddings && _defaultClient != null)
         {
-            return await GenerateEmbeddingWithSdkAsync(text, cancellationToken);
+            return await GenerateEmbeddingWithSdkAsync(text, effectiveModel, cancellationToken);
         }
 
         // Fall back to HTTP-based embedding
-        return await GenerateEmbeddingWithHttpAsync(text, cancellationToken);
+        return await GenerateEmbeddingWithHttpAsync(text, effectiveModel, cancellationToken);
     }
 
     /// <summary>
@@ -315,6 +320,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
     /// </summary>
     private async Task<EmbeddingResponse> GenerateEmbeddingWithSdkAsync(
         string text,
+        string effectiveModel,
         CancellationToken cancellationToken)
     {
         try
@@ -322,12 +328,12 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             var client = GetClientForUrl(null);
             if (client == null)
             {
-                return await GenerateEmbeddingWithHttpAsync(text, cancellationToken);
+                return await GenerateEmbeddingWithHttpAsync(text, effectiveModel, cancellationToken);
             }
 
             var embedRequest = new OllamaSharp.Models.EmbedRequest
             {
-                Model = _settings.Model,
+                Model = effectiveModel,
                 Input = new List<string> { text }
             };
             var response = await client.EmbedAsync(embedRequest, cancellationToken);
@@ -347,14 +353,14 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
             _logger.LogDebug(
                 "Generated Ollama embedding via SDK. Model: {Model}, Dimensions: {Dimensions}",
-                _settings.Model, embedding.Length);
+                effectiveModel, embedding.Length);
 
             return new EmbeddingResponse
             {
                 Success = true,
                 Embedding = embedding.Select(v => (double)v).ToList(),
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException)
@@ -380,7 +386,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
         {
             _logger.LogError(ex, "Error generating embedding from Ollama SDK, falling back to HTTP");
             // Fall back to HTTP on SDK error
-            return await GenerateEmbeddingWithHttpAsync(text, cancellationToken);
+            return await GenerateEmbeddingWithHttpAsync(text, effectiveModel, cancellationToken);
         }
     }
 
@@ -389,6 +395,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
     /// </summary>
     private async Task<EmbeddingResponse> GenerateEmbeddingWithHttpAsync(
         string text,
+        string effectiveModel,
         CancellationToken cancellationToken)
     {
         try
@@ -400,7 +407,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
             var request = new OllamaEmbedRequest
             {
-                Model = _settings.Model,
+                Model = effectiveModel,
                 Input = text
             };
 
@@ -438,14 +445,14 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
             _logger.LogDebug(
                 "Generated Ollama embedding via HTTP. Model: {Model}, Dimensions: {Dimensions}",
-                _settings.Model, embedding.Length);
+                effectiveModel, embedding.Length);
 
             return new EmbeddingResponse
             {
                 Success = true,
                 Embedding = embedding.Select(v => (double)v).ToList(),
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException)
@@ -481,7 +488,9 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
     public async Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (!IsEnabled)
         {
@@ -504,14 +513,17 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             };
         }
 
+        // Determine effective model (override takes priority)
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : _settings.Model;
+
         // Try SDK-based batch embedding first
         if (_useSdkEmbeddings && _defaultClient != null)
         {
-            return await GenerateEmbeddingsWithSdkAsync(textList, cancellationToken);
+            return await GenerateEmbeddingsWithSdkAsync(textList, effectiveModel, cancellationToken);
         }
 
         // Fall back to HTTP-based batch embedding
-        return await GenerateEmbeddingsWithHttpAsync(textList, cancellationToken);
+        return await GenerateEmbeddingsWithHttpAsync(textList, effectiveModel, cancellationToken);
     }
 
     /// <summary>
@@ -519,6 +531,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
     /// </summary>
     private async Task<BatchEmbeddingResponse> GenerateEmbeddingsWithSdkAsync(
         List<string> texts,
+        string effectiveModel,
         CancellationToken cancellationToken)
     {
         try
@@ -526,13 +539,13 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             var client = GetClientForUrl(null);
             if (client == null)
             {
-                return await GenerateEmbeddingsWithHttpAsync(texts, cancellationToken);
+                return await GenerateEmbeddingsWithHttpAsync(texts, effectiveModel, cancellationToken);
             }
 
             // OllamaSharp's EmbedAsync supports multiple inputs
             var embedRequest = new OllamaSharp.Models.EmbedRequest
             {
-                Model = _settings.Model,
+                Model = effectiveModel,
                 Input = texts.ToList()
             };
             var response = await client.EmbedAsync(embedRequest, cancellationToken);
@@ -553,20 +566,20 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
             _logger.LogDebug(
                 "Generated {Count} Ollama embeddings via SDK. Model: {Model}, Dimensions: {Dimensions}",
-                embeddings.Count, _settings.Model, embeddings.FirstOrDefault()?.Count ?? 0);
+                embeddings.Count, effectiveModel, embeddings.FirstOrDefault()?.Count ?? 0);
 
             return new BatchEmbeddingResponse
             {
                 Success = true,
                 Embeddings = embeddings,
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating batch embeddings from Ollama SDK, falling back to HTTP");
-            return await GenerateEmbeddingsWithHttpAsync(texts, cancellationToken);
+            return await GenerateEmbeddingsWithHttpAsync(texts, effectiveModel, cancellationToken);
         }
     }
 
@@ -575,6 +588,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
     /// </summary>
     private async Task<BatchEmbeddingResponse> GenerateEmbeddingsWithHttpAsync(
         List<string> texts,
+        string effectiveModel,
         CancellationToken cancellationToken)
     {
         try
@@ -587,7 +601,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
             // Ollama's embed API supports array input
             var request = new OllamaEmbedBatchRequest
             {
-                Model = _settings.Model,
+                Model = effectiveModel,
                 Input = texts.ToArray()
             };
 
@@ -626,14 +640,14 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
             _logger.LogDebug(
                 "Generated {Count} Ollama embeddings via HTTP. Model: {Model}, Dimensions: {Dimensions}",
-                embeddings.Count, _settings.Model, embeddings.FirstOrDefault()?.Count ?? 0);
+                embeddings.Count, effectiveModel, embeddings.FirstOrDefault()?.Count ?? 0);
 
             return new BatchEmbeddingResponse
             {
                 Success = true,
                 Embeddings = embeddings,
                 Provider = ProviderName,
-                Model = ModelName
+                Model = effectiveModel
             };
         }
         catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException)

@@ -25,7 +25,7 @@ export function ChatSidebarSkeleton() {
 
   return (
     <div
-      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
+      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem] transition-all duration-300 ease-out"
       style={{
         borderRightWidth: '0.5px',
         borderRightStyle: 'solid',
@@ -34,12 +34,8 @@ export function ChatSidebarSkeleton() {
     >
       {/* Header skeleton - matches ChatSidebar: px-4 py-4.5 */}
       <div
-        className="flex-shrink-0 px-4 flex items-center justify-between"
+        className="flex-shrink-0 px-4 py-4.5 border-b flex items-center justify-between"
         style={{
-          paddingTop: '1.125rem',
-          paddingBottom: '1.125rem',
-          borderBottomWidth: '1px',
-          borderBottomStyle: 'solid',
           borderBottomColor: 'var(--border)',
         }}
       >
@@ -60,33 +56,44 @@ export function ChatSidebarSkeleton() {
       </div>
 
       {/* Conversation list skeleton */}
-      <div className="flex-1 overflow-hidden px-2 py-1 space-y-1">
-        {skeletonItems.map((item, i) => (
-          <div
-            key={i}
-            className="p-3 rounded-xl"
-            style={{
-              backgroundColor: 'var(--surface-hover)',
-            }}
-          >
-            <div className="flex items-start gap-3">
-              {/* Provider icon */}
-              <ShimmerBlock className="h-8 w-8 rounded-lg flex-shrink-0" />
-              <div className="flex-1 min-w-0 space-y-2">
-                {/* Title */}
-                <ShimmerBlock
-                  className="h-4 rounded"
-                  style={{ width: `${item.titleWidth}%` }}
-                />
-                {/* Preview text */}
-                <ShimmerBlock
-                  className="h-3 rounded"
-                  style={{ width: `${item.previewWidth}%` }}
-                />
+      <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
+        <div className="pb-2">
+          {skeletonItems.map((item, i) => (
+            <div
+              key={i}
+              className="px-4 py-2"
+              style={{
+                borderTopWidth: '0.1px',
+                borderTopColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+                borderBottomWidth: '0.1px',
+                borderBottomColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+              }}
+            >
+              {/* Two-row layout matching ConversationListItem */}
+              <div className="flex flex-col gap-1">
+                {/* Title row */}
+                <div className="flex items-center gap-2">
+                  <ShimmerBlock
+                    className="h-4 rounded flex-1"
+                    style={{ width: `${item.titleWidth}%` }}
+                  />
+                </div>
+                {/* Metadata row: provider badge + date */}
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1">
+                    {/* Provider badge with small logo */}
+                    <ShimmerBlock
+                      className="h-4 rounded"
+                      style={{ width: `${item.previewWidth}%`, minWidth: '60px', maxWidth: '100px' }}
+                    />
+                  </div>
+                  {/* Date */}
+                  <ShimmerBlock className="h-3 w-12 rounded flex-shrink-0" />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -33,12 +33,34 @@ public interface INoteVersionService
     /// Creates a new version snapshot for a note.
     /// Should be called when a note is updated.
     /// </summary>
-    Task<int> CreateVersionAsync(Note note, string modifiedBy, string? changeSummary = null, CancellationToken cancellationToken = default);
+    /// <param name="note">The note to create a version for.</param>
+    /// <param name="modifiedBy">User who made this change.</param>
+    /// <param name="changeSummary">Optional description of what changed.</param>
+    /// <param name="aiProvider">AI provider name when modified by an agent.</param>
+    /// <param name="aiModel">AI model identifier when modified by an agent.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<int> CreateVersionAsync(
+        Note note,
+        string modifiedBy,
+        string? changeSummary = null,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Creates the initial version for a newly created note.
     /// </summary>
-    Task<NoteVersionResponse> CreateInitialVersionAsync(Note note, string createdBy, CancellationToken cancellationToken = default);
+    /// <param name="note">The newly created note.</param>
+    /// <param name="createdBy">User who created the note.</param>
+    /// <param name="aiProvider">AI provider name when created by an agent.</param>
+    /// <param name="aiModel">AI model identifier when created by an agent.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<NoteVersionResponse> CreateInitialVersionAsync(
+        Note note,
+        string createdBy,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Compares two versions and returns the differences.

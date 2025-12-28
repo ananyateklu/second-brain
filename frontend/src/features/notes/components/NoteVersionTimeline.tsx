@@ -12,6 +12,9 @@
 import { memo } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import type { NoteVersion } from '../../../types/notes';
+import { getProviderLogo } from '../../../utils/provider-logos';
+import { formatModelName } from '../../../utils/model-name-formatter';
+import { useBoundStore } from '../../../store/bound-store';
 
 interface NoteVersionTimelineProps {
   versions: NoteVersion[];
@@ -193,8 +196,56 @@ function renderStyledSummary(summary: string) {
   return parts.length > 0 ? parts : summary;
 }
 
-// Get source display info
-function getSourceInfo(source: string): { label: string; icon: React.ReactNode; color: string } {
+// Get provider-specific color
+function getProviderColor(provider: string): string {
+  const normalized = provider.toLowerCase();
+  if (normalized.includes('anthropic') || normalized.includes('claude'))
+    return 'var(--color-accent-orange, #d97706)'; // Claude orange
+  if (normalized.includes('google') || normalized.includes('gemini'))
+    return 'var(--color-accent-blue)'; // Google blue
+  if (normalized.includes('openai') || normalized.includes('gpt'))
+    return 'var(--color-success)'; // OpenAI green
+  if (normalized.includes('xai') || normalized.includes('grok'))
+    return 'var(--color-accent-purple)'; // Grok purple
+  if (normalized.includes('ollama'))
+    return 'var(--text-secondary)'; // Ollama neutral
+  return 'var(--color-accent-purple)'; // Default purple for unknown agents
+}
+
+// Get source display info with AI provider context
+interface SourceInfo {
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  tooltip?: string;
+  logo?: string;
+}
+
+function getSourceInfo(
+  source: string,
+  aiProvider?: string | null,
+  aiModel?: string | null,
+  isDarkMode?: boolean
+): SourceInfo {
+  // Handle agent source with provider info
+  if (source === 'agent' && aiProvider) {
+    const logo = getProviderLogo(aiProvider, isDarkMode ?? true);
+    const modelTooltip = aiModel ? formatModelName(aiModel) : `${aiProvider} Agent`;
+    const color = getProviderColor(aiProvider);
+
+    return {
+      label: 'Agent',
+      icon: logo ? null : (
+        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+      color,
+      tooltip: modelTooltip,
+      logo: logo ?? undefined,
+    };
+  }
+
   switch (source) {
     case 'web':
       return {
@@ -207,6 +258,7 @@ function getSourceInfo(source: string): { label: string; icon: React.ReactNode; 
         color: 'var(--color-brand-500)',
       };
     case 'agent':
+      // Agent without provider info (legacy data)
       return {
         label: 'Agent',
         icon: (
@@ -256,6 +308,9 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
   onRestore,
   isRestoring,
 }: NoteVersionTimelineProps) {
+  const { theme } = useBoundStore();
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+
   return (
     <div className="relative">
       {/* Main timeline line */}
@@ -356,19 +411,32 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
 
                 {/* Source, Images, and Modified by */}
                 <div className="flex items-center gap-2 mb-2">
-                  {/* Source badge */}
+                  {/* Source badge with provider logo for agent sources */}
                   {(() => {
-                    const sourceInfo = getSourceInfo(version.source);
+                    const sourceInfo = getSourceInfo(
+                      version.source,
+                      version.aiProvider,
+                      version.aiModel,
+                      isDarkMode
+                    );
                     return (
                       <div
-                        className="flex items-center gap-1 text-[9px] px-1 py-0.5 rounded-md"
+                        className="flex items-center gap-1 text-[9px] px-1 py-0.5 rounded-md cursor-default"
                         style={{
                           backgroundColor: `color-mix(in srgb, ${sourceInfo.color} 12%, transparent)`,
                           color: sourceInfo.color,
                         }}
-                        title={`Source: ${sourceInfo.label}`}
+                        title={sourceInfo.tooltip || `Source: ${sourceInfo.label}`}
                       >
-                        {sourceInfo.icon}
+                        {sourceInfo.logo ? (
+                          <img
+                            src={sourceInfo.logo}
+                            alt=""
+                            className="w-3 h-3 object-contain"
+                          />
+                        ) : (
+                          sourceInfo.icon
+                        )}
                         <span className="font-medium">{sourceInfo.label}</span>
                       </div>
                     );

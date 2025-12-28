@@ -50,13 +50,31 @@ public interface IEmbeddingProvider
     /// <returns>List of available embedding models</returns>
     Task<IEnumerable<EmbeddingModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Generate embedding for a single text.
+    /// </summary>
+    /// <param name="text">Text to embed</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <param name="customDimensions">Optional custom dimensions (for providers that support it like Cohere embed-v4.0)</param>
+    /// <param name="modelOverride">Optional model override to use instead of the default configured model</param>
     Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null);
 
+    /// <summary>
+    /// Generate embeddings for multiple texts.
+    /// </summary>
+    /// <param name="texts">Texts to embed</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <param name="customDimensions">Optional custom dimensions (for providers that support it like Cohere embed-v4.0)</param>
+    /// <param name="modelOverride">Optional model override to use instead of the default configured model</param>
     Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null);
 
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }

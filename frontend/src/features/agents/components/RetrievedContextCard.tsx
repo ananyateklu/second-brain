@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { RetrievedNoteContext } from '../types/agent-types';
 import { NoteCard } from '../../notes/components/NoteCard';
 import { useNotes } from '../../notes/hooks/use-notes-query';
-import { TimelineItem } from './TimelineItem';
 
 interface RetrievedContextCardProps {
   retrievedNotes: RetrievedNoteContext[];
@@ -10,7 +9,7 @@ interface RetrievedContextCardProps {
 }
 
 export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: RetrievedContextCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { data: allNotes, isLoading } = useNotes();
 
   // Map retrieved notes to display data, joining with cached note metadata when available
@@ -59,19 +58,44 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
     : 0;
 
   return (
-    <TimelineItem isLoading={isStreaming}>
+    <div className="relative pl-12 py-2 group">
+      {/* Timeline icon - matches RetrievedNotesCard styling */}
+      <div
+        className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
+        style={{
+          backgroundColor: 'var(--surface-card)',
+          borderColor: isStreaming ? 'var(--color-brand-500)' : 'var(--border)'
+        }}
+      >
+        <svg
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          style={{ color: 'var(--color-brand-500)' }}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+      </div>
+
+      {/* Content */}
       <div className="text-xs">
         <button
           onClick={() => { setIsExpanded(!isExpanded); }}
           className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity"
         >
-          <span 
+          <span
             className="font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
-            {retrievedNotes.length} note{retrievedNotes.length !== 1 ? 's' : ''} for context
+            {retrievedNotes.length} note{retrievedNotes.length !== 1 ? 's' : ''} retrieved
           </span>
-          
+
           {/* Show percentage when we have scores, even during streaming */}
           <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
             · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
@@ -91,15 +115,15 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
         {isExpanded && (
           <div className="mt-1.5">
             {isLoading ? (
-              <div 
-                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
+              <div
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
               >
                 Loading notes data...
               </div>
             ) : notesWithData.length === 0 ? (
-              <div 
-                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
+              <div
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed"
                 style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
               >
                 Note data not available
@@ -122,6 +146,6 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
           </div>
         )}
       </div>
-    </TimelineItem>
+    </div>
   );
 }

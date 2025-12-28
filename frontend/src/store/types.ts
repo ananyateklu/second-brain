@@ -5,7 +5,7 @@
 
 import type { StateCreator } from 'zustand';
 import type { Note, NoteListItem } from '../features/notes/types/note';
-import type { User, UserPreferences } from '../types/auth';
+import type { User, UserPreferences, MarkdownRendererType } from '../types/auth';
 import type { VectorStoreProvider } from '../types/rag';
 import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
 
@@ -95,6 +95,7 @@ export interface SettingsSliceActions {
   setAutoSaveInterval: (interval: number) => void;
   setEnableNotifications: (enabled: boolean) => void;
   setFontSize: (size: FontSize) => void;
+  setMarkdownRenderer: (renderer: MarkdownRendererType, syncToBackend?: boolean) => Promise<void>;
   setVectorStoreProvider: (provider: VectorStoreProvider, syncToBackend?: boolean) => Promise<void>;
   setChatProvider: (provider: string | null) => void;
   setChatModel: (model: string | null) => void;
@@ -195,6 +196,7 @@ export interface UISliceActions {
   toggleSearchMode: () => void;
   toggleSidebar: () => void;
   closeSidebar: () => void;
+  expandSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
   setDirectoryViewMode: (mode: NotesViewMode) => void;
   toggleFullscreenChat: () => void;
@@ -257,6 +259,27 @@ export interface RagAnalyticsSlice {
   setActiveTab: (tab: 'performance' | 'topics' | 'logs') => void;
   setSelectedTimeRange: (days: number | null) => void;
 }
+
+// ============================================
+// Insights Types
+// ============================================
+
+export type InsightsTabType = 'overview' | 'rag' | 'chat' | 'agent';
+export type RagSubTabType = 'performance' | 'topics' | 'logs';
+
+export interface InsightsSliceState {
+  activeInsightsTab: InsightsTabType;
+  ragSubTab: RagSubTabType;
+  insightsTimeRange: number | null;
+}
+
+export interface InsightsSliceActions {
+  setActiveInsightsTab: (tab: InsightsTabType) => void;
+  setRagSubTab: (tab: RagSubTabType) => void;
+  setInsightsTimeRange: (days: number | null) => void;
+}
+
+export type InsightsSlice = InsightsSliceState & InsightsSliceActions;
 
 // ============================================
 // Indexing Types (for background indexing notifications)
@@ -548,7 +571,7 @@ export type VoiceSlice = VoiceSliceState & VoiceSliceActions;
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
 
 // ============================================
 // Slice Creator Type

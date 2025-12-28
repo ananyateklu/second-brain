@@ -391,6 +391,7 @@ describe('settingsSlice', () => {
         defaultNoteView: 'grid',
         itemsPerPage: 50,
         fontSize: 'large',
+        markdownRenderer: 'custom',
         enableNotifications: false,
         ollamaRemoteUrl: 'http://remote:11434',
         useRemoteOllama: true,

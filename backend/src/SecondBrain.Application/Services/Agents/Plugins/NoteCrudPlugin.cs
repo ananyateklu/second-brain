@@ -128,7 +128,9 @@ For simple additions, use AppendToNote instead.";
                 Title = title.Trim(),
                 Content = content.Trim(),
                 Tags = ParseTags(tags),
-                Source = NoteSource.Agent // Agent operations always use Agent source
+                Source = NoteSource.Agent, // Agent operations always use Agent source
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
             };
 
             var result = await NoteOperationService.CreateAsync(request);
@@ -216,7 +218,9 @@ For simple additions, use AppendToNote instead.";
                 Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim(),
                 Content = string.IsNullOrWhiteSpace(content) ? null : content.Trim(),
                 Tags = tags != null ? ParseTags(tags) : null,
-                Source = NoteSource.Agent
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
             };
 
             var result = await NoteOperationService.UpdateAsync(request);
@@ -335,7 +339,9 @@ For simple additions, use AppendToNote instead.";
                 UserId = CurrentUserId,
                 ContentToAppend = contentToAppend.Trim(),
                 AddNewline = addNewline,
-                Source = NoteSource.Agent
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
             };
 
             var result = await NoteOperationService.AppendAsync(request);
@@ -372,7 +378,9 @@ For simple additions, use AppendToNote instead.";
                 SourceNoteId = noteId,
                 UserId = CurrentUserId,
                 NewTitle = newTitle,
-                Source = NoteSource.Agent
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
             };
 
             var result = await NoteOperationService.DuplicateAsync(request);

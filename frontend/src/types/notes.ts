@@ -259,6 +259,10 @@ export interface NoteVersion {
   changeSummary: string | null;
   /** Source of this version (web, agent, ios_notes, import, etc.) */
   source: NoteSource;
+  /** AI provider name when modified by an agent (e.g., "Anthropic", "Google", "OpenAI") */
+  aiProvider?: string | null;
+  /** AI model identifier when modified by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash") */
+  aiModel?: string | null;
   /** IDs of images attached to the note at this version */
   imageIds: string[];
   createdAt: string;

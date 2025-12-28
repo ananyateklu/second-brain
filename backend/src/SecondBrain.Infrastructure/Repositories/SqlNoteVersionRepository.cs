@@ -56,7 +56,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             var sql = @"
                 SELECT id, note_id, valid_period, title, content, content_json, content_format,
                        tags, is_archived, folder, modified_by, version_number, change_summary,
-                       source, image_ids, created_at
+                       source, image_ids, ai_provider, ai_model, created_at
                 FROM note_versions
                 WHERE note_id = @noteId
                   AND valid_period @> @timestamp::timestamptz";
@@ -138,7 +138,13 @@ public class SqlNoteVersionRepository : INoteVersionRepository
         }
     }
 
-    public async Task<int> CreateVersionAsync(Note note, string modifiedBy, string? changeSummary = null, CancellationToken cancellationToken = default)
+    public async Task<int> CreateVersionAsync(
+        Note note,
+        string modifiedBy,
+        string? changeSummary = null,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -158,11 +164,20 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                     @source,
                     @contentJson,
                     @contentFormat,
-                    @imageIds
+                    @imageIds,
+                    @aiProvider,
+                    @aiModel
                 )";
 
             var connection = _context.Database.GetDbConnection();
-            await connection.OpenAsync(cancellationToken);
+
+            // Check if connection is already open (EF Core may have opened it)
+            var connectionWasOpen = connection.State == System.Data.ConnectionState.Open;
+
+            if (!connectionWasOpen)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
 
             try
             {
@@ -180,19 +195,25 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 command.Parameters.Add(new NpgsqlParameter("@contentJson", NpgsqlDbType.Jsonb) { Value = (object?)note.ContentJson ?? DBNull.Value });
                 command.Parameters.Add(new NpgsqlParameter("@contentFormat", (int)note.ContentFormat));
                 command.Parameters.Add(new NpgsqlParameter("@imageIds", note.Images?.Select(i => i.Id).ToArray() ?? Array.Empty<string>()));
+                command.Parameters.Add(new NpgsqlParameter("@aiProvider", (object?)aiProvider ?? DBNull.Value));
+                command.Parameters.Add(new NpgsqlParameter("@aiModel", (object?)aiModel ?? DBNull.Value));
 
                 var result = await command.ExecuteScalarAsync(cancellationToken);
                 var newVersionNumber = Convert.ToInt32(result);
 
                 _logger.LogInformation(
-                    "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}",
-                    newVersionNumber, note.Id, modifiedBy);
+                    "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}{AiInfo}",
+                    newVersionNumber, note.Id, modifiedBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
 
                 return newVersionNumber;
             }
             finally
             {
-                // Let EF Core manage the connection state
+                // Only close the connection if we opened it
+                if (!connectionWasOpen && connection.State == System.Data.ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                }
             }
         }
         catch (Exception ex)
@@ -202,7 +223,12 @@ public class SqlNoteVersionRepository : INoteVersionRepository
         }
     }
 
-    public async Task<NoteVersion> CreateInitialVersionAsync(Note note, string createdBy, CancellationToken cancellationToken = default)
+    public async Task<NoteVersion> CreateInitialVersionAsync(
+        Note note,
+        string createdBy,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -230,6 +256,8 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 VersionNumber = 1,
                 ChangeSummary = "Initial version",
                 Source = note.Source ?? "web",
+                AiProvider = aiProvider,
+                AiModel = aiModel,
                 ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
                 CreatedAt = now
             };
@@ -237,7 +265,9 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             _context.NoteVersions.Add(version);
             await _context.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation("Created initial version for note {NoteId} by {CreatedBy}", note.Id, createdBy);
+            _logger.LogInformation(
+                "Created initial version for note {NoteId} by {CreatedBy}{AiInfo}",
+                note.Id, createdBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
 
             return version;
         }
@@ -311,7 +341,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             };
 
             var changeSummary = $"Restored from version {targetVersionNumber}";
-            var newVersionNumber = await CreateVersionAsync(note, restoredBy, changeSummary, cancellationToken);
+            var newVersionNumber = await CreateVersionAsync(note, restoredBy, changeSummary, null, null, cancellationToken);
 
             _logger.LogInformation(
                 "Restored note {NoteId} to version {TargetVersion}, created version {NewVersion}",

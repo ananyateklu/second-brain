@@ -58,41 +58,29 @@ function SkeletonBranchBar() {
 function SkeletonStatusPanel() {
   return (
     <div
-      className="h-full flex flex-col overflow-hidden rounded-2xl relative"
+      className="h-full flex flex-col overflow-hidden relative"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-        backdropFilter: 'blur(20px)',
+        backgroundColor: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur))',
+        borderRight: '1px solid var(--border)',
       }}
     >
-      {/* Ambient glow effect */}
-      <div
-        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        }}
-      />
-
       {/* Commit Input Section */}
-      <div className="px-4 pt-4 pb-3 relative z-10">
-        {/* Commit message input */}
-        <ShimmerBlock
-          className="w-full rounded-lg"
-          style={{ height: '38px' }}
-        />
-
-        {/* Commit button */}
-        <ShimmerBlock className="w-full h-9 rounded-lg mt-2" />
+      <div className="p-3 relative z-10">
+        {/* Commit message input and button - horizontal layout */}
+        <div className="flex items-center gap-2">
+          <ShimmerBlock
+            className="flex-1 rounded-lg"
+            style={{ height: '36px' }}
+          />
+          <ShimmerBlock className="px-3 py-2 rounded-xl" style={{ width: '80px', height: '36px' }} />
+        </div>
       </div>
 
       {/* File sections */}
       <div className="flex-1 overflow-y-auto pt-2 pb-3 space-y-3 relative z-10 thin-scrollbar">
         {/* Staged Section */}
-        <div
-          className="rounded-xl overflow-hidden mx-4"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
-        >
+        <div className="px-3">
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-3">
               <ShimmerBlock className="h-6 w-6 rounded-lg" />
@@ -116,10 +104,7 @@ function SkeletonStatusPanel() {
         </div>
 
         {/* Unstaged Section */}
-        <div
-          className="rounded-xl overflow-hidden mx-4"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
-        >
+        <div className="px-3">
           <div className="flex items-center justify-between px-3 py-2">
             <div className="flex items-center gap-3">
               <ShimmerBlock className="h-6 w-6 rounded-lg" />
@@ -154,30 +139,20 @@ function SkeletonDiffViewer() {
 
   return (
     <div
-      className="h-full flex flex-col rounded-2xl relative overflow-hidden"
+      className="h-full flex flex-col relative overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
-        backdropFilter: 'blur(20px)',
+        backgroundColor: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--glass-blur))',
       }}
     >
-      {/* Ambient glow effect */}
-      <div
-        className="absolute -top-20 -left-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        }}
-      />
-
       {/* Header */}
-      <div className="px-4 py-3 border-b relative z-10" style={{ borderColor: 'var(--border)' }}>
+      <div className="px-4 py-4 border-b relative z-10" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShimmerBlock className="h-5 w-5 rounded" />
             <ShimmerBlock className="h-4 w-48" />
           </div>
-          <ShimmerBlock className="h-8 w-8 rounded-lg" />
+          <ShimmerBlock className="h-7 w-7 rounded-md" />
         </div>
       </div>
 
@@ -209,9 +184,9 @@ export function GitPageSkeleton() {
       <SkeletonBranchBar />
 
       {/* Main content */}
-      <div className="flex-1 flex gap-4 mt-4 min-h-0">
+      <div className="flex-1 flex mt-4 min-h-0">
         {/* Left panel: File status */}
-        <div className="w-96 min-w-[384px] max-w-[480px] flex-shrink-0">
+        <div className="w-120 flex-shrink-0">
           <SkeletonStatusPanel />
         </div>
 

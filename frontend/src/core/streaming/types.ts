@@ -341,6 +341,8 @@ export interface StreamMessageRequest {
   contextCacheName?: string;
   /** Gemini: Thinking budget tokens */
   thinkingBudget?: number;
+  /** Markdown renderer preference for displaying the response */
+  markdownRenderer?: string;
 }
 
 /**

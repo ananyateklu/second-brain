@@ -56,16 +56,31 @@ public class NoteVersionService : INoteVersionService
         return version != null ? MapToResponse(version) : null;
     }
 
-    public async Task<int> CreateVersionAsync(Note note, string modifiedBy, string? changeSummary = null, CancellationToken cancellationToken = default)
+    public async Task<int> CreateVersionAsync(
+        Note note,
+        string modifiedBy,
+        string? changeSummary = null,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Creating new version for note {NoteId} by {ModifiedBy}", note.Id, modifiedBy);
-        return await _repository.CreateVersionAsync(note, modifiedBy, changeSummary, cancellationToken);
+        _logger.LogInformation(
+            "Creating new version for note {NoteId} by {ModifiedBy}{AiInfo}",
+            note.Id, modifiedBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
+        return await _repository.CreateVersionAsync(note, modifiedBy, changeSummary, aiProvider, aiModel, cancellationToken);
     }
 
-    public async Task<NoteVersionResponse> CreateInitialVersionAsync(Note note, string createdBy, CancellationToken cancellationToken = default)
+    public async Task<NoteVersionResponse> CreateInitialVersionAsync(
+        Note note,
+        string createdBy,
+        string? aiProvider = null,
+        string? aiModel = null,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Creating initial version for note {NoteId} by {CreatedBy}", note.Id, createdBy);
-        var version = await _repository.CreateInitialVersionAsync(note, createdBy, cancellationToken);
+        _logger.LogInformation(
+            "Creating initial version for note {NoteId} by {CreatedBy}{AiInfo}",
+            note.Id, createdBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
+        var version = await _repository.CreateInitialVersionAsync(note, createdBy, aiProvider, aiModel, cancellationToken);
         return MapToResponse(version);
     }
 
@@ -220,6 +235,8 @@ public class NoteVersionService : INoteVersionService
             ModifiedBy = version.ModifiedBy,
             ChangeSummary = version.ChangeSummary,
             Source = version.Source,
+            AiProvider = version.AiProvider,
+            AiModel = version.AiModel,
             ImageIds = version.ImageIds,
             CreatedAt = version.CreatedAt
         };

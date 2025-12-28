@@ -12,11 +12,10 @@ import { PageLoader } from './PageLoader';
 const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
 
 // Lazy load skeleton components - they're only needed during route transitions
-const DashboardSkeleton = lazy(() => import('../features/dashboard/components/DashboardSkeleton').then(m => ({ default: m.DashboardSkeleton })));
 const NotesSkeleton = lazy(() => import('../features/notes/components/NotesSkeleton').then(m => ({ default: m.NotesSkeleton })));
 const DirectorySkeleton = lazy(() => import('../features/notes/components/DirectorySkeleton').then(m => ({ default: m.DirectorySkeleton })));
 const ChatSkeleton = lazy(() => import('../components/skeletons').then(m => ({ default: m.ChatSkeleton })));
-const RagAnalyticsSkeleton = lazy(() => import('../features/rag/components/RagAnalyticsSkeleton').then(m => ({ default: m.RagAnalyticsSkeleton })));
+const InsightsSkeleton = lazy(() => import('../features/insights/components/InsightsSkeleton').then(m => ({ default: m.InsightsSkeleton })));
 const GitHubPageSkeleton = lazy(() => import('../features/github/components/GitHubPageSkeleton').then(m => ({ default: m.GitHubPageSkeleton })));
 const GeneralSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.GeneralSettingsSkeleton })));
 const AISettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.AISettingsSkeleton })));
@@ -37,7 +36,7 @@ const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ d
 const NotesPage = lazy(() => import('../pages/NotesPage').then(m => ({ default: m.NotesPage })));
 const NotesDirectoryPage = lazy(() => import('../pages/NotesDirectoryPage').then(m => ({ default: m.NotesDirectoryPage })));
 const ChatPage = lazy(() => import('../pages/ChatPage').then(m => ({ default: m.ChatPage })));
-const RagAnalyticsPage = lazy(() => import('../pages/RagAnalyticsPage').then(m => ({ default: m.RagAnalyticsPage })));
+const InsightsPage = lazy(() => import('../pages/InsightsPage').then(m => ({ default: m.InsightsPage })));
 
 // Lazy load settings pages (not frequently visited)
 const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').then(m => ({ default: m.GeneralSettings })));
@@ -54,6 +53,17 @@ function GitRedirect() {
   }, [setGitHubActiveTab]);
 
   return <Navigate to="/github" replace />;
+}
+
+// Analytics redirect component - redirects /analytics to /insights with RAG tab
+function AnalyticsRedirect() {
+  const setActiveInsightsTab = useBoundStore((state) => state.setActiveInsightsTab);
+
+  useEffect(() => {
+    setActiveInsightsTab('rag');
+  }, [setActiveInsightsTab]);
+
+  return <Navigate to="/insights" replace />;
 }
 
 // Lazy load GitHub page
@@ -77,30 +87,12 @@ const routes = [
   },
   {
     path: '/',
-    loader: async () => {
-      // Prefetch dashboard data while route loads
-      await Promise.all([
-        queryClient.prefetchQuery({
-          queryKey: statsKeys.ai(),
-          queryFn: () => statsService.getAIStats(),
-          staleTime: CACHE.STALE_TIME,
-        }),
-        queryClient.prefetchQuery({
-          queryKey: noteKeys.all,
-          queryFn: () => notesService.getAll(),
-          staleTime: CACHE.STALE_TIME,
-        }),
-      ]);
-      return null;
-    },
-    hydrateFallbackElement: <PageLoader />,
+    // Dashboard is now a placeholder, no data prefetch needed
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<DashboardSkeleton />}>
-              <DashboardPage />
-            </Suspense>
+            <DashboardPage />
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
@@ -179,18 +171,39 @@ const routes = [
     ),
   },
   {
-    path: '/analytics',
+    path: '/insights',
+    loader: async () => {
+      // Prefetch insights data while route loads
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.ai(),
+          queryFn: () => statsService.getAIStats(),
+          staleTime: CACHE.STALE_TIME,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: noteKeys.all,
+          queryFn: () => notesService.getAll(),
+          staleTime: CACHE.STALE_TIME,
+        }),
+      ]);
+      return null;
+    },
+    hydrateFallbackElement: <PageLoader />,
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <Suspense fallback={<RagAnalyticsSkeleton />}>
-              <RagAnalyticsPage />
+            <Suspense fallback={<InsightsSkeleton />}>
+              <InsightsPage />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/analytics',
+    element: <AnalyticsRedirect />,
   },
   {
     path: '/git',

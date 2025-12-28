@@ -255,7 +255,9 @@ public class MockEmbeddingProvider : IEmbeddingProvider
 
     public Task<EmbeddingResponse> GenerateEmbeddingAsync(
         string text,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (ShouldFail)
         {
@@ -281,7 +283,9 @@ public class MockEmbeddingProvider : IEmbeddingProvider
 
     public Task<BatchEmbeddingResponse> GenerateEmbeddingsAsync(
         IEnumerable<string> texts,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
         if (ShouldFail)
         {

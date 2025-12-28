@@ -84,6 +84,18 @@ public class NoteVersionResponse
     public string Source { get; set; } = "web";
 
     /// <summary>
+    /// AI provider name when modified by an agent (e.g., "Anthropic", "Google", "OpenAI").
+    /// Null for non-agent changes.
+    /// </summary>
+    public string? AiProvider { get; set; }
+
+    /// <summary>
+    /// AI model identifier when modified by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
+    /// Null for non-agent changes.
+    /// </summary>
+    public string? AiModel { get; set; }
+
+    /// <summary>
     /// IDs of images attached to the note at this version.
     /// </summary>
     public List<string> ImageIds { get; set; } = new();

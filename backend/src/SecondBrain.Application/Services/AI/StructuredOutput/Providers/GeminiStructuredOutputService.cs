@@ -133,8 +133,12 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
             if (response == null)
             {
                 _logger.LogWarning("Gemini structured output: response is null for model {Model}", modelName);
+                result.Success = false;
+                result.Error = "Gemini returned null response";
+                return result;
             }
-            else if (response.Candidates == null || response.Candidates.Count == 0)
+
+            if (response.Candidates == null || response.Candidates.Count == 0)
             {
                 _logger.LogWarning("Gemini structured output: no candidates returned for model {Model}. " +
                     "PromptFeedback: {Feedback}, BlockReason: {BlockReason}",

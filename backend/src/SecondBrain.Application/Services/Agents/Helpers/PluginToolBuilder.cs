@@ -30,6 +30,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null)
     {
         var tools = new List<Anthropic.SDK.Common.Tool>();
@@ -43,6 +45,7 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
+            plugin.SetAgentContext(provider, model);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -109,6 +112,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null)
     {
         var functionDeclarations = new List<GeminiFunctionDeclaration>();
@@ -122,6 +127,7 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
+            plugin.SetAgentContext(provider, model);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -153,6 +159,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             bool useStrictMode = false,
             RagOptions? ragOptions = null)
     {
@@ -167,6 +175,7 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
+            plugin.SetAgentContext(provider, model);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -198,6 +207,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             IReadOnlyDictionary<string, IAgentPlugin> plugins,
             string userId,
             bool agentRagEnabled,
+            string provider,
+            string model,
             RagOptions? ragOptions = null)
     {
         var tools = new List<OllamaTool>();
@@ -211,6 +222,7 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetCurrentUserId(userId);
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
+            plugin.SetAgentContext(provider, model);
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()

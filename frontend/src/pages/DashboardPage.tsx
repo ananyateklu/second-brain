@@ -1,144 +1,84 @@
-import { useState, useMemo } from 'react';
-import { EmptyState } from '../components/ui/EmptyState';
-import { useDashboardData } from '../features/dashboard/hooks/use-dashboard-data';
-import { useDashboardAnimations } from '../features/dashboard/hooks/use-dashboard-animations';
-import {
-  StatCardsGrid,
-  NotesChart,
-  ChatUsageChart,
-  ModelUsageSection,
-  DashboardSkeleton,
-} from '../features/dashboard/components';
+/**
+ * Dashboard Page
+ * Placeholder page for future dashboard features
+ */
 
-export function DashboardPage() {
-  const [selectedTimeRange, setSelectedTimeRange] = useState<number>(30);
-  const [selectedChatTimeRange, setSelectedChatTimeRange] = useState<number>(30);
+import { memo } from 'react';
+import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 
-  const {
-    isLoading,
-    error,
-    notes,
-    stats,
-    aiStats,
-    totalTokens,
-    sessionStats,
-    modelUsageData,
-    colors,
-    ragChartColor,
-    regularChartColor,
-    agentChartColor,
-    imageGenChartColor,
-    getNotesChartData,
-    getChatUsageData,
-    getFilteredModelUsageData,
-  } = useDashboardData();
+export const DashboardPage = memo(function DashboardPage() {
+  const titleBarHeight = useTitleBarHeight();
 
-  // Use optimized animations - 13 stat cards is typical
-  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!notes, 13);
-
-  // Memoize chart data based on time range selections
-  const chartData = useMemo(
-    () => getNotesChartData(selectedTimeRange),
-    [getNotesChartData, selectedTimeRange]
-  );
-
-  const chatUsageChartData = useMemo(
-    () => getChatUsageData(selectedChatTimeRange),
-    [getChatUsageData, selectedChatTimeRange]
-  );
-
-  // Get section animation states
-  const notesChartAnimation = getSectionAnimation(0);
-  const chatChartAnimation = getSectionAnimation(1);
-  const modelUsageAnimation = getSectionAnimation(2);
-
-  if (error) {
-    return (
-      <div
-        className="rounded-3xl border p-6 text-center shadow-sm"
-        style={{
-          backgroundColor: 'var(--color-error-light)',
-          borderColor: 'var(--color-error-border)',
-        }}
-      >
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <svg className="h-5 w-5" style={{ color: 'var(--color-error-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-base font-semibold" style={{ color: 'var(--color-error-text)' }}>
-            Error: {error instanceof Error ? error.message : 'Failed to load dashboard data'}
-          </p>
-        </div>
-        <p className="text-sm" style={{ color: 'var(--color-error-text-light)' }}>
-          Please check that the backend server is running and accessible
-        </p>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return <DashboardSkeleton />;
-  }
-
-  if (!notes || notes.length === 0) {
-    return (
-      <EmptyState
-        icon={
-          <svg className="h-8 w-8" style={{ color: 'var(--color-primary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-        }
-        title="No notes yet"
-        description="Start capturing your thoughts and ideas by creating your first note to see dashboard statistics!"
-      />
-    );
-  }
+  // Calculate container height - accounts for title bar and header
+  const containerHeight = `calc(100vh - ${titleBarHeight}px - 113px)`;
 
   return (
-    <div className="space-y-3 dashboard-container">
-      {/* Aggregated Stats Cards */}
-      <StatCardsGrid
-        stats={stats}
-        aiStats={aiStats}
-        totalTokens={totalTokens}
-        sessionStats={sessionStats}
-      />
+    <div
+      className="flex flex-col items-center justify-center"
+      style={{
+        height: containerHeight,
+        maxHeight: containerHeight,
+      }}
+    >
+      <div
+        className="flex flex-col items-center text-center max-w-lg p-10 rounded-3xl backdrop-blur-md"
+        style={{
+          backgroundColor: 'var(--surface-card)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
+        }}
+      >
+        {/* Icon */}
+        <div
+          className="mb-8 p-5 rounded-2xl"
+          style={{
+            background: 'linear-gradient(135deg, var(--color-primary-alpha) 0%, transparent 100%)',
+          }}
+        >
+          <svg
+            className="h-16 w-16"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            style={{ color: 'var(--color-primary)' }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+          </svg>
+        </div>
 
-      {/* Charts Section - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <NotesChart
-          chartData={chartData}
-          selectedTimeRange={selectedTimeRange}
-          onTimeRangeChange={setSelectedTimeRange}
-          animationDelay={notesChartAnimation.delay}
-          isAnimationReady={isReady}
-        />
+        {/* Title */}
+        <h2
+          className="text-2xl font-bold mb-4"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          Dashboard
+        </h2>
 
-        {aiStats && (
-          <ChatUsageChart
-            chatUsageChartData={chatUsageChartData}
-            selectedTimeRange={selectedChatTimeRange}
-            onTimeRangeChange={setSelectedChatTimeRange}
-            ragChartColor={ragChartColor}
-            regularChartColor={regularChartColor}
-            agentChartColor={agentChartColor}
-            imageGenChartColor={imageGenChartColor}
-            animationDelay={chatChartAnimation.delay}
-            isAnimationReady={isReady}
-          />
-        )}
+        {/* Description */}
+        <p
+          className="text-base leading-relaxed mb-6"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          Your personalized dashboard is coming soon. This will be your central hub for quick access to recent notes, pinned items, and personalized recommendations.
+        </p>
+
+        {/* Hint */}
+        <p
+          className="text-sm"
+          style={{ color: 'var(--text-tertiary)' }}
+        >
+          In the meantime, check out the{' '}
+          <a
+            href="/insights"
+            className="font-medium underline-offset-2 hover:underline"
+            style={{ color: 'var(--color-primary)' }}
+          >
+            Insights
+          </a>
+          {' '}page for analytics and statistics.
+        </p>
       </div>
-
-      {/* Model Usage Distribution */}
-      {aiStats && (
-        <ModelUsageSection
-          modelUsageData={modelUsageData}
-          colors={colors}
-          getFilteredModelUsageData={getFilteredModelUsageData}
-          animationDelay={modelUsageAnimation.delay}
-          isAnimationReady={isReady}
-        />
-      )}
     </div>
   );
-}
+});

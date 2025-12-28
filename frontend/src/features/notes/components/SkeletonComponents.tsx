@@ -22,7 +22,6 @@ export function NoteCardSkeleton() {
         borderWidth: '1px',
         padding: '22px',
         boxShadow: 'var(--shadow-card)',
-        minHeight: '240px', // Ensure consistent height matching actual note cards
       }}
     >
       <div className="relative z-10 flex flex-col h-full">
@@ -35,14 +34,14 @@ export function NoteCardSkeleton() {
         </div>
 
         {/* Content Preview - 3 lines (matches line-clamp-3) */}
-        <div className="space-y-2 mb-4" style={{ lineHeight: '1.5' }}>
+        <div className="space-y-1.5 mb-4" style={{ lineHeight: '1.5' }}>
           <ShimmerBlock className="h-3.5 w-full rounded" />
           <ShimmerBlock className="h-3.5 w-[92%] rounded" />
           <ShimmerBlock className="h-3.5 w-[78%] rounded" />
         </div>
 
         {/* Spacer to push footer to bottom */}
-        <div className="flex-grow min-h-[20px]" />
+        <div className="flex-grow" />
 
         {/* Footer Info - Tags and Date */}
         <div className="flex items-end justify-between mt-auto pt-2.5">
@@ -94,7 +93,7 @@ export function NoteCardsGridSkeleton({ count = 9 }: { count?: number }) {
  */
 export function PaginationSkeleton() {
   return (
-    <div className="flex items-center justify-between mt-6 px-2">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-4">
       {/* Page info */}
       <ShimmerBlock className="h-4 w-32" />
 
@@ -107,9 +106,6 @@ export function PaginationSkeleton() {
           />
         ))}
       </div>
-
-      {/* Items per page */}
-      <ShimmerBlock className="h-4 w-24" />
     </div>
   );
 }

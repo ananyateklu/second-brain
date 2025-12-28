@@ -76,6 +76,31 @@ public class RagOptions
     /// </summary>
     public string? QueryExpansionModel { get; set; }
 
+    /// <summary>
+    /// Embedding provider override for generating query embeddings.
+    /// IMPORTANT: This should match the provider used to index notes, otherwise
+    /// dimension mismatches will cause search to return no results.
+    /// When null, uses the default embedding provider.
+    /// </summary>
+    public string? EmbeddingProvider { get; set; }
+
+    /// <summary>
+    /// Embedding dimensions override for generating query embeddings.
+    /// IMPORTANT: This MUST match the dimensions used during indexing.
+    /// For providers with custom dimensions (e.g., Cohere embed-v4.0),
+    /// this ensures the query embedding has the same dimension as stored embeddings.
+    /// When null, uses the provider's default dimensions.
+    /// </summary>
+    public int? EmbeddingDimensions { get; set; }
+
+    /// <summary>
+    /// Embedding model override for generating query embeddings.
+    /// IMPORTANT: This should match the model used during indexing for consistent dimensions.
+    /// Examples: "text-embedding-3-small" (1536), "text-embedding-3-large" (3072)
+    /// When null, uses the provider's default model.
+    /// </summary>
+    public string? EmbeddingModel { get; set; }
+
     // === Tier 1: Core Retrieval Settings ===
 
     /// <summary>
@@ -135,6 +160,9 @@ public class RagOptions
         string? hydeModel = null,
         string? queryExpansionProvider = null,
         string? queryExpansionModel = null,
+        string? embeddingProvider = null,
+        int? embeddingDimensions = null,
+        string? embeddingModel = null,
         // Tier 1: Core Retrieval
         int? topK = null,
         float? similarityThreshold = null,
@@ -159,6 +187,9 @@ public class RagOptions
             HyDEModel = hydeModel,
             QueryExpansionProvider = queryExpansionProvider,
             QueryExpansionModel = queryExpansionModel,
+            EmbeddingProvider = embeddingProvider,
+            EmbeddingDimensions = embeddingDimensions,
+            EmbeddingModel = embeddingModel,
             // Tier 1
             TopK = topK,
             SimilarityThreshold = similarityThreshold,

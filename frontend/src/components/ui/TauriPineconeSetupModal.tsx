@@ -98,7 +98,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg p-0">
+      <DialogContent className="max-w-lg p-0" description="Configure Pinecone vector database settings including API key and index name">
         <DialogHeader className="rounded-t-3xl">
           <DialogTitle
             icon={

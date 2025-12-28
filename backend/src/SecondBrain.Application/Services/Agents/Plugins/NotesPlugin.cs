@@ -75,6 +75,14 @@ public class NotesPlugin : IAgentPlugin
         _analysisPlugin.SetRagOptions(options);
     }
 
+    public void SetAgentContext(string provider, string model)
+    {
+        _crudPlugin.SetAgentContext(provider, model);
+        _searchPlugin.SetAgentContext(provider, model);
+        _organizationPlugin.SetAgentContext(provider, model);
+        _analysisPlugin.SetAgentContext(provider, model);
+    }
+
     public object GetPluginInstance() => this;
 
     public string GetPluginName() => "Notes";
@@ -86,6 +94,27 @@ public class NotesPlugin : IAgentPlugin
 ## Notes Management Tools
 
 You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
+
+### CRITICAL: Note Reference Format
+
+When referencing notes, use: [[noteId|Note Title]]
+
+Example: ""I found [[019b26fb-042c-7037-80db-3184e5e37c0c|Garden Planning]] which covers your spring planting.""
+
+Rules:
+- Do NOT wrap [[...]] in markdown formatting (no **, __, etc.)
+- The [[...]] automatically renders as a styled clickable chip in the UI
+- You can use lists, but keep note references and descriptions together on the same line
+
+### Response Formatting Guidelines
+
+Use markdown thoughtfully for readability:
+- **Headers** (## ###): Only for distinct sections when organizing lengthy responses
+- **Lists** (- or 1.): For 3+ related items; keep items concise
+- **Bold** (**text**): Sparingly for key terms (NEVER around note references)
+- **Code** (`inline` or blocks): For technical content, commands, or code only
+- Keep paragraphs concise (2-4 sentences max)
+- Avoid excessive formatting - clarity over decoration
 
 ### IMPORTANT: Content Preview vs Full Content
 

@@ -10,6 +10,7 @@ public interface IIndexingService
         string? embeddingProvider = null,
         string? vectorStoreProvider = null,
         string? embeddingModel = null,
+        int? customDimensions = null,
         CancellationToken cancellationToken = default);
 
     Task<IndexingJob?> GetIndexingStatusAsync(

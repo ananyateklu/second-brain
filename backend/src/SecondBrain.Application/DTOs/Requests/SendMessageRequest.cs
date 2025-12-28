@@ -41,5 +41,11 @@ public class SendMessageRequest
     /// Only applies when EnableThinking is true.
     /// </summary>
     public int? ThinkingBudget { get; set; }
+
+    /// <summary>
+    /// Markdown renderer preference used to display the response ('custom' or 'llm-ui').
+    /// Tracked per message for historical analytics.
+    /// </summary>
+    public string? MarkdownRenderer { get; set; }
 }
 

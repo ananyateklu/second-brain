@@ -80,13 +80,16 @@ public interface INoteEmbeddingSearchRepository
     /// <summary>
     /// Performs native PostgreSQL hybrid search combining vector similarity and BM25 full-text search
     /// using Reciprocal Rank Fusion (RRF) in a single database query.
-    /// 
+    ///
     /// This is optimized for PostgreSQL 18 with Async I/O and parallel query execution.
+    /// Supports variable embedding dimensions (768, 1024, 1536, 3072) for different providers.
     /// </summary>
     /// <param name="query">The text query for BM25 search</param>
     /// <param name="queryEmbedding">The embedding vector for similarity search</param>
     /// <param name="userId">User ID to filter results</param>
     /// <param name="topK">Number of results to return</param>
+    /// <param name="embeddingDimensions">The dimension of the query embedding (768, 1024, 1536, or 3072).
+    /// Used to filter stored embeddings to matching dimensions and optimize index usage.</param>
     /// <param name="initialRetrievalCount">Number of results to retrieve from each source before fusion</param>
     /// <param name="vectorWeight">Weight for vector search in RRF (0.0-1.0)</param>
     /// <param name="bm25Weight">Weight for BM25 search in RRF (0.0-1.0)</param>
@@ -98,10 +101,23 @@ public interface INoteEmbeddingSearchRepository
         List<double> queryEmbedding,
         string userId,
         int topK,
+        int embeddingDimensions = 1536,
         int initialRetrievalCount = 20,
         float vectorWeight = 0.7f,
         float bm25Weight = 0.3f,
         int rrfConstant = 60,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the embedding dimensions and model info for a user's stored embeddings.
+    /// Returns the most common dimensions/model if multiple exist.
+    /// Used to match query embeddings to stored embeddings for correct vector comparison.
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Tuple of (dimensions, model) or null if no embeddings exist</returns>
+    Task<(int Dimensions, string? Model)?> GetUserEmbeddingInfoAsync(
+        string userId,
         CancellationToken cancellationToken = default);
 }
 

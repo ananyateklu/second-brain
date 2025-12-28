@@ -9,7 +9,7 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonManualIndexing() {
   return (
     <section
-      className="rounded-3xl border p-4"
+      className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -117,7 +117,7 @@ function SkeletonStatsCard() {
 function SkeletonIndexHealth() {
   return (
     <section
-      className="rounded-3xl border p-4"
+      className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

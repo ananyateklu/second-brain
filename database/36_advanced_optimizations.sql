@@ -74,10 +74,12 @@ BEGIN
     END IF;
 END $$;
 
--- Create function to search with quantized vectors
+-- Create function to search with dimension-aware vectors
+-- Uses halfvec quantization for 1536 dims (50% memory savings), full precision for others
 CREATE OR REPLACE FUNCTION search_embeddings_quantized(
-    p_query_embedding vector(1536),
+    p_query_embedding vector,
     p_user_id TEXT,
+    p_dimensions INT DEFAULT 1536,
     p_limit INT DEFAULT 10,
     p_ef_search INT DEFAULT 100
 )
@@ -94,19 +96,39 @@ BEGIN
     -- Set search-time parameter for better recall
     PERFORM set_config('hnsw.ef_search', p_ef_search::TEXT, true);
 
-    RETURN QUERY
-    SELECT
-        ne.id,
-        ne.note_id,
-        ne.note_title,
-        ne.content,
-        ne.chunk_index,
-        (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536))::FLOAT AS distance,
-        (1 - (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)))::FLOAT AS similarity
-    FROM note_embeddings ne
-    WHERE ne.user_id = p_user_id
-    ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
-    LIMIT p_limit;
+    -- Use dimension-aware search: halfvec for 1536, full precision for others
+    IF p_dimensions = 1536 THEN
+        RETURN QUERY
+        SELECT
+            ne.id,
+            ne.note_id,
+            ne.note_title,
+            ne.content,
+            ne.chunk_index,
+            (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536))::FLOAT AS distance,
+            (1 - (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)))::FLOAT AS similarity
+        FROM note_embeddings ne
+        WHERE ne.user_id = p_user_id
+          AND ne.embedding_dimensions = 1536
+        ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
+        LIMIT p_limit;
+    ELSE
+        -- Full precision for non-1536 dimensions
+        RETURN QUERY
+        SELECT
+            ne.id,
+            ne.note_id,
+            ne.note_title,
+            ne.content,
+            ne.chunk_index,
+            (ne.embedding <=> p_query_embedding)::FLOAT AS distance,
+            (1 - (ne.embedding <=> p_query_embedding))::FLOAT AS similarity
+        FROM note_embeddings ne
+        WHERE ne.user_id = p_user_id
+          AND ne.embedding_dimensions = p_dimensions
+        ORDER BY ne.embedding <=> p_query_embedding
+        LIMIT p_limit;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -226,15 +248,17 @@ END $$;
 -- 5. OPTIMIZED HYBRID SEARCH FUNCTION
 -- ============================================================================
 -- Single-query hybrid search with RRF, using all optimizations:
---   - Quantized vector search
+--   - Dimension-aware vector search (halfvec for 1536, full precision for others)
 --   - Native BM25 with ts_rank_cd
 --   - Reciprocal Rank Fusion in SQL
 --   - Iterative scan support
+--   - Filters by embedding_dimensions to only compare matching vectors
 
 CREATE OR REPLACE FUNCTION hybrid_search_optimized(
-    p_query_embedding vector(1536),
+    p_query_embedding vector,
     p_query_text TEXT,
     p_user_id TEXT,
+    p_dimensions INT DEFAULT 1536,
     p_limit INT DEFAULT 10,
     p_vector_weight FLOAT DEFAULT 0.7,
     p_bm25_weight FLOAT DEFAULT 0.3,
@@ -255,70 +279,134 @@ BEGIN
     -- Configure search parameters
     PERFORM configure_vector_search(p_ef_search, true, 20000);
 
-    RETURN QUERY
-    WITH
-    -- Vector search with quantized index
-    vector_results AS (
+    -- Use dimension-aware search: halfvec for 1536, full precision for others
+    IF p_dimensions = 1536 THEN
+        RETURN QUERY
+        WITH
+        -- Vector search with quantized halfvec index (50% memory savings)
+        vector_results AS (
+            SELECT
+                ne.note_id,
+                ne.note_title,
+                ne.content,
+                ne.chunk_index,
+                (1 - (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)))::FLOAT AS score,
+                ROW_NUMBER() OVER (
+                    ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
+                ) AS rank
+            FROM note_embeddings ne
+            WHERE ne.user_id = p_user_id
+              AND ne.embedding_dimensions = 1536
+            ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
+            LIMIT p_limit * 3
+        ),
+        bm25_results AS (
+            SELECT
+                ne.note_id,
+                ne.note_title,
+                ne.content,
+                ne.chunk_index,
+                ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text))::FLOAT AS score,
+                ROW_NUMBER() OVER (
+                    ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
+                ) AS rank
+            FROM note_embeddings ne
+            WHERE ne.user_id = p_user_id
+              AND ne.embedding_dimensions = 1536
+              AND ne.search_vector @@ plainto_tsquery('english', p_query_text)
+            ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
+            LIMIT p_limit * 3
+        ),
+        fused_results AS (
+            SELECT
+                COALESCE(v.note_id, b.note_id) AS note_id,
+                COALESCE(v.note_title, b.note_title) AS note_title,
+                COALESCE(v.content, b.content) AS content,
+                COALESCE(v.chunk_index, b.chunk_index) AS chunk_index,
+                COALESCE(v.score, 0) AS vector_score,
+                COALESCE(b.score, 0) AS bm25_score,
+                (p_vector_weight * COALESCE(1.0 / (p_rrf_k + v.rank), 0)) +
+                (p_bm25_weight * COALESCE(1.0 / (p_rrf_k + b.rank), 0)) AS rrf_score
+            FROM vector_results v
+            FULL OUTER JOIN bm25_results b
+                ON v.note_id = b.note_id AND v.chunk_index = b.chunk_index
+        )
         SELECT
-            ne.note_id,
-            ne.note_title,
-            ne.content,
-            ne.chunk_index,
-            (1 - (ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)))::FLOAT AS score,
-            ROW_NUMBER() OVER (
-                ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
-            ) AS rank
-        FROM note_embeddings ne
-        WHERE ne.user_id = p_user_id
-        ORDER BY ne.embedding::halfvec(1536) <=> p_query_embedding::halfvec(1536)
-        LIMIT p_limit * 3  -- Oversample for RRF fusion
-    ),
-    -- BM25 search with full-text
-    bm25_results AS (
+            f.note_id,
+            f.note_title,
+            f.content,
+            f.chunk_index,
+            f.vector_score,
+            f.bm25_score,
+            f.rrf_score,
+            (f.rrf_score / NULLIF(MAX(f.rrf_score) OVER (), 0))::FLOAT AS final_score
+        FROM fused_results f
+        ORDER BY f.rrf_score DESC
+        LIMIT p_limit;
+    ELSE
+        -- Full precision for non-1536 dimensions (768, 1024, 3072, etc.)
+        RETURN QUERY
+        WITH
+        vector_results AS (
+            SELECT
+                ne.note_id,
+                ne.note_title,
+                ne.content,
+                ne.chunk_index,
+                (1 - (ne.embedding <=> p_query_embedding))::FLOAT AS score,
+                ROW_NUMBER() OVER (
+                    ORDER BY ne.embedding <=> p_query_embedding
+                ) AS rank
+            FROM note_embeddings ne
+            WHERE ne.user_id = p_user_id
+              AND ne.embedding_dimensions = p_dimensions
+            ORDER BY ne.embedding <=> p_query_embedding
+            LIMIT p_limit * 3
+        ),
+        bm25_results AS (
+            SELECT
+                ne.note_id,
+                ne.note_title,
+                ne.content,
+                ne.chunk_index,
+                ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text))::FLOAT AS score,
+                ROW_NUMBER() OVER (
+                    ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
+                ) AS rank
+            FROM note_embeddings ne
+            WHERE ne.user_id = p_user_id
+              AND ne.embedding_dimensions = p_dimensions
+              AND ne.search_vector @@ plainto_tsquery('english', p_query_text)
+            ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
+            LIMIT p_limit * 3
+        ),
+        fused_results AS (
+            SELECT
+                COALESCE(v.note_id, b.note_id) AS note_id,
+                COALESCE(v.note_title, b.note_title) AS note_title,
+                COALESCE(v.content, b.content) AS content,
+                COALESCE(v.chunk_index, b.chunk_index) AS chunk_index,
+                COALESCE(v.score, 0) AS vector_score,
+                COALESCE(b.score, 0) AS bm25_score,
+                (p_vector_weight * COALESCE(1.0 / (p_rrf_k + v.rank), 0)) +
+                (p_bm25_weight * COALESCE(1.0 / (p_rrf_k + b.rank), 0)) AS rrf_score
+            FROM vector_results v
+            FULL OUTER JOIN bm25_results b
+                ON v.note_id = b.note_id AND v.chunk_index = b.chunk_index
+        )
         SELECT
-            ne.note_id,
-            ne.note_title,
-            ne.content,
-            ne.chunk_index,
-            ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text))::FLOAT AS score,
-            ROW_NUMBER() OVER (
-                ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
-            ) AS rank
-        FROM note_embeddings ne
-        WHERE ne.user_id = p_user_id
-          AND ne.search_vector @@ plainto_tsquery('english', p_query_text)
-        ORDER BY ts_rank_cd(ne.search_vector, plainto_tsquery('english', p_query_text)) DESC
-        LIMIT p_limit * 3
-    ),
-    -- Reciprocal Rank Fusion
-    fused_results AS (
-        SELECT
-            COALESCE(v.note_id, b.note_id) AS note_id,
-            COALESCE(v.note_title, b.note_title) AS note_title,
-            COALESCE(v.content, b.content) AS content,
-            COALESCE(v.chunk_index, b.chunk_index) AS chunk_index,
-            COALESCE(v.score, 0) AS vector_score,
-            COALESCE(b.score, 0) AS bm25_score,
-            -- RRF formula: 1/(k + rank)
-            (p_vector_weight * COALESCE(1.0 / (p_rrf_k + v.rank), 0)) +
-            (p_bm25_weight * COALESCE(1.0 / (p_rrf_k + b.rank), 0)) AS rrf_score
-        FROM vector_results v
-        FULL OUTER JOIN bm25_results b
-            ON v.note_id = b.note_id AND v.chunk_index = b.chunk_index
-    )
-    SELECT
-        f.note_id,
-        f.note_title,
-        f.content,
-        f.chunk_index,
-        f.vector_score,
-        f.bm25_score,
-        f.rrf_score,
-        -- Normalized final score (0-1 range)
-        (f.rrf_score / NULLIF(MAX(f.rrf_score) OVER (), 0))::FLOAT AS final_score
-    FROM fused_results f
-    ORDER BY f.rrf_score DESC
-    LIMIT p_limit;
+            f.note_id,
+            f.note_title,
+            f.content,
+            f.chunk_index,
+            f.vector_score,
+            f.bm25_score,
+            f.rrf_score,
+            (f.rrf_score / NULLIF(MAX(f.rrf_score) OVER (), 0))::FLOAT AS final_score
+        FROM fused_results f
+        ORDER BY f.rrf_score DESC
+        LIMIT p_limit;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -551,19 +639,17 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 
 COMMENT ON FUNCTION search_embeddings_quantized IS
-    'Vector search using quantized halfvec index for 50% memory savings';
+    'Dimension-aware vector search. Uses halfvec(1536) for OpenAI (50% memory), full precision for others (768, 1024, 3072).';
 COMMENT ON FUNCTION configure_vector_search IS
     'Configure pgvector 0.8 search parameters including iterative scan';
 COMMENT ON FUNCTION hybrid_search_optimized IS
-    'Optimized hybrid search with quantized vectors, BM25, and RRF fusion';
+    'Dimension-aware hybrid search with RRF. Filters by embedding_dimensions and uses halfvec for 1536 dims.';
 COMMENT ON FUNCTION get_vector_index_stats IS
     'Get statistics for HNSW and IVFFlat vector indexes';
 COMMENT ON FUNCTION get_search_performance_stats IS
     'Get RAG search performance metrics with recommendations';
 COMMENT ON FUNCTION init_rag_session IS
     'Initialize database session with optimal RAG settings';
-COMMENT ON INDEX ix_embeddings_hnsw_quantized IS
-    'Quantized HNSW index using halfvec (2-byte floats) for 50% memory savings';
 
 -- ============================================================================
 -- 12. ANALYZE UPDATED TABLES

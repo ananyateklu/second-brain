@@ -180,6 +180,13 @@ public class ChatMessage
     [MaxLength(20)]
     public string? RagFeedback { get; set; }
 
+    /// <summary>
+    /// Markdown renderer used to display this message ('custom' or 'llm-ui')
+    /// </summary>
+    [Column("markdown_renderer")]
+    [MaxLength(20)]
+    public string? MarkdownRenderer { get; set; }
+
     // Navigation property back to conversation (ignored to prevent circular serialization)
     [ForeignKey("ConversationId")]
     [JsonIgnore]

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 import {
   useIndexStats,
   useActiveIndexingVectorStores,
@@ -23,7 +23,42 @@ interface IndexingStatsProps {
 export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   const activeVectorStores = useActiveIndexingVectorStores();
   const isAnyIndexing = activeVectorStores.size > 0;
-  const { data: stats, isLoading } = useIndexStats(userId, isAnyIndexing);
+
+  // Track which stores were being indexed when the job completed
+  const wasPostgresIndexingRef = useRef(false);
+  const wasPineconeIndexingRef = useRef(false);
+  const [finalizingPostgres, setFinalizingPostgres] = useState(false);
+  const [finalizingPinecone, setFinalizingPinecone] = useState(false);
+
+  // Include finalizing state in the polling condition
+  const shouldPollStats = isAnyIndexing || finalizingPostgres || finalizingPinecone;
+  const { data: stats, isLoading, refetch } = useIndexStats(userId, shouldPollStats);
+
+  useEffect(() => {
+    const isPostgresActive = activeVectorStores.has('PostgreSQL');
+    const isPineconeActive = activeVectorStores.has('Pinecone');
+
+    // Check if PostgreSQL just finished
+    if (wasPostgresIndexingRef.current && !isPostgresActive) {
+      startTransition(() => setFinalizingPostgres(true));
+      void refetch().finally(() => {
+        startTransition(() => setFinalizingPostgres(false));
+      });
+    }
+
+    // Check if Pinecone just finished
+    if (wasPineconeIndexingRef.current && !isPineconeActive) {
+      startTransition(() => setFinalizingPinecone(true));
+      void refetch().finally(() => {
+        startTransition(() => setFinalizingPinecone(false));
+      });
+    }
+
+    // Update refs
+    wasPostgresIndexingRef.current = isPostgresActive;
+    wasPineconeIndexingRef.current = isPineconeActive;
+  }, [activeVectorStores, refetch]);
+
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } =
     usePineconeConfigured();
   const [showPineconeSetup, setShowPineconeSetup] = useState(false);
@@ -49,7 +84,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
           stats={stats.postgreSQL}
           userId={userId}
           vectorStoreProvider="PostgreSQL"
-          isIndexing={activeVectorStores.has('PostgreSQL')}
+          isIndexing={activeVectorStores.has('PostgreSQL') || finalizingPostgres}
         />
 
         {/* Pinecone Card - Show setup button if not configured in Tauri mode */}
@@ -61,7 +96,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
             stats={stats.pinecone}
             userId={userId}
             vectorStoreProvider="Pinecone"
-            isIndexing={activeVectorStores.has('Pinecone')}
+            isIndexing={activeVectorStores.has('Pinecone') || finalizingPinecone}
           />
         )}
       </div>

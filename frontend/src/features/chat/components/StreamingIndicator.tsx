@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useDeferredValue } from 'react';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownMessageWithNoteReferences';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
@@ -21,7 +21,7 @@ import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming
  * Renders text content within the process timeline.
  * Used for interleaved text that appears between thinking/tool events.
  */
-function TimelineTextCard({ content, agentModeEnabled = false }: { content: string; agentModeEnabled?: boolean }) {
+function TimelineTextCard({ content, showInlineNoteRefs = false }: { content: string; showInlineNoteRefs?: boolean }) {
   const strippedContent = stripAllThinkingTags(content);
   if (!strippedContent) return null;
 
@@ -33,7 +33,7 @@ function TimelineTextCard({ content, agentModeEnabled = false }: { content: stri
           backgroundColor: 'var(--surface-card)',
         }}
       >
-        {agentModeEnabled ? (
+        {showInlineNoteRefs ? (
           <MarkdownMessageWithNoteReferences content={strippedContent} />
         ) : (
           <MarkdownMessage content={strippedContent} />
@@ -134,23 +134,28 @@ export function StreamingIndicator({
   const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
   const hasTimeline = processTimeline.length > 0;
 
+  // Defer streamingMessage for thinking extraction to reduce re-computation frequency
+  // This allows React to batch updates and skip intermediate states during rapid streaming
+  const deferredStreamingMessage = useDeferredValue(streamingMessage);
+
   // Extract thinking content from streamingMessage that may not be in timeline yet
   // This handles the race condition where thinking tags appear in the stream before
   // the backend emits the thinking event
+  // Uses deferred value to reduce extraction frequency during rapid token updates
   const extractedThinking = useMemo(() => {
-    if (!agentModeEnabled || !streamingMessage) {
+    if (!agentModeEnabled || !deferredStreamingMessage) {
       return { complete: [] as string[], incomplete: null as string | null };
     }
     // Get complete thinking blocks (without including incomplete)
-    const completeBlocks = extractAllThinkingContent(streamingMessage, false);
+    const completeBlocks = extractAllThinkingContent(deferredStreamingMessage, false);
     // Get all blocks including incomplete (the last one might be incomplete)
-    const allBlocks = extractAllThinkingContent(streamingMessage, true);
+    const allBlocks = extractAllThinkingContent(deferredStreamingMessage, true);
     // If there are more blocks when including incomplete, the extra one is incomplete
     const incompleteBlock = allBlocks.length > completeBlocks.length
       ? allBlocks[allBlocks.length - 1]
       : null;
     return { complete: completeBlocks, incomplete: incompleteBlock };
-  }, [agentModeEnabled, streamingMessage]);
+  }, [agentModeEnabled, deferredStreamingMessage]);
 
   // Count thinking events already in timeline
   const timelineThinkingCount = useMemo(() => {
@@ -218,7 +223,7 @@ export function StreamingIndicator({
             );
           }
           if (event.type === 'text') {
-            return <TimelineTextCard key={event.id} content={event.content} agentModeEnabled={agentModeEnabled} />;
+            return <TimelineTextCard key={event.id} content={event.content} showInlineNoteRefs={agentModeEnabled || ragEnabled} />;
           }
           return null;
         })}
@@ -300,7 +305,7 @@ export function StreamingIndicator({
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
           >
-            {agentModeEnabled ? (
+            {(agentModeEnabled || ragEnabled) ? (
               <MarkdownMessageWithNoteReferences content={displayContent} showCursor={isStreaming} />
             ) : (
               <MarkdownMessage content={displayContent} showCursor={isStreaming} />

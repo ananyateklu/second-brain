@@ -119,7 +119,7 @@ public class NoteOperationService : INoteOperationService
         // 6. Create initial version with source tracking (including images)
         int versionNumber = 1;
         var versionResponse = await _versionService.CreateInitialVersionAsync(
-            createdNote, request.UserId, cancellationToken);
+            createdNote, request.UserId, request.AiProvider, request.AiModel, cancellationToken);
         versionNumber = versionResponse.VersionNumber;
         _logger.LogDebug("Created initial version {Version} for note {NoteId} with {ImageCount} images",
             versionNumber, createdNote.Id, createdNote.Images?.Count ?? 0);
@@ -170,7 +170,9 @@ public class NoteOperationService : INoteOperationService
             Tags = new List<string>(sourceNote.Tags),
             Folder = sourceNote.Folder,
             IsArchived = false,
-            Source = request.Source
+            Source = request.Source,
+            AiProvider = request.AiProvider,
+            AiModel = request.AiModel
         };
 
         var result = await CreateAsync(createRequest, cancellationToken);
@@ -281,7 +283,7 @@ public class NoteOperationService : INoteOperationService
                 "Creating initial version for note {NoteId} (no prior history) with {ImageCount} images",
                 request.NoteId, note.Images?.Count ?? 0);
             var initialVersion = await _versionService.CreateInitialVersionAsync(
-                note, request.UserId, cancellationToken);
+                note, request.UserId, request.AiProvider, request.AiModel, cancellationToken);
             _logger.LogDebug("Created initial version {Version} for note {NoteId}",
                 initialVersion.VersionNumber, request.NoteId);
         }
@@ -388,7 +390,7 @@ public class NoteOperationService : INoteOperationService
         // 14. Create version snapshot with the NEW state (including images)
         var changeSummary = BuildChangeSummary(changes, request.Source);
         versionNumber = await _versionService.CreateVersionAsync(
-            updatedNote, request.UserId, changeSummary, cancellationToken);
+            updatedNote, request.UserId, changeSummary, request.AiProvider, request.AiModel, cancellationToken);
         _logger.LogDebug("Created version {Version} for note {NoteId} with {ImageCount} images",
             versionNumber, request.NoteId, updatedNote.Images?.Count ?? 0);
 
@@ -435,7 +437,9 @@ public class NoteOperationService : INoteOperationService
             NoteId = request.NoteId,
             UserId = request.UserId,
             Source = request.Source,
-            Content = newContent
+            Content = newContent,
+            AiProvider = request.AiProvider,
+            AiModel = request.AiModel
         };
 
         return await UpdateAsync(updateRequest, cancellationToken);
@@ -569,7 +573,7 @@ public class NoteOperationService : INoteOperationService
 
         // Create version for the restore
         var versionNumber = await _versionService.CreateVersionAsync(
-            note, userId, "Restored from trash", cancellationToken);
+            note, userId, "Restored from trash", null, null, cancellationToken);
 
         return Result<NoteOperationResult>.Success(
             NoteOperationResultFactory.Updated(note, versionNumber, source, new[] { "restored" }));

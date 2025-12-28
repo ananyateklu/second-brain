@@ -32,6 +32,8 @@ public abstract class NotePluginBase : IAgentPlugin
     protected string CurrentUserId = string.Empty;
     protected bool AgentRagEnabled = false;
     protected RagOptions? UserRagOptions;
+    protected string CurrentProvider = string.Empty;
+    protected string CurrentModel = string.Empty;
 
     /// <summary>
     /// Maximum length for content preview in list operations.
@@ -71,6 +73,12 @@ public abstract class NotePluginBase : IAgentPlugin
     public void SetRagOptions(RagOptions? options)
     {
         UserRagOptions = options;
+    }
+
+    public void SetAgentContext(string provider, string model)
+    {
+        CurrentProvider = provider;
+        CurrentModel = model;
     }
 
     public virtual object GetPluginInstance() => this;

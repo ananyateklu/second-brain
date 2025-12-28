@@ -52,12 +52,13 @@ public class IndexingService : IIndexingService
         string? embeddingProvider = null,
         string? vectorStoreProvider = null,
         string? embeddingModel = null,
+        int? customDimensions = null,
         CancellationToken cancellationToken = default)
     {
         var provider = embeddingProvider ?? _settings.DefaultProvider;
 
-        _logger.LogInformation("Starting indexing job request. UserId: {UserId}, EmbeddingProvider: {Provider}, Model: {Model}, VectorStore: {Store}",
-            userId, provider, embeddingModel ?? "default", vectorStoreProvider ?? "Default");
+        _logger.LogInformation("Starting indexing job request. UserId: {UserId}, EmbeddingProvider: {Provider}, Model: {Model}, VectorStore: {Store}, CustomDims: {CustomDims}",
+            userId, provider, embeddingModel ?? "default", vectorStoreProvider ?? "Default", customDimensions?.ToString() ?? "default");
 
         // Validate embedding dimensions for Pinecone
         var embeddingProviderInstance = _embeddingProviderFactory.GetProvider(provider);
@@ -89,20 +90,23 @@ public class IndexingService : IIndexingService
             actualModel = embeddingProviderInstance.ModelName;
         }
 
-        if ((vectorStoreProvider == "Pinecone" || vectorStoreProvider == "Both") && providerDimensions != PineconeDimensions)
+        // If customDimensions is specified, use that for validation (for models that support it like Cohere embed-v4.0)
+        var effectiveDimensions = customDimensions ?? providerDimensions;
+
+        if ((vectorStoreProvider == "Pinecone" || vectorStoreProvider == "Both") && effectiveDimensions != PineconeDimensions)
         {
             var errorMessage = $"Pinecone requires {PineconeDimensions}-dimension embeddings. " +
-                $"{provider}/{actualModel} produces {providerDimensions} dimensions. " +
+                $"{provider}/{actualModel} produces {effectiveDimensions} dimensions. " +
                 $"Use PostgreSQL for this embedding provider/model, or use a model with 1536 dimensions for Pinecone.";
 
             _logger.LogWarning("Dimension mismatch for Pinecone. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}",
-                provider, actualModel, providerDimensions);
+                provider, actualModel, effectiveDimensions);
 
             throw new InvalidOperationException(errorMessage);
         }
 
-        _logger.LogInformation("Embedding provider validated. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}",
-            provider, actualModel, providerDimensions);
+        _logger.LogInformation("Embedding provider validated. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}, CustomDims: {CustomDims}",
+            provider, actualModel, providerDimensions, customDimensions?.ToString() ?? "none");
 
         // Fetch notes with images for the specific user (multi-tenant)
         // Images are needed for multi-modal RAG (image descriptions are embedded)
@@ -132,7 +136,7 @@ public class IndexingService : IIndexingService
         {
             try
             {
-                await ProcessIndexingJobAsync(job.Id, vectorStoreProvider);
+                await ProcessIndexingJobAsync(job.Id, vectorStoreProvider, customDimensions);
             }
             catch (Exception ex)
             {
@@ -144,7 +148,7 @@ public class IndexingService : IIndexingService
         return job;
     }
 
-    private async Task ProcessIndexingJobAsync(string jobId, string? vectorStoreProvider)
+    private async Task ProcessIndexingJobAsync(string jobId, string? vectorStoreProvider, int? customDimensions = null)
     {
         // Create a new scope for the background task to get fresh scoped services (DbContext, repositories)
         using var scope = _serviceScopeFactory.CreateScope();
@@ -253,7 +257,7 @@ public class IndexingService : IIndexingService
 
                 try
                 {
-                    await IndexNoteAsync(note, embeddingProvider, vectorStore, CancellationToken.None);
+                    await IndexNoteAsync(note, embeddingProvider, vectorStore, CancellationToken.None, customDimensions, job.EmbeddingModel);
                     job.ProcessedNotes++;
                 }
                 catch (Exception ex)
@@ -295,11 +299,16 @@ public class IndexingService : IIndexingService
         Note note,
         IEmbeddingProvider embeddingProvider,
         IVectorStore vectorStore,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int? customDimensions = null,
+        string? modelOverride = null)
     {
+        // Determine effective model: explicit override > provider default
+        var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : embeddingProvider.ModelName;
+
         _logger.LogInformation(
-            "Starting note indexing. NoteId: {NoteId}, UserId: {UserId}, Title: {Title}, Provider: {Provider}, Model: {Model}",
-            note.Id, note.UserId, note.Title, embeddingProvider.ProviderName, embeddingProvider.ModelName);
+            "Starting note indexing. NoteId: {NoteId}, UserId: {UserId}, Title: {Title}, Provider: {Provider}, Model: {Model}, CustomDims: {CustomDims}",
+            note.Id, note.UserId, note.Title, embeddingProvider.ProviderName, effectiveModel, customDimensions?.ToString() ?? "default");
 
         // Delete existing embeddings for this note
         await vectorStore.DeleteByNoteIdAsync(note.Id, cancellationToken);
@@ -313,13 +322,15 @@ public class IndexingService : IIndexingService
 
         foreach (var chunk in chunks)
         {
-            var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(chunk.Content, cancellationToken);
+            // Pass customDimensions and modelOverride to support runtime configuration
+            var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(
+                chunk.Content, cancellationToken, customDimensions, modelOverride);
 
             if (!embeddingResponse.Success)
             {
                 _logger.LogWarning(
-                    "Failed to generate embedding for note chunk. NoteId: {NoteId}, ChunkIndex: {ChunkIndex}, Provider: {Provider}, Error: {Error}",
-                    note.Id, chunk.ChunkIndex, embeddingProvider.ProviderName, embeddingResponse.Error);
+                    "Failed to generate embedding for note chunk. NoteId: {NoteId}, ChunkIndex: {ChunkIndex}, Provider: {Provider}, Model: {Model}, Error: {Error}",
+                    note.Id, chunk.ChunkIndex, embeddingProvider.ProviderName, effectiveModel, embeddingResponse.Error);
                 continue;
             }
 
@@ -334,9 +345,12 @@ public class IndexingService : IIndexingService
             else
             {
                 _logger.LogDebug(
-                    "Generated embedding for chunk. NoteId: {NoteId}, ChunkIndex: {ChunkIndex}, Dimensions: {Dimensions}, Provider: {Provider}",
-                    note.Id, chunk.ChunkIndex, embeddingResponse.Embedding.Count, embeddingProvider.ProviderName);
+                    "Generated embedding for chunk. NoteId: {NoteId}, ChunkIndex: {ChunkIndex}, Dimensions: {Dimensions}, Provider: {Provider}, Model: {Model}",
+                    note.Id, chunk.ChunkIndex, embeddingResponse.Embedding.Count, embeddingProvider.ProviderName, effectiveModel);
             }
+
+            // Use model from response if available, otherwise use effective model
+            var actualModel = !string.IsNullOrEmpty(embeddingResponse.Model) ? embeddingResponse.Model : effectiveModel;
 
             var noteEmbedding = new NoteEmbedding
             {
@@ -348,7 +362,7 @@ public class IndexingService : IIndexingService
                 Embedding = new Pgvector.Vector(embeddingResponse.Embedding.Select(d => (float)d).ToArray()),
                 EmbeddingDimensions = embeddingResponse.Embedding.Count, // Track embedding dimensions
                 EmbeddingProvider = embeddingProvider.ProviderName,
-                EmbeddingModel = embeddingProvider.ModelName, // Store actual model name
+                EmbeddingModel = actualModel, // Store actual model used (from response or override)
                 CreatedAt = DateTime.UtcNow,
                 NoteUpdatedAt = note.UpdatedAt, // Track note modification for incremental indexing
                 NoteTitle = note.Title,
@@ -365,7 +379,7 @@ public class IndexingService : IIndexingService
             await vectorStore.UpsertBatchAsync(embeddings, cancellationToken);
             _logger.LogInformation(
                 "Indexed note successfully. NoteId: {NoteId}, UserId: {UserId}, ChunkCount: {ChunkCount}, Provider: {Provider}, Model: {Model}",
-                note.Id, note.UserId, embeddings.Count, embeddingProvider.ProviderName, embeddingProvider.ModelName);
+                note.Id, note.UserId, embeddings.Count, embeddingProvider.ProviderName, effectiveModel);
         }
         else
         {

@@ -120,6 +120,8 @@ public class AgentController : ControllerBase
                     hydeModel: userPrefs.RagHydeModel,
                     queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
                     queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                    embeddingProvider: userPrefs.RagEmbeddingProvider,
+                    embeddingDimensions: userPrefs.RagEmbeddingDimensions,
                     // Tier 1: Core Retrieval
                     topK: userPrefs.RagTopK,
                     similarityThreshold: userPrefs.RagSimilarityThreshold,
@@ -498,7 +500,8 @@ public class AgentController : ControllerBase
                 ToolArgumentTokens = toolArgumentTokens > 0 ? toolArgumentTokens : null,
                 ToolResultTokens = toolResultTokens > 0 ? toolResultTokens : null,
                 RagContextTokens = ragContextTokens > 0 ? ragContextTokens : null,
-                RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null
+                RagChunksCount = retrievedNotes.Count > 0 ? retrievedNotes.Count : null,
+                MarkdownRenderer = request.MarkdownRenderer
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -596,6 +599,11 @@ public class AgentMessageRequest
     /// If empty or null, the agent runs as a general assistant without tools.
     /// </summary>
     public List<string>? Capabilities { get; set; }
+    /// <summary>
+    /// Markdown renderer preference used to display the response ('custom' or 'llm-ui').
+    /// Tracked per message for historical analytics.
+    /// </summary>
+    public string? MarkdownRenderer { get; set; }
 }
 
 public class SupportedProvidersResponse
