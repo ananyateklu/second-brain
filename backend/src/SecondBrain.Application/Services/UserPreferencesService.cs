@@ -152,12 +152,12 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.VectorStoreProvider != null)
             user.Preferences.VectorStoreProvider = request.VectorStoreProvider;
         else if (ShouldClear("vectorStoreProvider"))
-            user.Preferences.VectorStoreProvider = null;
+            user.Preferences.VectorStoreProvider = "PostgreSQL"; // Reset to default
 
         if (request.DefaultNoteView != null)
             user.Preferences.DefaultNoteView = request.DefaultNoteView;
         else if (ShouldClear("defaultNoteView"))
-            user.Preferences.DefaultNoteView = null;
+            user.Preferences.DefaultNoteView = "list"; // Reset to default
 
         if (request.ItemsPerPage.HasValue)
             user.Preferences.ItemsPerPage = request.ItemsPerPage.Value;
@@ -167,12 +167,12 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.FontSize != null)
             user.Preferences.FontSize = request.FontSize;
         else if (ShouldClear("fontSize"))
-            user.Preferences.FontSize = null;
+            user.Preferences.FontSize = "medium"; // Reset to default
 
         if (request.MarkdownRenderer != null)
             user.Preferences.MarkdownRenderer = request.MarkdownRenderer;
         else if (ShouldClear("markdownRenderer"))
-            user.Preferences.MarkdownRenderer = null;
+            user.Preferences.MarkdownRenderer = "custom"; // Reset to default
 
         if (request.EnableNotifications.HasValue)
             user.Preferences.EnableNotifications = request.EnableNotifications.Value;
