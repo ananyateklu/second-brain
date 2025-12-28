@@ -9,7 +9,6 @@ import { GitHubBranchesList } from '../features/github/components/GitHubBranches
 import { GitHubCodeBrowser } from '../features/github/components/GitHubCodeBrowser';
 import { GitHubPageSkeleton } from '../features/github/components/GitHubPageSkeleton';
 import { useBoundStore } from '../store/bound-store';
-import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import type { PullRequestSummary, WorkflowRunSummary, IssueSummary, CommitSummary, BranchSummary } from '../types/github';
 // Git imports
 import { useGitStatus, useSelectedDiff } from '../features/git/hooks';
@@ -21,8 +20,6 @@ import {
 } from '../features/git/components';
 
 export const GitHubPage = () => {
-  const titleBarHeight = useTitleBarHeight();
-
   // Get tab state from store
   const activeTab = useBoundStore((state) => state.githubActiveTab);
   const githubOwner = useBoundStore((state) => state.githubOwner);
@@ -35,10 +32,6 @@ export const GitHubPage = () => {
   const isGitSettingsOpen = useBoundStore((state) => state.isGitSettingsOpen);
   const openGitSettings = useBoundStore((state) => state.openGitSettings);
   const closeGitSettings = useBoundStore((state) => state.closeGitSettings);
-
-  // Calculate height - accounts for title bar and header
-  const headerHeight = 80; // Approximate header height
-  const containerHeight = `calc(100vh - ${titleBarHeight}px - ${headerHeight}px)`;
 
   const [selectedPR, setSelectedPR] = useState<PullRequestSummary | null>(null);
   const [selectedRun, setSelectedRun] = useState<WorkflowRunSummary | null>(null);
@@ -133,11 +126,9 @@ export const GitHubPage = () => {
 
   return (
     <div
-      className="flex flex-col overflow-hidden"
+      className="flex flex-col overflow-hidden h-full"
       style={{
         backgroundColor: 'transparent',
-        height: containerHeight,
-        maxHeight: containerHeight,
       }}
     >
       {/* Content - Scrollable area with proper height constraint */}
@@ -156,6 +147,8 @@ export const GitHubPage = () => {
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}
             </div>
+            {/* Vertical divider */}
+            <div className="w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
             {/* Right panel: Diff viewer - matches CodeViewer */}
             <div className="flex-1 min-w-0 overflow-hidden">
               <GitDiffViewer

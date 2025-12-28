@@ -4,10 +4,8 @@ import { useBoundStore } from '../../store/bound-store';
 import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
-import { NotesFilter } from '../../features/notes/components/NotesFilter';
-import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
+import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -37,15 +35,6 @@ export function Header() {
   const theme = useBoundStore((state) => state.theme);
   const logo = theme === 'light' ? logoLight : logoDark;
 
-  // Notes specific state
-  const { data: notes } = useNotes();
-  const filterState = useBoundStore((state) => state.filterState);
-  const setFilterState = useBoundStore((state) => state.setFilterState);
-  const notesViewMode = useBoundStore((state) => state.notesViewMode);
-  const setNotesViewMode = useBoundStore((state) => state.setNotesViewMode);
-  const isBulkMode = useBoundStore((state) => state.isBulkMode);
-  const toggleBulkMode = useBoundStore((state) => state.toggleBulkMode);
-
   // Ref for create button morph animation
   const createButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -69,7 +58,6 @@ export function Header() {
   const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
   const isChatPage = location.pathname === '/chat';
-  const isDirectoryPage = location.pathname === '/notes';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
@@ -189,7 +177,7 @@ export function Header() {
               <IndexingIndicator />
               <UserMenu />
             </div>
-          ) : isDirectoryPage ? (
+          ) : isNotesPage ? (
             <div className="flex items-center gap-4 h-12 flex-1">
               <DirectoryPageControls />
               <SummaryIndicator />
@@ -207,9 +195,6 @@ export function Header() {
               {isRagAnalyticsPage && (
                 <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
               )}
-
-              {/* Search Input - Only on Notes page */}
-              {isNotesPage && <NotesPageControls />}
 
               {/* Settings Navigation - Only on Settings pages */}
               {isSettingsPage && <SettingsNavTabs />}
@@ -237,22 +222,6 @@ export function Header() {
             </div>
           )}
         </div>
-
-        {/* Notes Filter - Only on Notes page */}
-        {isNotesPage && notes && (
-          <div className="w-full">
-            <NotesFilter
-              notes={notes}
-              filterState={filterState}
-              onFilterChange={setFilterState}
-              viewMode={notesViewMode}
-              onViewModeChange={setNotesViewMode}
-              isBulkMode={isBulkMode}
-              onBulkModeToggle={toggleBulkMode}
-              variant="embedded"
-            />
-          </div>
-        )}
 
         {/* RAG Analytics Time Range Selector - Only on Analytics page or Insights RAG tab */}
         {(isRagAnalyticsPage || (isInsightsPage && activeInsightsTab === 'rag')) && <TimeRangeSelector />}

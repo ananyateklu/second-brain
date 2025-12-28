@@ -249,6 +249,9 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
           />
         </div>
 
+        {/* Vertical divider */}
+        <div className="w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
+
         {/* Code viewer */}
         <div className="flex-1 min-w-0 overflow-hidden">
           <CodeViewer
