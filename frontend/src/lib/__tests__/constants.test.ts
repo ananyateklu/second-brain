@@ -354,8 +354,7 @@ describe('constants', () => {
         describe('STATS endpoints', () => {
             it('should have correct static endpoints', () => {
                 expect(API_ENDPOINTS.STATS.AI).toBe('/stats/ai');
-                expect(API_ENDPOINTS.STATS.NOTES).toBe('/stats/notes');
-                expect(API_ENDPOINTS.STATS.DASHBOARD).toBe('/stats/dashboard');
+                // Note: STATS.NOTES and STATS.DASHBOARD are commented out (reserved for future use)
                 expect(API_ENDPOINTS.STATS.TOOLS).toBe('/stats/tools');
                 expect(API_ENDPOINTS.STATS.TOOLS_ACTIONS).toBe('/stats/tools/actions');
                 expect(API_ENDPOINTS.STATS.TOOLS_ERRORS).toBe('/stats/tools/errors');
@@ -371,8 +370,7 @@ describe('constants', () => {
         describe('HEALTH endpoints', () => {
             it('should have correct static endpoints', () => {
                 expect(API_ENDPOINTS.HEALTH.BASE).toBe('/health');
-                expect(API_ENDPOINTS.HEALTH.READY).toBe('/health/ready');
-                expect(API_ENDPOINTS.HEALTH.LIVE).toBe('/health/live');
+                // Note: HEALTH.READY and HEALTH.LIVE are commented out (reserved for Kubernetes probes)
             });
         });
 

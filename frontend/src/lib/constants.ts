@@ -230,8 +230,9 @@ export const API_ENDPOINTS = {
   // Statistics
   STATS: {
     AI: '/stats/ai',
-    NOTES: '/stats/notes',
-    DASHBOARD: '/stats/dashboard',
+    // Note: NOTES and DASHBOARD are defined for future use but not currently implemented in UI
+    // NOTES: '/stats/notes',
+    // DASHBOARD: '/stats/dashboard',
     // Tool Call Analytics (PostgreSQL 18 JSON_TABLE)
     TOOLS: '/stats/tools',
     TOOLS_ACTIONS: '/stats/tools/actions',
@@ -244,10 +245,11 @@ export const API_ENDPOINTS = {
   },
 
   // Health Check
+  // Note: Only BASE is currently used; READY and LIVE are reserved for Kubernetes probes
   HEALTH: {
     BASE: '/health',
-    READY: '/health/ready',
-    LIVE: '/health/live',
+    // READY: '/health/ready',
+    // LIVE: '/health/live',
   },
 
   // Git Integration

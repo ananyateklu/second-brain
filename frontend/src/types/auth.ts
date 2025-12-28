@@ -116,6 +116,11 @@ export interface UserPreferences {
  * Update user preferences request
  */
 export interface UpdateUserPreferencesRequest {
+  /**
+   * List of property names to explicitly clear (set to null/default).
+   * Example: ["chatProvider", "chatModel"] will clear those properties.
+   */
+  clearProperties?: string[];
   chatProvider?: string | null;
   chatModel?: string | null;
   vectorStoreProvider?: 'PostgreSQL' | 'Pinecone';
