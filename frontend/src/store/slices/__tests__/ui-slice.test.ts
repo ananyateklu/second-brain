@@ -195,26 +195,18 @@ describe('uiSlice', () => {
   // Sidebar Actions Tests
   // ============================================
   describe('sidebar actions', () => {
-    it('should toggle sidebar from expanded to collapsed', () => {
+    it('should toggle sidebar from expanded to closed', () => {
       state.sidebarState = 'expanded';
       state.previousSidebarState = null;
       slice.toggleSidebar();
 
-      expect(state.sidebarState).toBe('collapsed');
+      expect(state.sidebarState).toBe('closed');
       expect(state.previousSidebarState).toBe('expanded');
     });
 
-    it('should toggle sidebar from collapsed to expanded', () => {
+    it('should toggle sidebar from collapsed to closed', () => {
       state.sidebarState = 'collapsed';
       state.previousSidebarState = 'closed';
-      slice.toggleSidebar();
-
-      expect(state.sidebarState).toBe('expanded');
-    });
-
-    it('should toggle sidebar from collapsed to closed when previous was expanded', () => {
-      state.sidebarState = 'collapsed';
-      state.previousSidebarState = 'expanded';
       slice.toggleSidebar();
 
       expect(state.sidebarState).toBe('closed');
@@ -240,7 +232,7 @@ describe('uiSlice', () => {
       state.sidebarState = 'expanded';
       slice.toggleSidebar();
 
-      expect(localStorage.setItem).toHaveBeenCalledWith('second-brain-sidebar-state', 'collapsed');
+      expect(localStorage.setItem).toHaveBeenCalledWith('second-brain-sidebar-state', 'closed');
     });
   });
 

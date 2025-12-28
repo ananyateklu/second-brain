@@ -595,6 +595,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       clearDraft,
       saveDraft,
       transferNewChatDraft,
+      markdownRenderer,
     ]
   );
 

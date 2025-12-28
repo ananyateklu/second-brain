@@ -44,7 +44,9 @@ export function parseNoteReferences(text: string): NoteReference[] {
  * Check if text contains note references.
  */
 export function hasNoteReferences(text: string): boolean {
-  return NOTE_REF_PATTERN.test(text);
+  // Create a new regex to avoid lastIndex issues with the global flag
+  const regex = new RegExp(NOTE_REF_PATTERN.source, 'i');
+  return regex.test(text);
 }
 
 /**

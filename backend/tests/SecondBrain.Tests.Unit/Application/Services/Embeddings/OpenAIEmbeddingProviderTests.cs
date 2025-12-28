@@ -140,7 +140,7 @@ public class OpenAIEmbeddingProviderTests
 
         // Assert
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("not enabled");
+        result.Error.Should().Contain("Failed to create embedding client");
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public class OpenAIEmbeddingProviderTests
 
         // Assert
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("not enabled");
+        result.Error.Should().Contain("Failed to create embedding client");
     }
 
     [Fact]

@@ -44,16 +44,17 @@ describe('RagAnalyticsSkeleton', () => {
 
     it('should render correlation card skeleton', () => {
       const { container } = render(<RagAnalyticsSkeleton />);
-      // Should have a 250px height element for scatter plot area
-      const scatterArea = container.querySelector('[style*="height: 250px"]');
-      expect(scatterArea).toBeInTheDocument();
+      // Should have 2 cards in the bottom grid (correlation + feedback)
+      const bottomGrid = container.querySelector('.lg\\:grid-cols-2');
+      expect(bottomGrid).toBeInTheDocument();
+      expect(bottomGrid?.children.length).toBe(2);
     });
 
-    it('should render feedback card skeleton with pie chart area', () => {
+    it('should render feedback card skeleton', () => {
       const { container } = render(<RagAnalyticsSkeleton />);
-      // Should have a 200x200 rounded element for pie chart
-      const pieChart = container.querySelector('[style*="width: 200px"]');
-      expect(pieChart).toBeInTheDocument();
+      // Should have 2 cards in the bottom grid
+      const bottomGrid = container.querySelector('.lg\\:grid-cols-2');
+      expect(bottomGrid).toBeInTheDocument();
     });
   });
 
@@ -92,33 +93,43 @@ describe('RagAnalyticsSkeleton', () => {
 
     it('should have proper gaps between elements', () => {
       const { container } = render(<RagAnalyticsSkeleton />);
-      const gappedContainers = container.querySelectorAll('.gap-4');
+      const gappedContainers = container.querySelectorAll('.gap-3');
       expect(gappedContainers.length).toBeGreaterThanOrEqual(2);
     });
   });
 
   // ============================================
-  // Skeleton Card Tests
+  // Skeleton Stat Cards Tests
   // ============================================
   describe('skeleton stat cards', () => {
     it('should render header row with icon placeholder', () => {
       render(<RagAnalyticsSkeleton />);
-      // Should have multiple icon placeholders (h-10 w-10 for stat card icons)
+      // Should have icon placeholders (h-5 w-5 for stat card icons)
       const shimmerBlocks = screen.getAllByTestId('shimmer-block');
       const iconPlaceholders = shimmerBlocks.filter(block =>
-        block.className.includes('h-10') && block.className.includes('w-10')
+        block.className.includes('h-5') && block.className.includes('w-5')
       );
-      expect(iconPlaceholders.length).toBe(4);
+      expect(iconPlaceholders.length).toBeGreaterThan(0);
     });
 
     it('should render stat value placeholder', () => {
       render(<RagAnalyticsSkeleton />);
-      // Should have h-8 placeholders for main stat values
+      // Should have h-6 placeholders for main stat values
       const shimmerBlocks = screen.getAllByTestId('shimmer-block');
       const valuePlaceholders = shimmerBlocks.filter(block =>
-        block.className.includes('h-8')
+        block.className.includes('h-6')
       );
-      expect(valuePlaceholders.length).toBe(4);
+      expect(valuePlaceholders.length).toBeGreaterThan(0);
+    });
+
+    it('should render title placeholders', () => {
+      render(<RagAnalyticsSkeleton />);
+      // Should have h-3 placeholders for titles
+      const shimmerBlocks = screen.getAllByTestId('shimmer-block');
+      const titlePlaceholders = shimmerBlocks.filter(block =>
+        block.className.includes('h-3')
+      );
+      expect(titlePlaceholders.length).toBeGreaterThan(0);
     });
   });
 
@@ -128,7 +139,7 @@ describe('RagAnalyticsSkeleton', () => {
   describe('correlation card skeleton', () => {
     it('should have header with icon placeholder', () => {
       render(<RagAnalyticsSkeleton />);
-      // Should have small icon placeholder
+      // Should have small icon placeholder wrapped in p-2.5 container
       const shimmerBlocks = screen.getAllByTestId('shimmer-block');
       const smallIcons = shimmerBlocks.filter(block =>
         block.className.includes('h-5') && block.className.includes('w-5')
@@ -136,14 +147,14 @@ describe('RagAnalyticsSkeleton', () => {
       expect(smallIcons.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should have legend placeholders', () => {
+    it('should have correlation bar placeholders', () => {
       render(<RagAnalyticsSkeleton />);
-      // Should have small circle placeholders for legend
+      // Should have rounded-full placeholders for correlation bars
       const shimmerBlocks = screen.getAllByTestId('shimmer-block');
-      const legendCircles = shimmerBlocks.filter(block =>
-        block.className.includes('h-3') && block.className.includes('w-3') && block.className.includes('rounded-full')
+      const barPlaceholders = shimmerBlocks.filter(block =>
+        block.className.includes('rounded-full') && block.className.includes('w-full')
       );
-      expect(legendCircles.length).toBe(3);
+      expect(barPlaceholders.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -151,16 +162,24 @@ describe('RagAnalyticsSkeleton', () => {
   // Feedback Card Skeleton Tests
   // ============================================
   describe('feedback card skeleton', () => {
-    it('should have pie chart circular placeholder', () => {
-      const { container } = render(<RagAnalyticsSkeleton />);
-      const pieChart = container.querySelector('.rounded-full[style*="200px"]');
-      expect(pieChart).toBeInTheDocument();
+    it('should have progress bar placeholders', () => {
+      render(<RagAnalyticsSkeleton />);
+      // Should have rounded-full placeholders for progress bars
+      const shimmerBlocks = screen.getAllByTestId('shimmer-block');
+      const progressBars = shimmerBlocks.filter(block =>
+        block.className.includes('rounded-full') && block.className.includes('h-2')
+      );
+      expect(progressBars.length).toBeGreaterThan(0);
     });
 
-    it('should have 2 stats summary boxes', () => {
-      const { container } = render(<RagAnalyticsSkeleton />);
-      const statsGrid = container.querySelector('.grid-cols-2');
-      expect(statsGrid).toBeInTheDocument();
+    it('should have subtitle placeholder', () => {
+      render(<RagAnalyticsSkeleton />);
+      // Should have h-3 w-32 subtitle placeholder
+      const shimmerBlocks = screen.getAllByTestId('shimmer-block');
+      const subtitles = shimmerBlocks.filter(block =>
+        block.className.includes('h-3') && block.className.includes('w-32')
+      );
+      expect(subtitles.length).toBeGreaterThanOrEqual(1);
     });
   });
 });

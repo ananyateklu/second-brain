@@ -137,10 +137,10 @@ describe('DashboardSkeleton', () => {
   // Styling Tests
   // ============================================
   describe('styling', () => {
-    it('should have space-y-6 for main container', () => {
+    it('should have space-y-3 for main container', () => {
       const { container } = render(<DashboardSkeleton />);
       const mainContainer = container.firstChild;
-      expect(mainContainer).toHaveClass('space-y-6');
+      expect(mainContainer).toHaveClass('space-y-3');
     });
 
     it('should use rounded corners on skeleton cards', () => {

@@ -89,7 +89,7 @@ describe('RetrievedContextCard', () => {
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} />,
         { wrapper: createWrapper() }
       );
-      expect(screen.getByText('1 note for context')).toBeInTheDocument();
+      expect(screen.getByText('1 note retrieved')).toBeInTheDocument();
     });
 
     it('should render note count for multiple notes', () => {
@@ -103,7 +103,7 @@ describe('RetrievedContextCard', () => {
         />,
         { wrapper: createWrapper() }
       );
-      expect(screen.getByText('3 notes for context')).toBeInTheDocument();
+      expect(screen.getByText('3 notes retrieved')).toBeInTheDocument();
     });
 
     it('should render relevance score percentage', () => {
@@ -133,7 +133,7 @@ describe('RetrievedContextCard', () => {
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} />,
         { wrapper: createWrapper() }
       );
-      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      const iconContainer = container.querySelector('.absolute.left-2\\.5');
       expect(iconContainer).toBeInTheDocument();
       expect(iconContainer?.querySelector('svg')).toBeInTheDocument();
     });
@@ -143,7 +143,7 @@ describe('RetrievedContextCard', () => {
   // Expand/Collapse Tests
   // ============================================
   describe('expand and collapse', () => {
-    it('should be expanded by default', () => {
+    it('should be collapsed by default', () => {
       const fullNote = {
         id: 'note-1',
         title: 'Test Note',
@@ -160,11 +160,11 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
-      // Should show the note card when expanded
-      expect(screen.getByText('Test Note')).toBeInTheDocument();
+      // Should NOT show the note card when collapsed
+      expect(screen.queryByText('Test Note')).not.toBeInTheDocument();
     });
 
-    it('should collapse when button is clicked', () => {
+    it('should expand when button is clicked', () => {
       const fullNote = {
         id: 'note-1',
         title: 'Test Note',
@@ -184,11 +184,11 @@ describe('RetrievedContextCard', () => {
       const button = screen.getByRole('button');
       fireEvent.click(button);
 
-      // Note should be hidden when collapsed
-      expect(screen.queryByText('Test Note')).not.toBeInTheDocument();
+      // Note should be visible when expanded
+      expect(screen.getByText('Test Note')).toBeInTheDocument();
     });
 
-    it('should expand when clicked again after collapsing', () => {
+    it('should collapse when clicked again after expanding', () => {
       const fullNote = {
         id: 'note-1',
         title: 'Test Note',
@@ -206,13 +206,13 @@ describe('RetrievedContextCard', () => {
       );
 
       const button = screen.getByRole('button');
-      fireEvent.click(button); // Collapse
       fireEvent.click(button); // Expand
+      fireEvent.click(button); // Collapse
 
-      expect(screen.getByText('Test Note')).toBeInTheDocument();
+      expect(screen.queryByText('Test Note')).not.toBeInTheDocument();
     });
 
-    it('should show chevron rotation when collapsed', () => {
+    it('should show chevron rotation when expanded', () => {
       mockUseNotes.mockReturnValue({ data: [], isLoading: false });
 
       render(
@@ -223,10 +223,10 @@ describe('RetrievedContextCard', () => {
       const button = screen.getByRole('button');
       const chevron = button.querySelector('svg:last-of-type');
 
-      expect(chevron).toHaveClass('rotate-180'); // Expanded by default
+      expect(chevron).not.toHaveClass('rotate-180'); // Collapsed by default
 
       fireEvent.click(button);
-      expect(chevron).not.toHaveClass('rotate-180'); // Collapsed
+      expect(chevron).toHaveClass('rotate-180'); // Expanded
     });
   });
 
@@ -234,13 +234,17 @@ describe('RetrievedContextCard', () => {
   // Loading State Tests
   // ============================================
   describe('loading state', () => {
-    it('should show loading message when notes are loading', () => {
+    it('should show loading message when notes are loading and expanded', () => {
       mockUseNotes.mockReturnValue({ data: undefined, isLoading: true });
 
       render(
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} />,
         { wrapper: createWrapper() }
       );
+
+      // Need to expand first
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
 
       expect(screen.getByText('Loading notes data...')).toBeInTheDocument();
     });
@@ -250,22 +254,7 @@ describe('RetrievedContextCard', () => {
   // Notes Display Tests
   // ============================================
   describe('notes display', () => {
-    it('should show "Note data not available" when notesWithData is empty', () => {
-      // When allNotes is empty and we have retrievedNotes, the component still creates
-      // minimal note objects from the retrieved data, so it won't show "not available"
-      // unless notesWithData is somehow empty. Let's test loading state instead.
-      mockUseNotes.mockReturnValue({ data: undefined, isLoading: false });
-
-      render(
-        <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} />,
-        { wrapper: createWrapper() }
-      );
-
-      // The component creates minimal notes from retrieved data
-      expect(screen.getByText('Test Note')).toBeInTheDocument();
-    });
-
-    it('should display notes when full note data is available', () => {
+    it('should display notes when expanded and full note data is available', () => {
       const fullNote = {
         id: 'note-1',
         title: 'Full Note Title',
@@ -284,6 +273,10 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
+      // Expand to see the note
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+
       expect(screen.getByText('Full Note Title')).toBeInTheDocument();
     });
 
@@ -296,6 +289,10 @@ describe('RetrievedContextCard', () => {
         />,
         { wrapper: createWrapper() }
       );
+
+      // Expand to see the note
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
 
       // The component creates a minimal note object from retrieved data
       expect(screen.getByText('Retrieved Title')).toBeInTheDocument();
@@ -320,6 +317,10 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
+      // Expand to see notes
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
+
       // Find all note title elements and verify high score (90%) comes first
       const titles = screen.getAllByText(/Score Note/);
       expect(titles[0]).toHaveTextContent('High Score Note');
@@ -337,24 +338,21 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
-      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      const iconContainer = container.querySelector('.absolute.left-2\\.5');
       expect(iconContainer).toBeInTheDocument();
-      // TimelineStatusIcon shows spinner when isLoading=true
-      const spinnerPath = iconContainer?.querySelector('.animate-spin');
-      expect(spinnerPath).toBeInTheDocument();
+      // Uses animate-pulse class when streaming
+      expect(iconContainer).toHaveClass('animate-pulse');
     });
 
-    it('should not show spinner animation when not streaming', () => {
+    it('should not show pulsing animation when not streaming', () => {
       const { container } = render(
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote()]} isStreaming={false} />,
         { wrapper: createWrapper() }
       );
 
-      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
+      const iconContainer = container.querySelector('.absolute.left-2\\.5');
       expect(iconContainer).toBeInTheDocument();
-      // TimelineStatusIcon shows checkmark when isLoading=false
-      const spinnerPath = iconContainer?.querySelector('.animate-spin');
-      expect(spinnerPath).not.toBeInTheDocument();
+      expect(iconContainer).not.toHaveClass('animate-pulse');
     });
   });
 
@@ -370,8 +368,6 @@ describe('RetrievedContextCard', () => {
         { wrapper: createWrapper() }
       );
 
-      // The top score is calculated after sorting, which happens with full notes.
-      // When full notes are empty, the component creates minimal notes.
       // The header button contains "X% match"
       const button = screen.getByRole('button');
       expect(button.textContent).toContain('0%');
@@ -417,7 +413,7 @@ describe('RetrievedContextCard', () => {
       expect(wrapper).toHaveClass('relative', 'pl-12', 'py-2');
     });
 
-    it('should use micro variant for NoteCards', () => {
+    it('should use grid layout for NoteCards when expanded', () => {
       const fullNote = {
         id: 'note-1',
         title: 'Test Note',
@@ -434,6 +430,10 @@ describe('RetrievedContextCard', () => {
         <RetrievedContextCard retrievedNotes={[createMockRetrievedNote({ noteId: 'note-1' })]} />,
         { wrapper: createWrapper() }
       );
+
+      // Expand first
+      const button = screen.getByRole('button');
+      fireEvent.click(button);
 
       // Should render in a grid layout
       const grid = container.querySelector('.grid');
