@@ -55,7 +55,7 @@ public class DeleteNoteCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_UsesHardDeleteByDefault()
+    public async Task Handle_UsesSoftDeleteByDefault()
     {
         // Arrange
         var command = new DeleteNoteCommand("note-123", "user-456");
@@ -66,7 +66,7 @@ public class DeleteNoteCommandHandlerTests
             Success = true,
             NoteId = "note-123",
             Source = NoteSource.Web,
-            WasSoftDelete = false
+            WasSoftDelete = true
         };
 
         _mockNoteOperationService
@@ -79,7 +79,7 @@ public class DeleteNoteCommandHandlerTests
 
         // Assert
         capturedRequest.Should().NotBeNull();
-        capturedRequest!.SoftDelete.Should().BeFalse();
+        capturedRequest!.SoftDelete.Should().BeTrue();
     }
 
     [Fact]
@@ -201,7 +201,7 @@ public class DeleteNoteCommandHandlerTests
             Success = true,
             NoteId = "note-789",
             Source = NoteSource.Web,
-            WasSoftDelete = false
+            WasSoftDelete = true
         };
 
         _mockNoteOperationService
@@ -218,7 +218,7 @@ public class DeleteNoteCommandHandlerTests
                     r.NoteId == "note-789" &&
                     r.UserId == "user-123" &&
                     r.Source == NoteSource.Web &&
-                    r.SoftDelete == false),
+                    r.SoftDelete == true),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }

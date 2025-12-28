@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SecondBrain.Application.DTOs.Responses;
 
@@ -205,11 +206,29 @@ public class NoteVersionDiffResponse
 
 /// <summary>
 /// Request DTO for restoring a version.
+/// Supports both "targetVersion" and "versionNumber" property names for flexibility.
 /// </summary>
 public class RestoreVersionRequest
 {
+    private int _targetVersion;
+
     /// <summary>
-    /// The version number to restore.
+    /// The version number to restore (primary property name).
     /// </summary>
-    public int TargetVersion { get; set; }
+    [JsonPropertyName("targetVersion")]
+    public int TargetVersion
+    {
+        get => _targetVersion;
+        set => _targetVersion = value;
+    }
+
+    /// <summary>
+    /// Alias for TargetVersion - accepts "versionNumber" in JSON for compatibility.
+    /// </summary>
+    [JsonPropertyName("versionNumber")]
+    public int VersionNumber
+    {
+        get => _targetVersion;
+        set => _targetVersion = value;
+    }
 }

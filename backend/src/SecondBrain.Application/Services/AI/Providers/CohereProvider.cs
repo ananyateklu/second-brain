@@ -552,11 +552,25 @@ public class CohereProvider : IAIProvider
 
         try
         {
-            var isAvailable = await IsAvailableAsync(cancellationToken);
+            var httpClient = CreateHttpClient();
+
+            // Simple test request with minimal tokens
+            var requestBody = new
+            {
+                model = _settings.DefaultModel,
+                messages = new[]
+                {
+                    new { role = "user", content = "Hi" }
+                },
+                max_tokens = 5
+            };
+
+            var jsonContent = JsonSerializer.Serialize(requestBody, CohereJsonOptions.Default);
+            var httpContent = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync("chat", httpContent, cancellationToken);
             stopwatch.Stop();
 
-            health.IsHealthy = isAvailable;
-            health.Status = isAvailable ? "Healthy" : "Unavailable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.Version = "v2";
             health.AvailableModels = new[]
@@ -572,10 +586,66 @@ public class CohereProvider : IAIProvider
                 "embed-multilingual-v3.0"
             };
 
-            if (!isAvailable)
+            if (response.IsSuccessStatusCode)
             {
-                health.ErrorMessage = "Failed to connect to Cohere API";
+                health.IsHealthy = true;
+                health.Status = "Healthy";
             }
+            else
+            {
+                health.IsHealthy = false;
+                health.Status = $"Error ({(int)response.StatusCode})";
+
+                // Try to parse the error response for detailed message
+                try
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    if (!string.IsNullOrEmpty(errorContent))
+                    {
+                        using var errorDoc = JsonDocument.Parse(errorContent);
+                        var root = errorDoc.RootElement;
+
+                        // Cohere error format: { "message": "...", "code": "..." }
+                        if (root.TryGetProperty("message", out var messageElement))
+                        {
+                            health.ErrorMessage = messageElement.GetString();
+                        }
+                        else
+                        {
+                            // Fallback to raw content (truncated)
+                            health.ErrorMessage = errorContent.Length > 200
+                                ? errorContent[..200] + "..."
+                                : errorContent;
+                        }
+                    }
+                    else
+                    {
+                        health.ErrorMessage = $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
+                    }
+                }
+                catch
+                {
+                    health.ErrorMessage = $"HTTP {(int)response.StatusCode}: {response.ReasonPhrase}";
+                }
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            stopwatch.Stop();
+            health.IsHealthy = false;
+            health.Status = "Connection Error";
+            health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
+            health.ErrorMessage = $"Failed to connect: {ex.Message}";
+            _logger.LogWarning(ex, "Cohere health check connection failed");
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            stopwatch.Stop();
+            health.IsHealthy = false;
+            health.Status = "Timeout";
+            health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
+            health.ErrorMessage = "Request timed out";
+            _logger.LogWarning("Cohere health check timed out");
         }
         catch (Exception ex)
         {

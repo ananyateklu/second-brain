@@ -135,6 +135,8 @@ export interface SettingsSliceActions {
   setRagEmbeddingDimensions: (dimensions: number | null, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
+  clearPreference: (propertyName: keyof UserPreferences) => Promise<void>;
+  clearPreferences: (propertyNames: (keyof UserPreferences)[]) => Promise<void>;
   resetSettings: () => void;
 }
 

@@ -83,6 +83,41 @@ export const userPreferencesService = {
     );
   },
 
+  /**
+   * Clear specific preferences (set to null/default)
+   * @param userId - The user ID
+   * @param propertyNames - Array of property names to clear
+   * @returns Updated preferences from backend
+   */
+  async clearPreferences(
+    userId: string,
+    propertyNames: string[]
+  ): Promise<UserPreferences> {
+    return apiClient.put<UserPreferences>(
+      API_ENDPOINTS.USER_PREFERENCES.BY_USER(userId),
+      { clearProperties: propertyNames }
+    );
+  },
+
+  /**
+   * Update preferences with optional clearing
+   * @param userId - The user ID
+   * @param updates - Properties to update
+   * @param propertiesToClear - Optional array of properties to clear
+   * @returns Updated preferences from backend
+   */
+  async updateWithClear(
+    userId: string,
+    updates: Partial<UserPreferences>,
+    propertiesToClear?: string[]
+  ): Promise<UserPreferences> {
+    const request: UpdateUserPreferencesRequest = {
+      ...updates,
+      ...(propertiesToClear?.length ? { clearProperties: propertiesToClear } : {}),
+    };
+    return this.updatePreferences(userId, request);
+  },
+
   // ============================================
   // Validation Functions
   // ============================================

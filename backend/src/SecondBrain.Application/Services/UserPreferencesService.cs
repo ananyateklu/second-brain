@@ -132,119 +132,195 @@ public class UserPreferencesService : IUserPreferencesService
         // Initialize preferences if null
         user.Preferences ??= new UserPreferences();
 
-        // Update only provided fields
+        // Helper to check if a property should be cleared
+        var clearSet = request.ClearProperties != null
+            ? new HashSet<string>(request.ClearProperties, StringComparer.OrdinalIgnoreCase)
+            : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        bool ShouldClear(string propName) => clearSet.Contains(propName);
+
+        // Update only provided fields (or clear if in ClearProperties)
         if (request.ChatProvider != null)
             user.Preferences.ChatProvider = request.ChatProvider;
+        else if (ShouldClear("chatProvider"))
+            user.Preferences.ChatProvider = null;
 
         if (request.ChatModel != null)
             user.Preferences.ChatModel = request.ChatModel;
+        else if (ShouldClear("chatModel"))
+            user.Preferences.ChatModel = null;
 
         if (request.VectorStoreProvider != null)
             user.Preferences.VectorStoreProvider = request.VectorStoreProvider;
+        else if (ShouldClear("vectorStoreProvider"))
+            user.Preferences.VectorStoreProvider = "PostgreSQL"; // Reset to default
 
         if (request.DefaultNoteView != null)
             user.Preferences.DefaultNoteView = request.DefaultNoteView;
+        else if (ShouldClear("defaultNoteView"))
+            user.Preferences.DefaultNoteView = "list"; // Reset to default
 
         if (request.ItemsPerPage.HasValue)
             user.Preferences.ItemsPerPage = request.ItemsPerPage.Value;
+        else if (ShouldClear("itemsPerPage"))
+            user.Preferences.ItemsPerPage = 10; // Reset to default
 
         if (request.FontSize != null)
             user.Preferences.FontSize = request.FontSize;
+        else if (ShouldClear("fontSize"))
+            user.Preferences.FontSize = "medium"; // Reset to default
 
         if (request.MarkdownRenderer != null)
             user.Preferences.MarkdownRenderer = request.MarkdownRenderer;
+        else if (ShouldClear("markdownRenderer"))
+            user.Preferences.MarkdownRenderer = "custom"; // Reset to default
 
         if (request.EnableNotifications.HasValue)
             user.Preferences.EnableNotifications = request.EnableNotifications.Value;
+        else if (ShouldClear("enableNotifications"))
+            user.Preferences.EnableNotifications = true; // Reset to default
 
         if (request.OllamaRemoteUrl != null)
             user.Preferences.OllamaRemoteUrl = request.OllamaRemoteUrl;
+        else if (ShouldClear("ollamaRemoteUrl"))
+            user.Preferences.OllamaRemoteUrl = null;
 
         if (request.UseRemoteOllama.HasValue)
             user.Preferences.UseRemoteOllama = request.UseRemoteOllama.Value;
+        else if (ShouldClear("useRemoteOllama"))
+            user.Preferences.UseRemoteOllama = false; // Reset to default
 
         if (request.RerankingProvider != null)
             user.Preferences.RerankingProvider = request.RerankingProvider;
+        else if (ShouldClear("rerankingProvider"))
+            user.Preferences.RerankingProvider = null;
 
         // Reranking Model Setting
         if (request.RagRerankingModel != null)
             user.Preferences.RagRerankingModel = request.RagRerankingModel;
+        else if (ShouldClear("ragRerankingModel"))
+            user.Preferences.RagRerankingModel = null;
 
         // Note Summary settings
         if (request.NoteSummaryEnabled.HasValue)
             user.Preferences.NoteSummaryEnabled = request.NoteSummaryEnabled.Value;
+        else if (ShouldClear("noteSummaryEnabled"))
+            user.Preferences.NoteSummaryEnabled = true; // Reset to default
 
         if (request.NoteSummaryProvider != null)
             user.Preferences.NoteSummaryProvider = request.NoteSummaryProvider;
+        else if (ShouldClear("noteSummaryProvider"))
+            user.Preferences.NoteSummaryProvider = null;
 
         if (request.NoteSummaryModel != null)
             user.Preferences.NoteSummaryModel = request.NoteSummaryModel;
+        else if (ShouldClear("noteSummaryModel"))
+            user.Preferences.NoteSummaryModel = null;
 
         // RAG Feature Toggles
         if (request.RagEnableHyde.HasValue)
             user.Preferences.RagEnableHyde = request.RagEnableHyde.Value;
+        else if (ShouldClear("ragEnableHyde"))
+            user.Preferences.RagEnableHyde = false; // Reset to default
 
         if (request.RagEnableQueryExpansion.HasValue)
             user.Preferences.RagEnableQueryExpansion = request.RagEnableQueryExpansion.Value;
+        else if (ShouldClear("ragEnableQueryExpansion"))
+            user.Preferences.RagEnableQueryExpansion = false;
 
         if (request.RagEnableHybridSearch.HasValue)
             user.Preferences.RagEnableHybridSearch = request.RagEnableHybridSearch.Value;
+        else if (ShouldClear("ragEnableHybridSearch"))
+            user.Preferences.RagEnableHybridSearch = true; // Reset to default
 
         if (request.RagEnableReranking.HasValue)
             user.Preferences.RagEnableReranking = request.RagEnableReranking.Value;
+        else if (ShouldClear("ragEnableReranking"))
+            user.Preferences.RagEnableReranking = false;
 
         if (request.RagEnableAnalytics.HasValue)
             user.Preferences.RagEnableAnalytics = request.RagEnableAnalytics.Value;
+        else if (ShouldClear("ragEnableAnalytics"))
+            user.Preferences.RagEnableAnalytics = true;
 
         // HyDE Provider Settings
         if (request.RagHydeProvider != null)
             user.Preferences.RagHydeProvider = request.RagHydeProvider;
+        else if (ShouldClear("ragHydeProvider"))
+            user.Preferences.RagHydeProvider = null;
 
         if (request.RagHydeModel != null)
             user.Preferences.RagHydeModel = request.RagHydeModel;
+        else if (ShouldClear("ragHydeModel"))
+            user.Preferences.RagHydeModel = null;
 
         // Query Expansion Provider Settings
         if (request.RagQueryExpansionProvider != null)
             user.Preferences.RagQueryExpansionProvider = request.RagQueryExpansionProvider;
+        else if (ShouldClear("ragQueryExpansionProvider"))
+            user.Preferences.RagQueryExpansionProvider = null;
 
         if (request.RagQueryExpansionModel != null)
             user.Preferences.RagQueryExpansionModel = request.RagQueryExpansionModel;
+        else if (ShouldClear("ragQueryExpansionModel"))
+            user.Preferences.RagQueryExpansionModel = null;
 
         // RAG Advanced Settings - Tier 1: Core Retrieval
         if (request.RagTopK.HasValue)
             user.Preferences.RagTopK = request.RagTopK.Value;
+        else if (ShouldClear("ragTopK"))
+            user.Preferences.RagTopK = 5; // Reset to default
 
         if (request.RagSimilarityThreshold.HasValue)
             user.Preferences.RagSimilarityThreshold = request.RagSimilarityThreshold.Value;
+        else if (ShouldClear("ragSimilarityThreshold"))
+            user.Preferences.RagSimilarityThreshold = 0.3f;
 
         if (request.RagInitialRetrievalCount.HasValue)
             user.Preferences.RagInitialRetrievalCount = request.RagInitialRetrievalCount.Value;
+        else if (ShouldClear("ragInitialRetrievalCount"))
+            user.Preferences.RagInitialRetrievalCount = 20;
 
         if (request.RagMinRerankScore.HasValue)
             user.Preferences.RagMinRerankScore = request.RagMinRerankScore.Value;
+        else if (ShouldClear("ragMinRerankScore"))
+            user.Preferences.RagMinRerankScore = 0.0f;
 
         // RAG Advanced Settings - Tier 2: Hybrid Search
         if (request.RagVectorWeight.HasValue)
             user.Preferences.RagVectorWeight = request.RagVectorWeight.Value;
+        else if (ShouldClear("ragVectorWeight"))
+            user.Preferences.RagVectorWeight = 0.7f;
 
         if (request.RagBm25Weight.HasValue)
             user.Preferences.RagBm25Weight = request.RagBm25Weight.Value;
+        else if (ShouldClear("ragBm25Weight"))
+            user.Preferences.RagBm25Weight = 0.3f;
 
         if (request.RagMultiQueryCount.HasValue)
             user.Preferences.RagMultiQueryCount = request.RagMultiQueryCount.Value;
+        else if (ShouldClear("ragMultiQueryCount"))
+            user.Preferences.RagMultiQueryCount = 3;
 
         if (request.RagMaxContextLength.HasValue)
             user.Preferences.RagMaxContextLength = request.RagMaxContextLength.Value;
+        else if (ShouldClear("ragMaxContextLength"))
+            user.Preferences.RagMaxContextLength = 4000;
 
         // RAG Embedding Settings
         if (request.RagEmbeddingProvider != null)
             user.Preferences.RagEmbeddingProvider = request.RagEmbeddingProvider;
+        else if (ShouldClear("ragEmbeddingProvider"))
+            user.Preferences.RagEmbeddingProvider = null;
 
         if (request.RagEmbeddingModel != null)
             user.Preferences.RagEmbeddingModel = request.RagEmbeddingModel;
+        else if (ShouldClear("ragEmbeddingModel"))
+            user.Preferences.RagEmbeddingModel = null;
 
         if (request.RagEmbeddingDimensions.HasValue)
             user.Preferences.RagEmbeddingDimensions = request.RagEmbeddingDimensions.Value;
+        else if (ShouldClear("ragEmbeddingDimensions"))
+            user.Preferences.RagEmbeddingDimensions = 1536;
 
         user.UpdatedAt = DateTime.UtcNow;
 

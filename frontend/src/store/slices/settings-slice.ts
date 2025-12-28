@@ -447,6 +447,44 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
     }
   },
 
+  clearPreference: async (propertyName: keyof UserPreferences) => {
+    const userId = getUserId();
+    if (!userId) {
+      loggers.store.warn('Cannot clear preference: no user ID found');
+      return;
+    }
+
+    try {
+      const updatedPrefs = await userPreferencesService.clearPreferences(userId, [propertyName]);
+      // Update local state with the cleared value
+      set({ [propertyName]: updatedPrefs[propertyName] });
+    } catch (error) {
+      loggers.store.error(`Failed to clear preference ${propertyName}:`, { error });
+      throw error;
+    }
+  },
+
+  clearPreferences: async (propertyNames: (keyof UserPreferences)[]) => {
+    const userId = getUserId();
+    if (!userId) {
+      loggers.store.warn('Cannot clear preferences: no user ID found');
+      return;
+    }
+
+    try {
+      const updatedPrefs = await userPreferencesService.clearPreferences(userId, propertyNames);
+      // Update local state with all cleared values
+      const updates: Record<string, UserPreferences[keyof UserPreferences]> = {};
+      for (const propName of propertyNames) {
+        updates[propName] = updatedPrefs[propName];
+      }
+      set(updates);
+    } catch (error) {
+      loggers.store.error('Failed to clear preferences:', { error, propertyNames });
+      throw error;
+    }
+  },
+
   // ============================================
   // Reset
   // ============================================
