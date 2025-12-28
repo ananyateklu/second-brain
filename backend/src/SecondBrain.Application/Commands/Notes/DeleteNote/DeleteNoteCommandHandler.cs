@@ -30,13 +30,13 @@ public class DeleteNoteCommandHandler : IRequestHandler<DeleteNoteCommand, Resul
     {
         _logger.LogDebug("Deleting note {NoteId} for user {UserId}", request.NoteId, request.UserId);
 
-        // Map command to operation request - hard delete (soft delete = false)
+        // Map command to operation request - soft delete for consistency with bulk delete
         var operationRequest = new DeleteNoteOperationRequest
         {
             NoteId = request.NoteId,
             UserId = request.UserId,
             Source = NoteSource.Web,
-            SoftDelete = false // Original behavior was hard delete
+            SoftDelete = true // Use soft delete for data recovery capability
         };
 
         var result = await _noteOperationService.DeleteAsync(operationRequest, cancellationToken);

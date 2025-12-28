@@ -2,6 +2,12 @@ namespace SecondBrain.Application.DTOs.Requests;
 
 public class UpdateUserPreferencesRequest
 {
+    /// <summary>
+    /// List of property names to explicitly clear (set to null/default).
+    /// Example: ["chatProvider", "chatModel"] will clear those properties even if not included in the request.
+    /// </summary>
+    public List<string>? ClearProperties { get; set; }
+
     public string? ChatProvider { get; set; }
     public string? ChatModel { get; set; }
     public string? VectorStoreProvider { get; set; }
