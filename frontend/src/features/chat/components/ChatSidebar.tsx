@@ -1,7 +1,5 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { ChatConversation } from '../types/chat';
 import { VirtualizedConversationList } from './VirtualizedConversationList';
-import styles from '@styles/components/selection.module.css';
 
 export interface ChatSidebarProps {
   conversations: ChatConversation[];
@@ -9,13 +7,15 @@ export interface ChatSidebarProps {
   isNewChat: boolean;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string) => void;
-  onBulkDeleteConversations?: (ids: string[]) => Promise<void>;
-  onNewChat: () => void;
-  onToggleSidebar: () => void;
+  // Selection state controlled by parent (ChatPage)
+  isSelectionMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelection: (id: string) => void;
 }
 
 /**
- * Sidebar showing conversation list with new chat button.
+ * Sidebar showing conversation list.
+ * Header controls (new chat, selection mode, etc.) are now in the main Header component.
  */
 export function ChatSidebar({
   conversations,
@@ -23,87 +23,10 @@ export function ChatSidebar({
   isNewChat,
   onSelectConversation,
   onDeleteConversation,
-  onBulkDeleteConversations,
-  onNewChat,
-  onToggleSidebar,
+  isSelectionMode,
+  selectedIds,
+  onToggleSelection,
 }: ChatSidebarProps) {
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [toggleAnimation, setToggleAnimation] = useState<'in' | 'out' | null>(null);
-  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Helper to set selection mode with animation (avoids useEffect setState)
-  const setSelectionModeWithAnimation = useCallback((newMode: boolean) => {
-    // Clear any pending animation timer
-    if (animationTimerRef.current) {
-      clearTimeout(animationTimerRef.current);
-    }
-    // Only animate if mode is actually changing
-    if (newMode !== isSelectionMode) {
-      setToggleAnimation(newMode ? 'in' : 'out');
-      animationTimerRef.current = setTimeout(() => {
-        setToggleAnimation(null);
-      }, 300);
-    }
-    setIsSelectionMode(newMode);
-  }, [isSelectionMode]);
-
-  // Cleanup animation timer on unmount
-  useEffect(() => {
-    return () => {
-      if (animationTimerRef.current) {
-        clearTimeout(animationTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Filter out placeholder conversations for selection
-  const selectableConversations = useMemo(() => {
-    return conversations.filter((conv) => conv.id !== 'placeholder-new-chat');
-  }, [conversations]);
-
-  const isAllSelected = selectedIds.size === selectableConversations.length && selectableConversations.length > 0;
-
-  const handleToggleSelection = (id: string) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(selectableConversations.map((conv) => conv.id)));
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (!onBulkDeleteConversations || selectedIds.size === 0) return;
-
-    const idsToDelete = Array.from(selectedIds);
-    await onBulkDeleteConversations(idsToDelete);
-    setSelectedIds(new Set());
-    setSelectionModeWithAnimation(false);
-  };
-
-  const handleExitSelectionMode = () => {
-    setSelectionModeWithAnimation(false);
-    setSelectedIds(new Set());
-  };
-
-  const getToggleAnimationClass = () => {
-    if (toggleAnimation === 'in') return styles.toggleRotateIn;
-    if (toggleAnimation === 'out') return styles.toggleRotateOut;
-    return '';
-  };
-
   return (
     <div
       className="flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-72 md:w-[23rem]"
@@ -113,172 +36,6 @@ export function ChatSidebar({
         borderRightColor: 'var(--border)',
       }}
     >
-      {/* Sidebar Header - Fixed */}
-      <div
-        className="flex-shrink-0 px-4 py-4.5 border-b flex items-center justify-between"
-        style={{
-          borderColor: 'var(--border)',
-        }}
-      >
-        <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-          Conversations
-        </h2>
-        <div className="flex items-center gap-2">
-          {/* Selection Mode Toggle */}
-          {selectableConversations.length > 0 && (
-            <button
-              onClick={() => { setSelectionModeWithAnimation(!isSelectionMode); }}
-              className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${getToggleAnimationClass()}`}
-              style={{
-                backgroundColor: isSelectionMode
-                  ? 'var(--btn-primary-bg)'
-                  : 'color-mix(in srgb, var(--surface-card) 80%, transparent)',
-                color: isSelectionMode ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                border: isSelectionMode
-                  ? '1px solid var(--btn-primary-border)'
-                  : '1px solid var(--border)',
-                boxShadow: isSelectionMode
-                  ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                  : 'none',
-              }}
-              title={isSelectionMode ? 'Exit selection mode' : 'Select conversations'}
-            >
-              <svg className="w-5 h-5 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isSelectionMode ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                )}
-              </svg>
-            </button>
-          )}
-          {/* Sidebar Toggle */}
-          <button
-            onClick={onToggleSidebar}
-            className="p-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--surface-card) 80%, transparent)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
-            }}
-            title="Hide sidebar"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          {/* New Chat Button */}
-          {!isSelectionMode && (
-            <button
-              onClick={onNewChat}
-              className="p-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
-              style={{
-                backgroundColor: 'var(--btn-primary-bg)',
-                color: 'var(--btn-primary-text)',
-                border: '1px solid var(--btn-primary-border)',
-                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
-              }}
-              title="New Chat"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Selection Mode Actions Bar */}
-      {isSelectionMode && (
-        <div
-          className={`${styles.actionBar} flex-shrink-0 px-3 py-2 border-b flex items-center justify-center gap-2 backdrop-blur-md`}
-          style={{
-            borderColor: 'var(--border)',
-            background: 'var(--glass-bg)',
-            boxShadow: '0 4px 16px -4px rgba(0, 0, 0, 0.15)',
-          }}
-        >
-          {/* Select All button */}
-          <button
-            onClick={handleSelectAll}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium h-8 px-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
-            style={{
-              color: isAllSelected ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-              backgroundColor: isAllSelected
-                ? 'var(--btn-primary-bg)'
-                : 'color-mix(in srgb, var(--surface-elevated) 90%, transparent)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {isAllSelected ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              )}
-            </svg>
-          </button>
-
-          {/* Selection count badge */}
-          <span
-            className="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
-              color: 'var(--color-brand-300)',
-              border: '1px solid color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-              minWidth: '80px',
-            }}
-          >
-            {selectedIds.size} selected
-          </span>
-
-          {/* Delete button */}
-          <button
-            onClick={() => { void handleBulkDelete(); }}
-            disabled={selectedIds.size === 0 || !onBulkDeleteConversations}
-            className={`${styles.deleteShake} flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${selectedIds.size > 0 ? styles.deletePulse : ''}`}
-            style={{
-              background: selectedIds.size > 0
-                ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
-                : 'color-mix(in srgb, var(--surface-elevated) 90%, transparent)',
-              color: selectedIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
-              border: selectedIds.size > 0 ? 'none' : '1px solid var(--border)',
-              opacity: selectedIds.size === 0 ? 0.6 : 1,
-              cursor: selectedIds.size === 0 ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            Delete ({selectedIds.size})
-          </button>
-
-          {/* Cancel button */}
-          <button
-            onClick={handleExitSelectionMode}
-            className="btn-ghost-secondary flex items-center justify-center h-8 px-3 rounded-lg text-xs font-medium hover:scale-105 active:scale-95"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
       {/* Conversations List - Scrollable with Virtual Scrolling */}
       <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
         {conversations.length === 0 ? (
@@ -295,7 +52,7 @@ export function ChatSidebar({
             selectedIds={selectedIds}
             onSelectConversation={onSelectConversation}
             onDeleteConversation={onDeleteConversation}
-            onToggleSelection={handleToggleSelection}
+            onToggleSelection={onToggleSelection}
             enableVirtualization={conversations.length >= 30}
           />
         )}

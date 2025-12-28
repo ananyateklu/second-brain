@@ -6,10 +6,9 @@
  * Enhanced with granular Suspense boundaries for better loading UX
  */
 
-import { useEffect, useRef, Suspense } from 'react';
+import { useEffect, useRef, Suspense, useCallback, useMemo, useState } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
-import { ChatHeader } from '../features/chat/components/ChatHeader';
 import { ChatMessageList } from '../features/chat/components/ChatMessageList';
 import { ChatInputArea } from '../features/chat/components/ChatInputArea';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
@@ -17,23 +16,27 @@ import { useBoundStore } from '../store/bound-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
 import { getDirectBackendUrl, API_ENDPOINTS } from '../lib/constants';
-import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import { isTauri } from '../lib/native-notifications';
-import type { VectorStoreProvider } from '../types/rag';
+import { useChatPageContext } from '../features/chat/context/ChatPageContext';
 import {
   ChatSidebarSkeleton,
-  ChatHeaderSkeleton,
   ChatMessagesSkeleton,
 } from '../components/skeletons';
 
 export function ChatPage() {
   const user = useBoundStore((state) => state.user);
   const sendMessage = useSendMessage();
-  const titleBarHeight = useTitleBarHeight();
 
   // Fullscreen state for Tauri
   const isFullscreen = useBoundStore((state) => state.isFullscreenChat);
   const isInTauri = isTauri();
+
+  // Sidebar visibility from Zustand (shared with header)
+  const chatSidebarVisible = useBoundStore((state) => state.chatSidebarVisible);
+  const toggleChatSidebar = useBoundStore((state) => state.toggleChatSidebar);
+
+  // Context for sharing state with header
+  const { setHeaderState } = useChatPageContext();
 
   // Session tracking hooks (PostgreSQL 18 Temporal Features)
   const { mutate: startSession } = useStartSession();
@@ -46,7 +49,6 @@ export function ChatPage() {
   const {
     // UI State
     inputValue,
-    showSidebar,
     isGeneratingImage,
     containerRef,
 
@@ -68,7 +70,6 @@ export function ChatPage() {
 
     // Settings
     ragEnabled,
-    selectedVectorStore,
     agentModeEnabled,
     agentRagEnabled: _agentRagEnabled,
     notesCapabilityEnabled,
@@ -106,8 +107,6 @@ export function ChatPage() {
 
     // Actions
     setInputValue,
-    toggleSidebar,
-    setShowSidebar,
     handleProviderChange,
     handleModelChange,
     handleNewChat,
@@ -115,7 +114,6 @@ export function ChatPage() {
     handleDeleteConversation,
     handleBulkDeleteConversations,
     handleRagToggle,
-    handleVectorStoreChange,
     setAgentModeEnabled,
     setAgentRagEnabled: _setAgentRagEnabled,
     setNotesCapabilityEnabled,
@@ -124,6 +122,58 @@ export function ChatPage() {
     handleImageGenerated,
     cancelStream,
   } = useChatPageState();
+
+  // Selection mode state (lifted from ChatSidebar for header integration)
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedConversationIds, setSelectedConversationIds] = useState<Set<string>>(new Set());
+
+  // Filter out placeholder conversations for selection
+  const selectableConversations = useMemo(() => {
+    return displayConversations.filter((conv) => conv.id !== 'placeholder-new-chat');
+  }, [displayConversations]);
+
+  const isAllSelected = selectedConversationIds.size === selectableConversations.length && selectableConversations.length > 0;
+
+  // Selection handlers
+  const handleToggleSelectionMode = useCallback(() => {
+    setIsSelectionMode(prev => !prev);
+    if (isSelectionMode) {
+      setSelectedConversationIds(new Set());
+    }
+  }, [isSelectionMode]);
+
+  const handleToggleConversationSelection = useCallback((id: string) => {
+    setSelectedConversationIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedConversationIds(new Set());
+    } else {
+      setSelectedConversationIds(new Set(selectableConversations.map(conv => conv.id)));
+    }
+  }, [isAllSelected, selectableConversations]);
+
+  const handleBulkDeleteFromHeader = useCallback(async () => {
+    if (selectedConversationIds.size === 0) return;
+    const idsToDelete = Array.from(selectedConversationIds);
+    await handleBulkDeleteConversations(idsToDelete);
+    setSelectedConversationIds(new Set());
+    setIsSelectionMode(false);
+  }, [selectedConversationIds, handleBulkDeleteConversations]);
+
+  const handleExitSelectionMode = useCallback(() => {
+    setIsSelectionMode(false);
+    setSelectedConversationIds(new Set());
+  }, []);
 
   // Start session when conversation is selected (PostgreSQL 18 Temporal Features)
   useEffect(() => {
@@ -209,13 +259,94 @@ export function ChatPage() {
     }
   }, [pendingMessage]);
 
+  // Memoized RAG toggle handler to prevent infinite loops
+  const handleRagToggleForHeader = useCallback((enabled: boolean) => {
+    if (agentModeEnabled) {
+      setNotesCapabilityEnabled(enabled);
+    } else {
+      void handleRagToggle(enabled);
+    }
+  }, [agentModeEnabled, setNotesCapabilityEnabled, handleRagToggle]);
+
+  // Memoize the header state object to prevent unnecessary updates
+  const headerStateValue = useMemo(() => ({
+    showSidebar: chatSidebarVisible,
+    onToggleSidebar: toggleChatSidebar,
+    isHealthLoading,
+    availableProviders,
+    selectedProvider,
+    selectedModel,
+    onProviderChange: handleProviderChange,
+    onModelChange: handleModelChange,
+    onRefreshProviders: refreshProviders,
+    isRefreshing,
+    ragEnabled: agentModeEnabled ? notesCapabilityEnabled : ragEnabled,
+    onRagToggle: handleRagToggleForHeader,
+    agentModeEnabled,
+    onAgentModeChange: setAgentModeEnabled,
+    agentRagEnabled: notesCapabilityEnabled,
+    agentCapabilities,
+    isLoading,
+    isImageGenerationMode,
+    contextUsage,
+    isStreaming,
+    // Sidebar controls for header integration
+    conversationCount: selectableConversations.length,
+    isSelectionMode,
+    selectedConversationIds,
+    onNewChat: handleNewChat,
+    onToggleSelectionMode: handleToggleSelectionMode,
+    onSelectAll: handleSelectAll,
+    onBulkDelete: handleBulkDeleteFromHeader,
+    onExitSelectionMode: handleExitSelectionMode,
+    onToggleConversationSelection: handleToggleConversationSelection,
+  }), [
+    chatSidebarVisible,
+    toggleChatSidebar,
+    isHealthLoading,
+    availableProviders,
+    selectedProvider,
+    selectedModel,
+    handleProviderChange,
+    handleModelChange,
+    refreshProviders,
+    isRefreshing,
+    ragEnabled,
+    agentModeEnabled,
+    notesCapabilityEnabled,
+    handleRagToggleForHeader,
+    setAgentModeEnabled,
+    agentCapabilities,
+    isLoading,
+    isImageGenerationMode,
+    contextUsage,
+    isStreaming,
+    selectableConversations.length,
+    isSelectionMode,
+    selectedConversationIds,
+    handleNewChat,
+    handleToggleSelectionMode,
+    handleSelectAll,
+    handleBulkDeleteFromHeader,
+    handleExitSelectionMode,
+    handleToggleConversationSelection,
+  ]);
+
+  // Populate header context for ChatPageControls in Header
+  useEffect(() => {
+    setHeaderState(headerStateValue);
+
+    // Clear context on unmount
+    return () => {
+      setHeaderState(null);
+    };
+  }, [setHeaderState, headerStateValue]);
+
   // Calculate container styles based on fullscreen mode
   const isPageFullscreen = isInTauri && isFullscreen;
   const containerStyles = isPageFullscreen
     ? {
-      backgroundColor: 'var(--surface-card)',
-      borderColor: 'var(--border)',
-      boxShadow: 'var(--shadow-2xl)',
+      backgroundColor: 'transparent',
       height: '100vh',
       maxHeight: '100vh',
       position: 'fixed' as const,
@@ -224,24 +355,20 @@ export function ChatPage() {
       right: 0,
       bottom: 0,
       zIndex: 30,
-      borderRadius: 0,
     }
     : {
-      backgroundColor: 'var(--surface-card)',
-      borderColor: 'var(--border)',
-      boxShadow: 'var(--shadow-2xl)',
-      height: `calc(100vh - ${titleBarHeight}px - 21px)`,
-      maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
+      backgroundColor: 'transparent',
+      height: '100%',
     };
 
   return (
     <div
       ref={containerRef}
-      className={`flex overflow-hidden border transition-all duration-300 ${isPageFullscreen ? '' : 'rounded-3xl'}`}
+      className="flex overflow-hidden flex-1 transition-all duration-300"
       style={containerStyles}
     >
       {/* Sidebar with Suspense boundary for independent loading */}
-      {showSidebar && (
+      {chatSidebarVisible && (
         <Suspense fallback={<ChatSidebarSkeleton />}>
           <ChatSidebar
             conversations={displayConversations}
@@ -249,52 +376,15 @@ export function ChatPage() {
             isNewChat={isNewChat}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteConversation}
-            onBulkDeleteConversations={handleBulkDeleteConversations}
-            onNewChat={handleNewChat}
-            onToggleSidebar={() => { setShowSidebar(false); }}
+            isSelectionMode={isSelectionMode}
+            selectedIds={selectedConversationIds}
+            onToggleSelection={handleToggleConversationSelection}
           />
         </Suspense>
       )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
-        {/* Header with Suspense boundary */}
-        <Suspense fallback={<ChatHeaderSkeleton />}>
-          <ChatHeader
-            showSidebar={showSidebar}
-            onToggleSidebar={toggleSidebar}
-            isHealthLoading={isHealthLoading}
-            availableProviders={availableProviders}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onProviderChange={handleProviderChange}
-            onModelChange={handleModelChange}
-            onRefreshProviders={refreshProviders}
-            isRefreshing={isRefreshing}
-            ragEnabled={agentModeEnabled ? notesCapabilityEnabled : ragEnabled}
-            onRagToggle={(enabled) => {
-              // Route to appropriate handler based on agent mode
-              // In agent mode: RAG button enables notes capability (SemanticSearch tool access)
-              // In normal mode: RAG button enables traditional RAG context injection
-              if (agentModeEnabled) {
-                setNotesCapabilityEnabled(enabled);
-              } else {
-                void handleRagToggle(enabled);
-              }
-            }}
-            selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
-            onVectorStoreChange={(provider) => { void handleVectorStoreChange(provider as VectorStoreProvider); }}
-            agentModeEnabled={agentModeEnabled}
-            onAgentModeChange={setAgentModeEnabled}
-            agentRagEnabled={notesCapabilityEnabled}
-            agentCapabilities={agentCapabilities}
-            isLoading={isLoading}
-            isImageGenerationMode={isImageGenerationMode}
-            contextUsage={contextUsage}
-            isStreaming={isStreaming}
-          />
-        </Suspense>
-
         {/* Messages Area with Suspense boundary */}
         <Suspense fallback={<ChatMessagesSkeleton />}>
           <ChatMessageList

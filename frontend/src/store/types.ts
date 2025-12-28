@@ -133,6 +133,15 @@ export interface SettingsSliceActions {
   setRagEmbeddingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
   setRagEmbeddingModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   setRagEmbeddingDimensions: (dimensions: number | null, syncToBackend?: boolean) => Promise<void>;
+  // Focus AI Settings
+  setFocusAIProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
+  setFocusAITemperature: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIMaxTokens: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIRagTopK: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAISimilarityThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIMaxSuggestions: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIDedupThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   clearPreference: (propertyName: keyof UserPreferences) => Promise<void>;
@@ -179,6 +188,10 @@ export interface UISliceState {
   githubRepo: string | null;
   /** Git settings panel open state */
   isGitSettingsOpen: boolean;
+  /** Chat page sidebar visibility */
+  chatSidebarVisible: boolean;
+  /** Directory page sidebar visibility */
+  directorySidebarVisible: boolean;
 }
 
 export interface UISliceActions {
@@ -213,6 +226,14 @@ export interface UISliceActions {
   openGitSettings: () => void;
   /** Close Git settings panel */
   closeGitSettings: () => void;
+  /** Set chat sidebar visibility */
+  setChatSidebarVisible: (visible: boolean) => void;
+  /** Toggle chat sidebar visibility */
+  toggleChatSidebar: () => void;
+  /** Set directory sidebar visibility */
+  setDirectorySidebarVisible: (visible: boolean) => void;
+  /** Toggle directory sidebar visibility */
+  toggleDirectorySidebar: () => void;
 }
 
 export type UISlice = UISliceState & UISliceActions;

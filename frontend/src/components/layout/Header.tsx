@@ -7,7 +7,7 @@ import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { NotesFilter } from '../../features/notes/components/NotesFilter';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls } from './header-components';
+import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -17,7 +17,7 @@ const getPageTitle = (pathname: string): string => {
   const titleMap: Record<string, string> = {
     '/': 'Dashboard',
     '/notes': 'Notes',
-    '/directory': 'Directory',
+    '/directory': 'Notes',
     '/chat': 'Chat',
     '/insights': 'Insights',
     '/analytics': 'RAG Analytics',
@@ -68,6 +68,8 @@ export function Header() {
   const isRagAnalyticsPage = location.pathname === '/analytics';
   const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
+  const isChatPage = location.pathname === '/chat';
+  const isDirectoryPage = location.pathname === '/directory';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
@@ -178,45 +180,62 @@ export function Header() {
             </h1>
           </div>
 
-          {/* Right side - Search/Tabs and User */}
-          <div className="flex items-center gap-4 h-12">
-            {/* Insights Tab Bar - Only on Insights page */}
-            {isInsightsPage && (
-              <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
-            )}
+          {/* Right side - Page-specific controls and User Menu */}
+          {/* Chat Page - Full-width controls */}
+          {isChatPage ? (
+            <div className="flex items-center gap-4 h-12 flex-1">
+              <ChatPageControls />
+              <SummaryIndicator />
+              <IndexingIndicator />
+              <UserMenu />
+            </div>
+          ) : isDirectoryPage ? (
+            <div className="flex items-center gap-4 h-12 flex-1">
+              <DirectoryPageControls />
+              <SummaryIndicator />
+              <IndexingIndicator />
+              <UserMenu />
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 h-12">
+              {/* Insights Tab Bar - Only on Insights page */}
+              {isInsightsPage && (
+                <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+              )}
 
-            {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
-            {isRagAnalyticsPage && (
-              <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-            )}
+              {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
+              {isRagAnalyticsPage && (
+                <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+              )}
 
-            {/* Search Input - Only on Notes page */}
-            {isNotesPage && <NotesPageControls />}
+              {/* Search Input - Only on Notes page */}
+              {isNotesPage && <NotesPageControls />}
 
-            {/* Settings Navigation - Only on Settings pages */}
-            {isSettingsPage && <SettingsNavTabs />}
+              {/* Settings Navigation - Only on Settings pages */}
+              {isSettingsPage && <SettingsNavTabs />}
 
-            {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
-            {showGitControls && <GitNavControls />}
+              {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
+              {showGitControls && <GitNavControls />}
 
-            {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
-            {isGitHubPage && <GitHubRepoSelector />}
+              {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
+              {isGitHubPage && <GitHubRepoSelector />}
 
-            {/* GitHub Navigation - Only on GitHub page */}
-            {isGitHubPage && <GitHubNavTabs />}
+              {/* GitHub Navigation - Only on GitHub page */}
+              {isGitHubPage && <GitHubNavTabs />}
 
-            {/* Focus Dashboard Controls - Only on Dashboard page */}
-            {isDashboardPage && <FocusDashboardControls />}
+              {/* Focus Dashboard Controls - Only on Dashboard page */}
+              {isDashboardPage && <FocusDashboardControls />}
 
-            {/* Summary Generation Indicator */}
-            <SummaryIndicator />
+              {/* Summary Generation Indicator */}
+              <SummaryIndicator />
 
-            {/* Indexing Indicator */}
-            <IndexingIndicator />
+              {/* Indexing Indicator */}
+              <IndexingIndicator />
 
-            {/* User Menu */}
-            <UserMenu />
-          </div>
+              {/* User Menu */}
+              <UserMenu />
+            </div>
+          )}
         </div>
 
         {/* Notes Filter - Only on Notes page */}

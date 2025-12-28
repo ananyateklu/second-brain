@@ -26,6 +26,7 @@ public class FocusAIService : IFocusAIService
     private readonly IFocusItemRepository _focusRepository;
     private readonly IFocusSuggestionRepository _suggestionRepository;
     private readonly IEmbeddingProvider _embeddingProvider;
+    private readonly IUserRepository _userRepository;
     private readonly FocusAISettings _settings;
     private readonly ILogger<FocusAIService> _logger;
 
@@ -35,6 +36,7 @@ public class FocusAIService : IFocusAIService
         IFocusItemRepository focusRepository,
         IFocusSuggestionRepository suggestionRepository,
         IEmbeddingProvider embeddingProvider,
+        IUserRepository userRepository,
         IOptions<FocusAISettings> settings,
         ILogger<FocusAIService> logger)
     {
@@ -43,6 +45,7 @@ public class FocusAIService : IFocusAIService
         _focusRepository = focusRepository;
         _suggestionRepository = suggestionRepository;
         _embeddingProvider = embeddingProvider;
+        _userRepository = userRepository;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -65,15 +68,21 @@ public class FocusAIService : IFocusAIService
 
         try
         {
+            // Get user-specific settings (merged with global defaults)
+            var effectiveSettings = await GetEffectiveSettingsAsync(userId, cancellationToken);
+            _logger.LogDebug(
+                "Using Focus AI settings for user {UserId}: Provider={Provider}, Model={Model}, TopK={TopK}",
+                userId, effectiveSettings.Provider, effectiveSettings.Model, effectiveSettings.RagTopK);
+
             // Build search query based on context
             var searchQuery = BuildSuggestionSearchQuery(currentFocusTitle);
 
-            // Retrieve relevant notes via RAG
+            // Retrieve relevant notes via RAG using user's settings
             var ragContext = await _ragService.RetrieveContextAsync(
                 query: searchQuery,
                 userId: userId,
-                topK: _settings.RagTopK,
-                similarityThreshold: _settings.RagSimilarityThreshold,
+                topK: effectiveSettings.RagTopK,
+                similarityThreshold: effectiveSettings.SimilarityThreshold,
                 cancellationToken: cancellationToken
             );
 
@@ -87,8 +96,8 @@ public class FocusAIService : IFocusAIService
                 );
             }
 
-            // Get AI provider
-            var provider = GetEnabledProvider();
+            // Get AI provider from user preferences
+            var provider = GetEnabledProvider(effectiveSettings.Provider);
             if (provider == null)
             {
                 return new FocusSuggestionsResponse(
@@ -99,15 +108,15 @@ public class FocusAIService : IFocusAIService
             }
 
             // Build prompt with note context
-            var prompt = BuildSuggestionPrompt(ragContext.FormattedContext, currentFocusTitle);
+            var prompt = BuildSuggestionPrompt(ragContext.FormattedContext, currentFocusTitle, effectiveSettings.MaxSuggestions);
 
-            // Generate suggestions
+            // Generate suggestions using user's model and settings
             var request = new AIRequest
             {
                 Prompt = prompt,
-                Model = _settings.SuggestionModel,
-                MaxTokens = _settings.SuggestionMaxTokens,
-                Temperature = _settings.SuggestionTemperature
+                Model = effectiveSettings.Model,
+                MaxTokens = effectiveSettings.MaxTokens,
+                Temperature = effectiveSettings.Temperature
             };
 
             var response = await provider.GenerateCompletionAsync(request, cancellationToken);
@@ -126,8 +135,8 @@ public class FocusAIService : IFocusAIService
             var suggestions = ParseSuggestions(response.Content, ragContext.RetrievedNotes);
 
             return new FocusSuggestionsResponse(
-                Suggestions: suggestions.Take(_settings.MaxSuggestions).ToList(),
-                Context: $"Based on {ragContext.RetrievedNotes.Count} relevant notes",
+                Suggestions: suggestions.Take(effectiveSettings.MaxSuggestions).ToList(),
+                Context: $"Based on {ragContext.RetrievedNotes.Count} relevant notes (Provider: {effectiveSettings.Provider})",
                 GeneratedAt: DateTime.UtcNow
             );
         }
@@ -188,8 +197,11 @@ public class FocusAIService : IFocusAIService
 
         try
         {
-            // Get AI provider
-            var provider = GetEnabledProvider();
+            // Get user-specific settings
+            var effectiveSettings = await GetEffectiveSettingsAsync(userId, cancellationToken);
+
+            // Get AI provider from user preferences
+            var provider = GetEnabledProvider(effectiveSettings.Provider);
             if (provider == null)
             {
                 return new ProgressSummaryResponse(
@@ -208,13 +220,14 @@ public class FocusAIService : IFocusAIService
             var completedTitles = completedList.Select(i => i.Title).ToList();
             var prompt = BuildSummaryPrompt(completedTitles, stats, period);
 
-            // Generate summary
+            // Generate summary using user's model and settings
+            // Use lower temperature for summaries (more factual)
             var request = new AIRequest
             {
                 Prompt = prompt,
-                Model = _settings.SummaryModel,
-                MaxTokens = _settings.SummaryMaxTokens,
-                Temperature = _settings.SummaryTemperature
+                Model = effectiveSettings.Model,
+                MaxTokens = Math.Min(effectiveSettings.MaxTokens, 500), // Summaries need fewer tokens
+                Temperature = Math.Min(effectiveSettings.Temperature, 0.5f) // Lower temp for factual summaries
             };
 
             var response = await provider.GenerateCompletionAsync(request, cancellationToken);
@@ -268,24 +281,92 @@ public class FocusAIService : IFocusAIService
     // Private Helper Methods
     // ============================================
 
-    private IAIProvider? GetEnabledProvider()
+    /// <summary>
+    /// Gets effective Focus AI settings by merging user preferences with global defaults
+    /// </summary>
+    private async Task<EffectiveFocusSettings> GetEffectiveSettingsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var provider = _aiProviderFactory.GetProvider(_settings.Provider);
+            var user = await _userRepository.GetByIdAsync(userId);
+            var prefs = user?.Preferences;
+
+            return new EffectiveFocusSettings
+            {
+                Provider = !string.IsNullOrWhiteSpace(prefs?.FocusAIProvider)
+                    ? prefs.FocusAIProvider
+                    : _settings.Provider,
+                Model = !string.IsNullOrWhiteSpace(prefs?.FocusAIModel)
+                    ? prefs.FocusAIModel
+                    : _settings.SuggestionModel,
+                Temperature = prefs?.FocusAITemperature ?? _settings.SuggestionTemperature,
+                MaxTokens = prefs?.FocusAIMaxTokens ?? _settings.SuggestionMaxTokens,
+                RagTopK = prefs?.FocusAIRagTopK ?? _settings.RagTopK,
+                SimilarityThreshold = prefs?.FocusAISimilarityThreshold ?? _settings.RagSimilarityThreshold,
+                MaxSuggestions = prefs?.FocusAIMaxSuggestions ?? _settings.MaxSuggestions,
+                DedupThreshold = prefs?.FocusAIDedupThreshold ?? _settings.SuggestionSimilarityThreshold
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load user preferences for {UserId}, using defaults", userId);
+            return new EffectiveFocusSettings
+            {
+                Provider = _settings.Provider,
+                Model = _settings.SuggestionModel,
+                Temperature = _settings.SuggestionTemperature,
+                MaxTokens = _settings.SuggestionMaxTokens,
+                RagTopK = _settings.RagTopK,
+                SimilarityThreshold = _settings.RagSimilarityThreshold,
+                MaxSuggestions = _settings.MaxSuggestions,
+                DedupThreshold = _settings.SuggestionSimilarityThreshold
+            };
+        }
+    }
+
+    /// <summary>
+    /// Effective Focus AI settings (merged from user prefs + global defaults)
+    /// </summary>
+    private class EffectiveFocusSettings
+    {
+        public string Provider { get; set; } = "OpenAI";
+        public string Model { get; set; } = "gpt-4o-mini";
+        public float Temperature { get; set; } = 0.7f;
+        public int MaxTokens { get; set; } = 800;
+        public int RagTopK { get; set; } = 10;
+        public float SimilarityThreshold { get; set; } = 0.3f;
+        public int MaxSuggestions { get; set; } = 5;
+        public float DedupThreshold { get; set; } = 0.85f;
+    }
+
+    private IAIProvider? GetEnabledProvider(string preferredProvider)
+    {
+        try
+        {
+            var provider = _aiProviderFactory.GetProvider(preferredProvider);
             if (provider.IsEnabled)
             {
+                _logger.LogDebug("Using user-preferred Focus AI provider: {Provider}", preferredProvider);
                 return provider;
             }
 
+            _logger.LogWarning("User-preferred provider {Provider} is not enabled, falling back", preferredProvider);
             // Fallback to any enabled provider
             return _aiProviderFactory.GetEnabledProviders().FirstOrDefault();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get AI provider {Provider}", _settings.Provider);
+            _logger.LogWarning(ex, "Failed to get AI provider {Provider}", preferredProvider);
             return _aiProviderFactory.GetEnabledProviders().FirstOrDefault();
         }
+    }
+
+    [Obsolete("Use GetEnabledProvider(string preferredProvider) instead")]
+    private IAIProvider? GetEnabledProvider()
+    {
+        return GetEnabledProvider(_settings.Provider);
     }
 
     private static string BuildSuggestionSearchQuery(string? currentFocusTitle)
@@ -300,7 +381,7 @@ public class FocusAIService : IFocusAIService
         return baseQuery;
     }
 
-    private string BuildSuggestionPrompt(string noteContext, string? currentFocusTitle)
+    private string BuildSuggestionPrompt(string noteContext, string? currentFocusTitle, int maxSuggestions)
     {
         var currentFocusSection = string.IsNullOrWhiteSpace(currentFocusTitle)
             ? ""
@@ -309,7 +390,7 @@ public class FocusAIService : IFocusAIService
         return $$"""
             You are a productivity assistant helping a user decide what to focus on next.
 
-            Based on the following notes from the user's knowledge base, suggest {{_settings.MaxSuggestions}} actionable focus items they could work on.
+            Based on the following notes from the user's knowledge base, suggest {{maxSuggestions}} actionable focus items they could work on.
             {{currentFocusSection}}
 
             NOTES CONTEXT:
@@ -603,7 +684,9 @@ public class FocusAIService : IFocusAIService
             // Step 3: Check for duplicates and create new suggestions
             var newSuggestions = new List<FocusSuggestion>();
             var duplicatesSkipped = 0;
-            var similarityThreshold = _settings.SuggestionSimilarityThreshold;
+            // Get user-specific settings for dedup threshold
+            var effectiveSettings = await GetEffectiveSettingsAsync(userId, cancellationToken);
+            var similarityThreshold = effectiveSettings.DedupThreshold;
 
             for (int i = 0; i < aiResponse.Suggestions.Count; i++)
             {

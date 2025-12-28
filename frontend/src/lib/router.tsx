@@ -12,7 +12,6 @@ import { PageLoader } from './PageLoader';
 const LoginPage = lazy(() => import('../pages/LoginPage').then(m => ({ default: m.LoginPage })));
 
 // Lazy load skeleton components - they're only needed during route transitions
-const NotesSkeleton = lazy(() => import('../features/notes/components/NotesSkeleton').then(m => ({ default: m.NotesSkeleton })));
 const DirectorySkeleton = lazy(() => import('../features/notes/components/DirectorySkeleton').then(m => ({ default: m.DirectorySkeleton })));
 const ChatSkeleton = lazy(() => import('../components/skeletons').then(m => ({ default: m.ChatSkeleton })));
 const InsightsSkeleton = lazy(() => import('../features/insights/components/InsightsSkeleton').then(m => ({ default: m.InsightsSkeleton })));
@@ -33,7 +32,6 @@ const isTauriProduction = '__TAURI_INTERNALS__' in window && import.meta.env.PRO
 
 // Lazy load heavy pages to reduce initial bundle size
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const NotesPage = lazy(() => import('../pages/NotesPage').then(m => ({ default: m.NotesPage })));
 const NotesDirectoryPage = lazy(() => import('../pages/NotesDirectoryPage').then(m => ({ default: m.NotesDirectoryPage })));
 const ChatPage = lazy(() => import('../pages/ChatPage').then(m => ({ default: m.ChatPage })));
 const InsightsPage = lazy(() => import('../pages/InsightsPage').then(m => ({ default: m.InsightsPage })));
@@ -43,6 +41,8 @@ const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').t
 const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => ({ default: m.AISettings })));
 const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
 const IndexingSettings = lazy(() => import('../pages/settings/IndexingSettings').then(m => ({ default: m.IndexingSettings })));
+const FocusSettings = lazy(() => import('../pages/settings/FocusSettings').then(m => ({ default: m.FocusSettings })));
+const FocusSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.FocusSettingsSkeleton })));
 
 // Git redirect component - redirects /git to /github with local-changes tab
 function GitRedirect() {
@@ -100,27 +100,7 @@ const routes = [
   },
   {
     path: '/notes',
-    loader: async () => {
-      // Prefetch notes while route loads for instant display
-      await queryClient.prefetchQuery({
-        queryKey: noteKeys.all,
-        queryFn: () => notesService.getAll(),
-        staleTime: CACHE.STALE_TIME,
-      });
-      return null;
-    },
-    hydrateFallbackElement: <PageLoader />,
-    element: (
-      <ProtectedRoute>
-        <ErrorBoundary>
-          <AppLayout>
-            <Suspense fallback={<NotesSkeleton />}>
-              <NotesPage />
-            </Suspense>
-          </AppLayout>
-        </ErrorBoundary>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/directory" replace />,
   },
   {
     path: '/directory',
@@ -291,6 +271,20 @@ const routes = [
           <AppLayout>
             <Suspense fallback={<IndexingSettingsSkeleton />}>
               <IndexingSettings />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/settings/focus',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<FocusSettingsSkeleton />}>
+              <FocusSettings />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>

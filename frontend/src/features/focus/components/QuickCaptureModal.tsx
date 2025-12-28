@@ -199,7 +199,7 @@ export const QuickCaptureModal = memo(function QuickCaptureModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={(e) => void handleSubmit(e)} className="p-5 space-y-4">
           {/* Title input */}
           <div>
             <input

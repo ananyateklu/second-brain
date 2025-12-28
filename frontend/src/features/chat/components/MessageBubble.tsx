@@ -386,7 +386,7 @@ export function MessageBubble({
         className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${isUser ? 'rounded-br-md' : 'rounded-bl-md'
           }`}
         style={{
-          backgroundColor: isUser ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'var(--surface-card)',
+          backgroundColor: isUser ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent',
           color: 'var(--text-primary)',
           ...(isUser && {
             border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',

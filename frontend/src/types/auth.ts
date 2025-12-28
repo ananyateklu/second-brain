@@ -110,6 +110,15 @@ export interface UserPreferences {
   ragEmbeddingProvider: string | null;
   ragEmbeddingModel: string | null;
   ragEmbeddingDimensions: number | null;
+  // Focus AI Settings
+  focusAIProvider: string | null;
+  focusAIModel: string | null;
+  focusAITemperature: number;
+  focusAIMaxTokens: number;
+  focusAIRagTopK: number;
+  focusAISimilarityThreshold: number;
+  focusAIMaxSuggestions: number;
+  focusAIDedupThreshold: number;
 }
 
 /**
@@ -163,5 +172,14 @@ export interface UpdateUserPreferencesRequest {
   ragEmbeddingProvider?: string | null;
   ragEmbeddingModel?: string | null;
   ragEmbeddingDimensions?: number | null;
+  // Focus AI Settings
+  focusAIProvider?: string | null;
+  focusAIModel?: string | null;
+  focusAITemperature?: number;
+  focusAIMaxTokens?: number;
+  focusAIRagTopK?: number;
+  focusAISimilarityThreshold?: number;
+  focusAIMaxSuggestions?: number;
+  focusAIDedupThreshold?: number;
 }
 

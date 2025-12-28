@@ -8,6 +8,8 @@ import type { UISlice, SliceCreator, SidebarState, NotesViewMode, SearchMode, Gi
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';
 const NOTES_VIEW_MODE_STORAGE_KEY = 'second-brain-notes-view-mode';
 const DIRECTORY_VIEW_MODE_STORAGE_KEY = 'second-brain-directory-view-mode';
+const CHAT_SIDEBAR_STORAGE_KEY = 'second-brain-chat-sidebar-visible';
+const DIRECTORY_SIDEBAR_STORAGE_KEY = 'second-brain-directory-sidebar-visible';
 
 /**
  * Load sidebar state from localStorage
@@ -69,10 +71,46 @@ const saveDirectoryViewMode = (mode: NotesViewMode) => {
   localStorage.setItem(DIRECTORY_VIEW_MODE_STORAGE_KEY, mode);
 };
 
+/**
+ * Load chat sidebar visibility from localStorage
+ */
+const loadChatSidebarVisible = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(CHAT_SIDEBAR_STORAGE_KEY);
+  return stored !== 'false'; // Default to true
+};
+
+/**
+ * Save chat sidebar visibility to localStorage
+ */
+const saveChatSidebarVisible = (visible: boolean) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(CHAT_SIDEBAR_STORAGE_KEY, String(visible));
+};
+
+/**
+ * Load directory sidebar visibility from localStorage
+ */
+const loadDirectorySidebarVisible = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(DIRECTORY_SIDEBAR_STORAGE_KEY);
+  return stored !== 'false'; // Default to true
+};
+
+/**
+ * Save directory sidebar visibility to localStorage
+ */
+const saveDirectorySidebarVisible = (visible: boolean) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(DIRECTORY_SIDEBAR_STORAGE_KEY, String(visible));
+};
+
 // Initialize from storage
 const initialSidebarState = loadSidebarState();
 const initialNotesViewMode = loadNotesViewMode();
 const initialDirectoryViewMode = loadDirectoryViewMode();
+const initialChatSidebarVisible = loadChatSidebarVisible();
+const initialDirectorySidebarVisible = loadDirectorySidebarVisible();
 
 export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // Initial state
@@ -95,6 +133,8 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   githubOwner: null,
   githubRepo: null,
   isGitSettingsOpen: false,
+  chatSidebarVisible: initialChatSidebarVisible,
+  directorySidebarVisible: initialDirectorySidebarVisible,
 
   // ============================================
   // Modal Actions
@@ -208,4 +248,29 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
 
   openGitSettings: () => set({ isGitSettingsOpen: true }),
   closeGitSettings: () => set({ isGitSettingsOpen: false }),
+
+  // ============================================
+  // Chat/Directory Sidebar Visibility Actions
+  // ============================================
+
+  setChatSidebarVisible: (visible: boolean) => {
+    saveChatSidebarVisible(visible);
+    set({ chatSidebarVisible: visible });
+  },
+  toggleChatSidebar: () =>
+    set((state) => {
+      const newVisible = !state.chatSidebarVisible;
+      saveChatSidebarVisible(newVisible);
+      return { chatSidebarVisible: newVisible };
+    }),
+  setDirectorySidebarVisible: (visible: boolean) => {
+    saveDirectorySidebarVisible(visible);
+    set({ directorySidebarVisible: visible });
+  },
+  toggleDirectorySidebar: () =>
+    set((state) => {
+      const newVisible = !state.directorySidebarVisible;
+      saveDirectorySidebarVisible(newVisible);
+      return { directorySidebarVisible: newVisible };
+    }),
 });

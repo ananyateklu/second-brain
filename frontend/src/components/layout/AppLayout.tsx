@@ -19,7 +19,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   const titleBarHeight = useTitleBarHeight();
   const isChatPage = location.pathname === '/chat';
   const isDirectoryPage = location.pathname === '/directory';
-  const isGitPage = location.pathname === '/git';
   const isGitHubPage = location.pathname === '/github';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
@@ -45,19 +44,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       classes.push('px-4', 'md:px-6');
     }
 
-    // Top padding for chat/directory/git/github
-    if ((isChatPage || isDirectoryPage || isGitPage || isGitHubPage) && !isPageFullscreen) {
-      classes.push('md:pt-4');
-    }
-
-    // Padding for other pages (Git and GitHub handle their own padding)
-    if (!isChatPage && !isDirectoryPage && !isGitPage && !isGitHubPage) {
-      classes.push('py-4', 'sm:py-1');
-    }
-
     // Settings page centering
     if (isSettingsPage) {
-      classes.push('flex', 'items-center', 'justify-center');
+      classes.push('flex', 'items-center', 'justify-center', 'py-4', 'sm:py-1');
     }
 
     // Width and margin
@@ -67,15 +56,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
     }
 
-    // Overflow handling
-    if (!isChatPage && !isGitPage && !isGitHubPage) {
-      classes.push('overflow-y-auto', 'thin-scrollbar');
-    } else {
+    // Overflow handling - chat and github need overflow hidden for their internal scrolling
+    if (isChatPage || isGitHubPage) {
       classes.push('overflow-hidden');
+    } else {
+      classes.push('overflow-y-auto', 'thin-scrollbar');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isDirectoryPage, isGitPage, isGitHubPage, isSettingsPage, isPageFullscreen]);
+  }, [isChatPage, isGitHubPage, isSettingsPage, isPageFullscreen]);
 
   return (
     <div
@@ -103,7 +92,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           ...(isPageFullscreen ? { marginLeft: 0 } : {}),
         }}
       >
-        {!isChatPage && !isDirectoryPage && <Header />}
+        <Header />
 
         <main className={mainClasses}>
           <PageTransition>

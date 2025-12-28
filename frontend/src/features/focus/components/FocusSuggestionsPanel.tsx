@@ -4,12 +4,12 @@
  * Supports persisted suggestions with delete functionality
  */
 
-import { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useState, useEffect, useRef } from 'react';
 import { Sparkles, Plus, RefreshCw, ChevronDown, ChevronUp, FileText, Clock, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { PriorityBadge } from './PriorityBadge';
-import type { PersistedFocusSuggestion, FocusPriority } from '../types';
+import type { PersistedFocusSuggestion } from '../types';
 
 export interface GenerationStats {
   newSuggestionsAdded: number;
@@ -62,14 +62,26 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
 }: FocusSuggestionsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showStats, setShowStats] = useState(false);
+  const showStatsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Show stats banner when new suggestions are generated
   useEffect(() => {
     if (lastGenerationStats && lastGenerationStats.newSuggestionsAdded > 0) {
-      setShowStats(true);
-      const timer = setTimeout(() => setShowStats(false), 5000);
-      return () => clearTimeout(timer);
+      // Clear any existing timeout
+      if (showStatsTimeoutRef.current) {
+        clearTimeout(showStatsTimeoutRef.current);
+      }
+      // Schedule the state update for the next tick to avoid sync setState in effect
+      showStatsTimeoutRef.current = setTimeout(() => {
+        setShowStats(true);
+        showStatsTimeoutRef.current = setTimeout(() => setShowStats(false), 5000);
+      }, 0);
     }
+    return () => {
+      if (showStatsTimeoutRef.current) {
+        clearTimeout(showStatsTimeoutRef.current);
+      }
+    };
   }, [lastGenerationStats]);
 
   const toggleExpanded = useCallback(() => {
@@ -365,7 +377,7 @@ const SuggestionItem = memo(function SuggestionItem({
       <div className="flex items-start gap-3">
         {/* Priority indicator */}
         <div className="pt-0.5">
-          <PriorityBadge priority={suggestion.priority as FocusPriority} />
+          <PriorityBadge priority={suggestion.priority} />
         </div>
 
         {/* Content */}

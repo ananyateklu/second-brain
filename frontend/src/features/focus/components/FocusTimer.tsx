@@ -4,7 +4,7 @@
  * Persists across page refreshes by calculating from focusStartedAt timestamp.
  */
 
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { Timer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,41 +35,50 @@ function formatDuration(totalSeconds: number): string {
  * Live timer that updates every second showing elapsed focus time.
  * Survives page refreshes by calculating from the server-stored focusStartedAt.
  */
+/**
+ * Helper to calculate elapsed seconds
+ */
+function calculateElapsedSeconds(focusStartedAt: string | null, accumulatedMinutes: number): number {
+  if (!focusStartedAt) {
+    return accumulatedMinutes * 60; // Only show accumulated time
+  }
+
+  const startTime = new Date(focusStartedAt).getTime();
+  const now = Date.now();
+  const currentSessionSeconds = Math.floor((now - startTime) / 1000);
+  const accumulatedSeconds = accumulatedMinutes * 60;
+
+  return Math.max(0, currentSessionSeconds + accumulatedSeconds);
+}
+
 export const FocusTimer = memo(function FocusTimer({
   focusStartedAt,
   accumulatedMinutes,
   className,
 }: FocusTimerProps) {
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  // Calculate elapsed time from focusStartedAt
-  const calculateElapsed = useCallback(() => {
-    if (!focusStartedAt) {
-      return accumulatedMinutes * 60; // Only show accumulated time
-    }
-
-    const startTime = new Date(focusStartedAt).getTime();
-    const now = Date.now();
-    const currentSessionSeconds = Math.floor((now - startTime) / 1000);
-    const accumulatedSeconds = accumulatedMinutes * 60;
-
-    return Math.max(0, currentSessionSeconds + accumulatedSeconds);
-  }, [focusStartedAt, accumulatedMinutes]);
+  // Initialize with computed value to avoid sync setState in effect
+  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+    calculateElapsedSeconds(focusStartedAt, accumulatedMinutes)
+  );
 
   // Update elapsed time every second
   useEffect(() => {
-    // Initial calculation
-    setElapsedSeconds(calculateElapsed());
-
     // Update every second while timer is running
     if (focusStartedAt) {
-      const interval = setInterval(() => {
-        setElapsedSeconds(calculateElapsed());
-      }, 1000);
+      // Immediately update on mount/dependency change
+      const updateElapsed = () => setElapsedSeconds(
+        calculateElapsedSeconds(focusStartedAt, accumulatedMinutes)
+      );
 
+      const interval = setInterval(updateElapsed, 1000);
       return () => clearInterval(interval);
     }
-  }, [focusStartedAt, calculateElapsed]);
+    // When not running, schedule state update to avoid sync setState in effect
+    const timeoutId = setTimeout(() => {
+      setElapsedSeconds(accumulatedMinutes * 60);
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [focusStartedAt, accumulatedMinutes]);
 
   const formattedTime = formatDuration(elapsedSeconds);
   const isRunning = !!focusStartedAt;

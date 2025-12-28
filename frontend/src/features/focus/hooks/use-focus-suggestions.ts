@@ -120,8 +120,8 @@ export function useFocusSuggestions(options?: UseFocusSuggestionsOptions) {
         }
       );
       // Invalidate focus items queries to show the new item
-      queryClient.invalidateQueries({ queryKey: focusKeys.todayPlan() });
-      queryClient.invalidateQueries({ queryKey: focusKeys.backlog() });
+      void queryClient.invalidateQueries({ queryKey: focusKeys.todayPlan() });
+      void queryClient.invalidateQueries({ queryKey: focusKeys.backlog() });
     },
   });
 

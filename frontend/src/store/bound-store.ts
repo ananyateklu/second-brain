@@ -95,6 +95,17 @@ export function validatePersistedState(parsed: Partial<BoundStore> | undefined):
     }
   }
 
+  // Validate Focus AI numeric types
+  const focusNumericFields = [
+    'focusAITemperature', 'focusAIMaxTokens', 'focusAIRagTopK',
+    'focusAISimilarityThreshold', 'focusAIMaxSuggestions', 'focusAIDedupThreshold'
+  ] as const;
+  for (const field of focusNumericFields) {
+    if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
+      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
+    }
+  }
+
   // Validate boolean types
   const booleanFields = [
     'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
@@ -171,6 +182,15 @@ export function mergePersistedState(
     ragEmbeddingProvider: parsed.ragEmbeddingProvider ?? currentState.ragEmbeddingProvider,
     ragEmbeddingModel: parsed.ragEmbeddingModel ?? currentState.ragEmbeddingModel,
     ragEmbeddingDimensions: parsed.ragEmbeddingDimensions ?? currentState.ragEmbeddingDimensions,
+    // Focus AI Settings
+    focusAIProvider: parsed.focusAIProvider ?? currentState.focusAIProvider,
+    focusAIModel: parsed.focusAIModel ?? currentState.focusAIModel,
+    focusAITemperature: parsed.focusAITemperature ?? currentState.focusAITemperature,
+    focusAIMaxTokens: parsed.focusAIMaxTokens ?? currentState.focusAIMaxTokens,
+    focusAIRagTopK: parsed.focusAIRagTopK ?? currentState.focusAIRagTopK,
+    focusAISimilarityThreshold: parsed.focusAISimilarityThreshold ?? currentState.focusAISimilarityThreshold,
+    focusAIMaxSuggestions: parsed.focusAIMaxSuggestions ?? currentState.focusAIMaxSuggestions,
+    focusAIDedupThreshold: parsed.focusAIDedupThreshold ?? currentState.focusAIDedupThreshold,
     // Merge theme
     theme: parsed.theme ?? currentState.theme,
     // Merge notes state
@@ -258,6 +278,15 @@ const _useBoundStore = create<BoundStore>()(
         ragEmbeddingProvider: state.ragEmbeddingProvider,
         ragEmbeddingModel: state.ragEmbeddingModel,
         ragEmbeddingDimensions: state.ragEmbeddingDimensions,
+        // Focus AI Settings
+        focusAIProvider: state.focusAIProvider,
+        focusAIModel: state.focusAIModel,
+        focusAITemperature: state.focusAITemperature,
+        focusAIMaxTokens: state.focusAIMaxTokens,
+        focusAIRagTopK: state.focusAIRagTopK,
+        focusAISimilarityThreshold: state.focusAISimilarityThreshold,
+        focusAIMaxSuggestions: state.focusAIMaxSuggestions,
+        focusAIDedupThreshold: state.focusAIDedupThreshold,
         // Theme state
         theme: state.theme,
         // Notes state
