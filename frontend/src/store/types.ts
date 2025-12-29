@@ -133,6 +133,15 @@ export interface SettingsSliceActions {
   setRagEmbeddingProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
   setRagEmbeddingModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
   setRagEmbeddingDimensions: (dimensions: number | null, syncToBackend?: boolean) => Promise<void>;
+  // Focus AI Settings
+  setFocusAIProvider: (provider: string | null, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIModel: (model: string | null, syncToBackend?: boolean) => Promise<void>;
+  setFocusAITemperature: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIMaxTokens: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIRagTopK: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAISimilarityThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIMaxSuggestions: (value: number, syncToBackend?: boolean) => Promise<void>;
+  setFocusAIDedupThreshold: (value: number, syncToBackend?: boolean) => Promise<void>;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   clearPreference: (propertyName: keyof UserPreferences) => Promise<void>;
@@ -177,8 +186,14 @@ export interface UISliceState {
   githubOwner: string | null;
   /** GitHub selected repository name */
   githubRepo: string | null;
+  /** GitHub selected branch name */
+  githubSelectedBranch: string | null;
   /** Git settings panel open state */
   isGitSettingsOpen: boolean;
+  /** Chat page sidebar visibility */
+  chatSidebarVisible: boolean;
+  /** Directory page sidebar visibility */
+  directorySidebarVisible: boolean;
 }
 
 export interface UISliceActions {
@@ -209,10 +224,20 @@ export interface UISliceActions {
   setGitHubActiveTab: (tab: GitHubTabType) => void;
   /** Set GitHub repository */
   setGitHubRepo: (owner: string | null, repo: string | null) => void;
+  /** Set GitHub selected branch */
+  setGitHubSelectedBranch: (branch: string | null) => void;
   /** Open Git settings panel */
   openGitSettings: () => void;
   /** Close Git settings panel */
   closeGitSettings: () => void;
+  /** Set chat sidebar visibility */
+  setChatSidebarVisible: (visible: boolean) => void;
+  /** Toggle chat sidebar visibility */
+  toggleChatSidebar: () => void;
+  /** Set directory sidebar visibility */
+  setDirectorySidebarVisible: (visible: boolean) => void;
+  /** Toggle directory sidebar visibility */
+  toggleDirectorySidebar: () => void;
 }
 
 export type UISlice = UISliceState & UISliceActions;
@@ -282,6 +307,36 @@ export interface InsightsSliceActions {
 }
 
 export type InsightsSlice = InsightsSliceState & InsightsSliceActions;
+
+// ============================================
+// Focus/Productivity Types
+// ============================================
+
+export type FocusViewMode = 'timeline' | 'kanban';
+export type FocusPriority = 1 | 2 | 3;
+
+export interface ModalSourceRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+export interface FocusSliceState {
+  isQuickCaptureOpen: boolean;
+  quickCaptureSourceRect: ModalSourceRect | null;
+  selectedBacklogPriority: FocusPriority | null;
+  focusViewMode: FocusViewMode;
+}
+
+export interface FocusSliceActions {
+  openQuickCapture: (sourceRect?: ModalSourceRect | null) => void;
+  closeQuickCapture: () => void;
+  setSelectedBacklogPriority: (priority: FocusPriority | null) => void;
+  setFocusViewMode: (mode: FocusViewMode) => void;
+}
+
+export type FocusSlice = FocusSliceState & FocusSliceActions;
 
 // ============================================
 // Indexing Types (for background indexing notifications)
@@ -573,7 +628,7 @@ export type VoiceSlice = VoiceSliceState & VoiceSliceActions;
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice & InsightsSlice & FocusSlice & IndexingSlice & SummarySlice & DraftSlice & GitSlice & VoiceSlice;
 
 // ============================================
 // Slice Creator Type

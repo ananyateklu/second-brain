@@ -53,5 +53,15 @@ public class UserPreferencesResponse
     public string? RagEmbeddingProvider { get; set; }
     public string? RagEmbeddingModel { get; set; }
     public int? RagEmbeddingDimensions { get; set; }
+
+    // Focus AI Settings
+    public string? FocusAIProvider { get; set; } = "OpenAI";
+    public string? FocusAIModel { get; set; } = "gpt-4o-mini";
+    public float FocusAITemperature { get; set; } = 0.7f;
+    public int FocusAIMaxTokens { get; set; } = 800;
+    public int FocusAIRagTopK { get; set; } = 10;
+    public float FocusAISimilarityThreshold { get; set; } = 0.3f;
+    public int FocusAIMaxSuggestions { get; set; } = 5;
+    public float FocusAIDedupThreshold { get; set; } = 0.85f;
 }
 

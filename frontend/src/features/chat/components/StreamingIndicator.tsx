@@ -30,7 +30,7 @@ function TimelineTextCard({ content, showInlineNoteRefs = false }: { content: st
       <div
         className="rounded-xl px-4 py-3 text-sm"
         style={{
-          backgroundColor: 'var(--surface-card)',
+          backgroundColor: 'transparent',
         }}
       >
         {showInlineNoteRefs ? (
@@ -51,7 +51,7 @@ function LoadingSpinner({ message }: { message: string }) {
     <div className="flex justify-start">
       <div
         className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-        style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
+        style={{ backgroundColor: 'transparent', color: 'var(--text-primary)' }}
       >
         <div className="flex items-center gap-3">
           <div className="relative w-5 h-5 flex-shrink-0">
@@ -59,7 +59,7 @@ function LoadingSpinner({ message }: { message: string }) {
               className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
               style={{ borderTopColor: 'var(--color-brand-500)', borderRightColor: 'var(--color-brand-500)' }}
             />
-            <div className="absolute inset-1 rounded-full" style={{ backgroundColor: 'var(--surface-card)' }} />
+            <div className="absolute inset-1 rounded-full" style={{ backgroundColor: 'var(--page-background)' }} />
           </div>
           <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{message}</span>
         </div>
@@ -283,7 +283,7 @@ export function StreamingIndicator({
         <div className="flex justify-start">
           <div
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
+            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)' }}
           >
             <div className="flex items-center gap-2">
               <div className="relative w-4 h-4 flex-shrink-0">
@@ -303,7 +303,7 @@ export function StreamingIndicator({
         <div className="flex justify-start">
           <div
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
-            style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-primary)' }}
+            style={{ backgroundColor: 'transparent', color: 'var(--text-primary)' }}
           >
             {(agentModeEnabled || ragEnabled) ? (
               <MarkdownMessageWithNoteReferences content={displayContent} showCursor={isStreaming} />
@@ -367,9 +367,7 @@ export function LoadingMessageSkeleton() {
       <div
         className="w-full rounded-2xl rounded-bl-md px-4 py-3"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          backgroundColor: 'transparent',
         }}
       >
         <div className="flex flex-col gap-3">
@@ -422,9 +420,7 @@ export function ImageGenerationLoadingSkeleton({ isGeneratingImage }: { isGenera
       <div
         className="w-full rounded-2xl rounded-bl-md px-4 py-3"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          backgroundColor: 'transparent',
         }}
       >
         <div className="flex flex-col gap-4">

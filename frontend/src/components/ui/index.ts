@@ -9,7 +9,8 @@
  */
 
 // Form Controls
-export { Button, buttonVariants } from "./Button";
+export { Button } from "./Button";
+export { buttonVariants } from "./button.variants";
 export type { ButtonProps } from "./Button";
 
 export { Input } from "./Input";
@@ -49,7 +50,8 @@ export type { LabelProps } from "./Label";
 // Feedback
 export { Alert, AlertTitle, AlertDescription } from "./Alert";
 
-export { Badge, badgeVariants } from "./Badge";
+export { Badge } from "./Badge";
+export { badgeVariants } from "./badge.variants";
 export type { BadgeProps } from "./Badge";
 
 export { Progress } from "./Progress";

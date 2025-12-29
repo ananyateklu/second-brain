@@ -59,5 +59,15 @@ public class UpdateUserPreferencesRequest
     public string? RagEmbeddingProvider { get; set; }
     public string? RagEmbeddingModel { get; set; }
     public int? RagEmbeddingDimensions { get; set; }
+
+    // Focus AI Settings
+    public string? FocusAIProvider { get; set; }
+    public string? FocusAIModel { get; set; }
+    public float? FocusAITemperature { get; set; }
+    public int? FocusAIMaxTokens { get; set; }
+    public int? FocusAIRagTopK { get; set; }
+    public float? FocusAISimilarityThreshold { get; set; }
+    public int? FocusAIMaxSuggestions { get; set; }
+    public float? FocusAIDedupThreshold { get; set; }
 }
 

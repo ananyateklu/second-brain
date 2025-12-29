@@ -132,11 +132,9 @@ export function VoiceAgentPage() {
   if (!isServiceAvailable) {
     return (
       <div
-        className="flex flex-col items-center justify-center gap-6 px-4 rounded-3xl border"
+        className="flex flex-col items-center justify-center gap-6 px-4"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-2xl)',
+          backgroundColor: 'transparent',
           height: containerHeight,
           maxHeight: containerHeight,
         }}
@@ -190,30 +188,13 @@ export function VoiceAgentPage() {
 
   return (
     <div
-      className="flex flex-col rounded-3xl border overflow-hidden"
+      className="flex flex-col overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
+        backgroundColor: 'transparent',
         height: containerHeight,
         maxHeight: containerHeight,
       }}
     >
-      {/* Page header - fixed height */}
-      <div className="flex-shrink-0 px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-card)]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[var(--color-brand-500)]/20 flex items-center justify-center">
-            <MicrophoneIcon className="w-5 h-5 text-[var(--color-brand-400)]" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-[var(--text-primary)]">Voice Agent</h1>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Have a natural conversation with AI using your voice
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Main content - fills remaining space */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <VoiceErrorBoundary>

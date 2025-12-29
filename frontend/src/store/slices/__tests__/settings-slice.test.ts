@@ -426,6 +426,15 @@ describe('settingsSlice', () => {
         ragEmbeddingProvider: null,
         ragEmbeddingModel: null,
         ragEmbeddingDimensions: null,
+        // Focus AI Settings
+        focusAIProvider: 'OpenAI',
+        focusAIModel: 'gpt-4o-mini',
+        focusAITemperature: 0.7,
+        focusAIMaxTokens: 800,
+        focusAIRagTopK: 10,
+        focusAISimilarityThreshold: 0.3,
+        focusAIMaxSuggestions: 5,
+        focusAIDedupThreshold: 0.85,
       };
 
       vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue(mockPreferences);

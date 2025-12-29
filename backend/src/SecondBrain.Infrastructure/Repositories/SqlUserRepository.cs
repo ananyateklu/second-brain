@@ -244,6 +244,16 @@ public class SqlUserRepository : IUserRepository
                     existingUser.Preferences.RagEmbeddingProvider = user.Preferences.RagEmbeddingProvider;
                     existingUser.Preferences.RagEmbeddingModel = user.Preferences.RagEmbeddingModel;
                     existingUser.Preferences.RagEmbeddingDimensions = user.Preferences.RagEmbeddingDimensions;
+
+                    // Focus AI Settings
+                    existingUser.Preferences.FocusAIProvider = user.Preferences.FocusAIProvider;
+                    existingUser.Preferences.FocusAIModel = user.Preferences.FocusAIModel;
+                    existingUser.Preferences.FocusAITemperature = user.Preferences.FocusAITemperature;
+                    existingUser.Preferences.FocusAIMaxTokens = user.Preferences.FocusAIMaxTokens;
+                    existingUser.Preferences.FocusAIRagTopK = user.Preferences.FocusAIRagTopK;
+                    existingUser.Preferences.FocusAISimilarityThreshold = user.Preferences.FocusAISimilarityThreshold;
+                    existingUser.Preferences.FocusAIMaxSuggestions = user.Preferences.FocusAIMaxSuggestions;
+                    existingUser.Preferences.FocusAIDedupThreshold = user.Preferences.FocusAIDedupThreshold;
                 }
             }
 

@@ -184,6 +184,33 @@ public class UserPreferences
     [Column("rag_embedding_dimensions")]
     public int? RagEmbeddingDimensions { get; set; }
 
+    // Focus AI Settings
+    [Column("focus_ai_provider")]
+    [MaxLength(50)]
+    public string? FocusAIProvider { get; set; } = "OpenAI";
+
+    [Column("focus_ai_model")]
+    [MaxLength(100)]
+    public string? FocusAIModel { get; set; } = "gpt-4o-mini";
+
+    [Column("focus_ai_temperature")]
+    public float FocusAITemperature { get; set; } = 0.7f;
+
+    [Column("focus_ai_max_tokens")]
+    public int FocusAIMaxTokens { get; set; } = 800;
+
+    [Column("focus_ai_rag_top_k")]
+    public int FocusAIRagTopK { get; set; } = 10;
+
+    [Column("focus_ai_similarity_threshold")]
+    public float FocusAISimilarityThreshold { get; set; } = 0.3f;
+
+    [Column("focus_ai_max_suggestions")]
+    public int FocusAIMaxSuggestions { get; set; } = 5;
+
+    [Column("focus_ai_dedup_threshold")]
+    public float FocusAIDedupThreshold { get; set; } = 0.85f;
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

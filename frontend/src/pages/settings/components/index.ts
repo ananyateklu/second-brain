@@ -7,3 +7,4 @@ export { GeneralSettingsSkeleton } from './GeneralSettingsSkeleton';
 export { AISettingsSkeleton } from './AISettingsSkeleton';
 export { RAGSettingsSkeleton } from './RAGSettingsSkeleton';
 export { IndexingSettingsSkeleton } from './IndexingSettingsSkeleton';
+export { FocusSettingsSkeleton } from './FocusSettingsSkeleton';

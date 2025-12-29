@@ -264,12 +264,13 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     [breakdown.total, maxTokens]
   );
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders in consumers
+  return useMemo(() => ({
     breakdown,
     maxTokens,
     percentUsed,
     warningLevel,
-  };
+  }), [breakdown, maxTokens, percentUsed, warningLevel]);
 }
 
 /**

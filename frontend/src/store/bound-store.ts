@@ -25,6 +25,7 @@ import { createSummarySlice } from './slices/summary-slice';
 import { createDraftSlice } from './slices/draft-slice';
 import { createGitSlice } from './slices/git-slice';
 import { createVoiceSlice } from './slices/voice-slice';
+import { createFocusSlice } from './slices/focus-slice';
 
 // ============================================
 // Persist Config - Exported for Testing
@@ -89,6 +90,17 @@ export function validatePersistedState(parsed: Partial<BoundStore> | undefined):
     'ragVectorWeight', 'ragBm25Weight', 'ragMultiQueryCount', 'ragMaxContextLength'
   ] as const;
   for (const field of ragNumericFields) {
+    if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
+      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
+    }
+  }
+
+  // Validate Focus AI numeric types
+  const focusNumericFields = [
+    'focusAITemperature', 'focusAIMaxTokens', 'focusAIRagTopK',
+    'focusAISimilarityThreshold', 'focusAIMaxSuggestions', 'focusAIDedupThreshold'
+  ] as const;
+  for (const field of focusNumericFields) {
     if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
       throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
     }
@@ -170,6 +182,15 @@ export function mergePersistedState(
     ragEmbeddingProvider: parsed.ragEmbeddingProvider ?? currentState.ragEmbeddingProvider,
     ragEmbeddingModel: parsed.ragEmbeddingModel ?? currentState.ragEmbeddingModel,
     ragEmbeddingDimensions: parsed.ragEmbeddingDimensions ?? currentState.ragEmbeddingDimensions,
+    // Focus AI Settings
+    focusAIProvider: parsed.focusAIProvider ?? currentState.focusAIProvider,
+    focusAIModel: parsed.focusAIModel ?? currentState.focusAIModel,
+    focusAITemperature: parsed.focusAITemperature ?? currentState.focusAITemperature,
+    focusAIMaxTokens: parsed.focusAIMaxTokens ?? currentState.focusAIMaxTokens,
+    focusAIRagTopK: parsed.focusAIRagTopK ?? currentState.focusAIRagTopK,
+    focusAISimilarityThreshold: parsed.focusAISimilarityThreshold ?? currentState.focusAISimilarityThreshold,
+    focusAIMaxSuggestions: parsed.focusAIMaxSuggestions ?? currentState.focusAIMaxSuggestions,
+    focusAIDedupThreshold: parsed.focusAIDedupThreshold ?? currentState.focusAIDedupThreshold,
     // Merge theme
     theme: parsed.theme ?? currentState.theme,
     // Merge notes state
@@ -205,6 +226,7 @@ const _useBoundStore = create<BoundStore>()(
       ...createDraftSlice(...args),
       ...createGitSlice(...args),
       ...createVoiceSlice(...args),
+      ...createFocusSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility
@@ -256,6 +278,15 @@ const _useBoundStore = create<BoundStore>()(
         ragEmbeddingProvider: state.ragEmbeddingProvider,
         ragEmbeddingModel: state.ragEmbeddingModel,
         ragEmbeddingDimensions: state.ragEmbeddingDimensions,
+        // Focus AI Settings
+        focusAIProvider: state.focusAIProvider,
+        focusAIModel: state.focusAIModel,
+        focusAITemperature: state.focusAITemperature,
+        focusAIMaxTokens: state.focusAIMaxTokens,
+        focusAIRagTopK: state.focusAIRagTopK,
+        focusAISimilarityThreshold: state.focusAISimilarityThreshold,
+        focusAIMaxSuggestions: state.focusAIMaxSuggestions,
+        focusAIDedupThreshold: state.focusAIDedupThreshold,
         // Theme state
         theme: state.theme,
         // Notes state

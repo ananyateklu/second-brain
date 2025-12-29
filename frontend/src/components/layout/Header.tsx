@@ -4,10 +4,8 @@ import { useBoundStore } from '../../store/bound-store';
 import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
-import { NotesFilter } from '../../features/notes/components/NotesFilter';
-import { useNotes } from '../../features/notes/hooks/use-notes-query';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, NotesPageControls, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar } from './header-components';
+import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -17,8 +15,8 @@ const getPageTitle = (pathname: string): string => {
   const titleMap: Record<string, string> = {
     '/': 'Dashboard',
     '/notes': 'Notes',
-    '/directory': 'Directory',
     '/chat': 'Chat',
+    '/voice': 'Voice Agent',
     '/insights': 'Insights',
     '/analytics': 'RAG Analytics',
     '/github': 'GitHub',
@@ -37,15 +35,6 @@ export function Header() {
   const theme = useBoundStore((state) => state.theme);
   const logo = theme === 'light' ? logoLight : logoDark;
 
-  // Notes specific state
-  const { data: notes } = useNotes();
-  const filterState = useBoundStore((state) => state.filterState);
-  const setFilterState = useBoundStore((state) => state.setFilterState);
-  const notesViewMode = useBoundStore((state) => state.notesViewMode);
-  const setNotesViewMode = useBoundStore((state) => state.setNotesViewMode);
-  const isBulkMode = useBoundStore((state) => state.isBulkMode);
-  const toggleBulkMode = useBoundStore((state) => state.toggleBulkMode);
-
   // Ref for create button morph animation
   const createButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -62,11 +51,13 @@ export function Header() {
   }, [openCreateModal]);
 
   const pageTitle = getPageTitle(location.pathname);
+  const isDashboardPage = location.pathname === '/';
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
   const isRagAnalyticsPage = location.pathname === '/analytics';
   const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
+  const isChatPage = location.pathname === '/chat';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
@@ -177,59 +168,63 @@ export function Header() {
             </h1>
           </div>
 
-          {/* Right side - Search/Tabs and User */}
-          <div className="flex items-center gap-4 h-12">
-            {/* Insights Tab Bar - Only on Insights page */}
-            {isInsightsPage && (
-              <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
-            )}
+          {/* Right side - Page-specific controls and User Menu */}
+          {/* Chat Page - Full-width controls */}
+          {isChatPage ? (
+            <div className="flex items-center gap-4 h-12 flex-1">
+              <ChatPageControls />
+              <SummaryIndicator />
+              <IndexingIndicator />
+              <UserMenu />
+            </div>
+          ) : isNotesPage ? (
+            <div className="flex items-center gap-4 h-12 flex-1">
+              <DirectoryPageControls />
+              <SummaryIndicator />
+              <IndexingIndicator />
+              <UserMenu />
+            </div>
+          ) : (
+            <div className="flex items-center gap-4 h-12">
+              {/* Insights Tab Bar - Only on Insights page */}
+              {isInsightsPage && (
+                <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+              )}
 
-            {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
-            {isRagAnalyticsPage && (
-              <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-            )}
+              {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
+              {isRagAnalyticsPage && (
+                <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+              )}
 
-            {/* Search Input - Only on Notes page */}
-            {isNotesPage && <NotesPageControls />}
+              {/* Settings Navigation - Only on Settings pages */}
+              {isSettingsPage && <SettingsNavTabs />}
 
-            {/* Settings Navigation - Only on Settings pages */}
-            {isSettingsPage && <SettingsNavTabs />}
+              {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
+              {showGitControls && <GitNavControls />}
 
-            {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
-            {showGitControls && <GitNavControls />}
+              {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
+              {isGitHubPage && <GitHubRepoSelector />}
 
-            {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
-            {isGitHubPage && <GitHubRepoSelector />}
+              {/* GitHub Branch Selector - Only on Code tab */}
+              {isGitHubPage && githubActiveTab === 'code' && <GitHubBranchSelector />}
 
-            {/* GitHub Navigation - Only on GitHub page */}
-            {isGitHubPage && <GitHubNavTabs />}
+              {/* GitHub Navigation - Only on GitHub page */}
+              {isGitHubPage && <GitHubNavTabs />}
 
-            {/* Summary Generation Indicator */}
-            <SummaryIndicator />
+              {/* Focus Dashboard Controls - Only on Dashboard page */}
+              {isDashboardPage && <FocusDashboardControls />}
 
-            {/* Indexing Indicator */}
-            <IndexingIndicator />
+              {/* Summary Generation Indicator */}
+              <SummaryIndicator />
 
-            {/* User Menu */}
-            <UserMenu />
-          </div>
+              {/* Indexing Indicator */}
+              <IndexingIndicator />
+
+              {/* User Menu */}
+              <UserMenu />
+            </div>
+          )}
         </div>
-
-        {/* Notes Filter - Only on Notes page */}
-        {isNotesPage && notes && (
-          <div className="w-full">
-            <NotesFilter
-              notes={notes}
-              filterState={filterState}
-              onFilterChange={setFilterState}
-              viewMode={notesViewMode}
-              onViewModeChange={setNotesViewMode}
-              isBulkMode={isBulkMode}
-              onBulkModeToggle={toggleBulkMode}
-              variant="embedded"
-            />
-          </div>
-        )}
 
         {/* RAG Analytics Time Range Selector - Only on Analytics page or Insights RAG tab */}
         {(isRagAnalyticsPage || (isInsightsPage && activeInsightsTab === 'rag')) && <TimeRangeSelector />}

@@ -381,6 +381,80 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
   },
 
   // ============================================
+  // Focus AI Settings
+  // ============================================
+
+  setFocusAIProvider: async (provider: string | null, syncToBackend = true) => {
+    set({ focusAIProvider: provider });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIProvider', provider, 'Focus AI provider');
+    }
+  },
+
+  setFocusAIModel: async (model: string | null, syncToBackend = true) => {
+    set({ focusAIModel: model });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIModel', model, 'Focus AI model');
+    }
+  },
+
+  setFocusAITemperature: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAITemperature(value);
+    set({ focusAITemperature: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAITemperature', validated, 'Focus AI temperature');
+    }
+  },
+
+  setFocusAIMaxTokens: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAIMaxTokens(value);
+    set({ focusAIMaxTokens: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIMaxTokens', validated, 'Focus AI max tokens');
+    }
+  },
+
+  setFocusAIRagTopK: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAIRagTopK(value);
+    set({ focusAIRagTopK: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIRagTopK', validated, 'Focus AI RAG top-k');
+    }
+  },
+
+  setFocusAISimilarityThreshold: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAISimilarityThreshold(value);
+    set({ focusAISimilarityThreshold: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAISimilarityThreshold', validated, 'Focus AI similarity threshold');
+    }
+  },
+
+  setFocusAIMaxSuggestions: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAIMaxSuggestions(value);
+    set({ focusAIMaxSuggestions: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIMaxSuggestions', validated, 'Focus AI max suggestions');
+    }
+  },
+
+  setFocusAIDedupThreshold: async (value: number, syncToBackend = true) => {
+    const validated = userPreferencesService.validateFocusAIDedupThreshold(value);
+    set({ focusAIDedupThreshold: validated });
+
+    if (syncToBackend) {
+      await syncSettingImmediate(get, 'focusAIDedupThreshold', validated, 'Focus AI dedup threshold');
+    }
+  },
+
+  // ============================================
   // Sync Actions
   // ============================================
 
@@ -430,6 +504,15 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => ({
         ragEmbeddingProvider: preferences.ragEmbeddingProvider,
         ragEmbeddingModel: preferences.ragEmbeddingModel,
         ragEmbeddingDimensions: preferences.ragEmbeddingDimensions,
+        // Focus AI Settings
+        focusAIProvider: preferences.focusAIProvider,
+        focusAIModel: preferences.focusAIModel,
+        focusAITemperature: preferences.focusAITemperature,
+        focusAIMaxTokens: preferences.focusAIMaxTokens,
+        focusAIRagTopK: preferences.focusAIRagTopK,
+        focusAISimilarityThreshold: preferences.focusAISimilarityThreshold,
+        focusAIMaxSuggestions: preferences.focusAIMaxSuggestions,
+        focusAIDedupThreshold: preferences.focusAIDedupThreshold,
       });
     } catch (error) {
       loggers.store.error('Failed to load preferences from backend:', { error });
@@ -543,5 +626,14 @@ function extractPreferences(state: SettingsSlice): UserPreferences {
     ragEmbeddingProvider: state.ragEmbeddingProvider,
     ragEmbeddingModel: state.ragEmbeddingModel,
     ragEmbeddingDimensions: state.ragEmbeddingDimensions,
+    // Focus AI Settings
+    focusAIProvider: state.focusAIProvider,
+    focusAIModel: state.focusAIModel,
+    focusAITemperature: state.focusAITemperature,
+    focusAIMaxTokens: state.focusAIMaxTokens,
+    focusAIRagTopK: state.focusAIRagTopK,
+    focusAISimilarityThreshold: state.focusAISimilarityThreshold,
+    focusAIMaxSuggestions: state.focusAIMaxSuggestions,
+    focusAIDedupThreshold: state.focusAIDedupThreshold,
   };
 }

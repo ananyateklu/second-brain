@@ -349,6 +349,36 @@ export const voiceKeys = {
 } as const;
 
 /**
+ * Query keys for Focus/Productivity dashboard
+ */
+export const focusKeys = {
+  /** Root key for all focus queries */
+  all: ['focus'] as const,
+
+  /** Key for today's plan */
+  todayPlan: (date?: string) => [...focusKeys.all, 'today', date ?? 'current'] as const,
+
+  /** Key for backlog items */
+  backlog: (priority?: number) => [...focusKeys.all, 'backlog', priority] as const,
+
+  /** Key for a specific focus item */
+  detail: (id: string) => [...focusKeys.all, 'detail', id] as const,
+
+  /** Key for completed items in a date range */
+  completed: (startDate: string, endDate: string) => [...focusKeys.all, 'completed', startDate, endDate] as const,
+
+  /** Key for AI suggestions (ephemeral) */
+  suggestions: () => [...focusKeys.all, 'ai', 'suggestions'] as const,
+
+  /** Key for persisted AI suggestions (stored in database) */
+  persistedSuggestions: (includeAccepted = false) =>
+    [...focusKeys.all, 'ai', 'persisted-suggestions', { includeAccepted }] as const,
+
+  /** Key for AI progress summary */
+  summary: (period: 'today' | 'week') => [...focusKeys.all, 'ai', 'summary', period] as const,
+} as const;
+
+/**
  * Query keys for Git integration
  */
 export const gitKeys = {
@@ -634,6 +664,9 @@ export type AgentQueryKey = typeof agentKeys['all'] | Exclude<ReturnType<Functio
 
 /** Type for voice query keys */
 export type VoiceQueryKey = typeof voiceKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof voiceKeys>>, never>;
+
+/** Type for focus query keys */
+export type FocusQueryKey = typeof focusKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof focusKeys>>, never>;
 
 /** Type for note version query keys */
  

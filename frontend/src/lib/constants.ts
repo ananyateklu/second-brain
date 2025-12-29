@@ -295,6 +295,26 @@ export const API_ENDPOINTS = {
     GROK_VOICES: '/voice/voices/grok',
     STATUS: '/voice/status',
   },
+
+  // Focus / Productivity Dashboard
+  FOCUS: {
+    BASE: '/focus',
+    BACKLOG: '/focus/backlog',
+    COMPLETED: '/focus/completed',
+    BY_ID: (id: string) => `/focus/${id}`,
+    SET_CURRENT: (id: string) => `/focus/${id}/set-current`,
+    COMPLETE: (id: string) => `/focus/${id}/complete`,
+    DEFER: (id: string) => `/focus/${id}/defer`,
+    REORDER: '/focus/reorder',
+    FROM_NOTE: (noteId: string) => `/focus/from-note/${noteId}`,
+    AI_SUGGEST: '/focus/ai/suggest',
+    AI_SUMMARY: '/focus/ai/summary',
+    // Persisted AI Suggestions
+    AI_SUGGESTIONS: '/focus/ai/suggestions',
+    AI_SUGGESTIONS_GENERATE: '/focus/ai/suggestions/generate',
+    AI_SUGGESTIONS_BY_ID: (id: string) => `/focus/ai/suggestions/${id}`,
+    AI_SUGGESTIONS_ACCEPT: (id: string) => `/focus/ai/suggestions/${id}/accept`,
+  },
 } as const;
 
 // ============================================
@@ -321,6 +341,7 @@ export {
   userPreferencesKeys,
   imageGenerationKeys,
   agentKeys,
+  focusKeys,
   // PostgreSQL 18 Temporal Feature key factories
   noteVersionKeys,
   chatSessionKeys,

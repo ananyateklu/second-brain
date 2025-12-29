@@ -136,8 +136,7 @@ export function FileTreeView({
 
       {/* File tree */}
       <div
-        className="flex-1 overflow-auto border-t thin-scrollbar"
-        style={{ borderColor: 'var(--border)' }}
+        className="flex-1 overflow-auto thin-scrollbar"
         role="tree"
         aria-label="Repository files"
       >

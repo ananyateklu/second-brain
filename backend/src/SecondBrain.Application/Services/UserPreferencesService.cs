@@ -322,6 +322,47 @@ public class UserPreferencesService : IUserPreferencesService
         else if (ShouldClear("ragEmbeddingDimensions"))
             user.Preferences.RagEmbeddingDimensions = 1536;
 
+        // Focus AI Settings
+        if (request.FocusAIProvider != null)
+            user.Preferences.FocusAIProvider = request.FocusAIProvider;
+        else if (ShouldClear("focusAIProvider"))
+            user.Preferences.FocusAIProvider = "OpenAI"; // Reset to default
+
+        if (request.FocusAIModel != null)
+            user.Preferences.FocusAIModel = request.FocusAIModel;
+        else if (ShouldClear("focusAIModel"))
+            user.Preferences.FocusAIModel = "gpt-4o-mini"; // Reset to default
+
+        if (request.FocusAITemperature.HasValue)
+            user.Preferences.FocusAITemperature = request.FocusAITemperature.Value;
+        else if (ShouldClear("focusAITemperature"))
+            user.Preferences.FocusAITemperature = 0.7f;
+
+        if (request.FocusAIMaxTokens.HasValue)
+            user.Preferences.FocusAIMaxTokens = request.FocusAIMaxTokens.Value;
+        else if (ShouldClear("focusAIMaxTokens"))
+            user.Preferences.FocusAIMaxTokens = 800;
+
+        if (request.FocusAIRagTopK.HasValue)
+            user.Preferences.FocusAIRagTopK = request.FocusAIRagTopK.Value;
+        else if (ShouldClear("focusAIRagTopK"))
+            user.Preferences.FocusAIRagTopK = 10;
+
+        if (request.FocusAISimilarityThreshold.HasValue)
+            user.Preferences.FocusAISimilarityThreshold = request.FocusAISimilarityThreshold.Value;
+        else if (ShouldClear("focusAISimilarityThreshold"))
+            user.Preferences.FocusAISimilarityThreshold = 0.3f;
+
+        if (request.FocusAIMaxSuggestions.HasValue)
+            user.Preferences.FocusAIMaxSuggestions = request.FocusAIMaxSuggestions.Value;
+        else if (ShouldClear("focusAIMaxSuggestions"))
+            user.Preferences.FocusAIMaxSuggestions = 5;
+
+        if (request.FocusAIDedupThreshold.HasValue)
+            user.Preferences.FocusAIDedupThreshold = request.FocusAIDedupThreshold.Value;
+        else if (ShouldClear("focusAIDedupThreshold"))
+            user.Preferences.FocusAIDedupThreshold = 0.85f;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -435,7 +476,16 @@ public class UserPreferencesService : IUserPreferencesService
             // RAG Embedding Settings
             RagEmbeddingProvider = preferences.RagEmbeddingProvider,
             RagEmbeddingModel = preferences.RagEmbeddingModel,
-            RagEmbeddingDimensions = preferences.RagEmbeddingDimensions
+            RagEmbeddingDimensions = preferences.RagEmbeddingDimensions,
+            // Focus AI Settings
+            FocusAIProvider = preferences.FocusAIProvider,
+            FocusAIModel = preferences.FocusAIModel,
+            FocusAITemperature = preferences.FocusAITemperature,
+            FocusAIMaxTokens = preferences.FocusAIMaxTokens,
+            FocusAIRagTopK = preferences.FocusAIRagTopK,
+            FocusAISimilarityThreshold = preferences.FocusAISimilarityThreshold,
+            FocusAIMaxSuggestions = preferences.FocusAIMaxSuggestions,
+            FocusAIDedupThreshold = preferences.FocusAIDedupThreshold
         };
     }
 }

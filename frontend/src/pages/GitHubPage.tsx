@@ -9,7 +9,6 @@ import { GitHubBranchesList } from '../features/github/components/GitHubBranches
 import { GitHubCodeBrowser } from '../features/github/components/GitHubCodeBrowser';
 import { GitHubPageSkeleton } from '../features/github/components/GitHubPageSkeleton';
 import { useBoundStore } from '../store/bound-store';
-import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import type { PullRequestSummary, WorkflowRunSummary, IssueSummary, CommitSummary, BranchSummary } from '../types/github';
 // Git imports
 import { useGitStatus, useSelectedDiff } from '../features/git/hooks';
@@ -21,8 +20,6 @@ import {
 } from '../features/git/components';
 
 export const GitHubPage = () => {
-  const titleBarHeight = useTitleBarHeight();
-
   // Get tab state from store
   const activeTab = useBoundStore((state) => state.githubActiveTab);
   const githubOwner = useBoundStore((state) => state.githubOwner);
@@ -35,11 +32,6 @@ export const GitHubPage = () => {
   const isGitSettingsOpen = useBoundStore((state) => state.isGitSettingsOpen);
   const openGitSettings = useBoundStore((state) => state.openGitSettings);
   const closeGitSettings = useBoundStore((state) => state.closeGitSettings);
-
-  // Calculate height similar to sidebar - accounts for title bar, header, and bottom padding
-  const headerHeight = 80; // Approximate header height
-  const bottomPadding = 10; // 0.625rem bottom padding
-  const containerHeight = `calc(100vh - ${titleBarHeight}px - ${headerHeight}px - ${bottomPadding}px)`;
 
   const [selectedPR, setSelectedPR] = useState<PullRequestSummary | null>(null);
   const [selectedRun, setSelectedRun] = useState<WorkflowRunSummary | null>(null);
@@ -134,13 +126,9 @@ export const GitHubPage = () => {
 
   return (
     <div
-      className="flex flex-col rounded-3xl border overflow-hidden"
+      className="flex flex-col overflow-hidden h-full"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: containerHeight,
-        maxHeight: containerHeight,
+        backgroundColor: 'transparent',
       }}
     >
       {/* Content - Scrollable area with proper height constraint */}
@@ -154,15 +142,7 @@ export const GitHubPage = () => {
         ) : (
           <div className="flex flex-1 min-h-0">
             {/* Left panel: File status - matches FileTreeView sidebar */}
-            <div
-              className="w-120 flex-shrink-0 overflow-hidden"
-              style={{
-                background: 'var(--glass-bg)',
-                backdropFilter: 'blur(var(--glass-blur))',
-                WebkitBackdropFilter: 'blur(var(--glass-blur))',
-                borderRight: '1px solid var(--border)',
-              }}
-            >
+            <div className="w-120 flex-shrink-0 overflow-hidden">
               {gitStatus && (
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}

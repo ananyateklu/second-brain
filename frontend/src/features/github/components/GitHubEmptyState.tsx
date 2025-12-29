@@ -9,10 +9,9 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
 
   return (
     <div
-      className="flex flex-col items-center justify-center py-16 px-8 rounded-2xl border"
+      className="flex flex-col items-center justify-center py-16 px-8"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'transparent',
       }}
     >
       {/* GitHub Logo */}

@@ -57,6 +57,15 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   ragEmbeddingProvider: null,
   ragEmbeddingModel: null,
   ragEmbeddingDimensions: null,
+  // Focus AI Settings
+  focusAIProvider: 'OpenAI',
+  focusAIModel: 'gpt-4o-mini',
+  focusAITemperature: 0.7,
+  focusAIMaxTokens: 800,
+  focusAIRagTopK: 10,
+  focusAISimilarityThreshold: 0.3,
+  focusAIMaxSuggestions: 5,
+  focusAIDedupThreshold: 0.85,
 };
 
 /**
@@ -263,6 +272,27 @@ export const userPreferencesService = {
       ragEmbeddingProvider: preferences.ragEmbeddingProvider ?? currentPreferences.ragEmbeddingProvider,
       ragEmbeddingModel: preferences.ragEmbeddingModel ?? currentPreferences.ragEmbeddingModel,
       ragEmbeddingDimensions: preferences.ragEmbeddingDimensions ?? currentPreferences.ragEmbeddingDimensions,
+      // Focus AI Settings
+      focusAIProvider: preferences.focusAIProvider ?? currentPreferences.focusAIProvider,
+      focusAIModel: preferences.focusAIModel ?? currentPreferences.focusAIModel,
+      focusAITemperature: this.validateFocusAITemperature(
+        preferences.focusAITemperature ?? currentPreferences.focusAITemperature
+      ),
+      focusAIMaxTokens: this.validateFocusAIMaxTokens(
+        preferences.focusAIMaxTokens ?? currentPreferences.focusAIMaxTokens
+      ),
+      focusAIRagTopK: this.validateFocusAIRagTopK(
+        preferences.focusAIRagTopK ?? currentPreferences.focusAIRagTopK
+      ),
+      focusAISimilarityThreshold: this.validateFocusAISimilarityThreshold(
+        preferences.focusAISimilarityThreshold ?? currentPreferences.focusAISimilarityThreshold
+      ),
+      focusAIMaxSuggestions: this.validateFocusAIMaxSuggestions(
+        preferences.focusAIMaxSuggestions ?? currentPreferences.focusAIMaxSuggestions
+      ),
+      focusAIDedupThreshold: this.validateFocusAIDedupThreshold(
+        preferences.focusAIDedupThreshold ?? currentPreferences.focusAIDedupThreshold
+      ),
     };
   },
 
@@ -338,6 +368,70 @@ export const userPreferencesService = {
       return Math.round(value);
     }
     return 4000;
+  },
+
+  // ============================================
+  // Focus AI Settings Validation
+  // ============================================
+
+  /**
+   * Validate Focus AI Temperature (0-1)
+   */
+  validateFocusAITemperature(value: number): number {
+    if (typeof value === 'number' && value >= 0 && value <= 1) {
+      return Math.round(value * 100) / 100; // 2 decimal places
+    }
+    return 0.7;
+  },
+
+  /**
+   * Validate Focus AI Max Tokens (100-4000)
+   */
+  validateFocusAIMaxTokens(value: number): number {
+    if (typeof value === 'number' && value >= 100 && value <= 4000) {
+      return Math.round(value);
+    }
+    return 800;
+  },
+
+  /**
+   * Validate Focus AI RAG Top-K (1-20)
+   */
+  validateFocusAIRagTopK(value: number): number {
+    if (typeof value === 'number' && value >= 1 && value <= 20) {
+      return Math.round(value);
+    }
+    return 10;
+  },
+
+  /**
+   * Validate Focus AI Similarity Threshold (0-1)
+   */
+  validateFocusAISimilarityThreshold(value: number): number {
+    if (typeof value === 'number' && value >= 0 && value <= 1) {
+      return Math.round(value * 100) / 100; // 2 decimal places
+    }
+    return 0.3;
+  },
+
+  /**
+   * Validate Focus AI Max Suggestions (1-10)
+   */
+  validateFocusAIMaxSuggestions(value: number): number {
+    if (typeof value === 'number' && value >= 1 && value <= 10) {
+      return Math.round(value);
+    }
+    return 5;
+  },
+
+  /**
+   * Validate Focus AI Dedup Threshold (0-1)
+   */
+  validateFocusAIDedupThreshold(value: number): number {
+    if (typeof value === 'number' && value >= 0 && value <= 1) {
+      return Math.round(value * 100) / 100; // 2 decimal places
+    }
+    return 0.85;
   },
 
   // ============================================

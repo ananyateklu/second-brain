@@ -344,5 +344,13 @@ export function SummaryNotification() {
 // Re-export components for flexibility
 export { SummaryProgress } from './SummaryProgress';
 export { SummaryStatusDisplay } from './SummaryStatus';
-export * from './SummaryIcons';
+export {
+  FileTextIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  XIcon,
+  StopIcon,
+  StopCircleIcon,
+  SpinnerIcon,
+} from './SummaryIcons';
 export type * from './types';

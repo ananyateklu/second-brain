@@ -56,6 +56,7 @@ using SecondBrain.Application.Services.Voice.Orchestration;
 using SecondBrain.Application.Services.Voice.ResponseProcessors;
 using SecondBrain.Application.Services.Voice.Synthesis;
 using SecondBrain.Application.Services.Voice.Transcription;
+using SecondBrain.Application.Services.Focus;
 using SecondBrain.Application.Validators;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -428,6 +429,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INoteEmbeddingRepository, SqlNoteEmbeddingRepository>();
         services.AddScoped<IIndexingJobRepository, SqlIndexingJobRepository>();
         services.AddScoped<ISummaryJobRepository, SqlSummaryJobRepository>();
+        services.AddScoped<IFocusItemRepository, SqlFocusItemRepository>();
+        services.AddScoped<IFocusSuggestionRepository, SqlFocusSuggestionRepository>();
+
+        // Focus AI service
+        services.AddScoped<IFocusAIService, FocusAIService>();
 
         // Parallel-safe repository using DbContextFactory for concurrent operations
         // This enables safe parallel tool execution in agent mode
@@ -742,6 +748,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
         services.Configure<PineconeSettings>(configuration.GetSection(PineconeSettings.SectionName));
         services.Configure<NoteSummarySettings>(configuration.GetSection(NoteSummarySettings.SectionName));
+        services.Configure<FocusAISettings>(configuration.GetSection(FocusAISettings.SectionName));
         services.Configure<GitSettings>(configuration.GetSection(GitSettings.SectionName));
         services.Configure<GitHubSettings>(configuration.GetSection(GitHubSettings.SectionName));
 
