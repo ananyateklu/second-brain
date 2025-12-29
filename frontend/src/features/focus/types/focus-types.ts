@@ -117,9 +117,15 @@ export interface CreateFocusItemRequest {
 export interface UpdateFocusItemRequest {
   title?: string;
   description?: string;
+  /** Flag to explicitly indicate description should be updated (to distinguish null from "clear description") */
+  updateDescription?: boolean;
   priority?: FocusPriority;
   scheduledDate?: string | null;
+  /** Flag to explicitly indicate scheduled date should be updated (to distinguish null from "clear date") */
+  updateScheduledDate?: boolean;
   estimatedMinutes?: number | null;
+  /** Flag to explicitly indicate estimated minutes should be updated (to distinguish null from "clear estimate") */
+  updateEstimatedMinutes?: boolean;
   isCurrentFocus?: boolean;
   status?: FocusItemStatus;
 }

@@ -237,9 +237,10 @@ export const FocusSkeleton = memo(function FocusSkeleton({
 }: FocusSkeletonProps) {
   return (
     <div className={cn('flex flex-col lg:flex-row gap-4 h-full', className)}>
-      {/* Left Column - Today's Plan */}
-      <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0">
+      {/* Left Column - Today's Plan + Backlog */}
+      <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4">
         <TodaysPlanSkeleton />
+        <BacklogSkeleton />
       </div>
 
       {/* Center Column - Current Focus + Progress */}
@@ -248,9 +249,8 @@ export const FocusSkeleton = memo(function FocusSkeleton({
         <ProgressSummarySkeleton />
       </div>
 
-      {/* Right Column - Backlog + Suggestions */}
-      <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4">
-        <BacklogSkeleton />
+      {/* Right Column - AI Suggestions */}
+      <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col">
         <SuggestionsSkeleton />
       </div>
     </div>

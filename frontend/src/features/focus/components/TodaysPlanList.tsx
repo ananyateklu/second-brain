@@ -4,9 +4,10 @@
  */
 
 import { memo, useCallback, useMemo } from 'react';
-import { Clock, CheckCircle2, Circle, Target, GripVertical } from 'lucide-react';
+import { Clock, CheckCircle2, Circle, Target, GripVertical, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Button } from '@/components/ui/Button';
 import { PriorityBadge } from './PriorityBadge';
 import type { FocusItem } from '../types';
 
@@ -17,6 +18,8 @@ export interface TodaysPlanListProps {
   onComplete: (id: string, completed: boolean) => void;
   /** Called when item is set as current focus */
   onSetFocus: (id: string) => void;
+  /** Called when item is removed from today's plan (sent to backlog) */
+  onRemove?: (id: string) => void;
   /** Called when items are reordered */
   onReorder?: (items: Array<{ id: string; sortOrder: number }>) => void;
   /** Whether actions are disabled */
@@ -29,6 +32,7 @@ interface PlanItemProps {
   item: FocusItem;
   onComplete: (id: string, completed: boolean) => void;
   onSetFocus: (id: string) => void;
+  onRemove?: (id: string) => void;
   disabled?: boolean;
   showDragHandle?: boolean;
 }
@@ -37,6 +41,7 @@ const PlanItem = memo(function PlanItem({
   item,
   onComplete,
   onSetFocus,
+  onRemove,
   disabled = false,
   showDragHandle = false,
 }: PlanItemProps) {
@@ -56,6 +61,10 @@ const PlanItem = memo(function PlanItem({
       onSetFocus(item.id);
     }
   }, [item.id, item.isCurrentFocus, isCompleted, onSetFocus]);
+
+  const handleRemove = useCallback(() => {
+    onRemove?.(item.id);
+  }, [item.id, onRemove]);
 
   return (
     <div
@@ -133,6 +142,20 @@ const PlanItem = memo(function PlanItem({
           {item.estimatedMinutes}m
         </span>
       )}
+
+      {/* Remove button */}
+      {onRemove && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleRemove}
+          disabled={disabled}
+          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+          title="Remove from today"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
     </div>
   );
 });
@@ -145,6 +168,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
   items,
   onComplete,
   onSetFocus,
+  onRemove,
   onReorder,
   disabled = false,
   className,
@@ -272,6 +296,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
             item={item}
             onComplete={onComplete}
             onSetFocus={onSetFocus}
+            onRemove={onRemove}
             disabled={disabled}
             showDragHandle={!!onReorder}
           />

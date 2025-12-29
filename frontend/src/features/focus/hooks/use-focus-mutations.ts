@@ -190,6 +190,39 @@ export function useUpdateFocusItem() {
                 }
               }
 
+              // Handle unscheduling (scheduledDate: null with updateScheduledDate: true) - remove from today's plan
+              if (data.scheduledDate === null && data.updateScheduledDate) {
+                const itemToRemove = old.scheduledItems.find((item) => item.id === id);
+                if (itemToRemove) {
+                  return {
+                    ...old,
+                    scheduledItems: old.scheduledItems.filter((item) => item.id !== id),
+                    totalEstimatedMinutes: old.totalEstimatedMinutes - (itemToRemove.estimatedMinutes || 0),
+                  };
+                }
+              }
+
+              // Handle scheduling (scheduledDate set to today with updateScheduledDate: true) - add from backlog
+              if (data.scheduledDate && data.updateScheduledDate && data.scheduledDate === todayDate) {
+                // Item is being scheduled from backlog, will be added via onSettled invalidation
+                // But we can optimistically add it if we have the backlog data
+                if (previousBacklog) {
+                  const itemToAdd = previousBacklog.items.find((item) => item.id === id);
+                  if (itemToAdd) {
+                    const scheduledItem = {
+                      ...itemToAdd,
+                      scheduledDate: data.scheduledDate,
+                      updatedAt: new Date().toISOString(),
+                    };
+                    return {
+                      ...old,
+                      scheduledItems: [...old.scheduledItems, scheduledItem],
+                      totalEstimatedMinutes: old.totalEstimatedMinutes + (itemToAdd.estimatedMinutes || 0),
+                    };
+                  }
+                }
+              }
+
               return {
                 ...old,
                 currentFocus: old.currentFocus?.id === id
@@ -211,6 +244,44 @@ export function useUpdateFocusItem() {
             focusKeys.backlog(),
             (old) => {
               if (!old) return old;
+
+              // Handle scheduling (scheduledDate set with updateScheduledDate: true) - remove from backlog
+              if (data.scheduledDate && data.updateScheduledDate) {
+                const itemToRemove = old.items.find((item) => item.id === id);
+                if (itemToRemove) {
+                  const newCountByPriority = { ...old.countByPriority };
+                  if (newCountByPriority[itemToRemove.priority]) {
+                    newCountByPriority[itemToRemove.priority]--;
+                  }
+                  return {
+                    ...old,
+                    items: old.items.filter((item) => item.id !== id),
+                    totalCount: old.totalCount - 1,
+                    countByPriority: newCountByPriority,
+                  };
+                }
+              }
+
+              // Handle unscheduling (scheduledDate: null with updateScheduledDate: true) - add to backlog
+              if (data.scheduledDate === null && data.updateScheduledDate && previousTodayPlan) {
+                const itemToAdd = previousTodayPlan.scheduledItems.find((item) => item.id === id);
+                if (itemToAdd) {
+                  const unscheduledItem = {
+                    ...itemToAdd,
+                    scheduledDate: null,
+                    updatedAt: new Date().toISOString(),
+                  };
+                  const newCountByPriority = { ...old.countByPriority };
+                  newCountByPriority[itemToAdd.priority] = (newCountByPriority[itemToAdd.priority] || 0) + 1;
+                  return {
+                    ...old,
+                    items: [unscheduledItem, ...old.items],
+                    totalCount: old.totalCount + 1,
+                    countByPriority: newCountByPriority,
+                  };
+                }
+              }
+
               return {
                 ...old,
                 items: old.items.map((item) =>
