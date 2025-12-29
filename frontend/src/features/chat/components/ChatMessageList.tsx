@@ -1,5 +1,5 @@
 import { RefObject, useMemo, memo } from 'react';
-import { ChatConversation, ChatMessage, ToolCall, GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
+import { ChatConversation, ChatMessage, ToolCall, GroundingSource, GrokSearchSource, ClaudeSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { MessageBubble } from './MessageBubble';
@@ -78,6 +78,8 @@ export interface ChatMessageListProps {
   groundingSources?: GroundingSource[];
   /** Search sources from Grok Live Search/DeepSearch (Grok only) */
   grokSearchSources?: GrokSearchSource[];
+  /** Search sources from Claude Web Search (Anthropic only) */
+  claudeSearchSources?: ClaudeSearchSource[];
   /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
   // Settings
@@ -115,6 +117,7 @@ export function ChatMessageList({
   ragLogId,
   groundingSources = [],
   grokSearchSources = [],
+  claudeSearchSources = [],
   codeExecutionResult = null,
   agentModeEnabled,
   ragEnabled,
@@ -206,7 +209,7 @@ export function ChatMessageList({
             )}
 
             {/* Show streaming message - also keep visible while we have grounding/search sources */}
-            {(isStreaming || (streamingMessage && !hasMatchingPersistedMessage) || (groundingSources.length > 0) || (grokSearchSources.length > 0)) && (
+            {(isStreaming || (streamingMessage && !hasMatchingPersistedMessage) || (groundingSources.length > 0) || (grokSearchSources.length > 0) || (claudeSearchSources.length > 0)) && (
               <StreamingIndicator
                 isStreaming={isStreaming}
                 streamingMessage={streamingMessage}
@@ -224,6 +227,7 @@ export function ChatMessageList({
                 agentRetrievedNotes={agentRetrievedNotes}
                 groundingSources={groundingSources}
                 grokSearchSources={grokSearchSources}
+                claudeSearchSources={claudeSearchSources}
                 codeExecutionResult={codeExecutionResult}
               />
             )}

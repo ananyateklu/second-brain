@@ -5,7 +5,7 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
+import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -173,6 +173,7 @@ export function Header() {
           {isChatPage ? (
             <div className="flex items-center gap-4 h-12 flex-1">
               <ChatPageControls />
+              <HeaderFocusIndicator />
               <SummaryIndicator />
               <IndexingIndicator />
               <UserMenu />
@@ -180,6 +181,7 @@ export function Header() {
           ) : isNotesPage ? (
             <div className="flex items-center gap-4 h-12 flex-1">
               <DirectoryPageControls />
+              <HeaderFocusIndicator />
               <SummaryIndicator />
               <IndexingIndicator />
               <UserMenu />
@@ -213,6 +215,9 @@ export function Header() {
 
               {/* Focus Dashboard Controls - Only on Dashboard page */}
               {isDashboardPage && <FocusDashboardControls />}
+
+              {/* Focus Indicator - On all pages except Dashboard (shows when focus is active) */}
+              {!isDashboardPage && <HeaderFocusIndicator />}
 
               {/* Summary Generation Indicator */}
               <SummaryIndicator />

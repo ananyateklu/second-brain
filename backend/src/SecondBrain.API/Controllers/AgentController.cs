@@ -449,6 +449,25 @@ public class AgentController : ControllerBase
                             await Response.WriteAsync($"event: grok_search\ndata: {grokSearchJson}\n\n");
                             await Response.Body.FlushAsync(cancellationToken);
                         }
+
+                        // Claude Web Search sources
+                        if (evt.ClaudeSearchSources != null && evt.ClaudeSearchSources.Count > 0)
+                        {
+                            var claudeSearchJson = JsonSerializer.Serialize(new
+                            {
+                                query = evt.SearchQuery,
+                                sources = evt.ClaudeSearchSources.Select(s => new
+                                {
+                                    url = s.Url,
+                                    title = s.Title,
+                                    pageAge = s.PageAge,
+                                    snippet = s.Snippet,
+                                    citedText = s.CitedText
+                                }).ToList()
+                            });
+                            await Response.WriteAsync($"event: claude_search\ndata: {claudeSearchJson}\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                        }
                         break;
 
                     case AgentEventType.CodeExecution:

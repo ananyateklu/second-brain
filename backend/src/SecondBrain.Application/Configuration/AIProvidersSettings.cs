@@ -330,6 +330,11 @@ public class AnthropicSettings
     /// Prompt caching configuration for reducing latency and costs
     /// </summary>
     public AnthropicCachingConfig Caching { get; set; } = new();
+
+    /// <summary>
+    /// Web search configuration for real-time information retrieval
+    /// </summary>
+    public AnthropicWebSearchConfig WebSearch { get; set; } = new();
 }
 
 /// <summary>
@@ -361,6 +366,12 @@ public class AnthropicFeaturesConfig
     /// Enable PDF document processing
     /// </summary>
     public bool EnablePdfSupport { get; set; } = true;
+
+    /// <summary>
+    /// Enable web search for real-time information (requires beta feature access).
+    /// Uses Brave Search under the hood. Cost: $10 per 1,000 searches.
+    /// </summary>
+    public bool EnableWebSearch { get; set; } = false;
 }
 
 /// <summary>
@@ -403,6 +414,73 @@ public class AnthropicCachingConfig
     /// Minimum content tokens required for caching to be cost-effective
     /// </summary>
     public int MinContentTokens { get; set; } = 1024;
+}
+
+/// <summary>
+/// Web search configuration for Claude's built-in web search tool.
+/// Uses Brave Search under the hood. Cost: $10 per 1,000 searches.
+/// </summary>
+public class AnthropicWebSearchConfig
+{
+    /// <summary>
+    /// Maximum number of web searches per request (default: 5).
+    /// Helps control costs and prevents excessive API usage.
+    /// </summary>
+    public int MaxUses { get; set; } = 5;
+
+    /// <summary>
+    /// Only include search results from these domains.
+    /// Subdomains are automatically included (e.g., "example.com" covers "docs.example.com").
+    /// Leave empty to allow all domains.
+    /// </summary>
+    public List<string> AllowedDomains { get; set; } = new();
+
+    /// <summary>
+    /// Exclude search results from these domains.
+    /// Cannot be used together with AllowedDomains.
+    /// </summary>
+    public List<string> BlockedDomains { get; set; } = new();
+
+    /// <summary>
+    /// Include user location context for localized search results.
+    /// </summary>
+    public bool IncludeUserLocation { get; set; } = false;
+
+    /// <summary>
+    /// Default user location settings (when IncludeUserLocation is true).
+    /// </summary>
+    public AnthropicUserLocation? DefaultUserLocation { get; set; }
+}
+
+/// <summary>
+/// User location for localized web search results.
+/// </summary>
+public class AnthropicUserLocation
+{
+    /// <summary>
+    /// Location type. Use "approximate" for privacy-respecting location.
+    /// </summary>
+    public string Type { get; set; } = "approximate";
+
+    /// <summary>
+    /// City name (e.g., "San Francisco").
+    /// </summary>
+    public string? City { get; set; }
+
+    /// <summary>
+    /// Region/State (e.g., "California").
+    /// </summary>
+    public string? Region { get; set; }
+
+    /// <summary>
+    /// Country code (e.g., "US").
+    /// </summary>
+    public string? Country { get; set; }
+
+    /// <summary>
+    /// Timezone (e.g., "America/Los_Angeles").
+    /// </summary>
+    public string? Timezone { get; set; }
 }
 
 public class OllamaSettings

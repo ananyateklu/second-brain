@@ -169,6 +169,20 @@ public class AgentStreamEvent
     public GrokThinkingStep? GrokThinkingStep { get; set; }
 
     #endregion
+
+    #region Claude-specific fields
+
+    /// <summary>
+    /// Search sources from Claude's built-in web search tool (for Grounding events)
+    /// </summary>
+    public List<ClaudeSearchSource>? ClaudeSearchSources { get; set; }
+
+    /// <summary>
+    /// The search query that was executed (for Grounding events with web search)
+    /// </summary>
+    public string? SearchQuery { get; set; }
+
+    #endregion
 }
 
 /// <summary>
