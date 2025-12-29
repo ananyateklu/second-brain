@@ -59,6 +59,7 @@ docker-compose up -d          # Access at http://localhost:3000
 | **Code Execution** | Python sandbox via Gemini with output display |
 | **Web Search** | Live search (Grok), Google grounding (Gemini) |
 | **Extended Thinking** | Claude reasoning chains, Grok think mode |
+| **Voice Agent** | Real-time voice interface with transcription and tool execution |
 
 ### Knowledge Management
 
@@ -70,6 +71,18 @@ docker-compose up -d          # Access at http://localhost:3000
 | **Image Attachments** | Multimodal notes with AI-extracted descriptions |
 | **Bulk Operations** | Multi-select delete, archive, tag |
 | **iOS Sync** | Bidirectional sync via iOS Shortcuts |
+
+### Productivity & Focus
+
+| Feature | Description |
+|---------|-------------|
+| **Focus Dashboard** | Current focus with live timer, today's plan, backlog management |
+| **AI Suggestions** | Generate task suggestions from notes using RAG pipeline |
+| **Time Tracking** | Accumulated time tracking across sessions with live display |
+| **Priority System** | P1 (High), P2 (Medium), P3 (Low) with visual indicators |
+| **Progress Summaries** | AI-generated daily/weekly productivity insights |
+| **Quick Capture** | Modal for fast task creation (Cmd+Enter shortcuts) |
+| **Note Linking** | Link focus items to existing notes for context |
 
 ### RAG Pipeline
 
@@ -118,10 +131,10 @@ second-brain/
 ├── frontend/src/
 │   ├── features/                  # 12 domain modules
 │   ├── services/                  # API service layer
-│   ├── store/                     # Zustand (12 slices)
+│   ├── store/                     # Zustand (14 slices)
 │   └── components/                # Shared UI
 ├── frontend/src-tauri/            # Desktop app (Rust)
-├── database/                      # 41 SQL migration scripts
+├── database/                      # 62 SQL migration scripts
 └── docs/                          # ADRs, guides
 ```
 
@@ -284,6 +297,7 @@ Full API documentation available at `/swagger` when running the backend.
 | Notes | `/api/notes` | CRUD, versions, summaries, images |
 | Chat | `/api/chat` | Conversations, streaming (SSE), image generation |
 | Agents | `/api/agent` | Agent streaming with tool execution |
+| Focus | `/api/focus` | Tasks, AI suggestions, progress summaries |
 | RAG | `/api/rag/analytics` | Query logs, feedback, topic clustering |
 | Indexing | `/api/indexing` | Vector indexing jobs and stats |
 | Git | `/api/git` | Repository operations, branches |
