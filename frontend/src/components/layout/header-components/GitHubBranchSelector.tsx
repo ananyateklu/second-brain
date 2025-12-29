@@ -27,7 +27,8 @@ export const GitHubBranchSelector = () => {
     githubRepo ?? undefined
   );
 
-  const branches = branchesData?.branches ?? [];
+  // Memoize branches array to prevent dependency changes on every render
+  const branches = useMemo(() => branchesData?.branches ?? [], [branchesData?.branches]);
 
   // Get the selected branch object or default
   const selectedBranch = useMemo((): BranchSummary | null => {

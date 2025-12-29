@@ -288,4 +288,14 @@ export function ContextUsageIndicator({
 export type * from './types';
 export { ContextBreakdownItem } from './ContextBreakdownItem';
 export { ContextProgressBar } from './ContextProgressBar';
-export * from './ContextBreakdownIcons';
+export {
+  SystemPromptIcon,
+  MessageHistoryIcon,
+  ToolDefinitionsIcon,
+  ToolResultsIcon,
+  RagContextIcon,
+  CurrentInputIcon,
+  TokenIcon,
+  ChevronIcon,
+  WarningIcon,
+} from './ContextBreakdownIcons';

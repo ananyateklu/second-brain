@@ -292,7 +292,7 @@ export const ProgressSummary = memo(function ProgressSummary({
                   <div className="flex items-start gap-2">
                     <Sparkles
                       className="h-4 w-4 mt-0.5 shrink-0"
-                      style={{ color: 'var(--color-accent-purple-text)' }}
+                      style={{ color: 'var(--color-success)' }}
                     />
                     <p
                       className="text-sm"

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useGitHubBranches, useGitHubRepositoryTree, useGitHubFileContent } from '../hooks';
 import type { BranchSummary } from '../../../types/github';
@@ -13,9 +13,16 @@ interface GitHubCodeBrowserProps {
 
 export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [prevBranch, setPrevBranch] = useState<string | null>(null);
 
   // Get branch from store
   const githubSelectedBranch = useBoundStore((state) => state.githubSelectedBranch);
+
+  // Reset file selection when branch changes (React recommended pattern for derived state)
+  if (githubSelectedBranch !== prevBranch) {
+    setPrevBranch(githubSelectedBranch);
+    setSelectedFilePath(null);
+  }
 
   // Fetch branches
   const {
@@ -39,11 +46,6 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     const defaultBranch = branches.find(b => b.isDefault);
     return defaultBranch ?? branches[0] ?? null;
   }, [branches, githubSelectedBranch]);
-
-  // Reset file selection when branch changes
-  useEffect(() => {
-    setSelectedFilePath(null);
-  }, [githubSelectedBranch]);
 
   // Fetch repository tree based on selected branch
   const treeRequest = useMemo(() => {
