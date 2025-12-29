@@ -170,7 +170,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
     return (
       <div
         className={cn(
-          'rounded-xl border p-6 text-center h-full flex flex-col items-center justify-center',
+          'rounded-2xl border p-6 text-center h-full flex flex-col items-center justify-center',
           className
         )}
         style={{
@@ -207,7 +207,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
 
   return (
     <div
-      className={cn('rounded-xl border flex flex-col h-full', className)}
+      className={cn('rounded-2xl border flex flex-col h-full', className)}
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

@@ -224,7 +224,7 @@ export const BacklogSection = memo(function BacklogSection({
 
   return (
     <div
-      className={cn('rounded-xl border flex flex-col', className)}
+      className={cn('rounded-2xl border flex flex-col', className)}
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

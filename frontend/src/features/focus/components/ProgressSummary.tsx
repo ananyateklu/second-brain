@@ -88,7 +88,7 @@ export const ProgressSummary = memo(function ProgressSummary({
   return (
     <div
       className={cn(
-        'rounded-xl border overflow-hidden transition-all duration-200',
+        'rounded-2xl border overflow-hidden transition-all duration-200',
         className
       )}
       style={{

@@ -58,7 +58,7 @@ const CurrentFocusSkeleton = memo(function CurrentFocusSkeleton() {
 const ProgressSummarySkeleton = memo(function ProgressSummarySkeleton() {
   return (
     <div
-      className="rounded-xl border p-4"
+      className="rounded-2xl border p-4"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -110,7 +110,7 @@ const PlanItemSkeleton = memo(function PlanItemSkeleton() {
 const TodaysPlanSkeleton = memo(function TodaysPlanSkeleton() {
   return (
     <div
-      className="rounded-xl border"
+      className="rounded-2xl border"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -160,7 +160,7 @@ const BacklogItemSkeleton = memo(function BacklogItemSkeleton() {
 const BacklogSkeleton = memo(function BacklogSkeleton() {
   return (
     <div
-      className="rounded-xl border"
+      className="rounded-2xl border"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
@@ -207,7 +207,7 @@ const BacklogSkeleton = memo(function BacklogSkeleton() {
 const SuggestionsSkeleton = memo(function SuggestionsSkeleton() {
   return (
     <div
-      className="rounded-xl border p-4"
+      className="rounded-2xl border p-4"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',

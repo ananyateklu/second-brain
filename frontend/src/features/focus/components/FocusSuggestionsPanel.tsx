@@ -111,7 +111,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
   return (
     <div
       className={cn(
-        'rounded-xl border transition-all duration-200 flex flex-col',
+        'rounded-2xl border transition-all duration-200 flex flex-col',
         className
       )}
       style={{
