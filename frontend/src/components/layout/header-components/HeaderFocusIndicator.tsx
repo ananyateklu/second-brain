@@ -49,13 +49,10 @@ export const HeaderFocusIndicator = memo(function HeaderFocusIndicator() {
     currentFocus ? calculateElapsedSeconds(currentFocus.focusStartedAt, currentFocus.accumulatedMinutes) : 0
   );
 
-  // Update timer every second when focus is active
+  // Update timer every second when focus is running
   useEffect(() => {
     if (!currentFocus?.focusStartedAt) {
-      if (currentFocus) {
-        setElapsedSeconds(currentFocus.accumulatedMinutes * 60);
-      }
-      return;
+      return; // No interval needed when paused - we compute the value directly
     }
 
     const updateElapsed = () => {
@@ -67,10 +64,15 @@ export const HeaderFocusIndicator = memo(function HeaderFocusIndicator() {
     updateElapsed();
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [currentFocus?.focusStartedAt, currentFocus?.accumulatedMinutes, currentFocus]);
+  }, [currentFocus?.focusStartedAt, currentFocus?.accumulatedMinutes]);
+
+  // Compute displayed seconds - use state when running (for live updates), compute directly when paused
+  const displayedSeconds = currentFocus?.focusStartedAt
+    ? elapsedSeconds
+    : (currentFocus?.accumulatedMinutes ?? 0) * 60;
 
   const handleClick = useCallback(() => {
-    navigate('/');
+    void navigate('/');
   }, [navigate]);
 
   // Don't render if no active focus
@@ -80,7 +82,7 @@ export const HeaderFocusIndicator = memo(function HeaderFocusIndicator() {
 
   const isRunning = !!currentFocus.focusStartedAt;
   const priorityInfo = PRIORITY_INFO[currentFocus.priority];
-  const formattedTime = formatDuration(elapsedSeconds);
+  const formattedTime = formatDuration(displayedSeconds);
 
   // Truncate title for header display
   const displayTitle = currentFocus.title.length > 30
