@@ -421,6 +421,19 @@ function processGrokSearchEvent(
 }
 
 /**
+ * Process claude:search event
+ */
+function processClaudeSearchEvent(
+  state: UnifiedStreamState,
+  event: Extract<StreamEvent, { type: 'claude:search' }>
+): UnifiedStreamState {
+  return {
+    ...state,
+    claudeSearchSources: event.sources,
+  };
+}
+
+/**
  * Process grok:thinking event
  */
 function processGrokThinkingEvent(
@@ -599,6 +612,9 @@ function processEvent(state: UnifiedStreamState, event: StreamEvent): UnifiedStr
 
     case 'grok:search':
       return processGrokSearchEvent(state, event);
+
+    case 'claude:search':
+      return processClaudeSearchEvent(state, event);
 
     case 'grok:thinking':
       return processGrokThinkingEvent(state, event);

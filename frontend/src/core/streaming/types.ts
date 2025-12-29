@@ -7,7 +7,7 @@
  */
 
 import type { RagContextNote } from '../../types/rag';
-import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep, GeneratedImage } from '../../types/chat';
+import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep, GeneratedImage, ClaudeSearchSource } from '../../types/chat';
 
 // ============================================
 // Stream Event Types (maps to backend SSE events)
@@ -31,6 +31,7 @@ export type StreamEventType =
   | 'status:update'
   | 'grok:search'
   | 'grok:thinking'
+  | 'claude:search'
   | 'image:start'
   | 'image:progress'
   | 'image:complete'
@@ -80,6 +81,7 @@ export type StreamEvent =
   | { type: 'status:update'; status: string }
   | { type: 'grok:search'; sources: GrokSearchSource[] }
   | { type: 'grok:thinking'; step: GrokThinkingStep }
+  | { type: 'claude:search'; sources: ClaudeSearchSource[]; query?: string }
   | { type: 'image:start'; provider: string; model: string; prompt: string }
   | { type: 'image:progress'; stage: ImageGenerationStage; progress?: number }
   | { type: 'image:complete'; images: GeneratedImage[] }
@@ -184,6 +186,7 @@ export interface UnifiedStreamState {
   ragContext: RagContextNote[];
   groundingSources: GroundingSource[];
   grokSearchSources: GrokSearchSource[];
+  claudeSearchSources: ClaudeSearchSource[];
   grokThinkingSteps: GrokThinkingStep[];
   codeExecution: CodeExecutionResult | null;
 
@@ -251,6 +254,7 @@ export const initialStreamState: UnifiedStreamState = {
   ragContext: [],
   groundingSources: [],
   grokSearchSources: [],
+  claudeSearchSources: [],
   grokThinkingSteps: [],
   codeExecution: null,
   imageGeneration: initialImageGenerationState,

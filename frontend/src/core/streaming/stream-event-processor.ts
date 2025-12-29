@@ -6,7 +6,7 @@
  */
 
 import type { RagContextNote } from '../../types/rag';
-import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep } from '../../types/chat';
+import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep, ClaudeSearchSource } from '../../types/chat';
 import type { StreamEvent } from './types';
 import { loggers } from '../../utils/logger';
 
@@ -114,6 +114,11 @@ interface GrokThinkingData {
   step?: number;
   thought?: string;
   conclusion?: string;
+}
+
+interface ClaudeSearchData {
+  query?: string;
+  sources?: ClaudeSearchSource[];
 }
 
 /**
@@ -362,6 +367,23 @@ function parseGrokSearchEvent(data: string): StreamEvent | null {
 }
 
 /**
+ * Parse Claude web search sources event data
+ */
+function parseClaudeSearchEvent(data: string): StreamEvent | null {
+  try {
+    const parsed = JSON.parse(data) as ClaudeSearchData;
+    return {
+      type: 'claude:search',
+      sources: parsed.sources || [],
+      query: parsed.query,
+    };
+  } catch (e) {
+    loggers.stream.error('Failed to parse Claude search data:', e);
+    return null;
+  }
+}
+
+/**
  * Parse Grok thinking step event data
  */
 function parseGrokThinkingEvent(data: string): StreamEvent | null {
@@ -555,6 +577,9 @@ export class StreamEventProcessor {
 
       case 'grok_search':
         return parseGrokSearchEvent(data);
+
+      case 'claude_search':
+        return parseClaudeSearchEvent(data);
 
       case 'grok_thinking':
         return parseGrokThinkingEvent(data);

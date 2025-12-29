@@ -546,7 +546,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
 // ============================================
 
 import type { RagContextNote } from '../types/rag';
-import type { GroundingSource, CodeExecutionResult, GeneratedImage, GrokSearchSource } from '../types/chat';
+import type { GroundingSource, CodeExecutionResult, GeneratedImage, GrokSearchSource, ClaudeSearchSource } from '../types/chat';
 import type { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../features/agents/types/agent-types';
 import type { ImageGenerationStage, ProcessEvent } from '../core/streaming/types';
 
@@ -580,6 +580,8 @@ export interface LegacyStreamingState {
   ragChunksCount?: number;
   // Grok-specific
   grokSearchSources?: GrokSearchSource[];
+  // Claude-specific
+  claudeSearchSources?: ClaudeSearchSource[];
   // Agent-specific - unified timeline
   processTimeline: ProcessEvent[];
   /** Length of text content captured in timeline events (for avoiding duplication in main bubble) */
@@ -648,6 +650,8 @@ export function createLegacyAdapter(state: UnifiedStreamState): LegacyStreamingS
     ragChunksCount: state.ragChunksCount,
     // Grok-specific
     grokSearchSources: state.grokSearchSources,
+    // Claude-specific
+    claudeSearchSources: state.claudeSearchSources,
     // Agent-specific - unified timeline
     processTimeline: state.processTimeline,
     textContentInTimeline: state.textContentInTimeline,

@@ -109,6 +109,23 @@ export interface GrokSearchSource {
 }
 
 /**
+ * Claude web search source from built-in web search tool.
+ * Uses Brave Search under the hood.
+ */
+export interface ClaudeSearchSource {
+  /** URL of the source page */
+  url: string;
+  /** Title of the source page */
+  title: string;
+  /** How old the page is (e.g., "2 days ago", "December 29, 2025") */
+  pageAge?: string;
+  /** Snippet or excerpt from the page */
+  snippet?: string;
+  /** The text that was cited from this source in the response */
+  citedText?: string;
+}
+
+/**
  * Grok DeepSearch options
  */
 export interface GrokDeepSearchOptions {
@@ -260,6 +277,8 @@ export interface ChatMessage {
   thinkingProcess?: string;
   /** Grok search sources from Live Search (Grok only) */
   grokSearchSources?: GrokSearchSource[];
+  /** Claude web search sources (Claude only) */
+  claudeSearchSources?: ClaudeSearchSource[];
   /** Grok DeepSearch result (Grok only) */
   deepSearchResult?: GrokDeepSearchResult;
   /** Grok thinking steps from Think Mode (Grok only) */
@@ -505,6 +524,8 @@ export interface StreamEndData {
   thinkingProcess?: string;
   /** Grok search sources from Live Search (Grok only) */
   grokSearchSources?: GrokSearchSource[];
+  /** Claude web search sources (Claude only) */
+  claudeSearchSources?: ClaudeSearchSource[];
   /** Grok DeepSearch result (Grok only) */
   grokDeepSearchResult?: GrokDeepSearchResult;
   /** Grok thinking steps from Think Mode (Grok only) */
@@ -530,6 +551,8 @@ export interface CombinedStreamingState {
   thinkingProcess?: string;
   /** Grok search sources from Live Search (Grok only) */
   grokSearchSources?: GrokSearchSource[];
+  /** Claude web search sources (Claude only) */
+  claudeSearchSources?: ClaudeSearchSource[];
   /** Grok DeepSearch result (Grok only) */
   grokDeepSearchResult?: GrokDeepSearchResult;
   /** Grok thinking steps from Think Mode (Grok only) */

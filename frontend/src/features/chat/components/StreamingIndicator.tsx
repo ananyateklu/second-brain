@@ -7,13 +7,14 @@ import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
 import { TimelineItem } from '../../agents/components/TimelineItem';
 import { GroundingSourcesCard } from '../../agents/components/GroundingSourcesCard';
 import { GrokSearchSourcesCard } from '../../agents/components/GrokSearchSourcesCard';
+import { ClaudeSearchSourcesCard } from '../../agents/components/ClaudeSearchSourcesCard';
 import { CodeExecutionCard } from '../../agents/components/CodeExecutionCard';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ImageGenerationProgress } from './ImageGenerationProgress';
 import { RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
-import { GroundingSource, GrokSearchSource, CodeExecutionResult } from '../../../types/chat';
+import { GroundingSource, GrokSearchSource, ClaudeSearchSource, CodeExecutionResult } from '../../../types/chat';
 import { stripAllThinkingTags, extractAllThinkingContent } from '../../../utils/thinking-utils';
 import type { ImageGenerationStage, ProcessEvent } from '../../../core/streaming/types';
 
@@ -87,6 +88,7 @@ export interface StreamingIndicatorProps {
   agentRetrievedNotes?: RetrievedNoteContext[];
   groundingSources?: GroundingSource[];
   grokSearchSources?: GrokSearchSource[];
+  claudeSearchSources?: ClaudeSearchSource[];
   codeExecutionResult?: CodeExecutionResult | null;
   isGeneratingImage?: boolean;
   imageGenerationStage?: ImageGenerationStage;
@@ -119,6 +121,7 @@ export function StreamingIndicator({
   agentRetrievedNotes = [],
   groundingSources = [],
   grokSearchSources = [],
+  claudeSearchSources = [],
   codeExecutionResult = null,
   isGeneratingImage = false,
   imageGenerationStage = 'idle',
@@ -130,6 +133,7 @@ export function StreamingIndicator({
   const hasRetrievedNotes = agentRetrievedNotes.length > 0 || retrievedNotes.length > 0;
   const hasGroundingSources = groundingSources.length > 0;
   const hasGrokSearchSources = grokSearchSources.length > 0;
+  const hasClaudeSearchSources = claudeSearchSources.length > 0;
   const hasCodeExecution = codeExecutionResult !== null;
   const hasImageGeneration = isGeneratingImage && imageGenerationStage !== 'idle' && imageGenerationStage !== 'complete';
   const hasTimeline = processTimeline.length > 0;
@@ -171,7 +175,7 @@ export function StreamingIndicator({
   // Check if there's an incomplete (currently streaming) thinking block
   const hasIncompleteThinking = extractedThinking.incomplete !== null;
 
-  const hasSteps = hasTimeline || hasRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasCodeExecution || hasImageGeneration || completeBlocksNotInTimeline.length > 0 || hasIncompleteThinking;
+  const hasSteps = hasTimeline || hasRetrievedNotes || hasGroundingSources || hasGrokSearchSources || hasClaudeSearchSources || hasCodeExecution || hasImageGeneration || completeBlocksNotInTimeline.length > 0 || hasIncompleteThinking;
 
   // Calculate final response content (text not already in timeline)
   const finalResponseContent = agentModeEnabled && textContentInTimeline > 0
@@ -251,6 +255,9 @@ export function StreamingIndicator({
 
         {/* Grok search sources */}
         {hasGrokSearchSources && <GrokSearchSourcesCard sources={grokSearchSources} isStreaming={isStreaming} />}
+
+        {/* Claude search sources */}
+        {hasClaudeSearchSources && <ClaudeSearchSourcesCard sources={claudeSearchSources} isStreaming={isStreaming} />}
 
         {/* Code execution result */}
         {hasCodeExecution && codeExecutionResult && <CodeExecutionCard result={codeExecutionResult} isStreaming={isStreaming} />}

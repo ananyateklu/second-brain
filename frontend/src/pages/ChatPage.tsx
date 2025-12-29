@@ -91,6 +91,7 @@ export function ChatPage() {
     ragLogId,
     groundingSources,
     grokSearchSources,
+    claudeSearchSources,
     codeExecutionResult,
 
     // Scroll
@@ -406,6 +407,7 @@ export function ChatPage() {
             ragLogId={ragLogId}
             groundingSources={groundingSources}
             grokSearchSources={grokSearchSources}
+            claudeSearchSources={claudeSearchSources}
             codeExecutionResult={codeExecutionResult}
             agentModeEnabled={agentModeEnabled}
             ragEnabled={ragEnabled}

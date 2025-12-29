@@ -91,6 +91,39 @@ public class GroundingSource
 }
 
 /// <summary>
+/// Represents a web search source from Claude's built-in web search tool.
+/// Uses Brave Search under the hood.
+/// </summary>
+public class ClaudeSearchSource
+{
+    /// <summary>
+    /// URL of the source page
+    /// </summary>
+    public string Url { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Title of the source page
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// How old the page is (e.g., "2 days ago", "December 29, 2025")
+    /// </summary>
+    public string? PageAge { get; set; }
+
+    /// <summary>
+    /// Snippet or excerpt from the page
+    /// </summary>
+    public string? Snippet { get; set; }
+
+    /// <summary>
+    /// The text that was cited from this source in the response.
+    /// Populated when citations are included in the final response.
+    /// </summary>
+    public string? CitedText { get; set; }
+}
+
+/// <summary>
 /// Result of code execution in Gemini's Python sandbox
 /// </summary>
 public class CodeExecutionResult

@@ -38,6 +38,8 @@
     "os:allow-locale",
     "os:allow-platform",
     "os:allow-version",
-    "os:allow-arch"
+    "os:allow-arch",
+    "core:window:default",
+    "core:window:allow-start-dragging"
   ]
 }

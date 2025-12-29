@@ -24,7 +24,7 @@ import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import { useUnifiedStream, createLegacyAdapter } from '../../../hooks/use-unified-stream';
 import { NEW_CHAT_DRAFT_KEY } from '../../../store/slices/draft-slice';
-import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, GrokSearchSource, CodeExecutionResult, GeneratedImage } from '../../../types/chat';
+import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, GrokSearchSource, ClaudeSearchSource, CodeExecutionResult, GeneratedImage } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../../types/rag';
@@ -94,6 +94,8 @@ export interface ChatPageState {
   groundingSources?: GroundingSource[];
   /** Search sources from Grok Live Search/DeepSearch (Grok only) */
   grokSearchSources?: GrokSearchSource[];
+  /** Search sources from Claude Web Search (Anthropic only) */
+  claudeSearchSources?: ClaudeSearchSource[];
   /** Code execution result from Python sandbox (Gemini only) */
   codeExecutionResult?: CodeExecutionResult | null;
 
@@ -368,6 +370,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     ragLogId,
     groundingSources,
     grokSearchSources,
+    claudeSearchSources,
     codeExecutionResult,
     // Image generation fields
     isGeneratingImage,
@@ -771,6 +774,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     ragLogId,
     groundingSources,
     grokSearchSources,
+    claudeSearchSources,
     codeExecutionResult,
 
     // Image Generation State

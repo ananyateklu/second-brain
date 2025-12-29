@@ -3,12 +3,14 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using Anthropic.SDK;
+using Anthropic.SDK.Common;
 using Anthropic.SDK.Messaging;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.AI.Models;
 
 namespace SecondBrain.Application.Services.Agents.Strategies;
 
@@ -78,6 +80,53 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
         {
             tools = new List<Anthropic.SDK.Common.Tool>();
             pluginMethods = new Dictionary<string, (IAgentPlugin, MethodInfo)>();
+        }
+
+        // Check if web search should be enabled
+        var enableWebSearch = settings.Anthropic.Features.EnableWebSearch;
+        var lastUserMessage = GetLastUserMessage(request)?.ToLowerInvariant() ?? "";
+
+        // Auto-enable web search for queries that likely need real-time information
+        if (!enableWebSearch && ShouldAutoEnableWebSearch(lastUserMessage))
+        {
+            enableWebSearch = true;
+            _logger.LogDebug("Auto-enabling web search for query that may need real-time info");
+        }
+
+        // Track web search sources collected during this session
+        var webSearchSources = new List<ClaudeSearchSource>();
+
+        // Add web search tool if enabled
+        if (enableWebSearch)
+        {
+            _logger.LogInformation("Enabling Claude web search (cost: $10/1000 searches)");
+            yield return StatusEvent("Enabling web search...");
+
+            var webSearchConfig = settings.Anthropic.WebSearch;
+
+            // Build user location if configured
+            UserLocation? userLocation = null;
+            if (webSearchConfig.IncludeUserLocation && webSearchConfig.DefaultUserLocation != null)
+            {
+                userLocation = new UserLocation
+                {
+                    City = webSearchConfig.DefaultUserLocation.City,
+                    Region = webSearchConfig.DefaultUserLocation.Region,
+                    Country = webSearchConfig.DefaultUserLocation.Country,
+                    Timezone = webSearchConfig.DefaultUserLocation.Timezone
+                };
+            }
+
+            // Add web search tool using SDK's ServerTools helper
+            // Parameters: maxUses, allowedDomains, blockedDomains, userLocation
+            var webSearchTool = ServerTools.GetWebSearchTool(
+                webSearchConfig.MaxUses,
+                webSearchConfig.AllowedDomains.Count > 0 ? webSearchConfig.AllowedDomains : null,
+                webSearchConfig.BlockedDomains.Count > 0 ? webSearchConfig.BlockedDomains : null,
+                userLocation
+            );
+
+            tools.Add(webSearchTool);
         }
 
         yield return StatusEvent("Building conversation context...");
@@ -198,6 +247,34 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                     }
                     hasToolUse = true;
                     yield return StatusEvent($"Planning to use {streamEvent.ContentBlock.Name}...");
+                    continue;
+                }
+
+                // Handle server_tool_use (web search being executed by Anthropic)
+                if (streamEvent.ContentBlock?.Type == "server_tool_use")
+                {
+                    var toolName = streamEvent.ContentBlock.Name;
+                    if (toolName == "web_search")
+                    {
+                        yield return StatusEvent("Searching the web...");
+                        _logger.LogDebug("Claude is executing web search");
+                    }
+                    continue;
+                }
+
+                // Handle web_search_tool_result (search results from Anthropic)
+                if (streamEvent.ContentBlock?.Type == "web_search_tool_result")
+                {
+                    // Extract search sources from the result
+                    var sources = ExtractWebSearchSources(streamEvent);
+                    if (sources.Count > 0)
+                    {
+                        webSearchSources.AddRange(sources);
+                        _logger.LogInformation("Claude web search returned {Count} sources", sources.Count);
+
+                        // Emit search sources event to frontend
+                        yield return ClaudeSearchEvent(sources, null);
+                    }
                     continue;
                 }
 
@@ -669,5 +746,81 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
             if (enumerator != null)
                 await enumerator.DisposeAsync();
         }
+    }
+
+    /// <summary>
+    /// Extract web search sources from a web_search_tool_result content block.
+    /// </summary>
+    private List<ClaudeSearchSource> ExtractWebSearchSources(MessageResponse streamEvent)
+    {
+        var sources = new List<ClaudeSearchSource>();
+
+        try
+        {
+            // The Anthropic SDK returns WebSearchToolResultContent for web search results
+            // Each result contains URL, title, and potentially page_age and snippet
+            if (streamEvent.Content != null)
+            {
+                foreach (var content in streamEvent.Content)
+                {
+                    if (content is WebSearchToolResultContent webSearchResult)
+                    {
+                        foreach (var result in webSearchResult.Content.OfType<WebSearchResultContent>())
+                        {
+                            sources.Add(new ClaudeSearchSource
+                            {
+                                Url = result.Url ?? string.Empty,
+                                Title = result.Title ?? string.Empty,
+                                PageAge = result.PageAge,
+                                // Snippet may come from encrypted_content in some cases
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to extract web search sources from response");
+        }
+
+        return sources;
+    }
+
+    /// <summary>
+    /// Create an event for Claude web search sources.
+    /// </summary>
+    private static AgentStreamEvent ClaudeSearchEvent(List<ClaudeSearchSource> sources, string? searchQuery)
+    {
+        return new AgentStreamEvent
+        {
+            Type = AgentEventType.Grounding,
+            Content = $"Found {sources.Count} web result(s)",
+            ClaudeSearchSources = sources,
+            SearchQuery = searchQuery
+        };
+    }
+
+    /// <summary>
+    /// Determine if web search should be auto-enabled based on the user's query.
+    /// Looks for indicators that the query may need real-time information.
+    /// </summary>
+    private static bool ShouldAutoEnableWebSearch(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return false;
+
+        // Keywords that indicate need for real-time information
+        var realTimeIndicators = new[]
+        {
+            "latest", "current", "today", "recent", "news",
+            "what is happening", "who won", "stock price",
+            "weather", "score", "election", "announcement",
+            "just released", "this week", "yesterday",
+            "breaking", "update", "now", "live"
+        };
+
+        return realTimeIndicators.Any(indicator =>
+            query.Contains(indicator, StringComparison.OrdinalIgnoreCase));
     }
 }
