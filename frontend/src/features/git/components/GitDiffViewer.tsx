@@ -269,10 +269,9 @@ export const GitDiffViewer = memo(function GitDiffViewer({
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
       {/* File header */}
       <div
-        className="flex items-center justify-between px-4 py-[16px] border-b flex-shrink-0"
+        className="flex items-center justify-between px-4 py-[16px] flex-shrink-0"
         style={{
           backgroundColor: 'var(--surface-elevated)',
-          borderColor: 'var(--border)',
         }}
       >
         <div className="flex items-center gap-3 min-w-0">

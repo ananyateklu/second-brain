@@ -147,8 +147,6 @@ export const GitHubPage = () => {
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}
             </div>
-            {/* Vertical divider */}
-            <div className="w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
             {/* Right panel: Diff viewer - matches CodeViewer */}
             <div className="flex-1 min-w-0 overflow-hidden">
               <GitDiffViewer

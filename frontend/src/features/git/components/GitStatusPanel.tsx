@@ -315,8 +315,7 @@ export const GitStatusPanel = memo(function GitStatusPanel({
 
       {/* File sections */}
       <div
-        className="flex-1 overflow-y-auto border-t thin-scrollbar"
-        style={{ borderColor: 'var(--border)' }}
+        className="flex-1 overflow-y-auto thin-scrollbar"
       >
         {/* Staged Changes */}
         <FileSection

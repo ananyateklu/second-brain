@@ -132,6 +132,7 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   githubActiveTab: 'code' as GitHubTabType,
   githubOwner: null,
   githubRepo: null,
+  githubSelectedBranch: null,
   isGitSettingsOpen: false,
   chatSidebarVisible: initialChatSidebarVisible,
   directorySidebarVisible: initialDirectorySidebarVisible,
@@ -240,7 +241,8 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   // ============================================
 
   setGitHubActiveTab: (tab: GitHubTabType) => set({ githubActiveTab: tab }),
-  setGitHubRepo: (owner: string | null, repo: string | null) => set({ githubOwner: owner, githubRepo: repo }),
+  setGitHubRepo: (owner: string | null, repo: string | null) => set({ githubOwner: owner, githubRepo: repo, githubSelectedBranch: null }),
+  setGitHubSelectedBranch: (branch: string | null) => set({ githubSelectedBranch: branch }),
 
   // ============================================
   // Git Settings Actions

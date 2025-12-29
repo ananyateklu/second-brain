@@ -5,7 +5,7 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
+import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, ChatPageControls, DirectoryPageControls } from './header-components';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -204,6 +204,9 @@ export function Header() {
 
               {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
               {isGitHubPage && <GitHubRepoSelector />}
+
+              {/* GitHub Branch Selector - Only on Code tab */}
+              {isGitHubPage && githubActiveTab === 'code' && <GitHubBranchSelector />}
 
               {/* GitHub Navigation - Only on GitHub page */}
               {isGitHubPage && <GitHubNavTabs />}

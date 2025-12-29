@@ -1,10 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
-import { ChevronDown, GitBranch, AlertCircle } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { useGitHubBranches, useGitHubRepositoryTree, useGitHubFileContent } from '../hooks';
 import type { BranchSummary } from '../../../types/github';
 import { FileTreeView } from './code-browser/FileTreeView';
 import { CodeViewer } from './code-browser/CodeViewer';
-import { GitHubRepoSelector } from '../../../components/layout/header-components';
+import { useBoundStore } from '../../../store/bound-store';
 
 interface GitHubCodeBrowserProps {
   owner?: string;
@@ -12,10 +12,10 @@ interface GitHubCodeBrowserProps {
 }
 
 export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
-  // Track user's manual branch selection (null = use default)
-  const [userSelectedBranchName, setUserSelectedBranchName] = useState<string | null>(null);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+
+  // Get branch from store
+  const githubSelectedBranch = useBoundStore((state) => state.githubSelectedBranch);
 
   // Fetch branches
   const {
@@ -24,21 +24,26 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     error: branchesError,
   } = useGitHubBranches(owner, repo);
 
-  // Derive the active branch from user selection or default
+  // Derive the active branch from store selection or default
   const branches = branchesData?.branches;
   const selectedBranch = useMemo((): BranchSummary | null => {
     if (!branches?.length) return null;
 
     // If user has selected a branch, use that
-    if (userSelectedBranchName) {
-      const userBranch = branches.find(b => b.name === userSelectedBranchName);
+    if (githubSelectedBranch) {
+      const userBranch = branches.find(b => b.name === githubSelectedBranch);
       if (userBranch) return userBranch;
     }
 
     // Otherwise, use default branch or first branch
     const defaultBranch = branches.find(b => b.isDefault);
     return defaultBranch ?? branches[0] ?? null;
-  }, [branches, userSelectedBranchName]);
+  }, [branches, githubSelectedBranch]);
+
+  // Reset file selection when branch changes
+  useEffect(() => {
+    setSelectedFilePath(null);
+  }, [githubSelectedBranch]);
 
   // Fetch repository tree based on selected branch
   const treeRequest = useMemo(() => {
@@ -73,13 +78,6 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     isLoading: fileLoading,
     error: fileError,
   } = useGitHubFileContent(fileRequest);
-
-  // Handle branch selection
-  const handleBranchSelect = useCallback((branch: BranchSummary) => {
-    setUserSelectedBranchName(branch.name);
-    setSelectedFilePath(null); // Reset file selection when branch changes
-    setIsBranchDropdownOpen(false);
-  }, []);
 
   // Handle file selection
   const handleFileSelect = useCallback((path: string) => {
@@ -138,103 +136,6 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
         backgroundColor: 'transparent',
       }}
     >
-      {/* Repo & Branch selector header */}
-      <div
-        className="flex items-center gap-6 px-4 py-3 border-b flex-shrink-0"
-        style={{ borderColor: 'var(--border)' }}
-      >
-        {/* Repository selector */}
-        <GitHubRepoSelector />
-
-        {/* Divider */}
-        <div className="h-5 w-px" style={{ backgroundColor: 'var(--border)' }} />
-
-        {/* Branch selector */}
-        <div className="relative">
-          <button
-            onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <GitBranch className="h-4 w-4" style={{ color: 'var(--color-brand-500)' }} />
-            <span className="max-w-[150px] truncate">
-              {selectedBranch?.name || 'Select branch'}
-            </span>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform duration-200 ${
-                isBranchDropdownOpen ? 'rotate-180' : ''
-              }`}
-              style={{ color: 'var(--text-tertiary)' }}
-            />
-          </button>
-
-          {/* Branch dropdown */}
-          {isBranchDropdownOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setIsBranchDropdownOpen(false)}
-              />
-              <div
-                className="absolute top-full left-0 mt-1 w-64 max-h-80 overflow-auto rounded-lg border z-20 thin-scrollbar"
-                style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
-                  boxShadow: 'var(--shadow-lg)',
-                  animation: 'scale-in 0.15s ease-out',
-                }}
-              >
-                {branchesData?.branches.map((branch) => {
-                  const isSelected = selectedBranch?.name === branch.name;
-                  return (
-                    <button
-                      key={branch.name}
-                      onClick={() => handleBranchSelect(branch)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-all duration-150 ${!isSelected ? 'hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]' : ''}`}
-                      style={{
-                        backgroundColor: isSelected
-                          ? 'var(--color-primary-alpha)'
-                          : 'transparent',
-                        color: isSelected
-                          ? 'var(--color-brand-400)'
-                          : 'var(--text-primary)',
-                        borderLeft: isSelected
-                          ? '3px solid var(--color-brand-500)'
-                          : '3px solid transparent',
-                      }}
-                    >
-                      <GitBranch className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{branch.name}</span>
-                      {branch.isDefault && (
-                        <span
-                          className="ml-auto text-xs px-1.5 py-0.5 rounded"
-                          style={{
-                            backgroundColor: 'var(--surface-card)',
-                            color: 'var(--text-tertiary)',
-                          }}
-                        >
-                          default
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        {selectedBranch && (
-          <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            {treeData?.totalCount?.toLocaleString() ?? '...'} entries
-          </span>
-        )}
-      </div>
-
       {/* Main content area - two pane layout */}
       <div className="flex flex-1 min-h-0">
         {/* File tree sidebar */}
@@ -248,9 +149,6 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
             onSelectFile={handleFileSelect}
           />
         </div>
-
-        {/* Vertical divider */}
-        <div className="w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
 
         {/* Code viewer */}
         <div className="flex-1 min-w-0 overflow-hidden">

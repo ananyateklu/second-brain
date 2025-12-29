@@ -186,6 +186,8 @@ export interface UISliceState {
   githubOwner: string | null;
   /** GitHub selected repository name */
   githubRepo: string | null;
+  /** GitHub selected branch name */
+  githubSelectedBranch: string | null;
   /** Git settings panel open state */
   isGitSettingsOpen: boolean;
   /** Chat page sidebar visibility */
@@ -222,6 +224,8 @@ export interface UISliceActions {
   setGitHubActiveTab: (tab: GitHubTabType) => void;
   /** Set GitHub repository */
   setGitHubRepo: (owner: string | null, repo: string | null) => void;
+  /** Set GitHub selected branch */
+  setGitHubSelectedBranch: (branch: string | null) => void;
   /** Open Git settings panel */
   openGitSettings: () => void;
   /** Close Git settings panel */
