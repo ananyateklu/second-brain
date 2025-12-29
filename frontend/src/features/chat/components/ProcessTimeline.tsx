@@ -40,7 +40,6 @@ export function ProcessTimeline({
                     >
                         <div
                             className={`flex items-center justify-center w-4 h-4 rounded transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                            style={{ backgroundColor: 'var(--surface-card)' }}
                         >
                             <svg
                                 className="w-2 h-2"

@@ -37,7 +37,7 @@ const PersistedTimelineTextCard = memo(function PersistedTimelineTextCard({ cont
       <div
         className="rounded-xl px-4 py-3 text-sm"
         style={{
-          backgroundColor: 'var(--surface-card)',
+          backgroundColor: 'transparent',
         }}
       >
         {showInlineNoteRefs ? (

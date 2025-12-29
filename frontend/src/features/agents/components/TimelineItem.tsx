@@ -8,9 +8,9 @@ const TIMELINE = {
   // Icon positioning (16px icon centered on line)
   ICON_LEFT: 'left-[7px]',
   ICON_TOP: 'top-2.5',
-  // Dot positioning (10px dot centered on line)
+  // Dot positioning (10px dot centered with first line of text)
   DOT_LEFT: 'left-[10px]',
-  DOT_TOP: 'top-[18px]',
+  DOT_TOP: 'top-[26px]',
   DOT_SIZE: 'w-2.5 h-2.5',
 } as const;
 
