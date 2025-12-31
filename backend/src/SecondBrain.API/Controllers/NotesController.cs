@@ -780,6 +780,37 @@ public class NotesController : ControllerBase
     }
 
     /// <summary>
+    /// Get a specific image by its ID. Returns the binary image data.
+    /// Used by agent tools to display images without embedding base64 in responses.
+    /// </summary>
+    /// <param name="imageId">The image ID</param>
+    /// <returns>Binary image data with appropriate content type</returns>
+    [HttpGet("images/{imageId}")]
+    [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetImage(string imageId)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var image = await _noteImageRepository.GetByIdAsync(imageId);
+
+        if (image == null || image.UserId != userId)
+        {
+            return NotFound(new { error = "Image not found or access denied" });
+        }
+
+        // Convert base64 to bytes and return as file
+        var bytes = Convert.FromBase64String(image.Base64Data);
+        return File(bytes, image.MediaType, image.FileName ?? $"image_{imageId}");
+    }
+
+    /// <summary>
     /// Extract AI descriptions for images attached to a note.
     /// This endpoint can be used to generate descriptions for images that don't have them yet.
     /// </summary>

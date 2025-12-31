@@ -421,30 +421,62 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                     yield return StatusEvent($"Executing {toolName}...");
                     yield return ToolCallStartEvent(toolName, toolId, effectiveInput?.ToJsonString() ?? "{}");
 
-                    string result;
+                    Helpers.ToolExecutionResult execResult;
                     if (pluginMethods.TryGetValue(toolName, out var pluginMethod))
                     {
                         var toolCall = new PendingToolCall(toolId, toolName, effectiveInput?.ToJsonString() ?? "{}", effectiveInput);
-                        var execResult = await ToolExecutor.ExecuteAsync(
+                        execResult = await ToolExecutor.ExecuteAsync(
                             toolCall, pluginMethod.Plugin, pluginMethod.Method, cancellationToken);
-                        result = execResult.Result;
                     }
                     else
                     {
-                        result = $"Error: Unknown tool '{toolName}'";
+                        execResult = new Helpers.ToolExecutionResult(toolId, toolName, effectiveInput?.ToJsonString() ?? "{}", $"Error: Unknown tool '{toolName}'", Success: false);
                     }
 
-                    yield return ToolCallEndEvent(toolName, toolId, result);
+                    // Handle AnalyzeImage tool - extract image data from marker, strip before storing
+                    // Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__<json>
+                    var resultForStorage = execResult.Result;
+                    string? extractedBase64 = null;
+                    string? extractedMediaType = null;
+
+                    if (toolName.Equals("AnalyzeImage", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var (cleanedResult, mediaType, base64Data) = ExtractImageDataFromResult(execResult.Result);
+                        resultForStorage = cleanedResult;
+                        extractedBase64 = base64Data;
+                        extractedMediaType = mediaType;
+                    }
+
+                    yield return ToolCallEndEvent(toolName, toolId, resultForStorage);
+
+                    // Build tool result content blocks - use cleaned result for storage (no base64)
+                    var contentBlocks = new List<ContentBase> { new TextContent { Text = resultForStorage } };
+
+                    // If we extracted image data and model supports vision, inject image for THIS request only
+                    // The image is NOT stored in conversation history (resultForStorage has no base64)
+                    if (extractedBase64 != null &&
+                        AI.Models.MultimodalConfig.IsMultimodalModel("Claude", request.Model))
+                    {
+                        contentBlocks.Add(new ImageContent
+                        {
+                            Source = new ImageSource
+                            {
+                                MediaType = extractedMediaType ?? "image/png",
+                                Data = extractedBase64
+                            }
+                        });
+                        _logger.LogInformation("Injected image for AnalyzeImage (ephemeral, not stored in history) for model {Model}", request.Model);
+                    }
 
                     toolResults.Add(new ToolResultContent
                     {
                         ToolUseId = toolId,
-                        Content = new List<ContentBase> { new TextContent { Text = result } }
+                        Content = contentBlocks
                     });
 
                     // Track that tools were executed and capture result for potential fallback
                     toolsExecutedThisSession = true;
-                    lastToolResultSummary = result;
+                    lastToolResultSummary = execResult.Result;
                 }
 
                 // Add tool results as user message
@@ -828,5 +860,57 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
 
         return realTimeIndicators.Any(indicator =>
             query.Contains(indicator, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Extract image data from AnalyzeImage result marker format.
+    /// Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__&lt;json&gt;
+    /// Returns (cleanedResult, mediaType, base64Data) where cleanedResult has the marker stripped.
+    /// </summary>
+    private (string CleanedResult, string? MediaType, string? Base64Data) ExtractImageDataFromResult(string result)
+    {
+        const string startMarker = "__IMAGE_DATA__";
+        const string endMarker = "__END_IMAGE_DATA__";
+
+        if (!result.StartsWith(startMarker))
+        {
+            return (result, null, null);
+        }
+
+        var endIndex = result.IndexOf(endMarker);
+        if (endIndex < 0)
+        {
+            _logger.LogWarning("AnalyzeImage result has start marker but no end marker");
+            return (result, null, null);
+        }
+
+        try
+        {
+            // Extract the data between markers: mediaType|base64Data
+            var dataSection = result.Substring(startMarker.Length, endIndex - startMarker.Length);
+            var pipeIndex = dataSection.IndexOf('|');
+
+            if (pipeIndex < 0)
+            {
+                _logger.LogWarning("AnalyzeImage data section missing pipe separator");
+                return (result, null, null);
+            }
+
+            var mediaType = dataSection.Substring(0, pipeIndex);
+            var base64Data = dataSection.Substring(pipeIndex + 1);
+
+            // The cleaned result is everything after the end marker (the JSON)
+            var cleanedResult = result.Substring(endIndex + endMarker.Length);
+
+            _logger.LogDebug("Extracted image data: mediaType={MediaType}, base64Length={Length}",
+                mediaType, base64Data.Length);
+
+            return (cleanedResult, mediaType, base64Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to extract image data from AnalyzeImage result");
+            return (result, null, null);
+        }
     }
 }

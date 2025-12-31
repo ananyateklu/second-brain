@@ -269,10 +269,33 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                     settings.Gemini.FunctionCalling.ParallelExecution,
                     cancellationToken);
 
-                // Emit end events
+                // Emit end events and handle AnalyzeImage specially
+                // For AnalyzeImage: extract image data from marker, store cleaned result in history
+                var toolResultImages = new List<(string MediaType, string Base64Data)>();
+                var cleanedResults = new List<Helpers.ToolExecutionResult>();
+
                 foreach (var result in results)
                 {
-                    yield return ToolCallEndEvent(result.Name, result.Id, result.Result);
+                    var resultForStorage = result.Result;
+
+                    // Handle AnalyzeImage tool - extract image data from marker, strip before storing
+                    // Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__<json>
+                    if (result.Name.Equals("AnalyzeImage", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var (cleanedResult, mediaType, base64Data) = ExtractImageDataFromResult(result.Result);
+                        resultForStorage = cleanedResult;
+
+                        // If we extracted image data and model supports vision, inject for THIS request only
+                        if (base64Data != null &&
+                            AI.Models.MultimodalConfig.IsMultimodalModel("Gemini", request.Model))
+                        {
+                            toolResultImages.Add((mediaType ?? "image/png", base64Data));
+                            _logger.LogInformation("Extracted image for AnalyzeImage (ephemeral, not stored in history) for model {Model}", request.Model);
+                        }
+                    }
+
+                    yield return ToolCallEndEvent(result.Name, result.Id, resultForStorage);
+                    cleanedResults.Add(new Helpers.ToolExecutionResult(result.Id, result.Name, result.Arguments, resultForStorage, result.Success));
                 }
 
                 // Add messages to history
@@ -284,18 +307,35 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                 };
                 messages.Add(assistantMsg);
 
-                // Send function results back to Gemini
-                var functionResults = results.Select(r => (r.Name, (object)r.Result)).ToArray();
+                // Send function results back to Gemini (use cleaned results, no base64)
+                var functionResults = cleanedResults.Select(r => (FunctionName: r.Name, Result: (object)r.Result)).ToArray();
                 var response = await _geminiProvider.ContinueWithFunctionResultsAsync(
                     messages, functionResults, aiSettings, featureOptions, cancellationToken);
+
+                // If AnalyzeImage returned an image, add it as a follow-up user message
+                if (toolResultImages.Count > 0)
+                {
+                    var imageUserMsg = new Services.AI.Models.ChatMessage
+                    {
+                        Role = "user",
+                        Content = "Here is the image from the AnalyzeImage tool. Please analyze it and describe what you see:",
+                        Images = toolResultImages.Select(img => new Services.AI.Models.MessageImage
+                        {
+                            MediaType = img.MediaType,
+                            Base64Data = img.Base64Data
+                        }).ToList()
+                    };
+                    messages.Add(imageUserMsg);
+                    _logger.LogInformation("Added image from AnalyzeImage tool for Gemini model {Model}", request.Model);
+                }
 
                 var toolMsg = new Services.AI.Models.ChatMessage
                 {
                     Role = "tool",
-                    ToolResults = results.Select(r => new Services.AI.Models.FunctionResultInfo
+                    ToolResults = cleanedResults.Select(r => new Services.AI.Models.FunctionResultInfo
                     {
                         Name = r.Name,
-                        Result = r.Result
+                        Result = r.Result  // Cleaned result (no base64)
                     }).ToList()
                 };
                 messages.Add(toolMsg);
@@ -353,5 +393,57 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             inputTokens: totalInputTokens,
             outputTokens: totalOutputTokens,
             cachedTokens: cachedTokens);
+    }
+
+    /// <summary>
+    /// Extract image data from AnalyzeImage result marker format.
+    /// Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__&lt;json&gt;
+    /// Returns (cleanedResult, mediaType, base64Data) where cleanedResult has the marker stripped.
+    /// </summary>
+    private (string CleanedResult, string? MediaType, string? Base64Data) ExtractImageDataFromResult(string result)
+    {
+        const string startMarker = "__IMAGE_DATA__";
+        const string endMarker = "__END_IMAGE_DATA__";
+
+        if (!result.StartsWith(startMarker))
+        {
+            return (result, null, null);
+        }
+
+        var endIndex = result.IndexOf(endMarker);
+        if (endIndex < 0)
+        {
+            _logger.LogWarning("AnalyzeImage result has start marker but no end marker");
+            return (result, null, null);
+        }
+
+        try
+        {
+            // Extract the data between markers: mediaType|base64Data
+            var dataSection = result.Substring(startMarker.Length, endIndex - startMarker.Length);
+            var pipeIndex = dataSection.IndexOf('|');
+
+            if (pipeIndex < 0)
+            {
+                _logger.LogWarning("AnalyzeImage data section missing pipe separator");
+                return (result, null, null);
+            }
+
+            var mediaType = dataSection.Substring(0, pipeIndex);
+            var base64Data = dataSection.Substring(pipeIndex + 1);
+
+            // The cleaned result is everything after the end marker (the JSON)
+            var cleanedResult = result.Substring(endIndex + endMarker.Length);
+
+            _logger.LogDebug("Extracted image data: mediaType={MediaType}, base64Length={Length}",
+                mediaType, base64Data.Length);
+
+            return (cleanedResult, mediaType, base64Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to extract image data from AnalyzeImage result");
+            return (result, null, null);
+        }
     }
 }

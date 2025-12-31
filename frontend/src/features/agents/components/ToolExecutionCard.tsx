@@ -4,6 +4,7 @@ import { NoteCard } from '../../notes/components/NoteCard';
 import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
 import { splitTextWithNoteReferences } from '../../../utils/note-reference-utils';
 import { TimelineItem } from './TimelineItem';
+import { AuthenticatedImage } from './AuthenticatedImage';
 
 interface ToolExecutionCardProps {
   execution: ToolExecution;
@@ -62,6 +63,26 @@ interface GenericResponse {
   type: string;
   message: string;
   [key: string]: unknown;
+}
+
+// Images response from ViewNoteImages tool (URL-based, no base64)
+interface ImageInfo {
+  id: string;
+  url: string;  // URL to fetch image from API endpoint
+  mediaType: string;
+  fileName?: string;
+  imageIndex: number;
+  description?: string;
+  altText?: string;
+}
+
+interface ImagesResponse {
+  type: 'images';
+  message: string;
+  noteId: string;
+  noteTitle: string;
+  imageCount: number;
+  images: ImageInfo[];
 }
 
 // Helper to parse note results from JSON
@@ -131,6 +152,26 @@ const parseGenericResult = (result: string): GenericResponse | null => {
     }
   } catch {
     // Not JSON
+  }
+  return null;
+};
+
+// Helper to parse images result from JSON
+const parseImagesResult = (result: string): ImagesResponse | null => {
+  try {
+    const parsed: unknown = JSON.parse(result);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'type' in parsed &&
+      parsed.type === 'images' &&
+      'images' in parsed &&
+      Array.isArray(parsed.images)
+    ) {
+      return parsed as ImagesResponse;
+    }
+  } catch {
+    // Not JSON or not an images response
   }
   return null;
 };
@@ -428,6 +469,10 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
         return 'Summarizing Note';
       case 'CompareNotes':
         return 'Comparing Notes';
+      case 'ViewNoteImages':
+        return 'Viewing Note Images';
+      case 'AnalyzeImage':
+        return 'Analyzing Image';
 
       // Web Browsing
       case 'fetch_url':
@@ -453,28 +498,31 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Parse results from result if available
-  const { notesResult, statsResult, singleNoteResult, genericResult } = useMemo(() => {
+  const { notesResult, statsResult, singleNoteResult, genericResult, imagesResult } = useMemo(() => {
     if (!execution.result) {
-      return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null };
+      return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null, imagesResult: null };
     }
 
     const notes = parseNotesResult(execution.result);
-    if (notes) return { notesResult: notes, statsResult: null, singleNoteResult: null, genericResult: null };
+    if (notes) return { notesResult: notes, statsResult: null, singleNoteResult: null, genericResult: null, imagesResult: null };
 
     const stats = parseStatsResult(execution.result);
-    if (stats) return { notesResult: null, statsResult: stats, singleNoteResult: null, genericResult: null };
+    if (stats) return { notesResult: null, statsResult: stats, singleNoteResult: null, genericResult: null, imagesResult: null };
 
     const singleNote = parseSingleNoteResult(execution.result);
-    if (singleNote) return { notesResult: null, statsResult: null, singleNoteResult: singleNote, genericResult: null };
+    if (singleNote) return { notesResult: null, statsResult: null, singleNoteResult: singleNote, genericResult: null, imagesResult: null };
+
+    const images = parseImagesResult(execution.result);
+    if (images) return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null, imagesResult: images };
 
     const generic = parseGenericResult(execution.result);
-    if (generic) return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: generic };
+    if (generic) return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: generic, imagesResult: null };
 
-    return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null };
+    return { notesResult: null, statsResult: null, singleNoteResult: null, genericResult: null, imagesResult: null };
   }, [execution.result]);
 
   // Check if we have any parsed result
-  const hasParsedResult = notesResult || statsResult || singleNoteResult || genericResult;
+  const hasParsedResult = notesResult || statsResult || singleNoteResult || genericResult || imagesResult;
 
   return (
     <TimelineItem isLoading={isExecuting}>
@@ -594,8 +642,71 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
               </div>
             )}
 
+            {/* Images result from ViewNoteImages */}
+            {imagesResult && (
+              <div>
+                {imagesResult.message && (
+                  <div
+                    className="text-xs font-medium mb-2"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {imagesResult.message}
+                  </div>
+                )}
+                {imagesResult.images.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {imagesResult.images.map((img, index) => (
+                      <div
+                        key={img.id || index}
+                        className="relative rounded-lg overflow-hidden"
+                        style={{
+                          backgroundColor: 'var(--surface-card)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
+                        <AuthenticatedImage
+                          url={img.url}
+                          alt={img.altText || img.description || `Image ${index + 1}`}
+                          className="w-full h-auto max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          title="Click to view full size"
+                        />
+                        {(img.description || img.fileName) && (
+                          <div
+                            className="p-2 text-xs"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {img.fileName && (
+                              <div className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                {img.fileName}
+                              </div>
+                            )}
+                            {img.description && (
+                              <div className="line-clamp-2 mt-0.5 opacity-80">
+                                {img.description}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    className="p-3 rounded-lg text-xs"
+                    style={{
+                      backgroundColor: 'var(--surface-card)',
+                      color: 'var(--text-tertiary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    No images attached to this note.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Generic response with message */}
-            {genericResult && !statsResult && !notesResult && !singleNoteResult && (
+            {genericResult && !statsResult && !notesResult && !singleNoteResult && !imagesResult && (
               <GenericResponseDisplay response={genericResult} />
             )}
 
