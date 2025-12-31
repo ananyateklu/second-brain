@@ -7,6 +7,11 @@ import { useState, useCallback } from 'react';
 import type { Secrets } from '../../../../lib/tauri-bridge';
 import { toast } from '../../../../hooks/use-toast';
 
+/** Parse git_allowed_repository_roots into array */
+function parseAllowedRoots(value: string | null | undefined): string[] {
+  return value ? value.split(',').map((p) => p.trim()).filter(Boolean) : [];
+}
+
 interface GitConfigSectionProps {
   /** Current secrets */
   secrets: Secrets | null;
@@ -30,23 +35,22 @@ export function GitConfigSection({
   const [newPath, setNewPath] = useState('');
 
   // Parse comma-separated paths into array
-  const allowedRoots = secrets?.git_allowed_repository_roots
-    ? secrets.git_allowed_repository_roots.split(',').map((p) => p.trim()).filter(Boolean)
-    : [];
-
+  const allowedRoots = parseAllowedRoots(secrets?.git_allowed_repository_roots);
   const requireUserScoped = secrets?.git_require_user_scoped_root ?? true;
 
   const handleAddPath = useCallback(() => {
     if (!newPath.trim()) return;
-    const updatedRoots = [...allowedRoots, newPath.trim()];
+    const currentRoots = parseAllowedRoots(secrets?.git_allowed_repository_roots);
+    const updatedRoots = [...currentRoots, newPath.trim()];
     onChange('git_allowed_repository_roots', updatedRoots.join(','));
     setNewPath('');
-  }, [newPath, allowedRoots, onChange]);
+  }, [newPath, secrets?.git_allowed_repository_roots, onChange]);
 
   const handleRemovePath = useCallback((index: number) => {
-    const updatedRoots = allowedRoots.filter((_, i) => i !== index);
+    const currentRoots = parseAllowedRoots(secrets?.git_allowed_repository_roots);
+    const updatedRoots = currentRoots.filter((_, i) => i !== index);
     onChange('git_allowed_repository_roots', updatedRoots.length > 0 ? updatedRoots.join(',') : null);
-  }, [allowedRoots, onChange]);
+  }, [secrets?.git_allowed_repository_roots, onChange]);
 
   const handleToggleUserScoped = useCallback(() => {
     onChange('git_require_user_scoped_root', !requireUserScoped);
@@ -228,7 +232,7 @@ export function GitConfigSection({
           {hasChanges && (
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               disabled={isSaving}
               className="px-4 py-2 rounded-xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
