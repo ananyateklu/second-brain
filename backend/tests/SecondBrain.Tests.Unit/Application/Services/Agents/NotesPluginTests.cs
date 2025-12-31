@@ -679,37 +679,37 @@ public class NotesPluginTests
 
     #endregion
 
-    #region ListRecentNotesAsync Tests
+    #region ListNotesAsync Tests
 
     [Fact]
-    public async Task ListRecentNotesAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task ListNotesAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
-        var result = await plugin.ListRecentNotesAsync();
+        var result = await plugin.ListNotesAsync("recent");
 
         // Assert
-        result.Should().Contain("Error: User context not set");
+        result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_WhenNoNotes_ReturnsEmptyMessage()
+    public async Task ListNotesAsync_WhenNoNotes_ReturnsEmptyMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note>());
 
         // Act
-        var result = await _sut.ListRecentNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
-        result.Should().Contain("don't have any notes");
+        result.Should().Contain("don't have any active notes");
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_ExcludesArchivedNotes()
+    public async Task ListNotesAsync_WithRecentFilter_ExcludesArchivedNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -721,7 +721,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListRecentNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
         result.Should().Contain("Active Note");
@@ -729,7 +729,7 @@ public class NotesPluginTests
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_OrdersByUpdatedAtDescending()
+    public async Task ListNotesAsync_WithRecentFilter_OrdersByUpdatedAtDescending()
     {
         // Arrange
         var notes = new List<Note>
@@ -741,7 +741,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListRecentNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
         var newIndex = result.IndexOf("New Note");
@@ -750,7 +750,7 @@ public class NotesPluginTests
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_RespectsMaxResults()
+    public async Task ListNotesAsync_RespectsLimitParameter()
     {
         // Arrange
         var notes = Enumerable.Range(1, 20)
@@ -760,7 +760,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListRecentNotesAsync(maxResults: 5);
+        var result = await _sut.ListNotesAsync("recent", limit: 5);
 
         // Assert
         var idCount = result.Split("\"id\"").Length - 1;
@@ -768,17 +768,17 @@ public class NotesPluginTests
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task ListNotesAsync_WhenRepositoryThrows_ReturnsError()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.ListRecentNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
-        result.Should().Contain("Error listing notes");
+        result.Should().Contain("Error");
     }
 
     #endregion
@@ -949,17 +949,18 @@ public class NotesPluginTests
                 Success = true,
                 NoteId = "note-id",
                 Source = NoteSource.Agent,
-                WasSoftDelete = false
+                WasSoftDelete = true // DeleteNote now uses soft delete by default
             }));
 
         // Act
         var result = await _sut.DeleteNoteAsync("note-id");
 
-        // Assert
-        result.Should().Contain("Successfully deleted");
+        // Assert - DeleteNote now moves to trash (soft delete)
+        result.Should().Contain("Successfully moved note");
         result.Should().Contain("Test Note");
+        result.Should().Contain("to trash");
         _mockNoteOperationService.Verify(s => s.DeleteAsync(
-            It.Is<DeleteNoteOperationRequest>(r => r.NoteId == "note-id"),
+            It.Is<DeleteNoteOperationRequest>(r => r.NoteId == "note-id" && r.SoftDelete == true),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

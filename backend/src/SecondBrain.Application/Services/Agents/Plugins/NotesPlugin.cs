@@ -290,37 +290,21 @@ Use markdown thoughtfully for readability:
 
     #region Organization Operations (delegated to NoteOrganizationPlugin)
 
-    [KernelFunction("ListAllNotes")]
-    [Description("Lists all of the user's notes. Use this when the user wants to see their complete list of notes, not just recent ones.")]
-    public Task<string> ListAllNotesAsync(
-        [Description("Whether to include archived notes (default: false)")] bool includeArchived = false,
-        [Description("Optional: Skip this many notes for pagination (default: 0)")] int skip = 0,
-        [Description("Optional: Maximum number of notes to return. Use 0 or negative for all notes (default: 0 = all)")] int limit = 0)
-        => _organizationPlugin.ListAllNotesAsync(includeArchived, skip, limit);
+    [KernelFunction("ListNotes")]
+    [Description("UNIFIED listing tool for all notes. filter: 'recent' (default), 'archived', 'all'. detailLevel: 'ids_only' (fast), 'summary' (default), 'full' (complete content). Examples: 'show my notes' -> filter=recent, 'show archived' -> filter=archived, 'list everything' -> filter=all.")]
+    public Task<string> ListNotesAsync(
+        [Description("Filter: 'recent' (default), 'archived', or 'all'")] string filter = "recent",
+        [Description("Max notes to return (default: 10)")] int limit = 10,
+        [Description("Skip N notes for pagination (default: 0)")] int skip = 0,
+        [Description("Detail: 'ids_only', 'summary' (default), 'full'")] string detailLevel = "summary")
+        => _organizationPlugin.ListNotesAsync(filter, limit, skip, detailLevel);
 
-    [KernelFunction("ListRecentNotes")]
-    [Description("Lists the user's most recent notes. Use this to show what notes exist or to help the user remember what they've saved.")]
-    public Task<string> ListRecentNotesAsync(
-        [Description("Maximum number of notes to list (default: 10)")] int maxResults = 10)
-        => _organizationPlugin.ListRecentNotesAsync(maxResults);
-
-    [KernelFunction("ListArchivedNotes")]
-    [Description("Lists all archived notes. Use this when the user wants to see notes they have previously archived.")]
-    public Task<string> ListArchivedNotesAsync(
-        [Description("Maximum number of archived notes to list (default: 10)")] int maxResults = 10)
-        => _organizationPlugin.ListArchivedNotesAsync(maxResults);
-
-    [KernelFunction("ArchiveNote")]
-    [Description("Archives a note, hiding it from the main list while preserving it. Use this when the user wants to hide a note without permanently deleting it.")]
-    public Task<string> ArchiveNoteAsync(
-        [Description("The ID of the note to archive")] string noteId)
-        => _organizationPlugin.ArchiveNoteAsync(noteId);
-
-    [KernelFunction("UnarchiveNote")]
-    [Description("Restores an archived note back to the main list. Use this when the user wants to bring back a previously archived note.")]
-    public Task<string> UnarchiveNoteAsync(
-        [Description("The ID of the note to unarchive")] string noteId)
-        => _organizationPlugin.UnarchiveNoteAsync(noteId);
+    [KernelFunction("SetNoteArchived")]
+    [Description("SET archive status for a note. isArchived=true to archive (hide from main list), isArchived=false to restore. Examples: 'archive this note' -> isArchived=true, 'restore from archive' -> isArchived=false.")]
+    public Task<string> SetNoteArchivedAsync(
+        [Description("Note ID to update")] string noteId,
+        [Description("true to archive, false to restore")] bool isArchived)
+        => _organizationPlugin.SetNoteArchivedAsync(noteId, isArchived);
 
     [KernelFunction("MoveToFolder")]
     [Description("Moves a note to a specific folder for organization. Use this when the user wants to organize notes into folders or categories.")]

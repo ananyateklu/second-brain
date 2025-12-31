@@ -101,7 +101,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
         var lastUserMessage = GetLastUserMessage(request);
 
         var fullResponse = new StringBuilder();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var maxIterations = 10;
 
         // Token tracking (from Gemini UsageMetadata in Complete event)
@@ -182,9 +182,11 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                         break;
 
                     case GeminiStreamEventType.Thinking:
-                        if (!string.IsNullOrEmpty(evt.Text) && !emittedThinkingBlocks.Contains(evt.Text))
+                        // Use shared context for deduplication across tool execution iterations
+                        if (!string.IsNullOrEmpty(evt.Text) &&
+                            !Helpers.ThinkingExtractor.IsSimilarToEmitted(evt.Text, context.EmittedThinkingBlocks))
                         {
-                            emittedThinkingBlocks.Add(evt.Text);
+                            context.EmittedThinkingBlocks.Add(evt.Text);
                             yield return ThinkingEvent(evt.Text);
                         }
                         break;

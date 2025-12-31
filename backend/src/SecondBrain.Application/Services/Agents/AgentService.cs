@@ -220,7 +220,39 @@ Your conversation history includes previous tool executions with their results. 
 If a tool call fails:
 1. Understand the error message
 2. Try an alternative approach if available
-3. Clearly explain to the user what happened and suggest next steps";
+3. Clearly explain to the user what happened and suggest next steps
+
+## Tool Selection Decision Tree
+
+Ask yourself these questions to choose the right tool:
+
+1. **Searching/finding notes?**
+   - Topic/concept search → **SemanticSearch** (DEFAULT - use first!)
+   - Exact phrase only → SearchNotes
+   - By tags explicitly → SearchByTags
+   - By date/time → GetNotesByDateRange
+   - Similar to specific note → FindRelatedNotes
+
+2. **Creating new content?**
+   - New note → **CreateNote** (search first to avoid duplicates!)
+   - Copy existing → DuplicateNote
+
+3. **Modifying existing note?**
+   - Add to end → **AppendToNote** (no GetNote needed)
+   - Add to beginning → **PrependToNote** (no GetNote needed)
+   - Fix specific text → **ReplaceInNote** (GetNote first to find exact text)
+   - Insert at line → InsertInNote
+   - Full rewrite → **UpdateNote** (GetNote first)
+
+4. **Organizing notes?**
+   - Hide temporarily → ArchiveNote
+   - Move to folder → MoveToFolder
+   - Delete → DeleteNote (moves to trash)
+
+5. **Need full content?**
+   - Read complete note → **GetNote** (required before UpdateNote/ReplaceInNote)
+
+**IMPORTANT**: Always search before creating - the note may already exist!";
 
         // Add capability-specific prompts
         var capabilityPrompts = new StringBuilder();

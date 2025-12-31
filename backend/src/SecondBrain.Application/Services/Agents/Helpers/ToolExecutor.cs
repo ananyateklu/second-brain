@@ -1,18 +1,30 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Application.Services.Agents.Metrics;
 using SecondBrain.Application.Services.Agents.Plugins;
 
 namespace SecondBrain.Application.Services.Agents.Helpers;
 
 /// <summary>
 /// Executes tool calls against registered plugins.
+/// Includes structured audit logging and metrics collection.
 /// </summary>
 public class ToolExecutor : IToolExecutor
 {
     private readonly ILogger<ToolExecutor> _logger;
+    private readonly IToolAuditLogger? _auditLogger;
+    private readonly IAgentMetricsService? _metricsService;
+
+    // Execution context for audit logging
+    private string _currentRequestId = string.Empty;
+    private string _currentUserId = string.Empty;
+    private string? _currentConversationId;
+    private string? _currentProvider;
+    private string? _currentModel;
 
     // Common parameter name aliases that AI models might use
     private static readonly Dictionary<string, string[]> ParameterAliases = new(StringComparer.OrdinalIgnoreCase)
@@ -25,9 +37,32 @@ public class ToolExecutor : IToolExecutor
         { "contentToAppend", new[] { "content", "content_to_append", "appendContent", "append_content", "newContent", "new_content" } }
     };
 
-    public ToolExecutor(ILogger<ToolExecutor> logger)
+    public ToolExecutor(
+        ILogger<ToolExecutor> logger,
+        IToolAuditLogger? auditLogger = null,
+        IAgentMetricsService? metricsService = null)
     {
         _logger = logger;
+        _auditLogger = auditLogger;
+        _metricsService = metricsService;
+    }
+
+    /// <summary>
+    /// Set the execution context for audit logging.
+    /// Call this before executing tools to enable detailed audit trails.
+    /// </summary>
+    public void SetExecutionContext(
+        string requestId,
+        string userId,
+        string? conversationId = null,
+        string? provider = null,
+        string? model = null)
+    {
+        _currentRequestId = requestId;
+        _currentUserId = userId;
+        _currentConversationId = conversationId;
+        _currentProvider = provider;
+        _currentModel = model;
     }
 
     /// <inheritdoc />
@@ -37,14 +72,26 @@ public class ToolExecutor : IToolExecutor
         MethodInfo method,
         CancellationToken cancellationToken = default)
     {
+        var startedAt = DateTime.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
+        var pluginName = plugin.GetPluginName();
+
+        // Log tool start
+        _auditLogger?.LogToolStart(_currentRequestId, toolCall.Name, toolCall.Arguments);
+
         try
         {
             _logger.LogDebug("Executing tool {ToolName} via plugin {PluginName}",
-                toolCall.Name, plugin.GetPluginName());
+                toolCall.Name, pluginName);
 
             var result = await InvokePluginMethodAsync(plugin, method, toolCall.ArgumentsNode);
 
+            stopwatch.Stop();
             _logger.LogDebug("Tool {ToolName} execution result: {Result}", toolCall.Name, result);
+
+            // Record metrics and audit
+            _metricsService?.RecordToolExecution(toolCall.Name, stopwatch.ElapsedMilliseconds, success: true, _currentProvider);
+            LogAudit(toolCall, pluginName, result, success: true, stopwatch.ElapsedMilliseconds, startedAt);
 
             return new ToolExecutionResult(
                 toolCall.Id,
@@ -55,14 +102,55 @@ public class ToolExecutor : IToolExecutor
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
             _logger.LogError(ex, "Error executing tool {ToolName}", toolCall.Name);
+
+            var errorResult = $"Error executing tool: {ex.Message}";
+
+            // Record metrics and audit for failure
+            _metricsService?.RecordToolExecution(toolCall.Name, stopwatch.ElapsedMilliseconds, success: false, _currentProvider);
+            LogAudit(toolCall, pluginName, errorResult, success: false, stopwatch.ElapsedMilliseconds, startedAt, ex.Message);
+
             return new ToolExecutionResult(
                 toolCall.Id,
                 toolCall.Name,
                 toolCall.Arguments,
-                $"Error executing tool: {ex.Message}",
+                errorResult,
                 Success: false);
         }
+    }
+
+    private void LogAudit(
+        PendingToolCall toolCall,
+        string pluginName,
+        string result,
+        bool success,
+        long durationMs,
+        DateTime startedAt,
+        string? errorMessage = null,
+        int sequence = 1,
+        bool wasParallel = false)
+    {
+        if (_auditLogger == null) return;
+
+        var audit = ToolAuditLogger.CreateAudit(
+            requestId: _currentRequestId,
+            userId: _currentUserId,
+            toolName: toolCall.Name,
+            pluginName: pluginName,
+            arguments: toolCall.Arguments,
+            result: result,
+            success: success,
+            durationMs: durationMs,
+            startedAt: startedAt,
+            conversationId: _currentConversationId,
+            provider: _currentProvider,
+            model: _currentModel,
+            toolCallSequence: sequence,
+            wasParallelExecution: wasParallel,
+            errorMessage: errorMessage);
+
+        _auditLogger.Log(audit);
     }
 
     /// <inheritdoc />

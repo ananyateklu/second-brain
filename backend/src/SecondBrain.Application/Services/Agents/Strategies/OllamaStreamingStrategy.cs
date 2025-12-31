@@ -97,7 +97,7 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
         }
 
         var fullResponse = new StringBuilder();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var maxIterations = settings.Ollama.FunctionCalling.MaxIterations;
 
         // Token tracking
@@ -147,10 +147,10 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
 
                             iterationText.Append(evt.Text);
 
-                            // Check for thinking blocks
+                            // Check for thinking blocks - use shared context for deduplication
                             var currentContent = fullResponse.ToString() + iterationText.ToString();
                             foreach (var thinkingContent in ThinkingExtractor.ExtractXmlThinkingBlocks(
-                                currentContent, emittedThinkingBlocks))
+                                currentContent, context.EmittedThinkingBlocks))
                             {
                                 yield return ThinkingEvent(thinkingContent);
                             }
@@ -173,9 +173,11 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
 
                     case Services.AI.Models.OllamaToolStreamEventType.Thinking:
                         // Handle native thinking content from models like deepseek-r1
-                        if (!string.IsNullOrEmpty(evt.Text) && !emittedThinkingBlocks.Contains(evt.Text))
+                        // Use shared context for deduplication across tool execution iterations
+                        if (!string.IsNullOrEmpty(evt.Text) &&
+                            !Helpers.ThinkingExtractor.IsSimilarToEmitted(evt.Text, context.EmittedThinkingBlocks))
                         {
-                            emittedThinkingBlocks.Add(evt.Text);
+                            context.EmittedThinkingBlocks.Add(evt.Text);
                             yield return ThinkingEvent(evt.Text);
                         }
                         break;

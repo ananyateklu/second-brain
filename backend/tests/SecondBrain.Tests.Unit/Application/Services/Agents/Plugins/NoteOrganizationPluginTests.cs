@@ -60,45 +60,45 @@ public class NoteOrganizationPluginTests
     public void GetSystemPromptAddition_ContainsToolDocumentation()
     {
         var result = _sut.GetSystemPromptAddition();
-        result.Should().Contain("ListAllNotes");
-        result.Should().Contain("ArchiveNote");
+        result.Should().Contain("ListNotes");
+        result.Should().Contain("SetNoteArchived");
         result.Should().Contain("ListFolders");
         result.Should().Contain("ListAllTags");
     }
 
     #endregion
 
-    #region ListAllNotesAsync Tests
+    #region ListNotesAsync Tests
 
     [Fact]
-    public async Task ListAllNotesAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task ListNotesAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteOrganizationPlugin(_mockNoteRepository.Object, null, null, null);
 
         // Act
-        var result = await plugin.ListAllNotesAsync();
+        var result = await plugin.ListNotesAsync("recent");
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_WhenNoNotes_ReturnsEmptyMessage()
+    public async Task ListNotesAsync_WhenNoNotes_ReturnsEmptyMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note>());
 
         // Act
-        var result = await _sut.ListAllNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
         result.Should().Contain("don't have any active notes");
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_ExcludesArchivedByDefault()
+    public async Task ListNotesAsync_WithRecentFilter_ExcludesArchived()
     {
         // Arrange
         var notes = new List<Note>
@@ -110,7 +110,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllNotesAsync(includeArchived: false);
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
         result.Should().Contain("Active Note");
@@ -118,7 +118,7 @@ public class NoteOrganizationPluginTests
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_IncludesArchivedWhenRequested()
+    public async Task ListNotesAsync_WithAllFilter_IncludesAll()
     {
         // Arrange
         var notes = new List<Note>
@@ -130,7 +130,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllNotesAsync(includeArchived: true);
+        var result = await _sut.ListNotesAsync("all");
 
         // Assert
         result.Should().Contain("Active Note");
@@ -138,7 +138,7 @@ public class NoteOrganizationPluginTests
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_RespectsSkipParameter()
+    public async Task ListNotesAsync_RespectsSkipParameter()
     {
         // Arrange
         var notes = Enumerable.Range(1, 10)
@@ -148,14 +148,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllNotesAsync(skip: 5);
+        var result = await _sut.ListNotesAsync("recent", skip: 5);
 
         // Assert
         result.Should().Contain("skipped");
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_RespectsLimitParameter()
+    public async Task ListNotesAsync_RespectsLimitParameter()
     {
         // Arrange
         var notes = Enumerable.Range(1, 10)
@@ -165,60 +165,29 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllNotesAsync(limit: 3);
+        var result = await _sut.ListNotesAsync("recent", limit: 3);
 
         // Assert
         result.Should().Contain("\"returned\":3");
     }
 
     [Fact]
-    public async Task ListAllNotesAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task ListNotesAsync_WhenRepositoryThrows_ReturnsError()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.ListAllNotesAsync();
+        var result = await _sut.ListNotesAsync("recent");
 
         // Assert
         result.Should().Contain("Error");
         result.Should().Contain("Database error");
     }
 
-    #endregion
-
-    #region ListRecentNotesAsync Tests
-
     [Fact]
-    public async Task ListRecentNotesAsync_WhenUserIdNotSet_ReturnsError()
-    {
-        // Arrange
-        var plugin = new NoteOrganizationPlugin(_mockNoteRepository.Object, null, null, null);
-
-        // Act
-        var result = await plugin.ListRecentNotesAsync();
-
-        // Assert
-        result.Should().Contain("Error");
-    }
-
-    [Fact]
-    public async Task ListRecentNotesAsync_WhenNoNotes_ReturnsEmptyMessage()
-    {
-        // Arrange
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(new List<Note>());
-
-        // Act
-        var result = await _sut.ListRecentNotesAsync();
-
-        // Assert
-        result.Should().Contain("don't have any notes");
-    }
-
-    [Fact]
-    public async Task ListRecentNotesAsync_ReturnsRecentNotes()
+    public async Task ListNotesAsync_WithRecentFilter_ReturnsRecentNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -230,7 +199,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListRecentNotesAsync(maxResults: 10);
+        var result = await _sut.ListNotesAsync("recent", limit: 10);
 
         // Assert
         result.Should().Contain("Recent Note");
@@ -238,28 +207,7 @@ public class NoteOrganizationPluginTests
     }
 
     [Fact]
-    public async Task ListRecentNotesAsync_RespectsMaxResults()
-    {
-        // Arrange
-        var notes = Enumerable.Range(1, 20)
-            .Select(i => CreateNote(i.ToString(), $"Note {i}"))
-            .ToList();
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.ListRecentNotesAsync(maxResults: 5);
-
-        // Assert
-        result.Should().Contain("5 most recent notes");
-    }
-
-    #endregion
-
-    #region ListArchivedNotesAsync Tests
-
-    [Fact]
-    public async Task ListArchivedNotesAsync_WhenNoArchivedNotes_ReturnsEmptyMessage()
+    public async Task ListNotesAsync_WithArchivedFilter_WhenNoArchivedNotes_ReturnsEmptyMessage()
     {
         // Arrange
         var notes = new List<Note>
@@ -270,14 +218,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListArchivedNotesAsync();
+        var result = await _sut.ListNotesAsync("archived");
 
         // Assert
         result.Should().Contain("don't have any archived notes");
     }
 
     [Fact]
-    public async Task ListArchivedNotesAsync_ReturnsOnlyArchivedNotes()
+    public async Task ListNotesAsync_WithArchivedFilter_ReturnsOnlyArchivedNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -289,7 +237,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListArchivedNotesAsync();
+        var result = await _sut.ListNotesAsync("archived");
 
         // Assert
         result.Should().Contain("Archived Note");
@@ -298,37 +246,37 @@ public class NoteOrganizationPluginTests
 
     #endregion
 
-    #region ArchiveNoteAsync Tests
+    #region SetNoteArchivedAsync Tests
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task SetNoteArchivedAsync_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteOrganizationPlugin(_mockNoteRepository.Object, null, null, null);
 
         // Act
-        var result = await plugin.ArchiveNoteAsync("note-1");
+        var result = await plugin.SetNoteArchivedAsync("note-1", true);
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
+    public async Task SetNoteArchivedAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.ArchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", true);
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenNoteNotOwnedByUser_ReturnsNotFound()
+    public async Task SetNoteArchivedAsync_WhenNoteNotOwnedByUser_ReturnsNotFound()
     {
         // Arrange
         // GetByIdForUserAsync returns null when note belongs to different user
@@ -336,14 +284,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.ArchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", true);
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenAlreadyArchived_ReturnsAlreadyArchivedMessage()
+    public async Task SetNoteArchivedAsync_WhenAlreadyArchived_ReturnsAlreadyArchivedMessage()
     {
         // Arrange
         var note = CreateNote("note-1", "Already Archived", isArchived: true);
@@ -351,14 +299,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(note);
 
         // Act
-        var result = await _sut.ArchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", true);
 
         // Assert
         result.Should().Contain("already archived");
     }
 
     [Fact]
-    public async Task ArchiveNoteAsync_WhenValid_ArchivesNote()
+    public async Task SetNoteArchivedAsync_WhenValid_ArchivesNote()
     {
         // Arrange
         var note = CreateNote("note-1", "To Archive", isArchived: false);
@@ -374,19 +322,15 @@ public class NoteOrganizationPluginTests
             }));
 
         // Act
-        var result = await _sut.ArchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", true);
 
         // Assert
         result.Should().Contain("Successfully archived");
         _mockNoteOperationService.Verify(s => s.SetArchivedAsync(It.Is<SetArchivedOperationRequest>(r => r.IsArchived == true), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    #endregion
-
-    #region UnarchiveNoteAsync Tests
-
     [Fact]
-    public async Task UnarchiveNoteAsync_WhenNoteNotArchived_ReturnsNotArchivedMessage()
+    public async Task SetNoteArchivedAsync_WhenNoteNotArchived_ReturnsNotArchivedMessage()
     {
         // Arrange
         var note = CreateNote("note-1", "Active Note", isArchived: false);
@@ -394,14 +338,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(note);
 
         // Act
-        var result = await _sut.UnarchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", false);
 
         // Assert
         result.Should().Contain("is not archived");
     }
 
     [Fact]
-    public async Task UnarchiveNoteAsync_WhenValid_UnarchivesNote()
+    public async Task SetNoteArchivedAsync_WhenValid_UnarchivesNote()
     {
         // Arrange
         var note = CreateNote("note-1", "Archived Note", isArchived: true, folder: "Archived");
@@ -417,7 +361,7 @@ public class NoteOrganizationPluginTests
             }));
 
         // Act
-        var result = await _sut.UnarchiveNoteAsync("note-1");
+        var result = await _sut.SetNoteArchivedAsync("note-1", false);
 
         // Assert
         result.Should().Contain("Successfully restored");

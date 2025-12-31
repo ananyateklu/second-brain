@@ -142,7 +142,7 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
 
         var fullResponse = new StringBuilder();
         var emittedToolCalls = new HashSet<string>();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var hasEmittedFirstToken = false;
 
         yield return StatusEvent($"Calling {request.Provider} model...");
@@ -178,9 +178,9 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
             {
                 fullResponse.Append(update.Content);
 
-                // Check for thinking blocks
+                // Check for thinking blocks - use shared context for deduplication
                 foreach (var thinkingContent in ThinkingExtractor.ExtractXmlThinkingBlocks(
-                    fullResponse.ToString(), emittedThinkingBlocks))
+                    fullResponse.ToString(), context.EmittedThinkingBlocks))
                 {
                     yield return ThinkingEvent(thinkingContent);
                 }

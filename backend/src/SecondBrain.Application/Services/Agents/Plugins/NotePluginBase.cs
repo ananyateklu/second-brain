@@ -242,6 +242,33 @@ public abstract class NotePluginBase : IAgentPlugin
     }
 
     /// <summary>
+    /// Maps notes to the appropriate format based on detail level.
+    /// </summary>
+    /// <param name="notes">Notes to map</param>
+    /// <param name="detailLevel">'ids_only', 'summary' (default), or 'full'</param>
+    protected static List<object> MapNotesByDetailLevel(IEnumerable<Core.Entities.Note> notes, string detailLevel)
+    {
+        return detailLevel.ToLowerInvariant() switch
+        {
+            "ids_only" => notes.Select(MapToIdsOnly).ToList(),
+            "full" => notes.Select(MapToDetail).ToList(),
+            _ => notes.Select(MapToPreview).ToList() // "summary" is default
+        };
+    }
+
+    /// <summary>
+    /// Maps a note to minimal ID-only format for fast operations.
+    /// </summary>
+    protected static object MapToIdsOnly(Core.Entities.Note note)
+    {
+        return new
+        {
+            id = note.Id,
+            title = note.Title
+        };
+    }
+
+    /// <summary>
     /// Maps a note to a preview object for list responses.
     /// Includes image count indicator so agent knows if note has attachments.
     /// </summary>

@@ -442,8 +442,9 @@ public class NoteCrudPluginTests
         // Act
         var result = await _sut.DeleteNoteAsync("note-1");
 
-        // Assert
-        result.Should().Contain("Successfully deleted");
+        // Assert - DeleteNote now moves to trash (soft delete)
+        result.Should().Contain("Successfully moved note");
+        result.Should().Contain("to trash");
     }
 
     #endregion
