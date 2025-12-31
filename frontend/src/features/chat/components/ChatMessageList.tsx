@@ -361,6 +361,43 @@ const MessageWithContext = memo(function MessageWithContext({
 
   const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions || shouldShowPersistedRetrievedNotes;
 
+  // Build unified timeline that merges thinking steps and tool calls in chronological order
+  // This ensures events are displayed in the order they occurred, not grouped by type
+  type PersistedTimelineEvent =
+    | { type: 'thinking'; timestamp: Date; content: string; originalIndex: number }
+    | { type: 'tool'; timestamp: Date; toolCall: ToolCall; originalIndex: number };
+
+  const unifiedPersistedTimeline = useMemo((): PersistedTimelineEvent[] => {
+    const events: PersistedTimelineEvent[] = [];
+
+    // Add thinking steps with their timestamps
+    if (shouldShowPersistedThinking) {
+      persistedThinkingSteps.forEach((step, idx) => {
+        events.push({
+          type: 'thinking',
+          timestamp: step.timestamp,
+          content: step.content,
+          originalIndex: idx,
+        });
+      });
+    }
+
+    // Add tool calls with their timestamps
+    if (shouldShowPersistedToolExecutions && message.toolCalls) {
+      message.toolCalls.forEach((toolCall, idx) => {
+        events.push({
+          type: 'tool',
+          timestamp: new Date(toolCall.executedAt),
+          toolCall,
+          originalIndex: idx,
+        });
+      });
+    }
+
+    // Sort by timestamp to ensure chronological order
+    return events.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  }, [shouldShowPersistedThinking, persistedThinkingSteps, shouldShowPersistedToolExecutions, message.toolCalls]);
+
   return (
     <div>
       {/* Use ProcessTimeline to wrap reasoning, context retrieval, and tool executions */}
@@ -372,28 +409,35 @@ const MessageWithContext = memo(function MessageWithContext({
           />
         )}
 
-        {shouldShowPersistedThinking && persistedThinkingSteps.map((step, thinkingIndex) => (
-          <ThinkingStepCard
-            key={`${index}-thinking-${thinkingIndex}`}
-            step={{
-              content: step.content,
-              timestamp: step.timestamp,
-            }}
-          />
-        ))}
-
-        {shouldShowPersistedToolExecutions && message.toolCalls?.map((toolCall: ToolCall, toolIndex: number) => (
-          <div key={`${index}-tool-group-${toolIndex}`}>
-            {/* Show pre-tool text if available (text streamed before this tool was invoked) */}
-            {toolCall.preToolText && (
-              <PersistedTimelineTextCard content={toolCall.preToolText} showInlineNoteRefs={agentModeEnabled || ragEnabled} />
-            )}
-            <ToolExecutionCard
-              execution={convertToolCallToExecution(toolCall)}
-              isLast={toolIndex === (message.toolCalls?.length ?? 0) - 1}
-            />
-          </div>
-        ))}
+        {/* Render unified timeline in chronological order */}
+        {unifiedPersistedTimeline.map((event) => {
+          if (event.type === 'thinking') {
+            return (
+              <ThinkingStepCard
+                key={`${index}-thinking-${event.originalIndex}`}
+                step={{
+                  content: event.content,
+                  timestamp: event.timestamp,
+                }}
+              />
+            );
+          }
+          if (event.type === 'tool') {
+            return (
+              <div key={`${index}-tool-group-${event.originalIndex}`}>
+                {/* Show pre-tool text if available (text streamed before this tool was invoked) */}
+                {event.toolCall.preToolText && (
+                  <PersistedTimelineTextCard content={event.toolCall.preToolText} showInlineNoteRefs={agentModeEnabled || ragEnabled} />
+                )}
+                <ToolExecutionCard
+                  execution={convertToolCallToExecution(event.toolCall)}
+                  isLast={event.originalIndex === (message.toolCalls?.length ?? 0) - 1}
+                />
+              </div>
+            );
+          }
+          return null;
+        })}
       </ProcessTimeline>
 
       {/* Show the message bubble */}
