@@ -212,6 +212,136 @@ public sealed record AppendToNoteOperationRequest
 }
 
 /// <summary>
+/// Request to replace a specific string in a note's content.
+/// Inspired by Anthropic's str_replace text editor tool pattern.
+/// </summary>
+public sealed record ReplaceInNoteOperationRequest
+{
+    /// <summary>
+    /// ID of the note to modify.
+    /// </summary>
+    public required string NoteId { get; init; }
+
+    /// <summary>
+    /// User ID for ownership verification.
+    /// </summary>
+    public required string UserId { get; init; }
+
+    /// <summary>
+    /// Exact text to find and replace (must match exactly, including whitespace).
+    /// </summary>
+    public required string OldText { get; init; }
+
+    /// <summary>
+    /// Text to replace OldText with. Empty string removes the text.
+    /// </summary>
+    public required string NewText { get; init; }
+
+    /// <summary>
+    /// Source of the operation (required for audit trail).
+    /// </summary>
+    public required NoteSource Source { get; init; }
+
+    /// <summary>
+    /// AI provider name when modified by an agent.
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when modified by an agent.
+    /// </summary>
+    public string? AiModel { get; init; }
+
+    /// <summary>
+    /// If true, allows replacement of multiple occurrences. Default is false (single match only).
+    /// </summary>
+    public bool AllowMultiple { get; init; } = false;
+}
+
+/// <summary>
+/// Request to insert text at a specific line number in a note.
+/// Inspired by Anthropic's insert text editor tool pattern.
+/// </summary>
+public sealed record InsertInNoteOperationRequest
+{
+    /// <summary>
+    /// ID of the note to modify.
+    /// </summary>
+    public required string NoteId { get; init; }
+
+    /// <summary>
+    /// User ID for ownership verification.
+    /// </summary>
+    public required string UserId { get; init; }
+
+    /// <summary>
+    /// Line number after which to insert the text (0 = beginning of note, 1 = after first line).
+    /// </summary>
+    public required int LineNumber { get; init; }
+
+    /// <summary>
+    /// Text to insert.
+    /// </summary>
+    public required string TextToInsert { get; init; }
+
+    /// <summary>
+    /// Source of the operation (required for audit trail).
+    /// </summary>
+    public required NoteSource Source { get; init; }
+
+    /// <summary>
+    /// AI provider name when modified by an agent.
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when modified by an agent.
+    /// </summary>
+    public string? AiModel { get; init; }
+}
+
+/// <summary>
+/// Request to prepend content to the beginning of a note.
+/// </summary>
+public sealed record PrependToNoteOperationRequest
+{
+    /// <summary>
+    /// ID of the note to modify.
+    /// </summary>
+    public required string NoteId { get; init; }
+
+    /// <summary>
+    /// User ID for ownership verification.
+    /// </summary>
+    public required string UserId { get; init; }
+
+    /// <summary>
+    /// Content to prepend to the note.
+    /// </summary>
+    public required string ContentToPrepend { get; init; }
+
+    /// <summary>
+    /// Source of the operation (required for audit trail).
+    /// </summary>
+    public required NoteSource Source { get; init; }
+
+    /// <summary>
+    /// AI provider name when prepended by an agent.
+    /// </summary>
+    public string? AiProvider { get; init; }
+
+    /// <summary>
+    /// AI model identifier when prepended by an agent.
+    /// </summary>
+    public string? AiModel { get; init; }
+
+    /// <summary>
+    /// Whether to add a newline after the prepended content.
+    /// </summary>
+    public bool AddNewline { get; init; } = true;
+}
+
+/// <summary>
 /// Request to delete a note.
 /// </summary>
 public sealed record DeleteNoteOperationRequest

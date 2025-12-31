@@ -281,4 +281,30 @@ public class ParallelNoteRepository : IParallelNoteRepository
             throw new RepositoryException($"Failed to delete note with ID '{id}'", ex);
         }
     }
+
+    public async Task<IEnumerable<Note>> GetDeletedByUserIdAsync(string userId)
+    {
+        try
+        {
+            _logger.LogDebug("ParallelRepo: Retrieving deleted notes for user. UserId: {UserId}", userId);
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var deletedNotes = await context.Notes
+                .AsNoTracking()
+                .IgnoreQueryFilters() // Include soft-deleted notes
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
+                .Where(n => n.UserId == userId && n.IsDeleted)
+                .OrderByDescending(n => n.DeletedAt)
+                .ToListAsync();
+
+            _logger.LogDebug("ParallelRepo: Retrieved deleted notes. UserId: {UserId}, Count: {Count}", userId, deletedNotes.Count);
+            return deletedNotes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ParallelRepo: Error retrieving deleted notes. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to retrieve deleted notes for user '{userId}'", ex);
+        }
+    }
 }

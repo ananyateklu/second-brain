@@ -40,6 +40,7 @@ public class AgentService : IAgentService
         HttpClient httpClient,
         IStructuredOutputService? structuredOutputService = null,
         INoteOperationService? noteOperationService = null,
+        INoteVersionService? versionService = null,
         GrokSearchTool? grokSearchTool = null,
         GrokDeepSearchTool? grokDeepSearchTool = null)
     {
@@ -51,8 +52,8 @@ public class AgentService : IAgentService
         _logger = logger;
 
         // Register available plugins
-        // NotesPlugin uses INoteOperationService for all mutations (create, update, delete, append)
-        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService, noteOperationService));
+        // NotesPlugin uses INoteOperationService for mutations and INoteVersionService for version history
+        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value, structuredOutputService, noteOperationService, versionService));
 
         // GrokSearchPlugin provides web search and deep search capabilities
         if (grokSearchTool != null && grokDeepSearchTool != null)

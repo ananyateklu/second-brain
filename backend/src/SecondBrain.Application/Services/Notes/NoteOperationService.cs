@@ -478,6 +478,218 @@ public class NoteOperationService : INoteOperationService
         return await UpdateAsync(updateRequest, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<NoteOperationResult>> ReplaceInAsync(
+        ReplaceInNoteOperationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "ReplaceIn note {NoteId} for user {UserId}. OldText length: {OldLen}, NewText length: {NewLen}, AllowMultiple: {AllowMultiple}",
+            request.NoteId, request.UserId, request.OldText?.Length ?? 0, request.NewText?.Length ?? 0, request.AllowMultiple);
+
+        // 1. Validate inputs
+        if (string.IsNullOrEmpty(request.OldText))
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("OldText cannot be empty - specify the exact text to replace"));
+        }
+
+        if (request.NewText == null)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("NewText cannot be null (use empty string to delete text)"));
+        }
+
+        if (request.OldText == request.NewText)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("OldText and NewText are identical - no replacement needed"));
+        }
+
+        // 2. Fetch note and verify ownership
+        var note = await _noteRepository.GetByIdAsync(request.NoteId);
+        if (note == null)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.NotFound("Note", request.NoteId));
+        }
+
+        if (note.UserId != request.UserId)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Forbidden("You don't have permission to modify this note"));
+        }
+
+        // 3. Count occurrences (exact match, case-sensitive)
+        var occurrenceCount = CountOccurrences(note.Content, request.OldText);
+
+        if (occurrenceCount == 0)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation($"No match found for the specified text. The text '{TruncateForError(request.OldText)}' was not found in the note content."));
+        }
+
+        if (occurrenceCount > 1 && !request.AllowMultiple)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation($"Multiple matches found ({occurrenceCount} occurrences). Set AllowMultiple=true to replace all, or provide more surrounding context in OldText to make it unique."));
+        }
+
+        // 4. Perform replacement
+        string newContent;
+        if (request.AllowMultiple)
+        {
+            newContent = note.Content.Replace(request.OldText, request.NewText);
+            _logger.LogDebug("Replaced all {Count} occurrences in note {NoteId}", occurrenceCount, request.NoteId);
+        }
+        else
+        {
+            newContent = ReplaceFirst(note.Content, request.OldText, request.NewText);
+            _logger.LogDebug("Replaced first occurrence in note {NoteId}", request.NoteId);
+        }
+
+        // 5. Use standard update flow
+        var updateRequest = new UpdateNoteOperationRequest
+        {
+            NoteId = request.NoteId,
+            UserId = request.UserId,
+            Source = request.Source,
+            Content = newContent,
+            AiProvider = request.AiProvider,
+            AiModel = request.AiModel
+        };
+
+        return await UpdateAsync(updateRequest, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<NoteOperationResult>> InsertInAsync(
+        InsertInNoteOperationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "InsertIn note {NoteId} at line {LineNumber} for user {UserId}. Text length: {TextLen}",
+            request.NoteId, request.LineNumber, request.UserId, request.TextToInsert?.Length ?? 0);
+
+        // 1. Validate inputs
+        if (string.IsNullOrEmpty(request.TextToInsert))
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("TextToInsert cannot be empty"));
+        }
+
+        if (request.LineNumber < 0)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("LineNumber must be non-negative (0 = insert at beginning, 1 = after first line, etc.)"));
+        }
+
+        // 2. Fetch note and verify ownership
+        var note = await _noteRepository.GetByIdAsync(request.NoteId);
+        if (note == null)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.NotFound("Note", request.NoteId));
+        }
+
+        if (note.UserId != request.UserId)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Forbidden("You don't have permission to modify this note"));
+        }
+
+        // 3. Split content into lines
+        var lines = note.Content.Split('\n').ToList();
+        var totalLines = lines.Count;
+
+        // 4. Insert at appropriate position
+        // LineNumber 0 = insert at beginning (before line 0)
+        // LineNumber 1 = insert after line 1 (between line 0 and line 1)
+        // LineNumber >= totalLines = append at end
+        string newContent;
+        if (request.LineNumber == 0)
+        {
+            // Insert at the very beginning
+            newContent = request.TextToInsert + "\n" + note.Content;
+            _logger.LogDebug("Inserted at beginning of note {NoteId}", request.NoteId);
+        }
+        else if (request.LineNumber >= totalLines)
+        {
+            // Append at end
+            newContent = note.Content + "\n" + request.TextToInsert;
+            _logger.LogDebug("Inserted at end of note {NoteId} (line {Line} >= {Total} lines)",
+                request.NoteId, request.LineNumber, totalLines);
+        }
+        else
+        {
+            // Insert after the specified line
+            lines.Insert(request.LineNumber, request.TextToInsert);
+            newContent = string.Join("\n", lines);
+            _logger.LogDebug("Inserted after line {Line} in note {NoteId}", request.LineNumber, request.NoteId);
+        }
+
+        // 5. Use standard update flow
+        var updateRequest = new UpdateNoteOperationRequest
+        {
+            NoteId = request.NoteId,
+            UserId = request.UserId,
+            Source = request.Source,
+            Content = newContent,
+            AiProvider = request.AiProvider,
+            AiModel = request.AiModel
+        };
+
+        return await UpdateAsync(updateRequest, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<NoteOperationResult>> PrependAsync(
+        PrependToNoteOperationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug(
+            "Prepend to note {NoteId} for user {UserId}. Text length: {TextLen}, AddNewline: {AddNewline}",
+            request.NoteId, request.UserId, request.ContentToPrepend?.Length ?? 0, request.AddNewline);
+
+        // 1. Validate inputs
+        if (string.IsNullOrWhiteSpace(request.ContentToPrepend))
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Validation("Content to prepend cannot be empty"));
+        }
+
+        // 2. Fetch note and verify ownership
+        var note = await _noteRepository.GetByIdAsync(request.NoteId);
+        if (note == null)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.NotFound("Note", request.NoteId));
+        }
+
+        if (note.UserId != request.UserId)
+        {
+            return Result<NoteOperationResult>.Failure(
+                Error.Forbidden("You don't have permission to modify this note"));
+        }
+
+        // 3. Build new content with prepended text
+        var separator = request.AddNewline ? "\n" : "";
+        var newContent = request.ContentToPrepend.Trim() + separator + note.Content;
+
+        // 4. Use standard update flow
+        var updateRequest = new UpdateNoteOperationRequest
+        {
+            NoteId = request.NoteId,
+            UserId = request.UserId,
+            Source = request.Source,
+            Content = newContent,
+            AiProvider = request.AiProvider,
+            AiModel = request.AiModel
+        };
+
+        return await UpdateAsync(updateRequest, cancellationToken);
+    }
+
     #endregion
 
     #region Delete Operations
@@ -950,6 +1162,52 @@ public class NoteOperationService : INoteOperationService
                 _logger.LogError(ex, "Background image description extraction failed for note {NoteId}", capturedNoteId);
             }
         });
+    }
+
+    /// <summary>
+    /// Counts non-overlapping occurrences of a substring in a string.
+    /// </summary>
+    private static int CountOccurrences(string text, string pattern)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(pattern))
+            return 0;
+
+        int count = 0;
+        int index = 0;
+
+        while ((index = text.IndexOf(pattern, index, StringComparison.Ordinal)) != -1)
+        {
+            count++;
+            index += pattern.Length;
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Replaces only the first occurrence of a substring.
+    /// </summary>
+    private static string ReplaceFirst(string text, string oldValue, string newValue)
+    {
+        var index = text.IndexOf(oldValue, StringComparison.Ordinal);
+        if (index < 0)
+            return text;
+
+        return string.Concat(text.AsSpan(0, index), newValue, text.AsSpan(index + oldValue.Length));
+    }
+
+    /// <summary>
+    /// Truncates text for error messages to avoid overly long errors.
+    /// </summary>
+    private static string TruncateForError(string text, int maxLength = 50)
+    {
+        if (string.IsNullOrEmpty(text))
+            return "(empty)";
+
+        if (text.Length <= maxLength)
+            return text;
+
+        return text[..maxLength] + "...";
     }
 
     #endregion

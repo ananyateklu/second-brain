@@ -50,38 +50,62 @@ When you see ""---RELEVANT NOTES CONTEXT---"" in the system context:
 
 Automatic context retrieval is disabled for this conversation. You should:
 - **Proactively use search tools** when the user asks questions about their notes
-- Use **SemanticSearch** for conceptual/meaning-based queries
-- Use **SearchNotes** for keyword-based searches
-- Use **SearchByTags** when looking for notes by category
+- **Always start with SemanticSearch** - it's the most effective way to find notes
+- Only use SearchNotes if you need exact phrase matching
+- Use SearchByTags when looking for notes by category
 - Always search before answering questions that might relate to the user's notes
 ";
 
         return contextInstructions + @"
+### Search Tool Selection (IMPORTANT)
+
+**DEFAULT CHOICE: SemanticSearch**
+- Use SemanticSearch as your **first choice** for finding notes
+- Finds notes by meaning/concept, not just keywords
+- Handles synonyms, related terms, and different phrasings
+- Example: ""sambusa recipe"" finds notes about ""samosas"" or ""fried pastries""
+
+**When to use other search tools:**
+| Scenario | Best Tool |
+|----------|-----------|
+| Finding notes about a topic | **SemanticSearch** (default) |
+| Looking up by exact phrase | SearchNotes |
+| Browsing notes in a category | SearchByTags |
+| Finding recent activity | GetNotesByDateRange |
+| Discovering connections | FindRelatedNotes |
+
 ### Search Tools (Return Previews Only)
 
-- **SearchNotes**: Keyword-based search in titles, content, and tags
+- **SemanticSearch** ⭐ PRIMARY SEARCH TOOL
+  - AI-powered search that understands meaning and context
+  - **Use this first** - it's the most effective for finding relevant notes
+  - Finds notes even with different wording, synonyms, or related concepts
   - Returns preview only - use GetNote for full content
-  - Use for finding specific notes when user provides exact terms
 
-- **SemanticSearch**: AI-powered search that finds conceptually related notes
+- **SearchNotes**: Exact keyword/phrase matching
+  - Only use when you need to match specific text exactly
+  - Looks for literal matches in titles, content, and tags
   - Returns preview only - use GetNote for full content
-  - Finds notes by meaning even without exact keyword matches
+  - If this returns no results, try SemanticSearch instead
 
 - **SearchByTags**: Find notes by their tags
-  - Returns preview only - use GetNote for full content
+  - Use when user asks for notes in a specific category
   - Can require all tags or any of the specified tags
+  - Returns preview only - use GetNote for full content
 
 - **GetNotesByDateRange**: Find notes by creation or update date
-  - Returns preview only - use GetNote for full content
+  - Use for time-based queries like ""notes from last week""
   - Supports relative dates: 'today', 'yesterday', 'last week', 'last month'
+  - Returns preview only - use GetNote for full content
 
 - **FindRelatedNotes**: Find notes similar to a given note
-  - Returns preview only - use GetNote for full content
-  - Uses semantic search to find conceptually related notes";
+  - Use to discover connections between notes
+  - Requires a note ID - use after finding a relevant note
+  - Returns preview only - use GetNote for full content";
     }
 
     [KernelFunction("SearchNotes")]
-    [Description("Searches for notes matching the query in titles, content, or tags. Use this to find existing notes or information the user has saved.")]
+    [Description("Exact keyword/phrase search in note titles, content, and tags. Only use when you need literal text matching. For general note finding, use SemanticSearch instead - it's more effective at finding relevant notes.")]
     public async Task<string> SearchNotesAsync(
         [Description("The search query to find notes")] string query,
         [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
@@ -104,7 +128,7 @@ Automatic context retrieval is disabled for this conversation. You should:
 
             if (!matches.Any())
             {
-                return $"No notes found matching \"{query}\".";
+                return $"No notes found with exact match for \"{query}\". Try using SemanticSearch instead - it finds notes by meaning and handles synonyms/related terms better.";
             }
 
             var noteData = matches.Select(n => new
@@ -133,7 +157,7 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("SemanticSearch")]
-    [Description("Searches for notes using semantic/meaning-based search powered by AI embeddings. This finds notes that are conceptually related to the query even if they don't contain the exact keywords.")]
+    [Description("PRIMARY SEARCH TOOL - AI-powered search that finds notes by meaning and context. Use this as your first choice when looking for notes. Finds relevant notes even with different wording, synonyms, or related concepts (e.g., 'sambusa' finds 'samosa recipes').")]
     public async Task<string> SemanticSearchAsync(
         [Description("The search query to find semantically related notes")] string query,
         [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)

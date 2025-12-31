@@ -1,7 +1,11 @@
 using FluentAssertions;
 using Moq;
 using SecondBrain.Application.Services.Agents.Plugins;
+using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Interfaces;
 using Xunit;
 
@@ -14,13 +18,15 @@ namespace SecondBrain.Tests.Unit.Application.Services.Agents.Plugins;
 public class NoteOrganizationPluginTests
 {
     private readonly Mock<IParallelNoteRepository> _mockNoteRepository;
+    private readonly Mock<INoteOperationService> _mockNoteOperationService;
     private readonly NoteOrganizationPlugin _sut;
     private const string TestUserId = "user-123";
 
     public NoteOrganizationPluginTests()
     {
         _mockNoteRepository = new Mock<IParallelNoteRepository>();
-        _sut = new NoteOrganizationPlugin(_mockNoteRepository.Object, null, null, null);
+        _mockNoteOperationService = new Mock<INoteOperationService>();
+        _sut = new NoteOrganizationPlugin(_mockNoteRepository.Object, null, null, null, _mockNoteOperationService.Object);
         _sut.SetCurrentUserId(TestUserId);
     }
 
@@ -358,15 +364,21 @@ public class NoteOrganizationPluginTests
         var note = CreateNote("note-1", "To Archive", isArchived: false);
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
-            .ReturnsAsync(note);
+        _mockNoteOperationService.Setup(s => s.SetArchivedAsync(It.IsAny<SetArchivedOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = note,
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new[] { "archived" }
+            }));
 
         // Act
         var result = await _sut.ArchiveNoteAsync("note-1");
 
         // Assert
         result.Should().Contain("Successfully archived");
-        _mockNoteRepository.Verify(r => r.UpdateAsync("note-1", It.Is<Note>(n => n.IsArchived == true)), Times.Once);
+        _mockNoteOperationService.Verify(s => s.SetArchivedAsync(It.Is<SetArchivedOperationRequest>(r => r.IsArchived == true), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -395,15 +407,21 @@ public class NoteOrganizationPluginTests
         var note = CreateNote("note-1", "Archived Note", isArchived: true, folder: "Archived");
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
-            .ReturnsAsync(note);
+        _mockNoteOperationService.Setup(s => s.SetArchivedAsync(It.IsAny<SetArchivedOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = note,
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new[] { "archived" }
+            }));
 
         // Act
         var result = await _sut.UnarchiveNoteAsync("note-1");
 
         // Assert
         result.Should().Contain("Successfully restored");
-        _mockNoteRepository.Verify(r => r.UpdateAsync("note-1", It.Is<Note>(n => n.IsArchived == false)), Times.Once);
+        _mockNoteOperationService.Verify(s => s.SetArchivedAsync(It.Is<SetArchivedOperationRequest>(r => r.IsArchived == false), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     #endregion
@@ -431,8 +449,14 @@ public class NoteOrganizationPluginTests
         var note = CreateNote("note-1", "Test Note");
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
-            .ReturnsAsync(note);
+        _mockNoteOperationService.Setup(s => s.MoveToFolderAsync(It.IsAny<MoveToFolderOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = note,
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new[] { "folder" }
+            }));
 
         // Act
         var result = await _sut.MoveToFolderAsync("note-1", "Work");
@@ -440,7 +464,7 @@ public class NoteOrganizationPluginTests
         // Assert
         result.Should().Contain("Moved note");
         result.Should().Contain("Work");
-        _mockNoteRepository.Verify(r => r.UpdateAsync("note-1", It.Is<Note>(n => n.Folder == "Work")), Times.Once);
+        _mockNoteOperationService.Verify(s => s.MoveToFolderAsync(It.Is<MoveToFolderOperationRequest>(r => r.Folder == "Work"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -450,8 +474,14 @@ public class NoteOrganizationPluginTests
         var note = CreateNote("note-1", "Test Note", folder: "Work");
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(note);
-        _mockNoteRepository.Setup(r => r.UpdateAsync("note-1", It.IsAny<Note>()))
-            .ReturnsAsync(note);
+        _mockNoteOperationService.Setup(s => s.MoveToFolderAsync(It.IsAny<MoveToFolderOperationRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteOperationResult>.Success(new NoteOperationResult
+            {
+                Note = note,
+                VersionNumber = 2,
+                Source = NoteSource.Agent,
+                Changes = new[] { "folder" }
+            }));
 
         // Act
         var result = await _sut.MoveToFolderAsync("note-1", "");
