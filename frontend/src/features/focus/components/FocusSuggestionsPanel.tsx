@@ -438,29 +438,31 @@ const SuggestionItem = memo(function SuggestionItem({
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDelete}
-            disabled={disabled || isDeleting}
-            className="h-8 w-8 p-0"
-            title="Delete suggestion"
-          >
-            <Trash2 className="h-4 w-4" style={{ color: 'var(--color-error)' }} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAdd}
-            disabled={disabled}
-            className="h-8 px-3"
-            title="Add to today's plan"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
+        {/* Action buttons - collapses when not hovered */}
+        <div className="w-0 group-hover:w-auto overflow-hidden transition-all duration-150 flex-shrink-0">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={disabled || isDeleting}
+              className="h-8 w-8 p-0"
+              title="Delete suggestion"
+            >
+              <Trash2 className="h-4 w-4" style={{ color: 'var(--color-error)' }} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAdd}
+              disabled={disabled}
+              className="h-8 px-3"
+              title="Add to today's plan"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -69,7 +69,7 @@ const PlanItem = memo(function PlanItem({
   return (
     <div
       className={cn(
-        'group flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg',
+        'group flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg',
         'transition-all duration-150',
         'hover:bg-[var(--surface-elevated)]',
         isCompleted && 'opacity-60',
@@ -143,18 +143,20 @@ const PlanItem = memo(function PlanItem({
         </span>
       )}
 
-      {/* Remove button */}
+      {/* Remove button - collapses when not hovered */}
       {onRemove && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleRemove}
-          disabled={disabled}
-          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
-          title="Remove from today"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        <div className="w-0 group-hover:w-7 overflow-hidden transition-all duration-150 flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRemove}
+            disabled={disabled}
+            className="h-7 w-7 hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+            title="Remove from today"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -289,7 +291,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
       </div>
 
       {/* Items list - scrollable */}
-      <div className="px-4 py-2 flex-1 overflow-y-auto thin-scrollbar">
+      <div className="px-4 flex-1 overflow-y-auto thin-scrollbar">
         {items.map((item) => (
           <PlanItem
             key={item.id}

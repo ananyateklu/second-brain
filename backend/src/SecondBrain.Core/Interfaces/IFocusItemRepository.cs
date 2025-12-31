@@ -100,4 +100,12 @@ public interface IFocusItemRepository
         string userId,
         DateOnly? date = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all active (non-completed, non-deleted) focus items for deduplication.
+    /// Includes today's plan and backlog items with pending or in_progress status.
+    /// </summary>
+    Task<IEnumerable<FocusItem>> GetActiveItemsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
 }

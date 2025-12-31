@@ -107,8 +107,13 @@ public class FocusAIService : IFocusAIService
                 );
             }
 
-            // Build prompt with note context
-            var prompt = BuildSuggestionPrompt(ragContext.FormattedContext, currentFocusTitle, effectiveSettings.MaxSuggestions);
+            // Get existing active focus items to avoid duplicate suggestions (Layer 1: Prompt)
+            var activeItems = await _focusRepository.GetActiveItemsAsync(userId, cancellationToken);
+            var existingTitles = activeItems.Select(f => f.Title).ToList();
+            _logger.LogDebug("Found {Count} existing active focus items for deduplication", existingTitles.Count);
+
+            // Build prompt with note context and existing items to avoid
+            var prompt = BuildSuggestionPrompt(ragContext.FormattedContext, currentFocusTitle, effectiveSettings.MaxSuggestions, existingTitles);
 
             // Generate suggestions using user's model and settings
             var request = new AIRequest
@@ -381,11 +386,31 @@ public class FocusAIService : IFocusAIService
         return baseQuery;
     }
 
-    private string BuildSuggestionPrompt(string noteContext, string? currentFocusTitle, int maxSuggestions)
+    private string BuildSuggestionPrompt(
+        string noteContext,
+        string? currentFocusTitle,
+        int maxSuggestions,
+        IEnumerable<string>? existingFocusTitles = null)
     {
         var currentFocusSection = string.IsNullOrWhiteSpace(currentFocusTitle)
             ? ""
             : $"\n\nCurrent focus: {currentFocusTitle}";
+
+        // Build existing focus items section to prevent duplicate suggestions
+        var existingItemsSection = "";
+        var existingList = existingFocusTitles?.ToList() ?? new List<string>();
+        if (existingList.Count > 0)
+        {
+            var existingItemsList = string.Join("\n- ", existingList);
+            existingItemsSection = $"""
+
+
+            EXISTING FOCUS ITEMS (DO NOT SUGGEST THESE OR SIMILAR):
+            - {existingItemsList}
+
+            IMPORTANT: Do NOT suggest items that are the same as or very similar to the existing focus items listed above. The user already has these in their plan or backlog.
+            """;
+        }
 
         return $$"""
             You are a productivity assistant helping a user decide what to focus on next.
@@ -395,6 +420,7 @@ public class FocusAIService : IFocusAIService
 
             NOTES CONTEXT:
             {{noteContext}}
+            {{existingItemsSection}}
 
             For each suggestion, provide:
             1. A clear, actionable title (max 100 chars)
@@ -688,6 +714,11 @@ public class FocusAIService : IFocusAIService
             var effectiveSettings = await GetEffectiveSettingsAsync(userId, cancellationToken);
             var similarityThreshold = effectiveSettings.DedupThreshold;
 
+            // Layer 2: Get existing focus item titles for post-generation filtering
+            var activeItems = await _focusRepository.GetActiveItemsAsync(userId, cancellationToken);
+            var existingFocusTitles = activeItems.Select(f => f.Title).ToList();
+            _logger.LogDebug("Layer 2 filter: {Count} existing focus items to check against", existingFocusTitles.Count);
+
             for (int i = 0; i < aiResponse.Suggestions.Count; i++)
             {
                 var suggestion = aiResponse.Suggestions[i];
@@ -711,7 +742,17 @@ public class FocusAIService : IFocusAIService
                 {
                     duplicatesSkipped++;
                     _logger.LogDebug(
-                        "Skipping duplicate suggestion: {Title}",
+                        "Skipping duplicate suggestion (similar to existing suggestion): {Title}",
+                        suggestion.Title);
+                    continue;
+                }
+
+                // Layer 2: Check if similar to existing focus items (belt and suspenders)
+                if (existingFocusTitles.Count > 0 && IsSimilarToExistingFocusItem(suggestion.Title, existingFocusTitles))
+                {
+                    duplicatesSkipped++;
+                    _logger.LogDebug(
+                        "Skipping suggestion similar to existing focus item: {Title}",
                         suggestion.Title);
                     continue;
                 }
@@ -868,5 +909,65 @@ public class FocusAIService : IFocusAIService
             AcceptedFocusItemId: suggestion.AcceptedFocusItemId,
             CreatedAt: suggestion.CreatedAt
         );
+    }
+
+    /// <summary>
+    /// Calculates fuzzy text similarity using Jaccard similarity on word tokens.
+    /// Returns a value between 0.0 (no similarity) and 1.0 (identical).
+    /// </summary>
+    private static double FuzzyTextSimilarity(string a, string b)
+    {
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            return 0;
+
+        // Normalize: lowercase, split on whitespace and common punctuation
+        var wordsA = a.ToLowerInvariant()
+            .Split(new[] { ' ', '-', '_', ':', '/', '&', '+' }, StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
+        var wordsB = b.ToLowerInvariant()
+            .Split(new[] { ' ', '-', '_', ':', '/', '&', '+' }, StringSplitOptions.RemoveEmptyEntries)
+            .ToHashSet();
+
+        if (wordsA.Count == 0 || wordsB.Count == 0)
+            return 0;
+
+        var intersection = wordsA.Intersect(wordsB).Count();
+        var union = wordsA.Union(wordsB).Count();
+
+        return union == 0 ? 0 : (double)intersection / union;
+    }
+
+    /// <summary>
+    /// Checks if a suggestion title is similar to any existing focus item titles.
+    /// Uses fuzzy matching and substring containment.
+    /// </summary>
+    private static bool IsSimilarToExistingFocusItem(string suggestionTitle, IEnumerable<string> existingTitles)
+    {
+        var suggestionLower = suggestionTitle.ToLowerInvariant();
+
+        foreach (var existingTitle in existingTitles)
+        {
+            var existingLower = existingTitle.ToLowerInvariant();
+
+            // Check Jaccard similarity (word overlap)
+            if (FuzzyTextSimilarity(suggestionTitle, existingTitle) > 0.6)
+                return true;
+
+            // Check substring containment (one contains the other)
+            if (existingLower.Contains(suggestionLower) || suggestionLower.Contains(existingLower))
+                return true;
+
+            // Check if most words overlap (handles slight rewording)
+            var suggestionWords = suggestionLower.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            var existingWords = existingLower.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            var overlap = suggestionWords.Intersect(existingWords).Count();
+            var minWords = Math.Min(suggestionWords.Count, existingWords.Count);
+
+            // If 70%+ of the shorter title's words appear in the longer one, it's similar
+            if (minWords > 0 && (double)overlap / minWords >= 0.7)
+                return true;
+        }
+
+        return false;
     }
 }

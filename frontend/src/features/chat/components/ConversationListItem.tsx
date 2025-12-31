@@ -180,14 +180,7 @@ export const ConversationListItem = memo(function ConversationListItem({
   const leftBorder = getLeftBorderStyle();
 
   return (
-    <>
-      <style>{`
-        .group:hover .conversation-title {
-          mask-image: linear-gradient(to right, black 0%, black calc(100% - 44px), transparent 100%);
-          -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 44px), transparent 100%);
-        }
-      `}</style>
-      <div
+    <div
         className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}`}
         style={{
           backgroundColor: getBackgroundColor(),
@@ -224,47 +217,49 @@ export const ConversationListItem = memo(function ConversationListItem({
                 />
               )}
               <h3
-                className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap pr-0 group-hover:pr-9"
+                className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap"
                 style={{
                   color: 'var(--text-primary)',
                   fontWeight: 400,
-                  maskImage: 'linear-gradient(to right, black 0%, black calc(100% - 50px), transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to right, black 0%, black calc(100% - 50px), transparent 100%)',
+                  textOverflow: 'ellipsis',
                 }}
                 title={conversation.title}
               >
                 {conversation.title}
               </h3>
             </div>
+            {/* Delete button - collapses when not hovered */}
             {!isPlaceholder && !isSelectionMode && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(conversation.id);
-                }}
-                className="absolute right-0 p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
-                style={{
-                  color: 'rgb(239, 68, 68)',
-                  backgroundColor: 'transparent',
-                  width: '28px',
-                  height: '28px',
-                }}
-                title="Delete conversation"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              <div className="w-0 group-hover:w-7 overflow-hidden transition-all duration-150 flex-shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(conversation.id);
+                  }}
+                  className="p-1.5 rounded-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+                  style={{
+                    color: 'rgb(239, 68, 68)',
+                    backgroundColor: 'transparent',
+                    width: '28px',
+                    height: '28px',
+                  }}
+                  title="Delete conversation"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
           <div className="flex items-center justify-between gap-1.5">
@@ -306,7 +301,6 @@ export const ConversationListItem = memo(function ConversationListItem({
           </div>
         </div>
       </div>
-    </>
   );
 });
 

@@ -265,13 +265,14 @@ export const DashboardPage = memo(function DashboardPage() {
       ) : (
         <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
           {/* Left Column - Today's Plan + Backlog (mobile: 2nd) */}
-          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 lg:overflow-y-auto thin-scrollbar">
+          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0">
             <TodaysPlanList
               items={scheduledItems}
               onComplete={handlePlanItemComplete}
               onSetFocus={handleSetFocus}
               onRemove={handleRemoveFromToday}
               disabled={isMutating}
+              className="flex-1 min-h-0"
             />
             <BacklogSection
               items={backlogItems}
@@ -279,6 +280,7 @@ export const DashboardPage = memo(function DashboardPage() {
               onSchedule={handleScheduleToday}
               onDelete={handleDeleteBacklogItem}
               disabled={isMutating}
+              className="flex-1 min-h-0"
             />
           </div>
 
