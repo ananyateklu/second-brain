@@ -2,6 +2,7 @@
  * ChatMessagesSkeleton
  * Skeleton placeholder for the chat messages list
  * Matches ChatMessageList: px-4 pt-4, inner max-w-4xl mx-auto
+ * Matches MessageBubble styling exactly
  */
 
 import { ShimmerBlock } from '../ui/Shimmer';
@@ -32,13 +33,19 @@ export function ChatMessagesSkeleton() {
                 space-y-2
                 ${msg.isUser
                   ? 'max-w-[85%] px-4 py-2.5 rounded-2xl rounded-br-md'
-                  : 'w-full rounded-2xl rounded-bl-md'}
+                  : 'w-full px-4 py-2.5 rounded-2xl rounded-bl-md'}
               `}
               style={{
+                // Match MessageBubble exactly:
+                // User: color-mix(in srgb, var(--color-primary) 10%, transparent)
+                // Assistant: transparent (not surface-card)
                 backgroundColor: msg.isUser
                   ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
-                  : 'var(--surface-card)',
-                border: msg.isUser ? '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)' : undefined,
+                  : 'transparent',
+                // User border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)
+                border: msg.isUser
+                  ? '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)'
+                  : undefined,
               }}
             >
               {/* Message content lines */}
@@ -49,6 +56,7 @@ export function ChatMessagesSkeleton() {
                   style={{
                     width: `${width}%`,
                     minWidth: '80px',
+                    // User shimmer lines use primary color blend
                     backgroundColor: msg.isUser
                       ? 'color-mix(in srgb, var(--color-primary) 30%, transparent)'
                       : undefined,
@@ -59,10 +67,10 @@ export function ChatMessagesSkeleton() {
           </div>
         ))}
 
-        {/* Typing indicator skeleton */}
+        {/* Typing indicator skeleton - subtle pulsing dots */}
         <div className="flex justify-start">
           <div
-            className="rounded-2xl px-4 py-3 flex items-center gap-1.5"
+            className="rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5"
             style={{ backgroundColor: 'var(--surface-secondary)' }}
           >
             <ShimmerBlock className="w-2 h-2 rounded-full" />

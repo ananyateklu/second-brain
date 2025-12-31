@@ -12,7 +12,6 @@ import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Pagination } from '../components/ui/Pagination';
 import { useBoundStore } from '../store/bound-store';
-import { isTauri } from '../lib/native-notifications';
 import { useDirectoryPageContext } from '../features/notes/context/DirectoryPageContext';
 import { toast } from '../hooks/use-toast';
 import { NoteListItem } from '../types/notes';
@@ -94,11 +93,6 @@ export function NotesDirectoryPage() {
   const theme = useBoundStore((state) => state.theme);
   const directoryViewMode = useBoundStore((state) => state.directoryViewMode);
   const isDarkMode = theme === 'dark' || theme === 'blue';
-
-  // Fullscreen state for Tauri
-  const isFullscreen = useBoundStore((state) => state.isFullscreenDirectory);
-  const isInTauri = isTauri();
-  const isPageFullscreen = isInTauri && isFullscreen;
 
   // Sidebar visibility from Zustand (shared with header)
   const directorySidebarVisible = useBoundStore((state) => state.directorySidebarVisible);
@@ -375,24 +369,10 @@ export function NotesDirectoryPage() {
     }
   }, [selectedNoteIds, bulkDeleteMutation, setBulkMode]);
 
-  // Calculate container styles based on fullscreen mode
-  const containerStyles = isPageFullscreen
-    ? {
-      backgroundColor: 'transparent',
-      height: '100vh',
-      maxHeight: '100vh',
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 30,
-      borderRadius: 0,
-    }
-    : {
-      backgroundColor: 'transparent',
-      height: '100%',
-    };
+  const containerStyles = {
+    backgroundColor: 'transparent',
+    height: '100%',
+  };
 
   if (error) {
     return (

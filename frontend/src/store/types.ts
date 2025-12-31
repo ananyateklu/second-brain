@@ -178,8 +178,6 @@ export interface UISliceState {
   notesViewMode: NotesViewMode;
   /** View mode for the Notes Directory page (independent from notesViewMode) */
   directoryViewMode: NotesViewMode;
-  isFullscreenChat: boolean;
-  isFullscreenDirectory: boolean;
   /** GitHub page active tab */
   githubActiveTab: GitHubTabType;
   /** GitHub selected repository owner */
@@ -216,10 +214,6 @@ export interface UISliceActions {
   expandSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
   setDirectoryViewMode: (mode: NotesViewMode) => void;
-  toggleFullscreenChat: () => void;
-  toggleFullscreenDirectory: () => void;
-  setFullscreenChat: (isFullscreen: boolean) => void;
-  setFullscreenDirectory: (isFullscreen: boolean) => void;
   /** Set GitHub active tab */
   setGitHubActiveTab: (tab: GitHubTabType) => void;
   /** Set GitHub repository */
