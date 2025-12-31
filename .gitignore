@@ -87,6 +87,7 @@ backend/coverage-report
 # Claude memory system - auto-generated files
 .claude/
 CLAUDE.md
+AGENTS.md
 
 # MCP server config (contains credentials)
 .mcp.json

@@ -1,34 +1,34 @@
 /**
  * ChatSkeleton Component
- * Full page skeleton for the chat page including sidebar, header, messages, and input
- * Matches ChatPage layout exactly: calc(100vh - titleBarHeight - 21px)
- * In browser titleBarHeight=0, in Tauri it's 16px
+ * Full page skeleton for the chat page including sidebar, messages, and input
+ * Matches ChatPage layout exactly: flex overflow-hidden flex-1 with transparent background
+ * Note: Header is rendered in AppLayout's Header component (via ChatPageControls)
  */
 
 import { ShimmerBlock, ShimmerStyles } from '../ui/Shimmer';
 import { ChatSidebarSkeleton } from './ChatSidebarSkeleton';
-import { ChatHeaderSkeleton } from './ChatHeaderSkeleton';
 import { ChatMessagesSkeleton } from './ChatMessagesSkeleton';
-import { useTitleBarHeight } from '../layout/use-title-bar-height';
 
 /**
  * ChatInputSkeleton - Matches ChatInputArea layout
  * Positioned absolutely at bottom with px-6 py-6, inner max-w-4xl mx-auto
+ * Uses the same glassmorphism styling as the actual ChatInput
  */
 function ChatInputSkeleton() {
   return (
     <div
-      className="absolute bottom-0 left-0 w-full px-6 py-6 z-20"
+      className="absolute bottom-0 left-0 w-full px-6 py-6 z-20 pointer-events-none"
     >
-      <div className="max-w-4xl mx-auto">
-        {/* Glassmorphism container matching chat-input-glass */}
+      <div className="max-w-4xl mx-auto pointer-events-auto">
+        {/* Glassmorphism container matching chat-input styles.glass */}
         <div
-          className="rounded-3xl px-3 py-2"
+          className="rounded-3xl px-3 py-2 relative flex flex-col"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--surface-card) 85%, transparent)',
             backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             border: '1px solid var(--border)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
           }}
         >
           {/* Input Row */}
@@ -54,31 +54,27 @@ function ChatInputSkeleton() {
   );
 }
 
+/**
+ * Full page chat skeleton matching ChatPage layout
+ * Uses the same flex layout as the actual ChatPage component
+ */
 export function ChatSkeleton() {
-  const titleBarHeight = useTitleBarHeight();
-
   return (
     <div
-      className="flex overflow-hidden border rounded-3xl"
+      className="flex overflow-hidden flex-1 transition-all duration-300"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: `calc(100vh - ${titleBarHeight}px - 21px)`,
-        maxHeight: `calc(100vh - ${titleBarHeight}px - 21px)`,
+        backgroundColor: 'transparent',
+        height: '100%',
       }}
     >
       <ShimmerStyles />
 
-      {/* Sidebar */}
+      {/* Sidebar - matches ChatSidebar positioning */}
       <ChatSidebarSkeleton />
 
-      {/* Main Chat Area */}
+      {/* Main Chat Area - matches ChatPage's main area */}
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
-        {/* Header */}
-        <ChatHeaderSkeleton />
-
-        {/* Messages */}
+        {/* Messages - fills available space */}
         <ChatMessagesSkeleton />
 
         {/* Input - Absolutely positioned at bottom */}

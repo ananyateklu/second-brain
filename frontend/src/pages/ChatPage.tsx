@@ -1,7 +1,7 @@
 /**
  * Chat Page
  * Main chat interface with AI conversations, streaming, and image generation
- * 
+ *
  * Refactored to use consolidated state hook for better maintainability
  * Enhanced with granular Suspense boundaries for better loading UX
  */
@@ -16,7 +16,6 @@ import { useBoundStore } from '../store/bound-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
 import { getDirectBackendUrl, API_ENDPOINTS } from '../lib/constants';
-import { isTauri } from '../lib/native-notifications';
 import { useChatPageContext } from '../features/chat/context/ChatPageContext';
 import {
   ChatSidebarSkeleton,
@@ -26,10 +25,6 @@ import {
 export function ChatPage() {
   const user = useBoundStore((state) => state.user);
   const sendMessage = useSendMessage();
-
-  // Fullscreen state for Tauri
-  const isFullscreen = useBoundStore((state) => state.isFullscreenChat);
-  const isInTauri = isTauri();
 
   // Sidebar visibility from Zustand (shared with header)
   const chatSidebarVisible = useBoundStore((state) => state.chatSidebarVisible);
@@ -343,30 +338,14 @@ export function ChatPage() {
     };
   }, [setHeaderState, headerStateValue]);
 
-  // Calculate container styles based on fullscreen mode
-  const isPageFullscreen = isInTauri && isFullscreen;
-  const containerStyles = isPageFullscreen
-    ? {
-      backgroundColor: 'transparent',
-      height: '100vh',
-      maxHeight: '100vh',
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 30,
-    }
-    : {
-      backgroundColor: 'transparent',
-      height: '100%',
-    };
-
   return (
     <div
       ref={containerRef}
       className="flex overflow-hidden flex-1 transition-all duration-300"
-      style={containerStyles}
+      style={{
+        backgroundColor: 'transparent',
+        height: '100%',
+      }}
     >
       {/* Sidebar with Suspense boundary for independent loading */}
       {chatSidebarVisible && (

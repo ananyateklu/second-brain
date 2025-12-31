@@ -120,14 +120,14 @@ describe('ToolExecutionCard', () => {
       render(<ToolExecutionCard execution={createMockExecution({ tool: 'ListRecentNotes' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Listing Notes')).toBeInTheDocument();
+      expect(screen.getByText('Listing Recent Notes')).toBeInTheDocument();
     });
 
     it('should render tool label for GetNoteStats', () => {
       render(<ToolExecutionCard execution={createMockExecution({ tool: 'GetNoteStats' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Getting Note Statistics')).toBeInTheDocument();
+      expect(screen.getByText('Getting Statistics')).toBeInTheDocument();
     });
 
     it('should render tool label for DeleteNote', () => {
@@ -148,14 +148,15 @@ describe('ToolExecutionCard', () => {
       render(<ToolExecutionCard execution={createMockExecution({ tool: 'SemanticSearch' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Semantic Search (RAG)')).toBeInTheDocument();
+      expect(screen.getByText('Semantic Search')).toBeInTheDocument();
     });
 
-    it('should render default label for unknown tool', () => {
+    it('should render default label for unknown tool (converted to Title Case)', () => {
       render(<ToolExecutionCard execution={createMockExecution({ tool: 'UnknownTool' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('UnknownTool')).toBeInTheDocument();
+      // Fallback converts camelCase to "Title Case"
+      expect(screen.getByText('Unknown Tool')).toBeInTheDocument();
     });
 
     it('should render timestamp', () => {

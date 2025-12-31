@@ -127,8 +127,6 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   previousSidebarState: null,
   notesViewMode: initialNotesViewMode,
   directoryViewMode: initialDirectoryViewMode,
-  isFullscreenChat: false,
-  isFullscreenDirectory: false,
   githubActiveTab: 'code' as GitHubTabType,
   githubOwner: null,
   githubRepo: null,
@@ -226,15 +224,6 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
     saveDirectoryViewMode(mode);
     set({ directoryViewMode: mode });
   },
-
-  // ============================================
-  // Fullscreen Actions (Tauri only)
-  // ============================================
-
-  toggleFullscreenChat: () => set((state) => ({ isFullscreenChat: !state.isFullscreenChat })),
-  toggleFullscreenDirectory: () => set((state) => ({ isFullscreenDirectory: !state.isFullscreenDirectory })),
-  setFullscreenChat: (isFullscreen: boolean) => set({ isFullscreenChat: isFullscreen }),
-  setFullscreenDirectory: (isFullscreen: boolean) => set({ isFullscreenDirectory: isFullscreen }),
 
   // ============================================
   // GitHub Actions

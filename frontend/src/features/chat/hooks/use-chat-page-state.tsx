@@ -516,17 +516,20 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
         let currentConversationId = conversationId;
 
         // Build capabilities array for agent mode
-        // Always include 'notes' when agent mode is enabled - it's the primary capability
+        // Always include 'notes' and 'browsing' when agent mode is enabled
         const capabilities: string[] = [];
         if (agentModeEnabled) {
           // Notes is always enabled in agent mode (can be extended with more capabilities later)
           if (notesCapabilityEnabled) {
             capabilities.push('notes');
           }
-          // Fallback: if no capabilities would be sent, default to notes
+          // Browsing capability is always enabled in agent mode for URL fetching
+          capabilities.push('browsing');
+          // Fallback: if no capabilities would be sent, default to notes + browsing
           // This ensures tools are always available in agent mode
           if (capabilities.length === 0) {
             capabilities.push('notes');
+            capabilities.push('browsing');
           }
         }
 

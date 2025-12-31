@@ -7,8 +7,6 @@ import { useTitleBarHeight } from './use-title-bar-height';
 import { PageTransition } from '../PageTransition';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
 import { QuickCaptureButton, QuickCaptureModal } from '../../features/focus/components';
-import { useBoundStore } from '../../store/bound-store';
-import { isTauri } from '../../lib/native-notifications';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -22,23 +20,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isGitHubPage = location.pathname === '/github';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
-  // Fullscreen state for Tauri
-  const isFullscreenChat = useBoundStore((state) => state.isFullscreenChat);
-  const isFullscreenDirectory = useBoundStore((state) => state.isFullscreenDirectory);
-
-  // Determine if current page is in fullscreen mode
-  const isInTauri = isTauri();
-  const isPageFullscreen = isInTauri && (
-    (isChatPage && isFullscreenChat) ||
-    (isDirectoryPage && isFullscreenDirectory)
-  );
-
   // Memoize main content classes to prevent unnecessary recalculations
   const mainClasses = useMemo(() => {
     const classes = ['flex-1'];
 
     // Padding classes - remove padding for full-width pages
-    if (isPageFullscreen || isGitHubPage || isChatPage || isDirectoryPage) {
+    if (isGitHubPage || isChatPage || isDirectoryPage) {
       classes.push('px-0', 'pt-0');
     } else {
       classes.push('px-4', 'md:px-6');
@@ -50,11 +37,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     // Width and margin
-    if (isPageFullscreen) {
-      classes.push('w-full');
-    } else {
-      classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
-    }
+    classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
 
     // Overflow handling - chat and github need overflow hidden for their internal scrolling
     if (isChatPage || isGitHubPage) {
@@ -64,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     return classes.join(' ');
-  }, [isChatPage, isGitHubPage, isSettingsPage, isPageFullscreen, isDirectoryPage]);
+  }, [isChatPage, isGitHubPage, isSettingsPage, isDirectoryPage]);
 
   return (
     <div
@@ -78,18 +61,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* macOS Title Bar - provides drag region */}
       <TitleBar />
 
-      {/* Sidebar - floats above content when page is fullscreen */}
-      <div className={isPageFullscreen ? 'fixed z-40' : ''}>
-        <Sidebar />
-      </div>
+      {/* Sidebar */}
+      <Sidebar />
 
       <div
-        className={`flex-1 flex flex-col min-w-0 main-content-wrapper ${isPageFullscreen ? 'ml-0' : ''}`}
+        className="flex-1 flex flex-col min-w-0 main-content-wrapper"
         style={{
           // GPU acceleration for the main content area
           transform: 'translateZ(0)',
           backfaceVisibility: 'hidden',
-          ...(isPageFullscreen ? { marginLeft: 0 } : {}),
         }}
       >
         <Header />

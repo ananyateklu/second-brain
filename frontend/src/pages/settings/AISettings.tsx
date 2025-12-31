@@ -22,6 +22,7 @@ import openaiLight from '../../assets/openai-light.svg';
 import openaiDark from '../../assets/openai-dark.svg';
 import xaiLight from '../../assets/xai-light.svg';
 import xaiDark from '../../assets/xai-dark.svg';
+import cohereLogo from '../../assets/cohere.svg';
 // Voice provider logos
 import deepgramLogo from '../../assets/deepgram-light.jpeg';
 import elevenlabsLogo from '../../assets/elevenlabs-light.svg';
@@ -73,6 +74,8 @@ export function AISettings() {
         return ollamaLogo;
       case 'xai':
         return isDarkMode ? xaiDark : xaiLight;
+      case 'cohere':
+        return cohereLogo;
       case 'deepgram':
         return deepgramLogo;
       case 'elevenlabs':

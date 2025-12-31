@@ -10,6 +10,7 @@ export const PROVIDER_SECRET_KEYS: Record<string, ProviderSecretKey> = {
   anthropic: 'anthropic_api_key',
   google: 'gemini_api_key',
   xai: 'xai_api_key',
+  cohere: 'cohere_api_key',
   ollama: 'ollama_base_url',
   // Voice providers
   deepgram: 'deepgram_api_key',
@@ -21,6 +22,11 @@ export const PROVIDER_KEY_INFO: Record<string, ProviderKeyInfo> = {
   anthropic: { label: 'Anthropic API Key', placeholder: 'sk-ant-...' },
   google: { label: 'Google Gemini API Key', placeholder: 'AI...' },
   xai: { label: 'xAI (Grok) API Key', placeholder: 'xai-...' },
+  cohere: {
+    label: 'Cohere API Key',
+    placeholder: 'Your Cohere key',
+    helpText: 'Required for Cohere embeddings and reranking',
+  },
   ollama: {
     label: 'Ollama Base URL',
     placeholder: 'http://localhost:11434',
@@ -45,6 +51,14 @@ export const API_KEY_FIELDS: ApiKeyField[] = [
   { key: 'anthropic_api_key', label: 'Anthropic API Key', placeholder: 'sk-ant-...', type: 'password', group: 'ai' },
   { key: 'gemini_api_key', label: 'Google Gemini API Key', placeholder: 'AI...', type: 'password', group: 'ai' },
   { key: 'xai_api_key', label: 'xAI (Grok) API Key', placeholder: 'xai-...', type: 'password', group: 'ai' },
+  {
+    key: 'cohere_api_key',
+    label: 'Cohere API Key',
+    placeholder: 'Your Cohere key',
+    type: 'password',
+    group: 'ai',
+    helpText: 'Required for Cohere embeddings and reranking',
+  },
   {
     key: 'ollama_base_url',
     label: 'Ollama Base URL',

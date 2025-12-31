@@ -54,7 +54,7 @@ const BacklogItem = memo(function BacklogItem({
   return (
     <div
       className={cn(
-        'group flex items-center gap-3 py-3 px-3 rounded-lg',
+        'group flex items-center gap-3 py-1.5 px-3 rounded-lg',
         'transition-all duration-150',
         'hover:bg-[var(--surface-elevated)]',
         disabled && 'pointer-events-none opacity-50'
@@ -81,29 +81,31 @@ const BacklogItem = memo(function BacklogItem({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSchedule}
-          disabled={disabled}
-          className="h-7 px-2 text-xs gap-1"
-          title="Add to today"
-        >
-          <Calendar className="h-3.5 w-3.5" />
-          Today
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleDelete}
-          disabled={disabled}
-          className="h-7 w-7 hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
-          title="Delete"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+      {/* Actions - collapses when not hovered */}
+      <div className="w-0 group-hover:w-auto overflow-hidden transition-all duration-150 flex-shrink-0">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSchedule}
+            disabled={disabled}
+            className="h-7 px-2 text-xs gap-1"
+            title="Add to today"
+          >
+            <Calendar className="h-3.5 w-3.5" />
+            Today
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDelete}
+            disabled={disabled}
+            className="h-7 w-7 hover:text-[var(--color-error)] hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+            title="Delete"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

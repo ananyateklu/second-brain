@@ -32,6 +32,7 @@ fn test_secrets_persistence_workflow() {
         elevenlabs_api_key: None,
         openai_tts_api_key: None,
         jwt_secret: None,
+        cohere_api_key: None,
     };
 
     let save_result = save_secrets(&app_data, &secrets);
@@ -98,6 +99,7 @@ fn test_secrets_full_roundtrip() {
         elevenlabs_api_key: Some("elevenlabs-key".to_string()),
         openai_tts_api_key: Some("sk-openai-tts-key".to_string()),
         jwt_secret: Some("test-jwt-secret-key".to_string()),
+        cohere_api_key: Some("cohere-key".to_string()),
     };
 
     // Save and load

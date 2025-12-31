@@ -243,9 +243,11 @@ public abstract class NotePluginBase : IAgentPlugin
 
     /// <summary>
     /// Maps a note to a preview object for list responses.
+    /// Includes image count indicator so agent knows if note has attachments.
     /// </summary>
     protected static object MapToPreview(Core.Entities.Note note)
     {
+        var imageCount = note.Images?.Count ?? 0;
         return new
         {
             id = note.Id,
@@ -254,6 +256,8 @@ public abstract class NotePluginBase : IAgentPlugin
             tags = note.Tags,
             folder = note.Folder,
             isArchived = note.IsArchived,
+            hasImages = imageCount > 0,
+            imageCount = imageCount,
             createdAt = note.CreatedAt,
             updatedAt = note.UpdatedAt
         };
@@ -261,6 +265,7 @@ public abstract class NotePluginBase : IAgentPlugin
 
     /// <summary>
     /// Maps a note to a full detail object.
+    /// Includes image metadata (descriptions, filenames) so agent can understand visual content.
     /// </summary>
     protected static object MapToDetail(Core.Entities.Note note)
     {
@@ -272,8 +277,26 @@ public abstract class NotePluginBase : IAgentPlugin
             tags = note.Tags,
             folder = note.Folder,
             isArchived = note.IsArchived,
+            images = note.Images?.OrderBy(i => i.ImageIndex).Select(MapImageForAgent).ToList() ?? new List<object>(),
             createdAt = note.CreatedAt,
             updatedAt = note.UpdatedAt
+        };
+    }
+
+    /// <summary>
+    /// Maps a note image to agent-friendly format.
+    /// Excludes base64 data (too large) but includes description and metadata.
+    /// </summary>
+    protected static object MapImageForAgent(Core.Entities.NoteImage image)
+    {
+        return new
+        {
+            id = image.Id,
+            fileName = image.FileName,
+            mediaType = image.MediaType,
+            imageIndex = image.ImageIndex,
+            description = image.Description ?? image.AltText ?? "No description available",
+            altText = image.AltText
         };
     }
 

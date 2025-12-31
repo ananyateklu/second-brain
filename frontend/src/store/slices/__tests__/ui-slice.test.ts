@@ -67,11 +67,6 @@ describe('uiSlice', () => {
       expect(slice.searchQuery).toBe('');
       expect(slice.searchMode).toBe('both');
     });
-
-    it('should have fullscreen modes off', () => {
-      expect(slice.isFullscreenChat).toBe(false);
-      expect(slice.isFullscreenDirectory).toBe(false);
-    });
   });
 
   // ============================================
@@ -258,44 +253,6 @@ describe('uiSlice', () => {
 
       expect(mockSet).toHaveBeenCalledWith({ directoryViewMode: 'list' });
       expect(localStorage.setItem).toHaveBeenCalledWith('second-brain-directory-view-mode', 'list');
-    });
-  });
-
-  // ============================================
-  // Fullscreen Actions Tests
-  // ============================================
-  describe('fullscreen actions', () => {
-    it('should toggle fullscreen chat from false to true', () => {
-      state.isFullscreenChat = false;
-      slice.toggleFullscreenChat();
-
-      expect(state.isFullscreenChat).toBe(true);
-    });
-
-    it('should toggle fullscreen chat from true to false', () => {
-      state.isFullscreenChat = true;
-      slice.toggleFullscreenChat();
-
-      expect(state.isFullscreenChat).toBe(false);
-    });
-
-    it('should toggle fullscreen directory', () => {
-      state.isFullscreenDirectory = false;
-      slice.toggleFullscreenDirectory();
-
-      expect(state.isFullscreenDirectory).toBe(true);
-    });
-
-    it('should set fullscreen chat', () => {
-      slice.setFullscreenChat(true);
-
-      expect(mockSet).toHaveBeenCalledWith({ isFullscreenChat: true });
-    });
-
-    it('should set fullscreen directory', () => {
-      slice.setFullscreenDirectory(true);
-
-      expect(mockSet).toHaveBeenCalledWith({ isFullscreenDirectory: true });
     });
   });
 });

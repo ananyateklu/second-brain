@@ -7,7 +7,6 @@ import { memo, useRef, useEffect, useState, useMemo } from 'react';
 import { ViewModeToggle } from '../../ui/ViewModeToggle';
 import { useDirectoryHeaderState } from '../../../features/notes/context/DirectoryPageContext';
 import { useBoundStore } from '../../../store/bound-store';
-import { isTauri } from '../../../lib/native-notifications';
 import { useNotes } from '../../../features/notes/hooks/use-notes-query';
 import type { NotesViewMode } from '../../../store/types';
 
@@ -397,7 +396,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* Right side: Select button, Note count, Fullscreen Toggle */}
+      {/* Right side: Select button, Note count */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* Select/Bulk Mode Button */}
         <button
@@ -430,44 +429,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         }}>
           {noteCount} {noteCount === 1 ? 'note' : 'notes'}
         </span>
-
-        {/* Fullscreen Toggle - Only in Tauri */}
-        <DirectoryFullscreenToggle />
       </div>
     </div>
   );
 });
-
-/**
- * Fullscreen toggle button for directory page - only visible in Tauri desktop app
- */
-function DirectoryFullscreenToggle() {
-  const isInTauri = isTauri();
-  const isFullscreen = useBoundStore((state) => state.isFullscreenDirectory);
-  const toggleFullscreen = useBoundStore((state) => state.toggleFullscreenDirectory);
-
-  if (!isInTauri) return null;
-
-  return (
-    <button
-      onClick={toggleFullscreen}
-      className="p-1.5 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-      style={{
-        backgroundColor: isFullscreen ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
-        color: isFullscreen ? 'var(--color-primary)' : 'var(--text-secondary)',
-        border: `1px solid ${isFullscreen ? 'var(--color-primary)' : 'var(--border)'}`,
-      }}
-      title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-    >
-      {isFullscreen ? (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
-        </svg>
-      ) : (
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-        </svg>
-      )}
-    </button>
-  );
-}

@@ -429,4 +429,31 @@ public class SqlFocusItemRepository : IFocusItemRepository
             throw new RepositoryException("Failed to get status counts", ex);
         }
     }
+
+    public async Task<IEnumerable<FocusItem>> GetActiveItemsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving active focus items for deduplication. UserId: {UserId}", userId);
+
+            // Get all non-completed, non-cancelled items (pending or in_progress)
+            // This includes today's plan and backlog items
+            var items = await _context.FocusItems
+                .AsNoTracking()
+                .Where(f => f.UserId == userId
+                    && f.Status != "completed"
+                    && f.Status != "cancelled")
+                .ToListAsync(cancellationToken);
+
+            _logger.LogDebug("Retrieved {Count} active focus items for deduplication", items.Count);
+            return items;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving active focus items. UserId: {UserId}", userId);
+            throw new RepositoryException("Failed to retrieve active focus items", ex);
+        }
+    }
 }

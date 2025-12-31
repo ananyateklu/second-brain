@@ -575,9 +575,10 @@ public class CohereProvider : IAIProvider
             health.Version = "v2";
             health.AvailableModels = new[]
             {
-                "command-r-plus",
-                "command-r",
-                "command-light",
+                "command-a-03-2025",
+                "command-a-vision-07-2025",
+                "command-r-plus-08-2024",
+                "command-r-08-2024",
                 "rerank-v3.5",
                 "rerank-english-v3.0",
                 "rerank-multilingual-v3.0",
