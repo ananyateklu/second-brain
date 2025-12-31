@@ -373,26 +373,79 @@ function GenericResponseDisplay({ response }: { response: GenericResponse }) {
 export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
   const getToolLabel = (name: string) => {
     switch (name) {
+      // Notes - CRUD Operations
       case 'CreateNote':
         return 'Creating Note';
+      case 'GetNote':
+        return 'Reading Note';
+      case 'UpdateNote':
+        return 'Updating Note';
+      case 'DeleteNote':
+        return 'Deleting Note';
+      case 'AppendToNote':
+        return 'Appending to Note';
+      case 'DuplicateNote':
+        return 'Duplicating Note';
+
+      // Notes - Search Operations
       case 'SearchNotes':
         return 'Searching Notes';
       case 'SemanticSearch':
-        return 'Semantic Search (RAG)';
-      case 'UpdateNote':
-        return 'Updating Note';
-      case 'GetNote':
-        return 'Reading Note';
+        return 'Semantic Search';
+      case 'SearchByTags':
+        return 'Searching by Tags';
+      case 'GetNotesByDateRange':
+        return 'Searching by Date';
+      case 'FindRelatedNotes':
+        return 'Finding Related Notes';
+
+      // Notes - Organization Operations
+      case 'ListAllNotes':
+        return 'Listing All Notes';
       case 'ListRecentNotes':
-        return 'Listing Notes';
-      case 'GetNoteStats':
-        return 'Getting Note Statistics';
-      case 'DeleteNote':
-        return 'Deleting Note';
+        return 'Listing Recent Notes';
+      case 'ListArchivedNotes':
+        return 'Listing Archived Notes';
       case 'ArchiveNote':
         return 'Archiving Note';
+      case 'UnarchiveNote':
+        return 'Unarchiving Note';
+      case 'MoveToFolder':
+        return 'Moving to Folder';
+      case 'ListFolders':
+        return 'Listing Folders';
+      case 'ListAllTags':
+        return 'Listing Tags';
+      case 'GetNoteStats':
+        return 'Getting Statistics';
+
+      // Notes - Analysis Operations
+      case 'AnalyzeNote':
+        return 'Analyzing Note';
+      case 'SuggestTags':
+        return 'Suggesting Tags';
+      case 'SummarizeNote':
+        return 'Summarizing Note';
+      case 'CompareNotes':
+        return 'Comparing Notes';
+
+      // Web Browsing
+      case 'fetch_url':
+        return 'Fetching Web Page';
+
+      // Web Search (Grok)
+      case 'web_search':
+        return 'Searching the Web';
+      case 'deep_search':
+        return 'Deep Research';
+
       default:
-        return name;
+        // Convert snake_case or camelCase to Title Case for unknown tools
+        return name
+          .replace(/_/g, ' ')
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase())
+          .trim();
     }
   };
 

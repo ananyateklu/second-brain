@@ -36,6 +36,8 @@ public class AgentService : IAgentService
         IRagService ragService,
         IUserPreferencesService userPreferencesService,
         ILogger<AgentService> logger,
+        ILoggerFactory loggerFactory,
+        HttpClient httpClient,
         IStructuredOutputService? structuredOutputService = null,
         INoteOperationService? noteOperationService = null,
         GrokSearchTool? grokSearchTool = null,
@@ -57,6 +59,9 @@ public class AgentService : IAgentService
         {
             RegisterPlugin(new GrokSearchPlugin(grokSearchTool, grokDeepSearchTool));
         }
+
+        // WebBrowsingPlugin provides URL fetching capabilities - always available
+        RegisterPlugin(new WebBrowsingPlugin(httpClient, loggerFactory.CreateLogger<WebBrowsingPlugin>()));
     }
 
     private void RegisterPlugin(IAgentPlugin plugin)

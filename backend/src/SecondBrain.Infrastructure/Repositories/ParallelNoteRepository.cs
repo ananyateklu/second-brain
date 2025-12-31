@@ -36,11 +36,13 @@ public class ParallelNoteRepository : IParallelNoteRepository
 
             var notes = await context.Notes
                 .AsNoTracking()
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.UpdatedAt)
                 .ToListAsync();
 
-            _logger.LogDebug("ParallelRepo: Retrieved notes. UserId: {UserId}, Count: {Count}", userId, notes.Count);
+            var totalImages = notes.Sum(n => n.Images.Count);
+            _logger.LogDebug("ParallelRepo: Retrieved notes. UserId: {UserId}, Count: {Count}, TotalImages: {TotalImages}", userId, notes.Count, totalImages);
             return notes;
         }
         catch (Exception ex)
@@ -61,6 +63,7 @@ public class ParallelNoteRepository : IParallelNoteRepository
 
             var note = await context.Notes
                 .AsNoTracking()
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
                 .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note == null)
@@ -69,7 +72,7 @@ public class ParallelNoteRepository : IParallelNoteRepository
                 return null;
             }
 
-            _logger.LogDebug("ParallelRepo: Note retrieved successfully. NoteId: {NoteId}", id);
+            _logger.LogDebug("ParallelRepo: Note retrieved successfully. NoteId: {NoteId}, ImageCount: {ImageCount}", id, note.Images.Count);
             return note;
         }
         catch (Exception ex)
@@ -90,6 +93,7 @@ public class ParallelNoteRepository : IParallelNoteRepository
             // User authorization check: only return notes belonging to the specified user
             var note = await context.Notes
                 .AsNoTracking()
+                .Include(n => n.Images.OrderBy(i => i.ImageIndex))
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
@@ -98,7 +102,7 @@ public class ParallelNoteRepository : IParallelNoteRepository
                 return null;
             }
 
-            _logger.LogDebug("ParallelRepo: Note retrieved successfully. NoteId: {NoteId}, UserId: {UserId}", id, userId);
+            _logger.LogDebug("ParallelRepo: Note retrieved successfully. NoteId: {NoteId}, UserId: {UserId}, ImageCount: {ImageCount}", id, userId, note.Images.Count);
             return note;
         }
         catch (Exception ex)

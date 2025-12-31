@@ -1575,6 +1575,7 @@ mod tests {
             elevenlabs_api_key: None,
             openai_tts_api_key: None,
             jwt_secret: None,
+            cohere_api_key: None,
         };
 
         let json = serde_json::to_string(&secrets).unwrap();
@@ -1752,6 +1753,7 @@ mod tests {
             elevenlabs_api_key: Some("elevenlabs-key".to_string()),
             openai_tts_api_key: Some("sk-tts-key".to_string()),
             jwt_secret: Some("test-jwt-secret".to_string()),
+            cohere_api_key: Some("cohere-key".to_string()),
         };
 
         save_secrets(&temp_dir.path().to_path_buf(), &original).unwrap();

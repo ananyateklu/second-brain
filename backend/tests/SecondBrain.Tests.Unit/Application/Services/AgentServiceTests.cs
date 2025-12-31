@@ -21,6 +21,8 @@ public class AgentServiceTests
     private readonly Mock<IRagService> _mockRagService;
     private readonly Mock<IUserPreferencesService> _mockUserPreferencesService;
     private readonly Mock<ILogger<AgentService>> _mockLogger;
+    private readonly Mock<ILoggerFactory> _mockLoggerFactory;
+    private readonly HttpClient _httpClient;
     private readonly AIProvidersSettings _settings;
     private readonly RagSettings _ragSettings;
     private readonly AgentService _sut;
@@ -32,6 +34,12 @@ public class AgentServiceTests
         _mockRagService = new Mock<IRagService>();
         _mockUserPreferencesService = new Mock<IUserPreferencesService>();
         _mockLogger = new Mock<ILogger<AgentService>>();
+        _mockLoggerFactory = new Mock<ILoggerFactory>();
+        _httpClient = new HttpClient();
+
+        // Setup logger factory to return mock loggers
+        _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
 
         _settings = new AIProvidersSettings
         {
@@ -76,7 +84,9 @@ public class AgentServiceTests
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockUserPreferencesService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockLoggerFactory.Object,
+            _httpClient
         );
     }
 
@@ -92,7 +102,9 @@ public class AgentServiceTests
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockUserPreferencesService.Object,
-            _mockLogger.Object
+            _mockLogger.Object,
+            _mockLoggerFactory.Object,
+            _httpClient
         );
     }
 
