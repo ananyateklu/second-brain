@@ -9,6 +9,7 @@ export const AI_PROVIDERS = [
   { id: 'google', name: 'Gemini' },
   { id: 'ollama', name: 'Ollama' },
   { id: 'xai', name: 'xAI' },
+  { id: 'cohere', name: 'Cohere' },
 ] as const;
 
 export type AIProviderId = typeof AI_PROVIDERS[number]['id'];
@@ -65,6 +66,13 @@ export const PROVIDER_DETAILS: Record<string, ProviderDetails> = {
     docsUrl: 'https://docs.x.ai/docs',
     billingNote: 'Subscription-based access; follow account quota.',
   },
+  cohere: {
+    tagline: 'Enterprise NLP with powerful embeddings and reranking.',
+    description: 'Best for semantic search, RAG pipelines, and multilingual embeddings with embed-v4.0.',
+    highlights: ['State-of-the-art embeddings', 'Rerank API for RAG', '100+ languages supported'],
+    docsUrl: 'https://docs.cohere.com',
+    billingNote: 'Usage-based billing with generous free tier.',
+  },
   // Voice providers
   deepgram: {
     tagline: 'Fast and accurate speech-to-text transcription.',
@@ -89,6 +97,7 @@ export const PROVIDER_NAME_TO_ID: Record<string, string> = {
   'Gemini': 'google',
   'Ollama': 'ollama',
   'Grok': 'xai',
+  'Cohere': 'cohere',
   // Voice providers
   'Deepgram': 'deepgram',
   'ElevenLabs': 'elevenlabs',
@@ -101,6 +110,7 @@ export const PROVIDER_ID_TO_CONFIG_KEY: Record<string, string> = {
   'google': 'Gemini',
   'ollama': 'Ollama',
   'xai': 'XAI',
+  'cohere': 'Cohere',
   // Voice providers
   'deepgram': 'Deepgram',
   'elevenlabs': 'ElevenLabs',
@@ -112,6 +122,7 @@ export const MODEL_SUGGESTIONS: Record<string, string[]> = {
   'anthropic': ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
   'google': ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.0-pro'],
   'xai': ['grok-2', 'grok-2-vision-1212', 'grok-beta'],
+  'cohere': ['command-a-03-2025', 'command-a-vision-07-2025', 'command-r-plus-08-2024', 'command-r-08-2024'],
 };
 
 /** Get provider ID from backend provider name */

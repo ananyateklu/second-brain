@@ -10,6 +10,7 @@ export type ProviderSecretKey =
   | 'anthropic_api_key'
   | 'gemini_api_key'
   | 'xai_api_key'
+  | 'cohere_api_key'
   | 'ollama_base_url'
   | 'deepgram_api_key'
   | 'elevenlabs_api_key';
@@ -20,6 +21,7 @@ export type StringSecretKeys =
   | 'anthropic_api_key'
   | 'gemini_api_key'
   | 'xai_api_key'
+  | 'cohere_api_key'
   | 'ollama_base_url'
   | 'pinecone_api_key'
   | 'pinecone_environment'

@@ -64,9 +64,9 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
   const [showStats, setShowStats] = useState(false);
   const showStatsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Show stats banner when new suggestions are generated
+  // Show stats banner when generation completes (success or failure feedback)
   useEffect(() => {
-    if (lastGenerationStats && lastGenerationStats.newSuggestionsAdded > 0) {
+    if (lastGenerationStats) {
       // Clear any existing timeout
       if (showStatsTimeoutRef.current) {
         clearTimeout(showStatsTimeoutRef.current);
@@ -74,7 +74,8 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
       // Schedule the state update for the next tick to avoid sync setState in effect
       showStatsTimeoutRef.current = setTimeout(() => {
         setShowStats(true);
-        showStatsTimeoutRef.current = setTimeout(() => setShowStats(false), 5000);
+        // Auto-hide after 8 seconds (longer for important feedback)
+        showStatsTimeoutRef.current = setTimeout(() => setShowStats(false), 8000);
       }, 0);
     }
     return () => {
@@ -191,16 +192,24 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
         <div
           className="px-4 py-2 flex items-center justify-between"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+            backgroundColor: lastGenerationStats.newSuggestionsAdded > 0
+              ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
+              : 'color-mix(in srgb, var(--color-warning, #f59e0b) 10%, transparent)',
             borderTop: '1px solid var(--border)',
             borderBottom: '1px solid var(--border)',
           }}
         >
-          <span className="text-xs" style={{ color: 'var(--color-primary)' }}>
+          <span className="text-xs" style={{
+            color: lastGenerationStats.newSuggestionsAdded > 0
+              ? 'var(--color-primary)'
+              : 'var(--color-warning, #f59e0b)'
+          }}>
             {lastGenerationStats.newSuggestionsAdded > 0
               ? `${lastGenerationStats.newSuggestionsAdded} new suggestion${lastGenerationStats.newSuggestionsAdded !== 1 ? 's' : ''} added`
-              : 'No new suggestions (all duplicates)'}
-            {lastGenerationStats.duplicatesSkipped > 0 && (
+              : lastGenerationStats.duplicatesSkipped > 0
+                ? 'No new suggestions (all duplicates)'
+                : lastGenerationStats.context || 'No suggestions generated'}
+            {lastGenerationStats.duplicatesSkipped > 0 && lastGenerationStats.newSuggestionsAdded > 0 && (
               <span style={{ color: 'var(--text-tertiary)' }}>
                 {' '}&middot; {lastGenerationStats.duplicatesSkipped} duplicate{lastGenerationStats.duplicatesSkipped !== 1 ? 's' : ''} skipped
               </span>

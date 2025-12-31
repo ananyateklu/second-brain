@@ -28,6 +28,7 @@ pub struct Secrets {
     pub anthropic_api_key: Option<String>,
     pub gemini_api_key: Option<String>,
     pub xai_api_key: Option<String>,
+    pub cohere_api_key: Option<String>,
     pub ollama_base_url: Option<String>,
     pub pinecone_api_key: Option<String>,
     pub pinecone_environment: Option<String>,
@@ -94,6 +95,7 @@ impl Secrets {
             anthropic_api_key: redact_key(&self.anthropic_api_key),
             gemini_api_key: redact_key(&self.gemini_api_key),
             xai_api_key: redact_key(&self.xai_api_key),
+            cohere_api_key: redact_key(&self.cohere_api_key),
             ollama_base_url: self.ollama_base_url.clone(),
             pinecone_api_key: redact_key(&self.pinecone_api_key),
             pinecone_environment: self.pinecone_environment.clone(),
@@ -133,6 +135,11 @@ impl Secrets {
                 .as_ref()
                 .map(|s| !s.is_empty())
                 .unwrap_or(false)
+            || self
+                .cohere_api_key
+                .as_ref()
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
     }
 
     /// Count how many API keys are configured
@@ -142,6 +149,7 @@ impl Secrets {
             &self.anthropic_api_key,
             &self.gemini_api_key,
             &self.xai_api_key,
+            &self.cohere_api_key,
             &self.pinecone_api_key,
         ]
         .iter()
@@ -157,6 +165,7 @@ pub struct RedactedSecrets {
     pub anthropic_api_key: Option<String>,
     pub gemini_api_key: Option<String>,
     pub xai_api_key: Option<String>,
+    pub cohere_api_key: Option<String>,
     pub ollama_base_url: Option<String>,
     pub pinecone_api_key: Option<String>,
     pub pinecone_environment: Option<String>,

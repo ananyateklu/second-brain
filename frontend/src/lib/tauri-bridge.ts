@@ -161,6 +161,7 @@ export interface Secrets {
   anthropic_api_key?: string | null;
   gemini_api_key?: string | null;
   xai_api_key?: string | null;
+  cohere_api_key?: string | null;
   ollama_base_url?: string | null;
 
   // Pinecone Vector Store

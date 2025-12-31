@@ -726,6 +726,10 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
     if let Some(ref xai_key) = secrets.xai_api_key {
         command.env("AIProviders__XAI__ApiKey", xai_key);
     }
+    if let Some(ref cohere_key) = secrets.cohere_api_key {
+        command.env("AIProviders__Cohere__ApiKey", cohere_key);
+        command.env("EmbeddingProviders__Cohere__ApiKey", cohere_key);
+    }
     if let Some(ref ollama_url) = secrets.ollama_base_url {
         command.env("AIProviders__Ollama__BaseUrl", ollama_url);
     }

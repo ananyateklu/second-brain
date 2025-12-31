@@ -25,7 +25,7 @@ public class FocusAIService : IFocusAIService
     private readonly IRagService _ragService;
     private readonly IFocusItemRepository _focusRepository;
     private readonly IFocusSuggestionRepository _suggestionRepository;
-    private readonly IEmbeddingProvider _embeddingProvider;
+    private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly IUserRepository _userRepository;
     private readonly FocusAISettings _settings;
     private readonly ILogger<FocusAIService> _logger;
@@ -35,7 +35,7 @@ public class FocusAIService : IFocusAIService
         IRagService ragService,
         IFocusItemRepository focusRepository,
         IFocusSuggestionRepository suggestionRepository,
-        IEmbeddingProvider embeddingProvider,
+        IEmbeddingProviderFactory embeddingProviderFactory,
         IUserRepository userRepository,
         IOptions<FocusAISettings> settings,
         ILogger<FocusAIService> logger)
@@ -44,7 +44,7 @@ public class FocusAIService : IFocusAIService
         _ragService = ragService;
         _focusRepository = focusRepository;
         _suggestionRepository = suggestionRepository;
-        _embeddingProvider = embeddingProvider;
+        _embeddingProviderFactory = embeddingProviderFactory;
         _userRepository = userRepository;
         _settings = settings.Value;
         _logger = logger;
@@ -685,24 +685,44 @@ public class FocusAIService : IFocusAIService
                 );
             }
 
-            // Step 2: Generate embeddings for each suggestion
+            // Step 2: Generate embeddings for each suggestion using the default embedding provider
             var textsToEmbed = aiResponse.Suggestions
                 .Select(s => $"{s.Title} {s.Description ?? ""} {s.Reason}")
                 .ToList();
 
-            var embeddingResult = await _embeddingProvider.GenerateEmbeddingsAsync(
-                textsToEmbed,
-                cancellationToken);
-
-            if (!embeddingResult.Success || embeddingResult.Embeddings.Count != aiResponse.Suggestions.Count)
+            // Get the default embedding provider from the factory
+            IEmbeddingProvider embeddingProvider;
+            try
             {
-                _logger.LogWarning("Failed to generate embeddings for suggestions");
+                embeddingProvider = _embeddingProviderFactory.GetDefaultProvider();
+                _logger.LogDebug("Using embedding provider {Provider} for Focus AI deduplication", embeddingProvider.ProviderName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get default embedding provider");
                 var existing = await GetPersistedSuggestionsAsync(userId, false, cancellationToken);
                 return new GenerateSuggestionsResponse(
                     AllSuggestions: existing,
                     NewSuggestionsAdded: 0,
                     DuplicatesSkipped: 0,
-                    Context: "Failed to generate embeddings for deduplication",
+                    Context: $"No embedding provider available: {ex.Message}",
+                    GeneratedAt: DateTime.UtcNow
+                );
+            }
+
+            var embeddingResult = await embeddingProvider.GenerateEmbeddingsAsync(
+                textsToEmbed,
+                cancellationToken);
+
+            if (!embeddingResult.Success || embeddingResult.Embeddings.Count != aiResponse.Suggestions.Count)
+            {
+                _logger.LogWarning("Failed to generate embeddings for suggestions: {Error}", embeddingResult.Error);
+                var existing = await GetPersistedSuggestionsAsync(userId, false, cancellationToken);
+                return new GenerateSuggestionsResponse(
+                    AllSuggestions: existing,
+                    NewSuggestionsAdded: 0,
+                    DuplicatesSkipped: 0,
+                    Context: $"Failed to generate embeddings: {embeddingResult.Error ?? "unknown error"}",
                     GeneratedAt: DateTime.UtcNow
                 );
             }
@@ -771,8 +791,8 @@ public class FocusAIService : IFocusAIService
                     SourceNoteId = suggestion.SourceNoteId,
                     SourceNoteTitle = suggestion.SourceNoteTitle,
                     Embedding = embedding,
-                    EmbeddingProvider = _embeddingProvider.ProviderName,
-                    EmbeddingModel = _embeddingProvider.ModelName,
+                    EmbeddingProvider = embeddingProvider.ProviderName,
+                    EmbeddingModel = embeddingProvider.ModelName,
                     EmbeddingDimensions = embeddingDimensions
                 });
             }

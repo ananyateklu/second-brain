@@ -734,9 +734,9 @@ public class CohereSettings
     public string BaseUrl { get; set; } = "https://api.cohere.com/v2";
 
     /// <summary>
-    /// Default model for chat/generation (e.g., command-r-plus, command-r)
+    /// Default model for chat/generation (e.g., command-a-03-2025, command-r-plus-08-2024)
     /// </summary>
-    public string DefaultModel { get; set; } = "command-r-plus";
+    public string DefaultModel { get; set; } = "command-a-03-2025";
 
     /// <summary>
     /// Model for reranking (e.g., rerank-v3.5, rerank-english-v3.0, rerank-multilingual-v3.0)
