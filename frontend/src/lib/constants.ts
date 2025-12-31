@@ -256,6 +256,7 @@ export const API_ENDPOINTS = {
   GIT: {
     VALIDATE: '/git/validate',
     STATUS: '/git/status',
+    INTEGRATION_STATUS: '/git/integration-status',
     DIFF: '/git/diff',
     STAGE: '/git/stage',
     UNSTAGE: '/git/unstage',
@@ -274,6 +275,7 @@ export const API_ENDPOINTS = {
 
   // GitHub Integration
   GITHUB: {
+    STATUS: '/github/status',
     REPOSITORY: '/github/repository',
     PULLS: '/github/pulls',
     PULL_BY_NUMBER: (number: number) => `/github/pulls/${number}`,

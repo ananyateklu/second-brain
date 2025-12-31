@@ -1,7 +1,9 @@
 using Asp.Versioning;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Commands.Git.Commit;
 using SecondBrain.Application.Commands.Git.CreateBranch;
 using SecondBrain.Application.Commands.Git.DeleteBranch;
@@ -35,10 +37,35 @@ namespace SecondBrain.API.Controllers;
 public class GitController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public GitController(IMediator mediator)
+    public GitController(IMediator mediator, IConfiguration configuration)
     {
         _mediator = mediator;
+        _configuration = configuration;
+    }
+
+    /// <summary>
+    /// Gets Git integration configuration status.
+    /// Used by settings page to show if Git is properly configured.
+    /// </summary>
+    [HttpGet("integration-status")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetIntegrationStatus()
+    {
+        var settings = _configuration.GetSection(GitSettings.SectionName).Get<GitSettings>();
+        var allowedRoots = settings?.AllowedRepositoryRoots ?? [];
+
+        return Ok(new
+        {
+            isConfigured = allowedRoots.Count > 0,
+            allowedRootsCount = allowedRoots.Count,
+            requireUserScopedRoot = settings?.RequireUserScopedRoot ?? true,
+            message = allowedRoots.Count > 0
+                ? $"Git integration configured with {allowedRoots.Count} allowed repository root(s)"
+                : "No repository roots configured. Add allowed repository roots to enable Git integration."
+        });
     }
 
     /// <summary>

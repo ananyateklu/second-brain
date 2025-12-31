@@ -8,3 +8,4 @@ export { AISettingsSkeleton } from './AISettingsSkeleton';
 export { RAGSettingsSkeleton } from './RAGSettingsSkeleton';
 export { IndexingSettingsSkeleton } from './IndexingSettingsSkeleton';
 export { FocusSettingsSkeleton } from './FocusSettingsSkeleton';
+export { GitSettingsSkeleton } from './GitSettingsSkeleton';

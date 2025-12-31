@@ -303,3 +303,18 @@ export interface GitPublishBranchRequest {
   /** The remote to publish to (defaults to "origin") */
   remote?: string;
 }
+
+/**
+ * Git integration configuration status.
+ * Used by settings page to show if Git is properly configured.
+ */
+export interface GitIntegrationStatus {
+  /** Whether Git integration is configured (has allowed repository roots) */
+  isConfigured: boolean;
+  /** Number of allowed repository roots */
+  allowedRootsCount: number;
+  /** Whether user-scoped roots are required */
+  requireUserScopedRoot: boolean;
+  /** Human-readable status message */
+  message: string;
+}

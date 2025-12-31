@@ -385,6 +385,9 @@ export const gitKeys = {
   /** Root key for all git queries */
   all: ['git'] as const,
 
+  /** Key for Git integration configuration status */
+  integrationStatus: () => [...gitKeys.all, 'integration-status'] as const,
+
   /** Key for repository status */
   status: (repoPath: string) => [...gitKeys.all, 'status', repoPath] as const,
 
@@ -475,6 +478,9 @@ export interface GitHubCommitFilters {
 export const githubKeys = {
   /** Root key for all github queries */
   all: ['github'] as const,
+
+  /** Key for GitHub integration configuration status */
+  integrationStatus: () => [...githubKeys.all, 'integration-status'] as const,
 
   /** Key for user repositories list */
   repositories: (filters?: { type?: string; sort?: string; page?: number; perPage?: number }) =>

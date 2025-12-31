@@ -653,3 +653,24 @@ export const getLanguageForHighlighter = (lang?: string): string => {
   };
   return mapping[lang.toLowerCase()] || 'text';
 };
+
+// GitHub Integration Status Types
+
+/**
+ * GitHub integration configuration status.
+ * Used by settings page to show if GitHub is properly configured.
+ */
+export interface GitHubIntegrationStatus {
+  /** Whether GitHub integration is configured (has valid PAT) */
+  isConfigured: boolean;
+  /** Whether a personal access token is set */
+  hasToken: boolean;
+  /** Whether default repository is configured */
+  hasDefaultRepository: boolean;
+  /** Default repository owner (if configured) */
+  defaultOwner: string | null;
+  /** Default repository name (if configured) */
+  defaultRepo: string | null;
+  /** Human-readable status message */
+  message: string;
+}

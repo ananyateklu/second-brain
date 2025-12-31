@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Commands.GitHub.CancelWorkflowRun;
 using SecondBrain.Application.Commands.GitHub.RerunWorkflow;
 using SecondBrain.Application.Queries.GitHub.GetBranches;
@@ -32,10 +33,51 @@ namespace SecondBrain.API.Controllers;
 public class GitHubController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IConfiguration _configuration;
 
-    public GitHubController(IMediator mediator)
+    public GitHubController(IMediator mediator, IConfiguration configuration)
     {
         _mediator = mediator;
+        _configuration = configuration;
+    }
+
+    /// <summary>
+    /// Gets GitHub integration configuration status.
+    /// Used by settings page to show if GitHub is properly configured.
+    /// </summary>
+    [HttpGet("status")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult GetStatus()
+    {
+        var settings = _configuration.GetSection(GitHubSettings.SectionName).Get<GitHubSettings>();
+        var hasToken = !string.IsNullOrWhiteSpace(settings?.PersonalAccessToken);
+        var hasDefaultRepo = !string.IsNullOrWhiteSpace(settings?.DefaultOwner)
+                          && !string.IsNullOrWhiteSpace(settings?.DefaultRepo);
+
+        string message;
+        if (!hasToken)
+        {
+            message = "GitHub Personal Access Token not configured. Add a PAT to enable GitHub integration.";
+        }
+        else if (!hasDefaultRepo)
+        {
+            message = "GitHub token configured. Set default owner/repo for easier access.";
+        }
+        else
+        {
+            message = $"GitHub fully configured for {settings!.DefaultOwner}/{settings.DefaultRepo}";
+        }
+
+        return Ok(new
+        {
+            isConfigured = hasToken,
+            hasToken,
+            hasDefaultRepository = hasDefaultRepo,
+            defaultOwner = hasDefaultRepo ? settings?.DefaultOwner : null,
+            defaultRepo = hasDefaultRepo ? settings?.DefaultRepo : null,
+            message
+        });
     }
 
     /// <summary>
