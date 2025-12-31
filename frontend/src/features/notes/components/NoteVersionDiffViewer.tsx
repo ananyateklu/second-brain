@@ -76,7 +76,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogBody,
 } from '../../../components/ui/Dialog';
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner';
@@ -131,7 +130,8 @@ function ReadOnlyContentViewer({ version }: { version: NoteVersion }) {
     editable: false,
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert max-w-none text-sm leading-relaxed focus:outline-none',
+        class: 'prose dark:prose-invert prose-sm max-w-none focus:outline-none [&_*]:!text-[11px] [&_*]:!leading-snug',
+        style: 'font-size: 11px; line-height: 1.4;',
       },
     },
   });
@@ -237,6 +237,7 @@ function DiffSection({
   addedTags,
   removedTags,
   icon,
+  compact = false,
 }: {
   label: string;
   fromContent: React.ReactNode;
@@ -246,10 +247,11 @@ function DiffSection({
   addedTags?: string[];
   removedTags?: string[];
   icon?: React.ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <div className="mb-5">
-      <div className="flex items-center gap-2 mb-2.5">
+    <div className={compact ? "mb-3" : "mb-5"}>
+      <div className={`flex items-center gap-2 ${compact ? "mb-1.5" : "mb-2.5"}`}>
         {icon && (
           <span style={{ color: changed ? 'var(--color-warning)' : 'var(--text-tertiary)' }}>
             {icon}
@@ -279,10 +281,10 @@ function DiffSection({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
         {/* From version */}
         <div
-          className="rounded-lg p-3 transition-all duration-200"
+          className={`rounded-lg ${compact ? "px-2.5 py-1.5" : "p-3"} transition-all duration-200`}
           style={{
             backgroundColor: changed
               ? 'color-mix(in srgb, var(--color-error) 5%, var(--surface-card))'
@@ -293,15 +295,6 @@ function DiffSection({
             opacity: changed ? 1 : 0.75,
           }}
         >
-          <div
-            className="text-[10px] font-medium mb-2 flex items-center gap-1"
-            style={{ color: changed ? 'var(--color-error)' : 'var(--text-tertiary)' }}
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Previous
-          </div>
           {isTag ? (
             <div className="flex flex-wrap gap-1.5">
               {(fromContent as string[]).length === 0 ? (
@@ -331,7 +324,7 @@ function DiffSection({
             </div>
           ) : (
             <div
-              className="text-sm max-h-40 overflow-y-auto thin-scrollbar"
+              className={`${compact ? "text-sm max-h-20" : "text-[11px] max-h-56"} overflow-y-auto thin-scrollbar`}
               style={{
                 color: 'var(--text-secondary)',
               }}
@@ -347,7 +340,7 @@ function DiffSection({
 
         {/* To version */}
         <div
-          className="rounded-lg p-3 transition-all duration-200"
+          className={`rounded-lg ${compact ? "px-2.5 py-1.5" : "p-3"} transition-all duration-200`}
           style={{
             backgroundColor: changed
               ? 'color-mix(in srgb, var(--color-success) 5%, var(--surface-card))'
@@ -358,15 +351,6 @@ function DiffSection({
             opacity: changed ? 1 : 0.75,
           }}
         >
-          <div
-            className="text-[10px] font-medium mb-2 flex items-center gap-1"
-            style={{ color: changed ? 'var(--color-success)' : 'var(--text-tertiary)' }}
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            Current
-          </div>
           {isTag ? (
             <div className="flex flex-wrap gap-1.5">
               {(toContent as string[]).length === 0 ? (
@@ -395,7 +379,7 @@ function DiffSection({
             </div>
           ) : (
             <div
-              className="text-sm max-h-40 overflow-y-auto thin-scrollbar"
+              className={`${compact ? "text-sm max-h-20" : "text-[11px] max-h-56"} overflow-y-auto thin-scrollbar`}
               style={{
                 color: 'var(--text-secondary)',
               }}
@@ -421,37 +405,75 @@ export function NoteVersionDiffViewer({
 }: NoteVersionDiffViewerProps) {
   const { data: diff, isLoading } = useNoteVersionDiff(noteId, fromVersion, toVersion);
 
-  // Count number of changes
-  const changeCount = diff
-    ? [
-        diff.titleChanged,
-        diff.contentChanged,
-        diff.tagsChanged,
-        diff.folderChanged,
-        diff.archivedChanged,
-        diff.imagesChanged,
-      ].filter(Boolean).length
-    : 0;
-
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl p-0">
+      <DialogContent className="max-w-8xl w-[80vw] p-0">
         <DialogHeader className="rounded-t-3xl">
-          <DialogTitle
-            icon={
-              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            }
-          >
-            Compare Versions
-          </DialogTitle>
-          <DialogDescription>v{fromVersion} → v{toVersion}</DialogDescription>
+          <div className="flex items-center gap-3">
+            <DialogTitle
+              icon={
+                <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+              }
+            >
+              Compare Versions
+            </DialogTitle>
+            <span
+              className="text-sm font-medium px-3 py-1 rounded-full"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                color: 'var(--color-brand-400)',
+              }}
+            >
+              v{fromVersion} → v{toVersion}
+            </span>
+            {diff && (
+              <>
+                <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>•</span>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Changed:</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {diff.titleChanged && <ChangeBadge type="Title" variant="changed" />}
+                  {diff.contentChanged && <ChangeBadge type="Content" variant="changed" />}
+                  {diff.tagsChanged && (
+                    <>
+                      {diff.tagsAdded.length > 0 && (
+                        <ChangeBadge type={`${diff.tagsAdded.length} tag${diff.tagsAdded.length > 1 ? 's' : ''} added`} variant="added" />
+                      )}
+                      {diff.tagsRemoved.length > 0 && (
+                        <ChangeBadge type={`${diff.tagsRemoved.length} tag${diff.tagsRemoved.length > 1 ? 's' : ''} removed`} variant="removed" />
+                      )}
+                    </>
+                  )}
+                  {diff.folderChanged && <ChangeBadge type="Folder" variant="changed" />}
+                  {diff.archivedChanged && <ChangeBadge type="Archive status" variant="changed" />}
+                  {diff.imagesChanged && (
+                    <>
+                      {diff.imagesAdded.length > 0 && (
+                        <ChangeBadge type={`${diff.imagesAdded.length} image${diff.imagesAdded.length > 1 ? 's' : ''} added`} variant="added" />
+                      )}
+                      {diff.imagesRemoved.length > 0 && (
+                        <ChangeBadge type={`${diff.imagesRemoved.length} image${diff.imagesRemoved.length > 1 ? 's' : ''} removed`} variant="removed" />
+                      )}
+                    </>
+                  )}
+                  {!diff.titleChanged &&
+                    !diff.contentChanged &&
+                    !diff.tagsChanged &&
+                    !diff.folderChanged &&
+                    !diff.archivedChanged &&
+                    !diff.imagesChanged && (
+                      <ChangeBadge type="No changes" variant="neutral" />
+                    )}
+                </div>
+              </>
+            )}
+          </div>
         </DialogHeader>
         <DialogBody>
       {isLoading ? (
@@ -459,89 +481,7 @@ export function NoteVersionDiffViewer({
           <LoadingSpinner message="Loading diff..." />
         </div>
       ) : diff ? (
-        <div className="max-h-[60vh] overflow-y-auto thin-scrollbar pr-2">
-          {/* Summary header */}
-          <div
-            className="flex flex-wrap items-center gap-2 p-4 rounded-xl mb-6"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <div className="flex items-center gap-2 mr-auto">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
-                }}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  style={{ color: 'var(--color-brand-500)' }}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {changeCount} {changeCount === 1 ? 'change' : 'changes'} detected
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  Between version {fromVersion} and version {toVersion}
-                </p>
-              </div>
-            </div>
-
-            {/* Change badges */}
-            <div className="flex flex-wrap gap-1.5">
-              {diff.titleChanged && <ChangeBadge type="Title" variant="changed" />}
-              {diff.contentChanged && <ChangeBadge type="Content" variant="changed" />}
-              {diff.tagsChanged && (
-                <>
-                  {diff.tagsAdded.length > 0 && (
-                    <ChangeBadge type={`${diff.tagsAdded.length} tag${diff.tagsAdded.length > 1 ? 's' : ''} added`} variant="added" />
-                  )}
-                  {diff.tagsRemoved.length > 0 && (
-                    <ChangeBadge type={`${diff.tagsRemoved.length} tag${diff.tagsRemoved.length > 1 ? 's' : ''} removed`} variant="removed" />
-                  )}
-                </>
-              )}
-              {diff.folderChanged && <ChangeBadge type="Folder" variant="changed" />}
-              {diff.archivedChanged && <ChangeBadge type="Archive status" variant="changed" />}
-              {diff.imagesChanged && (
-                <>
-                  {diff.imagesAdded.length > 0 && (
-                    <ChangeBadge type={`${diff.imagesAdded.length} image${diff.imagesAdded.length > 1 ? 's' : ''} added`} variant="added" />
-                  )}
-                  {diff.imagesRemoved.length > 0 && (
-                    <ChangeBadge type={`${diff.imagesRemoved.length} image${diff.imagesRemoved.length > 1 ? 's' : ''} removed`} variant="removed" />
-                  )}
-                </>
-              )}
-              {!diff.titleChanged &&
-                !diff.contentChanged &&
-                !diff.tagsChanged &&
-                !diff.folderChanged &&
-                !diff.archivedChanged &&
-                !diff.imagesChanged && (
-                  <ChangeBadge type="No changes" variant="neutral" />
-                )}
-            </div>
-          </div>
+        <div className="max-h-[75vh] overflow-y-auto thin-scrollbar pr-2">
 
           {/* Title diff */}
           <DiffSection
@@ -549,6 +489,7 @@ export function NoteVersionDiffViewer({
             fromContent={diff.fromVersion.title}
             toContent={diff.toVersion.title}
             changed={diff.titleChanged}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10" />
@@ -578,6 +519,7 @@ export function NoteVersionDiffViewer({
             isTag={true}
             addedTags={diff.tagsAdded}
             removedTags={diff.tagsRemoved}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -591,6 +533,7 @@ export function NoteVersionDiffViewer({
             fromContent={diff.fromVersion.folder || '(none)'}
             toContent={diff.toVersion.folder || '(none)'}
             changed={diff.folderChanged}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -604,6 +547,7 @@ export function NoteVersionDiffViewer({
             fromContent={diff.fromVersion.isArchived ? 'Archived' : 'Active'}
             toContent={diff.toVersion.isArchived ? 'Archived' : 'Active'}
             changed={diff.archivedChanged}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
@@ -617,6 +561,7 @@ export function NoteVersionDiffViewer({
             fromContent={`${diff.fromVersion.imageIds?.length ?? 0} image${(diff.fromVersion.imageIds?.length ?? 0) !== 1 ? 's' : ''} attached`}
             toContent={`${diff.toVersion.imageIds?.length ?? 0} image${(diff.toVersion.imageIds?.length ?? 0) !== 1 ? 's' : ''} attached`}
             changed={diff.imagesChanged}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -630,6 +575,7 @@ export function NoteVersionDiffViewer({
             fromContent={getSourceLabel(diff.fromVersion.source)}
             toContent={getSourceLabel(diff.toVersion.source)}
             changed={diff.fromVersion.source !== diff.toVersion.source}
+            compact
             icon={
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

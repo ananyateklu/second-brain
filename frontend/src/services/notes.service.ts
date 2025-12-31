@@ -126,12 +126,11 @@ export const notesService = {
   },
 
   /**
-   * Unarchive a note (backend automatically removes from Archived folder if applicable)
+   * Unarchive a note (removes from Archived folder)
    */
   async unarchive(id: string): Promise<NoteResponse> {
-    // Don't send updateFolder - let the backend automatically remove from Archived folder
-    // only if the note was in the Archived folder
-    return this.update(id, { isArchived: false });
+    // Clear the folder when unarchiving - this removes it from the Archived folder
+    return this.update(id, { isArchived: false, folder: undefined, updateFolder: true });
   },
 
   /**
