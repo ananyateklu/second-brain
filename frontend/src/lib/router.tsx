@@ -43,6 +43,8 @@ const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m =>
 const IndexingSettings = lazy(() => import('../pages/settings/IndexingSettings').then(m => ({ default: m.IndexingSettings })));
 const FocusSettings = lazy(() => import('../pages/settings/FocusSettings').then(m => ({ default: m.FocusSettings })));
 const FocusSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.FocusSettingsSkeleton })));
+const GitSettings = lazy(() => import('../pages/settings/GitSettings').then(m => ({ default: m.GitSettings })));
+const GitSettingsSkeleton = lazy(() => import('../pages/settings/components').then(m => ({ default: m.GitSettingsSkeleton })));
 
 // Git redirect component - redirects /git to /github with local-changes tab
 function GitRedirect() {
@@ -285,6 +287,20 @@ const routes = [
           <AppLayout>
             <Suspense fallback={<FocusSettingsSkeleton />}>
               <FocusSettings />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/settings/git',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<GitSettingsSkeleton />}>
+              <GitSettings />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>

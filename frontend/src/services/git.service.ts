@@ -22,6 +22,7 @@ import type {
   GitDeleteBranchRequest,
   GitMergeBranchRequest,
   GitPublishBranchRequest,
+  GitIntegrationStatus,
 } from '../types/git';
 
 /**
@@ -39,6 +40,14 @@ const buildUrl = (base: string, params: Record<string, string | number | boolean
 };
 
 export const gitService = {
+  /**
+   * Gets the Git integration configuration status.
+   * Used by settings page to check if Git is properly configured.
+   */
+  getIntegrationStatus: async (): Promise<GitIntegrationStatus> => {
+    return apiClient.get<GitIntegrationStatus>(API_ENDPOINTS.GIT.INTEGRATION_STATUS);
+  },
+
   /**
    * Validates that the given path is a valid Git repository
    */

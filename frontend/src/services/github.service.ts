@@ -23,10 +23,12 @@ import type {
   GitHubRepositoryTreeRequest,
   GitHubFileContentResponse,
   GitHubFileContentRequest,
+  GitHubIntegrationStatus,
 } from '../types/github';
 
 // Add GitHub endpoints to constants
 const GITHUB_ENDPOINTS = {
+  STATUS: '/github/status',
   REPOSITORIES: '/github/repositories',
   REPOSITORY: '/github/repository',
   PULLS: '/github/pulls',
@@ -51,6 +53,14 @@ const GITHUB_ENDPOINTS = {
  * Service for GitHub API integration
  */
 export const githubService = {
+  /**
+   * Gets the GitHub integration configuration status.
+   * Used by settings page to check if GitHub is properly configured.
+   */
+  async getIntegrationStatus(): Promise<GitHubIntegrationStatus> {
+    return apiClient.get<GitHubIntegrationStatus>(GITHUB_ENDPOINTS.STATUS);
+  },
+
   /**
    * Get user's accessible repositories
    */

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using SecondBrain.API.Controllers;
 using SecondBrain.Application.Commands.GitHub.CancelWorkflowRun;
 using SecondBrain.Application.Commands.GitHub.RerunWorkflow;
@@ -25,12 +26,14 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 public class GitHubControllerTests
 {
     private readonly Mock<IMediator> _mockMediator;
+    private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly GitHubController _sut;
 
     public GitHubControllerTests()
     {
         _mockMediator = new Mock<IMediator>();
-        _sut = new GitHubController(_mockMediator.Object);
+        _mockConfiguration = new Mock<IConfiguration>();
+        _sut = new GitHubController(_mockMediator.Object, _mockConfiguration.Object);
         SetupUnauthenticatedUser();
     }
 
