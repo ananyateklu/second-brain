@@ -11,6 +11,29 @@ import type { GroundingSource, CodeExecutionResult } from './chat';
 export type ToolExecutionStatus = 'executing' | 'completed' | 'failed';
 
 /**
+ * Image metadata from ViewNoteImages tool (URL-based, no base64 in model context)
+ */
+export interface ImageMetadata {
+  id: string;
+  url: string;
+  fileName?: string;
+  mediaType: string;
+  description?: string;
+  altText?: string;
+  imageIndex: number;
+}
+
+/**
+ * Image data from AnalyzeImage tool (base64 for when model needs to "see")
+ */
+export interface ToolResultImage {
+  base64Data: string;
+  mediaType: string;
+  description?: string;
+  altText?: string;
+}
+
+/**
  * Tool execution record
  */
 export interface ToolExecution {

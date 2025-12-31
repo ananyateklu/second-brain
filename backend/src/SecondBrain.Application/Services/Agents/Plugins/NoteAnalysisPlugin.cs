@@ -12,17 +12,21 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 
 /// <summary>
 /// Plugin handling AI-powered analysis operations for notes:
-/// AnalyzeNote, SuggestTags, SummarizeNote, CompareNotes.
+/// AnalyzeNote, SuggestTags, SummarizeNote, CompareNotes, ViewNoteImages.
 /// </summary>
 public class NoteAnalysisPlugin : NotePluginBase
 {
+    private readonly INoteImageRepository? _imageRepository;
+
     public NoteAnalysisPlugin(
         IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
-        IStructuredOutputService? structuredOutputService = null)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteImageRepository? imageRepository = null)
         : base(noteRepository, ragService, ragSettings, structuredOutputService)
     {
+        _imageRepository = imageRepository;
     }
 
     public override string CapabilityId => "notes-analysis";
@@ -52,7 +56,17 @@ public class NoteAnalysisPlugin : NotePluginBase
 - **CompareNotes**: Compare two notes for similarities and differences
   - Identifies shared themes and unique aspects
   - Provides similarity score and recommendations
-  - Use for finding connections between notes";
+  - Use for finding connections between notes
+
+- **ViewNoteImages**: List images attached to a note
+  - Returns image metadata and URLs for viewing (small response, no base64)
+  - Use first to discover what images exist on a note
+  - Frontend displays the images in the tool execution card
+
+- **AnalyzeImage**: Analyze a specific image's visual content
+  - Use when you need to actually SEE and describe an image in detail
+  - First call ViewNoteImages to get image IDs, then AnalyzeImage for the one you need
+  - Only available for vision-capable models (Claude 3+, GPT-4o, Gemini)";
 
     [KernelFunction("AnalyzeNote")]
     [Description("Analyzes a note using AI to extract key information, suggest tags, identify key points, and determine sentiment. Requires AI structured output service to be available.")]
@@ -399,6 +413,128 @@ Do NOT leave any field empty. Every field must have meaningful content.";
         catch (Exception ex)
         {
             return CreateErrorResponse("comparing notes", ex.Message);
+        }
+    }
+
+    [KernelFunction("ViewNoteImages")]
+    [Description("List all images attached to a specific note. Returns image metadata and URLs for viewing (no base64 data). Use AnalyzeImage if you need to examine an image's visual content in detail.")]
+    public async Task<string> ViewNoteImagesAsync(
+        [Description("The ID of the note whose images you want to list")] string noteId)
+    {
+        var userError = ValidateUserContext("view note images");
+        if (userError != null) return userError;
+
+        if (_imageRepository == null)
+        {
+            return "Error: Image viewing service is not available.";
+        }
+
+        try
+        {
+            // First verify the note exists and user has access
+            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
+            }
+
+            // Get all images for this note
+            var images = await _imageRepository.GetByNoteIdAsync(noteId);
+
+            if (images.Count == 0)
+            {
+                var response = new
+                {
+                    type = "images",
+                    message = $"Note \"{note.Title}\" has no images attached.",
+                    noteId = note.Id,
+                    noteTitle = note.Title,
+                    imageCount = 0,
+                    images = Array.Empty<object>()
+                };
+                return JsonSerializer.Serialize(response);
+            }
+
+            // Return structured response with metadata + URLs only (no base64!)
+            // Frontend prefixes with API base URL and fetches from /notes/images/{id} endpoint
+            var imageResponse = new
+            {
+                type = "images",
+                message = $"Found {images.Count} image(s) for note \"{note.Title}\". Use AnalyzeImage with an image ID if you need to see the visual content.",
+                noteId = note.Id,
+                noteTitle = note.Title,
+                imageCount = images.Count,
+                images = images.OrderBy(i => i.ImageIndex).Select(img => new
+                {
+                    id = img.Id,
+                    url = $"/notes/images/{img.Id}",  // Relative path - frontend prefixes with API base URL
+                    mediaType = img.MediaType,
+                    fileName = img.FileName,
+                    imageIndex = img.ImageIndex,
+                    description = img.Description ?? "No description available - use AnalyzeImage to examine",
+                    altText = img.AltText
+                }).ToList()
+            };
+
+            return JsonSerializer.Serialize(imageResponse);
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("viewing note images", ex.Message);
+        }
+    }
+
+    [KernelFunction("AnalyzeImage")]
+    [Description("Analyze a specific image's visual content. Use this when you need to actually SEE and describe what's in an image. First call ViewNoteImages to get the image IDs.")]
+    public async Task<string> AnalyzeImageAsync(
+        [Description("The ID of the image to analyze (get this from ViewNoteImages)")] string imageId)
+    {
+        var userError = ValidateUserContext("analyze image");
+        if (userError != null) return userError;
+
+        if (_imageRepository == null)
+        {
+            return "Error: Image analysis service is not available.";
+        }
+
+        try
+        {
+            var image = await _imageRepository.GetByIdAsync(imageId);
+
+            if (image == null || image.UserId != CurrentUserId)
+            {
+                return $"Image with ID \"{imageId}\" not found or you don't have permission to access it.";
+            }
+
+            // IMPORTANT: Return two parts:
+            // 1. __IMAGE_DATA__ section - parsed by streaming strategy, NOT stored in history
+            // 2. Lightweight text result - this is what gets stored in conversation history
+            //
+            // The streaming strategy will:
+            // - Extract and remove __IMAGE_DATA__ from the result before storing
+            // - Use the image data to inject into the model's immediate context
+            // - Store only the lightweight text in conversation history
+            var imageDataSection = $"__IMAGE_DATA__{image.MediaType}|{image.Base64Data}__END_IMAGE_DATA__";
+
+            var textResult = new
+            {
+                type = "image_analysis",
+                message = $"Image loaded: {image.FileName ?? imageId}. I can now see and analyze this image.",
+                imageId = image.Id,
+                mediaType = image.MediaType,
+                fileName = image.FileName,
+                existingDescription = image.Description,
+                altText = image.AltText
+            };
+
+            // Combine: image data marker + JSON result
+            // Strategy will strip __IMAGE_DATA__...__END_IMAGE_DATA__ before storing
+            return imageDataSection + JsonSerializer.Serialize(textResult);
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("analyzing image", ex.Message);
         }
     }
 }

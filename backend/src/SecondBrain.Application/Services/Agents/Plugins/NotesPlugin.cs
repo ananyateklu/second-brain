@@ -37,7 +37,8 @@ public class NotesPlugin : IAgentPlugin
         RagSettings? ragSettings = null,
         IStructuredOutputService? structuredOutputService = null,
         INoteOperationService? noteOperationService = null,
-        INoteVersionService? versionService = null)
+        INoteVersionService? versionService = null,
+        INoteImageRepository? imageRepository = null)
     {
         // NoteCrudPlugin uses INoteOperationService for mutations (Create, Update, Delete, Append, Duplicate)
         _crudPlugin = new NoteCrudPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
@@ -54,8 +55,9 @@ public class NotesPlugin : IAgentPlugin
         _trashPlugin = new NoteTrashPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
 
         // Search and Analysis plugins only do reads, so they don't need the operation service
+        // NoteAnalysisPlugin also receives INoteImageRepository for ViewNoteImages tool
         _searchPlugin = new NoteSearchPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
-        _analysisPlugin = new NoteAnalysisPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
+        _analysisPlugin = new NoteAnalysisPlugin(noteRepository, ragService, ragSettings, structuredOutputService, imageRepository);
     }
 
     #region IAgentPlugin Implementation
@@ -360,6 +362,18 @@ Use markdown thoughtfully for readability:
         [Description("The ID of the first note")] string noteId1,
         [Description("The ID of the second note")] string noteId2)
         => _analysisPlugin.CompareNotesAsync(noteId1, noteId2);
+
+    [KernelFunction("ViewNoteImages")]
+    [Description("List all images attached to a note. Returns image metadata and URLs for viewing (no base64 data). Use AnalyzeImage if you need to examine an image's visual content in detail.")]
+    public Task<string> ViewNoteImagesAsync(
+        [Description("The ID of the note whose images you want to list")] string noteId)
+        => _analysisPlugin.ViewNoteImagesAsync(noteId);
+
+    [KernelFunction("AnalyzeImage")]
+    [Description("Analyze a specific image's visual content. Use this when you need to actually SEE and describe what's in an image. First call ViewNoteImages to get the image IDs.")]
+    public Task<string> AnalyzeImageAsync(
+        [Description("The ID of the image to analyze (get this from ViewNoteImages)")] string imageId)
+        => _analysisPlugin.AnalyzeImageAsync(imageId);
 
     #endregion
 

@@ -224,12 +224,6 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
                     settings.OpenAI.FunctionCalling.ParallelExecution,
                     cancellationToken);
 
-                // Emit end events
-                foreach (var result in results)
-                {
-                    yield return ToolCallEndEvent(result.Name, result.Id, result.Result);
-                }
-
                 // Add assistant message with tool calls
                 // IMPORTANT: Include iterationText to preserve context of what was said before tool execution
                 var textBeforeTools = iterationText.ToString();
@@ -243,10 +237,45 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
                     textContent: !string.IsNullOrEmpty(textBeforeTools) ? textBeforeTools : null);
                 messages.Add(assistantToolCallMessage);
 
-                // Add tool results
+                // Process tool results: extract image data from marker, emit events, store cleaned results
+                var imageContentParts = new List<OpenAI.Chat.ChatMessageContentPart>();
+
                 foreach (var result in results)
                 {
-                    messages.Add(OpenAIProvider.CreateToolResultMessage(result.Id, result.Result));
+                    var resultForStorage = result.Result;
+
+                    // Handle AnalyzeImage tool - extract image data from marker, strip before storing
+                    // Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__<json>
+                    if (result.Name.Equals("AnalyzeImage", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var (cleanedResult, mediaType, base64Data) = ExtractImageDataFromResult(result.Result);
+                        resultForStorage = cleanedResult;
+
+                        // If we extracted image data and model supports vision, inject for THIS request only
+                        if (base64Data != null &&
+                            AI.Models.MultimodalConfig.IsMultimodalModel("OpenAI", request.Model))
+                        {
+                            var dataUrl = $"data:{mediaType ?? "image/png"};base64,{base64Data}";
+                            imageContentParts.Add(OpenAI.Chat.ChatMessageContentPart.CreateImagePart(new Uri(dataUrl)));
+                            _logger.LogInformation("Extracted image for AnalyzeImage (ephemeral, not stored in history) for model {Model}", request.Model);
+                        }
+                    }
+
+                    // Emit end event with CLEANED result (no base64) - this is what gets saved to history
+                    yield return ToolCallEndEvent(result.Name, result.Id, resultForStorage);
+
+                    // Store cleaned result (no base64) in conversation history for this request
+                    messages.Add(OpenAIProvider.CreateToolResultMessage(result.Id, resultForStorage));
+                }
+
+                // If AnalyzeImage returned an image, add it as a follow-up user message for THIS request only
+                // Note: This image injection is ephemeral - the cleaned result (no base64) is what gets stored
+                if (imageContentParts.Count > 0)
+                {
+                    imageContentParts.Insert(0, OpenAI.Chat.ChatMessageContentPart.CreateTextPart(
+                        "Here is the image from the AnalyzeImage tool. Please analyze it and describe what you see:"));
+                    messages.Add(new OpenAI.Chat.UserChatMessage(imageContentParts));
+                    _logger.LogInformation("Injected image for model vision (ephemeral) for model {Model}", request.Model);
                 }
 
                 continue;
@@ -269,5 +298,57 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             fullResponse.ToString(),
             inputTokens: totalInputTokens > 0 ? totalInputTokens : null,
             outputTokens: totalOutputTokens > 0 ? totalOutputTokens : null);
+    }
+
+    /// <summary>
+    /// Extract image data from AnalyzeImage result marker format.
+    /// Format: __IMAGE_DATA__mediaType|base64Data__END_IMAGE_DATA__&lt;json&gt;
+    /// Returns (cleanedResult, mediaType, base64Data) where cleanedResult has the marker stripped.
+    /// </summary>
+    private (string CleanedResult, string? MediaType, string? Base64Data) ExtractImageDataFromResult(string result)
+    {
+        const string startMarker = "__IMAGE_DATA__";
+        const string endMarker = "__END_IMAGE_DATA__";
+
+        if (!result.StartsWith(startMarker))
+        {
+            return (result, null, null);
+        }
+
+        var endIndex = result.IndexOf(endMarker);
+        if (endIndex < 0)
+        {
+            _logger.LogWarning("AnalyzeImage result has start marker but no end marker");
+            return (result, null, null);
+        }
+
+        try
+        {
+            // Extract the data between markers: mediaType|base64Data
+            var dataSection = result.Substring(startMarker.Length, endIndex - startMarker.Length);
+            var pipeIndex = dataSection.IndexOf('|');
+
+            if (pipeIndex < 0)
+            {
+                _logger.LogWarning("AnalyzeImage data section missing pipe separator");
+                return (result, null, null);
+            }
+
+            var mediaType = dataSection.Substring(0, pipeIndex);
+            var base64Data = dataSection.Substring(pipeIndex + 1);
+
+            // The cleaned result is everything after the end marker (the JSON)
+            var cleanedResult = result.Substring(endIndex + endMarker.Length);
+
+            _logger.LogDebug("Extracted image data: mediaType={MediaType}, base64Length={Length}",
+                mediaType, base64Data.Length);
+
+            return (cleanedResult, mediaType, base64Data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to extract image data from AnalyzeImage result");
+            return (result, null, null);
+        }
     }
 }
