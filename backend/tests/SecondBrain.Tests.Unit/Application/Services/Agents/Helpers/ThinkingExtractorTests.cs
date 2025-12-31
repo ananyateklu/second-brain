@@ -227,8 +227,8 @@ Line 3
     public void SupportsNativeThinking_WithSupportedAnthropicModel_ReturnsTrue(
         string provider, string model, bool expected)
     {
-        // Act
-        var result = _sut.SupportsNativeThinking(provider, model);
+        // Act - Note: SupportsNativeThinking is now static
+        var result = ThinkingExtractor.SupportsNativeThinking(provider, model);
 
         // Assert
         result.Should().Be(expected);
@@ -241,8 +241,8 @@ Line 3
     [InlineData("ollama", "llama3")]
     public void SupportsNativeThinking_WithNonAnthropicProvider_ReturnsFalse(string provider, string model)
     {
-        // Act
-        var result = _sut.SupportsNativeThinking(provider, model);
+        // Act - Note: SupportsNativeThinking is now static
+        var result = ThinkingExtractor.SupportsNativeThinking(provider, model);
 
         // Assert
         result.Should().BeFalse();
@@ -254,8 +254,8 @@ Line 3
     [InlineData("claude", "claude-instant")]
     public void SupportsNativeThinking_WithUnsupportedAnthropicModel_ReturnsFalse(string provider, string model)
     {
-        // Act
-        var result = _sut.SupportsNativeThinking(provider, model);
+        // Act - Note: SupportsNativeThinking is now static
+        var result = ThinkingExtractor.SupportsNativeThinking(provider, model);
 
         // Assert
         result.Should().BeFalse();
@@ -268,8 +268,8 @@ Line 3
     [InlineData("Anthropic")]
     public void SupportsNativeThinking_WithCaseInsensitiveProvider_Works(string provider)
     {
-        // Act
-        var result = _sut.SupportsNativeThinking(provider, "claude-opus-4-20250514");
+        // Act - Note: SupportsNativeThinking is now static
+        var result = ThinkingExtractor.SupportsNativeThinking(provider, "claude-opus-4-20250514");
 
         // Assert
         result.Should().BeTrue();
@@ -280,8 +280,8 @@ Line 3
     [InlineData("Claude-Opus-4")]
     public void SupportsNativeThinking_WithCaseInsensitiveModel_Works(string model)
     {
-        // Act
-        var result = _sut.SupportsNativeThinking("claude", model);
+        // Act - Note: SupportsNativeThinking is now static
+        var result = ThinkingExtractor.SupportsNativeThinking("claude", model);
 
         // Assert
         result.Should().BeTrue();

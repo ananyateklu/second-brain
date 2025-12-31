@@ -406,16 +406,10 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
         return 'Finding Related Notes';
 
       // Notes - Organization Operations
-      case 'ListAllNotes':
-        return 'Listing All Notes';
-      case 'ListRecentNotes':
-        return 'Listing Recent Notes';
-      case 'ListArchivedNotes':
-        return 'Listing Archived Notes';
-      case 'ArchiveNote':
-        return 'Archiving Note';
-      case 'UnarchiveNote':
-        return 'Unarchiving Note';
+      case 'ListNotes':
+        return 'Listing Notes';
+      case 'SetNoteArchived':
+        return 'Updating Archive Status';
       case 'MoveToFolder':
         return 'Moving to Folder';
       case 'ListFolders':

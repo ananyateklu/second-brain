@@ -105,10 +105,11 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("SearchNotes")]
-    [Description("Exact keyword/phrase search in note titles, content, and tags. Only use when you need literal text matching. For general note finding, use SemanticSearch instead - it's more effective at finding relevant notes.")]
+    [Description("EXACT TEXT search only. Use when user needs literal phrase matching (case-insensitive). If no results, suggest SemanticSearch. DEFAULT to SemanticSearch for topic searches. Examples: 'find exact phrase XYZ', 'search for error code 404' -> SearchNotes.")]
     public async Task<string> SearchNotesAsync(
-        [Description("The search query to find notes")] string query,
-        [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
+        [Description("Exact text to search for")] string query,
+        [Description("Max results (default: 5)")] int maxResults = 5,
+        [Description("Detail: 'ids_only', 'summary' (default), 'full'")] string detailLevel = "summary")
     {
         var userError = ValidateUserContext("search notes");
         if (userError != null) return userError;
@@ -131,20 +132,14 @@ Automatic context retrieval is disabled for this conversation. You should:
                 return $"No notes found with exact match for \"{query}\". Try using SemanticSearch instead - it finds notes by meaning and handles synonyms/related terms better.";
             }
 
-            var noteData = matches.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
+            var noteData = MapNotesByDetailLevel(matches, detailLevel);
+            var detailHint = detailLevel.ToLowerInvariant() == "full" ? "" : " Use GetNote with the note ID to read full content.";
 
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) matching \"{query}\". Use GetNote with the note ID to read full content.",
+                message = $"Found {matches.Count} note(s) matching \"{query}\".{detailHint}",
+                detailLevel = detailLevel.ToLowerInvariant(),
                 notes = noteData
             };
 
@@ -157,10 +152,10 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("SemanticSearch")]
-    [Description("PRIMARY SEARCH TOOL - AI-powered search that finds notes by meaning and context. Use this as your first choice when looking for notes. Finds relevant notes even with different wording, synonyms, or related concepts (e.g., 'sambusa' finds 'samosa recipes').")]
+    [Description("DEFAULT SEARCH - Find notes by MEANING. Use FIRST for any search. Handles synonyms, concepts, different wording ('pasta' finds 'spaghetti', 'cooking' finds 'recipes'). Only use SearchNotes if exact phrase required. Examples: 'find my notes about X', 'search for Y', 'what do I have on Z' -> SemanticSearch.")]
     public async Task<string> SemanticSearchAsync(
-        [Description("The search query to find semantically related notes")] string query,
-        [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
+        [Description("Search concept/topic (not exact phrase)")] string query,
+        [Description("Max results (default: 5)")] int maxResults = 5)
     {
         var userError = ValidateUserContext("search notes");
         if (userError != null) return userError;
@@ -244,11 +239,12 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("SearchByTags")]
-    [Description("Finds notes that have one or more of the specified tags. Use this when the user wants to find notes by their tags or categories.")]
+    [Description("Find notes by TAG only. Use when user explicitly asks for notes with specific tags/categories. For topic-based search use SemanticSearch. Examples: 'show notes tagged recipe', 'find all project notes', 'what's tagged important' -> SearchByTags.")]
     public async Task<string> SearchByTagsAsync(
-        [Description("Comma-separated list of tags to search for")] string tags,
-        [Description("If true, notes must have ALL specified tags; if false, notes with ANY of the tags match (default: false)")] bool requireAll = false,
-        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
+        [Description("Comma-separated tags to search")] string tags,
+        [Description("Require ALL tags? (default: false = any match)")] bool requireAll = false,
+        [Description("Max results (default: 10)")] int maxResults = 10,
+        [Description("Detail: 'ids_only', 'summary' (default), 'full'")] string detailLevel = "summary")
     {
         var userError = ValidateUserContext("search notes");
         if (userError != null) return userError;
@@ -293,20 +289,14 @@ Automatic context retrieval is disabled for this conversation. You should:
                     : $"No notes found with any of these tags: {tagList}.";
             }
 
-            var noteData = matches.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
+            var noteData = MapNotesByDetailLevel(matches, detailLevel);
+            var detailHint = detailLevel.ToLowerInvariant() == "full" ? "" : " Use GetNote with the note ID to read full content.";
 
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) with {(requireAll ? "all" : "any")} of the tags: {string.Join(", ", searchTags)}. Use GetNote with the note ID to read full content.",
+                message = $"Found {matches.Count} note(s) with {(requireAll ? "all" : "any")} of the tags: {string.Join(", ", searchTags)}.{detailHint}",
+                detailLevel = detailLevel.ToLowerInvariant(),
                 notes = noteData
             };
 
@@ -319,12 +309,13 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("GetNotesByDateRange")]
-    [Description("Finds notes created or updated within a specific date range. Use this when the user wants to find notes from a particular time period.")]
+    [Description("Find notes by DATE (created/updated). Supports relative dates: 'today', 'yesterday', 'last week', 'last month'. For topic-based search use SemanticSearch. Examples: 'notes from last week', 'what did I write yesterday', 'recent notes' -> GetNotesByDateRange.")]
     public async Task<string> GetNotesByDateRangeAsync(
-        [Description("Start date in ISO format (e.g., '2024-01-01') or relative like 'today', 'yesterday', 'last week', 'last month'")] string startDate,
-        [Description("End date in ISO format (e.g., '2024-12-31') or relative like 'today', 'now' (optional, defaults to now)")] string? endDate = null,
-        [Description("Whether to search by 'created' or 'updated' date (default: 'created')")] string dateField = "created",
-        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
+        [Description("Start date: ISO (2024-01-01) or relative (today, last week)")] string startDate,
+        [Description("End date (default: now)")] string? endDate = null,
+        [Description("Date field: 'created' or 'updated' (default: created)")] string dateField = "created",
+        [Description("Max results (default: 10)")] int maxResults = 10,
+        [Description("Detail: 'ids_only', 'summary' (default), 'full'")] string detailLevel = "summary")
     {
         var userError = ValidateUserContext("search notes");
         if (userError != null) return userError;
@@ -360,20 +351,14 @@ Automatic context retrieval is disabled for this conversation. You should:
                 return $"No notes found {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}.";
             }
 
-            var noteData = matches.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
+            var noteData = MapNotesByDetailLevel(matches, detailLevel);
+            var detailHint = detailLevel.ToLowerInvariant() == "full" ? "" : " Use GetNote with the note ID to read full content.";
 
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}. Use GetNote with the note ID to read full content.",
+                message = $"Found {matches.Count} note(s) {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}.{detailHint}",
+                detailLevel = detailLevel.ToLowerInvariant(),
                 notes = noteData
             };
 
@@ -386,10 +371,10 @@ Automatic context retrieval is disabled for this conversation. You should:
     }
 
     [KernelFunction("FindRelatedNotes")]
-    [Description("Finds notes that are semantically related to a specific note. Use this to discover connections between notes or find similar content.")]
+    [Description("Find notes SIMILAR to a specific note. Use to discover connections or related content. Requires note ID from previous operation. Examples: 'what else is related to this', 'find similar notes', 'show connected notes' -> FindRelatedNotes.")]
     public async Task<string> FindRelatedNotesAsync(
-        [Description("The ID of the note to find related notes for")] string noteId,
-        [Description("Maximum number of related notes to return (default: 5)")] int maxResults = 5)
+        [Description("Note ID to find related notes for")] string noteId,
+        [Description("Max related notes (default: 5)")] int maxResults = 5)
     {
         var userError = ValidateUserContext("find related notes");
         if (userError != null) return userError;

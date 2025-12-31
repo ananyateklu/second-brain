@@ -335,23 +335,28 @@ public class AgentController : ControllerBase
 
                     case AgentEventType.Thinking:
                         // Capture thinking step with timestamp for persistence
-                        var thinkingTimestamp = DateTime.UtcNow;
-                        thinkingSteps.Add(new ThinkingStep
+                        // Note: Deduplication is now handled at the strategy level via context.EmittedThinkingBlocks
+                        var thinkingContent = evt.Content ?? "";
+                        if (!string.IsNullOrEmpty(thinkingContent))
                         {
-                            StepNumber = currentThinkingStep++,
-                            Content = evt.Content ?? "",
-                            StartedAt = thinkingTimestamp,
-                            CompletedAt = thinkingTimestamp,
-                            ModelSource = conversation.Provider
-                        });
+                            var thinkingTimestamp = DateTime.UtcNow;
+                            thinkingSteps.Add(new ThinkingStep
+                            {
+                                StepNumber = currentThinkingStep++,
+                                Content = thinkingContent,
+                                StartedAt = thinkingTimestamp,
+                                CompletedAt = thinkingTimestamp,
+                                ModelSource = conversation.Provider
+                            });
 
-                        var thinkingJson = JsonSerializer.Serialize(new
-                        {
-                            content = evt.Content,
-                            timestamp = thinkingTimestamp.ToString("o") // ISO 8601 format
-                        });
-                        await Response.WriteAsync($"event: thinking\ndata: {thinkingJson}\n\n");
-                        await Response.Body.FlushAsync(cancellationToken);
+                            var thinkingJson = JsonSerializer.Serialize(new
+                            {
+                                content = evt.Content,
+                                timestamp = thinkingTimestamp.ToString("o") // ISO 8601 format
+                            });
+                            await Response.WriteAsync($"event: thinking\ndata: {thinkingJson}\n\n");
+                            await Response.Body.FlushAsync(cancellationToken);
+                        }
                         break;
 
                     case AgentEventType.Status:
@@ -605,6 +610,7 @@ public class AgentController : ControllerBase
             }).ToList()
         });
     }
+
 }
 
 // Request/Response DTOs

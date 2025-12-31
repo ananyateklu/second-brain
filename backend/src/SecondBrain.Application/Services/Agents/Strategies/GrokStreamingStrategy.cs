@@ -146,7 +146,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
         }
 
         var fullResponse = new StringBuilder();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var maxIterations = settings.XAI.FunctionCalling.MaxIterations;
 
         // Token tracking
@@ -207,10 +207,10 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
 
                             iterationText.Append(evt.Text);
 
-                            // Check for thinking blocks
+                            // Check for thinking blocks - use shared context for deduplication
                             var currentContent = fullResponse.ToString() + iterationText.ToString();
                             foreach (var thinkingContent in ThinkingExtractor.ExtractXmlThinkingBlocks(
-                                currentContent, emittedThinkingBlocks))
+                                currentContent, context.EmittedThinkingBlocks))
                             {
                                 yield return ThinkingEvent(thinkingContent);
                             }

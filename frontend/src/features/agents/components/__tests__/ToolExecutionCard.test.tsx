@@ -116,11 +116,11 @@ describe('ToolExecutionCard', () => {
       expect(screen.getByText('Reading Note')).toBeInTheDocument();
     });
 
-    it('should render tool label for ListRecentNotes', () => {
-      render(<ToolExecutionCard execution={createMockExecution({ tool: 'ListRecentNotes' })} />, {
+    it('should render tool label for ListNotes', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'ListNotes' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Listing Recent Notes')).toBeInTheDocument();
+      expect(screen.getByText('Listing Notes')).toBeInTheDocument();
     });
 
     it('should render tool label for GetNoteStats', () => {
@@ -137,11 +137,11 @@ describe('ToolExecutionCard', () => {
       expect(screen.getByText('Deleting Note')).toBeInTheDocument();
     });
 
-    it('should render tool label for ArchiveNote', () => {
-      render(<ToolExecutionCard execution={createMockExecution({ tool: 'ArchiveNote' })} />, {
+    it('should render tool label for SetNoteArchived', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'SetNoteArchived' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Archiving Note')).toBeInTheDocument();
+      expect(screen.getByText('Updating Archive Status')).toBeInTheDocument();
     });
 
     it('should render tool label for SemanticSearch', () => {

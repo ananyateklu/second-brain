@@ -52,4 +52,11 @@ public class AgentStreamingContext
     /// System prompt generator function.
     /// </summary>
     public required Func<List<string>?, string> GetSystemPrompt { get; init; }
+
+    /// <summary>
+    /// Tracks emitted thinking content to prevent duplicates across tool execution iterations.
+    /// Persists for the entire agent request lifecycle.
+    /// Uses fuzzy matching via ThinkingExtractor.IsSimilarToEmitted().
+    /// </summary>
+    public HashSet<string> EmittedThinkingBlocks { get; } = new(StringComparer.OrdinalIgnoreCase);
 }

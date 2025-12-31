@@ -40,6 +40,7 @@ using SecondBrain.Application.Services.AI.Caching;
 using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Helpers;
+using SecondBrain.Application.Services.Agents.Metrics;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
 using SecondBrain.Application.Services.Git;
@@ -301,6 +302,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGeminiCacheService, GeminiCacheService>();
 
         // Register Agent service helpers
+        services.AddSingleton<IToolAuditLogger, ToolAuditLogger>(); // Structured audit logging for tool executions
+        services.AddSingleton<IAgentMetricsService, AgentMetricsService>(); // In-memory metrics collection
         services.AddScoped<IToolExecutor, ToolExecutor>();
         services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
         services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();

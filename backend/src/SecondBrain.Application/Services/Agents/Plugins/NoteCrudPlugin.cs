@@ -136,11 +136,11 @@ For complete rewrites:
 2. **UpdateNote** with the new content";
 
     [KernelFunction("CreateNote")]
-    [Description("Creates a new note with title and content. IMPORTANT: Both parameters are REQUIRED. For notes with multiple sections, create with the first section only, then use AppendToNote for remaining sections.")]
+    [Description("CREATE a new note. Both 'title' AND 'content' are REQUIRED. Search first to avoid duplicates. For long content: create first section, then AppendToNote. Examples: 'save this as a note', 'create a note called X', 'remember this for later' -> CreateNote.")]
     public async Task<string> CreateNoteAsync(
-        [Description("The title of the note (required)")] string title,
-        [Description("The full text content of the note - REQUIRED, must not be empty or omitted")] string content,
-        [Description("Comma-separated tags for categorizing the note (optional)")] string? tags = null)
+        [Description("Note title (required, descriptive)")] string title,
+        [Description("Note content (required, cannot be empty)")] string content,
+        [Description("Comma-separated tags for categorization")] string? tags = null)
     {
         var userError = ValidateUserContext("create note");
         if (userError != null) return userError;
@@ -193,9 +193,9 @@ For complete rewrites:
     }
 
     [KernelFunction("GetNote")]
-    [Description("Retrieves a specific note by its ID. Use this when you need to read the full content of a note.")]
+    [Description("GET full note content by ID. REQUIRED before editing (UpdateNote, ReplaceInNote). Search/list tools only return previews. Examples: 'show me that note', 'read note X', 'what does it say' -> GetNote.")]
     public async Task<string> GetNoteAsync(
-        [Description("The ID of the note to retrieve")] string noteId)
+        [Description("Note ID from search/list results")] string noteId)
     {
         var userError = ValidateUserContext("get note");
         if (userError != null) return userError;
@@ -225,12 +225,12 @@ For complete rewrites:
     }
 
     [KernelFunction("UpdateNote")]
-    [Description("Updates an existing note's title, content, or tags. Use this when the user wants to modify or edit an existing note.")]
+    [Description("REPLACE note's title, content, or tags entirely. Use for full rewrites or changing multiple fields. GetNote FIRST to see current content. For small changes use ReplaceInNote/AppendToNote instead. Examples: 'rewrite this note', 'change the title to X', 'replace all content' -> UpdateNote.")]
     public async Task<string> UpdateNoteAsync(
-        [Description("The ID of the note to update")] string noteId,
-        [Description("New title for the note (optional, leave empty to keep current)")] string? title = null,
-        [Description("New content for the note (optional, leave empty to keep current)")] string? content = null,
-        [Description("New comma-separated tags (optional, leave empty to keep current)")] string? tags = null)
+        [Description("Note ID to update")] string noteId,
+        [Description("New title (omit to keep current)")] string? title = null,
+        [Description("New content - REPLACES all existing (omit to keep)")] string? content = null,
+        [Description("New tags - REPLACES all existing (omit to keep)")] string? tags = null)
     {
         var userError = ValidateUserContext("update note");
         if (userError != null) return userError;
@@ -307,9 +307,9 @@ For complete rewrites:
     }
 
     [KernelFunction("DeleteNote")]
-    [Description("Permanently deletes a note by its ID. Use this when the user explicitly wants to delete or remove a note entirely.")]
+    [Description("Move note to TRASH (soft delete). Can be restored later. Only use when user explicitly requests deletion. Consider ArchiveNote to hide without deleting. Examples: 'delete this note', 'remove that note', 'trash it' -> DeleteNote.")]
     public async Task<string> DeleteNoteAsync(
-        [Description("The ID of the note to delete")] string noteId)
+        [Description("Note ID to delete")] string noteId)
     {
         var userError = ValidateUserContext("delete note");
         if (userError != null) return userError;
@@ -335,13 +335,13 @@ For complete rewrites:
                 NoteId = noteId,
                 UserId = CurrentUserId,
                 Source = NoteSource.Agent,
-                SoftDelete = false // Agent deletes are permanent
+                SoftDelete = true // Soft delete - can be restored from trash
             };
 
             var result = await NoteOperationService.DeleteAsync(request);
 
             return result.Match(
-                onSuccess: _ => $"Successfully deleted note \"{noteTitle}\" (ID: {noteId}).",
+                onSuccess: _ => $"Successfully moved note \"{noteTitle}\" (ID: {noteId}) to trash. Use RestoreDeletedNote to recover it, or PermanentlyDeleteNote to remove permanently.",
                 onFailure: error => $"Error deleting note: {error.Message}"
             );
         }
@@ -352,11 +352,11 @@ For complete rewrites:
     }
 
     [KernelFunction("AppendToNote")]
-    [Description("Appends content to the end of an existing note. Use this when the user wants to add something to an existing note, like adding items to a list or adding new information.")]
+    [Description("ADD text to END of note. Does NOT replace existing content. Does NOT require GetNote first. Use for adding list items, new sections, logging info. Examples: 'add milk to grocery list', 'append these notes', 'put this at the end' -> AppendToNote.")]
     public async Task<string> AppendToNoteAsync(
-        [Description("The ID of the note to append to")] string noteId,
-        [Description("The content to append to the note")] string contentToAppend,
-        [Description("Whether to add a newline before the appended content (default: true)")] bool addNewline = true)
+        [Description("Note ID to append to")] string noteId,
+        [Description("Text to ADD at end (existing content preserved)")] string contentToAppend,
+        [Description("Add blank line before new content (default: true)")] bool addNewline = true)
     {
         var userError = ValidateUserContext("append to note");
         if (userError != null) return userError;
@@ -398,10 +398,10 @@ For complete rewrites:
     }
 
     [KernelFunction("DuplicateNote")]
-    [Description("Creates a copy of an existing note. Use this when the user wants to duplicate a note as a template or starting point for a new note.")]
+    [Description("COPY a note to use as template. Creates new note with same content, tags, folder. Examples: 'make a copy of this', 'duplicate that note', 'use this as template' -> DuplicateNote.")]
     public async Task<string> DuplicateNoteAsync(
-        [Description("The ID of the note to duplicate")] string noteId,
-        [Description("Optional new title for the duplicate (default: adds 'Copy of' prefix)")] string? newTitle = null)
+        [Description("Note ID to copy")] string noteId,
+        [Description("Title for copy (default: 'Copy of [original]')")] string? newTitle = null)
     {
         var userError = ValidateUserContext("duplicate note");
         if (userError != null) return userError;
@@ -446,12 +446,12 @@ For complete rewrites:
     }
 
     [KernelFunction("ReplaceInNote")]
-    [Description("Find and replace specific text within a note. Use for surgical edits like fixing typos, renaming terms, or updating specific phrases. By default, fails if the text appears multiple times (safety feature). Set allowMultiple=true to replace all occurrences.")]
+    [Description("FIND and REPLACE specific text. Use for typo fixes, term updates, removing text. Requires EXACT match (case-sensitive). Use GetNote first to find exact text. Use newText='' to delete. Examples: 'fix typo X to Y', 'change 2024 to 2025', 'remove the word draft' -> ReplaceInNote.")]
     public async Task<string> ReplaceInNoteAsync(
-        [Description("The ID of the note to modify")] string noteId,
-        [Description("The exact text to find and replace (case-sensitive, whitespace-sensitive)")] string oldText,
-        [Description("The text to replace it with (use empty string to delete the text)")] string newText,
-        [Description("Set to true to replace ALL occurrences. If false (default), fails when multiple matches exist.")] bool allowMultiple = false)
+        [Description("Note ID to modify")] string noteId,
+        [Description("EXACT text to find (case-sensitive, include spaces)")] string oldText,
+        [Description("Replacement text (empty '' to delete)")] string newText,
+        [Description("Replace ALL matches? (default: false = fail if multiple)")] bool allowMultiple = false)
     {
         var userError = ValidateUserContext("replace in note");
         if (userError != null) return userError;
@@ -499,11 +499,11 @@ For complete rewrites:
     }
 
     [KernelFunction("InsertInNote")]
-    [Description("Insert text at a specific line number in a note. Line 0 inserts at the very beginning, line N inserts after line N. Lines beyond the note length append at the end.")]
+    [Description("INSERT text at specific LINE NUMBER. Line 0 = very beginning, line N = after line N. Use for adding content in the middle of a note. For end use AppendToNote, for beginning use PrependToNote. Examples: 'add a line after line 3', 'insert between X and Y' -> InsertInNote.")]
     public async Task<string> InsertInNoteAsync(
-        [Description("The ID of the note to modify")] string noteId,
-        [Description("Line number to insert after (0 = beginning, 1 = after first line, etc.)")] int lineNumber,
-        [Description("The text to insert")] string textToInsert)
+        [Description("Note ID to modify")] string noteId,
+        [Description("Line number to insert AFTER (0 = at start)")] int lineNumber,
+        [Description("Text to insert")] string textToInsert)
     {
         var userError = ValidateUserContext("insert in note");
         if (userError != null) return userError;
@@ -554,11 +554,11 @@ For complete rewrites:
     }
 
     [KernelFunction("PrependToNote")]
-    [Description("Add content to the beginning of an existing note. Use for adding headers, introductions, or priority items at the top.")]
+    [Description("ADD text to BEGINNING of note. Does NOT replace existing content. Does NOT require GetNote first. Use for adding headers, warnings, priority items at top. Examples: 'add URGENT at top', 'put this at the beginning', 'add a header' -> PrependToNote.")]
     public async Task<string> PrependToNoteAsync(
-        [Description("The ID of the note to prepend to")] string noteId,
-        [Description("The content to add at the beginning of the note")] string contentToPrepend,
-        [Description("Whether to add a newline after the prepended content (default: true)")] bool addNewline = true)
+        [Description("Note ID to prepend to")] string noteId,
+        [Description("Text to ADD at beginning (existing content preserved)")] string contentToPrepend,
+        [Description("Add blank line after new content (default: true)")] bool addNewline = true)
     {
         var userError = ValidateUserContext("prepend to note");
         if (userError != null) return userError;

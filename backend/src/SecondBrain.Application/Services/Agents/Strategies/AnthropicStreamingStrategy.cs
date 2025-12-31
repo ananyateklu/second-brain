@@ -137,7 +137,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
         var systemPrompt = context.GetSystemPrompt(request.Capabilities);
 
         var fullResponse = new StringBuilder();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var maxIterations = 10;
         var toolsExecutedThisSession = false;
         string? lastToolResultSummary = null;
@@ -289,7 +289,13 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 if (streamEvent.Delta?.Thinking != null)
                 {
                     currentThinkingContent.Append(streamEvent.Delta.Thinking);
-                    yield return ThinkingEvent(streamEvent.Delta.Thinking);
+                    // Deduplicate using shared context to prevent duplicates across iterations
+                    var thinkingDelta = streamEvent.Delta.Thinking;
+                    if (!Helpers.ThinkingExtractor.IsSimilarToEmitted(thinkingDelta, context.EmittedThinkingBlocks))
+                    {
+                        context.EmittedThinkingBlocks.Add(thinkingDelta);
+                        yield return ThinkingEvent(thinkingDelta);
+                    }
                     continue;
                 }
 
@@ -325,7 +331,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                     if (!enableThinking || !ThinkingExtractor.SupportsNativeThinking("anthropic", request.Model))
                     {
                         foreach (var thinkingContent in ThinkingExtractor.ExtractXmlThinkingBlocks(
-                            fullResponse.ToString(), emittedThinkingBlocks))
+                            fullResponse.ToString(), context.EmittedThinkingBlocks))
                         {
                             yield return ThinkingEvent(thinkingContent);
                         }

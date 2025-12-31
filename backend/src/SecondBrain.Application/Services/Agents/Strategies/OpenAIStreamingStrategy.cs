@@ -116,7 +116,7 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
         }
 
         var fullResponse = new StringBuilder();
-        var emittedThinkingBlocks = new HashSet<string>();
+        // Use context.EmittedThinkingBlocks to persist across tool execution iterations
         var maxIterations = settings.OpenAI.FunctionCalling.MaxIterations;
 
         // Token tracking
@@ -161,7 +161,7 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
                             // Check for thinking blocks
                             var currentContent = fullResponse.ToString() + iterationText.ToString();
                             foreach (var thinkingContent in ThinkingExtractor.ExtractXmlThinkingBlocks(
-                                currentContent, emittedThinkingBlocks))
+                                currentContent, context.EmittedThinkingBlocks))
                             {
                                 yield return ThinkingEvent(thinkingContent);
                             }

@@ -37,21 +37,15 @@ public class NoteOrganizationPlugin : NotePluginBase
     public override string GetSystemPromptAddition() => @"
 ### Organization Tools (Return Previews Only)
 
-- **ListAllNotes**: Show all notes (with optional pagination)
-  - Returns preview only - use GetNote for full content
-  - Use when user wants to see their complete list of notes
-
-- **ListRecentNotes**: Show most recently updated notes
-  - Returns preview only - use GetNote for full content
-
-- **ListArchivedNotes**: Show archived notes
+- **ListNotes** - Unified listing tool with filters
+  - filter='recent' (default): Most recently updated notes
+  - filter='archived': Only archived notes
+  - filter='all': All notes with pagination
+  - detailLevel='ids_only', 'summary' (default), 'full'
   - Returns preview only - use GetNote for full content
 
-- **ArchiveNote**: Archive a note (soft delete)
-  - Hides note from main list without deleting
-
-- **UnarchiveNote**: Restore an archived note
-  - Brings archived note back to main list
+- **SetNoteArchived** - Toggle archive status
+  - Set isArchived=true to archive, false to restore
 
 - **MoveToFolder**: Organize note into a folder
   - Pass empty string to remove from folder
@@ -62,12 +56,13 @@ public class NoteOrganizationPlugin : NotePluginBase
 
 - **GetNoteStats**: Get notes statistics overview";
 
-    [KernelFunction("ListAllNotes")]
-    [Description("Lists all of the user's notes. Use this when the user wants to see their complete list of notes, not just recent ones.")]
-    public async Task<string> ListAllNotesAsync(
-        [Description("Whether to include archived notes (default: false)")] bool includeArchived = false,
-        [Description("Optional: Skip this many notes for pagination (default: 0)")] int skip = 0,
-        [Description("Optional: Maximum number of notes to return. Use 0 or negative for all notes (default: 0 = all)")] int limit = 0)
+    [KernelFunction("ListNotes")]
+    [Description("UNIFIED listing tool for all notes. filter: 'recent' (default), 'archived', 'all'. detailLevel: 'ids_only' (fast), 'summary' (default), 'full' (complete content). Examples: 'show my notes' -> filter=recent, 'show archived' -> filter=archived, 'list everything' -> filter=all.")]
+    public async Task<string> ListNotesAsync(
+        [Description("Filter: 'recent' (default), 'archived', or 'all'")] string filter = "recent",
+        [Description("Max notes to return (default: 10)")] int limit = 10,
+        [Description("Skip N notes for pagination (default: 0)")] int skip = 0,
+        [Description("Detail: 'ids_only', 'summary' (default), 'full'")] string detailLevel = "summary")
     {
         var userError = ValidateUserContext("list notes");
         if (userError != null) return userError;
@@ -75,55 +70,53 @@ public class NoteOrganizationPlugin : NotePluginBase
         try
         {
             var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
+            var allNotes = notes.ToList();
 
-            var filteredNotes = includeArchived
-                ? notes.ToList()
-                : notes.Where(n => !n.IsArchived).ToList();
-
-            var totalCount = filteredNotes.Count;
-
-            var orderedNotes = filteredNotes
-                .OrderByDescending(n => n.UpdatedAt)
-                .Skip(skip);
-
-            if (limit > 0)
+            // Apply filter
+            IEnumerable<SecondBrain.Core.Entities.Note> filteredNotes = filter.ToLowerInvariant() switch
             {
-                orderedNotes = orderedNotes.Take(limit);
-            }
+                "archived" => allNotes.Where(n => n.IsArchived),
+                "all" => allNotes,
+                _ => allNotes.Where(n => !n.IsArchived) // "recent" is default
+            };
 
-            var resultNotes = orderedNotes.ToList();
+            var totalCount = filteredNotes.Count();
+
+            var resultNotes = filteredNotes
+                .OrderByDescending(n => n.UpdatedAt)
+                .Skip(skip)
+                .Take(limit > 0 ? limit : 10)
+                .ToList();
 
             if (!resultNotes.Any())
             {
-                if (skip > 0)
+                return filter.ToLowerInvariant() switch
                 {
-                    return $"No more notes to show (skipped {skip} notes, total: {totalCount}).";
-                }
-                return includeArchived
-                    ? "You don't have any notes yet."
-                    : "You don't have any active notes. You may have archived notes - try setting includeArchived to true.";
+                    "archived" => "You don't have any archived notes.",
+                    "all" => "You don't have any notes yet.",
+                    _ => "You don't have any active notes. Try filter='archived' to see archived notes."
+                };
             }
 
-            var noteData = resultNotes.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                folder = n.Folder,
-                isArchived = n.IsArchived,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
+            var noteData = MapNotesByDetailLevel(resultNotes, detailLevel);
 
-            var paginationInfo = skip > 0 || limit > 0
-                ? $" (showing {resultNotes.Count} of {totalCount}, skipped {skip})"
-                : "";
+            var filterLabel = filter.ToLowerInvariant() switch
+            {
+                "archived" => "archived",
+                "all" => "total",
+                _ => "active"
+            };
+
+            var detailHint = detailLevel.ToLowerInvariant() == "full"
+                ? ""
+                : " Use GetNote with note ID for full content.";
 
             var response = new
             {
                 type = "notes",
-                message = $"Found {totalCount} total note(s){paginationInfo}. Use GetNote with the note ID to read full content.",
+                message = $"Found {totalCount} {filterLabel} note(s). Showing {resultNotes.Count}.{detailHint}",
+                filter = filter.ToLowerInvariant(),
+                detailLevel = detailLevel.ToLowerInvariant(),
                 notes = noteData,
                 pagination = new
                 {
@@ -138,112 +131,17 @@ public class NoteOrganizationPlugin : NotePluginBase
         }
         catch (Exception ex)
         {
-            return CreateErrorResponse("listing all notes", ex.Message);
-        }
-    }
-
-    [KernelFunction("ListRecentNotes")]
-    [Description("Lists the user's most recent notes. Use this to show what notes exist or to help the user remember what they've saved.")]
-    public async Task<string> ListRecentNotesAsync(
-        [Description("Maximum number of notes to list (default: 10)")] int maxResults = 10)
-    {
-        var userError = ValidateUserContext("list notes");
-        if (userError != null) return userError;
-
-        try
-        {
-            var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
-
-            var recentNotes = notes
-                .Where(n => !n.IsArchived)
-                .OrderByDescending(n => n.UpdatedAt)
-                .Take(maxResults)
-                .ToList();
-
-            if (!recentNotes.Any())
-            {
-                return "You don't have any notes yet.";
-            }
-
-            var noteData = recentNotes.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
-
-            var response = new
-            {
-                type = "notes",
-                message = $"Your {recentNotes.Count} most recent notes. Use GetNote with the note ID to read full content.",
-                notes = noteData
-            };
-
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
             return CreateErrorResponse("listing notes", ex.Message);
         }
     }
 
-    [KernelFunction("ListArchivedNotes")]
-    [Description("Lists all archived notes. Use this when the user wants to see notes they have previously archived.")]
-    public async Task<string> ListArchivedNotesAsync(
-        [Description("Maximum number of archived notes to list (default: 10)")] int maxResults = 10)
+    [KernelFunction("SetNoteArchived")]
+    [Description("SET archive status for a note. isArchived=true to archive (hide from main list), isArchived=false to restore. Combines ArchiveNote and UnarchiveNote. Examples: 'archive this note' -> isArchived=true, 'restore from archive' -> isArchived=false.")]
+    public async Task<string> SetNoteArchivedAsync(
+        [Description("Note ID to update")] string noteId,
+        [Description("true to archive, false to restore")] bool isArchived)
     {
-        var userError = ValidateUserContext("list archived notes");
-        if (userError != null) return userError;
-
-        try
-        {
-            var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
-
-            var archivedNotes = notes
-                .Where(n => n.IsArchived)
-                .OrderByDescending(n => n.UpdatedAt)
-                .Take(maxResults)
-                .ToList();
-
-            if (!archivedNotes.Any())
-            {
-                return "You don't have any archived notes.";
-            }
-
-            var noteData = archivedNotes.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
-
-            var response = new
-            {
-                type = "notes",
-                message = $"Found {archivedNotes.Count} archived note(s). Use GetNote with the note ID to read full content.",
-                notes = noteData
-            };
-
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("listing archived notes", ex.Message);
-        }
-    }
-
-    [KernelFunction("ArchiveNote")]
-    [Description("Archives a note, hiding it from the main list while preserving it. Use this when the user wants to hide a note without permanently deleting it.")]
-    public async Task<string> ArchiveNoteAsync(
-        [Description("The ID of the note to archive")] string noteId)
-    {
-        var userError = ValidateUserContext("archive note");
+        var userError = ValidateUserContext("update note archive status");
         if (userError != null) return userError;
 
         if (NoteOperationService == null)
@@ -253,7 +151,6 @@ public class NoteOrganizationPlugin : NotePluginBase
 
         try
         {
-            // First check if note exists and get title for feedback
             var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
@@ -261,9 +158,12 @@ public class NoteOrganizationPlugin : NotePluginBase
                 return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
-            if (note.IsArchived)
+            // Check if already in desired state
+            if (note.IsArchived == isArchived)
             {
-                return $"Note \"{note.Title}\" (ID: {noteId}) is already archived.";
+                return isArchived
+                    ? $"Note \"{note.Title}\" (ID: {noteId}) is already archived."
+                    : $"Note \"{note.Title}\" (ID: {noteId}) is not archived.";
             }
 
             var noteTitle = note.Title;
@@ -272,79 +172,30 @@ public class NoteOrganizationPlugin : NotePluginBase
             {
                 NoteId = noteId,
                 UserId = CurrentUserId,
-                IsArchived = true,
+                IsArchived = isArchived,
                 Source = NoteSource.Agent
             };
 
             var result = await NoteOperationService.SetArchivedAsync(request);
 
             return result.Match(
-                onSuccess: op => $"Successfully archived note \"{noteTitle}\" (ID: {noteId}). Use UnarchiveNote to restore it.",
-                onFailure: error => $"Error archiving note: {error.Message}"
+                onSuccess: op => isArchived
+                    ? $"Successfully archived note \"{noteTitle}\" (ID: {noteId}). Use SetNoteArchived with isArchived=false to restore."
+                    : $"Successfully restored note \"{noteTitle}\" (ID: {noteId}) from archive.",
+                onFailure: error => $"Error updating archive status: {error.Message}"
             );
         }
         catch (Exception ex)
         {
-            return CreateErrorResponse("archiving note", ex.Message);
-        }
-    }
-
-    [KernelFunction("UnarchiveNote")]
-    [Description("Restores an archived note back to the main list. Use this when the user wants to bring back a previously archived note.")]
-    public async Task<string> UnarchiveNoteAsync(
-        [Description("The ID of the note to unarchive")] string noteId)
-    {
-        var userError = ValidateUserContext("unarchive note");
-        if (userError != null) return userError;
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            // First check if note exists and get title for feedback
-            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
-
-            if (note == null)
-            {
-                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
-            }
-
-            if (!note.IsArchived)
-            {
-                return $"Note \"{note.Title}\" (ID: {noteId}) is not archived.";
-            }
-
-            var noteTitle = note.Title;
-
-            var request = new SetArchivedOperationRequest
-            {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                IsArchived = false,
-                Source = NoteSource.Agent
-            };
-
-            var result = await NoteOperationService.SetArchivedAsync(request);
-
-            return result.Match(
-                onSuccess: op => $"Successfully restored note \"{noteTitle}\" (ID: {noteId}) from archive.",
-                onFailure: error => $"Error unarchiving note: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("unarchiving note", ex.Message);
+            return CreateErrorResponse("updating archive status", ex.Message);
         }
     }
 
     [KernelFunction("MoveToFolder")]
-    [Description("Moves a note to a specific folder for organization. Use this when the user wants to organize notes into folders or categories.")]
+    [Description("MOVE note to folder for organization. Use empty string to remove from folder. Folders are created automatically. Examples: 'move to Work folder', 'file this under Projects', 'organize into X' -> MoveToFolder.")]
     public async Task<string> MoveToFolderAsync(
-        [Description("The ID of the note to move")] string noteId,
-        [Description("The folder name to move the note to (use empty string or null to remove from folder)")] string? folder = null)
+        [Description("Note ID to move")] string noteId,
+        [Description("Folder name (empty = remove from folder)")] string? folder = null)
     {
         var userError = ValidateUserContext("move note");
         if (userError != null) return userError;
@@ -410,9 +261,9 @@ public class NoteOrganizationPlugin : NotePluginBase
     }
 
     [KernelFunction("ListFolders")]
-    [Description("Lists all folders used to organize notes, with counts showing how many notes are in each folder.")]
+    [Description("LIST all folders with note counts. Shows how notes are organized. Examples: 'what folders do I have', 'show my organization', 'list categories' -> ListFolders.")]
     public async Task<string> ListFoldersAsync(
-        [Description("Whether to include archived notes in the folder counts (default: false)")] bool includeArchived = false)
+        [Description("Include archived in counts? (default: false)")] bool includeArchived = false)
     {
         var userError = ValidateUserContext("list folders");
         if (userError != null) return userError;
@@ -470,9 +321,9 @@ public class NoteOrganizationPlugin : NotePluginBase
     }
 
     [KernelFunction("ListAllTags")]
-    [Description("Lists all unique tags used across the user's notes, with counts showing how many notes use each tag.")]
+    [Description("LIST all tags with usage counts. Shows tag taxonomy across notes. Examples: 'what tags do I use', 'show my labels', 'list all categories' -> ListAllTags.")]
     public async Task<string> ListAllTagsAsync(
-        [Description("Whether to include archived notes in the tag counts (default: false)")] bool includeArchived = false)
+        [Description("Include archived in counts? (default: false)")] bool includeArchived = false)
     {
         var userError = ValidateUserContext("list tags");
         if (userError != null) return userError;
@@ -516,9 +367,9 @@ public class NoteOrganizationPlugin : NotePluginBase
     }
 
     [KernelFunction("GetNoteStats")]
-    [Description("Gets statistics about the user's notes, including total counts, tag distribution, and folder organization.")]
+    [Description("GET statistics overview: total counts, recent activity, top tags/folders. Good for understanding note collection. Examples: 'how many notes do I have', 'show statistics', 'give me an overview' -> GetNoteStats.")]
     public async Task<string> GetNoteStatsAsync(
-        [Description("Whether to include archived notes in the statistics (default: false)")] bool includeArchived = false)
+        [Description("Include archived in stats? (default: false)")] bool includeArchived = false)
     {
         var userError = ValidateUserContext("get statistics");
         if (userError != null) return userError;
