@@ -4,7 +4,9 @@ using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -20,8 +22,9 @@ public class NoteOrganizationPlugin : NotePluginBase
         IParallelNoteRepository noteRepository,
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
-        IStructuredOutputService? structuredOutputService = null)
-        : base(noteRepository, ragService, ragSettings, structuredOutputService)
+        IStructuredOutputService? structuredOutputService = null,
+        INoteOperationService? noteOperationService = null)
+        : base(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService)
     {
     }
 
@@ -243,8 +246,14 @@ public class NoteOrganizationPlugin : NotePluginBase
         var userError = ValidateUserContext("archive note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
+            // First check if note exists and get title for feedback
             var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
@@ -257,12 +266,22 @@ public class NoteOrganizationPlugin : NotePluginBase
                 return $"Note \"{note.Title}\" (ID: {noteId}) is already archived.";
             }
 
-            note.IsArchived = true;
-            note.Folder = "Archived";
-            note.UpdatedAt = DateTime.UtcNow;
-            await NoteRepository.UpdateAsync(noteId, note);
+            var noteTitle = note.Title;
 
-            return $"Successfully archived note \"{note.Title}\" (ID: {noteId}) and moved it to the Archived folder. Use UnarchiveNote to restore it.";
+            var request = new SetArchivedOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                IsArchived = true,
+                Source = NoteSource.Agent
+            };
+
+            var result = await NoteOperationService.SetArchivedAsync(request);
+
+            return result.Match(
+                onSuccess: op => $"Successfully archived note \"{noteTitle}\" (ID: {noteId}). Use UnarchiveNote to restore it.",
+                onFailure: error => $"Error archiving note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -278,8 +297,14 @@ public class NoteOrganizationPlugin : NotePluginBase
         var userError = ValidateUserContext("unarchive note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
+            // First check if note exists and get title for feedback
             var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
@@ -292,15 +317,22 @@ public class NoteOrganizationPlugin : NotePluginBase
                 return $"Note \"{note.Title}\" (ID: {noteId}) is not archived.";
             }
 
-            note.IsArchived = false;
-            if (note.Folder == "Archived")
-            {
-                note.Folder = null;
-            }
-            note.UpdatedAt = DateTime.UtcNow;
-            await NoteRepository.UpdateAsync(noteId, note);
+            var noteTitle = note.Title;
 
-            return $"Successfully restored note \"{note.Title}\" (ID: {noteId}) from archive.";
+            var request = new SetArchivedOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                IsArchived = false,
+                Source = NoteSource.Agent
+            };
+
+            var result = await NoteOperationService.SetArchivedAsync(request);
+
+            return result.Match(
+                onSuccess: op => $"Successfully restored note \"{noteTitle}\" (ID: {noteId}) from archive.",
+                onFailure: error => $"Error unarchiving note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {
@@ -317,8 +349,14 @@ public class NoteOrganizationPlugin : NotePluginBase
         var userError = ValidateUserContext("move note");
         if (userError != null) return userError;
 
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
         try
         {
+            // First check if note exists and get current state for feedback
             var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
 
             if (note == null)
@@ -326,23 +364,44 @@ public class NoteOrganizationPlugin : NotePluginBase
                 return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
+            var noteTitle = note.Title;
             var previousFolder = note.Folder;
             var newFolder = string.IsNullOrWhiteSpace(folder) ? null : folder.Trim();
 
-            note.Folder = newFolder;
-            note.UpdatedAt = DateTime.UtcNow;
-            await NoteRepository.UpdateAsync(noteId, note);
-
-            if (string.IsNullOrEmpty(newFolder))
+            // Check if already in the target folder
+            if (previousFolder == newFolder)
             {
-                return previousFolder != null
-                    ? $"Removed note \"{note.Title}\" (ID: {noteId}) from folder \"{previousFolder}\"."
-                    : $"Note \"{note.Title}\" (ID: {noteId}) is not in any folder.";
+                return newFolder == null
+                    ? $"Note \"{noteTitle}\" (ID: {noteId}) is not in any folder."
+                    : $"Note \"{noteTitle}\" (ID: {noteId}) is already in folder \"{newFolder}\".";
             }
 
-            return previousFolder != null
-                ? $"Moved note \"{note.Title}\" (ID: {noteId}) from folder \"{previousFolder}\" to \"{newFolder}\"."
-                : $"Moved note \"{note.Title}\" (ID: {noteId}) to folder \"{newFolder}\".";
+            var request = new MoveToFolderOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                Folder = newFolder,
+                Source = NoteSource.Agent
+            };
+
+            var result = await NoteOperationService.MoveToFolderAsync(request);
+
+            return result.Match(
+                onSuccess: op =>
+                {
+                    if (string.IsNullOrEmpty(newFolder))
+                    {
+                        return previousFolder != null
+                            ? $"Removed note \"{noteTitle}\" (ID: {noteId}) from folder \"{previousFolder}\"."
+                            : $"Note \"{noteTitle}\" (ID: {noteId}) is not in any folder.";
+                    }
+
+                    return previousFolder != null
+                        ? $"Moved note \"{noteTitle}\" (ID: {noteId}) from folder \"{previousFolder}\" to \"{newFolder}\"."
+                        : $"Moved note \"{noteTitle}\" (ID: {noteId}) to folder \"{newFolder}\".";
+                },
+                onFailure: error => $"Error moving note: {error.Message}"
+            );
         }
         catch (Exception ex)
         {

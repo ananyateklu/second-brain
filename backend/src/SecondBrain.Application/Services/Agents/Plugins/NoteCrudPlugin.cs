@@ -49,15 +49,35 @@ public class NoteCrudPlugin : NotePluginBase
   - Always use this before editing or when user needs to see full content
   - List/search operations only return previews - use GetNote for full content
 
-- **UpdateNote**: Modify a note's title, content, or tags
+- **UpdateNote**: Modify a note's title, content, or tags (full content replacement)
   - Requires the note ID from previous operations
   - Can update one or more fields at a time
   - **Always use GetNote first** to see current content before editing
+  - Use for complete rewrites or when changing multiple fields
 
 - **AppendToNote**: Add content to the end of an existing note
   - Use for adding items to lists, appending new information
   - Much simpler than GetNote + UpdateNote when just adding content
   - Example: 'add milk to my grocery list'
+
+- **PrependToNote**: Add content to the beginning of an existing note
+  - Use for adding headers, introductions, or priority items at the top
+  - Example: 'add URGENT header to meeting notes'
+
+- **ReplaceInNote**: Find and replace specific text within a note (surgical edit)
+  - Use for precise edits: fixing typos, renaming terms, updating specific phrases
+  - Requires exact text match (case-sensitive, whitespace-sensitive)
+  - By default, fails if text appears multiple times (safety feature)
+  - Set allowMultiple=true to replace all occurrences
+  - Use empty newText to delete text entirely
+  - Example: 'change all instances of 2024 to 2025'
+
+- **InsertInNote**: Insert text at a specific line number
+  - Line 0 = insert at the very beginning
+  - Line N = insert after line N
+  - Lines beyond note length append at end
+  - Use for inserting content in the middle of a note
+  - Example: 'add a new item between line 3 and 4'
 
 - **DeleteNote**: Permanently remove a note
   - Only use when user explicitly requests deletion
@@ -66,6 +86,19 @@ public class NoteCrudPlugin : NotePluginBase
 - **DuplicateNote**: Create a copy of an existing note
   - Use when user wants to use a note as a template
   - Can optionally specify a new title for the copy
+
+### Choosing the Right Edit Tool
+
+| Task | Best Tool |
+|------|-----------|
+| Fix a typo or specific word | ReplaceInNote |
+| Rename a term throughout | ReplaceInNote with allowMultiple=true |
+| Add to end of note/list | AppendToNote |
+| Add at beginning of note | PrependToNote |
+| Insert in middle of note | InsertInNote |
+| Rewrite entire note | UpdateNote |
+| Remove specific text | ReplaceInNote with newText="""" |
+| Change multiple fields | UpdateNote |
 
 ### Large Content Strategy (IMPORTANT)
 
@@ -88,12 +121,19 @@ When creating notes with substantial content (multiple sections, paragraphs, or 
 
 ### Content Editing Pattern
 
-When modifying note content:
-1. **GetNote** to retrieve FULL current content (required!)
-2. Modify the content as requested
-3. UpdateNote with the new content
+For precise edits (recommended):
+1. **GetNote** to retrieve FULL current content
+2. Identify the exact text to change
+3. Use **ReplaceInNote** with exact oldText and newText
 
-For simple additions, use AppendToNote instead.";
+For additions:
+- End of note: **AppendToNote**
+- Beginning of note: **PrependToNote**
+- Middle of note: **InsertInNote**
+
+For complete rewrites:
+1. **GetNote** to retrieve current content
+2. **UpdateNote** with the new content";
 
     [KernelFunction("CreateNote")]
     [Description("Creates a new note with title and content. IMPORTANT: Both parameters are REQUIRED. For notes with multiple sections, create with the first section only, then use AppendToNote for remaining sections.")]
@@ -402,6 +442,160 @@ For simple additions, use AppendToNote instead.";
         catch (Exception ex)
         {
             return CreateErrorResponse("duplicating note", ex.Message);
+        }
+    }
+
+    [KernelFunction("ReplaceInNote")]
+    [Description("Find and replace specific text within a note. Use for surgical edits like fixing typos, renaming terms, or updating specific phrases. By default, fails if the text appears multiple times (safety feature). Set allowMultiple=true to replace all occurrences.")]
+    public async Task<string> ReplaceInNoteAsync(
+        [Description("The ID of the note to modify")] string noteId,
+        [Description("The exact text to find and replace (case-sensitive, whitespace-sensitive)")] string oldText,
+        [Description("The text to replace it with (use empty string to delete the text)")] string newText,
+        [Description("Set to true to replace ALL occurrences. If false (default), fails when multiple matches exist.")] bool allowMultiple = false)
+    {
+        var userError = ValidateUserContext("replace in note");
+        if (userError != null) return userError;
+
+        if (string.IsNullOrEmpty(oldText))
+        {
+            return "Error: oldText cannot be empty - specify the exact text to replace.";
+        }
+
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
+        try
+        {
+            var request = new ReplaceInNoteOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                OldText = oldText,
+                NewText = newText ?? string.Empty,
+                AllowMultiple = allowMultiple,
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
+            };
+
+            var result = await NoteOperationService.ReplaceInAsync(request);
+
+            return result.Match(
+                onSuccess: op =>
+                {
+                    var action = string.IsNullOrEmpty(newText) ? "removed" : "replaced";
+                    var multipleNote = allowMultiple ? " (all occurrences)" : "";
+                    return $"Successfully {action} text in note \"{op.Note.Title}\" (ID: {noteId}){multipleNote}.";
+                },
+                onFailure: error => $"Error replacing text: {error.Message}"
+            );
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("replacing text in note", ex.Message);
+        }
+    }
+
+    [KernelFunction("InsertInNote")]
+    [Description("Insert text at a specific line number in a note. Line 0 inserts at the very beginning, line N inserts after line N. Lines beyond the note length append at the end.")]
+    public async Task<string> InsertInNoteAsync(
+        [Description("The ID of the note to modify")] string noteId,
+        [Description("Line number to insert after (0 = beginning, 1 = after first line, etc.)")] int lineNumber,
+        [Description("The text to insert")] string textToInsert)
+    {
+        var userError = ValidateUserContext("insert in note");
+        if (userError != null) return userError;
+
+        if (string.IsNullOrEmpty(textToInsert))
+        {
+            return "Error: textToInsert cannot be empty.";
+        }
+
+        if (lineNumber < 0)
+        {
+            return "Error: lineNumber must be 0 or greater (0 = insert at beginning).";
+        }
+
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
+        try
+        {
+            var request = new InsertInNoteOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                LineNumber = lineNumber,
+                TextToInsert = textToInsert,
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
+            };
+
+            var result = await NoteOperationService.InsertInAsync(request);
+
+            return result.Match(
+                onSuccess: op =>
+                {
+                    var position = lineNumber == 0 ? "at the beginning" : $"after line {lineNumber}";
+                    return $"Successfully inserted text {position} in note \"{op.Note.Title}\" (ID: {noteId}).";
+                },
+                onFailure: error => $"Error inserting text: {error.Message}"
+            );
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("inserting text in note", ex.Message);
+        }
+    }
+
+    [KernelFunction("PrependToNote")]
+    [Description("Add content to the beginning of an existing note. Use for adding headers, introductions, or priority items at the top.")]
+    public async Task<string> PrependToNoteAsync(
+        [Description("The ID of the note to prepend to")] string noteId,
+        [Description("The content to add at the beginning of the note")] string contentToPrepend,
+        [Description("Whether to add a newline after the prepended content (default: true)")] bool addNewline = true)
+    {
+        var userError = ValidateUserContext("prepend to note");
+        if (userError != null) return userError;
+
+        if (string.IsNullOrWhiteSpace(contentToPrepend))
+        {
+            return "Error: Content to prepend cannot be empty.";
+        }
+
+        if (NoteOperationService == null)
+        {
+            return "Error: Note operation service not available.";
+        }
+
+        try
+        {
+            var request = new PrependToNoteOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                ContentToPrepend = contentToPrepend.Trim(),
+                AddNewline = addNewline,
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
+            };
+
+            var result = await NoteOperationService.PrependAsync(request);
+
+            return result.Match(
+                onSuccess: op => $"Successfully prepended content to note \"{op.Note.Title}\" (ID: {noteId}). Note now contains {op.Note.Content.Length} characters.",
+                onFailure: error => $"Error prepending to note: {error.Message}"
+            );
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("prepending to note", ex.Message);
         }
     }
 }

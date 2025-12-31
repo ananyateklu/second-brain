@@ -51,4 +51,9 @@ public interface IParallelNoteRepository
     /// Deletes a note permanently with an isolated DbContext (thread-safe).
     /// </summary>
     Task<bool> DeleteAsync(string id);
+
+    /// <summary>
+    /// Gets all soft-deleted notes for a user with an isolated DbContext (thread-safe).
+    /// </summary>
+    Task<IEnumerable<Note>> GetDeletedByUserIdAsync(string userId);
 }

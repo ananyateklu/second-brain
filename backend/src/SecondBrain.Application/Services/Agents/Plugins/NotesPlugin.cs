@@ -16,6 +16,8 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 /// - NoteSearchPlugin: Search, SemanticSearch, SearchByTags, DateRange, FindRelated
 /// - NoteOrganizationPlugin: List, Archive, Folders, Tags, Stats
 /// - NoteAnalysisPlugin: Analyze, SuggestTags, Summarize, Compare
+/// - NoteVersionPlugin: GetVersionHistory, GetVersion, GetVersionAtTime, CompareVersions, RestoreVersion
+/// - NoteTrashPlugin: ListDeleted, RestoreDeleted, PermanentlyDelete
 /// </summary>
 public class NotesPlugin : IAgentPlugin
 {
@@ -23,6 +25,8 @@ public class NotesPlugin : IAgentPlugin
     private readonly NoteSearchPlugin _searchPlugin;
     private readonly NoteOrganizationPlugin _organizationPlugin;
     private readonly NoteAnalysisPlugin _analysisPlugin;
+    private readonly NoteVersionPlugin _versionPlugin;
+    private readonly NoteTrashPlugin _trashPlugin;
 
     private string _currentUserId = string.Empty;
     private bool _agentRagEnabled = true;
@@ -32,14 +36,25 @@ public class NotesPlugin : IAgentPlugin
         IRagService? ragService = null,
         RagSettings? ragSettings = null,
         IStructuredOutputService? structuredOutputService = null,
-        INoteOperationService? noteOperationService = null)
+        INoteOperationService? noteOperationService = null,
+        INoteVersionService? versionService = null)
     {
         // NoteCrudPlugin uses INoteOperationService for mutations (Create, Update, Delete, Append, Duplicate)
         _crudPlugin = new NoteCrudPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
 
-        // Other plugins only do reads, so they don't need the operation service
+        // NoteOrganizationPlugin uses INoteOperationService for Archive/Unarchive/MoveToFolder to ensure version tracking
+        _organizationPlugin = new NoteOrganizationPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
+
+        // NoteVersionPlugin uses INoteVersionService for version history operations and INoteOperationService for restore
+        _versionPlugin = versionService != null
+            ? new NoteVersionPlugin(noteRepository, versionService, ragService, ragSettings, structuredOutputService, noteOperationService)
+            : null!;
+
+        // NoteTrashPlugin uses INoteOperationService for restore and permanent delete operations
+        _trashPlugin = new NoteTrashPlugin(noteRepository, ragService, ragSettings, structuredOutputService, noteOperationService);
+
+        // Search and Analysis plugins only do reads, so they don't need the operation service
         _searchPlugin = new NoteSearchPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
-        _organizationPlugin = new NoteOrganizationPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
         _analysisPlugin = new NoteAnalysisPlugin(noteRepository, ragService, ragSettings, structuredOutputService);
     }
 
@@ -56,6 +71,8 @@ public class NotesPlugin : IAgentPlugin
         _searchPlugin.SetCurrentUserId(userId);
         _organizationPlugin.SetCurrentUserId(userId);
         _analysisPlugin.SetCurrentUserId(userId);
+        _versionPlugin?.SetCurrentUserId(userId);
+        _trashPlugin.SetCurrentUserId(userId);
     }
 
     public void SetAgentRagEnabled(bool enabled)
@@ -65,6 +82,8 @@ public class NotesPlugin : IAgentPlugin
         _searchPlugin.SetAgentRagEnabled(enabled);
         _organizationPlugin.SetAgentRagEnabled(enabled);
         _analysisPlugin.SetAgentRagEnabled(enabled);
+        _versionPlugin?.SetAgentRagEnabled(enabled);
+        _trashPlugin.SetAgentRagEnabled(enabled);
     }
 
     public void SetRagOptions(RagOptions? options)
@@ -73,6 +92,8 @@ public class NotesPlugin : IAgentPlugin
         _searchPlugin.SetRagOptions(options);
         _organizationPlugin.SetRagOptions(options);
         _analysisPlugin.SetRagOptions(options);
+        _versionPlugin?.SetRagOptions(options);
+        _trashPlugin.SetRagOptions(options);
     }
 
     public void SetAgentContext(string provider, string model)
@@ -81,6 +102,8 @@ public class NotesPlugin : IAgentPlugin
         _searchPlugin.SetAgentContext(provider, model);
         _organizationPlugin.SetAgentContext(provider, model);
         _analysisPlugin.SetAgentContext(provider, model);
+        _versionPlugin?.SetAgentContext(provider, model);
+        _trashPlugin.SetAgentContext(provider, model);
     }
 
     public object GetPluginInstance() => this;
@@ -132,11 +155,20 @@ Use markdown thoughtfully for readability:
 6. **Suggest organization** - Offer to add tags, move to folders, or find related notes
 ";
 
-        return basePrompt
+        var prompt = basePrompt
             + _searchPlugin.GetSystemPromptAddition()
             + _crudPlugin.GetSystemPromptAddition()
             + _organizationPlugin.GetSystemPromptAddition()
-            + _analysisPlugin.GetSystemPromptAddition();
+            + _analysisPlugin.GetSystemPromptAddition()
+            + _trashPlugin.GetSystemPromptAddition();
+
+        // Add version plugin prompt if available
+        if (_versionPlugin != null)
+        {
+            prompt += _versionPlugin.GetSystemPromptAddition();
+        }
+
+        return prompt;
     }
 
     #endregion
@@ -187,19 +219,44 @@ Use markdown thoughtfully for readability:
         [Description("Optional new title for the duplicate (default: adds 'Copy of' prefix)")] string? newTitle = null)
         => _crudPlugin.DuplicateNoteAsync(noteId, newTitle);
 
+    [KernelFunction("ReplaceInNote")]
+    [Description("Find and replace specific text within a note. Use for surgical edits like fixing typos, renaming terms, or updating specific phrases. By default, fails if the text appears multiple times (safety feature). Set allowMultiple=true to replace all occurrences.")]
+    public Task<string> ReplaceInNoteAsync(
+        [Description("The ID of the note to modify")] string noteId,
+        [Description("The exact text to find and replace (case-sensitive, whitespace-sensitive)")] string oldText,
+        [Description("The text to replace it with (use empty string to delete the text)")] string newText,
+        [Description("Set to true to replace ALL occurrences. If false (default), fails when multiple matches exist.")] bool allowMultiple = false)
+        => _crudPlugin.ReplaceInNoteAsync(noteId, oldText, newText, allowMultiple);
+
+    [KernelFunction("InsertInNote")]
+    [Description("Insert text at a specific line number in a note. Line 0 inserts at the very beginning, line N inserts after line N. Lines beyond the note length append at the end.")]
+    public Task<string> InsertInNoteAsync(
+        [Description("The ID of the note to modify")] string noteId,
+        [Description("Line number to insert after (0 = beginning, 1 = after first line, etc.)")] int lineNumber,
+        [Description("The text to insert")] string textToInsert)
+        => _crudPlugin.InsertInNoteAsync(noteId, lineNumber, textToInsert);
+
+    [KernelFunction("PrependToNote")]
+    [Description("Add content to the beginning of an existing note. Use for adding headers, introductions, or priority items at the top.")]
+    public Task<string> PrependToNoteAsync(
+        [Description("The ID of the note to prepend to")] string noteId,
+        [Description("The content to add at the beginning of the note")] string contentToPrepend,
+        [Description("Whether to add a newline after the prepended content (default: true)")] bool addNewline = true)
+        => _crudPlugin.PrependToNoteAsync(noteId, contentToPrepend, addNewline);
+
     #endregion
 
     #region Search Operations (delegated to NoteSearchPlugin)
 
     [KernelFunction("SearchNotes")]
-    [Description("Searches for notes matching the query in titles, content, or tags. Use this to find existing notes or information the user has saved.")]
+    [Description("Exact keyword/phrase search in note titles, content, and tags. Only use when you need literal text matching. For general note finding, use SemanticSearch instead - it's more effective at finding relevant notes.")]
     public Task<string> SearchNotesAsync(
         [Description("The search query to find notes")] string query,
         [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
         => _searchPlugin.SearchNotesAsync(query, maxResults);
 
     [KernelFunction("SemanticSearch")]
-    [Description("Searches for notes using semantic/meaning-based search powered by AI embeddings. This finds notes that are conceptually related to the query even if they don't contain the exact keywords.")]
+    [Description("PRIMARY SEARCH TOOL - AI-powered search that finds notes by meaning and context. Use this as your first choice when looking for notes. Finds relevant notes even with different wording, synonyms, or related concepts (e.g., 'sambusa' finds 'samosa recipes').")]
     public Task<string> SemanticSearchAsync(
         [Description("The search query to find semantically related notes")] string query,
         [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
@@ -319,6 +376,74 @@ Use markdown thoughtfully for readability:
         [Description("The ID of the first note")] string noteId1,
         [Description("The ID of the second note")] string noteId2)
         => _analysisPlugin.CompareNotesAsync(noteId1, noteId2);
+
+    #endregion
+
+    #region Version History Operations (delegated to NoteVersionPlugin)
+
+    [KernelFunction("GetNoteVersionHistory")]
+    [Description("Gets the version history of a note, showing all previous versions with change summaries. Use this when the user wants to see the edit history of a note.")]
+    public Task<string> GetNoteVersionHistoryAsync(
+        [Description("The ID of the note to get version history for")] string noteId,
+        [Description("Number of versions to skip for pagination (default: 0)")] int skip = 0,
+        [Description("Maximum number of versions to return (default: 20)")] int take = 20)
+        => _versionPlugin?.GetNoteVersionHistoryAsync(noteId, skip, take)
+           ?? Task.FromResult("Error: Version history service not available.");
+
+    [KernelFunction("GetNoteVersion")]
+    [Description("Gets a specific version of a note by version number. Use this when the user wants to see the content of a particular version.")]
+    public Task<string> GetNoteVersionAsync(
+        [Description("The ID of the note")] string noteId,
+        [Description("The version number to retrieve")] int versionNumber)
+        => _versionPlugin?.GetNoteVersionAsync(noteId, versionNumber)
+           ?? Task.FromResult("Error: Version history service not available.");
+
+    [KernelFunction("GetVersionAtTime")]
+    [Description("Gets a note's content as it was at a specific point in time. Supports ISO dates (2024-12-25) and relative dates (yesterday, last week, 3 days ago).")]
+    public Task<string> GetVersionAtTimeAsync(
+        [Description("The ID of the note")] string noteId,
+        [Description("The timestamp - ISO format (2024-12-25T10:30:00) or relative (yesterday, last week, 3 days ago)")] string timestamp)
+        => _versionPlugin?.GetVersionAtTimeAsync(noteId, timestamp)
+           ?? Task.FromResult("Error: Version history service not available.");
+
+    [KernelFunction("CompareNoteVersions")]
+    [Description("Compares two versions of a note to see what changed between them. Shows differences in title, content, tags, folder, and archived status.")]
+    public Task<string> CompareNoteVersionsAsync(
+        [Description("The ID of the note")] string noteId,
+        [Description("The earlier version number to compare from")] int fromVersion,
+        [Description("The later version number to compare to")] int toVersion)
+        => _versionPlugin?.CompareNoteVersionsAsync(noteId, fromVersion, toVersion)
+           ?? Task.FromResult("Error: Version history service not available.");
+
+    [KernelFunction("RestoreNoteVersion")]
+    [Description("Restores a note to a previous version. This creates a new version with the content from the target version (non-destructive - you can always restore again).")]
+    public Task<string> RestoreNoteVersionAsync(
+        [Description("The ID of the note to restore")] string noteId,
+        [Description("The version number to restore to")] int targetVersion)
+        => _versionPlugin?.RestoreNoteVersionAsync(noteId, targetVersion)
+           ?? Task.FromResult("Error: Version history service not available.");
+
+    #endregion
+
+    #region Trash Operations (delegated to NoteTrashPlugin)
+
+    [KernelFunction("ListDeletedNotes")]
+    [Description("Lists all notes in the trash (soft-deleted notes). These notes can be restored or permanently deleted.")]
+    public Task<string> ListDeletedNotesAsync(
+        [Description("Maximum number of deleted notes to list (default: 20)")] int maxResults = 20)
+        => _trashPlugin.ListDeletedNotesAsync(maxResults);
+
+    [KernelFunction("RestoreDeletedNote")]
+    [Description("Restores a soft-deleted note from the trash back to active notes. Use this when the user wants to recover a deleted note.")]
+    public Task<string> RestoreDeletedNoteAsync(
+        [Description("The ID of the deleted note to restore")] string noteId)
+        => _trashPlugin.RestoreDeletedNoteAsync(noteId);
+
+    [KernelFunction("PermanentlyDeleteNote")]
+    [Description("Permanently deletes a note from the trash. WARNING: This action cannot be undone. Only use when the user explicitly confirms permanent deletion.")]
+    public Task<string> PermanentlyDeleteNoteAsync(
+        [Description("The ID of the deleted note to permanently remove")] string noteId)
+        => _trashPlugin.PermanentlyDeleteNoteAsync(noteId);
 
     #endregion
 }

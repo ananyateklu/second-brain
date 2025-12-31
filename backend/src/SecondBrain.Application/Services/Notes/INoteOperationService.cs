@@ -143,6 +143,67 @@ public interface INoteOperationService
         MoveToFolderOperationRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Replaces a specific string in a note's content (inspired by Anthropic's str_replace pattern).
+    /// </summary>
+    /// <param name="request">The replace request with old/new text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// Success: NoteOperationResult with changes = ["content"].
+    /// Failure:
+    /// <list type="bullet">
+    ///   <item>NotFound if note doesn't exist or not owned</item>
+    ///   <item>Validation error if OldText not found in content</item>
+    ///   <item>Validation error if OldText matches multiple times and AllowMultiple=false</item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// This method enforces uniqueness by default - if the old text appears multiple times,
+    /// the caller must either set AllowMultiple=true or provide more context in OldText.
+    /// This prevents accidental mass replacements.
+    /// </remarks>
+    Task<Result<NoteOperationResult>> ReplaceInAsync(
+        ReplaceInNoteOperationRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Inserts text at a specific line number in a note's content.
+    /// </summary>
+    /// <param name="request">The insert request with line number and text.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// Success: NoteOperationResult with changes = ["content"].
+    /// Failure:
+    /// <list type="bullet">
+    ///   <item>NotFound if note doesn't exist or not owned</item>
+    ///   <item>Validation error if line number is invalid (negative or beyond note length)</item>
+    /// </list>
+    /// </returns>
+    /// <remarks>
+    /// Line numbers are 0-indexed: 0 inserts at the beginning, 1 inserts after the first line, etc.
+    /// Line numbers beyond the note's line count append to the end.
+    /// </remarks>
+    Task<Result<NoteOperationResult>> InsertInAsync(
+        InsertInNoteOperationRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Prepends content to the beginning of a note.
+    /// </summary>
+    /// <param name="request">The prepend request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// Success: NoteOperationResult with changes = ["content"].
+    /// Failure: NotFound, Forbidden, or Validation errors.
+    /// </returns>
+    /// <remarks>
+    /// This is a convenience method equivalent to InsertInAsync with LineNumber=0.
+    /// By default, adds a newline after the prepended content.
+    /// </remarks>
+    Task<Result<NoteOperationResult>> PrependAsync(
+        PrependToNoteOperationRequest request,
+        CancellationToken cancellationToken = default);
+
     #endregion
 
     #region Delete Operations

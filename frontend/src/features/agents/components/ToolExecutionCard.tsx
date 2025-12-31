@@ -384,6 +384,12 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
         return 'Deleting Note';
       case 'AppendToNote':
         return 'Appending to Note';
+      case 'PrependToNote':
+        return 'Prepending to Note';
+      case 'ReplaceInNote':
+        return 'Replacing Text in Note';
+      case 'InsertInNote':
+        return 'Inserting Text in Note';
       case 'DuplicateNote':
         return 'Duplicating Note';
 
