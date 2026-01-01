@@ -51,6 +51,7 @@ export function NoteImageAttachment({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   // Calculate total images (excluding deleted ones)
   const activeExistingImages = existingImages.filter(img => !deletedImageIds.includes(img.id));
@@ -63,8 +64,13 @@ export function NoteImageAttachment({
 
     const remainingSlots = MAX_IMAGES - totalImages;
     if (remainingSlots <= 0) {
-      setLocalError(`Maximum ${MAX_IMAGES} images allowed`);
+      setLocalError(`Cannot attach more than ${MAX_IMAGES} images`);
       return;
+    }
+
+    // Check if user is trying to add more files than remaining slots
+    if (files.length > remainingSlots) {
+      setLocalError(`Cannot attach more than ${MAX_IMAGES} images. You can add ${remainingSlots} more.`);
     }
 
     const filesToProcess = Array.from(files).slice(0, remainingSlots);
@@ -158,13 +164,48 @@ export function NoteImageAttachment({
         disabled={isSubmitting || !canAddMore}
       />
 
-      {/* Image gallery */}
-      {(newImages.length > 0 || existingImages.length > 0) && (
+      {/* Collapsible Header */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
+      >
+        <div className="flex items-center gap-2">
+          <svg
+            className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            style={{ color: 'var(--text-tertiary)' }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+          <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Images
+          </span>
+          {totalImages > 0 && (
+            <span
+              className="text-[10px] px-1.5 py-0.5 rounded-full"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                color: 'var(--color-brand-400)',
+              }}
+            >
+              {totalImages}
+            </span>
+          )}
+        </div>
+      </button>
+
+      {/* Collapsible Content */}
+      {isExpanded && (
+        <>
+          {/* Image gallery */}
+          {(newImages.length > 0 || existingImages.length > 0) && (
         <div
           className="flex flex-wrap gap-2 p-2 rounded-xl transition-all duration-200"
           style={{
             backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
           }}
         >
           {/* Existing images */}
@@ -370,23 +411,20 @@ export function NoteImageAttachment({
         </div>
       )}
 
-      {/* Error message */}
-      {displayError && (
-        <p className="text-sm px-1" style={{ color: 'var(--color-error-text)' }}>
-          {displayError}
-        </p>
-      )}
-
-      {/* Image count indicator */}
-      {totalImages > 0 && (
-        <p className="text-xs px-1" style={{ color: 'var(--text-tertiary)' }}>
-          {totalImages} of {MAX_IMAGES} images
-          {deletedImageIds.length > 0 && (
-            <span className="ml-2" style={{ color: 'var(--color-warning-text)' }}>
-              ({deletedImageIds.length} marked for deletion)
-            </span>
+          {/* Error message */}
+          {displayError && (
+            <p className="text-sm px-1" style={{ color: 'var(--color-error-text)' }}>
+              {displayError}
+            </p>
           )}
-        </p>
+
+          {/* Deletion indicator */}
+          {deletedImageIds.length > 0 && (
+            <p className="text-xs px-1" style={{ color: 'var(--color-warning-text)' }}>
+              {deletedImageIds.length} image{deletedImageIds.length !== 1 ? 's' : ''} marked for deletion
+            </p>
+          )}
+        </>
       )}
     </div>
   );

@@ -86,7 +86,7 @@ export function NoteVersionHistoryPanel({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <h3
                 className="text-sm font-semibold"
                 style={{ color: 'var(--text-primary)' }}
@@ -94,9 +94,15 @@ export function NoteVersionHistoryPanel({
                 Version History
               </h3>
               {history && history.totalVersions > 0 && (
-                <p className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
-                  {history.totalVersions} version{history.totalVersions !== 1 ? 's' : ''}
-                </p>
+                <span
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                    color: 'var(--color-brand-400)',
+                  }}
+                >
+                  {history.totalVersions} version{history.totalVersions !== 1 ? 's' : ''} • v{history.currentVersion}
+                </span>
               )}
             </div>
           </div>
@@ -156,52 +162,6 @@ export function NoteVersionHistoryPanel({
             </div>
           ) : (
             <div className="p-2">
-              {/* Version count badge */}
-              <div
-                className="mb-2 px-2 py-1.5 rounded-lg flex items-center gap-2"
-                style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div
-                  className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)',
-                  }}
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    style={{ color: 'var(--color-brand-500)' }}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p
-                    className="text-[10px] font-medium"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    <span style={{ color: 'var(--color-brand-500)' }}>{history.totalVersions}</span>
-                    {' '}version{history.totalVersions !== 1 ? 's' : ''}
-                  </p>
-                  <p
-                    className="text-[9px]"
-                    style={{ color: 'var(--text-tertiary)' }}
-                  >
-                    Current: v{history.currentVersion}
-                  </p>
-                </div>
-              </div>
-
               {/* Timeline */}
               <NoteVersionTimeline
                 versions={history.versions}

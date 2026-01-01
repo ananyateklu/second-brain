@@ -148,9 +148,9 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
 
   return (
     <div
-      className="flex overflow-hidden -mx-6 -mt-6 -mb-6 rounded-b-3xl"
+      className="flex overflow-hidden -mx-6 -mt-6 rounded-b-3xl"
       style={{
-        height: '100%',
+        height: 'calc(100% + 24px)',
         backgroundColor: 'var(--surface-elevated)',
       }}
     >
@@ -158,7 +158,7 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
       <form
         ref={formRef}
         onSubmit={handleFormSubmit}
-        className="flex-1 flex flex-col min-w-0 overflow-hidden p-6 pb-0"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden px-6 pt-6 pb-6"
       >
         <RichNoteForm
           register={register}
@@ -555,7 +555,7 @@ export function EditNoteModal() {
           </div>
           {headerActions}
         </DialogHeader>
-        <DialogBody className="flex-1 overflow-hidden">
+        <DialogBody className="flex-1 overflow-hidden !pb-0">
           {/* Key-based reset: when formKey changes, component remounts with fresh state */}
           <EditNoteFormContent
             key={formKey}
