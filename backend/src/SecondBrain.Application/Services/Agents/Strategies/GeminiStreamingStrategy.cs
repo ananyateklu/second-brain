@@ -67,7 +67,8 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             request.AgentRagEnabled,
             request.Provider,
             request.Model,
-            request.RagOptions);
+            request.RagOptions,
+            request.ContextImages);
 
         _logger.LogInformation("Registered {Count} function declarations for Gemini", functionDeclarations.Count);
 

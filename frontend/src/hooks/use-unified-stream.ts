@@ -136,6 +136,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
         temperature: request.temperature,
         maxTokens: request.maxTokens,
         capabilities: request.capabilities,
+        images: request.images,
         markdownRenderer: request.markdownRenderer,
       };
     }

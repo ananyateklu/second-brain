@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI.Search;
 using SecondBrain.Application.Services.RAG.Models;
 
@@ -44,6 +45,11 @@ public class GrokSearchPlugin : IAgentPlugin
     public void SetAgentContext(string provider, string model)
     {
         // Search tools don't need agent context
+    }
+
+    public void SetContextImages(IReadOnlyList<ContextImage>? images)
+    {
+        // Search tools don't need context images
     }
 
     public object GetPluginInstance() => this;

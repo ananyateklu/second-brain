@@ -675,6 +675,7 @@ public class TestPlugin : SecondBrain.Application.Services.Agents.Plugins.IAgent
     public void SetAgentRagEnabled(bool enabled) => _agentRagEnabled = enabled;
     public void SetRagOptions(RagOptions? options) { }
     public void SetAgentContext(string provider, string model) { }
+    public void SetContextImages(IReadOnlyList<SecondBrain.Application.Services.Agents.Models.ContextImage>? images) { }
     public object GetPluginInstance() => this;
     public string GetPluginName() => "Test";
     public string GetSystemPromptAddition() => "";

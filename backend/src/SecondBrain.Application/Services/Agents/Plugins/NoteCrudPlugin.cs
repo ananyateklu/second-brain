@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.DTOs;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.Notes.Models;
@@ -133,7 +134,44 @@ For additions:
 
 For complete rewrites:
 1. **GetNote** to retrieve current content
-2. **UpdateNote** with the new content";
+2. **UpdateNote** with the new content
+
+### Image Attachment Tools
+
+When the user attaches images to their message, you can save them to notes:
+
+- **ListContextImages**: See what images are available in the current message
+  - Returns image references (img1, img2, etc.) for use in other tools
+  - Always call this first to see available images
+
+- **CreateNoteWithImage**: Create a new note with image(s) attached
+  - Use when user says 'save this image as a note' or 'create a note with this image'
+  - Requires title, content, and image references (e.g., 'img1' or 'img1,img2')
+
+- **AttachImageToNote**: Attach image(s) to an existing note
+  - Use when user says 'attach this to my X note' or 'add this image to note Y'
+  - Use FindNoteForImageAttachment first if user doesn't provide exact note ID
+
+- **FindNoteForImageAttachment**: Search for a note to attach images to
+  - Uses semantic search with confidence score
+  - If score >= 80%: Proceed with AttachImageToNote automatically
+  - If score < 80%: Ask user to confirm the match before attaching
+
+### Image Attachment Workflow
+
+**Scenario: 'Save this image as a note'**
+1. Call **ListContextImages** to see available images
+2. Call **CreateNoteWithImage** with title, content, and 'img1' (or multiple like 'img1,img2')
+
+**Scenario: 'Attach this to my meeting notes'**
+1. Call **ListContextImages** to see available images
+2. Call **FindNoteForImageAttachment** with 'meeting notes'
+3. If high confidence (>=80%): Call **AttachImageToNote** with the noteId
+4. If low confidence (<80%): Show the match and ask user to confirm
+
+**Image Reference Format**: Use 'img1', 'img2', etc. to reference images (1-indexed).
+
+**Multi-Attach**: The same image can be attached to multiple notes. After attaching, the image will show as '[attached]' in ListContextImages but can still be used again.";
 
     [KernelFunction("CreateNote")]
     [Description("CREATE a new note. Both 'title' AND 'content' are REQUIRED. Search first to avoid duplicates. For long content: create first section, then AppendToNote. Examples: 'save this as a note', 'create a note called X', 'remember this for later' -> CreateNote.")]
@@ -598,4 +636,255 @@ For complete rewrites:
             return CreateErrorResponse("prepending to note", ex.Message);
         }
     }
+
+    #region Image Attachment Tools
+
+    [KernelFunction("ListContextImages")]
+    [Description("LIST images attached to the current message. Use to see available images before CreateNoteWithImage or AttachImageToNote. Returns image references (img1, img2, etc.) for use in other tools.")]
+    public Task<string> ListContextImagesAsync()
+    {
+        var userError = ValidateUserContext("list context images");
+        if (userError != null) return Task.FromResult(userError);
+
+        if (ContextImages.Count == 0)
+        {
+            return Task.FromResult("No images attached to the current message. Ask the user to attach images first if they want to save images to notes.");
+        }
+
+        var response = new
+        {
+            type = "context_images",
+            message = $"Found {ContextImages.Count} image(s) in current message",
+            images = ContextImages.Select(i => new
+            {
+                reference = $"img{i.Index + 1}",
+                referenceId = i.ReferenceId,
+                fileName = i.FileName ?? "unnamed",
+                mediaType = i.MediaType,
+                isAttached = i.IsAttached,
+                status = i.IsAttached ? "already attached to a note" : "available"
+            }).ToList(),
+            usage = "Use these references (e.g., 'img1') with CreateNoteWithImage or AttachImageToNote"
+        };
+
+        return Task.FromResult(JsonSerializer.Serialize(response));
+    }
+
+    [KernelFunction("CreateNoteWithImage")]
+    [Description("CREATE a new note with image(s) attached. Use when user says 'save this image as a note' or 'create a note with this image'. Requires images in current message (check with ListContextImages first).")]
+    public async Task<string> CreateNoteWithImageAsync(
+        [Description("Note title (required, descriptive)")] string title,
+        [Description("Note content (required, describes the image context)")] string content,
+        [Description("Image references to attach, comma-separated (e.g., 'img1' or 'img1,img2')")] string imageReferences,
+        [Description("Comma-separated tags for categorization")] string? tags = null)
+    {
+        var userError = ValidateUserContext("create note with image");
+        if (userError != null) return userError;
+
+        if (string.IsNullOrWhiteSpace(title))
+            return "Error: Note title is required.";
+
+        if (string.IsNullOrWhiteSpace(content))
+            return "Error: Note content is required.";
+
+        if (NoteOperationService == null)
+            return "Error: Note operation service not available.";
+
+        // Parse and validate image references
+        var (images, parseError) = ParseImageReferences(imageReferences);
+        if (parseError != null)
+            return $"Error: {parseError}";
+
+        if (images.Count == 0)
+            return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
+
+        try
+        {
+            // Convert context images to NoteImageDto
+            var imageDtos = images.Select(img => new NoteImageDto
+            {
+                Base64Data = img.Base64Data,
+                MediaType = img.MediaType,
+                FileName = img.FileName
+            }).ToList();
+
+            var request = new CreateNoteOperationRequest
+            {
+                UserId = CurrentUserId,
+                Title = title.Trim(),
+                Content = content.Trim(),
+                Tags = ParseTags(tags),
+                Images = imageDtos,
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
+            };
+
+            var result = await NoteOperationService.CreateAsync(request);
+
+            return result.Match(
+                onSuccess: op =>
+                {
+                    // Mark images as attached for multi-attach tracking
+                    foreach (var img in images)
+                    {
+                        img.IsAttached = true;
+                    }
+
+                    var tagInfo = op.Note.Tags.Any()
+                        ? $" with tags: {string.Join(", ", op.Note.Tags)}"
+                        : "";
+                    return $"Successfully created note \"{op.Note.Title}\" (ID: {op.Note.Id}) with {images.Count} image(s) attached{tagInfo}. The images will be processed for AI descriptions in the background.";
+                },
+                onFailure: error => $"Error creating note with image: {error.Message}"
+            );
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("creating note with image", ex.Message);
+        }
+    }
+
+    [KernelFunction("AttachImageToNote")]
+    [Description("ATTACH image(s) to an existing note. Use when user says 'attach this image to my X note' or 'add this image to note Y'. Use FindNoteForImageAttachment first if user doesn't provide exact note ID.")]
+    public async Task<string> AttachImageToNoteAsync(
+        [Description("Note ID to attach images to")] string noteId,
+        [Description("Image references to attach (e.g., 'img1' or 'img1,img2')")] string imageReferences)
+    {
+        var userError = ValidateUserContext("attach image to note");
+        if (userError != null) return userError;
+
+        if (NoteOperationService == null)
+            return "Error: Note operation service not available.";
+
+        // Verify note exists and user owns it
+        var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
+        if (note == null)
+            return $"Note with ID '{noteId}' not found or you don't have permission.";
+
+        // Parse and validate image references
+        var (images, parseError) = ParseImageReferences(imageReferences);
+        if (parseError != null)
+            return $"Error: {parseError}";
+
+        if (images.Count == 0)
+            return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
+
+        try
+        {
+            // Convert context images to NoteImageDto
+            var imageDtos = images.Select(img => new NoteImageDto
+            {
+                Base64Data = img.Base64Data,
+                MediaType = img.MediaType,
+                FileName = img.FileName
+            }).ToList();
+
+            var request = new UpdateNoteOperationRequest
+            {
+                NoteId = noteId,
+                UserId = CurrentUserId,
+                Images = imageDtos,
+                Source = NoteSource.Agent,
+                AiProvider = CurrentProvider,
+                AiModel = CurrentModel
+            };
+
+            var result = await NoteOperationService.UpdateAsync(request);
+
+            return result.Match(
+                onSuccess: op =>
+                {
+                    // Mark images as attached for multi-attach tracking
+                    foreach (var img in images)
+                    {
+                        img.IsAttached = true;
+                    }
+
+                    return $"Successfully attached {images.Count} image(s) to note \"{note.Title}\" (ID: {noteId}). The images will be processed for AI descriptions in the background.";
+                },
+                onFailure: error => $"Error attaching images: {error.Message}"
+            );
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("attaching image to note", ex.Message);
+        }
+    }
+
+    [KernelFunction("FindNoteForImageAttachment")]
+    [Description("SEARCH for a note to attach images to using semantic search. Returns best match with confidence score. If score > 0.8, you can proceed with AttachImageToNote. If score < 0.8, ask user to confirm the match first.")]
+    public async Task<string> FindNoteForImageAttachmentAsync(
+        [Description("Search query describing the note (e.g., 'meeting notes', 'project plan')")] string query)
+    {
+        var userError = ValidateUserContext("find note for image");
+        if (userError != null) return userError;
+
+        if (RagService == null)
+            return "Error: Search service not available.";
+
+        if (string.IsNullOrWhiteSpace(query))
+            return "Error: Search query is required.";
+
+        try
+        {
+            // Use semantic search to find matching notes via RetrieveContextAsync
+            var ragContext = await RagService.RetrieveContextAsync(
+                query: query.Trim(),
+                userId: CurrentUserId,
+                topK: 3,
+                options: UserRagOptions);
+
+            if (ragContext.RetrievedNotes.Count == 0)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    type = "note_search_result",
+                    found = false,
+                    message = "No matching notes found. Consider creating a new note with the image using CreateNoteWithImage instead.",
+                    contextImages = GetContextImagesSummary()
+                });
+            }
+
+            var topResult = ragContext.RetrievedNotes[0];
+            var confidenceThreshold = 0.8f;
+            var isHighConfidence = topResult.SimilarityScore >= confidenceThreshold;
+
+            var response = new
+            {
+                type = "note_search_result",
+                found = true,
+                topMatch = new
+                {
+                    noteId = topResult.NoteId,
+                    title = topResult.NoteTitle,
+                    score = topResult.SimilarityScore,
+                    scorePercent = $"{topResult.SimilarityScore:P0}",
+                    preview = topResult.Content?.Length > 100
+                        ? topResult.Content[..100] + "..."
+                        : topResult.Content
+                },
+                isHighConfidence,
+                recommendation = isHighConfidence
+                    ? $"High confidence match ({topResult.SimilarityScore:P0}). You can proceed with AttachImageToNote using noteId '{topResult.NoteId}'."
+                    : $"Best match is \"{topResult.NoteTitle}\" but confidence is only {topResult.SimilarityScore:P0}. Ask the user to confirm before attaching.",
+                alternatives = ragContext.RetrievedNotes.Skip(1).Select(r => new
+                {
+                    noteId = r.NoteId,
+                    title = r.NoteTitle,
+                    score = r.SimilarityScore,
+                    scorePercent = $"{r.SimilarityScore:P0}"
+                }).ToList(),
+                contextImages = GetContextImagesSummary()
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return CreateErrorResponse("searching for note", ex.Message);
+        }
+    }
+
+    #endregion
 }

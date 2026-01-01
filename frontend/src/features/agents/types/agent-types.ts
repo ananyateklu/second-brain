@@ -8,6 +8,7 @@ export type {
   ToolExecution,
   ThinkingStep,
   AgentStreamState,
+  AgentMessageImage,
   AgentMessageRequest,
   AgentCapability,
   AgentToolCall,

@@ -489,7 +489,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => { onCompare(version.versionNumber, currentVersion); }}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:bg-[var(--surface-card)] hover:border-[var(--border-strong)]"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:!text-[var(--color-brand-600)] hover:!border-[var(--color-brand-400)] hover:![background-color:rgba(255,255,255,0.95)]"
                       style={{
                         backgroundColor: 'var(--surface-elevated)',
                         color: 'var(--text-secondary)',
@@ -514,10 +514,10 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     <button
                       onClick={() => { onRestore(version.versionNumber); }}
                       disabled={isRestoring}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:bg-[var(--color-brand-700)]"
+                      className="group/restore flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:!bg-[var(--color-success)] hover:!text-white"
                       style={{
-                        backgroundColor: 'var(--color-brand-600)',
-                        color: 'white',
+                        backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
+                        color: 'var(--color-success)',
                       }}
                     >
                       {isRestoring ? (

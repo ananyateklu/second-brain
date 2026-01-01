@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.RAG.Models;
 using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
@@ -25,7 +26,8 @@ public interface IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null);
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null);
 
     /// <summary>
     /// Build Gemini function declarations from plugins.
@@ -38,7 +40,8 @@ public interface IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null);
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null);
 
     /// <summary>
     /// Build OpenAI chat tools from plugins.
@@ -51,6 +54,7 @@ public interface IPluginToolBuilder
     /// <param name="model">Model identifier for agent context.</param>
     /// <param name="useStrictMode">When true, enables strict mode with additionalProperties: false (for GPT-4o models).</param>
     /// <param name="ragOptions">User-specific RAG options for semantic search customization.</param>
+    /// <param name="contextImages">Images attached to the current message for image-aware tools.</param>
     (List<OpenAIChatTool> Tools, Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> Methods)
         BuildOpenAITools(
             IEnumerable<string> capabilities,
@@ -60,7 +64,8 @@ public interface IPluginToolBuilder
             string provider,
             string model,
             bool useStrictMode = false,
-            RagOptions? ragOptions = null);
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null);
 
     /// <summary>
     /// Build Ollama tools from plugins.
@@ -73,7 +78,8 @@ public interface IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null);
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null);
 
     /// <summary>
     /// Get JSON schema type string for a .NET type.

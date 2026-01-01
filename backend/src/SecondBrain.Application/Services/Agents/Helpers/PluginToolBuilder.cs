@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.AI.FunctionCalling;
 using SecondBrain.Application.Services.RAG.Models;
@@ -32,7 +33,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null)
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null)
     {
         var tools = new List<Anthropic.SDK.Common.Tool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>();
@@ -46,6 +48,10 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
             plugin.SetAgentContext(provider, model);
+            if (contextImages != null)
+            {
+                plugin.SetContextImages(contextImages);
+            }
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -114,7 +120,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null)
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null)
     {
         var functionDeclarations = new List<GeminiFunctionDeclaration>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -128,6 +135,10 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
             plugin.SetAgentContext(provider, model);
+            if (contextImages != null)
+            {
+                plugin.SetContextImages(contextImages);
+            }
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -162,7 +173,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             string provider,
             string model,
             bool useStrictMode = false,
-            RagOptions? ragOptions = null)
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null)
     {
         var tools = new List<OpenAIChatTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -176,6 +188,10 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
             plugin.SetAgentContext(provider, model);
+            if (contextImages != null)
+            {
+                plugin.SetContextImages(contextImages);
+            }
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
@@ -209,7 +225,8 @@ public class PluginToolBuilder : IPluginToolBuilder
             bool agentRagEnabled,
             string provider,
             string model,
-            RagOptions? ragOptions = null)
+            RagOptions? ragOptions = null,
+            IReadOnlyList<ContextImage>? contextImages = null)
     {
         var tools = new List<OllamaTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -223,6 +240,10 @@ public class PluginToolBuilder : IPluginToolBuilder
             plugin.SetAgentRagEnabled(agentRagEnabled);
             plugin.SetRagOptions(ragOptions);
             plugin.SetAgentContext(provider, model);
+            if (contextImages != null)
+            {
+                plugin.SetContextImages(contextImages);
+            }
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods()
