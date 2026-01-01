@@ -842,24 +842,37 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
 
     /// <summary>
     /// Determine if web search should be auto-enabled based on the user's query.
-    /// Looks for indicators that the query may need real-time information.
+    /// Looks for indicators that the query may need real-time information or explicit web search intent.
     /// </summary>
     private static bool ShouldAutoEnableWebSearch(string query)
     {
         if (string.IsNullOrWhiteSpace(query))
             return false;
 
-        // Keywords that indicate need for real-time information
-        var realTimeIndicators = new[]
+        // Keywords that indicate need for real-time information or web search
+        var webSearchIndicators = new[]
         {
+            // Real-time information indicators
             "latest", "current", "today", "recent", "news",
             "what is happening", "who won", "stock price",
             "weather", "score", "election", "announcement",
             "just released", "this week", "yesterday",
-            "breaking", "update", "now", "live"
+            "breaking", "update", "now", "live",
+
+            // Explicit web search intent
+            "search the web", "search online", "look up online",
+            "look at the web", "browse the web", "search for",
+            "find online", "look online", "web search",
+            "internet search", "google", "search results",
+
+            // Research intent
+            "research", "find information", "look up",
+            "find out about", "what is the best", "compare",
+            "reviews", "recommendations", "where can i find",
+            "how to find", "find recipes", "recipe for"
         };
 
-        return realTimeIndicators.Any(indicator =>
+        return webSearchIndicators.Any(indicator =>
             query.Contains(indicator, StringComparison.OrdinalIgnoreCase));
     }
 
