@@ -103,6 +103,15 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
             _logger.LogInformation("Enabling Claude web search (cost: $10/1000 searches)");
             yield return StatusEvent("Enabling web search...");
 
+            // Remove any conflicting "web_search" tool from plugins to avoid duplicate names
+            // (e.g., from GrokSearchPlugin that was registered for cross-provider compatibility)
+            var removedCount = tools.RemoveAll(t => t.Function?.Name == "web_search");
+            if (removedCount > 0)
+            {
+                pluginMethods.Remove("web_search");
+                _logger.LogDebug("Removed {Count} existing web_search tool(s) to avoid duplication with Claude native web search", removedCount);
+            }
+
             var webSearchConfig = settings.Anthropic.WebSearch;
 
             // Build user location if configured

@@ -23,6 +23,45 @@ import 'tippy.js/dist/tippy.css';
 
 import type { JSONContent } from '@tiptap/react';
 
+/**
+ * Recursively sanitizes TipTap JSON content to remove empty text nodes.
+ * TipTap/ProseMirror throws "Empty text nodes are not allowed" if a text node has an empty string.
+ * This can happen when markdown is converted to TipTap JSON with edge cases.
+ *
+ * @param content - The JSONContent to sanitize
+ * @returns Sanitized JSONContent with empty text nodes removed
+ */
+function sanitizeTipTapContent(content: JSONContent): JSONContent {
+  // If this is a text node with empty text, return null to signal removal
+  if (content.type === 'text') {
+    // Remove text nodes with empty or whitespace-only text
+    if (!content.text || content.text === '') {
+      return null as unknown as JSONContent; // Signal to parent to remove this node
+    }
+    return content;
+  }
+
+  // If this node has content array, recursively sanitize it
+  if (content.content && Array.isArray(content.content)) {
+    const sanitizedContent = content.content
+      .map(child => sanitizeTipTapContent(child))
+      .filter((child): child is JSONContent => {
+        // Filter out null (removed) nodes and invalid nodes
+        if (child === null) return false;
+        // Also filter out text nodes that somehow slipped through with empty text
+        if (child.type === 'text' && (!child.text || child.text === '')) return false;
+        return true;
+      });
+
+    return {
+      ...content,
+      content: sanitizedContent.length > 0 ? sanitizedContent : undefined,
+    };
+  }
+
+  return content;
+}
+
 interface RichTextEditorProps {
   /** TipTap JSON content - canonical format for editing */
   contentJson?: JSONContent | null;
@@ -190,7 +229,8 @@ export function RichTextEditor({
   const initialContent = useMemo<JSONContent | string>(() => {
     // Use contentJson directly (canonical format)
     if (contentJson && typeof contentJson === 'object' && contentJson.type === 'doc') {
-      return contentJson;
+      // Sanitize to remove empty text nodes that TipTap doesn't allow
+      return sanitizeTipTapContent(contentJson);
     }
 
     // For new notes with no content yet
@@ -520,7 +560,9 @@ export function RichTextEditor({
         // Reset the user edit flag when loading new content
         // This prevents the setContent from triggering tag overwrites
         hasUserEditedRef.current = false;
-        editor.commands.setContent(contentJson);
+        // Sanitize to remove empty text nodes that TipTap doesn't allow
+        const sanitizedContent = sanitizeTipTapContent(contentJson);
+        editor.commands.setContent(sanitizedContent);
         setTimeout(() => convertTagsToMentions(editor), 0);
 
         // Sync form with the new content - onUpdate isn't triggered for programmatic changes
