@@ -20,7 +20,7 @@ export type Theme = 'light' | 'dark' | 'blue';
 // ============================================
 
 export type NotesViewMode = 'card' | 'list';
-export type SidebarState = 'closed' | 'collapsed' | 'expanded';
+export type SidebarState = 'closed' | 'collapsed';
 export type SearchMode = 'both' | 'title' | 'content';
 export type NoteView = 'list' | 'grid';
 export type FontSize = 'small' | 'medium' | 'large';
@@ -211,7 +211,6 @@ export interface UISliceActions {
   toggleSearchMode: () => void;
   toggleSidebar: () => void;
   closeSidebar: () => void;
-  expandSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
   setDirectoryViewMode: (mode: NotesViewMode) => void;
   /** Set GitHub active tab */

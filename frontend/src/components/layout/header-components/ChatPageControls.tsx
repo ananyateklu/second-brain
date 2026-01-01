@@ -100,9 +100,9 @@ export const ChatPageControls = memo(function ChatPageControls() {
   // Render selection mode controls
   if (isSelectionMode) {
     return (
-      <div className="flex items-center gap-3 flex-1">
-        {/* Selection Mode Header - fixed width to align with sidebar border position */}
-        <div className={`flex items-center gap-2 flex-shrink-0 ${leftSectionWidth}`}>
+      <div className="flex items-center gap-3 flex-1 -ml-4">
+        {/* Selection Mode Header - -ml-2 counteracts header px-6 to align with sidebar px-4 checkboxes */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Select All button */}
           <button
             onClick={onSelectAll}
@@ -142,7 +142,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
           <button
             onClick={() => { void onBulkDelete(); }}
             disabled={selectedConversationIds.size === 0}
-            className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center gap-1.5 h-8 px-4 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap"
             style={{
               background: selectedConversationIds.size > 0
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'

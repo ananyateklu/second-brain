@@ -167,7 +167,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const noteCount = headerState?.noteCount ?? 0;
 
   // Fixed width left section to align with sidebar border position
-  const leftSectionWidth = 'w-[18rem] md:w-[12.5rem] justify-end';
+  const leftSectionWidth = 'w-[18rem] md:w-[17.5rem] justify-end';
 
   const renderDropdownMenu = (isOpen: boolean, children: React.ReactNode) => {
     if (!isOpen) return null;

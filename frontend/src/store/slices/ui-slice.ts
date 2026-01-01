@@ -15,12 +15,12 @@ const DIRECTORY_SIDEBAR_STORAGE_KEY = 'second-brain-directory-sidebar-visible';
  * Load sidebar state from localStorage
  */
 const loadSidebarState = (): SidebarState => {
-  if (typeof window === 'undefined') return 'expanded';
+  if (typeof window === 'undefined') return 'closed';
   const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-  if (stored === 'closed' || stored === 'collapsed' || stored === 'expanded') {
+  if (stored === 'closed' || stored === 'collapsed') {
     return stored;
   }
-  return 'expanded';
+  return 'closed';
 };
 
 /**
@@ -197,16 +197,6 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
       saveSidebarState('closed');
       return {
         sidebarState: 'closed' as const,
-        previousSidebarState: state.sidebarState,
-      };
-    }),
-
-  // Long press (2 seconds): Expand to full sidebar
-  expandSidebar: () =>
-    set((state) => {
-      saveSidebarState('expanded');
-      return {
-        sidebarState: 'expanded' as const,
         previousSidebarState: state.sidebarState,
       };
     }),

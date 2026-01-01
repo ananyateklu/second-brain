@@ -175,7 +175,7 @@ export function ChatMessageList({
       ref={messagesContainerRef}
       className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] thin-scrollbar"
     >
-      <div className="max-w-4xl mx-auto space-y-4 pb-34">
+      <div className={`max-w-4xl mx-auto ${hasNoMessages ? 'h-full flex flex-col' : 'space-y-4 pb-34'}`}>
         {hasNoMessages ? (
           <ChatWelcomeScreen />
         ) : (

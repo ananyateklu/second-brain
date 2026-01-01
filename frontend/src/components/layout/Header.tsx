@@ -6,6 +6,7 @@ import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
 import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls } from './header-components';
+import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -70,6 +71,10 @@ export function Header() {
   // Insights state
   const activeInsightsTab = useBoundStore((state) => state.activeInsightsTab);
   const setActiveInsightsTab = useBoundStore((state) => state.setActiveInsightsTab);
+
+  // Chat page selection mode state
+  const chatHeaderState = useChatHeaderState();
+  const isChatSelectionMode = isChatPage && chatHeaderState?.isSelectionMode;
 
   return (
     <>
@@ -158,15 +163,17 @@ export function Header() {
         }}
       >
         <div className="flex justify-between w-full pb-2">
-          {/* Left side - Page Title */}
-          <div className="flex items-center h-12">
-            <h1
-              className="text-xl font-medium"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {pageTitle}
-            </h1>
-          </div>
+          {/* Left side - Page Title (hidden in chat selection mode) */}
+          {!isChatSelectionMode && (
+            <div className="flex items-center h-12">
+              <h1
+                className="text-xl font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {pageTitle}
+              </h1>
+            </div>
+          )}
 
           {/* Right side - Page-specific controls and User Menu */}
           {/* Chat Page - Full-width controls */}
