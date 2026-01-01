@@ -93,7 +93,7 @@ export function NoteCardsGridSkeleton({ count = 9 }: { count?: number }) {
  */
 export function PaginationSkeleton() {
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-4">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
       {/* Page info */}
       <ShimmerBlock className="h-4 w-32" />
 

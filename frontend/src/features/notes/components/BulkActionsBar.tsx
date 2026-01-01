@@ -48,14 +48,17 @@ export const BulkActionsBar = memo(({
 
   const content = (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-2xl"
+      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-2xl"
       style={{
+        left: '50%',
+        bottom: '1.5rem',
+        transform: 'translate(-50%, 0)',
         backgroundColor: 'var(--surface-card-solid)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
         backdropFilter: 'blur(12px) saturate(180%)',
         WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-        animation: 'slideUp 0.3s ease-out',
+        animation: 'bulkBarSlideUp 0.3s ease-out',
       }}
     >
       {/* Selection Count */}
@@ -156,12 +159,12 @@ export const BulkActionsBar = memo(({
 
       {/* Animation keyframes - injected via style tag */}
       <style>{`
-        @keyframes slideUp {
-          from {
+        @keyframes bulkBarSlideUp {
+          0% {
             opacity: 0;
             transform: translate(-50%, 20px);
           }
-          to {
+          100% {
             opacity: 1;
             transform: translate(-50%, 0);
           }

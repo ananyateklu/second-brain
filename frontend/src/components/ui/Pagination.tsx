@@ -77,7 +77,7 @@ export const Pagination = memo(({
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-4">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
       {/* Item count */}
       {showItemCount && (
         <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
