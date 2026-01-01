@@ -74,7 +74,8 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                 request.AgentRagEnabled,
                 request.Provider,
                 request.Model,
-                request.RagOptions);
+                request.RagOptions,
+                request.ContextImages);
         }
         else
         {

@@ -69,6 +69,12 @@ public class AgentRequest
     /// When set, these options override default RAG settings for semantic search operations.
     /// </summary>
     public RagOptions? RagOptions { get; set; }
+
+    /// <summary>
+    /// Context images from the current message available for agent tools.
+    /// These images can be attached to notes via CreateNoteWithImage or AttachImageToNote tools.
+    /// </summary>
+    public List<ContextImage>? ContextImages { get; set; }
 }
 
 /// <summary>
@@ -249,4 +255,42 @@ public class AgentResponse
     public List<ToolExecutionResult> ToolCalls { get; set; } = new();
     public int InputTokens { get; set; }
     public int OutputTokens { get; set; }
+}
+
+/// <summary>
+/// Represents an image from chat context available for agent operations.
+/// Images are referenced by their index (e.g., "img1", "img2") in tool calls.
+/// </summary>
+public class ContextImage
+{
+    /// <summary>
+    /// Short reference ID for agent tool calls (e.g., "a1b2c3d4").
+    /// </summary>
+    public string ReferenceId { get; set; } = Guid.NewGuid().ToString("N")[..8];
+
+    /// <summary>
+    /// Base64-encoded image data (without data URL prefix).
+    /// </summary>
+    public string Base64Data { get; set; } = string.Empty;
+
+    /// <summary>
+    /// MIME type of the image (e.g., "image/jpeg", "image/png").
+    /// </summary>
+    public string MediaType { get; set; } = "image/jpeg";
+
+    /// <summary>
+    /// Original filename if available.
+    /// </summary>
+    public string? FileName { get; set; }
+
+    /// <summary>
+    /// Zero-based index of the image in the message (used for "img1", "img2" references).
+    /// </summary>
+    public int Index { get; set; }
+
+    /// <summary>
+    /// Whether this image has been attached to a note in this session.
+    /// Used to track multi-attach scenarios.
+    /// </summary>
+    public bool IsAttached { get; set; } = false;
 }

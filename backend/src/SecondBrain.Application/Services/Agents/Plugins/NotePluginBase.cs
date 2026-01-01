@@ -1,5 +1,6 @@
 using System.Text.Json;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
@@ -34,6 +35,11 @@ public abstract class NotePluginBase : IAgentPlugin
     protected RagOptions? UserRagOptions;
     protected string CurrentProvider = string.Empty;
     protected string CurrentModel = string.Empty;
+
+    /// <summary>
+    /// Context images from the current message available for attachment operations.
+    /// </summary>
+    protected IReadOnlyList<ContextImage> ContextImages { get; private set; } = Array.Empty<ContextImage>();
 
     /// <summary>
     /// Maximum length for content preview in list operations.
@@ -79,6 +85,11 @@ public abstract class NotePluginBase : IAgentPlugin
     {
         CurrentProvider = provider;
         CurrentModel = model;
+    }
+
+    public void SetContextImages(IReadOnlyList<ContextImage>? images)
+    {
+        ContextImages = images ?? Array.Empty<ContextImage>();
     }
 
     public virtual object GetPluginInstance() => this;
@@ -325,6 +336,83 @@ public abstract class NotePluginBase : IAgentPlugin
             description = image.Description ?? image.AltText ?? "No description available",
             altText = image.AltText
         };
+    }
+
+    #endregion
+
+    #region Context Image Helpers
+
+    /// <summary>
+    /// Finds a context image by reference (e.g., "img1" or the reference ID).
+    /// </summary>
+    /// <param name="reference">Image reference like "img1", "img2", or a reference ID.</param>
+    /// <returns>The matching context image or null if not found.</returns>
+    protected ContextImage? FindContextImage(string reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+            return null;
+
+        var trimmed = reference.Trim().ToLowerInvariant();
+
+        return ContextImages.FirstOrDefault(i =>
+            i.ReferenceId.Equals(trimmed, StringComparison.OrdinalIgnoreCase) ||
+            $"img{i.Index + 1}".Equals(trimmed, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Gets a summary of available context images for tool responses.
+    /// </summary>
+    protected string GetContextImagesSummary()
+    {
+        if (ContextImages.Count == 0)
+            return "No context images available.";
+
+        var items = ContextImages.Select(i =>
+        {
+            var status = i.IsAttached ? " [attached]" : "";
+            var name = !string.IsNullOrEmpty(i.FileName) ? $" ({i.FileName})" : "";
+            return $"img{i.Index + 1}{name}{status}";
+        });
+
+        return string.Join(", ", items);
+    }
+
+    /// <summary>
+    /// Parses comma-separated image references and returns the matching context images.
+    /// </summary>
+    /// <param name="imageReferences">Comma-separated references like "img1,img2".</param>
+    /// <returns>List of found images and any errors.</returns>
+    protected (List<ContextImage> images, string? error) ParseImageReferences(string imageReferences)
+    {
+        if (string.IsNullOrWhiteSpace(imageReferences))
+            return (new List<ContextImage>(), "No image references provided.");
+
+        var refs = imageReferences.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(r => r.Trim())
+            .ToList();
+
+        var images = new List<ContextImage>();
+        var notFound = new List<string>();
+
+        foreach (var refId in refs)
+        {
+            var img = FindContextImage(refId);
+            if (img != null)
+            {
+                images.Add(img);
+            }
+            else
+            {
+                notFound.Add(refId);
+            }
+        }
+
+        if (notFound.Count > 0)
+        {
+            return (images, $"Image(s) not found: {string.Join(", ", notFound)}. Available: {GetContextImagesSummary()}");
+        }
+
+        return (images, null);
     }
 
     #endregion

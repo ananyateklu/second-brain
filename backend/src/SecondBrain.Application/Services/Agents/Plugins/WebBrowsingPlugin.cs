@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -47,6 +48,11 @@ public class WebBrowsingPlugin : IAgentPlugin
     public void SetAgentContext(string provider, string model)
     {
         // Web browsing doesn't need agent context
+    }
+
+    public void SetContextImages(IReadOnlyList<ContextImage>? images)
+    {
+        // Web browsing doesn't need context images
     }
 
     public object GetPluginInstance() => this;

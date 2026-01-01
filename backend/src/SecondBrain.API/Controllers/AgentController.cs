@@ -5,6 +5,7 @@ using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI;
+using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -138,6 +139,22 @@ public class AgentController : ControllerBase
                 _logger.LogWarning(ex, "Failed to get user RAG preferences for agent, using defaults");
             }
 
+            // Convert request images to context images for agent tools
+            List<ContextImage>? contextImages = null;
+            if (request.Images != null && request.Images.Count > 0)
+            {
+                contextImages = request.Images.Select((img, idx) => new ContextImage
+                {
+                    ReferenceId = Guid.NewGuid().ToString("N")[..8],
+                    Base64Data = img.Base64Data,
+                    MediaType = img.MediaType,
+                    FileName = img.FileName,
+                    Index = idx
+                }).ToList();
+
+                _logger.LogInformation("Agent request includes {Count} context images for note attachment", contextImages.Count);
+            }
+
             // Build agent request with tool call history for proper multi-turn context
             var agentRequest = new AgentRequest
             {
@@ -160,7 +177,8 @@ public class AgentController : ControllerBase
                 MaxTokens = request.MaxTokens,
                 Capabilities = request.Capabilities,
                 AgentRagEnabled = conversation.AgentRagEnabled,
-                RagOptions = ragOptions
+                RagOptions = ragOptions,
+                ContextImages = contextImages
             };
 
             // Set Ollama remote URL if configured for this user
@@ -206,7 +224,7 @@ public class AgentController : ControllerBase
             }
 
             // Add user message to conversation with total input token count
-            var userMessage = new ChatMessage
+            var userMessage = new SecondBrain.Core.Entities.ChatMessage
             {
                 Role = "user",
                 Content = request.Content,
@@ -507,7 +525,7 @@ public class AgentController : ControllerBase
             var ragContextTokens = retrievedNotes.Sum(n => TokenEstimator.EstimateTokenCount(n.ChunkContent ?? n.Title ?? ""));
 
             // Add assistant message to conversation with tool calls, thinking steps, retrieved notes, and RAG log ID
-            var assistantMessage = new ChatMessage
+            var assistantMessage = new SecondBrain.Core.Entities.ChatMessage
             {
                 Role = "assistant",
                 Content = fullResponse.ToString(),
@@ -629,6 +647,11 @@ public class AgentMessageRequest
     /// Tracked per message for historical analytics.
     /// </summary>
     public string? MarkdownRenderer { get; set; }
+    /// <summary>
+    /// Images attached to this message for agent context.
+    /// These can be attached to notes using CreateNoteWithImage or AttachImageToNote tools.
+    /// </summary>
+    public List<SecondBrain.Application.Services.AI.Models.MessageImage>? Images { get; set; }
 }
 
 public class SupportedProvidersResponse

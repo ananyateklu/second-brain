@@ -1,4 +1,5 @@
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.RAG.Models;
 
 namespace SecondBrain.Application.Services.Agents.Plugins;
@@ -48,6 +49,13 @@ public interface IAgentPlugin
     /// <param name="provider">The AI provider name (e.g., "Anthropic", "Google", "OpenAI")</param>
     /// <param name="model">The model identifier (e.g., "claude-3-5-sonnet", "gemini-2.0-flash")</param>
     void SetAgentContext(string provider, string model);
+
+    /// <summary>
+    /// Set context images from the current message for image attachment operations.
+    /// Images can be referenced by index (e.g., "img1", "img2") in tool calls.
+    /// </summary>
+    /// <param name="images">List of context images from the current message.</param>
+    void SetContextImages(IReadOnlyList<ContextImage>? images);
 
     /// <summary>
     /// Get the plugin object to register with Semantic Kernel

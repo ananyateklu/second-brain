@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
@@ -106,6 +107,16 @@ public class NotesPlugin : IAgentPlugin
         _analysisPlugin.SetAgentContext(provider, model);
         _versionPlugin?.SetAgentContext(provider, model);
         _trashPlugin.SetAgentContext(provider, model);
+    }
+
+    public void SetContextImages(IReadOnlyList<ContextImage>? images)
+    {
+        _crudPlugin.SetContextImages(images);
+        _searchPlugin.SetContextImages(images);
+        _organizationPlugin.SetContextImages(images);
+        _analysisPlugin.SetContextImages(images);
+        _versionPlugin?.SetContextImages(images);
+        _trashPlugin.SetContextImages(images);
     }
 
     public object GetPluginInstance() => this;
@@ -245,6 +256,37 @@ Use markdown thoughtfully for readability:
         [Description("The content to add at the beginning of the note")] string contentToPrepend,
         [Description("Whether to add a newline after the prepended content (default: true)")] bool addNewline = true)
         => _crudPlugin.PrependToNoteAsync(noteId, contentToPrepend, addNewline);
+
+    #endregion
+
+    #region Image Attachment Operations (delegated to NoteCrudPlugin)
+
+    [KernelFunction("ListContextImages")]
+    [Description("LIST images attached to the current message. Use to see available images before CreateNoteWithImage or AttachImageToNote. Returns image references (img1, img2, etc.) for use in other tools.")]
+    public Task<string> ListContextImagesAsync()
+        => _crudPlugin.ListContextImagesAsync();
+
+    [KernelFunction("CreateNoteWithImage")]
+    [Description("CREATE a new note with image(s) attached. Use when user says 'save this image as a note' or 'create a note with this image'. Requires images in current message (check with ListContextImages first).")]
+    public Task<string> CreateNoteWithImageAsync(
+        [Description("Note title (required, descriptive)")] string title,
+        [Description("Note content (required, describes the image context)")] string content,
+        [Description("Image references to attach, comma-separated (e.g., 'img1' or 'img1,img2')")] string imageReferences,
+        [Description("Comma-separated tags for categorization")] string? tags = null)
+        => _crudPlugin.CreateNoteWithImageAsync(title, content, imageReferences, tags);
+
+    [KernelFunction("AttachImageToNote")]
+    [Description("ATTACH image(s) to an existing note. Use when user says 'attach this image to my X note' or 'add this image to note Y'. Use FindNoteForImageAttachment first if user doesn't provide exact note ID.")]
+    public Task<string> AttachImageToNoteAsync(
+        [Description("Note ID to attach images to")] string noteId,
+        [Description("Image references to attach (e.g., 'img1' or 'img1,img2')")] string imageReferences)
+        => _crudPlugin.AttachImageToNoteAsync(noteId, imageReferences);
+
+    [KernelFunction("FindNoteForImageAttachment")]
+    [Description("SEARCH for a note to attach images to using semantic search. Returns best match with confidence score. If score >= 0.8, you can proceed with AttachImageToNote. If score < 0.8, ask user to confirm the match first.")]
+    public Task<string> FindNoteForImageAttachmentAsync(
+        [Description("Search query describing the note (e.g., 'meeting notes', 'project plan')")] string query)
+        => _crudPlugin.FindNoteForImageAttachmentAsync(query);
 
     #endregion
 

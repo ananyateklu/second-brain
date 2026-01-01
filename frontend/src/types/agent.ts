@@ -75,6 +75,18 @@ export interface AgentStreamState {
 }
 
 /**
+ * Image content for multimodal agent messages
+ */
+export interface AgentMessageImage {
+  /** Base64-encoded image data (without data URL prefix) */
+  base64Data: string;
+  /** MIME type of the image (e.g., 'image/jpeg', 'image/png') */
+  mediaType: string;
+  /** Original filename (optional) */
+  fileName?: string;
+}
+
+/**
  * Agent message request
  */
 export interface AgentMessageRequest {
@@ -82,6 +94,8 @@ export interface AgentMessageRequest {
   temperature?: number;
   maxTokens?: number;
   capabilities?: string[];
+  /** Attached images for multimodal agent messages */
+  images?: AgentMessageImage[];
 }
 
 /**
