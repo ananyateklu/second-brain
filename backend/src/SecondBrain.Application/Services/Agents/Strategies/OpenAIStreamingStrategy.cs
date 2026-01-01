@@ -96,14 +96,29 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             {
                 if (msg.ToolCalls != null && msg.ToolCalls.Any())
                 {
-                    var contextBuilder = new StringBuilder();
-                    if (!string.IsNullOrWhiteSpace(msg.Content))
-                        contextBuilder.AppendLine(msg.Content);
-                    contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
-                    foreach (var tc in msg.ToolCalls)
-                        contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
-                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
-                    messages.Add(new OpenAI.Chat.AssistantChatMessage(contextBuilder.ToString()));
+                    // CRITICAL: Use proper OpenAI tool message format, NOT embedded HTML comments.
+                    // Embedding tool results as text teaches the model to output similar patterns
+                    // instead of using the actual function calling API.
+
+                    // Generate stable IDs for historical tool calls
+                    var openAIToolCalls = msg.ToolCalls.Select(tc => new Services.AI.Models.OpenAIToolCallInfo
+                    {
+                        Id = $"call_{ToolExecutor.GenerateToolId(tc.ToolName, tc.Arguments)}",
+                        Name = tc.ToolName,
+                        Arguments = tc.Arguments
+                    }).ToList();
+
+                    // Create assistant message with tool calls
+                    var assistantMsg = OpenAIProvider.CreateAssistantToolCallMessage(
+                        openAIToolCalls,
+                        textContent: !string.IsNullOrWhiteSpace(msg.Content) ? msg.Content : null);
+                    messages.Add(assistantMsg);
+
+                    // Add tool result messages for each tool call
+                    foreach (var (tc, openAITc) in msg.ToolCalls.Zip(openAIToolCalls))
+                    {
+                        messages.Add(OpenAIProvider.CreateToolResultMessage(openAITc.Id, tc.Result));
+                    }
                 }
                 else
                 {
@@ -138,7 +153,11 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
             var pendingToolCalls = new List<Services.AI.Models.OpenAIToolCallInfo>();
             var iterationText = new StringBuilder();
             var hasEmittedFirstToken = false;
-            var lastSpeakableLength = 0; // Track how much speakable content we've already yielded
+            // IMPORTANT: Start from speakable content length (excluding thinking blocks) to avoid re-yielding
+            // content from previous iterations. Using fullResponse.Length would skip content when
+            // previous iterations contain thinking blocks (e.g., iteration 1 has <thinking>...</thinking>
+            // with 45 chars, iteration 2 would skip first 45 chars of actual response).
+            var lastSpeakableLength = Helpers.ThinkingExtractor.StripThinkingBlocks(fullResponse.ToString()).Length;
 
             await foreach (var evt in _openAIProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
@@ -200,6 +219,9 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
 
             fullResponse.Append(iterationText);
 
+            _logger.LogDebug("OpenAI iteration {Iteration} completed. Tool calls received: {ToolCallCount}, Text length: {TextLength}",
+                iteration, pendingToolCalls.Count, iterationText.Length);
+
             if (pendingToolCalls.Count > 0)
             {
                 yield return StatusEvent($"Executing {pendingToolCalls.Count} tool(s)...");
@@ -219,9 +241,17 @@ public class OpenAIStreamingStrategy : BaseAgentStreamingStrategy
                     JsonNode.Parse(c.Arguments)
                 )).ToList();
 
-                var results = await ToolExecutor.ExecuteMultipleAsync(
+                // Use scope-isolated execution for parallel database safety
+                var executionContext = new PluginExecutionContext(
+                    UserId: request.UserId,
+                    Provider: request.Provider,
+                    Model: request.Model,
+                    AgentRagEnabled: request.AgentRagEnabled);
+
+                var results = await ToolExecutor.ExecuteMultipleWithScopeIsolationAsync(
                     toolCalls,
                     pluginMethods,
+                    executionContext,
                     settings.OpenAI.FunctionCalling.ParallelExecution,
                     cancellationToken);
 

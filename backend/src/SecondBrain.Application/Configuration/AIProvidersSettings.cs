@@ -84,10 +84,11 @@ public class OpenAIFunctionCallingConfig
     /// <summary>
     /// Maximum iterations for tool call loops
     /// </summary>
-    public int MaxIterations { get; set; } = 10;
+    public int MaxIterations { get; set; } = 40;
 
     /// <summary>
-    /// Enable parallel execution of multiple tool calls
+    /// Enable parallel execution of multiple tool calls.
+    /// Uses scope-isolated DbContext instances for thread safety.
     /// </summary>
     public bool ParallelExecution { get; set; } = true;
 
@@ -153,13 +154,13 @@ public class GeminiFunctionCallingConfig
     /// <summary>
     /// Maximum iterations for tool call loops
     /// </summary>
-    public int MaxIterations { get; set; } = 10;
+    public int MaxIterations { get; set; } = 40;
 
     /// <summary>
     /// Enable parallel execution of multiple tool calls.
-    /// Default is false to avoid DbContext concurrency issues.
+    /// Uses scope-isolated DbContext instances for thread safety.
     /// </summary>
-    public bool ParallelExecution { get; set; } = false;
+    public bool ParallelExecution { get; set; } = true;
 
     /// <summary>
     /// Timeout in seconds for individual tool executions
@@ -533,10 +534,11 @@ public class OllamaFunctionCallingConfig
     /// <summary>
     /// Maximum iterations for tool call loops
     /// </summary>
-    public int MaxIterations { get; set; } = 10;
+    public int MaxIterations { get; set; } = 40;
 
     /// <summary>
-    /// Enable parallel execution of multiple tool calls
+    /// Enable parallel execution of multiple tool calls.
+    /// Uses scope-isolated DbContext instances for thread safety.
     /// </summary>
     public bool ParallelExecution { get; set; } = true;
 
@@ -632,10 +634,11 @@ public class GrokFunctionCallingConfig
     /// <summary>
     /// Maximum iterations for tool call loops
     /// </summary>
-    public int MaxIterations { get; set; } = 10;
+    public int MaxIterations { get; set; } = 40;
 
     /// <summary>
-    /// Enable parallel execution of multiple tool calls
+    /// Enable parallel execution of multiple tool calls.
+    /// Uses scope-isolated DbContext instances for thread safety.
     /// </summary>
     public bool ParallelExecution { get; set; } = true;
 

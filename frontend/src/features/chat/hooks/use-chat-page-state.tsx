@@ -484,20 +484,71 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   }, [conversation?.messages, isStreaming, streamingMessage, resetStream, setPendingMessage]);
 
   // Fallback cleanup: if streaming ended but stream state wasn't cleared after a timeout,
-  // force clear it to prevent stuck UI state
+  // force clear it to prevent stuck UI state.
+  // We use a longer timeout and check if conversation data has been updated.
+  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up all fallback timeouts
+  const clearFallbackTimeouts = useCallback(() => {
+    if (fallbackTimeoutRef.current) {
+      clearTimeout(fallbackTimeoutRef.current);
+      fallbackTimeoutRef.current = null;
+    }
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!isStreaming && streamingMessage) {
-      const timeoutId = setTimeout(() => {
-        // If we still have a streaming message after streaming ended, clear it
-        // This handles edge cases where the content matching and message count checks both fail
-        resetStream();
-        setPendingMessage(null);
-      }, 2000); // 2 second fallback timeout
+      // Clear any existing timeouts first
+      clearFallbackTimeouts();
 
-      return () => { clearTimeout(timeoutId); };
+      // Only use fallback after a longer timeout (5 seconds) to give cache time to refresh
+      fallbackTimeoutRef.current = setTimeout(() => {
+        fallbackTimeoutRef.current = null;
+
+        // Before clearing, check one more time if the message is now in the conversation
+        // This prevents clearing when the cache refresh is slow
+        const messageNowPersisted = conversation?.messages?.some(
+          (msg) =>
+            msg.role === 'assistant' &&
+            (msg.content === streamingMessage ||
+              msg.content.trim() === streamingMessage.trim() ||
+              (streamingMessage.trim().length > 20 &&
+                msg.content.trim().includes(streamingMessage.trim().substring(0, 50))))
+        );
+
+        if (messageNowPersisted) {
+          // Safe to clear - message is persisted
+          resetStream();
+          setPendingMessage(null);
+        } else {
+          // Message still not in cache - log warning but don't clear yet
+          // This prevents the disappearing message issue
+          console.warn('[ChatPageState] Fallback timeout reached but message not found in conversation. Keeping streaming state visible.');
+          // Try again in another 3 seconds - but track this timeout for cleanup
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            resetStream();
+            setPendingMessage(null);
+          }, 3000);
+        }
+      }, 5000); // 5 second fallback timeout
+
+      return clearFallbackTimeouts;
     }
     return undefined;
-  }, [isStreaming, streamingMessage, resetStream, setPendingMessage]);
+  }, [isStreaming, streamingMessage, resetStream, setPendingMessage, conversation?.messages, clearFallbackTimeouts]);
+
+  // Also clean up timeouts when component unmounts or when streaming starts again
+  useEffect(() => {
+    if (isStreaming) {
+      clearFallbackTimeouts();
+    }
+  }, [isStreaming, clearFallbackTimeouts]);
 
   // Handle sending a message
   const handleSendMessage = useCallback(
@@ -516,19 +567,22 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
         let currentConversationId = conversationId;
 
         // Build capabilities array for agent mode
-        // Always include 'notes' and 'browsing' when agent mode is enabled
+        // Always include 'notes', 'web', and 'browsing' when agent mode is enabled
         const capabilities: string[] = [];
         if (agentModeEnabled) {
           // Notes is always enabled in agent mode (can be extended with more capabilities later)
           if (notesCapabilityEnabled) {
             capabilities.push('notes');
           }
-          // Browsing capability is always enabled in agent mode for URL fetching
+          // Web capability provides web_search and deep_search via Grok
+          capabilities.push('web');
+          // Browsing capability provides fetch_url for reading web pages
           capabilities.push('browsing');
-          // Fallback: if no capabilities would be sent, default to notes + browsing
+          // Fallback: if no capabilities would be sent, default to notes + web + browsing
           // This ensures tools are always available in agent mode
           if (capabilities.length === 0) {
             capabilities.push('notes');
+            capabilities.push('web');
             capabilities.push('browsing');
           }
         }

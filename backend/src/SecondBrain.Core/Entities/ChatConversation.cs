@@ -262,6 +262,14 @@ public class ToolCall
     [Column("pre_tool_text")]
     public string? PreToolText { get; set; }
 
+    /// <summary>
+    /// Gemini 3 thought signature - encrypted representation of model's reasoning state.
+    /// Must be preserved and returned to maintain reasoning context for function calling.
+    /// Only populated for Gemini 3+ models.
+    /// </summary>
+    [Column("thought_signature")]
+    public string? ThoughtSignature { get; set; }
+
     // Navigation property back to message (ignored to prevent circular serialization)
     [ForeignKey("MessageId")]
     [JsonIgnore]

@@ -62,8 +62,8 @@ public class NoteOrganizationPluginTests
         var result = _sut.GetSystemPromptAddition();
         result.Should().Contain("ListNotes");
         result.Should().Contain("SetNoteArchived");
-        result.Should().Contain("ListFolders");
-        result.Should().Contain("ListAllTags");
+        result.Should().Contain("GetOverview"); // Consolidated from ListFolders, ListAllTags, GetNoteStats
+        result.Should().Contain("MoveToFolder");
     }
 
     #endregion
@@ -439,21 +439,21 @@ public class NoteOrganizationPluginTests
     #region ListFoldersAsync Tests
 
     [Fact]
-    public async Task ListFoldersAsync_WhenNoNotes_ReturnsNoNotesMessage()
+    public async Task GetOverviewAsync_WithTypeFolders_WhenNoNotes_ReturnsNoNotesMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(new List<Note>());
 
         // Act
-        var result = await _sut.ListFoldersAsync();
+        var result = await _sut.GetOverviewAsync(type: "folders");
 
         // Assert
         result.Should().Contain("don't have any notes");
     }
 
     [Fact]
-    public async Task ListFoldersAsync_ReturnsFolderCounts()
+    public async Task GetOverviewAsync_WithTypeFolders_ReturnsFolderCounts()
     {
         // Arrange
         var notes = new List<Note>
@@ -466,7 +466,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListFoldersAsync();
+        var result = await _sut.GetOverviewAsync(type: "folders");
 
         // Assert
         result.Should().Contain("Work");
@@ -476,10 +476,10 @@ public class NoteOrganizationPluginTests
 
     #endregion
 
-    #region ListAllTagsAsync Tests
+    #region GetOverviewAsync Tests (Tags)
 
     [Fact]
-    public async Task ListAllTagsAsync_WhenNoTags_ReturnsNoTagsMessage()
+    public async Task GetOverviewAsync_WithTypeTags_WhenNoTags_ReturnsNoTagsMessage()
     {
         // Arrange
         var notes = new List<Note>
@@ -490,14 +490,14 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllTagsAsync();
+        var result = await _sut.GetOverviewAsync(type: "tags");
 
         // Assert
         result.Should().Contain("don't have any tags");
     }
 
     [Fact]
-    public async Task ListAllTagsAsync_ReturnsTagCounts()
+    public async Task GetOverviewAsync_WithTypeTags_ReturnsTagCounts()
     {
         // Arrange
         var notes = new List<Note>
@@ -509,7 +509,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.ListAllTagsAsync();
+        var result = await _sut.GetOverviewAsync(type: "tags");
 
         // Assert
         result.Should().Contain("work");
@@ -519,10 +519,10 @@ public class NoteOrganizationPluginTests
 
     #endregion
 
-    #region GetNoteStatsAsync Tests
+    #region GetOverviewAsync Tests (Stats)
 
     [Fact]
-    public async Task GetNoteStatsAsync_ReturnsStatistics()
+    public async Task GetOverviewAsync_WithTypeStats_ReturnsStatistics()
     {
         // Arrange
         var notes = new List<Note>
@@ -535,7 +535,7 @@ public class NoteOrganizationPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.GetNoteStatsAsync();
+        var result = await _sut.GetOverviewAsync(type: "stats");
 
         // Assert
         result.Should().Contain("statistics");
@@ -545,14 +545,14 @@ public class NoteOrganizationPluginTests
     }
 
     [Fact]
-    public async Task GetNoteStatsAsync_WhenRepositoryThrows_ReturnsError()
+    public async Task GetOverviewAsync_WhenRepositoryThrows_ReturnsError()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.GetNoteStatsAsync();
+        var result = await _sut.GetOverviewAsync();
 
         // Assert
         result.Should().Contain("Error");

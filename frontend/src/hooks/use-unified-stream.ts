@@ -56,7 +56,7 @@ import type {
 // ============================================
 
 // Note-related tools that should trigger cache invalidation when they complete
-const NOTE_MUTATION_TOOLS = ['CreateNote', 'UpdateNote', 'AppendToNote', 'DeleteNote', 'DuplicateNote'];
+const NOTE_MUTATION_TOOLS = ['CreateNote', 'UpdateNote', 'EditNote', 'DeleteNote', 'DuplicateNote', 'ManageTrash'];
 
 // ============================================
 // Hook Implementation

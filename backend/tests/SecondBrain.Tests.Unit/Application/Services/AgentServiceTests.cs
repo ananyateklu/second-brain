@@ -4,6 +4,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
+using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Strategies;
 using SecondBrain.Application.Services.RAG;
@@ -22,6 +23,7 @@ public class AgentServiceTests
     private readonly Mock<IUserPreferencesService> _mockUserPreferencesService;
     private readonly Mock<ILogger<AgentService>> _mockLogger;
     private readonly Mock<ILoggerFactory> _mockLoggerFactory;
+    private readonly Mock<IToolDiscoveryService> _mockToolDiscoveryService;
     private readonly HttpClient _httpClient;
     private readonly AIProvidersSettings _settings;
     private readonly RagSettings _ragSettings;
@@ -35,11 +37,17 @@ public class AgentServiceTests
         _mockUserPreferencesService = new Mock<IUserPreferencesService>();
         _mockLogger = new Mock<ILogger<AgentService>>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
+        _mockToolDiscoveryService = new Mock<IToolDiscoveryService>();
         _httpClient = new HttpClient();
 
         // Setup logger factory to return mock loggers
         _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
+
+        // Setup tool discovery service to return empty lists by default
+        _mockToolDiscoveryService.Setup(t => t.GetCoreTools()).Returns(new List<ToolMetadata>().AsReadOnly());
+        _mockToolDiscoveryService.Setup(t => t.GetAllTools()).Returns(new List<ToolMetadata>().AsReadOnly());
+        _mockToolDiscoveryService.Setup(t => t.SearchTools(It.IsAny<string>(), It.IsAny<int>())).Returns(new List<ToolMetadata>().AsReadOnly());
 
         _settings = new AIProvidersSettings
         {
@@ -86,7 +94,8 @@ public class AgentServiceTests
             _mockUserPreferencesService.Object,
             _mockLogger.Object,
             _mockLoggerFactory.Object,
-            _httpClient
+            _httpClient,
+            _mockToolDiscoveryService.Object
         );
     }
 
@@ -104,7 +113,8 @@ public class AgentServiceTests
             _mockUserPreferencesService.Object,
             _mockLogger.Object,
             _mockLoggerFactory.Object,
-            _httpClient
+            _httpClient,
+            _mockToolDiscoveryService.Object
         );
     }
 

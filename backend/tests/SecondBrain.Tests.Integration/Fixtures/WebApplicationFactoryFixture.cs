@@ -70,8 +70,7 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
         else
         {
             // Local development: Use Testcontainers
-            _container = new PostgreSqlBuilder()
-                .WithImage("pgvector/pgvector:pg18")
+            _container = new PostgreSqlBuilder("pgvector/pgvector:pg18")
                 .WithDatabase("secondbrain_integration_test")
                 .WithUsername("testuser")
                 .WithPassword("testpassword")

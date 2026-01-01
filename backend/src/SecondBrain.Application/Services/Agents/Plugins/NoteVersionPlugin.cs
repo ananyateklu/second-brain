@@ -12,7 +12,7 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 
 /// <summary>
 /// Plugin handling version history operations for notes:
-/// GetNoteVersionHistory, GetNoteVersion, GetVersionAtTime, CompareNoteVersions, RestoreNoteVersion.
+/// GetNoteVersionHistory, GetVersion (by number OR timestamp), CompareNoteVersions, RestoreNoteVersion.
 /// </summary>
 public class NoteVersionPlugin : NotePluginBase
 {
@@ -43,13 +43,10 @@ public class NoteVersionPlugin : NotePluginBase
   - Use when user asks ""show history"", ""what changed"", or ""list versions""
   - Returns paginated list of versions with change summaries
 
-- **GetNoteVersion**: Get content from a specific version
-  - Use when user asks ""show version 3"" or ""what was in version X""
-  - Returns full content of that version
-
-- **GetVersionAtTime**: Get note as it was at a specific time
-  - Supports ISO dates (2024-12-25) and relative dates (yesterday, last week)
-  - Use when user asks ""what did this look like yesterday?""
+- **GetVersion**: Get a specific version by number OR timestamp (use one, not both)
+  - versionNumber: Use when user asks ""show version 3"" or ""what was in version X""
+  - timestamp: Supports ISO dates (2024-12-25) and relative dates (yesterday, last week)
+  - Examples: ""show version 3"" -> versionNumber=3, ""what was this yesterday"" -> timestamp=""yesterday""
 
 - **CompareNoteVersions**: Compare two versions to see differences
   - Shows what changed between versions (title, content, tags, folder)
@@ -124,14 +121,26 @@ public class NoteVersionPlugin : NotePluginBase
         }
     }
 
-    [KernelFunction("GetNoteVersion")]
-    [Description("Gets a specific version of a note by version number. Use this when the user wants to see the content of a particular version.")]
-    public async Task<string> GetNoteVersionAsync(
-        [Description("The ID of the note")] string noteId,
-        [Description("The version number to retrieve")] int versionNumber)
+    [KernelFunction("GetVersion")]
+    [Description("Get specific note version. Use versionNumber OR timestamp (not both). Timestamp supports ISO dates and relative ('yesterday', 'last week'). Examples: 'show version 3' -> versionNumber=3, 'what was this yesterday' -> timestamp='yesterday'.")]
+    public async Task<string> GetVersionAsync(
+        [Description("Note ID")] string noteId,
+        [Description("Version number to retrieve")] int? versionNumber = null,
+        [Description("Timestamp (ISO or relative)")] string? timestamp = null)
     {
-        var userError = ValidateUserContext("get note version");
+        var userError = ValidateUserContext("get version");
         if (userError != null) return userError;
+
+        // Validate parameters
+        if (versionNumber == null && string.IsNullOrWhiteSpace(timestamp))
+        {
+            return "Please provide either a versionNumber or a timestamp to retrieve.";
+        }
+
+        if (versionNumber != null && !string.IsNullOrWhiteSpace(timestamp))
+        {
+            return "Please provide either versionNumber OR timestamp, not both.";
+        }
 
         try
         {
@@ -142,76 +151,55 @@ public class NoteVersionPlugin : NotePluginBase
                 return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
             }
 
-            var version = await _versionService.GetVersionByNumberAsync(noteId, versionNumber);
-
-            if (version == null)
+            // Retrieve by version number
+            if (versionNumber != null)
             {
-                var totalVersions = await _versionService.GetVersionCountAsync(noteId);
-                return $"Version {versionNumber} not found for note \"{note.Title}\". This note has {totalVersions} version(s).";
-            }
+                var version = await _versionService.GetVersionByNumberAsync(note.Id, versionNumber.Value);
 
-            var response = new
-            {
-                type = "noteVersion",
-                message = $"Version {versionNumber} of note \"{note.Title}\"",
-                noteId = note.Id,
-                noteTitle = note.Title,
-                version = new
+                if (version == null)
                 {
-                    versionNumber = version.VersionNumber,
-                    isCurrent = version.IsCurrent,
-                    title = version.Title,
-                    content = version.Content,
-                    tags = version.Tags,
-                    folder = version.Folder,
-                    isArchived = version.IsArchived,
-                    validFrom = version.ValidFrom,
-                    validTo = version.ValidTo,
-                    changeSummary = version.ChangeSummary,
-                    modifiedBy = version.ModifiedBy,
-                    source = version.Source,
-                    aiProvider = version.AiProvider,
-                    aiModel = version.AiModel
+                    var totalVersions = await _versionService.GetVersionCountAsync(note.Id);
+                    return $"Version {versionNumber} not found for note \"{note.Title}\". This note has {totalVersions} version(s).";
                 }
-            };
 
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("getting note version", ex.Message);
-        }
-    }
-
-    [KernelFunction("GetVersionAtTime")]
-    [Description("Gets a note's content as it was at a specific point in time. Supports ISO dates (2024-12-25) and relative dates (yesterday, last week, 3 days ago).")]
-    public async Task<string> GetVersionAtTimeAsync(
-        [Description("The ID of the note")] string noteId,
-        [Description("The timestamp - ISO format (2024-12-25T10:30:00) or relative (yesterday, last week, 3 days ago)")] string timestamp)
-    {
-        var userError = ValidateUserContext("get version at time");
-        if (userError != null) return userError;
-
-        try
-        {
-            // First verify the note exists and user has access
-            var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
-            if (note == null)
-            {
-                return $"Note with ID \"{noteId}\" not found or you don't have permission to access it.";
+                return JsonSerializer.Serialize(new
+                {
+                    type = "noteVersion",
+                    message = $"Version {versionNumber} of note \"{note.Title}\"",
+                    noteId = note.Id,
+                    noteTitle = note.Title,
+                    version = new
+                    {
+                        versionNumber = version.VersionNumber,
+                        isCurrent = version.IsCurrent,
+                        title = version.Title,
+                        content = version.Content,
+                        tags = version.Tags,
+                        folder = version.Folder,
+                        isArchived = version.IsArchived,
+                        validFrom = version.ValidFrom,
+                        validTo = version.ValidTo,
+                        changeSummary = version.ChangeSummary,
+                        modifiedBy = version.ModifiedBy,
+                        source = version.Source,
+                        aiProvider = version.AiProvider,
+                        aiModel = version.AiModel
+                    }
+                });
             }
 
+            // Retrieve by timestamp
             var now = DateTime.UtcNow;
-            DateTime targetTime = ParseRelativeDate(timestamp, now);
+            DateTime targetTime = ParseRelativeDate(timestamp!, now);
 
-            var version = await _versionService.GetVersionAtTimeAsync(noteId, targetTime);
+            var versionAtTime = await _versionService.GetVersionAtTimeAsync(note.Id, targetTime);
 
-            if (version == null)
+            if (versionAtTime == null)
             {
                 return $"No version found for note \"{note.Title}\" at {targetTime:yyyy-MM-dd HH:mm:ss} UTC. The note may not have existed at that time.";
             }
 
-            var response = new
+            return JsonSerializer.Serialize(new
             {
                 type = "noteVersion",
                 message = $"Note \"{note.Title}\" as it was at {targetTime:yyyy-MM-dd HH:mm:ss} UTC",
@@ -220,25 +208,23 @@ public class NoteVersionPlugin : NotePluginBase
                 requestedTime = targetTime,
                 version = new
                 {
-                    versionNumber = version.VersionNumber,
-                    isCurrent = version.IsCurrent,
-                    title = version.Title,
-                    content = version.Content,
-                    tags = version.Tags,
-                    folder = version.Folder,
-                    isArchived = version.IsArchived,
-                    validFrom = version.ValidFrom,
-                    validTo = version.ValidTo,
-                    changeSummary = version.ChangeSummary,
-                    modifiedBy = version.ModifiedBy
+                    versionNumber = versionAtTime.VersionNumber,
+                    isCurrent = versionAtTime.IsCurrent,
+                    title = versionAtTime.Title,
+                    content = versionAtTime.Content,
+                    tags = versionAtTime.Tags,
+                    folder = versionAtTime.Folder,
+                    isArchived = versionAtTime.IsArchived,
+                    validFrom = versionAtTime.ValidFrom,
+                    validTo = versionAtTime.ValidTo,
+                    changeSummary = versionAtTime.ChangeSummary,
+                    modifiedBy = versionAtTime.ModifiedBy
                 }
-            };
-
-            return JsonSerializer.Serialize(response);
+            });
         }
         catch (Exception ex)
         {
-            return CreateErrorResponse("getting version at time", ex.Message);
+            return CreateErrorResponse("getting version", ex.Message);
         }
     }
 

@@ -102,6 +102,11 @@ public class ToolCallInfo
     public string ToolName { get; set; } = string.Empty;
     public string Arguments { get; set; } = string.Empty;
     public string Result { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gemini 3 thought signature - must be preserved for function calling.
+    /// </summary>
+    public string? ThoughtSignature { get; set; }
 }
 
 public class AgentStreamEvent
@@ -112,6 +117,12 @@ public class AgentStreamEvent
     public string? ToolId { get; set; }
     public string? ToolArguments { get; set; }
     public string? ToolResult { get; set; }
+
+    /// <summary>
+    /// Thought signature for Gemini 3 function calling (for ToolCallEnd events).
+    /// Must be persisted and passed back to maintain reasoning context.
+    /// </summary>
+    public string? ThoughtSignature { get; set; }
 
     /// <summary>
     /// Retrieved notes from automatic context injection (for ContextRetrieval events)

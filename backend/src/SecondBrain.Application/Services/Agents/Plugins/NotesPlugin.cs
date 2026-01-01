@@ -14,11 +14,11 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 /// Facade plugin that combines all note-related plugins into a single cohesive interface.
 /// This maintains backward compatibility while delegating to specialized plugins:
 /// - NoteCrudPlugin: Create, Get, Update, Delete, Append, Duplicate
-/// - NoteSearchPlugin: Search, SemanticSearch, SearchByTags, DateRange, FindRelated
+/// - NoteSearchPlugin: Unified SearchNotes with modes (semantic, exact, tags, date, related)
 /// - NoteOrganizationPlugin: List, Archive, Folders, Tags, Stats
 /// - NoteAnalysisPlugin: Analyze, SuggestTags, Summarize, Compare
-/// - NoteVersionPlugin: GetVersionHistory, GetVersion, GetVersionAtTime, CompareVersions, RestoreVersion
-/// - NoteTrashPlugin: ListDeleted, RestoreDeleted, PermanentlyDelete
+/// - NoteVersionPlugin: GetVersionHistory, GetVersion (by number OR timestamp), CompareVersions, RestoreVersion
+/// - NoteTrashPlugin: ManageTrash (list, restore, delete actions)
 /// </summary>
 public class NotesPlugin : IAgentPlugin
 {
@@ -217,13 +217,17 @@ Use markdown thoughtfully for readability:
         [Description("The ID of the note to delete")] string noteId)
         => _crudPlugin.DeleteNoteAsync(noteId);
 
-    [KernelFunction("AppendToNote")]
-    [Description("Appends content to the end of an existing note. Use this when the user wants to add something to an existing note, like adding items to a list or adding new information.")]
-    public Task<string> AppendToNoteAsync(
-        [Description("The ID of the note to append to")] string noteId,
-        [Description("The content to append to the note")] string contentToAppend,
-        [Description("Whether to add a newline before the appended content (default: true)")] bool addNewline = true)
-        => _crudPlugin.AppendToNoteAsync(noteId, contentToAppend, addNewline);
+    [KernelFunction("EditNote")]
+    [Description("Surgical edit: append/prepend/insert/replace text. operation='append' adds to end, 'prepend' adds to start, 'insert' at line#, 'replace' for find-replace. Examples: 'add milk to list' -> append, 'fix typo X to Y' -> replace.")]
+    public Task<string> EditNoteAsync(
+        [Description("Note ID to edit")] string noteId,
+        [Description("Operation: 'append'|'prepend'|'insert'|'replace'")] string operation,
+        [Description("Content to add (for append/prepend/insert) or replacement text (for replace)")] string content,
+        [Description("Line number for 'insert' (0=beginning)")] int? lineNumber = null,
+        [Description("Text to find for 'replace' operation")] string? oldText = null,
+        [Description("Replace all occurrences? (default: false)")] bool allowMultiple = false,
+        [Description("Add blank line separator? (for append/prepend)")] bool addNewline = true)
+        => _crudPlugin.EditNoteAsync(noteId, operation, content, lineNumber, oldText, allowMultiple, addNewline);
 
     [KernelFunction("DuplicateNote")]
     [Description("Creates a copy of an existing note. Use this when the user wants to duplicate a note as a template or starting point for a new note.")]
@@ -232,103 +236,38 @@ Use markdown thoughtfully for readability:
         [Description("Optional new title for the duplicate (default: adds 'Copy of' prefix)")] string? newTitle = null)
         => _crudPlugin.DuplicateNoteAsync(noteId, newTitle);
 
-    [KernelFunction("ReplaceInNote")]
-    [Description("Find and replace specific text within a note. Use for surgical edits like fixing typos, renaming terms, or updating specific phrases. By default, fails if the text appears multiple times (safety feature). Set allowMultiple=true to replace all occurrences.")]
-    public Task<string> ReplaceInNoteAsync(
-        [Description("The ID of the note to modify")] string noteId,
-        [Description("The exact text to find and replace (case-sensitive, whitespace-sensitive)")] string oldText,
-        [Description("The text to replace it with (use empty string to delete the text)")] string newText,
-        [Description("Set to true to replace ALL occurrences. If false (default), fails when multiple matches exist.")] bool allowMultiple = false)
-        => _crudPlugin.ReplaceInNoteAsync(noteId, oldText, newText, allowMultiple);
-
-    [KernelFunction("InsertInNote")]
-    [Description("Insert text at a specific line number in a note. Line 0 inserts at the very beginning, line N inserts after line N. Lines beyond the note length append at the end.")]
-    public Task<string> InsertInNoteAsync(
-        [Description("The ID of the note to modify")] string noteId,
-        [Description("Line number to insert after (0 = beginning, 1 = after first line, etc.)")] int lineNumber,
-        [Description("The text to insert")] string textToInsert)
-        => _crudPlugin.InsertInNoteAsync(noteId, lineNumber, textToInsert);
-
-    [KernelFunction("PrependToNote")]
-    [Description("Add content to the beginning of an existing note. Use for adding headers, introductions, or priority items at the top.")]
-    public Task<string> PrependToNoteAsync(
-        [Description("The ID of the note to prepend to")] string noteId,
-        [Description("The content to add at the beginning of the note")] string contentToPrepend,
-        [Description("Whether to add a newline after the prepended content (default: true)")] bool addNewline = true)
-        => _crudPlugin.PrependToNoteAsync(noteId, contentToPrepend, addNewline);
-
     #endregion
 
-    #region Image Attachment Operations (delegated to NoteCrudPlugin)
+    #region Image Management Operations (delegated to NoteCrudPlugin)
 
-    [KernelFunction("ListContextImages")]
-    [Description("LIST images attached to the current message. Use to see available images before CreateNoteWithImage or AttachImageToNote. Returns image references (img1, img2, etc.) for use in other tools.")]
-    public Task<string> ListContextImagesAsync()
-        => _crudPlugin.ListContextImagesAsync();
-
-    [KernelFunction("CreateNoteWithImage")]
-    [Description("CREATE a new note with image(s) attached. Use when user says 'save this image as a note' or 'create a note with this image'. Requires images in current message (check with ListContextImages first).")]
-    public Task<string> CreateNoteWithImageAsync(
-        [Description("Note title (required, descriptive)")] string title,
-        [Description("Note content (required, describes the image context)")] string content,
-        [Description("Image references to attach, comma-separated (e.g., 'img1' or 'img1,img2')")] string imageReferences,
-        [Description("Comma-separated tags for categorization")] string? tags = null)
-        => _crudPlugin.CreateNoteWithImageAsync(title, content, imageReferences, tags);
-
-    [KernelFunction("AttachImageToNote")]
-    [Description("ATTACH image(s) to an existing note. Use when user says 'attach this image to my X note' or 'add this image to note Y'. Use FindNoteForImageAttachment first if user doesn't provide exact note ID.")]
-    public Task<string> AttachImageToNoteAsync(
-        [Description("Note ID to attach images to")] string noteId,
-        [Description("Image references to attach (e.g., 'img1' or 'img1,img2')")] string imageReferences)
-        => _crudPlugin.AttachImageToNoteAsync(noteId, imageReferences);
-
-    [KernelFunction("FindNoteForImageAttachment")]
-    [Description("SEARCH for a note to attach images to using semantic search. Returns best match with confidence score. If score >= 0.8, you can proceed with AttachImageToNote. If score < 0.8, ask user to confirm the match first.")]
-    public Task<string> FindNoteForImageAttachmentAsync(
-        [Description("Search query describing the note (e.g., 'meeting notes', 'project plan')")] string query)
-        => _crudPlugin.FindNoteForImageAttachmentAsync(query);
+    [KernelFunction("ManageContextImages")]
+    [Description("Handle images in current message. action='list' to see available images, 'create' to make new note with image, 'attach' to add to existing note, 'find' to search for note to attach to. Examples: 'save this image' -> create, 'attach to my project note' -> find then attach.")]
+    public Task<string> ManageContextImagesAsync(
+        [Description("Action: 'list'|'create'|'attach'|'find'")] string action,
+        [Description("Note title (for 'create')")] string? title = null,
+        [Description("Note content (for 'create')")] string? content = null,
+        [Description("Note ID (for 'attach')")] string? noteId = null,
+        [Description("Image refs e.g. 'img1,img2' (for 'create'/'attach')")] string? imageReferences = null,
+        [Description("Search query (for 'find')")] string? searchQuery = null,
+        [Description("Tags (for 'create')")] string? tags = null)
+        => _crudPlugin.ManageContextImagesAsync(action, title, content, noteId, imageReferences, searchQuery, tags);
 
     #endregion
 
     #region Search Operations (delegated to NoteSearchPlugin)
 
     [KernelFunction("SearchNotes")]
-    [Description("Exact keyword/phrase search in note titles, content, and tags. Only use when you need literal text matching. For general note finding, use SemanticSearch instead - it's more effective at finding relevant notes.")]
+    [Description("Find notes. mode='semantic' (default) finds by meaning, 'exact' for literal text, 'tags' for categories, 'date' for time range, 'related' for similar notes. Examples: 'find notes about cooking' -> semantic, 'notes tagged project' -> tags, 'notes from last week' -> date.")]
     public Task<string> SearchNotesAsync(
-        [Description("The search query to find notes")] string query,
-        [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
-        => _searchPlugin.SearchNotesAsync(query, maxResults);
-
-    [KernelFunction("SemanticSearch")]
-    [Description("PRIMARY SEARCH TOOL - AI-powered search that finds notes by meaning and context. Use this as your first choice when looking for notes. Finds relevant notes even with different wording, synonyms, or related concepts (e.g., 'sambusa' finds 'samosa recipes').")]
-    public Task<string> SemanticSearchAsync(
-        [Description("The search query to find semantically related notes")] string query,
-        [Description("Maximum number of results to return (default: 5)")] int maxResults = 5)
-        => _searchPlugin.SemanticSearchAsync(query, maxResults);
-
-    [KernelFunction("SearchByTags")]
-    [Description("Finds notes that have one or more of the specified tags. Use this when the user wants to find notes by their tags or categories.")]
-    public Task<string> SearchByTagsAsync(
-        [Description("Comma-separated list of tags to search for")] string tags,
-        [Description("If true, notes must have ALL specified tags; if false, notes with ANY of the tags match (default: false)")] bool requireAll = false,
-        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
-        => _searchPlugin.SearchByTagsAsync(tags, requireAll, maxResults);
-
-    [KernelFunction("GetNotesByDateRange")]
-    [Description("Finds notes created or updated within a specific date range. Use this when the user wants to find notes from a particular time period.")]
-    public Task<string> GetNotesByDateRangeAsync(
-        [Description("Start date in ISO format (e.g., '2024-01-01') or relative like 'today', 'yesterday', 'last week', 'last month'")] string startDate,
-        [Description("End date in ISO format (e.g., '2024-12-31') or relative like 'today', 'now' (optional, defaults to now)")] string? endDate = null,
-        [Description("Whether to search by 'created' or 'updated' date (default: 'created')")] string dateField = "created",
-        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
-        => _searchPlugin.GetNotesByDateRangeAsync(startDate, endDate, dateField, maxResults);
-
-    [KernelFunction("FindRelatedNotes")]
-    [Description("Finds notes that are semantically related to a specific note. Use this to discover connections between notes or find similar content.")]
-    public Task<string> FindRelatedNotesAsync(
-        [Description("The ID of the note to find related notes for")] string noteId,
-        [Description("Maximum number of related notes to return (default: 5)")] int maxResults = 5)
-        => _searchPlugin.FindRelatedNotesAsync(noteId, maxResults);
+        [Description("Search query or comma-separated tags")] string query,
+        [Description("Search mode: 'semantic'|'exact'|'tags'|'date'|'related'")] string mode = "semantic",
+        [Description("Max results (default: 5)")] int maxResults = 5,
+        [Description("Start date for 'date' mode (ISO or relative: today, yesterday, last week, last month)")] string? startDate = null,
+        [Description("End date for 'date' mode (default: now)")] string? endDate = null,
+        [Description("Note ID for 'related' mode")] string? relatedToNoteId = null,
+        [Description("For 'tags' mode: require ALL tags? (default: false = any match)")] bool requireAllTags = false,
+        [Description("Detail level: 'ids_only'|'summary'|'full' (default: summary)")] string detailLevel = "summary")
+        => _searchPlugin.SearchNotesAsync(query, mode, maxResults, startDate, endDate, relatedToNoteId, requireAllTags, detailLevel);
 
     #endregion
 
@@ -357,46 +296,24 @@ Use markdown thoughtfully for readability:
         [Description("The folder name to move the note to (use empty string or null to remove from folder)")] string? folder = null)
         => _organizationPlugin.MoveToFolderAsync(noteId, folder);
 
-    [KernelFunction("ListFolders")]
-    [Description("Lists all folders used to organize notes, with counts showing how many notes are in each folder.")]
-    public Task<string> ListFoldersAsync(
-        [Description("Whether to include archived notes in the folder counts (default: false)")] bool includeArchived = false)
-        => _organizationPlugin.ListFoldersAsync(includeArchived);
-
-    [KernelFunction("ListAllTags")]
-    [Description("Lists all unique tags used across the user's notes, with counts showing how many notes use each tag.")]
-    public Task<string> ListAllTagsAsync(
-        [Description("Whether to include archived notes in the tag counts (default: false)")] bool includeArchived = false)
-        => _organizationPlugin.ListAllTagsAsync(includeArchived);
-
-    [KernelFunction("GetNoteStats")]
-    [Description("Gets statistics about the user's notes, including total counts, tag distribution, and folder organization.")]
-    public Task<string> GetNoteStatsAsync(
-        [Description("Whether to include archived notes in the statistics (default: false)")] bool includeArchived = false)
-        => _organizationPlugin.GetNoteStatsAsync(includeArchived);
+    [KernelFunction("GetOverview")]
+    [Description("Get notes overview. type='all' (default) for full stats with top tags/folders, 'folders' for folder list, 'tags' for tag list, 'stats' for counts only. Examples: 'how many notes' -> all, 'what folders exist' -> folders, 'show my tags' -> tags.")]
+    public Task<string> GetOverviewAsync(
+        [Description("Overview type: 'all'|'folders'|'tags'|'stats'")] string type = "all",
+        [Description("Include archived notes in counts?")] bool includeArchived = false)
+        => _organizationPlugin.GetOverviewAsync(type, includeArchived);
 
     #endregion
 
     #region Analysis Operations (delegated to NoteAnalysisPlugin)
 
     [KernelFunction("AnalyzeNote")]
-    [Description("Analyzes a note using AI to extract key information, suggest tags, identify key points, and determine sentiment. Requires AI structured output service to be available.")]
+    [Description("AI analysis of note. type='full' (default) for comprehensive analysis with tags/keypoints/sentiment, 'tags' for tag suggestions only, 'summary' for summaries. Examples: 'analyze this note' -> full, 'suggest tags for note X' -> tags, 'summarize my notes' -> summary.")]
     public Task<string> AnalyzeNoteAsync(
-        [Description("The ID of the note to analyze")] string noteId)
-        => _analysisPlugin.AnalyzeNoteAsync(noteId);
-
-    [KernelFunction("SuggestTags")]
-    [Description("Uses AI to suggest relevant tags for a note based on its content. Helpful for organizing and categorizing notes.")]
-    public Task<string> SuggestTagsAsync(
-        [Description("The ID of the note to suggest tags for")] string noteId,
-        [Description("Maximum number of tags to suggest (default: 5)")] int maxTags = 5)
-        => _analysisPlugin.SuggestTagsAsync(noteId, maxTags);
-
-    [KernelFunction("SummarizeNote")]
-    [Description("Generates a comprehensive summary of a note using AI, including a one-liner, short summary, and key takeaways.")]
-    public Task<string> SummarizeNoteAsync(
-        [Description("The ID of the note to summarize")] string noteId)
-        => _analysisPlugin.SummarizeNoteAsync(noteId);
+        [Description("Note ID to analyze")] string noteId,
+        [Description("Analysis type: 'full'|'tags'|'summary'")] string type = "full",
+        [Description("Max tags for 'tags' type (default: 5)")] int maxTags = 5)
+        => _analysisPlugin.AnalyzeNoteAsync(noteId, type, maxTags);
 
     [KernelFunction("CompareNotes")]
     [Description("Compares two notes using AI to identify similarities, differences, and relationships between them.")]
@@ -430,20 +347,13 @@ Use markdown thoughtfully for readability:
         => _versionPlugin?.GetNoteVersionHistoryAsync(noteId, skip, take)
            ?? Task.FromResult("Error: Version history service not available.");
 
-    [KernelFunction("GetNoteVersion")]
-    [Description("Gets a specific version of a note by version number. Use this when the user wants to see the content of a particular version.")]
-    public Task<string> GetNoteVersionAsync(
-        [Description("The ID of the note")] string noteId,
-        [Description("The version number to retrieve")] int versionNumber)
-        => _versionPlugin?.GetNoteVersionAsync(noteId, versionNumber)
-           ?? Task.FromResult("Error: Version history service not available.");
-
-    [KernelFunction("GetVersionAtTime")]
-    [Description("Gets a note's content as it was at a specific point in time. Supports ISO dates (2024-12-25) and relative dates (yesterday, last week, 3 days ago).")]
-    public Task<string> GetVersionAtTimeAsync(
-        [Description("The ID of the note")] string noteId,
-        [Description("The timestamp - ISO format (2024-12-25T10:30:00) or relative (yesterday, last week, 3 days ago)")] string timestamp)
-        => _versionPlugin?.GetVersionAtTimeAsync(noteId, timestamp)
+    [KernelFunction("GetVersion")]
+    [Description("Get specific note version. Use versionNumber OR timestamp (not both). Timestamp supports ISO dates and relative ('yesterday', 'last week'). Examples: 'show version 3' -> versionNumber=3, 'what was this yesterday' -> timestamp='yesterday'.")]
+    public Task<string> GetVersionAsync(
+        [Description("Note ID")] string noteId,
+        [Description("Version number to retrieve")] int? versionNumber = null,
+        [Description("Timestamp (ISO or relative)")] string? timestamp = null)
+        => _versionPlugin?.GetVersionAsync(noteId, versionNumber, timestamp)
            ?? Task.FromResult("Error: Version history service not available.");
 
     [KernelFunction("CompareNoteVersions")]
@@ -467,23 +377,13 @@ Use markdown thoughtfully for readability:
 
     #region Trash Operations (delegated to NoteTrashPlugin)
 
-    [KernelFunction("ListDeletedNotes")]
-    [Description("Lists all notes in the trash (soft-deleted notes). These notes can be restored or permanently deleted.")]
-    public Task<string> ListDeletedNotesAsync(
-        [Description("Maximum number of deleted notes to list (default: 20)")] int maxResults = 20)
-        => _trashPlugin.ListDeletedNotesAsync(maxResults);
-
-    [KernelFunction("RestoreDeletedNote")]
-    [Description("Restores a soft-deleted note from the trash back to active notes. Use this when the user wants to recover a deleted note.")]
-    public Task<string> RestoreDeletedNoteAsync(
-        [Description("The ID of the deleted note to restore")] string noteId)
-        => _trashPlugin.RestoreDeletedNoteAsync(noteId);
-
-    [KernelFunction("PermanentlyDeleteNote")]
-    [Description("Permanently deletes a note from the trash. WARNING: This action cannot be undone. Only use when the user explicitly confirms permanent deletion.")]
-    public Task<string> PermanentlyDeleteNoteAsync(
-        [Description("The ID of the deleted note to permanently remove")] string noteId)
-        => _trashPlugin.PermanentlyDeleteNoteAsync(noteId);
+    [KernelFunction("ManageTrash")]
+    [Description("Manage deleted notes. action='list' to view trash, 'restore' to recover a note, 'delete' to permanently remove (CANNOT BE UNDONE). Examples: 'show trash' -> list, 'restore note X' -> restore, 'empty this from trash' -> delete.")]
+    public Task<string> ManageTrashAsync(
+        [Description("Action: 'list'|'restore'|'delete'")] string action,
+        [Description("Note ID (for 'restore'/'delete')")] string? noteId = null,
+        [Description("Max results (for 'list')")] int maxResults = 20)
+        => _trashPlugin.ManageTrashAsync(action, noteId, maxResults);
 
     #endregion
 }

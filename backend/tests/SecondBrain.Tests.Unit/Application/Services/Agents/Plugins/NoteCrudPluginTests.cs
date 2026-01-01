@@ -449,26 +449,26 @@ public class NoteCrudPluginTests
 
     #endregion
 
-    #region AppendToNoteAsync Tests
+    #region EditNoteAsync Tests (Append operation)
 
     [Fact]
-    public async Task AppendToNoteAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task EditNoteAsync_Append_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteCrudPlugin(_mockNoteRepository.Object, null, null, null, _mockNoteOperationService.Object);
 
         // Act
-        var result = await plugin.AppendToNoteAsync("note-1", "More content");
+        var result = await plugin.EditNoteAsync("note-1", "append", "More content");
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task AppendToNoteAsync_WhenContentIsEmpty_ReturnsError()
+    public async Task EditNoteAsync_Append_WhenContentIsEmpty_ReturnsError()
     {
         // Act
-        var result = await _sut.AppendToNoteAsync("note-1", "");
+        var result = await _sut.EditNoteAsync("note-1", "append", "");
 
         // Assert
         result.Should().Contain("Error");
@@ -476,35 +476,35 @@ public class NoteCrudPluginTests
     }
 
     [Fact]
-    public async Task AppendToNoteAsync_WhenNoteNotFound_ReturnsNotFound()
+    public async Task EditNoteAsync_Append_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange - AppendAsync handles note lookup internally
         _mockNoteOperationService.Setup(s => s.AppendAsync(It.IsAny<AppendToNoteOperationRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<NoteOperationResult>.Failure(Error.NotFound("Note", "note-1")));
 
         // Act
-        var result = await _sut.AppendToNoteAsync("note-1", "More content");
+        var result = await _sut.EditNoteAsync("note-1", "append", "More content");
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task AppendToNoteAsync_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
+    public async Task EditNoteAsync_Append_WhenNoteOwnedByDifferentUser_ReturnsPermissionError()
     {
         // Arrange - AppendAsync handles permission check internally
         _mockNoteOperationService.Setup(s => s.AppendAsync(It.IsAny<AppendToNoteOperationRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<NoteOperationResult>.Failure(Error.Forbidden("You don't have permission to access this note")));
 
         // Act
-        var result = await _sut.AppendToNoteAsync("note-1", "More content");
+        var result = await _sut.EditNoteAsync("note-1", "append", "More content");
 
         // Assert
         result.Should().Contain("permission");
     }
 
     [Fact]
-    public async Task AppendToNoteAsync_WithValidInput_ReturnsSuccess()
+    public async Task EditNoteAsync_Append_WithValidInput_ReturnsSuccess()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", content: "Original content");
@@ -516,7 +516,7 @@ public class NoteCrudPluginTests
                 NoteOperationResultFactory.Updated(note, 2, NoteSource.Agent, new[] { "content" })));
 
         // Act
-        var result = await _sut.AppendToNoteAsync("note-1", "Appended content");
+        var result = await _sut.EditNoteAsync("note-1", "append", "Appended content");
 
         // Assert
         result.Should().Contain("Successfully appended");

@@ -72,8 +72,6 @@ public class NoteAnalysisPluginTests
     {
         var result = _sut.GetSystemPromptAddition();
         result.Should().Contain("AnalyzeNote");
-        result.Should().Contain("SuggestTags");
-        result.Should().Contain("SummarizeNote");
         result.Should().Contain("CompareNotes");
     }
 
@@ -203,34 +201,34 @@ public class NoteAnalysisPluginTests
 
     #endregion
 
-    #region SuggestTagsAsync Tests
+    #region AnalyzeNoteAsync with type='tags' Tests
 
     [Fact]
-    public async Task SuggestTagsAsync_WhenNoAIService_ReturnsServiceNotAvailableError()
+    public async Task AnalyzeNoteAsync_Tags_WhenNoAIService_ReturnsServiceNotAvailableError()
     {
         // Act
-        var result = await _sutWithoutAI.SuggestTagsAsync("note-1");
+        var result = await _sutWithoutAI.AnalyzeNoteAsync("note-1", type: "tags");
 
         // Assert
         result.Should().Contain("AI structured output service");
     }
 
     [Fact]
-    public async Task SuggestTagsAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
+    public async Task AnalyzeNoteAsync_Tags_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.SuggestTagsAsync("note-1");
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "tags");
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task SuggestTagsAsync_WhenAIReturnsNoTags_ReturnsError()
+    public async Task AnalyzeNoteAsync_Tags_WhenAIReturnsNoTags_ReturnsError()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
@@ -243,14 +241,14 @@ public class NoteAnalysisPluginTests
             .ReturnsAsync(analysis);
 
         // Act
-        var result = await _sut.SuggestTagsAsync("note-1");
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "tags");
 
         // Assert
         result.Should().Contain("Failed to generate tag suggestions");
     }
 
     [Fact]
-    public async Task SuggestTagsAsync_WhenValid_ReturnsSuggestedTags()
+    public async Task AnalyzeNoteAsync_Tags_WhenValid_ReturnsSuggestedTags()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note", tags: new List<string> { "existing" });
@@ -266,7 +264,7 @@ public class NoteAnalysisPluginTests
             .ReturnsAsync(analysis);
 
         // Act
-        var result = await _sut.SuggestTagsAsync("note-1", maxTags: 5);
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "tags", maxTags: 5);
 
         // Assert
         result.Should().Contain("suggestedTags");
@@ -275,7 +273,7 @@ public class NoteAnalysisPluginTests
     }
 
     [Fact]
-    public async Task SuggestTagsAsync_RespectsMaxTagsParameter()
+    public async Task AnalyzeNoteAsync_Tags_RespectsMaxTagsParameter()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
@@ -291,7 +289,7 @@ public class NoteAnalysisPluginTests
             .ReturnsAsync(analysis);
 
         // Act
-        var result = await _sut.SuggestTagsAsync("note-1", maxTags: 3);
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "tags", maxTags: 3);
 
         // Assert
         result.Should().Contain("tag1");
@@ -301,34 +299,34 @@ public class NoteAnalysisPluginTests
 
     #endregion
 
-    #region SummarizeNoteAsync Tests
+    #region AnalyzeNoteAsync with type='summary' Tests
 
     [Fact]
-    public async Task SummarizeNoteAsync_WhenNoAIService_ReturnsServiceNotAvailableError()
+    public async Task AnalyzeNoteAsync_Summary_WhenNoAIService_ReturnsServiceNotAvailableError()
     {
         // Act
-        var result = await _sutWithoutAI.SummarizeNoteAsync("note-1");
+        var result = await _sutWithoutAI.AnalyzeNoteAsync("note-1", type: "summary");
 
         // Assert
         result.Should().Contain("AI structured output service");
     }
 
     [Fact]
-    public async Task SummarizeNoteAsync_WhenNoteNotFound_ReturnsNotFoundMessage()
+    public async Task AnalyzeNoteAsync_Summary_WhenNoteNotFound_ReturnsNotFoundMessage()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.SummarizeNoteAsync("note-1");
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "summary");
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task SummarizeNoteAsync_WhenAIReturnsNull_ReturnsError()
+    public async Task AnalyzeNoteAsync_Summary_WhenAIReturnsNull_ReturnsError()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
@@ -339,14 +337,14 @@ public class NoteAnalysisPluginTests
             .ReturnsAsync((ContentSummary?)null);
 
         // Act
-        var result = await _sut.SummarizeNoteAsync("note-1");
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "summary");
 
         // Assert
         result.Should().Contain("Failed to generate summary");
     }
 
     [Fact]
-    public async Task SummarizeNoteAsync_WhenValid_ReturnsSummary()
+    public async Task AnalyzeNoteAsync_Summary_WhenValid_ReturnsSummary()
     {
         // Arrange
         var note = CreateNote("note-1", "Test Note");
@@ -366,7 +364,7 @@ public class NoteAnalysisPluginTests
             .ReturnsAsync(summary);
 
         // Act
-        var result = await _sut.SummarizeNoteAsync("note-1");
+        var result = await _sut.AnalyzeNoteAsync("note-1", type: "summary");
 
         // Assert
         result.Should().Contain("summary");

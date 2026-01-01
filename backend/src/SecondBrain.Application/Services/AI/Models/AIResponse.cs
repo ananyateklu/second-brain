@@ -173,6 +173,12 @@ public class FunctionCallInfo
     /// Unique ID for this function call (for matching with results)
     /// </summary>
     public string? Id { get; set; }
+
+    /// <summary>
+    /// Thought signature for Gemini 3 models.
+    /// Must be preserved and returned to maintain reasoning context.
+    /// </summary>
+    public string? ThoughtSignature { get; set; }
 }
 
 /// <summary>

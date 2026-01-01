@@ -114,11 +114,10 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
                     if (!string.IsNullOrWhiteSpace(message.Content))
                         contextBuilder.AppendLine(message.Content);
                     contextBuilder.AppendLine();
-                    contextBuilder.AppendLine("---SYSTEM CONTEXT (DO NOT REPRODUCE THIS FORMAT IN YOUR RESPONSE)---");
-                    contextBuilder.AppendLine("Tools executed in previous turn:");
+                    contextBuilder.AppendLine("<!-- tool-results -->");
                     foreach (var toolCall in message.ToolCalls)
-                        contextBuilder.AppendLine($"  {toolCall.ToolName}: {toolCall.Result}");
-                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+                        contextBuilder.AppendLine($"{toolCall.ToolName}: {toolCall.Result}");
+                    contextBuilder.AppendLine("<!-- /tool-results -->");
                     chatHistory.AddAssistantMessage(contextBuilder.ToString());
                 }
                 else

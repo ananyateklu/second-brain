@@ -123,11 +123,11 @@ describe('ToolExecutionCard', () => {
       expect(screen.getByText('Listing Notes')).toBeInTheDocument();
     });
 
-    it('should render tool label for GetNoteStats', () => {
-      render(<ToolExecutionCard execution={createMockExecution({ tool: 'GetNoteStats' })} />, {
+    it('should render tool label for GetOverview', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'GetOverview' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Getting Statistics')).toBeInTheDocument();
+      expect(screen.getByText('Getting Overview')).toBeInTheDocument();
     });
 
     it('should render tool label for DeleteNote', () => {
@@ -144,11 +144,46 @@ describe('ToolExecutionCard', () => {
       expect(screen.getByText('Updating Archive Status')).toBeInTheDocument();
     });
 
-    it('should render tool label for SemanticSearch', () => {
-      render(<ToolExecutionCard execution={createMockExecution({ tool: 'SemanticSearch' })} />, {
+    it('should render tool label for EditNote', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'EditNote' })} />, {
         wrapper: createWrapper(),
       });
-      expect(screen.getByText('Semantic Search')).toBeInTheDocument();
+      expect(screen.getByText('Editing Note')).toBeInTheDocument();
+    });
+
+    it('should render tool label for ManageTrash', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'ManageTrash' })} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByText('Managing Trash')).toBeInTheDocument();
+    });
+
+    it('should render tool label for GetVersion', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'GetVersion' })} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByText('Getting Version')).toBeInTheDocument();
+    });
+
+    it('should render tool label for ManageContextImages', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'ManageContextImages' })} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByText('Managing Images')).toBeInTheDocument();
+    });
+
+    it('should render tool label for search_tools', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'search_tools' })} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByText('Searching Tools')).toBeInTheDocument();
+    });
+
+    it('should render tool label for list_tool_categories', () => {
+      render(<ToolExecutionCard execution={createMockExecution({ tool: 'list_tool_categories' })} />, {
+        wrapper: createWrapper(),
+      });
+      expect(screen.getByText('Listing Tool Categories')).toBeInTheDocument();
     });
 
     it('should render default label for unknown tool (converted to Title Case)', () => {
@@ -495,7 +530,20 @@ describe('ToolExecutionCard', () => {
   // ============================================
   describe('tool icons', () => {
     it('should render different icons for different tools', () => {
-      const tools = ['CreateNote', 'SearchNotes', 'UpdateNote', 'GetNote', 'DeleteNote'];
+      const tools = [
+        'CreateNote',
+        'SearchNotes',
+        'UpdateNote',
+        'GetNote',
+        'DeleteNote',
+        'EditNote',
+        'GetOverview',
+        'ManageContextImages',
+        'GetVersion',
+        'ManageTrash',
+        'search_tools',
+        'list_tool_categories',
+      ];
 
       tools.forEach((tool) => {
         const { container, unmount } = render(

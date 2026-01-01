@@ -165,11 +165,13 @@ public class AgentController : ControllerBase
                     Role = m.Role,
                     Content = m.Content,
                     // Pass tool calls to the AgentService so it can build proper context
+                    // Include ThoughtSignature for Gemini 3 models
                     ToolCalls = m.ToolCalls?.Select(tc => new Application.Services.Agents.Models.ToolCallInfo
                     {
                         ToolName = tc.ToolName,
                         Arguments = tc.Arguments,
-                        Result = tc.Result
+                        Result = tc.Result,
+                        ThoughtSignature = tc.ThoughtSignature
                     }).ToList()
                 }).ToList(),
                 UserId = userId,
@@ -287,10 +289,13 @@ public class AgentController : ControllerBase
 
                     case AgentEventType.ToolCallStart:
                         // Store arguments for this tool call to use when ToolCallEnd arrives
+                        // CRITICAL: Use ToolId as key, not ToolName, because multiple calls can have
+                        // the same name (e.g., 21 SetNoteArchived calls). Using ToolName would overwrite.
                         var toolName = evt.ToolName ?? "";
-                        if (!string.IsNullOrEmpty(toolName))
+                        var toolCallKey = evt.ToolId ?? toolName; // ToolId is unique per call
+                        if (!string.IsNullOrEmpty(toolCallKey))
                         {
-                            pendingToolArguments[toolName] = evt.ToolArguments ?? "";
+                            pendingToolArguments[toolCallKey] = evt.ToolArguments ?? "";
 
                             // Capture text streamed since last tool ended (or start of response)
                             // This is the "pre-tool text" that should appear before this tool in the timeline
@@ -300,7 +305,7 @@ public class AgentController : ControllerBase
                                 var capturedPreToolText = currentText.Substring(lastToolEndPosition).Trim();
                                 if (!string.IsNullOrEmpty(capturedPreToolText))
                                 {
-                                    pendingPreToolText[toolName] = capturedPreToolText;
+                                    pendingPreToolText[toolCallKey] = capturedPreToolText;
                                 }
                             }
                         }
@@ -318,10 +323,12 @@ public class AgentController : ControllerBase
 
                     case AgentEventType.ToolCallEnd:
                         var endToolName = evt.ToolName ?? "";
+                        // Use ToolId as key to match what was stored in ToolCallStart
+                        var endToolCallKey = evt.ToolId ?? endToolName;
                         // Retrieve the arguments that were captured during ToolCallStart
-                        var toolArguments = pendingToolArguments.TryGetValue(endToolName, out var args) ? args : "";
+                        var toolArguments = pendingToolArguments.TryGetValue(endToolCallKey, out var args) ? args : "";
                         // Retrieve the pre-tool text that was captured during ToolCallStart
-                        var preToolText = pendingPreToolText.TryGetValue(endToolName, out var preText) ? preText : null;
+                        var preToolText = pendingPreToolText.TryGetValue(endToolCallKey, out var preText) ? preText : null;
 
                         var toolEndJson = JsonSerializer.Serialize(new
                         {
@@ -340,15 +347,16 @@ public class AgentController : ControllerBase
                             Result = evt.ToolResult ?? "",
                             ExecutedAt = DateTime.UtcNow,
                             Success = true,
-                            PreToolText = preToolText
+                            PreToolText = preToolText,
+                            ThoughtSignature = evt.ThoughtSignature  // Gemini 3 thought signature
                         });
 
                         // Update the position tracker for the next tool's pre-text calculation
                         lastToolEndPosition = fullResponse.Length;
 
                         // Remove from pending after processing
-                        pendingToolArguments.Remove(endToolName);
-                        pendingPreToolText.Remove(endToolName);
+                        pendingToolArguments.Remove(endToolCallKey);
+                        pendingPreToolText.Remove(endToolCallKey);
                         break;
 
                     case AgentEventType.Thinking:

@@ -22,8 +22,7 @@ public class PostgresFixture : IAsyncLifetime
     {
         // Use pgvector/pgvector:pg18 image for PostgreSQL 18 features
         // Required for: uuidv7(), JSON_TABLE, and other PG18 features
-        _container = new PostgreSqlBuilder()
-            .WithImage("pgvector/pgvector:pg18")
+        _container = new PostgreSqlBuilder("pgvector/pgvector:pg18")
             .WithDatabase("secondbrain_test")
             .WithUsername("testuser")
             .WithPassword("testpassword")
