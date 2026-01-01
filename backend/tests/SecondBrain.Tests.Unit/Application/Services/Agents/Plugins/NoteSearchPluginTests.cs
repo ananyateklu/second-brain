@@ -562,16 +562,17 @@ public class NoteSearchPluginTests
     [Fact]
     public async Task GetNotesByDateRangeAsync_WhenNoMatches_ReturnsNotFoundMessage()
     {
-        // Arrange
+        // Arrange - Use a fixed date far in the past (2020) that won't overlap with any reasonable query range
         var notes = new List<Note>
         {
-            CreateNote("note-1", "Old Note", "Content", createdAt: DateTime.UtcNow.AddYears(-1))
+            CreateNote("note-1", "Old Note", "Content", createdAt: new DateTime(2020, 6, 15, 12, 0, 0, DateTimeKind.Utc))
         };
         _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
             .ReturnsAsync(notes);
 
-        // Act
-        var result = await _sut.GetNotesByDateRangeAsync("2025-01-01", "2025-12-31");
+        // Act - Query for a range that definitely doesn't include the note (far future)
+        var futureYear = DateTime.UtcNow.Year + 10;
+        var result = await _sut.GetNotesByDateRangeAsync($"{futureYear}-01-01", $"{futureYear}-12-31");
 
         // Assert
         result.Should().Contain("No notes found");
