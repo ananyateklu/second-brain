@@ -496,9 +496,9 @@ const PendingUserMessage = memo(function PendingUserMessage({ pendingMessage, in
         <div
           className="max-w-[85%] rounded-2xl px-4 py-3 rounded-br-md"
           style={{
-            backgroundColor: 'var(--btn-primary-bg)',
-            color: 'var(--btn-primary-text)',
-            border: '1px solid var(--btn-primary-border)',
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+            color: 'var(--text-primary)',
+            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
           }}
         >
           {/* Image generation badge */}
@@ -506,8 +506,8 @@ const PendingUserMessage = memo(function PendingUserMessage({ pendingMessage, in
             <div
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(4px)',
+                backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                color: 'var(--color-primary)',
               }}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -542,9 +542,9 @@ const PendingUserMessage = memo(function PendingUserMessage({ pendingMessage, in
       <div
         className="max-w-[85%] rounded-2xl px-4 py-2.5 rounded-br-md"
         style={{
-          backgroundColor: 'var(--btn-primary-bg)',
-          color: 'var(--btn-primary-text)',
-          border: '1px solid var(--btn-primary-border)',
+          backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+          color: 'var(--text-primary)',
+          border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
         }}
       >
         {pendingMessage.images && pendingMessage.images.length > 0 && (
@@ -552,8 +552,12 @@ const PendingUserMessage = memo(function PendingUserMessage({ pendingMessage, in
             {pendingMessage.images.map((image, index) => (
               <div
                 key={index}
-                className="relative rounded-lg overflow-hidden border border-white/20"
-                style={{ width: '80px', height: '80px' }}
+                className="relative rounded-lg overflow-hidden border"
+                style={{
+                  borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
+                  width: '80px',
+                  height: '80px',
+                }}
               >
                 <img
                   src={`data:${image.mediaType};base64,${image.base64Data}`}
