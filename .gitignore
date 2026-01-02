@@ -84,10 +84,20 @@ backend/src/SecondBrain.API/secondbrain-db.json
 backend/coverage-report
 .markdownlint.json
 
-# Claude memory system - auto-generated files
-.claude/
-CLAUDE.md
-AGENTS.md
+# Claude Code context system
+# Ignore machine-specific and auto-generated files
+.claude/settings.local.json
+.claude/auto-context.md
+.claude/full-context.md
+.claude/*.bak
+.claude/*.tmp
+
+# Keep these (safe to commit):
+# - .claude/README.md, GETTING_STARTED.md, GITHUB_INTEGRATION.md, SETUP_COMPLETE.md
+# - .claude/memory.md, session.md
+# - .claude/memory-cli.sh, auto-context.sh, install-hooks.sh
+# - .claude/.claudeignore
+# - .claude/agents/, rules/, hooks/
 
 # MCP server config (contains credentials)
 .mcp.json

@@ -1,0 +1,72 @@
+# Claude Context Ignore File
+# Files and patterns listed here will be excluded from Claude's context
+# Uses .gitignore syntax
+
+# Backups
+*.bak
+*.tmp
+*.swp
+
+# Auto-generated (will be regenerated)
+auto-context.md
+full-context.md
+
+# Logs
+*.log
+
+# Build outputs
+**/bin/
+**/obj/
+**/dist/
+**/build/
+**/.next/
+
+# Dependencies
+**/node_modules/
+**/packages/
+
+# Test coverage
+**/coverage/
+**/.nyc_output/
+
+# Large data files
+**/*.db
+**/*.sqlite
+**/*.dump
+
+# Images and media (unless needed)
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.svg
+**/*.mp4
+**/*.webm
+
+# Vendor/third-party
+**/vendor/
+**/third-party/
+
+# IDE files
+**/.vscode/
+**/.idea/
+**/.vs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets
+**/.env
+**/.env.local
+**/secrets.json
+**/appsettings.*.json  # Keep appsettings.json, exclude environment-specific
+
+# Large generated files
+**/*.min.js
+**/*.min.css
+**/*.bundle.js
+
+# Documentation that's not code-relevant
+**/LICENSE
+**/CHANGELOG.md
