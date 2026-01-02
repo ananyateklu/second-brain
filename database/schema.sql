@@ -309,13 +309,25 @@
 \echo ''
 
 -- Step 49: Thought signature for Gemini 3 function calling
-\echo 'Step 49/50: Adding thought_signature column for Gemini 3...'
+\echo 'Step 49/51: Adding thought_signature column for Gemini 3...'
 \i 59_thought_signature.sql
 \echo 'Thought signature column added successfully.'
 \echo ''
 
--- Step 50: Final statistics update
-\echo 'Step 50/50: Updating statistics...'
+-- Step 50: Focus suggestions vector index
+\echo 'Step 50/52: Creating HNSW vector index for focus_suggestions...'
+\i 60_focus_suggestions_vector_index.sql
+\echo 'Focus suggestions vector index created successfully.'
+\echo ''
+
+-- Step 51: Chat messages and tool calls soft delete
+\echo 'Step 51/52: Adding soft delete to chat_messages and tool_calls...'
+\i 61_chat_messages_soft_delete.sql
+\echo 'Soft delete columns added successfully.'
+\echo ''
+
+-- Step 52: Final statistics update
+\echo 'Step 52/52: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

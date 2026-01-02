@@ -228,6 +228,24 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
 });
 
+// Configure request timeouts (ASP.NET Core 8+) for long-running RAG/agent operations
+// This ensures requests don't timeout before database operations complete (60s command timeout)
+builder.Services.AddRequestTimeouts(options =>
+{
+    options.DefaultPolicy = new Microsoft.AspNetCore.Http.Timeouts.RequestTimeoutPolicy
+    {
+        Timeout = TimeSpan.FromMinutes(2)  // Default: 2 minutes for most endpoints
+    };
+    options.AddPolicy("LongRunning", new Microsoft.AspNetCore.Http.Timeouts.RequestTimeoutPolicy
+    {
+        Timeout = TimeSpan.FromMinutes(5)  // RAG, agent, and streaming operations
+    });
+    options.AddPolicy("Streaming", new Microsoft.AspNetCore.Http.Timeouts.RequestTimeoutPolicy
+    {
+        Timeout = TimeSpan.FromMinutes(10)  // SSE streaming can run longer
+    });
+});
+
 // Configure services
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -742,6 +760,9 @@ if (httpsPort.HasValue)
 
 // Response compression (before routing for maximum effectiveness)
 app.UseResponseCompression();
+
+// Request timeouts (must be before routing to catch all endpoints)
+app.UseRequestTimeouts();
 
 app.UseCors("AllowFrontend");
 

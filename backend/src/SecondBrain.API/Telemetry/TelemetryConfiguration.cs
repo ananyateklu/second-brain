@@ -23,6 +23,7 @@ public static class TelemetryConfiguration
     public static readonly Meter AIMetrics = new("SecondBrain.AI", ServiceVersion);
     public static readonly Meter RAGMetrics = new("SecondBrain.RAG", ServiceVersion);
     public static readonly Meter CacheMetrics = new("SecondBrain.Cache", ServiceVersion);
+    public static readonly Meter DatabaseMetrics = new("SecondBrain.Database", ServiceVersion);
 
     // AI Provider Counters
     public static readonly Counter<long> AIRequestsTotal = AIMetrics.CreateCounter<long>(
@@ -54,6 +55,29 @@ public static class TelemetryConfiguration
     public static readonly Counter<long> CacheMissesTotal = CacheMetrics.CreateCounter<long>(
         "cache_misses_total",
         description: "Total embedding cache misses");
+
+    // Database Counters
+    public static readonly Counter<long> DbQueriesTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_queries_total",
+        description: "Total database queries executed");
+
+    public static readonly Counter<long> DbErrorsTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_errors_total",
+        description: "Total database errors");
+
+    public static readonly Counter<long> DbBulkOperationsTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_bulk_operations_total",
+        description: "Total bulk database operations (ExecuteUpdate/ExecuteDelete)");
+
+    // Database Histograms
+    public static readonly Histogram<double> DbQueryDuration = DatabaseMetrics.CreateHistogram<double>(
+        "db_query_duration_ms",
+        unit: "ms",
+        description: "Database query duration in milliseconds");
+
+    public static readonly Histogram<int> DbBulkOperationRows = DatabaseMetrics.CreateHistogram<int>(
+        "db_bulk_operation_rows",
+        description: "Number of rows affected by bulk operations");
 
     // AI Response Histograms
     public static readonly Histogram<double> AIResponseDuration = AIMetrics.CreateHistogram<double>(
