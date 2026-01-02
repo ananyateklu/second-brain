@@ -3,16 +3,16 @@
  */
 export const featureColors = {
   rag: {
-    bg: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
-    text: 'var(--color-accent-blue-text)',
-    border: 'var(--color-accent-blue-border)',
-    dot: 'var(--color-accent-blue-dot)',
+    bg: 'var(--btn-primary-bg)',
+    text: 'var(--btn-primary-text)',
+    border: 'var(--btn-primary-border)',
+    dot: 'var(--btn-primary-text)',
   },
   agent: {
-    bg: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-    text: 'var(--color-brand-400)',
-    border: 'var(--color-brand-500)',
-    dot: 'var(--color-brand-400)',
+    bg: 'var(--btn-primary-bg)',
+    text: 'var(--btn-primary-text)',
+    border: 'var(--btn-primary-border)',
+    dot: 'var(--btn-primary-text)',
   },
   image: {
     bg: 'color-mix(in srgb, var(--color-accent-purple) 15%, transparent)',

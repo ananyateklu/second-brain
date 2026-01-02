@@ -189,9 +189,10 @@ export const ChatPageControls = memo(function ChatPageControls() {
           onClick={toggleChatSidebar}
           className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: chatSidebarVisible ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
-            color: chatSidebarVisible ? 'var(--color-primary)' : 'var(--text-primary)',
-            border: `1px solid ${chatSidebarVisible ? 'var(--color-primary)' : 'var(--border)'}`,
+            backgroundColor: chatSidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+            color: chatSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+            border: `1px solid ${chatSidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+            boxShadow: chatSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={chatSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >

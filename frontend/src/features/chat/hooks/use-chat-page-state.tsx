@@ -774,10 +774,10 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
           </svg>
         ),
         color: {
-          enabledBg: 'var(--color-notes-alpha)',
-          enabledText: 'var(--color-notes-text)',
-          enabledBorder: 'var(--color-notes-border)',
-          enabledDot: 'var(--color-notes-dot)',
+          enabledBg: 'rgba(255, 255, 255, 0.2)',
+          enabledText: 'var(--btn-primary-text)',
+          enabledBorder: 'rgba(255, 255, 255, 0.3)',
+          enabledDot: 'var(--btn-primary-text)',
         },
       },
     ],
