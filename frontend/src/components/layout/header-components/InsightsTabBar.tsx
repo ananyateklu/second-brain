@@ -57,7 +57,7 @@ export const InsightsTabBar = memo(function InsightsTabBar({
 }: InsightsTabBarProps) {
   return (
     <div
-      className="flex items-center p-1 rounded-xl backdrop-blur-md"
+      className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md"
       style={{
         backgroundColor: 'var(--surface-elevated)',
         border: '1px solid var(--border)',
@@ -67,7 +67,7 @@ export const InsightsTabBar = memo(function InsightsTabBar({
         <button
           key={tab.id}
           onClick={() => { onTabChange(tab.id); }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm rounded-lg transition-all duration-200 relative"
+          className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-200 relative"
           style={{
             backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',
             color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',

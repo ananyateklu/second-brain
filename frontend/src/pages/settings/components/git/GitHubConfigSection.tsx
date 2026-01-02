@@ -208,13 +208,17 @@ export function GitHubConfigSection({
               type="button"
               onClick={() => void handleSave()}
               disabled={isSaving}
-              className="px-4 py-2 rounded-xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))',
-                borderColor: 'var(--color-brand-600)',
-                color: 'var(--color-brand-600)',
+                backgroundColor: 'var(--btn-primary-bg)',
+                borderColor: 'var(--btn-primary-border)',
+                color: 'var(--btn-primary-text)',
+                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
               }}
             >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
               {isSaving ? 'Saving...' : 'Save GitHub Settings'}
             </button>
           )}

@@ -78,29 +78,36 @@ export const GitHubBranchSelector = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Current branch display / trigger */}
-      <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-          if (!isOpen) {
-            setTimeout(() => inputRef.current?.focus(), 100);
-          }
-        }}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+      <div
+        className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
           backgroundColor: 'var(--surface-elevated)',
-          color: 'var(--text-primary)',
           border: '1px solid var(--border)',
         }}
       >
-        <GitBranch className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-brand-500)' }} />
-        <span className="font-medium truncate max-w-[150px]" title={selectedBranch?.name || 'Select branch'}>
-          {isLoading ? 'Loading...' : selectedBranch?.name || 'Select branch'}
-        </span>
-        <ChevronDown
-          className={`w-3 h-3 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--text-tertiary)' }}
-        />
-      </button>
+        <button
+          onClick={() => {
+            setIsOpen(!isOpen);
+            if (!isOpen) {
+              setTimeout(() => inputRef.current?.focus(), 100);
+            }
+          }}
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+          style={{
+            backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <GitBranch className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-brand-500)' }} />
+          <span className="font-medium truncate max-w-[150px]" title={selectedBranch?.name || 'Select branch'}>
+            {isLoading ? 'Loading...' : selectedBranch?.name || 'Select branch'}
+          </span>
+          <ChevronDown
+            className={`w-3 h-3 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+            style={{ color: 'var(--text-tertiary)' }}
+          />
+        </button>
+      </div>
 
       {/* Dropdown */}
       {isOpen && (

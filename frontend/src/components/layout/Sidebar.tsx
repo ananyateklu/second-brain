@@ -274,16 +274,17 @@ export function Sidebar() {
           />
           <button
             onClick={closeMobileMenu}
-            className="flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'var(--btn-primary-bg)',
+              border: '1px solid var(--btn-primary-border)',
+              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
             }}
             aria-label="Close menu"
           >
             <svg
               className="h-5 w-5"
-              style={{ color: 'var(--text-primary)' }}
+              style={{ color: 'var(--btn-primary-text)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -480,17 +481,22 @@ export function Sidebar() {
           {/* Desktop toggle button */}
           <button
             onClick={handleToggleClick}
-            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border)] shadow-[0_2px_8px_-2px_var(--color-primary-alpha)] hover:shadow-[0_6px_16px_-4px_var(--color-primary-alpha)] hover:border-[var(--color-primary)] hover:scale-110 active:scale-95"
+            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-lg transition-all duration-300 overflow-hidden hover:scale-110 active:scale-95"
+            style={{
+              backgroundColor: 'var(--btn-primary-bg)',
+              border: '1px solid var(--btn-primary-border)',
+              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+            }}
             aria-label={isCollapsed ? 'Close sidebar' : 'Open sidebar'}
           >
             {/* Ripple effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             {/* Icon: X when collapsed, arrows when closed */}
             {isCollapsed ? (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: 'var(--btn-primary-text)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -500,7 +506,7 @@ export function Sidebar() {
             ) : (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: 'var(--btn-primary-text)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

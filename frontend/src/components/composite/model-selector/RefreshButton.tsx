@@ -24,12 +24,12 @@ export function RefreshButton({
       }}
       disabled={isRefreshing || disabled}
       className={cn(
-        'p-2 rounded-lg transition-all duration-200',
+        'p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200',
         'hover:scale-105 active:scale-95',
         'disabled:opacity-50 disabled:cursor-not-allowed'
       )}
       style={{
-        backgroundColor: 'var(--surface-card)',
+        backgroundColor: 'var(--surface-elevated)',
         color: isRefreshing ? 'var(--color-primary)' : 'var(--text-secondary)',
         border: '1px solid var(--border)',
       }}

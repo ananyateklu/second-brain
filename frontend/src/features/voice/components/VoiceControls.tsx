@@ -46,16 +46,16 @@ export function VoiceControls({
         whileTap={{ scale: 0.95 }}
         onClick={isActive ? onStop : onStart}
         disabled={isConnecting}
-        className={`
-          flex items-center justify-center gap-2 px-6 py-3 rounded-full font-medium
-          transition-colors duration-200 focus:outline-none focus-visible:ring-2
-          focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
-          ${
-            isActive
-              ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30 focus-visible:ring-red-500'
-              : 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary)]/90 focus-visible:ring-[var(--color-primary)]'
-          }
-        `}
+        className="flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={isActive ? {
+          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          color: '#ef4444',
+        } : {
+          backgroundColor: 'var(--btn-primary-bg)',
+          color: 'var(--btn-primary-text)',
+          border: '1px solid var(--btn-primary-border)',
+          boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+        }}
         aria-label={isActive ? 'End session' : 'Start session'}
       >
         {isConnecting ? (

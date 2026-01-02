@@ -178,13 +178,21 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
             <button
               onClick={() => setVoiceProviderType('GrokVoice' as VoiceProviderType)}
               disabled={disabled || !grokVoiceAvailable}
-              className={`
-                flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                ${voiceProviderType === 'GrokVoice'
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)]/80'}
-                ${disabled || !grokVoiceAvailable ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
+              className="flex-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5"
+              style={voiceProviderType === 'GrokVoice' ? {
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+                border: '1px solid var(--btn-primary-border)',
+                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+                opacity: disabled || !grokVoiceAvailable ? 0.5 : 1,
+                cursor: disabled || !grokVoiceAvailable ? 'not-allowed' : 'pointer',
+              } : {
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                opacity: disabled || !grokVoiceAvailable ? 0.5 : 1,
+                cursor: disabled || !grokVoiceAvailable ? 'not-allowed' : 'pointer',
+              }}
               title={!grokVoiceAvailable ? 'Grok Voice is not available - check xAI API key' : ''}
             >
               Grok Voice
@@ -192,13 +200,21 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
             <button
               onClick={() => setVoiceProviderType('Standard' as VoiceProviderType)}
               disabled={disabled}
-              className={`
-                flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                ${voiceProviderType === 'Standard'
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)]/80'}
-                ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
+              className="flex-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5"
+              style={voiceProviderType === 'Standard' ? {
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+                border: '1px solid var(--btn-primary-border)',
+                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+                opacity: disabled ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              } : {
+                backgroundColor: 'var(--surface-elevated)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+                opacity: disabled ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }}
             >
               Standard
             </button>
@@ -468,18 +484,19 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
             <button
               onClick={() => setAgentEnabled(!agentEnabled)}
               disabled={disabled}
-              className={`
-                relative w-11 h-6 rounded-full transition-colors
-                ${agentEnabled ? 'bg-[var(--color-brand-500)]' : 'bg-[var(--surface-elevated)]'}
-                ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-              `}
+              className="relative w-11 h-6 rounded-full transition-colors"
+              style={{
+                backgroundColor: agentEnabled ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+                opacity: disabled ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+              }}
               aria-pressed={agentEnabled}
             >
               <span
-                className={`
-                  absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform
-                  ${agentEnabled ? 'translate-x-5' : 'translate-x-0'}
-                `}
+                className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform"
+                style={{
+                  transform: agentEnabled ? 'translateX(20px)' : 'translateX(0)',
+                }}
               />
             </button>
           </div>

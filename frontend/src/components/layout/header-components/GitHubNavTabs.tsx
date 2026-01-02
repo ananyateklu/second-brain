@@ -85,7 +85,7 @@ export const GitHubNavTabs = memo(() => {
 
   return (
     <div
-      className="flex items-center gap-1 p-1 rounded-xl backdrop-blur-md"
+      className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
       style={{
         backgroundColor: 'var(--surface-elevated)',
         border: '1px solid var(--border)',
@@ -95,15 +95,16 @@ export const GitHubNavTabs = memo(() => {
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200"
+          className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-200 relative"
           style={{
             backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',
-            color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+            color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
             fontWeight: activeTab === tab.id ? 600 : 400,
             boxShadow: activeTab === tab.id ? 'var(--shadow-sm)' : 'none',
           }}
         >
           <span
+            className="transition-colors duration-200"
             style={{
               color: activeTab === tab.id ? 'var(--color-brand-400)' : 'inherit',
             }}
@@ -111,6 +112,12 @@ export const GitHubNavTabs = memo(() => {
             {tab.icon}
           </span>
           {tab.label}
+          {activeTab === tab.id && (
+            <div
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
+              style={{ backgroundColor: 'var(--color-brand-400)' }}
+            />
+          )}
         </button>
       ))}
     </div>

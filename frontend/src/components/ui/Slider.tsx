@@ -36,17 +36,17 @@ const Slider = React.forwardRef<
       <SliderPrimitive.Track
         className={cn(
           "relative h-2 w-full grow overflow-hidden rounded-full",
-          "bg-[var(--muted)]"
+          "bg-[var(--border)]"
         )}
       >
-        <SliderPrimitive.Range className="absolute h-full bg-[var(--primary)]" />
+        <SliderPrimitive.Range className="absolute h-full bg-[var(--btn-primary-bg)]" />
       </SliderPrimitive.Track>
       {value?.map((_, index) => (
         <SliderPrimitive.Thumb
           key={index}
           className={cn(
             "block h-5 w-5 rounded-full border-2 shadow-md",
-            "border-[var(--primary)] bg-white",
+            "border-[var(--btn-primary-bg)] bg-white",
             "transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2",
             "disabled:pointer-events-none disabled:opacity-50"
