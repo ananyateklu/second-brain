@@ -30,6 +30,7 @@ import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { VoiceTranscript } from './VoiceTranscript';
 import { VoiceInputBar } from './VoiceInputBar';
 import { VoiceSidebar } from './VoiceSidebar';
+import { voiceService } from '../../../services/voice.service';
 import type { VoiceSessionOptions } from '../types/voice-types';
 import type { VoiceHeaderState, VoiceAgentCapability } from '../context/VoicePageContext';
 
@@ -46,6 +47,7 @@ export function VoiceAgentInterface() {
     // Agent state
     agentEnabled,
     capabilities,
+    voiceRagEnabled,
     toolExecutions,
     thinkingSteps,
     retrievedNotes,
@@ -68,16 +70,53 @@ export function VoiceAgentInterface() {
     setSelectedVoiceId,
     setAgentEnabled,
     setCapabilities,
+    setVoiceRagEnabled,
     setVoiceProviderType,
     setSelectedGrokVoice,
     setEnableGrokWebSearch,
     setEnableGrokXSearch,
     toggleVoiceSidebar,
     setSelectedHistoricalSessionId,
+    setAvailableVoices,
+    setAvailableGrokVoices,
+    clearTranscriptHistory,
   } = useBoundStore();
 
   // AI health for provider/model selection
   const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth, isRefetching } = useAIHealth();
+
+  // Load available voices on mount (only once)
+  useEffect(() => {
+    let mounted = true;
+
+    const loadVoices = async () => {
+      try {
+        // Load ElevenLabs/OpenAI TTS voices
+        const voices = await voiceService.getVoices();
+        if (mounted && voices.length > 0) {
+          setAvailableVoices(voices);
+        }
+      } catch (err) {
+        console.error('Failed to load TTS voices:', err);
+      }
+
+      try {
+        // Load Grok voices
+        const grokVoices = await voiceService.getGrokVoices();
+        if (mounted && grokVoices.length > 0) {
+          setAvailableGrokVoices(grokVoices);
+        }
+      } catch (err) {
+        console.error('Failed to load Grok voices:', err);
+      }
+    };
+
+    void loadVoices();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setAvailableVoices, setAvailableGrokVoices]);
 
   // Voice session hook
   const {
@@ -115,6 +154,22 @@ export function VoiceAgentInterface() {
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+
+  // Disconnect feedback state - shows "Connection closed" briefly after disconnect
+  const [showDisconnected, setShowDisconnected] = useState(false);
+
+  // Watch for disconnect errors and show feedback briefly
+  useEffect(() => {
+    if (error && error.toLowerCase().includes('disconnected')) {
+      setShowDisconnected(true);
+      // Auto-reset after 3 seconds
+      const timer = setTimeout(() => {
+        setShowDisconnected(false);
+        _clearError();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, _clearError]);
 
   // Tool chips for floating bar - track dismissed tool IDs
   const [dismissedToolIds, setDismissedToolIds] = useState<Set<string>>(new Set());
@@ -211,19 +266,19 @@ export function VoiceAgentInterface() {
         enableGrokXSearch,
         agentEnabled,
         capabilities: agentEnabled ? capabilities : [],
-        enableRag: false,
-        enableAgentRag: false,
+        enableRag: agentEnabled && voiceRagEnabled,
+        enableAgentRag: agentEnabled && voiceRagEnabled,
       }
       : {
         provider: selectedProvider ?? '',
         model: selectedModel ?? '',
         voiceId: selectedVoiceId ?? '',
         voiceProviderType: 'Standard',
-        enableRag: false,
+        enableRag: agentEnabled && voiceRagEnabled,
         temperature: 0.7,
         agentEnabled,
         capabilities: agentEnabled ? capabilities : [],
-        enableAgentRag: false,
+        enableAgentRag: agentEnabled && voiceRagEnabled,
       };
 
     try {
@@ -241,6 +296,7 @@ export function VoiceAgentInterface() {
     enableGrokXSearch,
     agentEnabled,
     capabilities,
+    voiceRagEnabled,
     startSession,
     setSelectedHistoricalSessionId,
   ]);
@@ -249,10 +305,11 @@ export function VoiceAgentInterface() {
   const handleStartSync = useCallback(() => void handleStart(), [handleStart]);
   const handleStopSync = useCallback(() => void endSession(), [endSession]);
 
-  // Handle new session (clear history view and scroll to top)
+  // Handle new session (clear history view and transcript for fresh start)
   const handleNewSession = useCallback(() => {
     setSelectedHistoricalSessionId(null);
-  }, [setSelectedHistoricalSessionId]);
+    clearTranscriptHistory();
+  }, [setSelectedHistoricalSessionId, clearTranscriptHistory]);
 
   // Handle delete session
   const handleDeleteSession = useCallback(async (id: string) => {
@@ -335,10 +392,17 @@ export function VoiceAgentInterface() {
       agentEnabled,
       onAgentModeChange: setAgentEnabled,
       agentCapabilities,
+      voiceRagEnabled,
+      onVoiceRagChange: setVoiceRagEnabled,
       isConnected,
       isConnecting,
       sessionState,
       sessionId,
+      // Session stats
+      transcriptCount: transcriptHistory.length,
+      // History viewing
+      isViewingHistory: !!selectedHistoricalSessionId && !isConnected,
+      onBackToCurrent: () => setSelectedHistoricalSessionId(null),
       sessionHistory: sessions,
       sessionCount: sessions.length,
       isLoadingHistory,
@@ -390,10 +454,13 @@ export function VoiceAgentInterface() {
     agentEnabled,
     setAgentEnabled,
     agentCapabilities,
+    voiceRagEnabled,
+    setVoiceRagEnabled,
     isConnected,
     isConnecting,
     sessionState,
     sessionId,
+    transcriptHistory.length,
     sessions,
     isLoadingHistory,
     selectedHistoricalSessionId,
@@ -430,11 +497,39 @@ export function VoiceAgentInterface() {
 
   // Get transcript to display (current or historical)
   const displayTranscriptHistory = isViewingHistory
-    ? historicalTranscript?.turns.map((t) => ({
-        role: t.role,
-        content: t.content || t.transcriptText || '',
-        timestamp: new Date(t.timestamp).getTime(),
-      })) ?? []
+    ? historicalTranscript?.turns.map((t) => {
+        // Parse tool calls from JSON if present
+        let toolExecutions: import('../types/voice-types').VoiceToolExecution[] | undefined;
+        if (t.toolCallsJson) {
+          try {
+            const parsed = JSON.parse(t.toolCallsJson) as Array<{
+              toolId: string;
+              toolName: string;
+              arguments?: string;
+              result?: string;
+              startedAt: string;
+              completedAt?: string;
+              status: string;
+            }>;
+            toolExecutions = parsed.map((tc) => ({
+              toolId: tc.toolId,
+              toolName: tc.toolName,
+              arguments: tc.arguments,
+              result: tc.result,
+              status: tc.status as 'pending' | 'executing' | 'completed' | 'failed',
+              timestamp: new Date(tc.startedAt).getTime(),
+            }));
+          } catch {
+            // Ignore parse errors
+          }
+        }
+        return {
+          role: t.role,
+          content: t.content || t.transcriptText || '',
+          timestamp: new Date(t.timestamp).getTime(),
+          toolExecutions,
+        };
+      }) ?? []
     : transcriptHistory;
 
   return (
@@ -465,38 +560,8 @@ export function VoiceAgentInterface() {
 
       {/* Main Content Area */}
       <div className="flex-1 relative min-h-0 min-w-0">
-        {/* Historical session indicator */}
-        {isViewingHistory && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-6 py-3"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--surface-primary) 95%, transparent)',
-              backdropFilter: 'blur(8px)',
-              borderBottom: '1px solid var(--border)',
-            }}
-          >
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Viewing past session
-            </span>
-            <button
-              onClick={() => setSelectedHistoricalSessionId(null)}
-              className="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-              style={{
-                backgroundColor: 'var(--surface-elevated)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              Back to current
-            </button>
-          </motion.div>
-        )}
-
         {/* Transcript */}
         <VoiceTranscript
-          className={isViewingHistory ? 'pt-14' : ''}
           transcriptHistory={displayTranscriptHistory}
           currentTranscript={isViewingHistory ? '' : currentTranscript}
           currentAssistantTranscript={isViewingHistory ? '' : currentAssistantTranscript}
@@ -524,12 +589,13 @@ export function VoiceAgentInterface() {
             onInterrupt={interrupt}
             canStart={canStart}
             disabledReason={disabledReason}
+            showDisconnected={showDisconnected}
           />
         )}
 
-        {/* Error toast */}
+        {/* Error toast - hide disconnect errors since they're shown in the button */}
         <AnimatePresence>
-          {error && (
+          {error && !error.toLowerCase().includes('disconnected') && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

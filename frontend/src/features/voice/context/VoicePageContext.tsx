@@ -71,11 +71,22 @@ export interface VoiceHeaderState {
   onAgentModeChange: (enabled: boolean) => void;
   agentCapabilities: VoiceAgentCapability[];
 
+  // RAG settings for voice agent
+  voiceRagEnabled: boolean;
+  onVoiceRagChange: (enabled: boolean) => void;
+
   // Session state
   isConnected: boolean;
   isConnecting: boolean;
   sessionState: VoiceSessionState;
   sessionId: string | null;
+
+  // Session stats (for header display)
+  transcriptCount: number;
+
+  // History viewing state
+  isViewingHistory: boolean;
+  onBackToCurrent: () => void;
 
   // Session history (for sidebar)
   sessionHistory: VoiceSessionSummary[];

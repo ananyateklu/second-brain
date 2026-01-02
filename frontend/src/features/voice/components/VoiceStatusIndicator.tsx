@@ -130,7 +130,7 @@ export function VoiceStatusIndicator({
       {/* Connection indicator */}
       {isConnected && (
         <div className="flex items-center gap-1 ml-2 pl-2 border-l border-[var(--border)]">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+          <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
           <span className="text-xs text-[var(--text-tertiary)]">Connected</span>
         </div>
       )}

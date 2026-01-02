@@ -137,7 +137,7 @@ export function VoiceHeader({
     if (!isGrokMode && capabilities.includes('web')) {
       items.push({
         icon: <FeatureIcons.Web />,
-        color: 'var(--color-green-500)',
+        color: 'var(--color-accent-blue)',
       });
     }
 
@@ -147,20 +147,20 @@ export function VoiceHeader({
   // Session status indicator
   const getSessionStatus = () => {
     if (isConnecting) {
-      return { text: 'Connecting...', color: 'var(--color-amber-500)' };
+      return { text: 'Connecting...', color: 'var(--color-warning)' };
     }
     if (isConnected) {
       switch (sessionState) {
         case 'Listening':
-          return { text: 'Listening', color: 'var(--color-green-500)' };
+          return { text: 'Listening', color: 'var(--color-success)' };
         case 'Processing':
-          return { text: 'Processing', color: 'var(--color-blue-500)' };
+          return { text: 'Processing', color: 'var(--color-accent-blue)' };
         case 'Speaking':
-          return { text: 'Speaking', color: 'var(--color-purple-500)' };
+          return { text: 'Speaking', color: 'var(--color-accent-purple)' };
         case 'Interrupted':
-          return { text: 'Interrupted', color: 'var(--color-amber-500)' };
+          return { text: 'Interrupted', color: 'var(--color-warning)' };
         default:
-          return { text: 'Ready', color: 'var(--color-green-500)' };
+          return { text: 'Ready', color: 'var(--color-success)' };
       }
     }
     return { text: 'Disconnected', color: 'var(--text-tertiary)' };

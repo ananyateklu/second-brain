@@ -261,7 +261,7 @@ export interface VoiceToolExecution {
   toolName: string;
   arguments?: string;
   result?: string;
-  status: 'executing' | 'completed' | 'failed';
+  status: 'pending' | 'executing' | 'completed' | 'failed';
   timestamp: number;
 }
 

@@ -32,13 +32,22 @@ export const VoicePageControls = memo(function VoicePageControls() {
   const selectedSessionIds = headerState?.selectedSessionIds ?? new Set<string>();
   const sessionCount = headerState?.sessionCount ?? 0;
 
-  // Build badge items for agent pill
+  // Get Grok search settings from header
+  const enableGrokWebSearchFromHeader = headerState?.enableGrokWebSearch;
+  const enableGrokXSearchFromHeader = headerState?.enableGrokXSearch;
+
+  // Get RAG settings from header
+  const voiceRagEnabledFromHeader = headerState?.voiceRagEnabled ?? true;
+  const onVoiceRagChangeFromHeader = headerState?.onVoiceRagChange;
+
+  // Build badge items for agent pill (all white to match chat)
   const agentBadgeItems = useMemo(() => {
     if (!agentEnabled) return [];
 
     const items: { icon: ReactNode; color: string }[] = [];
     const capabilities = agentCapabilitiesFromHeader ?? [];
     const isGrokMode = voiceProviderTypeFromHeader === 'GrokVoice';
+    const whiteColor = 'var(--btn-primary-text)';
 
     // Map capabilities to icons
     capabilities.forEach((cap) => {
@@ -46,24 +55,44 @@ export const VoicePageControls = memo(function VoicePageControls() {
         if (cap.id === 'notes-crud' || cap.id.includes('notes')) {
           items.push({
             icon: <FeatureIcons.NotesAnalysis />,
-            color: 'var(--color-amber-500)',
+            color: whiteColor,
           });
         } else if (cap.id === 'notes-search' || cap.id.includes('search')) {
           items.push({
             icon: <FeatureIcons.RAG />,
-            color: 'var(--color-blue-500)',
+            color: whiteColor,
           });
         } else if (!isGrokMode && cap.id === 'web') {
           items.push({
             icon: <FeatureIcons.Web />,
-            color: 'var(--color-green-500)',
+            color: whiteColor,
           });
         }
       }
     });
 
+    // Add Grok search icons when in Grok mode
+    if (isGrokMode) {
+      if (enableGrokWebSearchFromHeader) {
+        items.push({
+          icon: <FeatureIcons.Web />,
+          color: whiteColor,
+        });
+      }
+      if (enableGrokXSearchFromHeader) {
+        items.push({
+          icon: (
+            <svg className="w-full h-full" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          ),
+          color: whiteColor,
+        });
+      }
+    }
+
     return items;
-  }, [agentEnabled, agentCapabilitiesFromHeader, voiceProviderTypeFromHeader]);
+  }, [agentEnabled, agentCapabilitiesFromHeader, voiceProviderTypeFromHeader, enableGrokWebSearchFromHeader, enableGrokXSearchFromHeader]);
 
   // Check if all selectable sessions are selected
   const isAllSelected = selectedSessionIds.size === sessionCount && sessionCount > 0;
@@ -104,6 +133,11 @@ export const VoicePageControls = memo(function VoicePageControls() {
     onSelectAllSessions,
     onBulkDeleteSessions,
     onExitSelectionMode,
+    // Session stats
+    transcriptCount = 0,
+    // History viewing
+    isViewingHistory = false,
+    onBackToCurrent,
   } = headerState;
 
   const isGrokMode = voiceProviderType === 'GrokVoice';
@@ -363,6 +397,8 @@ export const VoicePageControls = memo(function VoicePageControls() {
               onAgentModeChange={onAgentModeChange}
               capabilities={capabilities}
               onCapabilityToggle={handleCapabilityToggle}
+              voiceRagEnabled={voiceRagEnabledFromHeader}
+              onVoiceRagChange={onVoiceRagChangeFromHeader}
               enableGrokWebSearch={enableGrokWebSearch ?? false}
               enableGrokXSearch={enableGrokXSearch ?? false}
               onGrokWebSearchChange={onGrokWebSearchChange}
@@ -372,46 +408,54 @@ export const VoicePageControls = memo(function VoicePageControls() {
           }
         />
 
-        {/* Grok Search Indicators */}
-        {isGrokMode && (enableGrokWebSearch || enableGrokXSearch) && (
-          <div className="flex items-center gap-1.5">
-            {enableGrokWebSearch && (
-              <div
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-blue-500) 15%, transparent)',
-                  color: 'var(--color-blue-500)',
-                }}
-                title="Web search enabled"
-              >
-                <span className="w-3.5 h-3.5">
-                  <FeatureIcons.Web />
-                </span>
-              </div>
-            )}
-            {enableGrokXSearch && (
-              <div
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--color-purple-500) 15%, transparent)',
-                  color: 'var(--color-purple-500)',
-                }}
-                title="X search enabled"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* Right side: Session Status */}
+      {/* Right side: History Indicator, Token Stats, Session Status */}
       <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Viewing Past Session Indicator */}
+        {isViewingHistory && (
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--color-amber-500) 15%, transparent)',
+              color: 'var(--color-amber-500)',
+              border: '1px solid color-mix(in srgb, var(--color-amber-500) 30%, transparent)',
+            }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Viewing past session</span>
+            <button
+              onClick={onBackToCurrent}
+              className="ml-1 hover:opacity-80 transition-opacity"
+              title="Back to current"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Message count - Only show when there are messages and not viewing history */}
+        {!isViewingHistory && transcriptCount > 0 && (
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              color: 'var(--text-tertiary)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <span>{transcriptCount} msg{transcriptCount !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+
+        {/* Session Status Indicator */}
         <div
           className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium"
           style={{

@@ -1,15 +1,18 @@
 /**
  * VoiceSessionItem Component
  * Individual voice session item for the sidebar list
+ * Styled to match ConversationListItem from chat
  */
 
-import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { MicrophoneIcon, TrashIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { useState, useRef, useCallback, useEffect, memo, useMemo } from 'react';
 import type { VoiceSessionSummary } from '../types/voice-types';
+import { formatModelName } from '../../../utils/model-name-formatter';
+import { useBoundStore } from '../../../store/bound-store';
+import { getProviderLogo } from '../../../utils/provider-logos';
 import styles from '@styles/components/selection.module.css';
 
 /**
- * Circular checkbox component matching ChatSidebar style
+ * Custom circular checkbox component with animations (matches chat)
  */
 function CircularCheckbox({
   checked,
@@ -115,7 +118,7 @@ interface VoiceSessionItemProps {
   onDelete: () => void;
 }
 
-export function VoiceSessionItem({
+export const VoiceSessionItem = memo(function VoiceSessionItem({
   session,
   isSelected,
   isCurrentSession,
@@ -125,11 +128,11 @@ export function VoiceSessionItem({
   onSelect,
   onDelete,
 }: VoiceSessionItemProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const deleteButtonRef = useRef<HTMLButtonElement>(null);
+  const theme = useBoundStore((state) => state.theme);
+  const isDarkMode = theme === 'dark' || theme === 'blue';
   const showCheckbox = isSelectionMode;
 
-  // Format timestamp
+  // Format timestamp (matches chat's formatConversationDate style)
   const formattedTime = useMemo(() => {
     const date = new Date(session.startedAt);
     const now = new Date();
@@ -150,107 +153,49 @@ export function VoiceSessionItem({
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }, [session.startedAt]);
 
-  // Format duration
-  const formattedDuration = useMemo(() => {
-    const totalSeconds = Math.floor(session.totalAudioDurationMs / 1000);
-    if (totalSeconds < 60) {
-      return `${totalSeconds}s`;
-    }
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
-  }, [session.totalAudioDurationMs]);
-
-  // Get provider icon/color
-  const providerStyle = useMemo(() => {
-    const provider = session.provider.toLowerCase();
-    if (provider.includes('grok') || provider.includes('xai')) {
-      return {
-        bg: 'color-mix(in srgb, var(--color-xai, #6366f1) 20%, transparent)',
-        color: 'var(--color-xai, #818cf8)',
-      };
-    }
-    if (provider.includes('openai')) {
-      return {
-        bg: 'color-mix(in srgb, var(--color-openai, #10a37f) 20%, transparent)',
-        color: 'var(--color-openai, #10a37f)',
-      };
-    }
-    if (provider.includes('anthropic') || provider.includes('claude')) {
-      return {
-        bg: 'color-mix(in srgb, var(--color-anthropic, #d4a574) 20%, transparent)',
-        color: 'var(--color-anthropic, #d4a574)',
-      };
-    }
-    if (provider.includes('gemini') || provider.includes('google')) {
-      return {
-        bg: 'color-mix(in srgb, var(--color-gemini, #4285f4) 20%, transparent)',
-        color: 'var(--color-gemini, #4285f4)',
-      };
-    }
-    return {
-      bg: 'color-mix(in srgb, var(--color-brand-500) 20%, transparent)',
-      color: 'var(--color-brand-400)',
-    };
-  }, [session.provider]);
-
-  // Close delete confirm when clicking outside
-  useEffect(() => {
-    if (!showDeleteConfirm) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (deleteButtonRef.current && !deleteButtonRef.current.contains(e.target as Node)) {
-        setShowDeleteConfirm(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDeleteConfirm]);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (showDeleteConfirm) {
-      onDelete();
-      setShowDeleteConfirm(false);
-    } else {
-      setShowDeleteConfirm(true);
-    }
+  const handleClick = () => {
+    onSelect();
   };
 
-  // Determine background color based on selection state
+  // Determine background color based on selection state (matches chat exactly)
   const getBackgroundColor = () => {
     if (isSelectionMode && isChecked) {
       return 'color-mix(in srgb, var(--surface-card) 40%, transparent)';
     }
     if (isSelected && !isSelectionMode) {
-      return 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)';
+      return 'var(--surface-card)';
     }
     return 'transparent';
   };
 
-  // Determine left border styling
+  // Determine left border styling (matches chat exactly)
   const getLeftBorderStyle = () => {
     if (isSelectionMode && isChecked) {
-      return { width: '3px', color: 'var(--color-brand-500)' };
+      return {
+        width: '3px',
+        color: 'var(--color-brand-500)',
+      };
     }
     if (isSelected && !isSelectionMode) {
-      return { width: '4px', color: 'var(--btn-primary-bg)' };
+      return {
+        width: '4px',
+        color: 'var(--btn-primary-bg)',
+      };
     }
-    return { width: '0.25px', color: 'color-mix(in srgb, var(--border) 50%, transparent)' };
+    return {
+      width: '0.25px',
+      color: 'color-mix(in srgb, var(--border) 50%, transparent)',
+    };
   };
 
   const leftBorder = getLeftBorderStyle();
 
+  // Get display title
+  const displayTitle = session.firstUserMessage || 'Voice Session';
+
   return (
     <div
-      onClick={onSelect}
-      className={`
-        group relative flex items-start gap-3 px-4 py-3 cursor-pointer
-        transition-all duration-150 hover:scale-[1.01]
-        ${isSelectionMode && isChecked ? styles.itemHighlight : ''}
-        ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}
-      `}
+      className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}`}
       style={{
         backgroundColor: getBackgroundColor(),
         borderLeftWidth: leftBorder.width,
@@ -261,113 +206,124 @@ export function VoiceSessionItem({
         borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)',
         borderBottomWidth: '0.1px',
         borderBottomColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+        cursor: 'pointer',
+        boxShadow: 'none',
       }}
+      onClick={handleClick}
     >
       {/* Hover indicator - faded green bar on the left */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-        style={{ backgroundColor: 'var(--color-brand-500)' }}
+        style={{
+          backgroundColor: 'var(--color-brand-500)',
+        }}
       />
 
-      {/* Checkbox (in selection mode) */}
-      {showCheckbox && (
-        <div className="flex items-center self-center">
-          <CircularCheckbox
-            checked={isChecked}
-            onChange={onSelect}
-            staggerIndex={staggerIndex}
-          />
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {showCheckbox && (
+              <CircularCheckbox
+                checked={isChecked}
+                onChange={onSelect}
+                staggerIndex={staggerIndex}
+              />
+            )}
+            <h3
+              className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap"
+              style={{
+                color: 'var(--text-primary)',
+                fontWeight: 400,
+                textOverflow: 'ellipsis',
+              }}
+              title={displayTitle}
+            >
+              {displayTitle}
+            </h3>
+
+            {/* Active session indicator */}
+            {isCurrentSession && (
+              <div
+                className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
+                style={{ backgroundColor: 'var(--color-success)' }}
+                title="Active session"
+              />
+            )}
+          </div>
+
+          {/* Delete button - collapses when not hovered (matches chat) */}
+          {!isCurrentSession && !isSelectionMode && (
+            <div className="w-0 group-hover:w-7 overflow-hidden transition-all duration-150 flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="p-1.5 rounded-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+                style={{
+                  color: 'rgb(239, 68, 68)',
+                  backgroundColor: 'transparent',
+                  width: '28px',
+                  height: '28px',
+                }}
+                title="Delete session"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Provider Icon */}
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{
-          backgroundColor: providerStyle.bg,
-        }}
-      >
-        <MicrophoneIcon className="w-5 h-5" style={{ color: providerStyle.color }} />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        {/* Preview text */}
-        <p
-          className="text-sm font-medium truncate"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {session.firstUserMessage || 'Voice Session'}
-        </p>
-
-        {/* Metadata */}
-        <div className="flex items-center gap-2 mt-1">
-          {/* Provider */}
-          <span
-            className="text-xs"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            {session.provider}
-          </span>
-
-          <span style={{ color: 'var(--text-tertiary)' }}>·</span>
-
-          {/* Turn count */}
-          <span
-            className="text-xs"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            {session.turnCount} turns
-          </span>
-
-          <span style={{ color: 'var(--text-tertiary)' }}>·</span>
-
-          {/* Duration */}
-          <span
-            className="text-xs flex items-center gap-1"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            <ClockIcon className="w-3 h-3" />
-            {formattedDuration}
-          </span>
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <span
+              className="inline-flex items-center gap-2 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
+              style={{
+                backgroundColor: isDarkMode
+                  ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                  : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                color: isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                opacity: isDarkMode ? 1 : 0.7,
+              }}
+            >
+              {(() => {
+                const logo = getProviderLogo(session.provider, isDarkMode);
+                return logo ? (
+                  <img
+                    src={logo}
+                    alt={session.provider}
+                    className="w-2.5 h-2.5 flex-shrink-0 object-contain"
+                  />
+                ) : null;
+              })()}
+              {formatModelName(session.model)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Date */}
+            <span
+              className="text-[10px] whitespace-nowrap"
+              style={{
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              {formattedTime}
+            </span>
+          </div>
         </div>
-
-        {/* Time */}
-        <p
-          className="text-xs mt-1"
-          style={{ color: 'var(--text-tertiary)' }}
-        >
-          {formattedTime}
-        </p>
       </div>
-
-      {/* Status indicator (for active sessions) */}
-      {isCurrentSession && (
-        <div
-          className="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse"
-          style={{ backgroundColor: 'var(--color-green-500)' }}
-          title="Active session"
-        />
-      )}
-
-      {/* Delete button (show on hover, hidden in selection mode) */}
-      {!isCurrentSession && !isSelectionMode && (
-        <button
-          ref={deleteButtonRef}
-          onClick={handleDelete}
-          className={`
-            absolute top-2 right-2 p-1.5 rounded-lg transition-all duration-200
-            opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95
-          `}
-          style={{
-            backgroundColor: showDeleteConfirm ? 'var(--color-red-500)' : 'var(--surface-elevated)',
-            color: showDeleteConfirm ? 'white' : 'var(--text-secondary)',
-          }}
-          title={showDeleteConfirm ? 'Click again to confirm' : 'Delete session'}
-        >
-          <TrashIcon className="w-4 h-4" />
-        </button>
-      )}
     </div>
   );
-}
+});

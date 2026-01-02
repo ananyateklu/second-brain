@@ -10,7 +10,7 @@
  * - Bottom padding for floating input bar
  */
 
-import { useRef, useEffect, Fragment } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   VoiceMessageBubble,
@@ -18,6 +18,7 @@ import {
   VoiceLiveTranscriptionIndicator,
 } from './VoiceMessageBubble';
 import { VoiceProcessTimeline } from './VoiceProcessTimeline';
+import brainTop from '../../../assets/brain-top-tab.png';
 import type {
   VoiceSessionState,
   VoiceToolExecution,
@@ -34,6 +35,8 @@ export interface TranscriptEntry {
   toolExecutions?: VoiceToolExecution[];
   thinkingSteps?: VoiceThinkingStep[];
   retrievedNotes?: VoiceRetrievedNote[];
+  // Response duration for assistant messages
+  durationMs?: number;
 }
 
 interface VoiceTranscriptProps {
@@ -106,129 +109,126 @@ export function VoiceTranscript({
         paddingBottom: '140px',
       }}
     >
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        {/* Empty state */}
-        {!hasContent && (
+      {/* Empty state - positioned lower to match ChatWelcomeScreen */}
+      {!hasContent && (
+        <div className="flex flex-col items-center pt-[35vh] px-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center py-16 text-center"
+            className="flex flex-col items-center text-center"
           >
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)',
-              }}
-            >
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                style={{ color: 'var(--color-brand-400)' }}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                />
-              </svg>
+            <div className="mb-8 relative group">
+              <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img
+                src={brainTop}
+                alt="Second Brain"
+                className="w-32 h-32 object-contain relative z-10 drop-shadow-2xl transition-transform duration-500 group-hover:scale-110"
+              />
             </div>
+            <h2
+              className="text-4xl font-bold tracking-tight drop-shadow-lg"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              Start a conversation
+            </h2>
             <p
-              className="text-sm font-medium"
+              className="text-lg mt-4 drop-shadow-md"
               style={{ color: 'var(--text-secondary)' }}
             >
-              Start a voice conversation
-            </p>
-            <p
-              className="text-xs mt-1"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Click Start to begin speaking with the AI
+              Select a voice and click Start to begin
             </p>
           </motion.div>
-        )}
+        </div>
+      )}
 
-        {/* Transcript history */}
-        <AnimatePresence mode="popLayout">
-          {transcriptHistory.map((entry, index) => {
-            const isAssistant = entry.role === 'assistant';
-            const hasProcess =
-              isAssistant &&
-              ((entry.toolExecutions && entry.toolExecutions.length > 0) ||
-                (entry.thinkingSteps && entry.thinkingSteps.length > 0) ||
-                (entry.retrievedNotes && entry.retrievedNotes.length > 0));
+      {/* Transcript content */}
+      {hasContent && (
+        <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+          {/* Transcript history */}
+          <AnimatePresence mode="popLayout">
+            {transcriptHistory.map((entry, index) => {
+              const isAssistant = entry.role === 'assistant';
+              const hasProcess =
+                isAssistant &&
+                ((entry.toolExecutions && entry.toolExecutions.length > 0) ||
+                  (entry.thinkingSteps && entry.thinkingSteps.length > 0) ||
+                  (entry.retrievedNotes && entry.retrievedNotes.length > 0));
 
-            return (
-              <Fragment key={`${entry.timestamp}-${index}`}>
-                {/* Process timeline before assistant message */}
-                {hasProcess && (
-                  <VoiceProcessTimeline
-                    toolExecutions={entry.toolExecutions || []}
-                    thinkingSteps={entry.thinkingSteps || []}
-                    retrievedNotes={entry.retrievedNotes || []}
-                    isExpanded={false}
-                    isStreaming={false}
+              return (
+                <motion.div
+                  key={`${entry.timestamp}-${index}`}
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {/* Process timeline before assistant message */}
+                  {hasProcess && (
+                    <VoiceProcessTimeline
+                      toolExecutions={entry.toolExecutions || []}
+                      thinkingSteps={entry.thinkingSteps || []}
+                      retrievedNotes={entry.retrievedNotes || []}
+                      isExpanded={true}
+                      isStreaming={false}
+                    />
+                  )}
+
+                  {/* Message bubble */}
+                  <VoiceMessageBubble
+                    role={entry.role}
+                    content={entry.content}
                   />
-                )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
 
-                {/* Message bubble */}
-                <VoiceMessageBubble
-                  role={entry.role}
-                  content={entry.content}
-                  timestamp={entry.timestamp}
-                  confidence={entry.confidence}
+          {/* Live user transcription */}
+          <AnimatePresence>
+            {(currentTranscript || isTranscribing) && (
+              <VoiceLiveTranscriptionIndicator text={currentTranscript} />
+            )}
+          </AnimatePresence>
+
+          {/* Active process timeline (streaming) */}
+          <AnimatePresence>
+            {hasActiveProcess && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <VoiceProcessTimeline
+                  toolExecutions={activeToolExecutions}
+                  thinkingSteps={activeThinkingSteps}
+                  retrievedNotes={activeRetrievedNotes}
+                  isExpanded={true}
+                  isStreaming={true}
                 />
-              </Fragment>
-            );
-          })}
-        </AnimatePresence>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        {/* Live user transcription */}
-        <AnimatePresence>
-          {(currentTranscript || isTranscribing) && (
-            <VoiceLiveTranscriptionIndicator text={currentTranscript} />
-          )}
-        </AnimatePresence>
+          {/* Thinking indicator (processing but no response yet) */}
+          <AnimatePresence>
+            {isProcessing && !currentAssistantTranscript && !hasActiveProcess && (
+              <VoiceTypingIndicator />
+            )}
+          </AnimatePresence>
 
-        {/* Active process timeline (streaming) */}
-        <AnimatePresence>
-          {hasActiveProcess && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <VoiceProcessTimeline
-                toolExecutions={activeToolExecutions}
-                thinkingSteps={activeThinkingSteps}
-                retrievedNotes={activeRetrievedNotes}
-                isExpanded={true}
-                isStreaming={true}
+          {/* Streaming assistant response */}
+          <AnimatePresence>
+            {currentAssistantTranscript && (
+              <VoiceMessageBubble
+                role="assistant"
+                content={currentAssistantTranscript}
+                isStreaming={isSpeaking}
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Thinking indicator (processing but no response yet) */}
-        <AnimatePresence>
-          {isProcessing && !currentAssistantTranscript && !hasActiveProcess && (
-            <VoiceTypingIndicator />
-          )}
-        </AnimatePresence>
-
-        {/* Streaming assistant response */}
-        <AnimatePresence>
-          {currentAssistantTranscript && (
-            <VoiceMessageBubble
-              role="assistant"
-              content={currentAssistantTranscript}
-              isStreaming={isSpeaking}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

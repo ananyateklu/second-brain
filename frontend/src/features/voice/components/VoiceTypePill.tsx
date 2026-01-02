@@ -1,9 +1,9 @@
 /**
  * VoiceTypePill Component
- * Toggle button for switching between GrokVoice and Standard voice modes
+ * Segmented toggle for switching between GrokVoice and Standard voice modes
+ * Both options are always visible, active one has green highlight
  */
 
-import { BoltIcon } from '@heroicons/react/24/outline';
 import type { VoiceProviderType } from '../types/voice-types';
 
 interface VoiceTypePillProps {
@@ -21,51 +21,74 @@ export function VoiceTypePill({
 }: VoiceTypePillProps) {
   const isGrokMode = voiceProviderType === 'GrokVoice';
 
-  const handleToggle = () => {
+  const handleSelect = (type: VoiceProviderType) => {
     if (disabled) return;
-    const newType = isGrokMode ? 'Standard' : 'GrokVoice';
     // Only switch to GrokVoice if it's available
-    if (newType === 'GrokVoice' && !grokVoiceAvailable) return;
-    onVoiceProviderTypeChange(newType);
+    if (type === 'GrokVoice' && !grokVoiceAvailable) return;
+    onVoiceProviderTypeChange(type);
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      disabled={disabled}
-      title={!grokVoiceAvailable && !isGrokMode ? 'Grok Voice is not available - check xAI API key' : undefined}
+    <div
       className={`
-        flex items-center gap-1.5 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium
-        transition-all duration-200
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.03] active:scale-[0.97]'}
+        inline-flex items-center gap-0.5 p-0.5 rounded-lg
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       style={{
-        backgroundColor: isGrokMode
-          ? 'color-mix(in srgb, var(--color-xai, #6366f1) 15%, transparent)'
-          : 'var(--surface-elevated)',
-        color: isGrokMode
-          ? 'var(--color-xai, #818cf8)'
-          : 'var(--text-secondary)',
-        border: `1px solid ${isGrokMode ? 'var(--color-xai, #6366f1)' : 'var(--border)'}`,
-        boxShadow: isGrokMode
-          ? '0 0 12px -4px var(--color-xai, #6366f1)'
-          : 'none',
+        backgroundColor: 'var(--surface-elevated)',
+        border: '1px solid var(--border)',
       }}
     >
-      {/* Icon */}
-      <BoltIcon className="w-3.5 h-3.5 flex-shrink-0" />
+      {/* Standard Option */}
+      <button
+        type="button"
+        onClick={() => handleSelect('Standard')}
+        disabled={disabled}
+        className={`
+          flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+          transition-all duration-200
+          ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+        `}
+        style={{
+          backgroundColor: !isGrokMode
+            ? 'var(--btn-primary-bg)'
+            : 'transparent',
+          color: !isGrokMode
+            ? 'var(--btn-primary-text)'
+            : 'var(--text-secondary)',
+          boxShadow: !isGrokMode
+            ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
+            : 'none',
+        }}
+      >
+        <span>Standard</span>
+      </button>
 
-      {/* Label */}
-      <span>{isGrokMode ? 'Grok Voice' : 'Standard'}</span>
-
-      {/* Active indicator */}
-      {isGrokMode && (
-        <span
-          className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0"
-          style={{ backgroundColor: 'var(--color-xai, #818cf8)' }}
-        />
-      )}
-    </button>
+      {/* Grok Voice Option */}
+      <button
+        type="button"
+        onClick={() => handleSelect('GrokVoice')}
+        disabled={disabled || !grokVoiceAvailable}
+        title={!grokVoiceAvailable ? 'Grok Voice is not available - check xAI API key' : undefined}
+        className={`
+          flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
+          transition-all duration-200
+          ${disabled || !grokVoiceAvailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+        `}
+        style={{
+          backgroundColor: isGrokMode
+            ? 'var(--btn-primary-bg)'
+            : 'transparent',
+          color: isGrokMode
+            ? 'var(--btn-primary-text)'
+            : 'var(--text-secondary)',
+          boxShadow: isGrokMode
+            ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
+            : 'none',
+        }}
+      >
+        <span>Grok</span>
+      </button>
+    </div>
   );
 }

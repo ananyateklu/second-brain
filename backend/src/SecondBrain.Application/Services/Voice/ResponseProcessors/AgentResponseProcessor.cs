@@ -1,9 +1,11 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Application.Services.Voice.Formatting;
 using SecondBrain.Application.Services.Voice.Models;
 using SecondBrain.Application.Services.Voice.Orchestration;
@@ -20,6 +22,7 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
     private readonly IVoiceSessionManager _sessionManager;
     private readonly IVoiceAnnouncementService _announcementService;
     private readonly ITTSBufferingStrategy _bufferingStrategy;
+    private readonly IUserPreferencesService _userPreferencesService;
     private readonly VoiceSettings _voiceSettings;
     private readonly ILogger<AgentResponseProcessor> _logger;
 
@@ -28,6 +31,7 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
         IVoiceSessionManager sessionManager,
         IVoiceAnnouncementService announcementService,
         ITTSBufferingStrategy bufferingStrategy,
+        IUserPreferencesService userPreferencesService,
         IOptions<VoiceSettings> voiceSettings,
         ILogger<AgentResponseProcessor> logger)
     {
@@ -35,6 +39,7 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
         _sessionManager = sessionManager;
         _announcementService = announcementService;
         _bufferingStrategy = bufferingStrategy;
+        _userPreferencesService = userPreferencesService;
         _voiceSettings = voiceSettings.Value;
         _logger = logger;
     }
@@ -58,8 +63,8 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
         // Send AI response start event
         await eventEmitter.SendAiResponseStartAsync(cancellationToken);
 
-        // Build AgentRequest from session
-        var agentRequest = BuildAgentRequest(session, userText);
+        // Build AgentRequest from session (includes fetching user RAG preferences)
+        var agentRequest = await BuildAgentRequestAsync(session, userText);
 
         // Initialize TTS options (lazy initialization - session created on first text)
         var synthOptions = new SynthesisOptions
@@ -83,6 +88,10 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
         int? inputTokens = null;
         int? outputTokens = null;
 
+        // Track tool calls for persistence
+        var toolCalls = new List<VoiceToolCallRecord>();
+        var activeToolCalls = new Dictionary<string, VoiceToolCallRecord>();
+
         await foreach (var evt in _agentService.ProcessStreamAsync(agentRequest, cancellationToken))
         {
             switch (evt.Type)
@@ -103,10 +112,32 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
                     var toolAnnouncement = _announcementService.GetToolStartAnnouncement(evt.ToolName);
                     await ttsOrchestrator.EnsureConnectedAsync(cancellationToken);
                     await ttsOrchestrator.SpeakImmediatelyAsync(toolAnnouncement, cancellationToken);
+                    // Track tool call start
+                    if (!string.IsNullOrEmpty(evt.ToolId))
+                    {
+                        var toolRecord = new VoiceToolCallRecord
+                        {
+                            ToolId = evt.ToolId,
+                            ToolName = evt.ToolName ?? "unknown",
+                            Arguments = evt.ToolArguments,
+                            StartedAt = DateTime.UtcNow,
+                            Status = "executing"
+                        };
+                        activeToolCalls[evt.ToolId] = toolRecord;
+                    }
                     break;
 
                 case AgentEventType.ToolCallEnd:
                     await eventEmitter.SendToolCallEndAsync(evt.ToolId, evt.ToolName, evt.ToolResult, cancellationToken);
+                    // Track tool call completion
+                    if (!string.IsNullOrEmpty(evt.ToolId) && activeToolCalls.TryGetValue(evt.ToolId, out var completedTool))
+                    {
+                        completedTool.Result = evt.ToolResult;
+                        completedTool.CompletedAt = DateTime.UtcNow;
+                        completedTool.Status = "completed";
+                        toolCalls.Add(completedTool);
+                        activeToolCalls.Remove(evt.ToolId);
+                    }
                     break;
 
                 case AgentEventType.Thinking:
@@ -233,6 +264,17 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
             await ttsOrchestrator.FlushAsync(cancellationToken);
         }
 
+        // Serialize tool calls for persistence
+        string? toolCallsJson = null;
+        if (toolCalls.Count > 0)
+        {
+            toolCallsJson = JsonSerializer.Serialize(toolCalls, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+        }
+
         // Add assistant turn
         await _sessionManager.AddTurnAsync(session.Id, new VoiceTurn
         {
@@ -242,7 +284,8 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
             {
                 InputTokens = inputTokens ?? 0,
                 OutputTokens = outputTokens ?? 0
-            } : null
+            } : null,
+            ToolCallsJson = toolCallsJson
         });
 
         // Send end metadata
@@ -257,8 +300,48 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
         await eventEmitter.SendStateAsync(VoiceSessionState.Speaking, cancellationToken: cancellationToken);
     }
 
-    private AgentRequest BuildAgentRequest(VoiceSession session, string userText)
+    private async Task<AgentRequest> BuildAgentRequestAsync(VoiceSession session, string userText)
     {
+        // Fetch user RAG preferences for agent semantic search (same pattern as AgentController)
+        RagOptions? ragOptions = null;
+        if (session.Options.EnableAgentRag)
+        {
+            try
+            {
+                var userPrefs = await _userPreferencesService.GetPreferencesAsync(session.UserId);
+                ragOptions = RagOptions.FromUserPreferences(
+                    enableHyde: userPrefs.RagEnableHyde,
+                    enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                    enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                    enableReranking: userPrefs.RagEnableReranking,
+                    enableAnalytics: userPrefs.RagEnableAnalytics,
+                    rerankingProvider: userPrefs.RerankingProvider,
+                    rerankingModel: userPrefs.RagRerankingModel,
+                    hydeProvider: userPrefs.RagHydeProvider,
+                    hydeModel: userPrefs.RagHydeModel,
+                    queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
+                    queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                    embeddingProvider: userPrefs.RagEmbeddingProvider,
+                    embeddingDimensions: userPrefs.RagEmbeddingDimensions,
+                    // Tier 1: Core Retrieval
+                    topK: userPrefs.RagTopK,
+                    similarityThreshold: userPrefs.RagSimilarityThreshold,
+                    initialRetrievalCount: userPrefs.RagInitialRetrievalCount,
+                    minRerankScore: userPrefs.RagMinRerankScore,
+                    // Tier 2: Hybrid Search
+                    vectorWeight: userPrefs.RagVectorWeight,
+                    bm25Weight: userPrefs.RagBm25Weight,
+                    multiQueryCount: userPrefs.RagMultiQueryCount,
+                    maxContextLength: userPrefs.RagMaxContextLength);
+
+                _logger.LogDebug("Loaded user RAG preferences for voice agent session {SessionId}", session.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user RAG preferences for voice agent, using defaults");
+            }
+        }
+
         var messages = new List<AgentMessage>();
 
         // Add system prompt optimized for voice
@@ -296,7 +379,8 @@ public class AgentResponseProcessor : IVoiceResponseProcessor
             Capabilities = session.Options.Capabilities.Count > 0
                 ? session.Options.Capabilities
                 : _voiceSettings.Features.DefaultCapabilities,
-            AgentRagEnabled = session.Options.EnableAgentRag
+            AgentRagEnabled = session.Options.EnableAgentRag,
+            RagOptions = ragOptions
         };
     }
 }

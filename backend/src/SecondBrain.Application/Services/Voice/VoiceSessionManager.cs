@@ -170,7 +170,8 @@ public class VoiceSessionManager : IVoiceSessionManager
                     Timestamp = turn.Timestamp,
                     InputTokens = turn.TokenUsage?.InputTokens,
                     OutputTokens = turn.TokenUsage?.OutputTokens,
-                    AudioDurationMs = turn.DurationSeconds.HasValue ? (int)(turn.DurationSeconds.Value * 1000) : null
+                    AudioDurationMs = turn.DurationSeconds.HasValue ? (int)(turn.DurationSeconds.Value * 1000) : null,
+                    ToolCallsJson = turn.ToolCallsJson
                 };
 
                 try

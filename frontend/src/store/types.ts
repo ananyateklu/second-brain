@@ -521,7 +521,16 @@ export interface VoiceSliceState {
   currentTranscript: string;
   currentAssistantTranscript: string;
   isTranscribing: boolean;
-  transcriptHistory: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>;
+  transcriptHistory: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+    // Agent data for assistant messages
+    toolExecutions?: import('../features/voice/types/voice-types').VoiceToolExecution[];
+    thinkingSteps?: import('../features/voice/types/voice-types').VoiceThinkingStep[];
+    retrievedNotes?: import('../features/voice/types/voice-types').VoiceRetrievedNote[];
+    durationMs?: number;
+  }>;
 
   // Settings
   selectedProvider: string | null;
@@ -550,6 +559,7 @@ export interface VoiceSliceState {
   // Agent mode state
   agentEnabled: boolean;
   capabilities: string[];
+  voiceRagEnabled: boolean;
   toolExecutions: import('../features/voice/types/voice-types').VoiceToolExecution[];
   thinkingSteps: import('../features/voice/types/voice-types').VoiceThinkingStep[];
   retrievedNotes: import('../features/voice/types/voice-types').VoiceRetrievedNote[];
@@ -584,7 +594,16 @@ export interface VoiceSliceActions {
   setCurrentTranscript: (transcript: string) => void;
   setCurrentAssistantTranscript: (transcript: string) => void;
   setIsTranscribing: (isTranscribing: boolean) => void;
-  addTranscriptEntry: (role: 'user' | 'assistant', content: string) => void;
+  addTranscriptEntry: (
+    role: 'user' | 'assistant',
+    content: string,
+    agentData?: {
+      toolExecutions?: import('../features/voice/types/voice-types').VoiceToolExecution[];
+      thinkingSteps?: import('../features/voice/types/voice-types').VoiceThinkingStep[];
+      retrievedNotes?: import('../features/voice/types/voice-types').VoiceRetrievedNote[];
+      durationMs?: number;
+    }
+  ) => void;
   clearTranscriptHistory: () => void;
 
   // Settings actions
@@ -606,6 +625,7 @@ export interface VoiceSliceActions {
   // Agent mode actions
   setAgentEnabled: (enabled: boolean) => void;
   setCapabilities: (capabilities: string[]) => void;
+  setVoiceRagEnabled: (enabled: boolean) => void;
   addToolExecution: (execution: import('../features/voice/types/voice-types').VoiceToolExecution) => void;
   updateToolExecution: (toolId: string, updates: Partial<import('../features/voice/types/voice-types').VoiceToolExecution>) => void;
   addThinkingStep: (step: import('../features/voice/types/voice-types').VoiceThinkingStep) => void;

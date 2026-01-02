@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,6 +11,7 @@ using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Application.Services.Voice.Models;
 using SecondBrain.Application.Services.Voice.Orchestration;
 
@@ -25,6 +27,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
     private readonly VoiceSettings _voiceSettings;
     private readonly IToolExecutor _toolExecutor;
     private readonly IReadOnlyDictionary<string, IAgentPlugin> _plugins;
+    private readonly IUserPreferencesService _userPreferencesService;
     private readonly ILogger<GrokVoiceHandler> _logger;
 
     private VoiceSession? _session;
@@ -36,6 +39,10 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
     // Plugin method mappings for custom function tools
     private Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> _pluginMethods = new();
+
+    // Track tool calls for persistence
+    private readonly List<VoiceToolCallRecord> _currentToolCalls = new();
+    private readonly Dictionary<string, VoiceToolCallRecord> _activeToolCalls = new();
 
     public bool IsConnected => _realtimeClient.IsConnected;
 
@@ -50,6 +57,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         IOptions<VoiceSettings> voiceSettings,
         IToolExecutor toolExecutor,
         IEnumerable<IAgentPlugin> plugins,
+        IUserPreferencesService userPreferencesService,
         ILogger<GrokVoiceHandler> logger)
     {
         _realtimeClient = realtimeClient;
@@ -57,6 +65,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         _voiceSettings = voiceSettings.Value;
         _toolExecutor = toolExecutor;
         _plugins = plugins.ToDictionary(p => p.CapabilityId, StringComparer.OrdinalIgnoreCase);
+        _userPreferencesService = userPreferencesService;
         _logger = logger;
     }
 
@@ -75,8 +84,8 @@ public class GrokVoiceHandler : IGrokVoiceHandler
             string.Join(", ", session.Options.Capabilities),
             _plugins.Count);
 
-        // Build session configuration
-        var config = BuildSessionConfig(session);
+        // Build session configuration (async to fetch user RAG preferences)
+        var config = await BuildSessionConfigAsync(session);
 
         // Connect to xAI Realtime
         await _realtimeClient.ConnectAsync(config, cancellationToken);
@@ -351,6 +360,17 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         // Send tool call start event (for UI tracking)
         await eventEmitter.SendToolCallStartAsync(callId, toolName, arguments, ct);
 
+        // Track tool call start for persistence
+        var toolRecord = new VoiceToolCallRecord
+        {
+            ToolId = callId,
+            ToolName = toolName,
+            Arguments = arguments,
+            StartedAt = DateTime.UtcNow,
+            Status = "executing"
+        };
+        _activeToolCalls[callId] = toolRecord;
+
         // Handle built-in tools (web_search, x_search) - xAI handles execution
         if (toolName is "web_search" or "x_search")
         {
@@ -373,6 +393,16 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
             // Send tool call end event (built-in tools complete immediately)
             await eventEmitter.SendToolCallEndAsync(callId, toolName, $"Search completed via {toolName}", ct);
+
+            // Track tool completion
+            if (_activeToolCalls.TryGetValue(callId, out var builtInTool))
+            {
+                builtInTool.Result = $"Search completed via {toolName}";
+                builtInTool.CompletedAt = DateTime.UtcNow;
+                builtInTool.Status = "completed";
+                _currentToolCalls.Add(builtInTool);
+                _activeToolCalls.Remove(callId);
+            }
             return;
         }
 
@@ -400,6 +430,16 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 // Send tool call end event with result
                 await eventEmitter.SendToolCallEndAsync(callId, toolName, result.Result, ct);
 
+                // Track tool completion
+                if (_activeToolCalls.TryGetValue(callId, out var customTool))
+                {
+                    customTool.Result = result.Result;
+                    customTool.CompletedAt = DateTime.UtcNow;
+                    customTool.Status = result.Success ? "completed" : "failed";
+                    _currentToolCalls.Add(customTool);
+                    _activeToolCalls.Remove(callId);
+                }
+
                 // Send function output back to xAI to continue the conversation
                 await _realtimeClient.SendFunctionCallOutputAsync(callId, result.Result, ct);
 
@@ -413,6 +453,16 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 var errorResult = $"Error executing tool: {ex.Message}";
                 await eventEmitter.SendToolCallEndAsync(callId, toolName, errorResult, ct);
 
+                // Track tool failure
+                if (_activeToolCalls.TryGetValue(callId, out var failedTool))
+                {
+                    failedTool.Result = errorResult;
+                    failedTool.CompletedAt = DateTime.UtcNow;
+                    failedTool.Status = "failed";
+                    _currentToolCalls.Add(failedTool);
+                    _activeToolCalls.Remove(callId);
+                }
+
                 // Send error back to xAI so it can inform the user
                 await _realtimeClient.SendFunctionCallOutputAsync(callId, errorResult, ct);
                 await _realtimeClient.CreateResponseAsync(cancellationToken: ct);
@@ -424,17 +474,39 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 toolName, string.Join(", ", _pluginMethods.Keys));
 
             await eventEmitter.SendToolCallEndAsync(callId, toolName, $"Unknown tool: {toolName}", ct);
+
+            // Track unknown tool
+            if (_activeToolCalls.TryGetValue(callId, out var unknownTool))
+            {
+                unknownTool.Result = $"Unknown tool: {toolName}";
+                unknownTool.CompletedAt = DateTime.UtcNow;
+                unknownTool.Status = "failed";
+                _currentToolCalls.Add(unknownTool);
+                _activeToolCalls.Remove(callId);
+            }
         }
     }
 
     private async Task HandleResponseDoneAsync(GrokResponseDoneEvent evt, VoiceSession session, IVoiceEventEmitter eventEmitter, CancellationToken ct)
     {
         var usage = evt.Response?.Usage;
-        _logger.LogInformation("Grok response done. Tokens - Input: {Input}, Output: {Output}",
-            usage?.InputTokens, usage?.OutputTokens);
+        _logger.LogInformation("Grok response done. Tokens - Input: {Input}, Output: {Output}, ToolCalls: {ToolCallCount}",
+            usage?.InputTokens, usage?.OutputTokens, _currentToolCalls.Count);
+
+        // Serialize tool calls for persistence
+        string? toolCallsJson = null;
+        if (_currentToolCalls.Count > 0)
+        {
+            toolCallsJson = JsonSerializer.Serialize(_currentToolCalls, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+            _logger.LogDebug("Serialized {Count} tool calls for persistence", _currentToolCalls.Count);
+        }
 
         // Add assistant turn to session
-        if (_currentResponseText.Length > 0)
+        if (_currentResponseText.Length > 0 || _currentToolCalls.Count > 0)
         {
             await _sessionManager.AddTurnAsync(session.Id, new VoiceTurn
             {
@@ -444,7 +516,8 @@ public class GrokVoiceHandler : IGrokVoiceHandler
                 {
                     InputTokens = usage.InputTokens,
                     OutputTokens = usage.OutputTokens
-                } : null
+                } : null,
+                ToolCallsJson = toolCallsJson
             });
         }
 
@@ -461,9 +534,11 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
         // Reset state
         _currentResponseText.Clear();
+        _currentToolCalls.Clear();
+        _activeToolCalls.Clear();
     }
 
-    private GrokRealtimeSessionConfig BuildSessionConfig(VoiceSession session)
+    private async Task<GrokRealtimeSessionConfig> BuildSessionConfigAsync(VoiceSession session)
     {
         var config = new GrokRealtimeSessionConfig
         {
@@ -485,6 +560,48 @@ public class GrokVoiceHandler : IGrokVoiceHandler
             }
         };
 
+        // Fetch user RAG preferences if agent RAG is enabled
+        RagOptions? ragOptions = null;
+        if (session.Options.EnableAgentRag)
+        {
+            try
+            {
+                var userPrefs = await _userPreferencesService.GetPreferencesAsync(session.UserId);
+                ragOptions = RagOptions.FromUserPreferences(
+                    enableHyde: userPrefs.RagEnableHyde,
+                    enableQueryExpansion: userPrefs.RagEnableQueryExpansion,
+                    enableHybridSearch: userPrefs.RagEnableHybridSearch,
+                    enableReranking: userPrefs.RagEnableReranking,
+                    enableAnalytics: userPrefs.RagEnableAnalytics,
+                    rerankingProvider: userPrefs.RerankingProvider,
+                    rerankingModel: userPrefs.RagRerankingModel,
+                    hydeProvider: userPrefs.RagHydeProvider,
+                    hydeModel: userPrefs.RagHydeModel,
+                    queryExpansionProvider: userPrefs.RagQueryExpansionProvider,
+                    queryExpansionModel: userPrefs.RagQueryExpansionModel,
+                    embeddingProvider: userPrefs.RagEmbeddingProvider,
+                    embeddingDimensions: userPrefs.RagEmbeddingDimensions,
+                    // Tier 1: Core Retrieval
+                    topK: userPrefs.RagTopK,
+                    similarityThreshold: userPrefs.RagSimilarityThreshold,
+                    initialRetrievalCount: userPrefs.RagInitialRetrievalCount,
+                    minRerankScore: userPrefs.RagMinRerankScore,
+                    // Tier 2: Hybrid Search
+                    vectorWeight: userPrefs.RagVectorWeight,
+                    bm25Weight: userPrefs.RagBm25Weight,
+                    multiQueryCount: userPrefs.RagMultiQueryCount,
+                    maxContextLength: userPrefs.RagMaxContextLength);
+
+                _logger.LogDebug(
+                    "Loaded user RAG preferences for Grok Voice session {SessionId}. HyDE={HyDE}, QueryExpansion={QueryExpansion}, Reranking={Reranking}",
+                    session.Id, ragOptions.EnableHyDE, ragOptions.EnableQueryExpansion, ragOptions.EnableReranking);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get user RAG preferences for Grok Voice session {SessionId}, using defaults", session.Id);
+            }
+        }
+
         // Add tools if enabled
         var tools = new List<GrokRealtimeTool>();
 
@@ -502,7 +619,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         // Add custom function tools if agent mode is enabled
         if (session.Options.AgentEnabled && session.Options.Capabilities.Count > 0)
         {
-            var (customTools, pluginMethods) = BuildCustomFunctionTools(session);
+            var (customTools, pluginMethods) = BuildCustomFunctionTools(session, ragOptions);
             tools.AddRange(customTools);
             _pluginMethods = pluginMethods;
 
@@ -535,7 +652,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         return config;
     }
 
-    private (List<GrokRealtimeTool> Tools, Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> Methods) BuildCustomFunctionTools(VoiceSession session)
+    private (List<GrokRealtimeTool> Tools, Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> Methods) BuildCustomFunctionTools(VoiceSession session, RagOptions? ragOptions)
     {
         var tools = new List<GrokRealtimeTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
@@ -550,6 +667,7 @@ public class GrokVoiceHandler : IGrokVoiceHandler
 
             plugin.SetCurrentUserId(session.UserId);
             plugin.SetAgentRagEnabled(session.Options.EnableAgentRag);
+            plugin.SetRagOptions(ragOptions); // Pass user RAG preferences to plugins
 
             var pluginInstance = plugin.GetPluginInstance();
             var methods = pluginInstance.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance)

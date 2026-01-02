@@ -39,7 +39,15 @@ export interface UseVoiceSessionReturn {
   audioLevel: number;
   currentTranscript: string;
   currentAssistantTranscript: string;
-  transcriptHistory: Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>;
+  transcriptHistory: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+    toolExecutions?: import('../types/voice-types').VoiceToolExecution[];
+    thinkingSteps?: import('../types/voice-types').VoiceThinkingStep[];
+    retrievedNotes?: import('../types/voice-types').VoiceRetrievedNote[];
+    durationMs?: number;
+  }>;
   error: string | null;
 
   // Actions
@@ -66,6 +74,10 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     currentAssistantTranscript,
     transcriptHistory,
     error,
+    // Agent state (for attaching to transcript entries)
+    toolExecutions,
+    thinkingSteps,
+    retrievedNotes,
     setSessionId,
     setSessionState,
     setIsConnecting,
@@ -87,6 +99,7 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     addThinkingStep,
     setRetrievedNotes,
     setGroundingSources,
+    clearAgentState,
   } = useBoundStore();
 
   // WebSocket connection ref
@@ -102,6 +115,10 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
   const isMicrophoneEnabledRef = useRef(isMicrophoneEnabled);
   const isAudioPlayingRef = useRef(isAudioPlaying);
   const isConnectedRef = useRef(isConnected);
+  // Agent state refs (for attaching to transcript entries)
+  const toolExecutionsRef = useRef(toolExecutions);
+  const thinkingStepsRef = useRef(thinkingSteps);
+  const retrievedNotesRef = useRef(retrievedNotes);
 
   // Keep callback refs up to date
   useEffect(() => {
@@ -122,6 +139,19 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
   useEffect(() => {
     isConnectedRef.current = isConnected;
   }, [isConnected]);
+
+  // Keep agent state refs up to date
+  useEffect(() => {
+    toolExecutionsRef.current = toolExecutions;
+  }, [toolExecutions]);
+
+  useEffect(() => {
+    thinkingStepsRef.current = thinkingSteps;
+  }, [thinkingSteps]);
+
+  useEffect(() => {
+    retrievedNotesRef.current = retrievedNotes;
+  }, [retrievedNotes]);
 
   // Audio player - handle TTS audio playback
   const audioPlayer = useAudioPlayer({
@@ -239,11 +269,19 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
             }
             break;
 
-          // AI response completion - add to history and clear streaming text
+          // AI response completion - add to history with agent data and clear streaming text
           case MetadataEvents.AI_RESPONSE_END:
             if (data?.content) {
-              addTranscriptEntry('assistant', data.content as string);
+              // Attach current agent state to the transcript entry
+              addTranscriptEntry('assistant', data.content as string, {
+                toolExecutions: toolExecutionsRef.current.length > 0 ? [...toolExecutionsRef.current] : undefined,
+                thinkingSteps: thinkingStepsRef.current.length > 0 ? [...thinkingStepsRef.current] : undefined,
+                retrievedNotes: retrievedNotesRef.current.length > 0 ? [...retrievedNotesRef.current] : undefined,
+                durationMs: data?.durationMs as number | undefined,
+              });
               setCurrentAssistantTranscript('');
+              // Clear agent state for next response
+              clearAgentState();
             }
             break;
 
@@ -324,6 +362,7 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     addThinkingStep,
     setRetrievedNotes,
     setGroundingSources,
+    clearAgentState,
   ]);
 
   // Start a voice session

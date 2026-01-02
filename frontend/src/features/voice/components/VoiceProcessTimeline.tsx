@@ -342,10 +342,10 @@ function VoiceToolExecutionItem({ tool }: { tool: VoiceToolExecution }) {
             stroke="currentColor"
             style={{
               color: isFailed
-                ? 'var(--color-red-500)'
+                ? 'var(--color-error)'
                 : isExecuting
                 ? 'var(--color-brand-500)'
-                : 'var(--color-green-500)',
+                : 'var(--color-success)',
             }}
           >
             <path
@@ -393,7 +393,7 @@ function VoiceToolExecutionItem({ tool }: { tool: VoiceToolExecution }) {
           {tool.status === 'completed' && (
             <span
               className="text-[10px]"
-              style={{ color: 'var(--color-green-500)' }}
+              style={{ color: 'var(--color-success)' }}
             >
               Done
             </span>
@@ -402,7 +402,7 @@ function VoiceToolExecutionItem({ tool }: { tool: VoiceToolExecution }) {
           {isFailed && (
             <span
               className="text-[10px]"
-              style={{ color: 'var(--color-red-500)' }}
+              style={{ color: 'var(--color-error)' }}
             >
               Failed
             </span>

@@ -13,6 +13,9 @@ interface VoiceAgentSettingsPopoverProps {
   onAgentModeChange: (enabled: boolean) => void;
   capabilities: string[];
   onCapabilityToggle: (capability: string) => void;
+  // RAG settings
+  voiceRagEnabled?: boolean;
+  onVoiceRagChange?: (enabled: boolean) => void;
   // Grok search options (only for GrokVoice mode)
   enableGrokWebSearch?: boolean;
   enableGrokXSearch?: boolean;
@@ -27,6 +30,8 @@ export function VoiceAgentSettingsPopover({
   onAgentModeChange,
   capabilities,
   onCapabilityToggle,
+  voiceRagEnabled = true,
+  onVoiceRagChange,
   enableGrokWebSearch = true,
   enableGrokXSearch = true,
   onGrokWebSearchChange,
@@ -137,6 +142,27 @@ export function VoiceAgentSettingsPopover({
               </div>
             </label>
           )}
+
+          {/* RAG Toggle - Knowledge Search */}
+          <label className="flex items-center gap-3 cursor-pointer pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+            <input
+              type="checkbox"
+              checked={voiceRagEnabled}
+              onChange={(e) => onVoiceRagChange?.(e.target.checked)}
+              disabled={disabled}
+              className="w-4 h-4 rounded"
+              style={{
+                accentColor: 'var(--color-brand-500)',
+                borderColor: 'var(--border)',
+              }}
+            />
+            <div className="flex-1">
+              <p className="text-sm" style={{ color: 'var(--text-primary)' }}>Knowledge Search (RAG)</p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                Search your notes for context
+              </p>
+            </div>
+          </label>
         </div>
       )}
 

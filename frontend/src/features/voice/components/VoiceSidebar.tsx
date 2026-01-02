@@ -6,7 +6,6 @@
  * header via VoicePageControls, matching the ChatSidebar pattern.
  */
 
-import { MicrophoneIcon } from '@heroicons/react/24/outline';
 import { VoiceSessionItem } from './VoiceSessionItem';
 import type { VoiceSessionSummary } from '../types/voice-types';
 
@@ -44,10 +43,9 @@ export function VoiceSidebar({
         borderRightWidth: '0.5px',
         borderRightStyle: 'solid',
         borderRightColor: 'var(--border)',
-        backgroundColor: 'var(--surface-card)',
       }}
     >
-      {/* Session List */}
+      {/* Session List - Scrollable (matches ChatSidebar) */}
       <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
         {isLoading ? (
           // Loading skeleton
@@ -75,67 +73,32 @@ export function VoiceSidebar({
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          // Empty state
-          <div className="text-center py-12 px-4">
-            <div
-              className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)',
-              }}
-            >
-              <MicrophoneIcon
-                className="w-8 h-8"
-                style={{ color: 'var(--color-brand-400)' }}
-              />
-            </div>
-            <p
-              className="text-sm font-medium"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              No voice sessions yet
-            </p>
-            <p
-              className="text-xs mt-2"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Click the + button to start a voice conversation
-            </p>
+          // Empty state (matches ChatSidebar)
+          <div className="text-center py-8 px-4" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-sm">No voice sessions yet</p>
+            <p className="text-xs mt-2">Start a new session to begin</p>
           </div>
         ) : (
-          // Session list
-          <div className="py-2">
-            {/* Current/Active session indicator (if any) */}
-            {currentSessionId && (
-              <div className="px-4 py-2">
-                <span
-                  className="text-xs font-medium uppercase tracking-wider"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  Current Session
-                </span>
-              </div>
-            )}
-
-            {sessions.map((session, index) => (
-              <VoiceSessionItem
-                key={session.id}
-                session={session}
-                isSelected={session.id === selectedSessionId}
-                isCurrentSession={session.id === currentSessionId}
-                isSelectionMode={isSelectionMode}
-                isChecked={selectedSessionIds.has(session.id)}
-                staggerIndex={index}
-                onSelect={() => {
-                  if (isSelectionMode) {
-                    onToggleSessionSelection?.(session.id);
-                  } else {
-                    onSelectSession(session.id);
-                  }
-                }}
-                onDelete={() => onDeleteSession(session.id)}
-              />
-            ))}
-          </div>
+          // Session list - no wrapper div (matches ChatSidebar)
+          sessions.map((session, index) => (
+            <VoiceSessionItem
+              key={session.id}
+              session={session}
+              isSelected={session.id === selectedSessionId}
+              isCurrentSession={session.id === currentSessionId}
+              isSelectionMode={isSelectionMode}
+              isChecked={selectedSessionIds.has(session.id)}
+              staggerIndex={index}
+              onSelect={() => {
+                if (isSelectionMode) {
+                  onToggleSessionSelection?.(session.id);
+                } else {
+                  onSelectSession(session.id);
+                }
+              }}
+              onDelete={() => onDeleteSession(session.id)}
+            />
+          ))
         )}
       </div>
     </div>

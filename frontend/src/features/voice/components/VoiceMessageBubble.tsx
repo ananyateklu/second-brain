@@ -1,142 +1,83 @@
 /**
  * VoiceMessageBubble Component
- * Chat-style message bubble for voice transcripts
+ * Chat-style message display for voice transcripts
  *
  * Features:
- * - User messages: right-aligned with branded background
- * - Assistant messages: left-aligned with elevated background
- * - Rounded corners with one flattened (user: br, assistant: bl)
- * - Avatar icons: User icon or Sparkles icon
+ * - User messages: right-aligned with bubble background (matches chat MessageBubble)
+ * - Assistant messages: left-aligned, no bubble (transparent like chat)
  * - Supports streaming state for live transcription
  * - Markdown rendering for assistant messages
  */
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { UserIcon, SparklesIcon } from '@heroicons/react/24/solid';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
 
 interface VoiceMessageBubbleProps {
   role: 'user' | 'assistant';
   content: string;
-  timestamp?: number;
   isStreaming?: boolean;
   /** For user messages during live transcription */
   isTranscribing?: boolean;
-  /** Confidence score for transcription (0-1) */
-  confidence?: number;
 }
 
 export function VoiceMessageBubble({
   role,
   content,
-  timestamp,
   isStreaming = false,
   isTranscribing = false,
-  confidence,
 }: VoiceMessageBubbleProps) {
   const prefersReducedMotion = useReducedMotion();
   const isUser = role === 'user';
   const isLiveIndicator = isTranscribing && isUser;
 
-  // Format timestamp if provided
-  const formattedTime = timestamp
-    ? new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : null;
+  // Don't render empty assistant messages (unless streaming)
+  if (!isUser && !content?.trim() && !isStreaming) {
+    return null;
+  }
 
   return (
-    <motion.div
-      initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: isUser ? 20 : -20 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} gap-2`}
-    >
-      {/* Assistant avatar */}
-      {!isUser && (
-        <div
-          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-          }}
-        >
-          <SparklesIcon className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />
-        </div>
-      )}
-
-      {/* Message bubble */}
-      <div
-        className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <motion.div
+        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+        animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 py-2.5 ${
           isUser ? 'rounded-br-md' : 'rounded-bl-md'
         }`}
-        style={
-          isUser
-            ? {
-                backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
-                border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
-                color: 'var(--text-primary)',
-              }
-            : {
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-primary)',
-              }
-        }
+        style={{
+          backgroundColor: isUser
+            ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
+            : 'transparent',
+          color: 'var(--text-primary)',
+          ...(isUser && {
+            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
+          }),
+        }}
       >
-        {/* Content */}
-        <div className="text-sm whitespace-pre-wrap break-words">
-          {isUser ? (
-            // User messages are plain text
-            <p>{content}</p>
-          ) : (
-            // Assistant messages support markdown
+        {isUser ? (
+          // User messages are plain text (matches chat)
+          <p className="whitespace-pre-wrap break-words text-sm">{content}</p>
+        ) : (
+          // Assistant messages support markdown (matches chat)
+          <>
             <MarkdownMessage content={content} />
-          )}
+            {/* Streaming indicator */}
+            {isStreaming && (
+              <span className="inline-flex ml-1">
+                <StreamingDots />
+              </span>
+            )}
+          </>
+        )}
 
-          {/* Streaming indicator */}
-          {(isStreaming || isLiveIndicator) && (
-            <span className="inline-flex ml-1">
-              <StreamingDots />
-            </span>
-          )}
-        </div>
-
-        {/* Footer with timestamp and confidence */}
-        <div className="flex items-center justify-between mt-1.5 gap-2">
-          {formattedTime && (
-            <span
-              className="text-[10px]"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {formattedTime}
-            </span>
-          )}
-
-          {/* Confidence indicator for user messages */}
-          {isUser && typeof confidence === 'number' && (
-            <span
-              className="text-[10px] px-1.5 py-0.5 rounded"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              {Math.round(confidence * 100)}% confidence
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* User avatar */}
-      {isUser && (
-        <div
-          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
-          }}
-        >
-          <UserIcon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-        </div>
-      )}
-    </motion.div>
+        {/* Live transcription indicator for user */}
+        {isLiveIndicator && (
+          <span className="inline-flex ml-1">
+            <StreamingDots />
+          </span>
+        )}
+      </motion.div>
+    </div>
   );
 }
 
@@ -176,7 +117,7 @@ function StreamingDots() {
 }
 
 /**
- * Typing indicator for when assistant is about to speak
+ * Typing indicator for when assistant is processing
  */
 export function VoiceTypingIndicator() {
   const prefersReducedMotion = useReducedMotion();
@@ -186,26 +127,9 @@ export function VoiceTypingIndicator() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
-      className="flex justify-start gap-2"
+      className="flex justify-start"
     >
-      {/* Avatar */}
-      <div
-        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-        }}
-      >
-        <SparklesIcon className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />
-      </div>
-
-      {/* Typing bubble */}
-      <div
-        className="rounded-2xl rounded-bl-md px-4 py-3"
-        style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
-        }}
-      >
+      <div className="px-1 py-1">
         <div className="flex items-center gap-1">
           {[0, 1, 2].map((i) => (
             <motion.div
@@ -238,13 +162,11 @@ export function VoiceTypingIndicator() {
  */
 export function VoiceLiveTranscriptionIndicator({ text }: { text: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="flex justify-end gap-2"
-    >
-      <div
+    <div className="flex justify-end">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
         className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)',
@@ -274,17 +196,7 @@ export function VoiceLiveTranscriptionIndicator({ text }: { text: string }) {
             <StreamingDots />
           </span>
         </div>
-      </div>
-
-      {/* User avatar */}
-      <div
-        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
-        }}
-      >
-        <UserIcon className="w-4 h-4" style={{ color: 'var(--color-primary)' }} />
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

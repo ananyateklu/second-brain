@@ -89,8 +89,8 @@ export function VoiceToolChip({
 
   // Color based on status
   const getStatusColor = () => {
-    if (isFailed) return 'var(--color-red-500)';
-    if (isCompleted) return 'var(--color-green-500)';
+    if (isFailed) return 'var(--color-error)';
+    if (isCompleted) return 'var(--color-success)';
     return 'var(--color-brand-500)';
   };
 

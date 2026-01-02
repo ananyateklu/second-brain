@@ -1,10 +1,12 @@
 /**
  * VoiceDropdown Component
  * Dropdown for selecting TTS voice (Standard mode) or Grok voice
+ * Styled to match GitHubRepoSelector dropdown
  */
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { SpeakerWaveIcon, ChevronDownIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { SpeakerWaveIcon, ChevronDownIcon, PlayIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useBoundStore } from '../../../store/bound-store';
 import type { VoiceInfo, GrokVoiceInfo, VoiceProviderType } from '../types/voice-types';
 
 interface VoiceDropdownProps {
@@ -33,6 +35,8 @@ export function VoiceDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const theme = useBoundStore((state) => state.theme);
+  const isBlueTheme = theme === 'blue';
 
   const isGrokMode = voiceProviderType === 'GrokVoice';
 
@@ -101,191 +105,182 @@ export function VoiceDropdown({
     audio.play().catch(console.error);
   };
 
+  const isSelected = (voiceId: string) => {
+    return isGrokMode ? voiceId === selectedGrokVoice : voiceId === selectedVoiceId;
+  };
+
   return (
     <div ref={containerRef} className="relative">
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
-        className={`
-          flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium
-          transition-all duration-200
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.03] active:scale-[0.97]'}
-        `}
+      {/* Trigger Button */}
+      <div
+        className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
           backgroundColor: 'var(--surface-elevated)',
-          color: 'var(--text-primary)',
           border: '1px solid var(--border)',
         }}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
       >
-        <SpeakerWaveIcon className="w-3.5 h-3.5 flex-shrink-0 text-[var(--text-secondary)]" />
-        <span className="truncate max-w-[120px]">
-          {currentVoice?.name || 'Select voice'}
-        </span>
-        <ChevronDownIcon
-          className={`w-3 h-3 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--text-tertiary)' }}
-        />
-      </button>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className={`
+            flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-opacity-80'}
+          `}
+          style={{
+            backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
+            color: 'var(--text-primary)',
+          }}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
+        >
+          <SpeakerWaveIcon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-brand-500)' }} />
+          <span className="font-medium truncate max-w-[120px]" title={currentVoice?.name || 'Select voice'}>
+            {currentVoice?.name || 'Select voice'}
+          </span>
+          <ChevronDownIcon
+            className={`w-3 h-3 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      </div>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.15)' }}
-          />
-
-          <div
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{
-              backgroundColor: 'var(--surface-card-solid, var(--surface-card))',
-              borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-xl), 0 0 40px -10px rgba(0, 0, 0, 0.3)',
-              minWidth: '280px',
-              maxHeight: '320px',
-              overflowY: 'auto',
-              backdropFilter: 'blur(16px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            }}
-            role="listbox"
-          >
-            {/* Header */}
-            <div
-              className="px-4 py-3 border-b sticky top-0"
-              style={{
-                borderColor: 'var(--border)',
-                backgroundColor: 'var(--surface-card-solid, var(--surface-card))',
-              }}
+        <div
+          className="absolute top-full left-0 mt-2 w-72 rounded-xl border shadow-lg z-50 overflow-hidden"
+          style={{
+            backgroundColor: isBlueTheme
+              ? 'rgba(10, 22, 40, 0.98)'
+              : 'var(--surface-card-solid)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-xl)',
+            backdropFilter: 'blur(12px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+          }}
+          role="listbox"
+        >
+          {/* Header */}
+          <div className="px-3 py-2.5 border-b" style={{ borderColor: 'var(--border)' }}>
+            <h3
+              className="text-xs font-medium uppercase tracking-wider"
+              style={{ color: 'var(--text-tertiary)' }}
             >
-              <h3
-                className="text-sm font-semibold"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {isGrokMode ? 'Grok Voices' : 'TTS Voices'}
-              </h3>
-            </div>
+              {isGrokMode ? 'Grok Voices' : 'TTS Voices'}
+            </h3>
+          </div>
 
-            {/* Voice List */}
-            <div className="p-2">
-              {isGrokMode ? (
-                // Grok voices (flat list)
-                availableGrokVoices.map((voice) => (
+          {/* Voice List */}
+          <div className="max-h-64 overflow-y-auto thin-scrollbar">
+            {/* Empty state */}
+            {((isGrokMode && availableGrokVoices.length === 0) || (!isGrokMode && availableVoices.length === 0)) && (
+              <div className="p-4 text-center">
+                <SpeakerWaveIcon className="w-8 h-8 mx-auto mb-2 opacity-40" style={{ color: 'var(--text-tertiary)' }} />
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  No voices available
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                  {isGrokMode ? 'Check xAI API configuration' : 'Check ElevenLabs API key'}
+                </p>
+              </div>
+            )}
+
+            {isGrokMode ? (
+              // Grok voices (flat list)
+              <div className="p-2">
+                {availableGrokVoices.map((voice) => (
                   <button
                     key={voice.voiceId}
                     type="button"
                     onClick={() => handleSelectVoice(voice.voiceId)}
-                    className={`
-                      w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left
-                      transition-all duration-150 hover:scale-[1.01]
-                    `}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-3"
                     style={{
-                      backgroundColor: voice.voiceId === selectedGrokVoice
-                        ? 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)'
+                      backgroundColor: isSelected(voice.voiceId)
+                        ? 'var(--color-primary-alpha)'
                         : 'transparent',
                       color: 'var(--text-primary)',
                     }}
                     role="option"
-                    aria-selected={voice.voiceId === selectedGrokVoice}
+                    aria-selected={isSelected(voice.voiceId)}
                   >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--color-xai, #6366f1) 20%, transparent)',
-                      }}
-                    >
-                      <SpeakerWaveIcon className="w-4 h-4" style={{ color: 'var(--color-xai, #818cf8)' }} />
-                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{voice.name}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate">{voice.name}</span>
+                      </div>
                       {voice.description && (
-                        <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                        <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
                           {voice.description}
                         </p>
                       )}
                     </div>
-                    {voice.voiceId === selectedGrokVoice && (
-                      <span
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: 'var(--color-brand-500)' }}
+                    {isSelected(voice.voiceId) && (
+                      <CheckIcon
+                        className="w-4 h-4 flex-shrink-0"
+                        style={{ color: 'var(--color-primary)' }}
                       />
                     )}
                   </button>
-                ))
-              ) : (
-                // Standard voices (grouped by category)
-                Object.entries(voicesByCategory).map(([category, voices]) => (
-                  <div key={category} className="mb-2 last:mb-0">
-                    <div
-                      className="px-3 py-1.5 text-xs font-medium uppercase tracking-wider"
-                      style={{ color: 'var(--text-tertiary)' }}
+                ))}
+              </div>
+            ) : (
+              // Standard voices (grouped by category)
+              Object.entries(voicesByCategory).map(([category, voices]) => (
+                <div key={category} className="p-2">
+                  <p
+                    className="text-xs font-medium px-2 py-1 uppercase tracking-wider"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    {category}
+                  </p>
+                  {voices.map((voice) => (
+                    <button
+                      key={voice.voiceId}
+                      type="button"
+                      onClick={() => handleSelectVoice(voice.voiceId)}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-3"
+                      style={{
+                        backgroundColor: isSelected(voice.voiceId)
+                          ? 'var(--color-primary-alpha)'
+                          : 'transparent',
+                        color: 'var(--text-primary)',
+                      }}
+                      role="option"
+                      aria-selected={isSelected(voice.voiceId)}
                     >
-                      {category}
-                    </div>
-                    {voices.map((voice) => (
-                      <button
-                        key={voice.voiceId}
-                        type="button"
-                        onClick={() => handleSelectVoice(voice.voiceId)}
-                        className={`
-                          w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left
-                          transition-all duration-150 hover:scale-[1.01]
-                        `}
-                        style={{
-                          backgroundColor: voice.voiceId === selectedVoiceId
-                            ? 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)'
-                            : 'transparent',
-                          color: 'var(--text-primary)',
-                        }}
-                        role="option"
-                        aria-selected={voice.voiceId === selectedVoiceId}
-                      >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{
-                            backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 20%, transparent)',
-                          }}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate">{voice.name}</span>
+                        </div>
+                        {voice.description && (
+                          <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
+                            {voice.description}
+                          </p>
+                        )}
+                      </div>
+                      {voice.previewUrl && (
+                        <button
+                          type="button"
+                          onClick={(e) => handlePreview(e, voice.previewUrl as string)}
+                          className="p-1 rounded transition-colors hover:bg-[var(--surface-elevated)]"
+                          style={{ color: 'var(--text-secondary)' }}
+                          title="Preview voice"
                         >
-                          <SpeakerWaveIcon className="w-4 h-4" style={{ color: 'var(--color-brand-400)' }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{voice.name}</p>
-                          {voice.description && (
-                            <p className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
-                              {voice.description}
-                            </p>
-                          )}
-                        </div>
-                        {voice.previewUrl && (
-                          <button
-                            type="button"
-                            onClick={(e) => handlePreview(e, voice.previewUrl as string)}
-                            className="p-1.5 rounded-lg transition-colors hover:bg-[var(--surface-elevated)]"
-                            style={{ color: 'var(--text-secondary)' }}
-                            title="Preview voice"
-                          >
-                            <PlayIcon className="w-4 h-4" />
-                          </button>
-                        )}
-                        {voice.voiceId === selectedVoiceId && (
-                          <span
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: 'var(--color-brand-500)' }}
-                          />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                ))
-              )}
-            </div>
+                          <PlayIcon className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {isSelected(voice.voiceId) && (
+                        <CheckIcon
+                          className="w-4 h-4 flex-shrink-0"
+                          style={{ color: 'var(--color-primary)' }}
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );
