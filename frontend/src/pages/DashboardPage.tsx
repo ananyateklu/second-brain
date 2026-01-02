@@ -17,6 +17,7 @@ import {
   useCreateFocusItem,
   useFocusSuggestions,
   useProgressSummary,
+  useClaudeSession,
 } from '../features/focus/hooks';
 import {
   CurrentFocusCard,
@@ -25,7 +26,10 @@ import {
   FocusSkeleton,
   FocusSuggestionsPanel,
   ProgressSummary,
+  ClaudeSessionCard,
+  PasteSessionModal,
 } from '../features/focus/components';
+import type { ClaudeSessionData } from '../features/focus/types';
 import { focusService } from '../services/focus.service';
 import type { PersistedFocusSuggestion, SummaryPeriod } from '../features/focus/types';
 
@@ -84,6 +88,17 @@ export const DashboardPage = memo(function DashboardPage() {
   } = useProgressSummary({
     period: summaryPeriod,
   });
+
+  // Claude Code Session Integration
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const {
+    session: claudeSession,
+    isLoading: isClaudeSessionLoading,
+    isTauriMode,
+    refresh: refreshClaudeSession,
+    setFromPaste: setClaudeSessionFromPaste,
+    clearSession: clearClaudeSession,
+  } = useClaudeSession();
 
   // Combined mutation state
   const isMutating = isCompleting || isSettingFocus || isDeleting || isUpdating || isCreating;
@@ -194,6 +209,34 @@ export const DashboardPage = memo(function DashboardPage() {
   const handleRefreshSummary = useCallback(() => {
     void refetchSummary();
   }, [refetchSummary]);
+
+  // Claude Session Handlers
+  const handleImportClaudeSession = useCallback(
+    (session: ClaudeSessionData) => {
+      createFocusItem({
+        title: session.title ?? session.focus ?? 'Claude Code Session',
+        description: session.description ?? undefined,
+        priority: 1, // P1 - High priority for active coding work
+        scheduledDate: focusService.getTodayDateString(),
+      });
+    },
+    [createFocusItem]
+  );
+
+  const handleOpenPasteModal = useCallback(() => {
+    setIsPasteModalOpen(true);
+  }, []);
+
+  const handleClosePasteModal = useCallback(() => {
+    setIsPasteModalOpen(false);
+  }, []);
+
+  const handlePasteSession = useCallback(
+    (content: string) => {
+      setClaudeSessionFromPaste(content);
+    },
+    [setClaudeSessionFromPaste]
+  );
 
   // Calculate container height - accounts for title bar and header
   const containerHeight = `calc(100vh - ${titleBarHeight}px - 113px)`;
@@ -306,8 +349,21 @@ export const DashboardPage = memo(function DashboardPage() {
             />
           </div>
 
-          {/* Right Column - AI Suggestions (mobile: 3rd) */}
-          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col min-h-0 lg:overflow-y-auto thin-scrollbar">
+          {/* Right Column - Claude Session + AI Suggestions (mobile: 3rd) */}
+          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 lg:overflow-y-auto thin-scrollbar">
+            {/* Claude Code Session Card */}
+            <ClaudeSessionCard
+              session={claudeSession}
+              isLoading={isClaudeSessionLoading}
+              isTauriMode={isTauriMode}
+              onImportAsFocus={handleImportClaudeSession}
+              onRefresh={refreshClaudeSession}
+              onOpenPasteModal={handleOpenPasteModal}
+              onClear={clearClaudeSession}
+              disabled={isMutating}
+            />
+
+            {/* AI Suggestions */}
             <FocusSuggestionsPanel
               suggestions={suggestions}
               isLoading={isSuggestionsLoading}
@@ -324,6 +380,13 @@ export const DashboardPage = memo(function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Paste Session Modal (web fallback) */}
+      <PasteSessionModal
+        isOpen={isPasteModalOpen}
+        onClose={handleClosePasteModal}
+        onPaste={handlePasteSession}
+      />
     </div>
   );
 });

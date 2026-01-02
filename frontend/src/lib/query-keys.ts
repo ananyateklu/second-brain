@@ -397,6 +397,17 @@ export const focusKeys = {
 } as const;
 
 /**
+ * Query keys for Claude Code session integration
+ */
+export const claudeSessionKeys = {
+  /** Root key for all Claude session queries */
+  all: ['claude-session'] as const,
+
+  /** Key for session at specific project path */
+  byProject: (projectPath: string) => [...claudeSessionKeys.all, projectPath] as const,
+} as const;
+
+/**
  * Query keys for Git integration
  */
 export const gitKeys = {

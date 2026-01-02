@@ -24,3 +24,7 @@ export { useQuickCapture, type UseQuickCaptureReturn } from './use-quick-capture
 // AI hooks
 export { useFocusSuggestions, type UseFocusSuggestionsOptions } from './use-focus-suggestions';
 export { useProgressSummary, type UseProgressSummaryOptions } from './use-progress-summary';
+
+// Claude Code integration
+export { useClaudeSession } from './use-claude-session';
+export type { UseClaudeSessionOptions, UseClaudeSessionReturn } from '../types/claude-session';

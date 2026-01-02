@@ -300,6 +300,24 @@ export async function onOpenReportIssue(callback: () => void): Promise<() => voi
 }
 
 /**
+ * Read Claude Code session.md from a project directory
+ * Returns null if file doesn't exist or not in Tauri mode
+ */
+export async function readClaudeSession(projectPath: string): Promise<string | null> {
+  if (!isTauri()) {
+    loggers.tauri.debug('readClaudeSession is only available in Tauri');
+    return null;
+  }
+
+  try {
+    return await invoke<string | null>('read_claude_session', { projectPath });
+  } catch (e) {
+    loggers.tauri.error('Failed to read Claude session:', e);
+    throw e;
+  }
+}
+
+/**
  * Listen for Tauri events with type-safe event names
  */
 export type TauriEvent =

@@ -44,6 +44,25 @@ pub async fn get_app_version(app: AppHandle) -> Result<String, String> {
     Ok(version)
 }
 
+/// Read Claude Code session.md from a project directory
+/// Returns None if file doesn't exist, error on read failure
+#[tauri::command]
+pub async fn read_claude_session(project_path: String) -> Result<Option<String>, String> {
+    use std::path::Path;
+
+    let session_path = Path::new(&project_path)
+        .join(".claude")
+        .join("session.md");
+
+    if !session_path.exists() {
+        return Ok(None);
+    }
+
+    std::fs::read_to_string(&session_path)
+        .map(Some)
+        .map_err(|e| format!("Failed to read session.md: {}", e))
+}
+
 // ============================================================
 // Unit Tests
 // ============================================================

@@ -118,10 +118,18 @@ update_session() {
   # Create backup
   cp "$SESSION_FILE" "$SESSION_FILE.bak"
 
-  # Update the session file
+  # Update the session file - handle both formats:
+  # Format 1: "> **Last Updated**:" and "> **Focus**:" (current format)
+  # Format 2: "**Last Updated**:" and "**Working On**:" (legacy format)
+
+  # Update timestamp (both formats)
   sed -i.tmp "s/^> \*\*Last Updated\*\*:.*/> **Last Updated**: $timestamp/" "$SESSION_FILE"
-  sed -i.tmp "s/^\*\*Branch\*\*:.*/\*\*Branch\*\*: $current_branch/" "$SESSION_FILE"
-  sed -i.tmp "s/^\*\*Working On\*\*:.*/\*\*Working On\*\*: $focus_text/" "$SESSION_FILE"
+  sed -i.tmp "s/^\*\*Last Updated\*\*:.*/> **Last Updated**: $timestamp/" "$SESSION_FILE"
+
+  # Update focus (both formats - > **Focus**: is the current format)
+  sed -i.tmp "s/^> \*\*Focus\*\*:.*/> **Focus**: $focus_text/" "$SESSION_FILE"
+  sed -i.tmp "s/^\*\*Working On\*\*:.*/> **Focus**: $focus_text/" "$SESSION_FILE"
+
   rm -f "$SESSION_FILE.tmp"
 
   echo -e "${GREEN}✅ Session updated: $focus_text${NC}"
@@ -142,14 +150,48 @@ start_session() {
     exit 1
   fi
 
-  # Update session
-  update_session "$focus_text"
+  # Create backup of old session
+  if [ -f "$SESSION_FILE" ]; then
+    cp "$SESSION_FILE" "$SESSION_FILE.bak"
+  fi
+
+  # Reset session file with new focus
+  local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+
+  cat > "$SESSION_FILE" << EOF
+# Current Session Context
+
+> **Last Updated**: $timestamp
+> **Focus**: $focus_text
+
+---
+
+## Session Summary
+
+### Current Work
+
+**$focus_text**
+
+*(Session just started - details will be added as work progresses)*
+
+---
+
+## Notes
+
+*(Add session notes here)*
+
+---
+
+**Remember**: This file is for current session work. Long-term learnings go in \`.claude/memory.md\`.
+EOF
+
+  echo -e "${GREEN}✅ Session reset with new focus${NC}"
 
   # Generate auto-context
   echo -e "${BLUE}🔄 Generating auto-context...${NC}"
   "$AUTO_CONTEXT_SCRIPT"
 
-  echo -e "${GREEN}✅ Session started!${NC}"
+  echo -e "${GREEN}📝 Session started!${NC}"
   echo -e "${CYAN}Focus: $focus_text${NC}"
   echo -e "${CYAN}Branch: $current_branch${NC}"
 }

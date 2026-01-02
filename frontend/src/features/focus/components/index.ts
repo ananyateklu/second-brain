@@ -26,3 +26,7 @@ export { FocusTimer, type FocusTimerProps } from './FocusTimer';
 // AI Components
 export { FocusSuggestionsPanel, type FocusSuggestionsPanelProps } from './FocusSuggestionsPanel';
 export { ProgressSummary, type ProgressSummaryProps } from './ProgressSummary';
+
+// Claude Code Integration
+export { ClaudeSessionCard, type ClaudeSessionCardProps } from './ClaudeSessionCard';
+export { PasteSessionModal, type PasteSessionModalProps } from './PasteSessionModal';

@@ -1509,6 +1509,7 @@ pub fn run() {
             commands::open_data_directory,
             commands::open_log_directory,
             commands::get_app_version,
+            commands::read_claude_session,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
