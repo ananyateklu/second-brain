@@ -1,4 +1,4 @@
-# Second Brain
+#
 
 <div align="center">
 
