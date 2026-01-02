@@ -1,5 +1,4 @@
-#
-
+<!-- markdownlint-disable MD041 -->
 <div align="center">
 
 <img src="frontend/src/assets/second-brain-logo-dark-mode.png" alt="Second Brain Logo" width="180"/>
@@ -16,7 +15,7 @@
 **Intelligent knowledge management with multi-provider AI chat, smart notes, AI agents, and advanced RAG.**
 
 </div>
-
+<!-- markdownlint-enable MD041 -->
 ---
 
 ## Quick Start
