@@ -85,10 +85,10 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
                 var contextBuilder = new StringBuilder();
                 if (!string.IsNullOrWhiteSpace(msg.Content))
                     contextBuilder.AppendLine(msg.Content);
-                contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
+                contextBuilder.AppendLine("\n<!-- tool-results -->");
                 foreach (var tc in msg.ToolCalls)
-                    contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
-                contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
+                    contextBuilder.AppendLine($"{tc.ToolName}: {tc.Result}");
+                contextBuilder.AppendLine("<!-- /tool-results -->");
                 messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = contextBuilder.ToString() });
             }
             else
@@ -127,7 +127,10 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
             var pendingToolCalls = new List<Services.AI.Models.OllamaToolCallInfo>();
             var iterationText = new StringBuilder();
             var hasEmittedFirstToken = false;
-            var lastSpeakableLength = 0; // Track how much speakable content we've already yielded
+            // IMPORTANT: Start from speakable content length (excluding thinking blocks) to avoid re-yielding
+            // content from previous iterations. Using fullResponse.Length would skip content when
+            // previous iterations contain thinking blocks.
+            var lastSpeakableLength = Helpers.ThinkingExtractor.StripThinkingBlocks(fullResponse.ToString()).Length;
 
             await foreach (var evt in _ollamaProvider.StreamWithToolsAsync(
                 messages, tools, aiSettings, cancellationToken))
@@ -221,9 +224,17 @@ public class OllamaStreamingStrategy : BaseAgentStreamingStrategy
                     JsonNode.Parse(c.Arguments)
                 )).ToList();
 
-                var results = await ToolExecutor.ExecuteMultipleAsync(
+                // Use scope-isolated execution for parallel database safety
+                var executionContext = new PluginExecutionContext(
+                    UserId: request.UserId,
+                    Provider: request.Provider,
+                    Model: request.Model,
+                    AgentRagEnabled: request.AgentRagEnabled);
+
+                var results = await ToolExecutor.ExecuteMultipleWithScopeIsolationAsync(
                     toolCalls,
                     pluginMethods,
+                    executionContext,
                     settings.Ollama.FunctionCalling.ParallelExecution,
                     cancellationToken);
 

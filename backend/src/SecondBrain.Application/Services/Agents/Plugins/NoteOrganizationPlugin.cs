@@ -50,11 +50,11 @@ public class NoteOrganizationPlugin : NotePluginBase
 - **MoveToFolder**: Organize note into a folder
   - Pass empty string to remove from folder
 
-- **ListFolders**: Show all folders with note counts
-
-- **ListAllTags**: Show all tags with usage counts
-
-- **GetNoteStats**: Get notes statistics overview";
+- **GetOverview** - Unified overview tool for organization info
+  - type='all' (default): Full stats with top tags and folders
+  - type='folders': List of all folders with note counts
+  - type='tags': List of all tags with usage counts
+  - type='stats': Counts only (total, active, archived, recent activity)";
 
     [KernelFunction("ListNotes")]
     [Description("UNIFIED listing tool for all notes. filter: 'recent' (default), 'archived', 'all'. detailLevel: 'ids_only' (fast), 'summary' (default), 'full' (complete content). Examples: 'show my notes' -> filter=recent, 'show archived' -> filter=archived, 'list everything' -> filter=all.")]
@@ -260,131 +260,114 @@ public class NoteOrganizationPlugin : NotePluginBase
         }
     }
 
-    [KernelFunction("ListFolders")]
-    [Description("LIST all folders with note counts. Shows how notes are organized. Examples: 'what folders do I have', 'show my organization', 'list categories' -> ListFolders.")]
-    public async Task<string> ListFoldersAsync(
-        [Description("Include archived in counts? (default: false)")] bool includeArchived = false)
+    [KernelFunction("GetOverview")]
+    [Description("Get notes overview. type='all' (default) for full stats with top tags/folders, 'folders' for folder list, 'tags' for tag list, 'stats' for counts only. Examples: 'how many notes' -> all, 'what folders exist' -> folders, 'show my tags' -> tags.")]
+    public async Task<string> GetOverviewAsync(
+        [Description("Overview type: 'all'|'folders'|'tags'|'stats'")] string type = "all",
+        [Description("Include archived notes in counts?")] bool includeArchived = false)
     {
-        var userError = ValidateUserContext("list folders");
+        var userError = ValidateUserContext("get overview");
         if (userError != null) return userError;
 
         try
         {
             var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
             var allNotes = notes.ToList();
-
             var activeNotes = allNotes.Where(n => !n.IsArchived).ToList();
             var archivedNotes = allNotes.Where(n => n.IsArchived).ToList();
             var filteredNotes = includeArchived ? allNotes : activeNotes;
 
-            var folderCountsDict = filteredNotes
-                .Where(n => !string.IsNullOrEmpty(n.Folder))
-                .GroupBy(n => n.Folder!)
-                .ToDictionary(g => g.Key, g => g.Count());
+            var normalizedType = type.ToLowerInvariant();
 
-            if (archivedNotes.Any() && !folderCountsDict.ContainsKey("Archived"))
+            // Handle "folders" type
+            if (normalizedType == "folders")
             {
-                folderCountsDict["Archived"] = archivedNotes.Count;
+                var folderCountsDict = filteredNotes
+                    .Where(n => !string.IsNullOrEmpty(n.Folder))
+                    .GroupBy(n => n.Folder!)
+                    .ToDictionary(g => g.Key, g => g.Count());
+
+                if (archivedNotes.Any() && !folderCountsDict.ContainsKey("Archived"))
+                {
+                    folderCountsDict["Archived"] = archivedNotes.Count;
+                }
+
+                var folderCounts = folderCountsDict
+                    .Select(kvp => new { name = kvp.Key, noteCount = kvp.Value })
+                    .OrderByDescending(x => x.noteCount)
+                    .ThenBy(x => x.name)
+                    .ToList();
+
+                var notesWithoutFolder = filteredNotes.Count(n => string.IsNullOrEmpty(n.Folder));
+                var totalNotesCount = filteredNotes.Count + (includeArchived ? 0 : archivedNotes.Count);
+
+                if (!folderCounts.Any() && notesWithoutFolder == 0 && !archivedNotes.Any())
+                {
+                    return "You don't have any notes yet.";
+                }
+
+                return JsonSerializer.Serialize(new
+                {
+                    type = "folders",
+                    message = folderCounts.Any()
+                        ? $"Found {folderCounts.Count} folder(s)"
+                        : "No folders found. All notes are unfiled.",
+                    folders = folderCounts,
+                    unfiledNotes = notesWithoutFolder,
+                    totalNotes = totalNotesCount
+                });
             }
 
-            var folderCounts = folderCountsDict
-                .Select(kvp => new { name = kvp.Key, noteCount = kvp.Value })
-                .OrderByDescending(x => x.noteCount)
-                .ThenBy(x => x.name)
-                .ToList();
-
-            var notesWithoutFolder = filteredNotes.Count(n => string.IsNullOrEmpty(n.Folder));
-            var totalNotesCount = filteredNotes.Count + (includeArchived ? 0 : archivedNotes.Count);
-
-            if (!folderCounts.Any() && notesWithoutFolder == 0 && !archivedNotes.Any())
+            // Handle "tags" type
+            if (normalizedType == "tags")
             {
-                return "You don't have any notes yet.";
+                var tagCounts = filteredNotes
+                    .SelectMany(n => n.Tags)
+                    .GroupBy(t => t.ToLowerInvariant())
+                    .Select(g => new { tag = g.First(), count = g.Count() })
+                    .OrderByDescending(x => x.count)
+                    .ThenBy(x => x.tag)
+                    .ToList();
+
+                if (!tagCounts.Any())
+                {
+                    return "You don't have any tags yet. Add tags to your notes to organize them.";
+                }
+
+                return JsonSerializer.Serialize(new
+                {
+                    type = "tags",
+                    message = $"Found {tagCounts.Count} unique tag(s) across your notes",
+                    tags = tagCounts.Select(tc => new { name = tc.tag, noteCount = tc.count }).ToList(),
+                    totalNotesWithTags = filteredNotes.Count(n => n.Tags.Any()),
+                    totalNotes = filteredNotes.Count
+                });
             }
 
-            var response = new
+            // Handle "stats" type
+            if (normalizedType == "stats")
             {
-                type = "folders",
-                message = folderCounts.Any()
-                    ? $"Found {folderCounts.Count} folder(s)"
-                    : "No folders found. All notes are unfiled.",
-                folders = folderCounts,
-                unfiledNotes = notesWithoutFolder,
-                totalNotes = totalNotesCount
-            };
+                var now = DateTime.UtcNow;
+                var notesThisWeek = filteredNotes.Count(n => n.CreatedAt >= now.AddDays(-7));
+                var notesThisMonth = filteredNotes.Count(n => n.CreatedAt >= now.AddDays(-30));
 
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("listing folders", ex.Message);
-        }
-    }
-
-    [KernelFunction("ListAllTags")]
-    [Description("LIST all tags with usage counts. Shows tag taxonomy across notes. Examples: 'what tags do I use', 'show my labels', 'list all categories' -> ListAllTags.")]
-    public async Task<string> ListAllTagsAsync(
-        [Description("Include archived in counts? (default: false)")] bool includeArchived = false)
-    {
-        var userError = ValidateUserContext("list tags");
-        if (userError != null) return userError;
-
-        try
-        {
-            var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
-
-            var filteredNotes = includeArchived
-                ? notes
-                : notes.Where(n => !n.IsArchived);
-
-            var tagCounts = filteredNotes
-                .SelectMany(n => n.Tags)
-                .GroupBy(t => t.ToLowerInvariant())
-                .Select(g => new { tag = g.First(), count = g.Count() })
-                .OrderByDescending(x => x.count)
-                .ThenBy(x => x.tag)
-                .ToList();
-
-            if (!tagCounts.Any())
-            {
-                return "You don't have any tags yet. Add tags to your notes to organize them.";
+                return JsonSerializer.Serialize(new
+                {
+                    type = "stats",
+                    message = "Notes statistics (counts only)",
+                    statistics = new
+                    {
+                        totalNotes = allNotes.Count,
+                        activeNotes = activeNotes.Count,
+                        archivedNotes = archivedNotes.Count,
+                        notesCreatedThisWeek = notesThisWeek,
+                        notesCreatedThisMonth = notesThisMonth
+                    }
+                });
             }
 
-            var response = new
-            {
-                type = "tags",
-                message = $"Found {tagCounts.Count} unique tag(s) across your notes",
-                tags = tagCounts.Select(tc => new { name = tc.tag, noteCount = tc.count }).ToList(),
-                totalNotesWithTags = filteredNotes.Count(n => n.Tags.Any()),
-                totalNotes = filteredNotes.Count()
-            };
-
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("listing tags", ex.Message);
-        }
-    }
-
-    [KernelFunction("GetNoteStats")]
-    [Description("GET statistics overview: total counts, recent activity, top tags/folders. Good for understanding note collection. Examples: 'how many notes do I have', 'show statistics', 'give me an overview' -> GetNoteStats.")]
-    public async Task<string> GetNoteStatsAsync(
-        [Description("Include archived in stats? (default: false)")] bool includeArchived = false)
-    {
-        var userError = ValidateUserContext("get statistics");
-        if (userError != null) return userError;
-
-        try
-        {
-            var notes = await NoteRepository.GetByUserIdAsync(CurrentUserId);
-            var allNotes = notes.ToList();
-
-            var activeNotes = allNotes.Where(n => !n.IsArchived).ToList();
-            var archivedNotes = allNotes.Where(n => n.IsArchived).ToList();
-            var notesForStats = includeArchived ? allNotes : activeNotes;
-
-            // Tag statistics
-            var tagCounts = notesForStats
+            // Default: "all" type - full overview
+            var allTagCounts = filteredNotes
                 .SelectMany(n => n.Tags)
                 .GroupBy(t => t.ToLowerInvariant())
                 .Select(g => new { tag = g.First(), count = g.Count() })
@@ -392,60 +375,56 @@ public class NoteOrganizationPlugin : NotePluginBase
                 .Take(10)
                 .ToList();
 
-            // Folder statistics
-            var folderCountsDict = notesForStats
+            var allFolderCountsDict = filteredNotes
                 .Where(n => !string.IsNullOrEmpty(n.Folder))
                 .GroupBy(n => n.Folder!)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            if (archivedNotes.Any() && !folderCountsDict.ContainsKey("Archived"))
+            if (archivedNotes.Any() && !allFolderCountsDict.ContainsKey("Archived"))
             {
-                folderCountsDict["Archived"] = archivedNotes.Count;
+                allFolderCountsDict["Archived"] = archivedNotes.Count;
             }
 
-            var topFolders = folderCountsDict
+            var topFolders = allFolderCountsDict
                 .Select(kvp => new { name = kvp.Key, count = kvp.Value })
                 .OrderByDescending(x => x.count)
                 .ThenBy(x => x.name)
                 .Take(10)
                 .ToList();
 
-            var notesInFoldersCount = notesForStats.Count(n => !string.IsNullOrEmpty(n.Folder));
+            var notesInFoldersCount = filteredNotes.Count(n => !string.IsNullOrEmpty(n.Folder));
             if (!includeArchived && archivedNotes.Any())
             {
                 notesInFoldersCount += archivedNotes.Count;
             }
 
-            // Date statistics
-            var now = DateTime.UtcNow;
-            var notesThisWeek = notesForStats.Count(n => n.CreatedAt >= now.AddDays(-7));
-            var notesThisMonth = notesForStats.Count(n => n.CreatedAt >= now.AddDays(-30));
+            var nowForAll = DateTime.UtcNow;
+            var allNotesThisWeek = filteredNotes.Count(n => n.CreatedAt >= nowForAll.AddDays(-7));
+            var allNotesThisMonth = filteredNotes.Count(n => n.CreatedAt >= nowForAll.AddDays(-30));
 
-            var response = new
+            return JsonSerializer.Serialize(new
             {
-                type = "stats",
-                message = "Notes statistics",
+                type = "overview",
+                message = "Full notes overview",
                 statistics = new
                 {
                     totalNotes = allNotes.Count,
                     activeNotes = activeNotes.Count,
                     archivedNotes = archivedNotes.Count,
-                    notesCreatedThisWeek = notesThisWeek,
-                    notesCreatedThisMonth = notesThisMonth,
-                    notesWithTags = notesForStats.Count(n => n.Tags.Any()),
+                    notesCreatedThisWeek = allNotesThisWeek,
+                    notesCreatedThisMonth = allNotesThisMonth,
+                    notesWithTags = filteredNotes.Count(n => n.Tags.Any()),
                     notesInFolders = notesInFoldersCount,
-                    uniqueTagCount = tagCounts.Count,
-                    uniqueFolderCount = folderCountsDict.Count,
-                    topTags = tagCounts.Select(tc => new { name = tc.tag, count = tc.count }).ToList(),
+                    uniqueTagCount = allTagCounts.Count,
+                    uniqueFolderCount = allFolderCountsDict.Count,
+                    topTags = allTagCounts.Select(tc => new { name = tc.tag, count = tc.count }).ToList(),
                     topFolders = topFolders
                 }
-            };
-
-            return JsonSerializer.Serialize(response);
+            });
         }
         catch (Exception ex)
         {
-            return CreateErrorResponse("getting note statistics", ex.Message);
+            return CreateErrorResponse("getting overview", ex.Message);
         }
     }
 }

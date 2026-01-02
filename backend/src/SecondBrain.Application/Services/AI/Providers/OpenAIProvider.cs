@@ -858,6 +858,10 @@ public class OpenAIProvider : IAIProvider
         var accumulatedToolCalls = new Dictionary<int, OpenAIToolCallInfo>();
         var tokenCount = 0;
 
+        // Track actual token usage from streaming response (when available)
+        int? streamPromptTokens = null;
+        int? streamCompletionTokens = null;
+
         // Use wrapper to avoid yield in catch
         var streamResult = await CreateStreamSafelyAsync(client, messageList, chatOptions, cancellationToken);
 
@@ -901,23 +905,33 @@ public class OpenAIProvider : IAIProvider
                 }
             },
             () => tokenCount++,
+            (prompt, completion) =>
+            {
+                streamPromptTokens = prompt;
+                streamCompletionTokens = completion;
+            },
             cancellationToken))
         {
             yield return evt;
         }
 
         stopwatch.Stop();
-        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetTag("ai.tokens.output", streamCompletionTokens ?? tokenCount);
+        if (streamPromptTokens.HasValue)
+        {
+            activity?.SetTag("ai.tokens.input", streamPromptTokens.Value);
+        }
         activity?.SetStatus(ActivityStatusCode.Ok);
         ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
 
-        // Yield done event
+        // Yield done event with actual usage if available, otherwise use token count estimate
         yield return new OpenAIToolStreamEvent
         {
             Type = OpenAIToolStreamEventType.Done,
             Usage = new OpenAITokenUsage
             {
-                CompletionTokens = tokenCount
+                PromptTokens = streamPromptTokens ?? 0,
+                CompletionTokens = streamCompletionTokens ?? tokenCount
             }
         };
     }
@@ -955,6 +969,7 @@ public class OpenAIProvider : IAIProvider
         Activity? activity,
         Action onFirstToken,
         Action onToken,
+        Action<int, int> onUsageAvailable,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         IAsyncEnumerator<StreamingChatCompletionUpdate>? enumerator = null;
@@ -1037,6 +1052,12 @@ public class OpenAIProvider : IAIProvider
 
             if (update == null) continue;
 
+            // Capture token usage if available (OpenAI sends this in final chunks)
+            if (update.Usage != null)
+            {
+                onUsageAvailable(update.Usage.InputTokenCount, update.Usage.OutputTokenCount);
+            }
+
             // Handle text content
             foreach (var contentPart in update.ContentUpdate)
             {
@@ -1085,10 +1106,34 @@ public class OpenAIProvider : IAIProvider
                 }
             }
 
-            // Check finish reason
+            // Check finish reason - DEBUG LOGGING
+            if (update.FinishReason.HasValue)
+            {
+                _logger.LogInformation("OpenAI stream finish reason: {FinishReason}, Accumulated tool calls: {ToolCallCount}",
+                    update.FinishReason, accumulatedToolCalls.Count);
+            }
+
             if (update.FinishReason == ChatFinishReason.ToolCalls && accumulatedToolCalls.Count > 0)
             {
+                _logger.LogInformation("OpenAI emitting {Count} tool calls (FinishReason=ToolCalls): [{ToolNames}]",
+                    accumulatedToolCalls.Count,
+                    string.Join(", ", accumulatedToolCalls.Values.Select(tc => tc.Name)));
+
                 // Yield all accumulated tool calls
+                yield return new OpenAIToolStreamEvent
+                {
+                    Type = OpenAIToolStreamEventType.ToolCalls,
+                    ToolCalls = accumulatedToolCalls.Values.ToList()
+                };
+            }
+            else if (update.FinishReason == ChatFinishReason.Stop && accumulatedToolCalls.Count > 0)
+            {
+                // FALLBACK: Some OpenAI models (especially newer ones like GPT-5) might return Stop
+                // instead of ToolCalls but still have accumulated tool calls
+                _logger.LogWarning("OpenAI finished with Stop but has {Count} accumulated tool calls - emitting them anyway: [{ToolNames}]",
+                    accumulatedToolCalls.Count,
+                    string.Join(", ", accumulatedToolCalls.Values.Select(tc => tc.Name)));
+
                 yield return new OpenAIToolStreamEvent
                 {
                     Type = OpenAIToolStreamEventType.ToolCalls,

@@ -92,7 +92,7 @@ export const HeaderFocusIndicator = memo(function HeaderFocusIndicator() {
   return (
     <button
       onClick={handleClick}
-      className="group flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+      className="group flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
       style={{
         backgroundColor: isRunning
           ? 'color-mix(in srgb, var(--color-primary) 12%, transparent)'

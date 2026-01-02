@@ -105,15 +105,15 @@ export function GeneralSettings() {
                                             key={size}
                                             type="button"
                                             onClick={() => handleFontSizeChange(size)}
-                                            className="px-4 py-2 rounded-2xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
+                                            className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    ? 'var(--btn-primary-bg)'
                                                     : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
+                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                                                 boxShadow: isActive
-                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
                                                     : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
@@ -141,15 +141,15 @@ export function GeneralSettings() {
                                             key={renderer}
                                             type="button"
                                             onClick={() => handleMarkdownRendererChange(renderer)}
-                                            className="px-4 py-2 rounded-2xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
+                                            className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    ? 'var(--btn-primary-bg)'
                                                     : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
+                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                                                 boxShadow: isActive
-                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
                                                     : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
@@ -186,15 +186,15 @@ export function GeneralSettings() {
                                             key={view}
                                             type="button"
                                             onClick={() => handleNoteViewChange(view)}
-                                            className="px-4 py-2 rounded-2xl border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
+                                            className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, var(--surface-card))'
+                                                    ? 'var(--btn-primary-bg)'
                                                     : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
-                                                color: isActive ? 'var(--color-brand-600)' : 'var(--text-primary)',
+                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
+                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                                                 boxShadow: isActive
-                                                    ? '0 8px 20px color-mix(in srgb, var(--color-brand-900) 25%, transparent)'
+                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
                                                     : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
@@ -243,7 +243,7 @@ export function GeneralSettings() {
                                     onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value, 10))}
                                     className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
                                     style={{
-                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) 100%)`,
+                                        background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) 100%)`,
                                     }}
                                 />
                                 <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>100</span>
@@ -306,11 +306,12 @@ export function GeneralSettings() {
                                     <button
                                         type="button"
                                         onClick={() => toast.success('Success!', 'Your action was completed successfully.')}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, var(--surface-elevated))',
-                                            borderColor: 'var(--color-brand-600)',
-                                            color: 'var(--color-brand-500)',
+                                            backgroundColor: 'var(--color-status-success)',
+                                            borderColor: 'var(--color-status-success-border)',
+                                            color: 'var(--color-status-success-text)',
+                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-success) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -323,11 +324,12 @@ export function GeneralSettings() {
                                     <button
                                         type="button"
                                         onClick={() => toast.error('Error!', 'Something went wrong. Please try again.')}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-error) 12%, var(--surface-elevated))',
-                                            borderColor: 'var(--color-error)',
-                                            color: 'var(--color-error-text-light)',
+                                            backgroundColor: 'var(--color-status-error)',
+                                            borderColor: 'var(--color-status-error-border)',
+                                            color: 'var(--color-status-error-text)',
+                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-error) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -340,11 +342,12 @@ export function GeneralSettings() {
                                     <button
                                         type="button"
                                         onClick={() => toast.warning('Warning!', 'Please review this before proceeding.')}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'color-mix(in srgb, #f59e0b 12%, var(--surface-elevated))',
-                                            borderColor: '#f59e0b',
-                                            color: '#fbbf24',
+                                            backgroundColor: 'var(--color-status-warning)',
+                                            borderColor: 'var(--color-status-warning-border)',
+                                            color: 'var(--color-status-warning-text)',
+                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-warning) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -357,11 +360,12 @@ export function GeneralSettings() {
                                     <button
                                         type="button"
                                         onClick={() => toast.info('Information', 'Here is some helpful information for you.')}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 12%, var(--surface-elevated))',
-                                            borderColor: 'var(--color-accent-blue)',
-                                            color: 'var(--color-accent-blue)',
+                                            backgroundColor: 'var(--color-status-info)',
+                                            borderColor: 'var(--color-status-info-border)',
+                                            color: 'var(--color-status-info-text)',
+                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-info) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -394,7 +398,7 @@ export function GeneralSettings() {
                                                 }
                                             }, 2000);
                                         }}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
                                             backgroundColor: 'var(--surface-elevated)',
                                             borderColor: 'var(--border)',
@@ -420,7 +424,7 @@ export function GeneralSettings() {
                                                 error: 'Failed to fetch data',
                                             });
                                         }}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
                                             backgroundColor: 'var(--surface-elevated)',
                                             borderColor: 'var(--border)',
@@ -445,7 +449,7 @@ export function GeneralSettings() {
                                                 duration: 10000,
                                             });
                                         }}
-                                        className="px-2.5 py-2 rounded-xl border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
+                                        className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
                                             backgroundColor: 'var(--surface-elevated)',
                                             borderColor: 'var(--border)',
@@ -531,7 +535,7 @@ export function GeneralSettings() {
                                     onChange={(e) => handleAutoSaveChange(parseInt(e.target.value, 10))}
                                     className="flex-1 h-2 rounded-full appearance-none cursor-pointer transition-all duration-200"
                                     style={{
-                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--border) 50%, transparent) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--border) 50%, transparent) 100%)`,
+                                        background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${((autoSaveInterval - 500) / 9500) * 100}%, var(--surface-elevated) ${((autoSaveInterval - 500) / 9500) * 100}%, var(--surface-elevated) 100%)`,
                                     }}
                                 />
                                 <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>10s</span>

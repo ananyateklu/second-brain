@@ -13,7 +13,7 @@ namespace SecondBrain.Tests.Unit.Application.Services.Agents.Plugins;
 
 /// <summary>
 /// Unit tests for NoteSearchPlugin.
-/// Tests search operations: SearchNotes, SemanticSearch, SearchByTags, GetNotesByDateRange, FindRelatedNotes.
+/// Tests the unified SearchNotes function with modes: semantic, exact, tags, date, related.
 /// </summary>
 public class NoteSearchPluginTests
 {
@@ -63,14 +63,16 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public void GetSystemPromptAddition_ContainsSearchToolDocumentation()
+    public void GetSystemPromptAddition_ContainsUnifiedSearchToolDocumentation()
     {
         var result = _sut.GetSystemPromptAddition();
         result.Should().Contain("SearchNotes");
-        result.Should().Contain("SemanticSearch");
-        result.Should().Contain("SearchByTags");
-        result.Should().Contain("GetNotesByDateRange");
-        result.Should().Contain("FindRelatedNotes");
+        result.Should().Contain("mode");
+        result.Should().Contain("semantic");
+        result.Should().Contain("exact");
+        result.Should().Contain("tags");
+        result.Should().Contain("date");
+        result.Should().Contain("related");
     }
 
     [Fact]
@@ -98,188 +100,15 @@ public class NoteSearchPluginTests
 
         // Assert
         result.Should().Contain("Proactive Search Strategy");
-        result.Should().Contain("Proactively use search tools");
+        result.Should().Contain("Proactively use SearchNotes");
     }
 
     #endregion
 
-    #region SearchNotesAsync Tests
+    #region SearchNotesAsync - Semantic Mode Tests (Default)
 
     [Fact]
-    public async Task SearchNotesAsync_WhenUserIdNotSet_ReturnsError()
-    {
-        // Arrange
-        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
-
-        // Act
-        var result = await plugin.SearchNotesAsync("test");
-
-        // Assert
-        result.Should().Contain("Error");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_WhenNoMatches_ReturnsNotFoundMessage()
-    {
-        // Arrange
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(new List<Note>());
-
-        // Act
-        var result = await _sut.SearchNotesAsync("nonexistent");
-
-        // Assert
-        result.Should().Contain("No notes found");
-        result.Should().Contain("nonexistent");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_WhenMatchInTitle_ReturnsNote()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "Shopping List", "Buy milk and eggs")
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("Shopping");
-
-        // Assert
-        result.Should().Contain("note-1");
-        result.Should().Contain("Shopping List");
-        result.Should().Contain("Found 1 note");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_WhenMatchInContent_ReturnsNote()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "Groceries", "Buy milk and eggs")
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("milk");
-
-        // Assert
-        result.Should().Contain("note-1");
-        result.Should().Contain("Groceries");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_WhenMatchInTags_ReturnsNote()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "My Note", "Content", tags: new[] { "important", "work" })
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("important");
-
-        // Assert
-        result.Should().Contain("note-1");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_ExcludesArchivedNotes()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "Active Note", "Content"),
-            CreateNote("note-2", "Archived Note", "Content", isArchived: true)
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("Note");
-
-        // Assert
-        result.Should().Contain("note-1");
-        result.Should().NotContain("note-2");
-        result.Should().NotContain("Archived Note");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_RespectsMaxResults()
-    {
-        // Arrange
-        var notes = Enumerable.Range(1, 10)
-            .Select(i => CreateNote($"note-{i}", $"Test Note {i}", "Content"))
-            .ToList();
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("Test", maxResults: 3);
-
-        // Assert
-        result.Should().Contain("Found 3 note");
-    }
-
-    [Fact]
-    public async Task SearchNotesAsync_IsCaseInsensitive()
-    {
-        // Arrange
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "Important Meeting", "Content")
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.SearchNotesAsync("IMPORTANT");
-
-        // Assert
-        result.Should().Contain("note-1");
-    }
-
-    #endregion
-
-    #region SemanticSearchAsync Tests
-
-    [Fact]
-    public async Task SemanticSearchAsync_WhenUserIdNotSet_ReturnsError()
-    {
-        // Arrange
-        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object, _mockRagService.Object);
-
-        // Act
-        var result = await plugin.SemanticSearchAsync("test");
-
-        // Assert
-        result.Should().Contain("Error");
-    }
-
-    [Fact]
-    public async Task SemanticSearchAsync_WhenRagServiceIsNull_ReturnsNotAvailable()
-    {
-        // Arrange
-        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
-        plugin.SetCurrentUserId(TestUserId);
-
-        // Act
-        var result = await plugin.SemanticSearchAsync("test");
-
-        // Assert
-        result.Should().Contain("Semantic search is not available");
-        result.Should().Contain("SearchNotes");
-    }
-
-    [Fact]
-    public async Task SemanticSearchAsync_WhenNoResults_ReturnsNotFoundMessage()
+    public async Task SearchNotesAsync_DefaultsToSemanticMode()
     {
         // Arrange
         var emptyContext = new RagContext
@@ -298,15 +127,77 @@ public class NoteSearchPluginTests
             .ReturnsAsync(emptyContext);
 
         // Act
-        var result = await _sut.SemanticSearchAsync("nonexistent");
+        var result = await _sut.SearchNotesAsync("test"); // No mode specified
 
-        // Assert
-        result.Should().Contain("No notes found semantically related");
-        result.Should().Contain("SearchNotes");
+        // Assert - Should use semantic mode (RAG service is called)
+        _mockRagService.Verify(r => r.RetrieveContextAsync(
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<int?>(),
+            It.IsAny<float?>(),
+            It.IsAny<string?>(),
+            It.IsAny<string?>(),
+            It.IsAny<RagOptions?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_WithResults_ReturnsMatchedNotes()
+    public async Task SearchNotesAsync_WhenUserIdNotSet_ReturnsError()
+    {
+        // Arrange
+        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object, _mockRagService.Object);
+
+        // Act
+        var result = await plugin.SearchNotesAsync("test");
+
+        // Assert
+        result.Should().Contain("Error");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_SemanticMode_WhenRagServiceIsNull_ReturnsNotAvailable()
+    {
+        // Arrange
+        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
+        plugin.SetCurrentUserId(TestUserId);
+
+        // Act
+        var result = await plugin.SearchNotesAsync("test", mode: "semantic");
+
+        // Assert
+        result.Should().Contain("Semantic search is not available");
+        result.Should().Contain("exact");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_SemanticMode_WhenNoResults_ReturnsNotFoundMessage()
+    {
+        // Arrange
+        var emptyContext = new RagContext
+        {
+            RetrievedNotes = new List<VectorSearchResult>()
+        };
+        _mockRagService.Setup(r => r.RetrieveContextAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<int?>(),
+                It.IsAny<float?>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<RagOptions?>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(emptyContext);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("nonexistent", mode: "semantic");
+
+        // Assert
+        result.Should().Contain("No notes found semantically related");
+        result.Should().Contain("exact");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_SemanticMode_WithResults_ReturnsMatchedNotes()
     {
         // Arrange
         var note = CreateNote("note-1", "Meeting Notes", "Discussion about project");
@@ -339,7 +230,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(note);
 
         // Act
-        var result = await _sut.SemanticSearchAsync("project discussion");
+        var result = await _sut.SearchNotesAsync("project discussion", mode: "semantic");
 
         // Assert
         result.Should().Contain("note-1");
@@ -348,7 +239,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_DeduplicatesResultsByNoteId()
+    public async Task SearchNotesAsync_SemanticMode_DeduplicatesResultsByNoteId()
     {
         // Arrange
         var note = CreateNote("note-1", "Meeting Notes", "Long content with multiple chunks");
@@ -376,7 +267,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(note);
 
         // Act
-        var result = await _sut.SemanticSearchAsync("meeting");
+        var result = await _sut.SearchNotesAsync("meeting", mode: "semantic");
 
         // Assert
         result.Should().Contain("Found 1 note");
@@ -384,26 +275,171 @@ public class NoteSearchPluginTests
 
     #endregion
 
-    #region SearchByTagsAsync Tests
+    #region SearchNotesAsync - Exact Mode Tests
 
     [Fact]
-    public async Task SearchByTagsAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task SearchNotesAsync_ExactMode_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
 
         // Act
-        var result = await plugin.SearchByTagsAsync("work");
+        var result = await plugin.SearchNotesAsync("test", mode: "exact");
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WhenTagsEmpty_ReturnsError()
+    public async Task SearchNotesAsync_ExactMode_WhenNoMatches_ReturnsNotFoundMessage()
+    {
+        // Arrange
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(new List<Note>());
+
+        // Act
+        var result = await _sut.SearchNotesAsync("nonexistent", mode: "exact");
+
+        // Assert
+        result.Should().Contain("No notes found");
+        result.Should().Contain("nonexistent");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_WhenMatchInTitle_ReturnsNote()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateNote("note-1", "Shopping List", "Buy milk and eggs")
+        };
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("Shopping", mode: "exact");
+
+        // Assert
+        result.Should().Contain("note-1");
+        result.Should().Contain("Shopping List");
+        result.Should().Contain("Found 1 note");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_WhenMatchInContent_ReturnsNote()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateNote("note-1", "Groceries", "Buy milk and eggs")
+        };
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("milk", mode: "exact");
+
+        // Assert
+        result.Should().Contain("note-1");
+        result.Should().Contain("Groceries");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_WhenMatchInTags_ReturnsNote()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateNote("note-1", "My Note", "Content", tags: new[] { "important", "work" })
+        };
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("important", mode: "exact");
+
+        // Assert
+        result.Should().Contain("note-1");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_ExcludesArchivedNotes()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateNote("note-1", "Active Note", "Content"),
+            CreateNote("note-2", "Archived Note", "Content", isArchived: true)
+        };
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("Note", mode: "exact");
+
+        // Assert
+        result.Should().Contain("note-1");
+        result.Should().NotContain("note-2");
+        result.Should().NotContain("Archived Note");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_RespectsMaxResults()
+    {
+        // Arrange
+        var notes = Enumerable.Range(1, 10)
+            .Select(i => CreateNote($"note-{i}", $"Test Note {i}", "Content"))
+            .ToList();
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("Test", mode: "exact", maxResults: 3);
+
+        // Assert
+        result.Should().Contain("Found 3 note");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_ExactMode_IsCaseInsensitive()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateNote("note-1", "Important Meeting", "Content")
+        };
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
+            .ReturnsAsync(notes);
+
+        // Act
+        var result = await _sut.SearchNotesAsync("IMPORTANT", mode: "exact");
+
+        // Assert
+        result.Should().Contain("note-1");
+    }
+
+    #endregion
+
+    #region SearchNotesAsync - Tags Mode Tests
+
+    [Fact]
+    public async Task SearchNotesAsync_TagsMode_WhenUserIdNotSet_ReturnsError()
+    {
+        // Arrange
+        var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
+
+        // Act
+        var result = await plugin.SearchNotesAsync("work", mode: "tags");
+
+        // Assert
+        result.Should().Contain("Error");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_TagsMode_WhenTagsEmpty_ReturnsError()
     {
         // Act
-        var result = await _sut.SearchByTagsAsync("");
+        var result = await _sut.SearchNotesAsync("", mode: "tags");
 
         // Assert
         result.Should().Contain("Error");
@@ -411,10 +447,10 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WhenTagsWhitespace_ReturnsError()
+    public async Task SearchNotesAsync_TagsMode_WhenTagsWhitespace_ReturnsError()
     {
         // Act
-        var result = await _sut.SearchByTagsAsync("   ");
+        var result = await _sut.SearchNotesAsync("   ", mode: "tags");
 
         // Assert
         result.Should().Contain("Error");
@@ -422,7 +458,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WhenNoMatches_ReturnsNotFoundMessage()
+    public async Task SearchNotesAsync_TagsMode_WhenNoMatches_ReturnsNotFoundMessage()
     {
         // Arrange
         var notes = new List<Note>
@@ -433,7 +469,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work");
+        var result = await _sut.SearchNotesAsync("work", mode: "tags");
 
         // Assert
         result.Should().Contain("No notes found");
@@ -441,7 +477,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WithMatchingTags_ReturnsNotes()
+    public async Task SearchNotesAsync_TagsMode_WithMatchingTags_ReturnsNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -453,7 +489,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work");
+        var result = await _sut.SearchNotesAsync("work", mode: "tags");
 
         // Assert
         result.Should().Contain("note-1");
@@ -461,7 +497,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WithRequireAll_RequiresAllTags()
+    public async Task SearchNotesAsync_TagsMode_WithRequireAllTags_RequiresAllTags()
     {
         // Arrange
         var notes = new List<Note>
@@ -473,7 +509,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work, important", requireAll: true);
+        var result = await _sut.SearchNotesAsync("work, important", mode: "tags", requireAllTags: true);
 
         // Assert
         result.Should().Contain("note-1");
@@ -482,7 +518,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_WithoutRequireAll_MatchesAnyTag()
+    public async Task SearchNotesAsync_TagsMode_WithoutRequireAllTags_MatchesAnyTag()
     {
         // Arrange
         var notes = new List<Note>
@@ -495,7 +531,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work, important", requireAll: false);
+        var result = await _sut.SearchNotesAsync("work, important", mode: "tags", requireAllTags: false);
 
         // Assert
         result.Should().Contain("note-1");
@@ -505,7 +541,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_IsCaseInsensitive()
+    public async Task SearchNotesAsync_TagsMode_IsCaseInsensitive()
     {
         // Arrange
         var notes = new List<Note>
@@ -516,14 +552,14 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work, IMPORTANT");
+        var result = await _sut.SearchNotesAsync("work, IMPORTANT", mode: "tags");
 
         // Assert
         result.Should().Contain("note-1");
     }
 
     [Fact]
-    public async Task SearchByTagsAsync_ExcludesArchivedNotes()
+    public async Task SearchNotesAsync_TagsMode_ExcludesArchivedNotes()
     {
         // Arrange
         var notes = new List<Note>
@@ -535,7 +571,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchByTagsAsync("work");
+        var result = await _sut.SearchNotesAsync("work", mode: "tags");
 
         // Assert
         result.Should().Contain("note-1");
@@ -544,23 +580,23 @@ public class NoteSearchPluginTests
 
     #endregion
 
-    #region GetNotesByDateRangeAsync Tests
+    #region SearchNotesAsync - Date Mode Tests
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task SearchNotesAsync_DateMode_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
 
         // Act
-        var result = await plugin.GetNotesByDateRangeAsync("2024-01-01");
+        var result = await plugin.SearchNotesAsync("", mode: "date", startDate: "2024-01-01");
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_WhenNoMatches_ReturnsNotFoundMessage()
+    public async Task SearchNotesAsync_DateMode_WhenNoMatches_ReturnsNotFoundMessage()
     {
         // Arrange - Use a fixed date far in the past (2020) that won't overlap with any reasonable query range
         var notes = new List<Note>
@@ -572,14 +608,14 @@ public class NoteSearchPluginTests
 
         // Act - Query for a range that definitely doesn't include the note (far future)
         var futureYear = DateTime.UtcNow.Year + 10;
-        var result = await _sut.GetNotesByDateRangeAsync($"{futureYear}-01-01", $"{futureYear}-12-31");
+        var result = await _sut.SearchNotesAsync("", mode: "date", startDate: $"{futureYear}-01-01", endDate: $"{futureYear}-12-31");
 
         // Assert
         result.Should().Contain("No notes found");
     }
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_WithMatchingDates_ReturnsNotes()
+    public async Task SearchNotesAsync_DateMode_WithMatchingDates_ReturnsNotes()
     {
         // Arrange
         var now = DateTime.UtcNow;
@@ -591,7 +627,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.GetNotesByDateRangeAsync("last week");
+        var result = await _sut.SearchNotesAsync("", mode: "date", startDate: "last week");
 
         // Assert
         result.Should().Contain("note-1");
@@ -599,7 +635,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_WithRelativeDate_LastWeek()
+    public async Task SearchNotesAsync_DateMode_WithRelativeDate_LastWeek()
     {
         // Arrange
         var now = DateTime.UtcNow;
@@ -612,7 +648,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.GetNotesByDateRangeAsync("last week");
+        var result = await _sut.SearchNotesAsync("", mode: "date", startDate: "last week");
 
         // Assert
         result.Should().Contain("note-1");
@@ -620,27 +656,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_WithUpdatedDateField_SearchesByUpdatedAt()
-    {
-        // Arrange
-        var now = DateTime.UtcNow;
-        var notes = new List<Note>
-        {
-            CreateNote("note-1", "Note", "Content", createdAt: now.AddMonths(-1), updatedAt: now.AddDays(-1))
-        };
-        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(TestUserId))
-            .ReturnsAsync(notes);
-
-        // Act
-        var result = await _sut.GetNotesByDateRangeAsync("last week", dateField: "updated");
-
-        // Assert
-        result.Should().Contain("note-1");
-        result.Should().Contain("updated");
-    }
-
-    [Fact]
-    public async Task GetNotesByDateRangeAsync_SwapsStartAndEndIfReversed()
+    public async Task SearchNotesAsync_DateMode_SwapsStartAndEndIfReversed()
     {
         // Arrange
         var now = DateTime.UtcNow;
@@ -652,14 +668,14 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.GetNotesByDateRangeAsync("2025-12-31", "2025-01-01");
+        var result = await _sut.SearchNotesAsync("", mode: "date", startDate: "2025-12-31", endDate: "2025-01-01");
 
         // Assert - Should not throw, should handle reversed dates
         result.Should().NotContain("Error");
     }
 
     [Fact]
-    public async Task GetNotesByDateRangeAsync_ExcludesArchivedNotes()
+    public async Task SearchNotesAsync_DateMode_ExcludesArchivedNotes()
     {
         // Arrange
         var now = DateTime.UtcNow;
@@ -672,7 +688,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.GetNotesByDateRangeAsync("last week");
+        var result = await _sut.SearchNotesAsync("", mode: "date", startDate: "last week");
 
         // Assert
         result.Should().Contain("note-1");
@@ -681,37 +697,48 @@ public class NoteSearchPluginTests
 
     #endregion
 
-    #region FindRelatedNotesAsync Tests
+    #region SearchNotesAsync - Related Mode Tests
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task SearchNotesAsync_RelatedMode_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object, _mockRagService.Object);
 
         // Act
-        var result = await plugin.FindRelatedNotesAsync("note-1");
+        var result = await plugin.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("Error");
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WhenNoteNotFound_ReturnsNotFound()
+    public async Task SearchNotesAsync_RelatedMode_WhenNoteIdNotProvided_ReturnsError()
+    {
+        // Act
+        var result = await _sut.SearchNotesAsync("", mode: "related");
+
+        // Assert
+        result.Should().Contain("Error");
+        result.Should().Contain("note ID");
+    }
+
+    [Fact]
+    public async Task SearchNotesAsync_RelatedMode_WhenNoteNotFound_ReturnsNotFound()
     {
         // Arrange
         _mockNoteRepository.Setup(r => r.GetByIdForUserAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.FindRelatedNotesAsync("note-1");
+        var result = await _sut.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
+    public async Task SearchNotesAsync_RelatedMode_WhenNoteOwnedByDifferentUser_ReturnsNotFound()
     {
         // Arrange
         // GetByIdForUserAsync returns null when note belongs to different user
@@ -719,14 +746,14 @@ public class NoteSearchPluginTests
             .ReturnsAsync((Note?)null);
 
         // Act
-        var result = await _sut.FindRelatedNotesAsync("note-1");
+        var result = await _sut.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("not found");
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WithRagService_FindsSemanticallySimilarNotes()
+    public async Task SearchNotesAsync_RelatedMode_WithRagService_FindsSemanticallySimilarNotes()
     {
         // Arrange
         var sourceNote = CreateNote("note-1", "Source Note", "About machine learning");
@@ -758,7 +785,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(ragContext);
 
         // Act
-        var result = await _sut.FindRelatedNotesAsync("note-1");
+        var result = await _sut.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("note-2");
@@ -767,7 +794,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WithoutRagService_FallsBackToTagSimilarity()
+    public async Task SearchNotesAsync_RelatedMode_WithoutRagService_FallsBackToTagSimilarity()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
@@ -783,7 +810,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(new List<Note> { sourceNote, relatedNote, unrelatedNote });
 
         // Act
-        var result = await plugin.FindRelatedNotesAsync("note-1");
+        var result = await plugin.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("note-2");
@@ -792,7 +819,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_WhenNoRelatedNotes_ReturnsNotFoundMessage()
+    public async Task SearchNotesAsync_RelatedMode_WhenNoRelatedNotes_ReturnsNotFoundMessage()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
@@ -807,7 +834,7 @@ public class NoteSearchPluginTests
             .ReturnsAsync(new List<Note> { sourceNote, otherNote });
 
         // Act
-        var result = await plugin.FindRelatedNotesAsync("note-1");
+        var result = await plugin.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().Contain("No related notes found");
@@ -815,7 +842,7 @@ public class NoteSearchPluginTests
     }
 
     [Fact]
-    public async Task FindRelatedNotesAsync_ExcludesArchivedNotesFromResults()
+    public async Task SearchNotesAsync_RelatedMode_ExcludesArchivedNotesFromResults()
     {
         // Arrange
         var plugin = new NoteSearchPlugin(_mockNoteRepository.Object);
@@ -830,11 +857,26 @@ public class NoteSearchPluginTests
             .ReturnsAsync(new List<Note> { sourceNote, archivedNote });
 
         // Act
-        var result = await plugin.FindRelatedNotesAsync("note-1");
+        var result = await plugin.SearchNotesAsync("", mode: "related", relatedToNoteId: "note-1");
 
         // Assert
         result.Should().NotContain("note-2");
         result.Should().Contain("No related notes found");
+    }
+
+    #endregion
+
+    #region SearchNotesAsync - Invalid Mode Tests
+
+    [Fact]
+    public async Task SearchNotesAsync_WhenInvalidMode_ReturnsError()
+    {
+        // Act
+        var result = await _sut.SearchNotesAsync("test", mode: "invalid");
+
+        // Assert
+        result.Should().Contain("Invalid search mode");
+        result.Should().Contain("invalid");
     }
 
     #endregion

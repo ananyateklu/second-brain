@@ -121,12 +121,12 @@ export function ContextUsageIndicator({
           setIsExpanded(!isExpanded);
         }}
         className={cn(
-          'flex items-center gap-3 px-3 py-2 rounded-xl',
-          'transition-all duration-300 border backdrop-blur-sm',
+          'flex items-center gap-3 px-3 py-3 my-1 rounded-xl',
+          'transition-all duration-300 border backdrop-blur-md',
           'hover:scale-[1.02] active:scale-[0.98]'
         )}
         style={{
-          backgroundColor: isExpanded ? 'var(--surface-elevated)' : 'var(--surface-card)',
+          backgroundColor: isExpanded ? 'var(--surface-elevated)' : 'var(--surface-elevated)',
           borderColor: colors.border,
           boxShadow: isExpanded ? '0 0 0 2px var(--color-primary-alpha)' : 'none',
         }}

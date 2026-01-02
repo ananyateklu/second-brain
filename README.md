@@ -31,77 +31,35 @@ docker-compose up -d          # Access at http://localhost:3000
 
 ## Screenshots
 
+<!-- markdownlint-disable MD033 -->
 <div align="center">
 <table>
 <tr>
-<td align="center"><img src="frontend/src/assets/dashboard-screenshot.png" alt="Dashboard" width="400"/><br>Dashboard</td>
-<td align="center"><img src="frontend/src/assets/chat-screenshot.png" alt="Chat" width="400"/><br>AI Chat</td>
+<td align="center"><img src="frontend/src/assets/dashboard-screenshot.png" alt="Dashboard" width="280"/><br><b>Dashboard</b></td>
+<td align="center"><img src="frontend/src/assets/chat-screenshot.png" alt="AI Chat" width="280"/><br><b>AI Chat</b></td>
+<td align="center"><img src="frontend/src/assets/notes-screenshot.png" alt="Notes" width="280"/><br><b>Notes</b></td>
 </tr>
 <tr>
-<td align="center"><img src="frontend/src/assets/aisettings-screenshot.png" alt="Settings" width="400"/><br>AI Settings</td>
-<td align="center"><img src="frontend/src/assets/indexing-screenshot.png" alt="Indexing" width="400"/><br>RAG Indexing</td>
+<td align="center"><img src="frontend/src/assets/voiceagent-screenshot.png" alt="Voice Agent" width="280"/><br><b>Voice Agent</b></td>
+<td align="center"><img src="frontend/src/assets/github-screenshot.png" alt="GitHub" width="280"/><br><b>GitHub</b></td>
+<td align="center"><img src="frontend/src/assets/insights-screenshot.png" alt="Insights" width="280"/><br><b>Insights</b></td>
 </tr>
 </table>
 </div>
+<!-- markdownlint-enable MD033 -->
 
 ---
 
 ## Features
 
-### AI Chat & Agents
-
-| Feature | Description |
-|---------|-------------|
-| **Multi-Provider Chat** | OpenAI, Claude, Gemini, Grok, Ollama, Cohere with streaming responses |
-| **AI Agents** | Tool execution with real-time reasoning display and thinking steps |
-| **Image Generation** | DALL-E, Gemini Imagen, Grok Aurora with size/quality options |
-| **Vision Models** | Attach images to messages (GPT-4o, Claude 3.5, Gemini) |
-| **Code Execution** | Python sandbox via Gemini with output display |
-| **Web Search** | Live search (Grok), Google grounding (Gemini) |
-| **Extended Thinking** | Claude reasoning chains, Grok think mode |
-| **Voice Agent** | Real-time voice interface with transcription and tool execution |
-
-### Knowledge Management
-
-| Feature | Description |
-|---------|-------------|
-| **Smart Notes** | Rich text editor, tags, folders, archive |
-| **Version History** | Point-in-time restore via PostgreSQL 18 temporal tables |
-| **AI Summaries** | Auto-generated note summaries for quick scanning |
-| **Image Attachments** | Multimodal notes with AI-extracted descriptions |
-| **Bulk Operations** | Multi-select delete, archive, tag |
-| **iOS Sync** | Bidirectional sync via iOS Shortcuts |
-
-### Productivity & Focus
-
-| Feature | Description |
-|---------|-------------|
-| **Focus Dashboard** | Current focus with live timer, today's plan, backlog management |
-| **AI Suggestions** | Generate task suggestions from notes using RAG pipeline |
-| **Time Tracking** | Accumulated time tracking across sessions with live display |
-| **Priority System** | P1 (High), P2 (Medium), P3 (Low) with visual indicators |
-| **Progress Summaries** | AI-generated daily/weekly productivity insights |
-| **Quick Capture** | Modal for fast task creation (Cmd+Enter shortcuts) |
-| **Note Linking** | Link focus items to existing notes for context |
-
-### RAG Pipeline
-
-| Stage | Features |
-|-------|----------|
-| **Query Expansion** | HyDE (hypothetical documents), multi-query generation |
-| **Hybrid Search** | Vector (pgvector) + BM25 full-text with RRF fusion |
-| **Reranking** | LLM-based relevance scoring (Cohere, OpenAI) |
-| **Analytics** | Query logs, user feedback, topic clustering |
-| **Vector Stores** | PostgreSQL pgvector (default), Pinecone (cloud) |
-
-### Developer Tools
-
-| Feature | Description |
-|---------|-------------|
-| **Git Integration** | Branch management, commits, diff viewer |
-| **GitHub Integration** | PRs, issues, workflows, check runs |
-| **Analytics Dashboard** | Token usage, provider stats, session tracking |
-| **Desktop App** | Native macOS via Tauri 2.0 with embedded database |
+- AI-powered chat with **7 providers** (OpenAI, Anthropic Claude, Google Gemini, X.AI Grok, Ollama, Cohere, SemanticKernel)
+- Smart notes with version history (PostgreSQL 18 temporal tables)
+- AI agents with tool execution and **9 plugins**
+- Advanced RAG with hybrid search (vector + BM25 + RRF fusion)
+- **Voice agents** with real-time transcription and synthesis
+- **Focus/productivity dashboard** with task suggestions
+- GitHub integration with code browser
+- Multi-provider image generation (DALL-E, Gemini, Grok Aurora)
 
 ---
 
@@ -110,12 +68,14 @@ docker-compose up -d          # Access at http://localhost:3000
 | Layer | Technology |
 |-------|------------|
 | **Backend** | ASP.NET Core 10, PostgreSQL 18 + pgvector, Entity Framework Core, MediatR (CQRS) |
-| **Frontend** | React 19, TypeScript 5.9, Vite 7, Tailwind CSS v4, Zustand, TanStack Query v5 |
-| **Desktop** | Tauri 2.0 (Rust), embedded PostgreSQL on port 5433 |
-| **AI Providers** | OpenAI, Anthropic Claude, Google Gemini, X.AI Grok, Ollama, Cohere |
-| **Vector Search** | PostgreSQL pgvector (HNSW), Pinecone |
-| **Image Generation** | DALL-E, Gemini Imagen, Grok Aurora |
-| **Resilience** | Polly circuit breaker, exponential backoff |
+| **Frontend** | React 19, TypeScript 5.9, Vite 7, Tailwind CSS v4 |
+| **Desktop App** | Tauri 2.0 (Rust), embedded PostgreSQL |
+| **State Management** | Zustand (13 slices), TanStack Query v5 |
+| **AI Providers** | OpenAI, Anthropic Claude, Google Gemini, Ollama, X.AI Grok, Cohere |
+| **Vector Stores** | PostgreSQL pgvector (default), Pinecone |
+| **Image Generation** | OpenAI DALL-E, Google Gemini, X.AI Grok Aurora |
+| **Voice I/O** | Deepgram (STT), ElevenLabs/OpenAI (TTS), Grok Realtime |
+| **Resilience** | Polly (circuit breaker, retry with exponential backoff) |
 
 ---
 
@@ -129,12 +89,12 @@ second-brain/
 │   ├── SecondBrain.Core/          # Entities, interfaces
 │   └── SecondBrain.Infrastructure/ # EF Core, repositories
 ├── frontend/src/
-│   ├── features/                  # 12 domain modules
+│   ├── features/                  # 16 domain modules
 │   ├── services/                  # API service layer
-│   ├── store/                     # Zustand (14 slices)
+│   ├── store/                     # Zustand (13 slices)
 │   └── components/                # Shared UI
 ├── frontend/src-tauri/            # Desktop app (Rust)
-├── database/                      # 62 SQL migration scripts
+├── database/                      # 62 SQL scripts
 └── docs/                          # ADRs, guides
 ```
 
@@ -256,7 +216,7 @@ See `backend/src/SecondBrain.API/appsettings.json` for full configuration option
                           ▼                          ▼                          ▼
                     ┌─────────────┐            ┌─────────────┐            ┌─────────────┐
                     │ PostgreSQL  │            │ AI Providers│            │   Pinecone  │
-                    │ + pgvector  │            │ (6 total)   │            │  (optional) │
+                    │ + pgvector  │            │ (7 total)   │            │  (optional) │
                     └─────────────┘            └─────────────┘            └─────────────┘
 ```
 
@@ -298,6 +258,7 @@ Full API documentation available at `/swagger` when running the backend.
 | Chat | `/api/chat` | Conversations, streaming (SSE), image generation |
 | Agents | `/api/agent` | Agent streaming with tool execution |
 | Focus | `/api/focus` | Tasks, AI suggestions, progress summaries |
+| Voice | `/api/voice` | Real-time voice sessions, transcription, synthesis |
 | RAG | `/api/rag/analytics` | Query logs, feedback, topic clustering |
 | Indexing | `/api/indexing` | Vector indexing jobs and stats |
 | Git | `/api/git` | Repository operations, branches |

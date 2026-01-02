@@ -100,18 +100,18 @@ export const ChatPageControls = memo(function ChatPageControls() {
   // Render selection mode controls
   if (isSelectionMode) {
     return (
-      <div className="flex items-center gap-3 flex-1">
-        {/* Selection Mode Header - fixed width to align with sidebar border position */}
-        <div className={`flex items-center gap-2 flex-shrink-0 ${leftSectionWidth}`}>
+      <div className="flex items-center gap-3 flex-1 -ml-4">
+        {/* Selection Mode Header - -ml-2 counteracts header px-6 to align with sidebar px-4 checkboxes */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Select All button */}
           <button
             onClick={onSelectAll}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium h-8 px-3 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
               color: isAllSelected ? 'var(--btn-primary-text)' : 'var(--text-primary)',
               backgroundColor: isAllSelected
                 ? 'var(--btn-primary-bg)'
-                : 'color-mix(in srgb, var(--surface-elevated) 90%, transparent)',
+                : 'var(--surface-elevated)',
               border: '1px solid var(--border)',
             }}
             title={isAllSelected ? 'Deselect all' : 'Select all'}
@@ -127,7 +127,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
 
           {/* Selection count badge */}
           <span
-            className="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold"
+            className="inline-flex items-center justify-center px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-semibold"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
               color: 'var(--color-brand-300)',
@@ -142,11 +142,11 @@ export const ChatPageControls = memo(function ChatPageControls() {
           <button
             onClick={() => { void onBulkDelete(); }}
             disabled={selectedConversationIds.size === 0}
-            className="flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap"
             style={{
               background: selectedConversationIds.size > 0
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
-                : 'color-mix(in srgb, var(--surface-elevated) 90%, transparent)',
+                : 'var(--surface-elevated)',
               color: selectedConversationIds.size > 0 ? 'white' : 'var(--text-tertiary)',
               boxShadow: selectedConversationIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
               border: selectedConversationIds.size > 0 ? 'none' : '1px solid var(--border)',
@@ -163,7 +163,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
           {/* Cancel button */}
           <button
             onClick={onExitSelectionMode}
-            className="flex items-center justify-center h-8 px-3 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               color: 'var(--text-secondary)',
@@ -187,11 +187,12 @@ export const ChatPageControls = memo(function ChatPageControls() {
         {/* Sidebar Toggle - Show/Hide sidebar */}
         <button
           onClick={toggleChatSidebar}
-          className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+          className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: chatSidebarVisible ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
-            color: chatSidebarVisible ? 'var(--color-primary)' : 'var(--text-primary)',
-            border: `1px solid ${chatSidebarVisible ? 'var(--color-primary)' : 'var(--border)'}`,
+            backgroundColor: chatSidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+            color: chatSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+            border: `1px solid ${chatSidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+            boxShadow: chatSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={chatSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -208,7 +209,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
         {conversationCount > 0 && (
           <button
             onClick={onToggleSelectionMode}
-            className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+            className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               color: 'var(--text-primary)',
@@ -225,7 +226,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
         {/* New Chat Button */}
         <button
           onClick={onNewChat}
-          className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+          className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
@@ -309,7 +310,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
           {/* Image Mode Pill - Indicator only */}
           {isImageGenerationMode && (
             <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+              className="flex items-center gap-1.5 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium"
               style={{
                 backgroundColor: featureColors.image.bg,
                 color: featureColors.image.text,

@@ -42,6 +42,20 @@
   --color-warning: #d4a574;
   --color-warning-light: rgba(212, 165, 116, 0.12);
 
+  /* Status button colors (solid buttons matching toast notifications) */
+  --color-status-success: var(--btn-primary-bg);
+  --color-status-success-border: var(--btn-primary-border);
+  --color-status-success-text: var(--btn-primary-text);
+  --color-status-error: #ef4444;
+  --color-status-error-border: #dc2626;
+  --color-status-error-text: #ffffff;
+  --color-status-warning: #f59e0b;
+  --color-status-warning-border: #d97706;
+  --color-status-warning-text: #ffffff;
+  --color-status-info: #5d7dac;
+  --color-status-info-border: #4a6d99;
+  --color-status-info-text: #ffffff;
+
   /* Git diff colors */
   --color-git-add: var(--color-brand-400);
   --color-git-add-bg: color-mix(in srgb, var(--color-brand-400) 6%, transparent);
@@ -114,6 +128,20 @@
   --color-warning: #b8956a;
   --color-warning-light: rgba(184, 149, 106, 0.1);
 
+  /* Status button colors for light theme */
+  --color-status-success: var(--btn-primary-bg);
+  --color-status-success-border: var(--btn-primary-border);
+  --color-status-success-text: var(--btn-primary-text);
+  --color-status-error: #dc2626;
+  --color-status-error-border: #b91c1c;
+  --color-status-error-text: #ffffff;
+  --color-status-warning: #d97706;
+  --color-status-warning-border: #b45309;
+  --color-status-warning-text: #ffffff;
+  --color-status-info: #4a6d99;
+  --color-status-info-border: #3b5998;
+  --color-status-info-text: #ffffff;
+
   /* Git diff colors for light theme */
   --color-git-add: var(--color-brand-600);
   --color-git-add-bg: color-mix(in srgb, var(--color-brand-500) 5%, transparent);
@@ -184,6 +212,20 @@
   /* Warning colors for dark theme */
   --color-warning: #d4a574;
   --color-warning-light: rgba(212, 165, 116, 0.12);
+
+  /* Status button colors for dark theme */
+  --color-status-success: var(--btn-primary-bg);
+  --color-status-success-border: var(--btn-primary-border);
+  --color-status-success-text: var(--btn-primary-text);
+  --color-status-error: #ef4444;
+  --color-status-error-border: #dc2626;
+  --color-status-error-text: #ffffff;
+  --color-status-warning: #f59e0b;
+  --color-status-warning-border: #d97706;
+  --color-status-warning-text: #ffffff;
+  --color-status-info: #5d7dac;
+  --color-status-info-border: #4a6d99;
+  --color-status-info-text: #ffffff;
 
   /* Git diff colors for dark theme */
   --color-git-add: var(--color-brand-400);
@@ -260,6 +302,20 @@
   --color-error-border: rgba(239, 68, 68, 0.3);
   --color-error-text: #f87171;
   --color-error-text-light: #fca5a5;
+
+  /* Status button colors for blue theme */
+  --color-status-success: var(--btn-primary-bg);
+  --color-status-success-border: var(--btn-primary-border);
+  --color-status-success-text: var(--btn-primary-text);
+  --color-status-error: #ef4444;
+  --color-status-error-border: #dc2626;
+  --color-status-error-text: #ffffff;
+  --color-status-warning: #f59e0b;
+  --color-status-warning-border: #d97706;
+  --color-status-warning-text: #ffffff;
+  --color-status-info: var(--color-blue-300);
+  --color-status-info-border: var(--color-blue-400);
+  --color-status-info-text: #ffffff;
 
   /* Notes capability colors for blue theme */
   --color-notes: var(--color-brand-300);

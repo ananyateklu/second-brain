@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
@@ -38,6 +39,7 @@ public class AgentService : IAgentService
         ILogger<AgentService> logger,
         ILoggerFactory loggerFactory,
         HttpClient httpClient,
+        IToolDiscoveryService toolDiscoveryService,
         IStructuredOutputService? structuredOutputService = null,
         INoteOperationService? noteOperationService = null,
         INoteVersionService? versionService = null,
@@ -64,6 +66,9 @@ public class AgentService : IAgentService
 
         // WebBrowsingPlugin provides URL fetching capabilities - always available
         RegisterPlugin(new WebBrowsingPlugin(httpClient, loggerFactory.CreateLogger<WebBrowsingPlugin>()));
+
+        // ToolSearchPlugin provides on-demand tool discovery (Tool Search Tool pattern)
+        RegisterPlugin(new ToolSearchPlugin(toolDiscoveryService));
     }
 
     private void RegisterPlugin(IAgentPlugin plugin)
@@ -138,7 +143,7 @@ public class AgentService : IAgentService
                     content.Append(evt.Content);
                     break;
                 case AgentEventType.ToolCallEnd:
-                    response.ToolCalls.Add(new ToolExecutionResult
+                    response.ToolCalls.Add(new Models.ToolExecutionResult
                     {
                         ToolName = evt.ToolName ?? "",
                         Result = evt.ToolResult ?? ""
@@ -189,6 +194,7 @@ When you have tools available:
 - **Track context** - Remember IDs, names, and results from previous tool calls
 - **Handle references** - When user says ""that"" or ""it"", use conversation history to identify what they mean
 - **ALWAYS respond after tool execution** - After every tool call completes, you MUST provide a text response summarizing the results for the user. Never end with just a tool call - always explain what was found or accomplished
+- **NEVER claim actions without tool execution** - Do NOT say you completed an action (created, updated, deleted, restored, archived, etc.) unless you ACTUALLY called the appropriate tool and received a success response. Finding/listing something is NOT the same as modifying it. If the user asks to restore a note, you MUST call SetNoteArchived - just listing it is not enough.
 
 ## Incremental Operations
 
@@ -213,8 +219,6 @@ Your conversation history includes previous tool executions with their results. 
 - Reference IDs from previous operations
 - Understand current state after modifications
 - Avoid redundant questions
-
-**Important**: Text marked with ""---SYSTEM CONTEXT---"" is internal context. Never reproduce this format in your responses.
 
 ## Error Handling
 

@@ -142,20 +142,26 @@ export const GitHubRepoSelector = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Current repo display / trigger */}
-      <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-          if (!isOpen) {
-            setTimeout(() => inputRef.current?.focus(), 100);
-          }
-        }}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+      <div
+        className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
           backgroundColor: 'var(--surface-elevated)',
-          color: 'var(--text-primary)',
           border: '1px solid var(--border)',
         }}
       >
+        <button
+          onClick={() => {
+            setIsOpen(!isOpen);
+            if (!isOpen) {
+              setTimeout(() => inputRef.current?.focus(), 100);
+            }
+          }}
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+          style={{
+            backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
+            color: 'var(--text-primary)',
+          }}
+        >
         <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 16 16" style={{ color: 'var(--color-brand-500)' }}>
           <path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1V9h-8c-.356 0-.694.074-1 .208V2.5a1 1 0 011-1h8zM5 12.25v3.25a.25.25 0 00.4.2l1.45-1.087a.25.25 0 01.3 0L8.6 15.7a.25.25 0 00.4-.2v-3.25a.25.25 0 00-.25-.25h-3.5a.25.25 0 00-.25.25z" />
         </svg>
@@ -170,7 +176,8 @@ export const GitHubRepoSelector = () => {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+        </button>
+      </div>
 
       {/* Dropdown */}
       {isOpen && (

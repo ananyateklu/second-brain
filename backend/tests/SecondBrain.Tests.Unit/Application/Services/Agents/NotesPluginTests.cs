@@ -314,7 +314,7 @@ public class NotesPluginTests
             .ReturnsAsync(new List<Note>());
 
         // Act
-        var result = await _sut.SearchNotesAsync("test query");
+        var result = await _sut.SearchNotesAsync("test query", mode: "exact");
 
         // Assert
         result.Should().Contain("No notes found");
@@ -333,7 +333,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchNotesAsync("meeting");
+        var result = await _sut.SearchNotesAsync("meeting", mode: "exact");
 
         // Assert
         result.Should().Contain("Meeting Notes");
@@ -353,7 +353,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchNotesAsync("groceries");
+        var result = await _sut.SearchNotesAsync("groceries", mode: "exact");
 
         // Assert
         result.Should().Contain("Note 1");
@@ -372,7 +372,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchNotesAsync("work");
+        var result = await _sut.SearchNotesAsync("work", mode: "exact");
 
         // Assert
         result.Should().Contain("Note 1");
@@ -391,7 +391,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchNotesAsync("Test");
+        var result = await _sut.SearchNotesAsync("Test", mode: "exact");
 
         // Assert
         result.Should().Contain("Active Note");
@@ -409,7 +409,7 @@ public class NotesPluginTests
             .ReturnsAsync(notes);
 
         // Act
-        var result = await _sut.SearchNotesAsync("Test", maxResults: 3);
+        var result = await _sut.SearchNotesAsync("Test", maxResults: 3, mode: "exact");
 
         // Assert
         // Result is JSON, count the occurrences of "id"
@@ -425,7 +425,7 @@ public class NotesPluginTests
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        var result = await _sut.SearchNotesAsync("test");
+        var result = await _sut.SearchNotesAsync("test", mode: "exact");
 
         // Assert
         result.Should().Contain("Error searching notes");
@@ -783,37 +783,37 @@ public class NotesPluginTests
 
     #endregion
 
-    #region SemanticSearchAsync Tests
+    #region SearchNotesAsync - Semantic Mode Tests
 
     [Fact]
-    public async Task SemanticSearchAsync_WhenUserIdNotSet_ReturnsError()
+    public async Task SearchNotesAsync_SemanticMode_WhenUserIdNotSet_ReturnsError()
     {
         // Arrange
         var plugin = new NotesPlugin(_mockNoteRepository.Object, _mockRagService.Object, null, null, _mockNoteOperationService.Object);
 
         // Act
-        var result = await plugin.SemanticSearchAsync("query");
+        var result = await plugin.SearchNotesAsync("query", mode: "semantic");
 
         // Assert
         result.Should().Contain("Error: User context not set");
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_WhenRagServiceNull_ReturnsFallbackMessage()
+    public async Task SearchNotesAsync_SemanticMode_WhenRagServiceNull_ReturnsFallbackMessage()
     {
         // Arrange
         var plugin = new NotesPlugin(_mockNoteRepository.Object, null, null, null, _mockNoteOperationService.Object);
         plugin.SetCurrentUserId(TestUserId);
 
         // Act
-        var result = await plugin.SemanticSearchAsync("query");
+        var result = await plugin.SearchNotesAsync("query", mode: "semantic");
 
         // Assert
         result.Should().Contain("Semantic search is not available");
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_WhenNoResults_ReturnsNotFoundMessage()
+    public async Task SearchNotesAsync_SemanticMode_WhenNoResults_ReturnsNotFoundMessage()
     {
         // Arrange
         var ragContext = new RagContext { RetrievedNotes = new List<VectorSearchResult>() };
@@ -829,14 +829,14 @@ public class NotesPluginTests
             .ReturnsAsync(ragContext);
 
         // Act
-        var result = await _sut.SemanticSearchAsync("query");
+        var result = await _sut.SearchNotesAsync("query", mode: "semantic");
 
         // Assert
         result.Should().Contain("No notes found");
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_ReturnsMatchingNotes()
+    public async Task SearchNotesAsync_SemanticMode_ReturnsMatchingNotes()
     {
         // Arrange
         var note = CreateTestNote("note-id", "Related Note", "Content");
@@ -861,14 +861,14 @@ public class NotesPluginTests
             .ReturnsAsync(note);
 
         // Act
-        var result = await _sut.SemanticSearchAsync("query");
+        var result = await _sut.SearchNotesAsync("query", mode: "semantic");
 
         // Assert
         result.Should().Contain("Related Note");
     }
 
     [Fact]
-    public async Task SemanticSearchAsync_WhenExceptionThrown_ReturnsError()
+    public async Task SearchNotesAsync_SemanticMode_WhenExceptionThrown_ReturnsError()
     {
         // Arrange
         _mockRagService.Setup(r => r.RetrieveContextAsync(
@@ -883,7 +883,7 @@ public class NotesPluginTests
             .ThrowsAsync(new Exception("RAG error"));
 
         // Act
-        var result = await _sut.SemanticSearchAsync("query");
+        var result = await _sut.SearchNotesAsync("query", mode: "semantic");
 
         // Assert
         result.Should().Contain("Error performing semantic search");

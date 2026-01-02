@@ -78,25 +78,42 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             new() { Role = "system", Content = context.GetSystemPrompt(request.Capabilities) }
         };
 
-        // Convert request messages
+        // Convert request messages - use native format for Gemini
+        // Note: GeminiProvider.BuildTextContents will convert ToolCalls to proper FunctionCall parts
         foreach (var msg in request.Messages)
         {
+            var chatMsg = new Services.AI.Models.ChatMessage
+            {
+                Role = msg.Role,
+                Content = msg.Content
+            };
+
+            // For assistant messages with tool calls, convert to native format
+            // This avoids HTML comment embedding that Gemini 3 would output verbatim
+            // Include ThoughtSignature for Gemini 3 models (required for function calling context)
             if (msg.Role.Equals("assistant", StringComparison.OrdinalIgnoreCase) &&
                 msg.ToolCalls != null && msg.ToolCalls.Any())
             {
-                var contextBuilder = new StringBuilder();
-                if (!string.IsNullOrWhiteSpace(msg.Content))
-                    contextBuilder.AppendLine(msg.Content);
-                contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
-                foreach (var tc in msg.ToolCalls)
-                    contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
-                contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
-                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = contextBuilder.ToString() });
+                chatMsg.ToolCalls = msg.ToolCalls.Select(tc => new Services.AI.Models.FunctionCallInfo
+                {
+                    Name = tc.ToolName,
+                    Arguments = tc.Arguments ?? "{}",
+                    ThoughtSignature = tc.ThoughtSignature  // Pass saved signature for Gemini 3
+                }).ToList();
             }
-            else
+
+            // For tool result messages, add as ToolResults
+            if (msg.Role.Equals("tool", StringComparison.OrdinalIgnoreCase) &&
+                msg.ToolCalls != null && msg.ToolCalls.Any())
             {
-                messages.Add(new Services.AI.Models.ChatMessage { Role = msg.Role, Content = msg.Content });
+                chatMsg.ToolResults = msg.ToolCalls.Select(tc => new Services.AI.Models.FunctionResultInfo
+                {
+                    Name = tc.ToolName,
+                    Result = tc.Result ?? ""
+                }).ToList();
             }
+
+            messages.Add(chatMsg);
         }
 
         var lastUserMessage = GetLastUserMessage(request);
@@ -111,11 +128,20 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
         int? cachedTokens = null;
         int groundingSourceCount = 0;
 
+        // Gemini 3 requires temperature 1.0 for optimal performance
+        var isGemini3 = IsGemini3Model(request.Model);
+        var temperature = request.Temperature ?? 0.7f;
+        if (isGemini3)
+        {
+            temperature = 1.0f;
+            _logger.LogDebug("Using temperature 1.0 for Gemini 3 model: {Model}", request.Model);
+        }
+
         var aiSettings = new Services.AI.Models.AIRequest
         {
             Model = request.Model,
             MaxTokens = request.MaxTokens ?? 4096,
-            Temperature = request.Temperature ?? 0.7f
+            Temperature = temperature
         };
 
         // Detect if query might benefit from Gemini's unique features
@@ -144,9 +170,24 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             EnableGrounding = enableGrounding,
             EnableCodeExecution = enableCodeExecution,
             EnableThinking = enableThinking,
-            ThinkingBudget = enableThinking ? (request.ThinkingBudget ?? settings.Gemini.Thinking.DefaultBudget) : null,
             FileReferences = request.FileReferences
         };
+
+        // Gemini 3 uses thinking_level, older models use thinking_budget
+        if (enableThinking)
+        {
+            if (isGemini3)
+            {
+                // Gemini 3: use thinking_level (low/medium/high)
+                featureOptions.ThinkingLevel = "high";
+                _logger.LogDebug("Using thinking_level='high' for Gemini 3 model");
+            }
+            else
+            {
+                // Gemini 2.x: use thinking_budget
+                featureOptions.ThinkingBudget = request.ThinkingBudget ?? settings.Gemini.Thinking.DefaultBudget;
+            }
+        }
 
         if (featureOptions.EnableGrounding)
         {
@@ -247,26 +288,38 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             {
                 yield return StatusEvent($"Executing {pendingFunctionCalls.Count} tool(s)...");
 
-                // Emit start events
-                var geminiToolIds = new Dictionary<string, string>();
-                foreach (var call in pendingFunctionCalls)
+                // Emit start events - generate unique IDs per call (not per name)
+                // to handle parallel calls to the same tool (e.g., multiple SetNoteArchived)
+                var callsWithIds = pendingFunctionCalls.Select((call, index) =>
                 {
-                    var geminiToolId = $"toolu_{ToolExecutor.GenerateToolId(call.Name, call.Arguments)}";
-                    geminiToolIds[call.Name] = geminiToolId;
-                    yield return ToolCallStartEvent(call.Name, geminiToolId, call.Arguments);
+                    var geminiToolId = $"toolu_{ToolExecutor.GenerateToolId(call.Name, call.Arguments)}_{index}";
+                    return (Call: call, Id: geminiToolId);
+                }).ToList();
+
+                foreach (var (call, id) in callsWithIds)
+                {
+                    yield return ToolCallStartEvent(call.Name, id, call.Arguments);
                 }
 
                 // Execute tools
-                var toolCalls = pendingFunctionCalls.Select(c => new PendingToolCall(
-                    geminiToolIds[c.Name],
-                    c.Name,
-                    c.Arguments,
-                    JsonNode.Parse(c.Arguments)
+                var toolCalls = callsWithIds.Select(item => new PendingToolCall(
+                    item.Id,
+                    item.Call.Name,
+                    item.Call.Arguments,
+                    JsonNode.Parse(item.Call.Arguments)
                 )).ToList();
 
-                var results = await ToolExecutor.ExecuteMultipleAsync(
+                // Use scope-isolated execution for parallel database safety
+                var executionContext = new PluginExecutionContext(
+                    UserId: request.UserId,
+                    Provider: request.Provider,
+                    Model: request.Model,
+                    AgentRagEnabled: request.AgentRagEnabled);
+
+                var results = await ToolExecutor.ExecuteMultipleWithScopeIsolationAsync(
                     toolCalls,
                     pluginMethods,
+                    executionContext,
                     settings.Gemini.FunctionCalling.ParallelExecution,
                     cancellationToken);
 
@@ -275,6 +328,9 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                 var toolResultImages = new List<(string MediaType, string Base64Data)>();
                 var cleanedResults = new List<Helpers.ToolExecutionResult>();
 
+                // Match results to original calls by index to get ThoughtSignature
+                // (results are returned in same order as toolCalls were sent)
+                var resultIndex = 0;
                 foreach (var result in results)
                 {
                     var resultForStorage = result.Result;
@@ -295,8 +351,13 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
                         }
                     }
 
-                    yield return ToolCallEndEvent(result.Name, result.Id, resultForStorage);
+                    // Get ThoughtSignature by index (Gemini 3 requires it for multi-turn function calling)
+                    var thoughtSignature = resultIndex < callsWithIds.Count
+                        ? callsWithIds[resultIndex].Call.ThoughtSignature
+                        : null;
+                    yield return ToolCallEndEvent(result.Name, result.Id, resultForStorage, thoughtSignature);
                     cleanedResults.Add(new Helpers.ToolExecutionResult(result.Id, result.Name, result.Arguments, resultForStorage, result.Success));
+                    resultIndex++;
                 }
 
                 // Add messages to history
@@ -446,5 +507,21 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             _logger.LogWarning(ex, "Failed to extract image data from AnalyzeImage result");
             return (result, null, null);
         }
+    }
+
+    /// <summary>
+    /// Detect if the model is a Gemini 3 variant that requires special handling:
+    /// - Temperature must be 1.0
+    /// - Thought signatures required for function calling
+    /// - Uses thinking_level instead of thinking_budget
+    /// </summary>
+    private static bool IsGemini3Model(string model)
+    {
+        if (string.IsNullOrEmpty(model)) return false;
+
+        var modelLower = model.ToLowerInvariant();
+        return modelLower.Contains("gemini-3") ||
+               modelLower.Contains("gemini-exp") ||
+               modelLower.StartsWith("gemini-3");
     }
 }

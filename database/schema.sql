@@ -303,13 +303,19 @@
 \echo ''
 
 -- Step 48: RAG embedding settings
-\echo 'Step 48/49: Adding RAG embedding settings to user_preferences...'
+\echo 'Step 48/50: Adding RAG embedding settings to user_preferences...'
 \i 48_rag_embedding_settings.sql
 \echo 'RAG embedding settings added successfully.'
 \echo ''
 
--- Step 49: Final statistics update
-\echo 'Step 49/49: Updating statistics...'
+-- Step 49: Thought signature for Gemini 3 function calling
+\echo 'Step 49/50: Adding thought_signature column for Gemini 3...'
+\i 59_thought_signature.sql
+\echo 'Thought signature column added successfully.'
+\echo ''
+
+-- Step 50: Final statistics update
+\echo 'Step 50/50: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

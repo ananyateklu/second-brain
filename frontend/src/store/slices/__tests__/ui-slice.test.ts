@@ -190,21 +190,13 @@ describe('uiSlice', () => {
   // Sidebar Actions Tests
   // ============================================
   describe('sidebar actions', () => {
-    it('should toggle sidebar from expanded to closed', () => {
-      state.sidebarState = 'expanded';
-      state.previousSidebarState = null;
-      slice.toggleSidebar();
-
-      expect(state.sidebarState).toBe('closed');
-      expect(state.previousSidebarState).toBe('expanded');
-    });
-
     it('should toggle sidebar from collapsed to closed', () => {
       state.sidebarState = 'collapsed';
       state.previousSidebarState = 'closed';
       slice.toggleSidebar();
 
       expect(state.sidebarState).toBe('closed');
+      expect(state.previousSidebarState).toBe('collapsed');
     });
 
     it('should toggle sidebar from closed to collapsed', () => {
@@ -213,18 +205,19 @@ describe('uiSlice', () => {
       slice.toggleSidebar();
 
       expect(state.sidebarState).toBe('collapsed');
+      expect(state.previousSidebarState).toBe('closed');
     });
 
     it('should close sidebar', () => {
-      state.sidebarState = 'expanded';
+      state.sidebarState = 'collapsed';
       slice.closeSidebar();
 
       expect(state.sidebarState).toBe('closed');
-      expect(state.previousSidebarState).toBe('expanded');
+      expect(state.previousSidebarState).toBe('collapsed');
     });
 
     it('should save sidebar state to localStorage', () => {
-      state.sidebarState = 'expanded';
+      state.sidebarState = 'collapsed';
       slice.toggleSidebar();
 
       expect(localStorage.setItem).toHaveBeenCalledWith('second-brain-sidebar-state', 'closed');

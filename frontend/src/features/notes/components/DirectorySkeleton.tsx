@@ -53,7 +53,7 @@ export function DirectorySkeleton() {
 
       {/* Folder Sidebar Skeleton - matches NotesDirectoryPage sidebar */}
       <div
-        className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-64 md:w-72"
+        className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-[23rem]"
         style={{ borderColor: 'var(--border)' }}
       >
         {/* Navigation Items - no header, controls are in Header component */}

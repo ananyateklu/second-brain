@@ -111,18 +111,16 @@ export const ModelSelectorTrigger = forwardRef<
       onClick={onClick}
       disabled={disabled || isRefreshing}
       className={cn(
-        'group px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+        'group px-4 py-2.5 my-1 rounded-xl backdrop-blur-md text-sm font-medium transition-all duration-200',
         'hover:scale-[1.02] active:scale-[0.98]',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'flex items-center gap-2 max-w-[280px]'
       )}
       style={{
-        backgroundColor: isOpen
-          ? 'var(--surface-elevated)'
-          : 'var(--surface-card)',
+        backgroundColor: 'var(--surface-elevated)',
         color: 'var(--text-primary)',
         border: `1px solid ${isRefreshing ? 'var(--color-primary)' : 'var(--border)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
+        boxShadow: isOpen ? 'var(--shadow-lg)' : 'none',
       }}
       aria-expanded={isOpen}
       aria-haspopup="listbox"

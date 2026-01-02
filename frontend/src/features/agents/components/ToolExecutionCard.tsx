@@ -28,16 +28,17 @@ interface NoteStatistics {
   archivedNotes: number;
   notesCreatedThisWeek: number;
   notesCreatedThisMonth: number;
-  notesWithTags: number;
-  notesInFolders: number;
-  uniqueTagCount: number;
-  uniqueFolderCount: number;
-  topTags: TagCount[];
-  topFolders: FolderCount[];
+  // These fields are only present in 'overview' type (type='all')
+  notesWithTags?: number;
+  notesInFolders?: number;
+  uniqueTagCount?: number;
+  uniqueFolderCount?: number;
+  topTags?: TagCount[];
+  topFolders?: FolderCount[];
 }
 
 interface StatsResponse {
-  type: 'stats';
+  type: 'stats' | 'overview';
   message: string;
   statistics: NoteStatistics;
 }
@@ -106,6 +107,7 @@ const parseNotesResult = (result: string): AgentNotesResponse | null => {
 };
 
 // Helper to parse stats results from JSON
+// GetOverview returns type='overview' for full stats, type='stats' for stats-only
 const parseStatsResult = (result: string): StatsResponse | null => {
   try {
     const parsed: unknown = JSON.parse(result);
@@ -113,7 +115,7 @@ const parseStatsResult = (result: string): StatsResponse | null => {
       typeof parsed === 'object' &&
       parsed !== null &&
       'type' in parsed &&
-      parsed.type === 'stats' &&
+      (parsed.type === 'stats' || parsed.type === 'overview') &&
       'statistics' in parsed
     ) {
       return parsed as StatsResponse;
@@ -227,6 +229,9 @@ const StatIcons = {
 
 // Stats display component
 function StatsDisplay({ stats }: { stats: NoteStatistics }) {
+  // Check if we have full overview data (vs stats-only)
+  const hasFullOverview = stats.notesWithTags !== undefined;
+
   return (
     <div className="space-y-3">
       {/* Overview Stats Grid */}
@@ -236,17 +241,21 @@ function StatsDisplay({ stats }: { stats: NoteStatistics }) {
         <StatItem label="Archived" value={stats.archivedNotes} icon={StatIcons.archived} />
         <StatItem label="This Week" value={stats.notesCreatedThisWeek} icon={StatIcons.week} />
         <StatItem label="This Month" value={stats.notesCreatedThisMonth} icon={StatIcons.month} />
-        <StatItem label="With Tags" value={stats.notesWithTags} icon={StatIcons.tag} />
+        {hasFullOverview && (
+          <StatItem label="With Tags" value={stats.notesWithTags ?? 0} icon={StatIcons.tag} />
+        )}
       </div>
 
-      {/* Additional Stats */}
-      <div className="grid grid-cols-2 gap-2">
-        <StatItem label="Unique Tags" value={stats.uniqueTagCount} icon={StatIcons.bookmark} />
-        <StatItem label="Folders" value={stats.uniqueFolderCount} icon={StatIcons.folder} />
-      </div>
+      {/* Additional Stats - only show if full overview */}
+      {hasFullOverview && (
+        <div className="grid grid-cols-2 gap-2">
+          <StatItem label="Unique Tags" value={stats.uniqueTagCount ?? 0} icon={StatIcons.bookmark} />
+          <StatItem label="Folders" value={stats.uniqueFolderCount ?? 0} icon={StatIcons.folder} />
+        </div>
+      )}
 
       {/* Top Tags */}
-      {stats.topTags.length > 0 && (
+      {stats.topTags && stats.topTags.length > 0 && (
         <div>
           <div
             className="text-xs font-medium mb-1.5"
@@ -282,7 +291,7 @@ function StatsDisplay({ stats }: { stats: NoteStatistics }) {
       )}
 
       {/* Top Folders */}
-      {stats.topFolders.length > 0 && (
+      {stats.topFolders && stats.topFolders.length > 0 && (
         <div>
           <div
             className="text-xs font-medium mb-1.5"
@@ -423,28 +432,14 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
         return 'Updating Note';
       case 'DeleteNote':
         return 'Deleting Note';
-      case 'AppendToNote':
-        return 'Appending to Note';
-      case 'PrependToNote':
-        return 'Prepending to Note';
-      case 'ReplaceInNote':
-        return 'Replacing Text in Note';
-      case 'InsertInNote':
-        return 'Inserting Text in Note';
+      case 'EditNote':
+        return 'Editing Note';
       case 'DuplicateNote':
         return 'Duplicating Note';
 
       // Notes - Search Operations
       case 'SearchNotes':
         return 'Searching Notes';
-      case 'SemanticSearch':
-        return 'Semantic Search';
-      case 'SearchByTags':
-        return 'Searching by Tags';
-      case 'GetNotesByDateRange':
-        return 'Searching by Date';
-      case 'FindRelatedNotes':
-        return 'Finding Related Notes';
 
       // Notes - Organization Operations
       case 'ListNotes':
@@ -453,26 +448,42 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
         return 'Updating Archive Status';
       case 'MoveToFolder':
         return 'Moving to Folder';
-      case 'ListFolders':
-        return 'Listing Folders';
-      case 'ListAllTags':
-        return 'Listing Tags';
-      case 'GetNoteStats':
-        return 'Getting Statistics';
+      case 'GetOverview':
+        return 'Getting Overview';
 
       // Notes - Analysis Operations
       case 'AnalyzeNote':
         return 'Analyzing Note';
-      case 'SuggestTags':
-        return 'Suggesting Tags';
-      case 'SummarizeNote':
-        return 'Summarizing Note';
       case 'CompareNotes':
         return 'Comparing Notes';
       case 'ViewNoteImages':
         return 'Viewing Note Images';
       case 'AnalyzeImage':
         return 'Analyzing Image';
+
+      // Notes - Image Management
+      case 'ManageContextImages':
+        return 'Managing Images';
+
+      // Notes - Version History
+      case 'GetNoteVersionHistory':
+        return 'Getting Version History';
+      case 'GetVersion':
+        return 'Getting Version';
+      case 'CompareNoteVersions':
+        return 'Comparing Versions';
+      case 'RestoreNoteVersion':
+        return 'Restoring Version';
+
+      // Notes - Trash Management
+      case 'ManageTrash':
+        return 'Managing Trash';
+
+      // Tool Discovery
+      case 'search_tools':
+        return 'Searching Tools';
+      case 'list_tool_categories':
+        return 'Listing Tool Categories';
 
       // Web Browsing
       case 'fetch_url':

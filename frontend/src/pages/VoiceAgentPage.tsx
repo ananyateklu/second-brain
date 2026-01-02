@@ -79,12 +79,17 @@ class VoiceErrorBoundary extends Component<VoiceErrorBoundaryProps, VoiceErrorBo
             <button
               onClick={this.handleRetry}
               className="
-                inline-flex items-center gap-2 px-4 py-2 rounded-lg
-                bg-[var(--color-brand-500)] text-white font-medium
-                hover:bg-[var(--color-brand-600)] transition-colors
+                inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg
+                font-semibold text-xs transition-all duration-200 hover:-translate-y-0.5
               "
+              style={{
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+                border: '1px solid var(--btn-primary-border)',
+                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+              }}
             >
-              <ArrowPathIcon className="w-4 h-4" />
+              <ArrowPathIcon className="w-3.5 h-3.5" />
               Retry
             </button>
           </div>

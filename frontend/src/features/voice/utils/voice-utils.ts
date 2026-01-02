@@ -43,20 +43,30 @@ export function getToolLabel(toolName: string): string {
       return 'Creating note';
     case 'SearchNotes':
       return 'Searching notes';
-    case 'SemanticSearch':
-      return 'Semantic search';
     case 'UpdateNote':
       return 'Updating note';
+    case 'EditNote':
+      return 'Editing Note';
     case 'GetNote':
       return 'Reading note';
     case 'ListNotes':
       return 'Listing notes';
-    case 'GetNoteStats':
-      return 'Getting stats';
+    case 'GetOverview':
+      return 'Getting Overview';
     case 'DeleteNote':
       return 'Deleting note';
     case 'SetNoteArchived':
       return 'Updating archive status';
+    case 'ManageContextImages':
+      return 'Managing Images';
+    case 'GetVersion':
+      return 'Getting Version';
+    case 'ManageTrash':
+      return 'Managing Trash';
+    case 'search_tools':
+      return 'Searching Tools';
+    case 'list_tool_categories':
+      return 'Listing Categories';
     case 'LiveSearch':
       return 'Searching web';
     case 'DeepSearch':
@@ -75,20 +85,30 @@ export function getToolLabelPastTense(toolName: string): string {
       return 'Created Note';
     case 'SearchNotes':
       return 'Searched Notes';
-    case 'SemanticSearch':
-      return 'Semantic Search';
     case 'UpdateNote':
       return 'Updated Note';
+    case 'EditNote':
+      return 'Edited Note';
     case 'GetNote':
       return 'Retrieved Note';
     case 'ListNotes':
       return 'Listed Notes';
-    case 'GetNoteStats':
-      return 'Note Statistics';
+    case 'GetOverview':
+      return 'Got Overview';
     case 'DeleteNote':
       return 'Deleted Note';
     case 'SetNoteArchived':
       return 'Updated Archive Status';
+    case 'ManageContextImages':
+      return 'Managed Images';
+    case 'GetVersion':
+      return 'Got Version';
+    case 'ManageTrash':
+      return 'Managed Trash';
+    case 'search_tools':
+      return 'Searched Tools';
+    case 'list_tool_categories':
+      return 'Listed Categories';
     case 'LiveSearch':
       return 'Web Search';
     case 'DeepSearch':
@@ -116,9 +136,10 @@ export function getToolIconPath(toolName: string): ToolIconPath {
     case 'CreateNote':
       return { d: 'M12 4v16m8-8H4' };
     case 'SearchNotes':
-    case 'SemanticSearch':
+    case 'search_tools':
       return { d: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' };
     case 'UpdateNote':
+    case 'EditNote':
       return {
         d: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
       };
@@ -127,17 +148,27 @@ export function getToolIconPath(toolName: string): ToolIconPath {
       return {
         d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
       };
-    case 'GetNoteStats':
+    case 'GetOverview':
+    case 'list_tool_categories':
       return {
         d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
       };
     case 'DeleteNote':
+    case 'ManageTrash':
       return {
         d: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
       };
     case 'SetNoteArchived':
       return {
         d: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4',
+      };
+    case 'ManageContextImages':
+      return {
+        d: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+      };
+    case 'GetVersion':
+      return {
+        d: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
       };
     case 'LiveSearch':
     case 'DeepSearch':

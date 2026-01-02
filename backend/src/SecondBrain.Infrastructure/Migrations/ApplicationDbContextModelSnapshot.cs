@@ -160,6 +160,11 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("input_tokens");
 
+                    b.Property<string>("MarkdownRenderer")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("markdown_renderer");
+
                     b.Property<int?>("OutputTokens")
                         .HasColumnType("integer")
                         .HasColumnName("output_tokens");
@@ -295,6 +300,253 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasDatabaseName("ix_chat_sessions_user_conversation");
 
                     b.ToTable("chat_sessions");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.FocusItem", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AccumulatedMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("accumulated_minutes");
+
+                    b.Property<int?>("ActualMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("actual_minutes");
+
+                    b.Property<float?>("AiConfidence")
+                        .HasColumnType("real")
+                        .HasColumnName("ai_confidence");
+
+                    b.Property<bool>("AiSuggested")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ai_suggested");
+
+                    b.Property<string>("AiSuggestionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("ai_suggestion_reason");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly?>("DeferredTo")
+                        .HasColumnType("date")
+                        .HasColumnName("deferred_to");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<int?>("EstimatedMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_minutes");
+
+                    b.Property<DateTime?>("FocusStartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("focus_started_at");
+
+                    b.Property<bool>("IsCurrentFocus")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_current_focus");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("NoteId")
+                        .HasColumnType("text")
+                        .HasColumnName("note_id");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<DateOnly?>("ScheduledDate")
+                        .HasColumnType("date")
+                        .HasColumnName("scheduled_date");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteId");
+
+                    b.HasIndex("UserId", "Priority", "SortOrder")
+                        .HasDatabaseName("ix_focus_items_backlog")
+                        .HasFilter("scheduled_date IS NULL AND is_deleted = false AND status != 'completed'");
+
+                    b.HasIndex("UserId", "Status", "UpdatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_focus_items_status")
+                        .HasFilter("is_deleted = false");
+
+                    b.HasIndex("UserId", "ScheduledDate", "Priority", "SortOrder")
+                        .HasDatabaseName("ix_focus_items_scheduled")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("focus_items");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.FocusSuggestion", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("accepted_at");
+
+                    b.Property<string>("AcceptedFocusItemId")
+                        .HasColumnType("text")
+                        .HasColumnName("accepted_focus_item_id");
+
+                    b.Property<float>("Confidence")
+                        .HasColumnType("real")
+                        .HasColumnName("confidence");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector")
+                        .HasColumnName("embedding");
+
+                    b.Property<int>("EmbeddingDimensions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1536)
+                        .HasColumnName("embedding_dimensions");
+
+                    b.Property<string>("EmbeddingModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("embedding_model");
+
+                    b.Property<string>("EmbeddingProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("embedding_provider");
+
+                    b.Property<int?>("EstimatedMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_minutes");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("SourceNoteId")
+                        .HasColumnType("text")
+                        .HasColumnName("source_note_id");
+
+                    b.Property<string>("SourceNoteTitle")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("source_note_title");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcceptedFocusItemId");
+
+                    b.HasIndex("SourceNoteId")
+                        .HasDatabaseName("ix_focus_suggestions_source_note")
+                        .HasFilter("source_note_id IS NOT NULL AND is_deleted = false");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_focus_suggestions_pending")
+                        .HasFilter("is_deleted = false AND accepted_at IS NULL");
+
+                    b.HasIndex("UserId", "AcceptedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_focus_suggestions_accepted")
+                        .HasFilter("is_deleted = false AND accepted_at IS NOT NULL");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_focus_suggestions_user")
+                        .HasFilter("is_deleted = false");
+
+                    b.ToTable("focus_suggestions");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.GeminiContextCache", b =>
@@ -840,6 +1092,16 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
+                    b.Property<string>("AiModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ai_model");
+
+                    b.Property<string>("AiProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ai_provider");
+
                     b.Property<string>("ChangeSummary")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -1269,6 +1531,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("success");
 
+                    b.Property<string>("ThoughtSignature")
+                        .HasColumnType("text")
+                        .HasColumnName("thought_signature");
+
                     b.Property<string>("ToolName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1366,6 +1632,40 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("enable_notifications");
 
+                    b.Property<float>("FocusAIDedupThreshold")
+                        .HasColumnType("real")
+                        .HasColumnName("focus_ai_dedup_threshold");
+
+                    b.Property<int>("FocusAIMaxSuggestions")
+                        .HasColumnType("integer")
+                        .HasColumnName("focus_ai_max_suggestions");
+
+                    b.Property<int>("FocusAIMaxTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("focus_ai_max_tokens");
+
+                    b.Property<string>("FocusAIModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("focus_ai_model");
+
+                    b.Property<string>("FocusAIProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("focus_ai_provider");
+
+                    b.Property<int>("FocusAIRagTopK")
+                        .HasColumnType("integer")
+                        .HasColumnName("focus_ai_rag_top_k");
+
+                    b.Property<float>("FocusAISimilarityThreshold")
+                        .HasColumnType("real")
+                        .HasColumnName("focus_ai_similarity_threshold");
+
+                    b.Property<float>("FocusAITemperature")
+                        .HasColumnType("real")
+                        .HasColumnName("focus_ai_temperature");
+
                     b.Property<string>("FontSize")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1375,6 +1675,12 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<int>("ItemsPerPage")
                         .HasColumnType("integer")
                         .HasColumnName("items_per_page");
+
+                    b.Property<string>("MarkdownRenderer")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("markdown_renderer");
 
                     b.Property<bool>("NoteSummaryEnabled")
                         .HasColumnType("boolean")
@@ -1679,6 +1985,33 @@ namespace SecondBrain.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.FocusItem", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.Note", "Note")
+                        .WithMany()
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Note");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.FocusSuggestion", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.FocusItem", "AcceptedFocusItem")
+                        .WithMany()
+                        .HasForeignKey("AcceptedFocusItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SecondBrain.Core.Entities.Note", "SourceNote")
+                        .WithMany()
+                        .HasForeignKey("SourceNoteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AcceptedFocusItem");
+
+                    b.Navigation("SourceNote");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.GeneratedImageData", b =>

@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.Services.Agents.Metrics;
 using SecondBrain.Application.Services.Agents.Plugins;
@@ -13,12 +14,14 @@ namespace SecondBrain.Application.Services.Agents.Helpers;
 /// <summary>
 /// Executes tool calls against registered plugins.
 /// Includes structured audit logging and metrics collection.
+/// Supports scope-isolated parallel execution for thread-safe database operations.
 /// </summary>
 public class ToolExecutor : IToolExecutor
 {
     private readonly ILogger<ToolExecutor> _logger;
     private readonly IToolAuditLogger? _auditLogger;
     private readonly IAgentMetricsService? _metricsService;
+    private readonly IServiceScopeFactory? _scopeFactory;
 
     // Execution context for audit logging
     private string _currentRequestId = string.Empty;
@@ -40,10 +43,12 @@ public class ToolExecutor : IToolExecutor
 
     public ToolExecutor(
         ILogger<ToolExecutor> logger,
+        IServiceScopeFactory? scopeFactory = null,
         IToolAuditLogger? auditLogger = null,
         IAgentMetricsService? metricsService = null)
     {
         _logger = logger;
+        _scopeFactory = scopeFactory;
         _auditLogger = auditLogger;
         _metricsService = metricsService;
     }
@@ -203,6 +208,82 @@ public class ToolExecutor : IToolExecutor
             }
             return results.ToArray();
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<ToolExecutionResult[]> ExecuteMultipleWithScopeIsolationAsync(
+        IReadOnlyList<PendingToolCall> toolCalls,
+        IReadOnlyDictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> pluginMethods,
+        PluginExecutionContext executionContext,
+        bool parallelExecution,
+        CancellationToken cancellationToken = default)
+    {
+        // If scope factory not available or sequential execution, fall back to regular method
+        if (_scopeFactory == null || !parallelExecution)
+        {
+            return await ExecuteMultipleAsync(toolCalls, pluginMethods, parallelExecution, cancellationToken);
+        }
+
+        _logger.LogDebug("Executing {Count} tools in parallel with scope isolation", toolCalls.Count);
+
+        // Parallel execution with isolated scopes - each task gets its own DbContext
+        var executionTasks = toolCalls.Select(async call =>
+        {
+            if (!pluginMethods.TryGetValue(call.Name, out var pluginMethod))
+            {
+                return new ToolExecutionResult(
+                    call.Id,
+                    call.Name,
+                    call.Arguments,
+                    $"Error: Unknown tool '{call.Name}'",
+                    Success: false);
+            }
+
+            // Create isolated scope for this tool execution
+            await using var scope = _scopeFactory.CreateAsyncScope();
+
+            try
+            {
+                // Resolve fresh plugin instance from the new scope
+                var freshPlugin = scope.ServiceProvider.GetService(pluginMethod.Plugin.GetType()) as IAgentPlugin;
+
+                if (freshPlugin == null)
+                {
+                    _logger.LogWarning("Could not resolve fresh plugin {PluginType} from scope, falling back to shared instance",
+                        pluginMethod.Plugin.GetType().Name);
+                    return await ExecuteAsync(call, pluginMethod.Plugin, pluginMethod.Method, cancellationToken);
+                }
+
+                // Configure the fresh plugin with execution context
+                freshPlugin.SetCurrentUserId(executionContext.UserId);
+                freshPlugin.SetAgentRagEnabled(executionContext.AgentRagEnabled);
+
+                if (executionContext.Provider != null && executionContext.Model != null)
+                {
+                    freshPlugin.SetAgentContext(executionContext.Provider, executionContext.Model);
+                }
+
+                if (executionContext.RagOptions != null)
+                {
+                    freshPlugin.SetRagOptions(executionContext.RagOptions);
+                }
+
+                // Execute with isolated plugin
+                return await ExecuteAsync(call, freshPlugin, pluginMethod.Method, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing tool {ToolName} with scope isolation", call.Name);
+                return new ToolExecutionResult(
+                    call.Id,
+                    call.Name,
+                    call.Arguments,
+                    $"Error executing tool: {ex.Message}",
+                    Success: false);
+            }
+        });
+
+        return await Task.WhenAll(executionTasks);
     }
 
     /// <inheritdoc />

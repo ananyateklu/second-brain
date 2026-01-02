@@ -19,12 +19,12 @@ export const ViewModeToggle = memo(({
   size = 'md',
   className = '',
 }: ViewModeToggleProps) => {
-  const buttonSize = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
+  const buttonSize = size === 'sm' ? 'w-9 h-9' : 'w-10 h-10';
   const iconSize = size === 'sm' ? 'w-3.5 h-3.5' : 'w-4 h-4';
 
   return (
     <div
-      className={`flex items-center rounded-xl border overflow-hidden ${className}`}
+      className={`flex items-center my-1 rounded-xl border overflow-hidden backdrop-blur-md ${className}`}
       style={{
         backgroundColor: 'var(--surface-elevated)',
         borderColor: 'var(--border)',
@@ -39,8 +39,8 @@ export const ViewModeToggle = memo(({
             : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
         }`}
         style={{
-          backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
-          color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
+          backgroundColor: viewMode === 'card' ? 'var(--btn-primary-bg)' : 'transparent',
+          color: viewMode === 'card' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
         }}
         title="Grid view"
         aria-label="Grid view"
@@ -64,8 +64,8 @@ export const ViewModeToggle = memo(({
             : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
         }`}
         style={{
-          backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',
-          color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
+          backgroundColor: viewMode === 'list' ? 'var(--btn-primary-bg)' : 'transparent',
+          color: viewMode === 'list' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
         }}
         title="List view"
         aria-label="List view"

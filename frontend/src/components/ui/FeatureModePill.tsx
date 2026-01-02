@@ -107,12 +107,12 @@ export function FeatureModePill({
         aria-expanded={popoverContent ? isPopoverOpen : undefined}
         aria-haspopup={popoverContent ? 'dialog' : undefined}
         className={`
-          flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium
+          flex items-center gap-1.5 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium
           transition-all duration-200
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.03] active:scale-[0.97]'}
         `}
         style={{
-          backgroundColor: isActive ? activeColor.bg : 'var(--surface-card)',
+          backgroundColor: isActive ? activeColor.bg : 'var(--surface-elevated)',
           color: isActive ? activeColor.text : 'var(--text-secondary)',
           border: `1px solid ${isActive ? activeColor.border : 'var(--border)'}`,
           boxShadow: isActive

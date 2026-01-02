@@ -35,9 +35,15 @@ public class GeminiFeatureOptions
     public bool EnableThinking { get; set; }
 
     /// <summary>
-    /// Thinking budget (max tokens for thinking process)
+    /// Thinking budget (max tokens for thinking process) - for Gemini 2.x
     /// </summary>
     public int? ThinkingBudget { get; set; }
+
+    /// <summary>
+    /// Thinking level for Gemini 3 models - "low", "medium", "high"
+    /// Cannot be used together with ThinkingBudget
+    /// </summary>
+    public string? ThinkingLevel { get; set; }
 
     /// <summary>
     /// Function declarations for native function calling
@@ -397,7 +403,8 @@ public class GeminiProvider : IAIProvider
     }
 
     /// <summary>
-    /// Extract function calls from response
+    /// Extract function calls from response, including thought signatures for Gemini 3.
+    /// Thought signatures must be preserved and returned to maintain reasoning context.
     /// </summary>
     private static List<FunctionCallInfo>? ExtractFunctionCalls(GenerateContentResponse? response)
     {
@@ -419,11 +426,20 @@ public class GeminiProvider : IAIProvider
                     argsJson = JsonSerializer.Serialize(part.FunctionCall.Args);
                 }
 
+                // Capture thought signature from the Part (Gemini 3 requirement)
+                // ThoughtSignature is a byte array, convert to Base64 for storage
+                string? thoughtSignature = null;
+                if (part.ThoughtSignature != null && part.ThoughtSignature.Length > 0)
+                {
+                    thoughtSignature = Convert.ToBase64String(part.ThoughtSignature);
+                }
+
                 functionCalls.Add(new FunctionCallInfo
                 {
                     Name = part.FunctionCall.Name ?? string.Empty,
                     Arguments = argsJson,
-                    Id = part.FunctionCall.Id
+                    Id = part.FunctionCall.Id,
+                    ThoughtSignature = thoughtSignature
                 });
             }
         }
@@ -1368,18 +1384,34 @@ public class GeminiProvider : IAIProvider
             }
 
             // Add Function Calls (Model -> User)
+            // Include ThoughtSignature for Gemini 3 models to maintain reasoning context
             if (msg.ToolCalls != null && msg.ToolCalls.Any())
             {
                 foreach (var toolCall in msg.ToolCalls)
                 {
-                    parts.Add(new Part
+                    var part = new Part
                     {
                         FunctionCall = new FunctionCall
                         {
                             Name = toolCall.Name,
                             Args = TryParseArgs(toolCall.Arguments)
                         }
-                    });
+                    };
+
+                    // Restore thought signature for Gemini 3 (required for function calling)
+                    if (!string.IsNullOrEmpty(toolCall.ThoughtSignature))
+                    {
+                        try
+                        {
+                            part.ThoughtSignature = Convert.FromBase64String(toolCall.ThoughtSignature);
+                        }
+                        catch
+                        {
+                            // If base64 decode fails, the signature is likely already raw bytes or invalid
+                        }
+                    }
+
+                    parts.Add(part);
                 }
             }
 
@@ -1479,18 +1511,34 @@ public class GeminiProvider : IAIProvider
             }
 
             // Add Function Calls (Model -> User)
+            // Include ThoughtSignature for Gemini 3 models to maintain reasoning context
             if (msg.ToolCalls != null && msg.ToolCalls.Any())
             {
                 foreach (var toolCall in msg.ToolCalls)
                 {
-                    parts.Add(new Part
+                    var part = new Part
                     {
                         FunctionCall = new FunctionCall
                         {
                             Name = toolCall.Name,
                             Args = TryParseArgs(toolCall.Arguments)
                         }
-                    });
+                    };
+
+                    // Restore thought signature for Gemini 3 (required for function calling)
+                    if (!string.IsNullOrEmpty(toolCall.ThoughtSignature))
+                    {
+                        try
+                        {
+                            part.ThoughtSignature = Convert.FromBase64String(toolCall.ThoughtSignature);
+                        }
+                        catch
+                        {
+                            // If base64 decode fails, the signature is likely already raw bytes or invalid
+                        }
+                    }
+
+                    parts.Add(part);
                 }
             }
 
@@ -1683,7 +1731,14 @@ public class GeminiProvider : IAIProvider
         // Fallback to known models with context info from database
         return new[]
         {
+            // Gemini 3 models (latest)
+            "gemini-3-pro",
+            "gemini-3-flash",
+            // Gemini 2.x models
+            "gemini-2.5-pro",
+            "gemini-2.5-flash",
             "gemini-2.0-flash-exp",
+            // Gemini 1.x models (legacy)
             "gemini-1.5-flash",
             "gemini-1.5-flash-8b",
             "gemini-1.5-pro",

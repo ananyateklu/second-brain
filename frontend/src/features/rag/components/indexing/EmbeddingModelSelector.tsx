@@ -50,12 +50,12 @@ export function EmbeddingModelSelector({
               disabled={modelDisabled}
               title={model.description || `${model.displayName}: ${model.dimensions} dimensions`}
               className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200",
+                "px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)]",
                 "disabled:cursor-not-allowed",
                 isActive && [
-                  "bg-[var(--color-brand-600)] border-[var(--color-brand-600)] text-[var(--color-brand-50)]",
-                  "shadow-[0_10px_22px_color-mix(in_srgb,var(--color-brand-900)_30%,transparent)]",
+                  "bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] text-[var(--btn-primary-text)]",
+                  "shadow-[0_4px_12px_-2px_rgba(54,105,61,0.3)]",
                   "-translate-y-px"
                 ],
                 !isActive && !modelDisabled && [

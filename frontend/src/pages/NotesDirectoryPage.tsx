@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react';
+import { createPortal } from 'react-dom';
 import { useNotesPaged, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
@@ -114,6 +115,9 @@ export function NotesDirectoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showPagination, setShowPagination] = useState(true);
+  const lastScrollTop = useRef(0);
+  const scrollableRef = useRef<HTMLDivElement>(null);
 
   // Defer search query updates to keep typing responsive
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -301,6 +305,40 @@ export function NotesDirectoryPage() {
     }
   }, [currentPage, totalPages]);
 
+  // Scroll direction detection for floating pagination
+  useEffect(() => {
+    const scrollable = scrollableRef.current;
+    if (!scrollable) return;
+
+    const handleScroll = () => {
+      const currentScrollTop = scrollable.scrollTop;
+      const scrollDiff = currentScrollTop - lastScrollTop.current;
+
+      // Only trigger if scroll difference is significant (> 5px)
+      if (Math.abs(scrollDiff) > 5) {
+        // Scrolling down - show pagination
+        if (scrollDiff > 0) {
+          setShowPagination(true);
+        } else {
+          // Scrolling up - hide pagination
+          setShowPagination(false);
+        }
+      }
+
+      // Always show when at top or bottom
+      const isAtTop = currentScrollTop < 10;
+      const isAtBottom = scrollable.scrollHeight - scrollable.clientHeight - currentScrollTop < 10;
+      if (isAtTop || isAtBottom) {
+        setShowPagination(true);
+      }
+
+      lastScrollTop.current = currentScrollTop;
+    };
+
+    scrollable.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollable.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const isSelected = (folder: FolderFilter) => selectedFolder === folder;
 
   const getItemStyle = (itemId: string, selected: boolean) => ({
@@ -423,7 +461,7 @@ export function NotesDirectoryPage() {
       {/* Folder Sidebar */}
       {directorySidebarVisible && (
         <div
-          className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-64 md:w-72"
+          className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-[23rem]"
           style={{ borderColor: 'var(--border)' }}
         >
           {/* Navigation Items */}
@@ -616,6 +654,7 @@ export function NotesDirectoryPage() {
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
         {/* Notes Content */}
         <div
+          ref={scrollableRef}
           className="flex-1 overflow-y-auto p-6 thin-scrollbar transition-opacity duration-200"
           style={{ opacity: isSearchStale || isFetching ? 0.7 : 1 }}
         >
@@ -661,19 +700,35 @@ export function NotesDirectoryPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="border-t px-6 py-3" style={{ borderColor: 'var(--border)' }}>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-            />
-          </div>
-        )}
       </div>
+
+      {/* Floating Pagination */}
+      {totalPages > 1 && createPortal(
+        <div
+          className="fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl transition-all duration-300"
+          style={{
+            left: '50%',
+            bottom: isBulkMode ? '5.75rem' : '1.5rem',
+            backgroundColor: 'var(--surface-card-solid)',
+            borderColor: 'var(--border)',
+            boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
+            backdropFilter: 'blur(12px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            opacity: showPagination ? 1 : 0,
+            transform: `translate(-50%, ${showPagination ? '0' : '20px'})`,
+            pointerEvents: showPagination ? 'auto' : 'none',
+          }}
+        >
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>,
+        document.body
+      )}
 
       {/* Bulk Actions Bar */}
       {isBulkMode && (

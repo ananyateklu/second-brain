@@ -46,6 +46,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
         return isGrok &&
                _grokProvider != null &&
                settings.XAI.Enabled &&
+               settings.XAI.Features.EnableFunctionCalling &&
                request.Capabilities?.Count > 0;
     }
 
@@ -111,7 +112,8 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             }
         }
 
-        _logger.LogInformation("Registered {Count} tools for Grok", tools.Count);
+        _logger.LogInformation("Registered {Count} tools for Grok model {Model}: [{ToolNames}]",
+            tools.Count, request.Model, string.Join(", ", tools.Select(t => t.FunctionName)));
 
         // Build messages
         var messages = new List<OpenAIChatMessage>
@@ -129,14 +131,29 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             {
                 if (msg.ToolCalls != null && msg.ToolCalls.Any())
                 {
-                    var contextBuilder = new StringBuilder();
-                    if (!string.IsNullOrWhiteSpace(msg.Content))
-                        contextBuilder.AppendLine(msg.Content);
-                    contextBuilder.AppendLine("\n---SYSTEM CONTEXT (DO NOT REPRODUCE)---");
-                    foreach (var tc in msg.ToolCalls)
-                        contextBuilder.AppendLine($"  {tc.ToolName}: {tc.Result}");
-                    contextBuilder.AppendLine("---END SYSTEM CONTEXT---");
-                    messages.Add(new OpenAI.Chat.AssistantChatMessage(contextBuilder.ToString()));
+                    // CRITICAL: Use proper OpenAI tool message format, NOT embedded HTML comments.
+                    // Embedding tool results as text teaches the model to output similar patterns
+                    // instead of using the actual function calling API.
+
+                    // Generate stable IDs for historical tool calls
+                    var grokToolCalls = msg.ToolCalls.Select(tc => new Services.AI.Models.GrokToolCallInfo
+                    {
+                        Id = $"call_{ToolExecutor.GenerateToolId(tc.ToolName, tc.Arguments)}",
+                        Name = tc.ToolName,
+                        Arguments = tc.Arguments
+                    }).ToList();
+
+                    // Create assistant message with tool calls
+                    var assistantMsg = GrokProvider.CreateAssistantToolCallMessage(
+                        grokToolCalls,
+                        textContent: !string.IsNullOrWhiteSpace(msg.Content) ? msg.Content : null);
+                    messages.Add(assistantMsg);
+
+                    // Add tool result messages for each tool call
+                    foreach (var (tc, grokTc) in msg.ToolCalls.Zip(grokToolCalls))
+                    {
+                        messages.Add(GrokProvider.CreateToolResultMessage(grokTc.Id, tc.Result));
+                    }
                 }
                 else
                 {
@@ -190,7 +207,10 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             var pendingToolCalls = new List<Services.AI.Models.GrokToolCallInfo>();
             var iterationText = new StringBuilder();
             var hasEmittedFirstToken = false;
-            var lastSpeakableLength = 0; // Track how much speakable content we've already yielded
+            // IMPORTANT: Start from speakable content length (excluding thinking blocks) to avoid re-yielding
+            // content from previous iterations. Using fullResponse.Length would skip content when
+            // previous iterations contain thinking blocks.
+            var lastSpeakableLength = Helpers.ThinkingExtractor.StripThinkingBlocks(fullResponse.ToString()).Length;
 
             await foreach (var evt in _grokProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
@@ -278,6 +298,9 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
 
             fullResponse.Append(iterationText);
 
+            _logger.LogDebug("Grok iteration {Iteration} completed. Tool calls received: {ToolCallCount}, Text length: {TextLength}",
+                iteration, pendingToolCalls.Count, iterationText.Length);
+
             if (pendingToolCalls.Count > 0)
             {
                 yield return StatusEvent($"Executing {pendingToolCalls.Count} tool(s)...");
@@ -297,9 +320,17 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                     JsonNode.Parse(c.Arguments)
                 )).ToList();
 
-                var results = await ToolExecutor.ExecuteMultipleAsync(
+                // Use scope-isolated execution for parallel database safety
+                var executionContext = new PluginExecutionContext(
+                    UserId: request.UserId,
+                    Provider: request.Provider,
+                    Model: request.Model,
+                    AgentRagEnabled: request.AgentRagEnabled);
+
+                var results = await ToolExecutor.ExecuteMultipleWithScopeIsolationAsync(
                     toolCalls,
                     pluginMethods,
+                    executionContext,
                     settings.XAI.FunctionCalling.ParallelExecution,
                     cancellationToken);
 

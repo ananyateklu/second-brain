@@ -56,29 +56,17 @@ public class NoteCrudPlugin : NotePluginBase
   - **Always use GetNote first** to see current content before editing
   - Use for complete rewrites or when changing multiple fields
 
-- **AppendToNote**: Add content to the end of an existing note
-  - Use for adding items to lists, appending new information
-  - Much simpler than GetNote + UpdateNote when just adding content
-  - Example: 'add milk to my grocery list'
-
-- **PrependToNote**: Add content to the beginning of an existing note
-  - Use for adding headers, introductions, or priority items at the top
-  - Example: 'add URGENT header to meeting notes'
-
-- **ReplaceInNote**: Find and replace specific text within a note (surgical edit)
-  - Use for precise edits: fixing typos, renaming terms, updating specific phrases
-  - Requires exact text match (case-sensitive, whitespace-sensitive)
-  - By default, fails if text appears multiple times (safety feature)
-  - Set allowMultiple=true to replace all occurrences
-  - Use empty newText to delete text entirely
-  - Example: 'change all instances of 2024 to 2025'
-
-- **InsertInNote**: Insert text at a specific line number
-  - Line 0 = insert at the very beginning
-  - Line N = insert after line N
-  - Lines beyond note length append at end
-  - Use for inserting content in the middle of a note
-  - Example: 'add a new item between line 3 and 4'
+- **EditNote**: Surgical edit with 4 operations in one tool
+  - **operation='append'**: Add content to END of note (for lists, new sections)
+  - **operation='prepend'**: Add content to BEGINNING of note (for headers, priority items)
+  - **operation='insert'**: Insert at specific line number (lineNumber required)
+  - **operation='replace'**: Find and replace text (oldText required, case-sensitive)
+  - Does NOT require GetNote first (except for 'replace' to find exact text)
+  - Examples:
+    - 'add milk to list' -> EditNote with operation='append'
+    - 'add URGENT at top' -> EditNote with operation='prepend'
+    - 'fix typo X to Y' -> EditNote with operation='replace', oldText='X', content='Y'
+    - 'insert after line 3' -> EditNote with operation='insert', lineNumber=3
 
 - **DeleteNote**: Permanently remove a note
   - Only use when user explicitly requests deletion
@@ -88,17 +76,17 @@ public class NoteCrudPlugin : NotePluginBase
   - Use when user wants to use a note as a template
   - Can optionally specify a new title for the copy
 
-### Choosing the Right Edit Tool
+### Choosing the Right Edit Approach
 
-| Task | Best Tool |
-|------|-----------|
-| Fix a typo or specific word | ReplaceInNote |
-| Rename a term throughout | ReplaceInNote with allowMultiple=true |
-| Add to end of note/list | AppendToNote |
-| Add at beginning of note | PrependToNote |
-| Insert in middle of note | InsertInNote |
+| Task | Tool & Operation |
+|------|------------------|
+| Fix a typo or specific word | EditNote operation='replace' |
+| Rename a term throughout | EditNote operation='replace' allowMultiple=true |
+| Add to end of note/list | EditNote operation='append' |
+| Add at beginning of note | EditNote operation='prepend' |
+| Insert in middle of note | EditNote operation='insert' lineNumber=N |
 | Rewrite entire note | UpdateNote |
-| Remove specific text | ReplaceInNote with newText="""" |
+| Remove specific text | EditNote operation='replace' content='' |
 | Change multiple fields | UpdateNote |
 
 ### Large Content Strategy (IMPORTANT)
@@ -136,42 +124,41 @@ For complete rewrites:
 1. **GetNote** to retrieve current content
 2. **UpdateNote** with the new content
 
-### Image Attachment Tools
+### Image Management (ManageContextImages)
 
-When the user attaches images to their message, you can save them to notes:
+Use **ManageContextImages** to handle images attached to the current message:
 
-- **ListContextImages**: See what images are available in the current message
-  - Returns image references (img1, img2, etc.) for use in other tools
-  - Always call this first to see available images
+- **action='list'**: See available images (img1, img2, etc.)
+  - Always call this first to see what images are available
 
-- **CreateNoteWithImage**: Create a new note with image(s) attached
-  - Use when user says 'save this image as a note' or 'create a note with this image'
-  - Requires title, content, and image references (e.g., 'img1' or 'img1,img2')
+- **action='create'**: Create a new note with image(s) attached
+  - Requires: title, content, imageReferences (e.g., 'img1' or 'img1,img2')
+  - Use when: 'save this image as a note', 'create a note with this image'
 
-- **AttachImageToNote**: Attach image(s) to an existing note
-  - Use when user says 'attach this to my X note' or 'add this image to note Y'
-  - Use FindNoteForImageAttachment first if user doesn't provide exact note ID
+- **action='attach'**: Attach image(s) to an existing note
+  - Requires: noteId, imageReferences
+  - Use after 'find' action or when user provides note ID
 
-- **FindNoteForImageAttachment**: Search for a note to attach images to
-  - Uses semantic search with confidence score
-  - If score >= 80%: Proceed with AttachImageToNote automatically
-  - If score < 80%: Ask user to confirm the match before attaching
+- **action='find'**: Semantic search for note to attach images to
+  - Requires: searchQuery
+  - Returns: best match with confidence score
+  - If score >= 80%: Proceed with 'attach' action
+  - If score < 80%: Ask user to confirm the match first
 
-### Image Attachment Workflow
+### Image Workflow Examples
 
 **Scenario: 'Save this image as a note'**
-1. Call **ListContextImages** to see available images
-2. Call **CreateNoteWithImage** with title, content, and 'img1' (or multiple like 'img1,img2')
+1. ManageContextImages(action='list') -> see available images
+2. ManageContextImages(action='create', title='...', content='...', imageReferences='img1')
 
 **Scenario: 'Attach this to my meeting notes'**
-1. Call **ListContextImages** to see available images
-2. Call **FindNoteForImageAttachment** with 'meeting notes'
-3. If high confidence (>=80%): Call **AttachImageToNote** with the noteId
-4. If low confidence (<80%): Show the match and ask user to confirm
+1. ManageContextImages(action='list') -> see available images
+2. ManageContextImages(action='find', searchQuery='meeting notes')
+3. If high confidence: ManageContextImages(action='attach', noteId='...', imageReferences='img1')
+4. If low confidence: Ask user to confirm before attaching
 
-**Image Reference Format**: Use 'img1', 'img2', etc. to reference images (1-indexed).
-
-**Multi-Attach**: The same image can be attached to multiple notes. After attaching, the image will show as '[attached]' in ListContextImages but can still be used again.";
+**Image References**: Use 'img1', 'img2', etc. (1-indexed).
+**Multi-Attach**: Same image can be attached to multiple notes.";
 
     [KernelFunction("CreateNote")]
     [Description("CREATE a new note. Both 'title' AND 'content' are REQUIRED. Search first to avoid duplicates. For long content: create first section, then AppendToNote. Examples: 'save this as a note', 'create a note called X', 'remember this for later' -> CreateNote.")]
@@ -389,52 +376,6 @@ When the user attaches images to their message, you can save them to notes:
         }
     }
 
-    [KernelFunction("AppendToNote")]
-    [Description("ADD text to END of note. Does NOT replace existing content. Does NOT require GetNote first. Use for adding list items, new sections, logging info. Examples: 'add milk to grocery list', 'append these notes', 'put this at the end' -> AppendToNote.")]
-    public async Task<string> AppendToNoteAsync(
-        [Description("Note ID to append to")] string noteId,
-        [Description("Text to ADD at end (existing content preserved)")] string contentToAppend,
-        [Description("Add blank line before new content (default: true)")] bool addNewline = true)
-    {
-        var userError = ValidateUserContext("append to note");
-        if (userError != null) return userError;
-
-        if (string.IsNullOrWhiteSpace(contentToAppend))
-        {
-            return "Error: Content to append cannot be empty.";
-        }
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            var request = new AppendToNoteOperationRequest
-            {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                ContentToAppend = contentToAppend.Trim(),
-                AddNewline = addNewline,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.AppendAsync(request);
-
-            return result.Match(
-                onSuccess: op => $"Successfully appended content to note \"{op.Note.Title}\" (ID: {noteId}). Note now contains {op.Note.Content.Length} characters. Continue with additional AppendToNote calls if more sections remain.",
-                onFailure: error => $"Error appending to note: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("appending to note", ex.Message);
-        }
-    }
-
     [KernelFunction("DuplicateNote")]
     [Description("COPY a note to use as template. Creates new note with same content, tags, folder. Examples: 'make a copy of this', 'duplicate that note', 'use this as template' -> DuplicateNote.")]
     public async Task<string> DuplicateNoteAsync(
@@ -483,20 +424,28 @@ When the user attaches images to their message, you can save them to notes:
         }
     }
 
-    [KernelFunction("ReplaceInNote")]
-    [Description("FIND and REPLACE specific text. Use for typo fixes, term updates, removing text. Requires EXACT match (case-sensitive). Use GetNote first to find exact text. Use newText='' to delete. Examples: 'fix typo X to Y', 'change 2024 to 2025', 'remove the word draft' -> ReplaceInNote.")]
-    public async Task<string> ReplaceInNoteAsync(
-        [Description("Note ID to modify")] string noteId,
-        [Description("EXACT text to find (case-sensitive, include spaces)")] string oldText,
-        [Description("Replacement text (empty '' to delete)")] string newText,
-        [Description("Replace ALL matches? (default: false = fail if multiple)")] bool allowMultiple = false)
+    [KernelFunction("EditNote")]
+    [Description("Surgical edit: append/prepend/insert/replace text. operation='append' adds to end, 'prepend' adds to start, 'insert' at line#, 'replace' for find-replace. Examples: 'add milk to list' -> append, 'fix typo X to Y' -> replace.")]
+    public async Task<string> EditNoteAsync(
+        [Description("Note ID to edit")] string noteId,
+        [Description("Operation: 'append'|'prepend'|'insert'|'replace'")] string operation,
+        [Description("Content to add (for append/prepend/insert) or replacement text (for replace)")] string content,
+        [Description("Line number for 'insert' (0=beginning)")] int? lineNumber = null,
+        [Description("Text to find for 'replace' operation")] string? oldText = null,
+        [Description("Replace all occurrences? (default: false)")] bool allowMultiple = false,
+        [Description("Add blank line separator? (for append/prepend)")] bool addNewline = true)
     {
-        var userError = ValidateUserContext("replace in note");
+        var userError = ValidateUserContext("edit note");
         if (userError != null) return userError;
 
-        if (string.IsNullOrEmpty(oldText))
+        if (string.IsNullOrWhiteSpace(noteId))
         {
-            return "Error: oldText cannot be empty - specify the exact text to replace.";
+            return "Error: Note ID is required.";
+        }
+
+        if (string.IsNullOrWhiteSpace(operation))
+        {
+            return "Error: Operation is required. Use 'append', 'prepend', 'insert', or 'replace'.";
         }
 
         if (NoteOperationService == null)
@@ -504,385 +453,424 @@ When the user attaches images to their message, you can save them to notes:
             return "Error: Note operation service not available.";
         }
 
-        try
+        // Normalize operation to lowercase for comparison
+        var op = operation.Trim().ToLowerInvariant();
+
+        switch (op)
         {
-            var request = new ReplaceInNoteOperationRequest
+            case "append":
             {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                OldText = oldText,
-                NewText = newText ?? string.Empty,
-                AllowMultiple = allowMultiple,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.ReplaceInAsync(request);
-
-            return result.Match(
-                onSuccess: op =>
+                if (string.IsNullOrWhiteSpace(content))
                 {
-                    var action = string.IsNullOrEmpty(newText) ? "removed" : "replaced";
-                    var multipleNote = allowMultiple ? " (all occurrences)" : "";
-                    return $"Successfully {action} text in note \"{op.Note.Title}\" (ID: {noteId}){multipleNote}.";
-                },
-                onFailure: error => $"Error replacing text: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("replacing text in note", ex.Message);
-        }
-    }
+                    return "Error: Content to append cannot be empty.";
+                }
 
-    [KernelFunction("InsertInNote")]
-    [Description("INSERT text at specific LINE NUMBER. Line 0 = very beginning, line N = after line N. Use for adding content in the middle of a note. For end use AppendToNote, for beginning use PrependToNote. Examples: 'add a line after line 3', 'insert between X and Y' -> InsertInNote.")]
-    public async Task<string> InsertInNoteAsync(
-        [Description("Note ID to modify")] string noteId,
-        [Description("Line number to insert AFTER (0 = at start)")] int lineNumber,
-        [Description("Text to insert")] string textToInsert)
-    {
-        var userError = ValidateUserContext("insert in note");
-        if (userError != null) return userError;
-
-        if (string.IsNullOrEmpty(textToInsert))
-        {
-            return "Error: textToInsert cannot be empty.";
-        }
-
-        if (lineNumber < 0)
-        {
-            return "Error: lineNumber must be 0 or greater (0 = insert at beginning).";
-        }
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            var request = new InsertInNoteOperationRequest
-            {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                LineNumber = lineNumber,
-                TextToInsert = textToInsert,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.InsertInAsync(request);
-
-            return result.Match(
-                onSuccess: op =>
+                try
                 {
-                    var position = lineNumber == 0 ? "at the beginning" : $"after line {lineNumber}";
-                    return $"Successfully inserted text {position} in note \"{op.Note.Title}\" (ID: {noteId}).";
-                },
-                onFailure: error => $"Error inserting text: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("inserting text in note", ex.Message);
-        }
-    }
-
-    [KernelFunction("PrependToNote")]
-    [Description("ADD text to BEGINNING of note. Does NOT replace existing content. Does NOT require GetNote first. Use for adding headers, warnings, priority items at top. Examples: 'add URGENT at top', 'put this at the beginning', 'add a header' -> PrependToNote.")]
-    public async Task<string> PrependToNoteAsync(
-        [Description("Note ID to prepend to")] string noteId,
-        [Description("Text to ADD at beginning (existing content preserved)")] string contentToPrepend,
-        [Description("Add blank line after new content (default: true)")] bool addNewline = true)
-    {
-        var userError = ValidateUserContext("prepend to note");
-        if (userError != null) return userError;
-
-        if (string.IsNullOrWhiteSpace(contentToPrepend))
-        {
-            return "Error: Content to prepend cannot be empty.";
-        }
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            var request = new PrependToNoteOperationRequest
-            {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                ContentToPrepend = contentToPrepend.Trim(),
-                AddNewline = addNewline,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.PrependAsync(request);
-
-            return result.Match(
-                onSuccess: op => $"Successfully prepended content to note \"{op.Note.Title}\" (ID: {noteId}). Note now contains {op.Note.Content.Length} characters.",
-                onFailure: error => $"Error prepending to note: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("prepending to note", ex.Message);
-        }
-    }
-
-    #region Image Attachment Tools
-
-    [KernelFunction("ListContextImages")]
-    [Description("LIST images attached to the current message. Use to see available images before CreateNoteWithImage or AttachImageToNote. Returns image references (img1, img2, etc.) for use in other tools.")]
-    public Task<string> ListContextImagesAsync()
-    {
-        var userError = ValidateUserContext("list context images");
-        if (userError != null) return Task.FromResult(userError);
-
-        if (ContextImages.Count == 0)
-        {
-            return Task.FromResult("No images attached to the current message. Ask the user to attach images first if they want to save images to notes.");
-        }
-
-        var response = new
-        {
-            type = "context_images",
-            message = $"Found {ContextImages.Count} image(s) in current message",
-            images = ContextImages.Select(i => new
-            {
-                reference = $"img{i.Index + 1}",
-                referenceId = i.ReferenceId,
-                fileName = i.FileName ?? "unnamed",
-                mediaType = i.MediaType,
-                isAttached = i.IsAttached,
-                status = i.IsAttached ? "already attached to a note" : "available"
-            }).ToList(),
-            usage = "Use these references (e.g., 'img1') with CreateNoteWithImage or AttachImageToNote"
-        };
-
-        return Task.FromResult(JsonSerializer.Serialize(response));
-    }
-
-    [KernelFunction("CreateNoteWithImage")]
-    [Description("CREATE a new note with image(s) attached. Use when user says 'save this image as a note' or 'create a note with this image'. Requires images in current message (check with ListContextImages first).")]
-    public async Task<string> CreateNoteWithImageAsync(
-        [Description("Note title (required, descriptive)")] string title,
-        [Description("Note content (required, describes the image context)")] string content,
-        [Description("Image references to attach, comma-separated (e.g., 'img1' or 'img1,img2')")] string imageReferences,
-        [Description("Comma-separated tags for categorization")] string? tags = null)
-    {
-        var userError = ValidateUserContext("create note with image");
-        if (userError != null) return userError;
-
-        if (string.IsNullOrWhiteSpace(title))
-            return "Error: Note title is required.";
-
-        if (string.IsNullOrWhiteSpace(content))
-            return "Error: Note content is required.";
-
-        if (NoteOperationService == null)
-            return "Error: Note operation service not available.";
-
-        // Parse and validate image references
-        var (images, parseError) = ParseImageReferences(imageReferences);
-        if (parseError != null)
-            return $"Error: {parseError}";
-
-        if (images.Count == 0)
-            return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
-
-        try
-        {
-            // Convert context images to NoteImageDto
-            var imageDtos = images.Select(img => new NoteImageDto
-            {
-                Base64Data = img.Base64Data,
-                MediaType = img.MediaType,
-                FileName = img.FileName
-            }).ToList();
-
-            var request = new CreateNoteOperationRequest
-            {
-                UserId = CurrentUserId,
-                Title = title.Trim(),
-                Content = content.Trim(),
-                Tags = ParseTags(tags),
-                Images = imageDtos,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.CreateAsync(request);
-
-            return result.Match(
-                onSuccess: op =>
-                {
-                    // Mark images as attached for multi-attach tracking
-                    foreach (var img in images)
+                    var request = new AppendToNoteOperationRequest
                     {
-                        img.IsAttached = true;
-                    }
+                        NoteId = noteId,
+                        UserId = CurrentUserId,
+                        ContentToAppend = content.Trim(),
+                        AddNewline = addNewline,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
 
-                    var tagInfo = op.Note.Tags.Any()
-                        ? $" with tags: {string.Join(", ", op.Note.Tags)}"
-                        : "";
-                    return $"Successfully created note \"{op.Note.Title}\" (ID: {op.Note.Id}) with {images.Count} image(s) attached{tagInfo}. The images will be processed for AI descriptions in the background.";
-                },
-                onFailure: error => $"Error creating note with image: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("creating note with image", ex.Message);
-        }
-    }
+                    var result = await NoteOperationService.AppendAsync(request);
 
-    [KernelFunction("AttachImageToNote")]
-    [Description("ATTACH image(s) to an existing note. Use when user says 'attach this image to my X note' or 'add this image to note Y'. Use FindNoteForImageAttachment first if user doesn't provide exact note ID.")]
-    public async Task<string> AttachImageToNoteAsync(
-        [Description("Note ID to attach images to")] string noteId,
-        [Description("Image references to attach (e.g., 'img1' or 'img1,img2')")] string imageReferences)
-    {
-        var userError = ValidateUserContext("attach image to note");
-        if (userError != null) return userError;
-
-        if (NoteOperationService == null)
-            return "Error: Note operation service not available.";
-
-        // Verify note exists and user owns it
-        var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
-        if (note == null)
-            return $"Note with ID '{noteId}' not found or you don't have permission.";
-
-        // Parse and validate image references
-        var (images, parseError) = ParseImageReferences(imageReferences);
-        if (parseError != null)
-            return $"Error: {parseError}";
-
-        if (images.Count == 0)
-            return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
-
-        try
-        {
-            // Convert context images to NoteImageDto
-            var imageDtos = images.Select(img => new NoteImageDto
-            {
-                Base64Data = img.Base64Data,
-                MediaType = img.MediaType,
-                FileName = img.FileName
-            }).ToList();
-
-            var request = new UpdateNoteOperationRequest
-            {
-                NoteId = noteId,
-                UserId = CurrentUserId,
-                Images = imageDtos,
-                Source = NoteSource.Agent,
-                AiProvider = CurrentProvider,
-                AiModel = CurrentModel
-            };
-
-            var result = await NoteOperationService.UpdateAsync(request);
-
-            return result.Match(
-                onSuccess: op =>
+                    return result.Match(
+                        onSuccess: opResult => $"Successfully appended content to note \"{opResult.Note.Title}\" (ID: {noteId}). Note now contains {opResult.Note.Content.Length} characters.",
+                        onFailure: error => $"Error appending to note: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
                 {
-                    // Mark images as attached for multi-attach tracking
-                    foreach (var img in images)
-                    {
-                        img.IsAttached = true;
-                    }
-
-                    return $"Successfully attached {images.Count} image(s) to note \"{note.Title}\" (ID: {noteId}). The images will be processed for AI descriptions in the background.";
-                },
-                onFailure: error => $"Error attaching images: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("attaching image to note", ex.Message);
-        }
-    }
-
-    [KernelFunction("FindNoteForImageAttachment")]
-    [Description("SEARCH for a note to attach images to using semantic search. Returns best match with confidence score. If score > 0.8, you can proceed with AttachImageToNote. If score < 0.8, ask user to confirm the match first.")]
-    public async Task<string> FindNoteForImageAttachmentAsync(
-        [Description("Search query describing the note (e.g., 'meeting notes', 'project plan')")] string query)
-    {
-        var userError = ValidateUserContext("find note for image");
-        if (userError != null) return userError;
-
-        if (RagService == null)
-            return "Error: Search service not available.";
-
-        if (string.IsNullOrWhiteSpace(query))
-            return "Error: Search query is required.";
-
-        try
-        {
-            // Use semantic search to find matching notes via RetrieveContextAsync
-            var ragContext = await RagService.RetrieveContextAsync(
-                query: query.Trim(),
-                userId: CurrentUserId,
-                topK: 3,
-                options: UserRagOptions);
-
-            if (ragContext.RetrievedNotes.Count == 0)
-            {
-                return JsonSerializer.Serialize(new
-                {
-                    type = "note_search_result",
-                    found = false,
-                    message = "No matching notes found. Consider creating a new note with the image using CreateNoteWithImage instead.",
-                    contextImages = GetContextImagesSummary()
-                });
+                    return CreateErrorResponse("appending to note", ex.Message);
+                }
             }
 
-            var topResult = ragContext.RetrievedNotes[0];
-            var confidenceThreshold = 0.8f;
-            var isHighConfidence = topResult.SimilarityScore >= confidenceThreshold;
-
-            var response = new
+            case "prepend":
             {
-                type = "note_search_result",
-                found = true,
-                topMatch = new
+                if (string.IsNullOrWhiteSpace(content))
                 {
-                    noteId = topResult.NoteId,
-                    title = topResult.NoteTitle,
-                    score = topResult.SimilarityScore,
-                    scorePercent = $"{topResult.SimilarityScore:P0}",
-                    preview = topResult.Content?.Length > 100
-                        ? topResult.Content[..100] + "..."
-                        : topResult.Content
-                },
-                isHighConfidence,
-                recommendation = isHighConfidence
-                    ? $"High confidence match ({topResult.SimilarityScore:P0}). You can proceed with AttachImageToNote using noteId '{topResult.NoteId}'."
-                    : $"Best match is \"{topResult.NoteTitle}\" but confidence is only {topResult.SimilarityScore:P0}. Ask the user to confirm before attaching.",
-                alternatives = ragContext.RetrievedNotes.Skip(1).Select(r => new
-                {
-                    noteId = r.NoteId,
-                    title = r.NoteTitle,
-                    score = r.SimilarityScore,
-                    scorePercent = $"{r.SimilarityScore:P0}"
-                }).ToList(),
-                contextImages = GetContextImagesSummary()
-            };
+                    return "Error: Content to prepend cannot be empty.";
+                }
 
-            return JsonSerializer.Serialize(response);
+                try
+                {
+                    var request = new PrependToNoteOperationRequest
+                    {
+                        NoteId = noteId,
+                        UserId = CurrentUserId,
+                        ContentToPrepend = content.Trim(),
+                        AddNewline = addNewline,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
+
+                    var result = await NoteOperationService.PrependAsync(request);
+
+                    return result.Match(
+                        onSuccess: opResult => $"Successfully prepended content to note \"{opResult.Note.Title}\" (ID: {noteId}). Note now contains {opResult.Note.Content.Length} characters.",
+                        onFailure: error => $"Error prepending to note: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("prepending to note", ex.Message);
+                }
+            }
+
+            case "insert":
+            {
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    return "Error: Content to insert cannot be empty.";
+                }
+
+                if (lineNumber == null)
+                {
+                    return "Error: lineNumber is required for 'insert' operation. Use 0 to insert at beginning.";
+                }
+
+                if (lineNumber < 0)
+                {
+                    return "Error: lineNumber must be 0 or greater (0 = insert at beginning).";
+                }
+
+                try
+                {
+                    var request = new InsertInNoteOperationRequest
+                    {
+                        NoteId = noteId,
+                        UserId = CurrentUserId,
+                        LineNumber = lineNumber.Value,
+                        TextToInsert = content,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
+
+                    var result = await NoteOperationService.InsertInAsync(request);
+
+                    return result.Match(
+                        onSuccess: opResult =>
+                        {
+                            var position = lineNumber == 0 ? "at the beginning" : $"after line {lineNumber}";
+                            return $"Successfully inserted text {position} in note \"{opResult.Note.Title}\" (ID: {noteId}).";
+                        },
+                        onFailure: error => $"Error inserting text: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("inserting text in note", ex.Message);
+                }
+            }
+
+            case "replace":
+            {
+                if (string.IsNullOrEmpty(oldText))
+                {
+                    return "Error: oldText is required for 'replace' operation - specify the exact text to replace.";
+                }
+
+                try
+                {
+                    var request = new ReplaceInNoteOperationRequest
+                    {
+                        NoteId = noteId,
+                        UserId = CurrentUserId,
+                        OldText = oldText,
+                        NewText = content ?? string.Empty,
+                        AllowMultiple = allowMultiple,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
+
+                    var result = await NoteOperationService.ReplaceInAsync(request);
+
+                    return result.Match(
+                        onSuccess: opResult =>
+                        {
+                            var action = string.IsNullOrEmpty(content) ? "removed" : "replaced";
+                            var multipleNote = allowMultiple ? " (all occurrences)" : "";
+                            return $"Successfully {action} text in note \"{opResult.Note.Title}\" (ID: {noteId}){multipleNote}.";
+                        },
+                        onFailure: error => $"Error replacing text: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("replacing text in note", ex.Message);
+                }
+            }
+
+            default:
+                return $"Error: Unknown operation '{operation}'. Valid operations: 'append', 'prepend', 'insert', 'replace'.";
         }
-        catch (Exception ex)
+    }
+
+    #region Image Management Tool
+
+    [KernelFunction("ManageContextImages")]
+    [Description("Handle images in current message. action='list' to see available images, 'create' to make new note with image, 'attach' to add to existing note, 'find' to search for note to attach to. Examples: 'save this image' -> create, 'attach to my project note' -> find then attach.")]
+    public async Task<string> ManageContextImagesAsync(
+        [Description("Action: 'list'|'create'|'attach'|'find'")] string action,
+        [Description("Note title (for 'create')")] string? title = null,
+        [Description("Note content (for 'create')")] string? content = null,
+        [Description("Note ID (for 'attach')")] string? noteId = null,
+        [Description("Image refs e.g. 'img1,img2' (for 'create'/'attach')")] string? imageReferences = null,
+        [Description("Search query (for 'find')")] string? searchQuery = null,
+        [Description("Tags (for 'create')")] string? tags = null)
+    {
+        var userError = ValidateUserContext("manage context images");
+        if (userError != null) return userError;
+
+        if (string.IsNullOrWhiteSpace(action))
         {
-            return CreateErrorResponse("searching for note", ex.Message);
+            return "Error: Action is required. Use 'list', 'create', 'attach', or 'find'.";
+        }
+
+        var normalizedAction = action.Trim().ToLowerInvariant();
+
+        switch (normalizedAction)
+        {
+            case "list":
+            {
+                if (ContextImages.Count == 0)
+                {
+                    return "No images attached to the current message. Ask the user to attach images first if they want to save images to notes.";
+                }
+
+                var listResponse = new
+                {
+                    type = "context_images",
+                    message = $"Found {ContextImages.Count} image(s) in current message",
+                    images = ContextImages.Select(i => new
+                    {
+                        reference = $"img{i.Index + 1}",
+                        referenceId = i.ReferenceId,
+                        fileName = i.FileName ?? "unnamed",
+                        mediaType = i.MediaType,
+                        isAttached = i.IsAttached,
+                        status = i.IsAttached ? "already attached to a note" : "available"
+                    }).ToList(),
+                    usage = "Use these references (e.g., 'img1') with action='create' or action='attach'"
+                };
+
+                return JsonSerializer.Serialize(listResponse);
+            }
+
+            case "create":
+            {
+                if (string.IsNullOrWhiteSpace(title))
+                    return "Error: Note title is required for 'create' action.";
+
+                if (string.IsNullOrWhiteSpace(content))
+                    return "Error: Note content is required for 'create' action.";
+
+                if (string.IsNullOrWhiteSpace(imageReferences))
+                    return $"Error: imageReferences is required for 'create' action. Available: {GetContextImagesSummary()}";
+
+                if (NoteOperationService == null)
+                    return "Error: Note operation service not available.";
+
+                // Parse and validate image references
+                var (images, parseError) = ParseImageReferences(imageReferences);
+                if (parseError != null)
+                    return $"Error: {parseError}";
+
+                if (images.Count == 0)
+                    return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
+
+                try
+                {
+                    // Convert context images to NoteImageDto
+                    var imageDtos = images.Select(img => new NoteImageDto
+                    {
+                        Base64Data = img.Base64Data,
+                        MediaType = img.MediaType,
+                        FileName = img.FileName
+                    }).ToList();
+
+                    var createRequest = new CreateNoteOperationRequest
+                    {
+                        UserId = CurrentUserId,
+                        Title = title.Trim(),
+                        Content = content.Trim(),
+                        Tags = ParseTags(tags),
+                        Images = imageDtos,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
+
+                    var createResult = await NoteOperationService.CreateAsync(createRequest);
+
+                    return createResult.Match(
+                        onSuccess: op =>
+                        {
+                            // Mark images as attached for multi-attach tracking
+                            foreach (var img in images)
+                            {
+                                img.IsAttached = true;
+                            }
+
+                            var tagInfo = op.Note.Tags.Any()
+                                ? $" with tags: {string.Join(", ", op.Note.Tags)}"
+                                : "";
+                            return $"Successfully created note \"{op.Note.Title}\" (ID: {op.Note.Id}) with {images.Count} image(s) attached{tagInfo}. The images will be processed for AI descriptions in the background.";
+                        },
+                        onFailure: error => $"Error creating note with image: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("creating note with image", ex.Message);
+                }
+            }
+
+            case "attach":
+            {
+                if (string.IsNullOrWhiteSpace(noteId))
+                    return "Error: noteId is required for 'attach' action.";
+
+                if (string.IsNullOrWhiteSpace(imageReferences))
+                    return $"Error: imageReferences is required for 'attach' action. Available: {GetContextImagesSummary()}";
+
+                if (NoteOperationService == null)
+                    return "Error: Note operation service not available.";
+
+                // Verify note exists and user owns it
+                var note = await NoteRepository.GetByIdForUserAsync(noteId, CurrentUserId);
+                if (note == null)
+                    return $"Note with ID '{noteId}' not found or you don't have permission.";
+
+                // Parse and validate image references
+                var (images, parseError) = ParseImageReferences(imageReferences);
+                if (parseError != null)
+                    return $"Error: {parseError}";
+
+                if (images.Count == 0)
+                    return $"Error: No valid image references provided. Available: {GetContextImagesSummary()}";
+
+                try
+                {
+                    // Convert context images to NoteImageDto
+                    var imageDtos = images.Select(img => new NoteImageDto
+                    {
+                        Base64Data = img.Base64Data,
+                        MediaType = img.MediaType,
+                        FileName = img.FileName
+                    }).ToList();
+
+                    var updateRequest = new UpdateNoteOperationRequest
+                    {
+                        NoteId = noteId,
+                        UserId = CurrentUserId,
+                        Images = imageDtos,
+                        Source = NoteSource.Agent,
+                        AiProvider = CurrentProvider,
+                        AiModel = CurrentModel
+                    };
+
+                    var updateResult = await NoteOperationService.UpdateAsync(updateRequest);
+
+                    return updateResult.Match(
+                        onSuccess: op =>
+                        {
+                            // Mark images as attached for multi-attach tracking
+                            foreach (var img in images)
+                            {
+                                img.IsAttached = true;
+                            }
+
+                            return $"Successfully attached {images.Count} image(s) to note \"{note.Title}\" (ID: {noteId}). The images will be processed for AI descriptions in the background.";
+                        },
+                        onFailure: error => $"Error attaching images: {error.Message}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("attaching image to note", ex.Message);
+                }
+            }
+
+            case "find":
+            {
+                if (RagService == null)
+                    return "Error: Search service not available.";
+
+                if (string.IsNullOrWhiteSpace(searchQuery))
+                    return "Error: searchQuery is required for 'find' action.";
+
+                try
+                {
+                    // Use semantic search to find matching notes via RetrieveContextAsync
+                    var ragContext = await RagService.RetrieveContextAsync(
+                        query: searchQuery.Trim(),
+                        userId: CurrentUserId,
+                        topK: 3,
+                        options: UserRagOptions);
+
+                    if (ragContext.RetrievedNotes.Count == 0)
+                    {
+                        return JsonSerializer.Serialize(new
+                        {
+                            type = "note_search_result",
+                            found = false,
+                            message = "No matching notes found. Consider using action='create' to make a new note with the image instead.",
+                            contextImages = GetContextImagesSummary()
+                        });
+                    }
+
+                    var topResult = ragContext.RetrievedNotes[0];
+                    var confidenceThreshold = 0.8f;
+                    var isHighConfidence = topResult.SimilarityScore >= confidenceThreshold;
+
+                    var findResponse = new
+                    {
+                        type = "note_search_result",
+                        found = true,
+                        topMatch = new
+                        {
+                            noteId = topResult.NoteId,
+                            title = topResult.NoteTitle,
+                            score = topResult.SimilarityScore,
+                            scorePercent = $"{topResult.SimilarityScore:P0}",
+                            preview = topResult.Content?.Length > 100
+                                ? topResult.Content[..100] + "..."
+                                : topResult.Content
+                        },
+                        isHighConfidence,
+                        recommendation = isHighConfidence
+                            ? $"High confidence match ({topResult.SimilarityScore:P0}). You can proceed with action='attach', noteId='{topResult.NoteId}'."
+                            : $"Best match is \"{topResult.NoteTitle}\" but confidence is only {topResult.SimilarityScore:P0}. Ask the user to confirm before attaching.",
+                        alternatives = ragContext.RetrievedNotes.Skip(1).Select(r => new
+                        {
+                            noteId = r.NoteId,
+                            title = r.NoteTitle,
+                            score = r.SimilarityScore,
+                            scorePercent = $"{r.SimilarityScore:P0}"
+                        }).ToList(),
+                        contextImages = GetContextImagesSummary()
+                    };
+
+                    return JsonSerializer.Serialize(findResponse);
+                }
+                catch (Exception ex)
+                {
+                    return CreateErrorResponse("searching for note", ex.Message);
+                }
+            }
+
+            default:
+                return $"Error: Unknown action '{action}'. Valid actions: 'list', 'create', 'attach', 'find'.";
         }
     }
 

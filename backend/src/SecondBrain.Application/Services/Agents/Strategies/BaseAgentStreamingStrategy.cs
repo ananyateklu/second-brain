@@ -98,12 +98,13 @@ public abstract partial class BaseAgentStreamingStrategy : IAgentStreamingStrate
         ToolArguments = arguments
     };
 
-    protected static AgentStreamEvent ToolCallEndEvent(string toolName, string toolId, string result) => new()
+    protected static AgentStreamEvent ToolCallEndEvent(string toolName, string toolId, string result, string? thoughtSignature = null) => new()
     {
         Type = AgentEventType.ToolCallEnd,
         ToolName = toolName,
         ToolId = toolId,
-        ToolResult = result
+        ToolResult = result,
+        ThoughtSignature = thoughtSignature
     };
 
     protected static AgentStreamEvent ContextRetrievalEvent(

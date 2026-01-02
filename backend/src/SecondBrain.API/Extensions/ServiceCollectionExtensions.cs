@@ -308,6 +308,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
         services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();
         services.AddSingleton<IAgentRetryPolicy, AgentRetryPolicy>(); // Unified retry policy with exponential backoff
+        services.AddSingleton<IToolDiscoveryService, ToolDiscoveryService>(); // Tool Search Tool pattern for on-demand discovery
+
+        // Register Agent plugins (concrete types for scope-isolated parallel execution)
+        // Each plugin is scoped so parallel tool calls can get fresh instances with their own DbContext
+        services.AddScoped<NotesPlugin>();
+        services.AddScoped<GrokSearchPlugin>();
+        services.AddScoped<WebBrowsingPlugin>();
+        services.AddScoped<ToolSearchPlugin>();
 
         // Register Agent streaming strategies
         services.AddScoped<IAgentStreamingStrategy, AnthropicStreamingStrategy>();
@@ -804,10 +812,7 @@ public static class ServiceCollectionExtensions
                             activity.SetTag("ai.provider", "Grok");
                     };
                 })
-                .AddEntityFrameworkCoreInstrumentation(options =>
-                {
-                    options.SetDbStatementForText = true;
-                })
+                .AddEntityFrameworkCoreInstrumentation()
                 // Custom activity sources
                 .AddSource(TelemetryConfiguration.AIProviderSource.Name)
                 .AddSource(TelemetryConfiguration.RAGPipelineSource.Name)

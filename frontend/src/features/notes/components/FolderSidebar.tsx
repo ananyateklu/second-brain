@@ -138,12 +138,10 @@ export function FolderSidebar({
 
   return (
     <div
-      className="h-full flex flex-col border-r overflow-hidden"
+      className="h-full flex flex-col border-r overflow-hidden w-[23rem]"
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        width: '240px',
-        minWidth: '240px',
       }}
     >
       {/* Header */}

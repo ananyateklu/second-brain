@@ -122,12 +122,13 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     if (effectiveAgentEnabled && effectiveCapabilities.length > 0) {
       // Each capability defines multiple tools with their schemas
       // Actual tool counts based on backend plugin implementations:
-      // - Notes: 20 tools (CreateNote, GetNote, UpdateNote, DeleteNote, SearchNotes,
-      //   SemanticSearch, ListAllNotes, ListRecentNotes, ArchiveNote, UnarchiveNote,
-      //   DuplicateNote, AppendToNote, SearchByTags, GetNotesByDateRange, FindRelatedNotes,
-      //   ListArchivedNotes, MoveToFolder, ListFolders, ListAllTags, GetNoteStats)
+      // - Notes: ~15 tools (CreateNote, GetNote, UpdateNote, EditNote, DeleteNote,
+      //   SearchNotes, ListNotes, SetNoteArchived, DuplicateNote, MoveToFolder,
+      //   GetOverview, AnalyzeNote, CompareNotes, ManageContextImages, ViewNoteImages,
+      //   AnalyzeImage, GetNoteVersionHistory, GetVersion, CompareNoteVersions,
+      //   RestoreNoteVersion, ManageTrash)
       const toolsPerCapability: Record<string, number> = {
-        'notes': 20,
+        'notes': 15,
         'web': 2,
         'code': 3,
       };

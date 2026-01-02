@@ -187,6 +187,16 @@ public static partial class MarkdownToTipTapConverter
             return content;
         }
 
+        // Helper to safely add text node (skips null/empty)
+        void AddTextNodeIfValid(string nodeText, string[]? marks = null)
+        {
+            var node = CreateTextNode(nodeText, marks);
+            if (node != null)
+            {
+                content.Add(node);
+            }
+        }
+
         var remaining = text;
         while (remaining.Length > 0)
         {
@@ -195,7 +205,7 @@ public static partial class MarkdownToTipTapConverter
             if (boldMatch.Success && boldMatch.Index == 0)
             {
                 var boldText = boldMatch.Groups[1].Value;
-                content.Add(CreateTextNode(boldText, new[] { "bold" }));
+                AddTextNodeIfValid(boldText, new[] { "bold" });
                 remaining = remaining[boldMatch.Length..];
                 continue;
             }
@@ -205,7 +215,7 @@ public static partial class MarkdownToTipTapConverter
             if (italicMatch.Success && italicMatch.Index == 0)
             {
                 var italicText = italicMatch.Groups[1].Value;
-                content.Add(CreateTextNode(italicText, new[] { "italic" }));
+                AddTextNodeIfValid(italicText, new[] { "italic" });
                 remaining = remaining[italicMatch.Length..];
                 continue;
             }
@@ -215,7 +225,7 @@ public static partial class MarkdownToTipTapConverter
             if (codeMatch.Success && codeMatch.Index == 0)
             {
                 var codeText = codeMatch.Groups[1].Value;
-                content.Add(CreateTextNode(codeText, new[] { "code" }));
+                AddTextNodeIfValid(codeText, new[] { "code" });
                 remaining = remaining[codeMatch.Length..];
                 continue;
             }
@@ -225,7 +235,7 @@ public static partial class MarkdownToTipTapConverter
             if (strikeMatch.Success && strikeMatch.Index == 0)
             {
                 var strikeText = strikeMatch.Groups[1].Value;
-                content.Add(CreateTextNode(strikeText, new[] { "strike" }));
+                AddTextNodeIfValid(strikeText, new[] { "strike" });
                 remaining = remaining[strikeMatch.Length..];
                 continue;
             }
@@ -245,19 +255,19 @@ public static partial class MarkdownToTipTapConverter
             var nextSpecialIndex = FindNextSpecialIndex(remaining);
             if (nextSpecialIndex > 0)
             {
-                content.Add(CreateTextNode(remaining[..nextSpecialIndex]));
+                AddTextNodeIfValid(remaining[..nextSpecialIndex]);
                 remaining = remaining[nextSpecialIndex..];
             }
             else if (nextSpecialIndex == 0)
             {
                 // Special char at start but no pattern matched - consume one char
-                content.Add(CreateTextNode(remaining[..1]));
+                AddTextNodeIfValid(remaining[..1]);
                 remaining = remaining[1..];
             }
             else
             {
                 // No special chars found - add rest as plain text
-                content.Add(CreateTextNode(remaining));
+                AddTextNodeIfValid(remaining);
                 break;
             }
         }
@@ -282,8 +292,14 @@ public static partial class MarkdownToTipTapConverter
         return minIndex;
     }
 
-    private static JsonObject CreateTextNode(string text, string[]? marks = null)
+    private static JsonObject? CreateTextNode(string text, string[]? marks = null)
     {
+        // TipTap/ProseMirror does not allow empty text nodes
+        if (string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
         var node = new JsonObject
         {
             ["type"] = "text",

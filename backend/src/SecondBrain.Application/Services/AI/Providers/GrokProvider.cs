@@ -1098,10 +1098,22 @@ public class GrokProvider : IAIProvider
         };
 
         // Add tools to options
-        foreach (var tool in tools)
+        var toolsList = tools.ToList();
+        foreach (var tool in toolsList)
         {
             chatOptions.Tools.Add(tool);
         }
+
+        // Set tool_choice to "auto" to ensure the model considers using tools
+        // For Grok 4 models, this is critical to prevent the model from generating fake tool results
+        if (toolsList.Count > 0)
+        {
+            chatOptions.ToolChoice = ChatToolChoice.CreateAutoChoice();
+            _logger.LogDebug("Set ToolChoice to 'auto' for {Count} tools", toolsList.Count);
+        }
+
+        _logger.LogDebug("Added {Count} tools to Grok chat options for model {Model}: [{ToolNames}]",
+            toolsList.Count, model, string.Join(", ", toolsList.Select(t => t.FunctionName)));
 
         // Only set temperature if supported (Grok models generally support temperature)
         var temperature = settings?.Temperature ?? _settings.Temperature;
@@ -1342,9 +1354,30 @@ public class GrokProvider : IAIProvider
             }
 
             // Check finish reason
+            if (update.FinishReason.HasValue)
+            {
+                _logger.LogDebug("Grok stream finish reason: {FinishReason}, Accumulated tool calls: {ToolCallCount}",
+                    update.FinishReason, accumulatedToolCalls.Count);
+            }
+
             if (update.FinishReason == ChatFinishReason.ToolCalls && accumulatedToolCalls.Count > 0)
             {
+                _logger.LogInformation("Grok returning {Count} tool calls: [{ToolNames}]",
+                    accumulatedToolCalls.Count,
+                    string.Join(", ", accumulatedToolCalls.Values.Select(tc => tc.Name)));
+
                 // Yield all accumulated tool calls
+                yield return new GrokToolStreamEvent
+                {
+                    Type = GrokToolStreamEventType.ToolCalls,
+                    ToolCalls = accumulatedToolCalls.Values.ToList()
+                };
+            }
+            else if (update.FinishReason == ChatFinishReason.Stop && accumulatedToolCalls.Count > 0)
+            {
+                // Some Grok models might return Stop instead of ToolCalls but still have tool calls
+                _logger.LogWarning("Grok finished with Stop but has {Count} accumulated tool calls - emitting them anyway",
+                    accumulatedToolCalls.Count);
                 yield return new GrokToolStreamEvent
                 {
                     Type = GrokToolStreamEventType.ToolCalls,

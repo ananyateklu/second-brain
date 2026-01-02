@@ -153,7 +153,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
               className="text-sm font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
-              AI Suggestions
+              Suggestions
             </h3>
             <p
               className="text-xs"
@@ -376,8 +376,8 @@ const SuggestionItem = memo(function SuggestionItem({
     confidencePercent >= 80
       ? 'var(--color-success)'
       : confidencePercent >= 60
-      ? 'var(--color-warning)'
-      : 'var(--text-tertiary)';
+        ? 'var(--color-warning)'
+        : 'var(--text-tertiary)';
 
   return (
     <div

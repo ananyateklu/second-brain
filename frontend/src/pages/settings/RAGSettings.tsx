@@ -628,8 +628,8 @@ export function RAGSettings() {
                         disabled={isSavingRerankingProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                          color: isActive ? 'white' : 'var(--text-primary)',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
                         <span>{option.name}</span>
@@ -796,8 +796,8 @@ export function RAGSettings() {
                         disabled={isSavingHydeProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                          color: isActive ? 'white' : 'var(--text-primary)',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
                         <span>{option.name}</span>
@@ -943,8 +943,8 @@ export function RAGSettings() {
                         disabled={isSavingQueryExpansionProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                          color: isActive ? 'white' : 'var(--text-primary)',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
                         <span>{option.name}</span>
@@ -1097,8 +1097,8 @@ export function RAGSettings() {
                       disabled={isSavingVectorStore}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
                       style={{
-                        backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
-                        color: isActive ? 'white' : 'var(--text-primary)',
+                        backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                        color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                       }}
                     >
                       {option.id === 'PostgreSQL' ? (
@@ -1181,8 +1181,8 @@ export function RAGSettings() {
                       disabled={isSaving}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                       style={{
-                        backgroundColor: isEnabled ? 'var(--color-brand-600)' : 'transparent',
-                        color: isEnabled ? 'white' : 'var(--text-primary)',
+                        backgroundColor: isEnabled ? 'var(--btn-primary-bg)' : 'transparent',
+                        color: isEnabled ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                       }}
                     >
                       <span className={isEnabled ? '' : 'opacity-60'}>{feature.icon}</span>
@@ -1314,7 +1314,7 @@ export function RAGSettings() {
                                 disabled={isSaving}
                                 className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{
-                                  background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) 100%)`,
+                                  background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) ${((value - setting.min) / (setting.max - setting.min)) * 100}%, var(--border) 100%)`,
                                 }}
                               />
                             </div>
@@ -1387,7 +1387,7 @@ export function RAGSettings() {
                             disabled={savingAdvancedSetting === 'ragVectorWeight' || savingAdvancedSetting === 'ragBm25Weight'}
                             className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-10"
                             style={{
-                              background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${ragVectorWeight * 100}%, var(--border) ${ragVectorWeight * 100}%, var(--border) 100%)`,
+                              background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${ragVectorWeight * 100}%, var(--border) ${ragVectorWeight * 100}%, var(--border) 100%)`,
                             }}
                           />
                           {/* Vertical line indicator for Keyword (BM25) position */}
@@ -1476,7 +1476,7 @@ export function RAGSettings() {
                                 disabled={isSaving}
                                 className="w-full h-2 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{
-                                  background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`,
+                                  background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${percentage}%, var(--border) ${percentage}%, var(--border) 100%)`,
                                 }}
                               />
                             </div>

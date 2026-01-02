@@ -7,7 +7,6 @@ import { noteKeys, conversationKeys, statsKeys } from '../../lib/query-keys';
 import { notesService, chatService, statsService } from '../../services';
 import { CACHE } from '../../lib/constants';
 import { useTitleBarHeight } from './use-title-bar-height';
-import { useLongPress } from '../../hooks/use-long-press';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 import brainTopTab from '../../assets/brain-top-tab.png';
@@ -17,7 +16,6 @@ export function Sidebar() {
   const openCreateModal = useBoundStore((state) => state.openCreateModal);
   const sidebarState = useBoundStore((state) => state.sidebarState);
   const toggleSidebar = useBoundStore((state) => state.toggleSidebar);
-  const expandSidebar = useBoundStore((state) => state.expandSidebar);
   const theme = useBoundStore((state) => state.theme);
   const titleBarHeight = useTitleBarHeight();
   const logo = theme === 'light' ? logoLight : logoDark;
@@ -27,7 +25,6 @@ export function Sidebar() {
   const closeMobileMenu = useBoundStore((state) => state.closeMobileMenu);
 
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  const [holdProgress, setHoldProgress] = useState(0);
   const [isTemporarilyOpen, setIsTemporarilyOpen] = useState(false);
   const temporarySidebarRef = useRef<HTMLDivElement>(null);
   const hoverTriggerRef = useRef<HTMLDivElement>(null);
@@ -35,16 +32,13 @@ export function Sidebar() {
 
   // Handle mouse enter on hover trigger zone
   const handleHoverTriggerEnter = useCallback(() => {
-    // Don't show temporary sidebar if button is being pressed
-    if (holdProgress > 0) return;
-
     // Clear any pending close timeout
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
     setIsTemporarilyOpen(true);
-  }, [holdProgress]);
+  }, []);
 
   // Handle mouse leave from the temporary sidebar
   const handleTemporarySidebarLeave = useCallback(() => {
@@ -71,34 +65,16 @@ export function Sidebar() {
     };
   }, []);
 
-  // Long press hook for sidebar toggle button
-  // Quick click: toggles between closed ↔ collapsed (or expanded → collapsed)
-  // Hold 2s: expands to full sidebar
-  const { handlers: toggleHandlers, isPressed: isTogglePressed } = useLongPress({
-    onLongPress: () => {
-      // Only expand if not already expanded
-      if (sidebarState !== 'expanded') {
-        expandSidebar();
-      }
-    },
-    onShortPress: toggleSidebar,
-    duration: 2000,
-    onProgress: setHoldProgress,
-  });
+  // Handle sidebar toggle button click
+  const handleToggleClick = useCallback(() => {
+    toggleSidebar();
+  }, [toggleSidebar]);
 
-  // Long press hook for the closed-state edge button
-  const { handlers: edgeHandlers, isPressed: isEdgePressed } = useLongPress({
-    onLongPress: () => {
-      setIsTemporarilyOpen(false); // Close temporary sidebar first
-      expandSidebar();
-    },
-    onShortPress: () => {
-      setIsTemporarilyOpen(false); // Close temporary sidebar first
-      toggleSidebar();
-    },
-    duration: 2000,
-    onProgress: setHoldProgress,
-  });
+  // Handle edge button click (when sidebar is closed)
+  const handleEdgeClick = useCallback(() => {
+    setIsTemporarilyOpen(false);
+    toggleSidebar();
+  }, [toggleSidebar]);
 
   // Close mobile menu on escape key
   useEffect(() => {
@@ -184,7 +160,6 @@ export function Sidebar() {
   }, [queryClient]);
 
   const isCollapsed = sidebarState === 'collapsed';
-  const isExpanded = sidebarState === 'expanded';
   const isClosed = sidebarState === 'closed';
 
   // Calculate top position and height accounting for title bar
@@ -299,16 +274,17 @@ export function Sidebar() {
           />
           <button
             onClick={closeMobileMenu}
-            className="flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'var(--btn-primary-bg)',
+              border: '1px solid var(--btn-primary-border)',
+              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
             }}
             aria-label="Close menu"
           >
             <svg
               className="h-5 w-5"
-              style={{ color: 'var(--text-primary)' }}
+              style={{ color: 'var(--btn-primary-text)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -502,54 +478,25 @@ export function Sidebar() {
             <ThemeToggle />
           </div>
 
-          {/* Desktop toggle button with long-press support */}
-          {/* Quick click: toggle between closed ↔ collapsed (or expanded → collapsed) */}
-          {/* Hold 2s: expand to full sidebar */}
+          {/* Desktop toggle button */}
           <button
-            {...toggleHandlers}
-            className={`hidden md:flex group relative items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 overflow-hidden bg-[var(--surface-elevated)] border border-[var(--border)] shadow-[0_2px_8px_-2px_var(--color-primary-alpha)] hover:shadow-[0_6px_16px_-4px_var(--color-primary-alpha)] hover:border-[var(--color-primary)] ${isTogglePressed ? 'scale-95' : 'hover:scale-110 active:scale-95'}`}
-            aria-label={
-              isExpanded
-                ? 'Close sidebar (click) or collapse (hold)'
-                : isCollapsed
-                  ? 'Close sidebar (click) or expand (hold 2s)'
-                  : 'Open sidebar (click) or expand (hold 2s)'
-            }
+            onClick={handleToggleClick}
+            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-lg transition-all duration-300 overflow-hidden hover:scale-110 active:scale-95"
+            style={{
+              backgroundColor: 'var(--btn-primary-bg)',
+              border: '1px solid var(--btn-primary-border)',
+              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+            }}
+            aria-label={isCollapsed ? 'Close sidebar' : 'Open sidebar'}
           >
-            {/* Border progress indicator for long press - follows rounded corners */}
-            {holdProgress > 0 && (
-              <div
-                className="absolute inset-0 rounded-xl pointer-events-none z-20"
-                style={{
-                  background: `conic-gradient(from -90deg, var(--color-primary) ${holdProgress * 360}deg, transparent ${holdProgress * 360}deg)`,
-                  WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                  mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                  WebkitMaskComposite: 'xor',
-                  maskComposite: 'exclude',
-                  padding: '3px',
-                  boxShadow: '0 0 12px var(--color-primary)',
-                }}
-              />
-            )}
-
             {/* Ripple effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* Icon changes based on state */}
-            {isExpanded ? (
-              <svg
-                className="h-5 w-5 transition-all duration-300 group-hover:-translate-x-0.5 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--text-primary)' }}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            ) : isCollapsed ? (
+            {/* Icon: X when collapsed, arrows when closed */}
+            {isCollapsed ? (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: 'var(--btn-primary-text)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -559,7 +506,7 @@ export function Sidebar() {
             ) : (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--text-primary)' }}
+                style={{ color: 'var(--btn-primary-text)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -579,37 +526,18 @@ export function Sidebar() {
 
   // Green toggle button when sidebar is closed (desktop only)
   if (isClosed) {
-    const centerOffset = '50%';
-
     return (
       <>
-        {/* Desktop closed state button with long-press support */}
-        {/* Quick click: open to collapsed mode */}
-        {/* Hold 2s: open to expanded mode */}
+        {/* Desktop closed state button */}
         <button
-          {...edgeHandlers}
-          className={`hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-5 h-10 items-center justify-center rounded-r-xl transition-all duration-500 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)] ${isEdgePressed ? 'w-7 scale-95' : 'hover:w-7 hover:shadow-2xl active:scale-95'}`}
+          onClick={handleEdgeClick}
+          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-5 h-10 items-center justify-center rounded-r-xl transition-all duration-500 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)] hover:w-7 hover:shadow-2xl active:scale-95"
           style={{
-            top: centerOffset,
+            top: '50vh',
             color: 'var(--btn-primary-text)',
           }}
-          aria-label="Open sidebar (click) or expand (hold 2s)"
+          aria-label="Open sidebar"
         >
-          {/* Border progress indicator for long press - follows rounded corners */}
-          {holdProgress > 0 && (
-            <div
-              className="absolute inset-0 rounded-r-xl pointer-events-none z-20"
-              style={{
-                background: `conic-gradient(from -90deg, rgba(255, 255, 255, 0.9) ${holdProgress * 360}deg, transparent ${holdProgress * 360}deg)`,
-                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                WebkitMaskComposite: 'xor',
-                maskComposite: 'exclude',
-                padding: '2px',
-                boxShadow: '0 0 8px rgba(255, 255, 255, 0.5)',
-              }}
-            />
-          )}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <svg
             className="h-3.5 w-3.5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
@@ -634,7 +562,7 @@ export function Sidebar() {
         {/* Temporary sidebar that appears on hover */}
         <aside
           ref={temporarySidebarRef}
-          className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-72 flex-col p-6 transform transition-all duration-300 ease-out ${
+          className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-[23rem] flex-col p-6 transform transition-all duration-300 ease-out ${
             isTemporarilyOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
           }`}
           style={{
@@ -822,7 +750,7 @@ export function Sidebar() {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
+        className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-[23rem] px-6'
           }`}
         style={{
           top: topPosition,

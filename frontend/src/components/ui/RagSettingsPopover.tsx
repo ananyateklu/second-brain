@@ -25,9 +25,9 @@ export function RagSettingsPopover({
         className="flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all duration-200"
         style={{
           backgroundColor: ragEnabled
-            ? 'color-mix(in srgb, var(--color-accent-blue) 10%, var(--surface))'
+            ? 'color-mix(in srgb, var(--btn-primary-bg) 10%, var(--surface))'
             : 'var(--surface)',
-          borderColor: ragEnabled ? 'var(--color-accent-blue-border)' : 'var(--border)',
+          borderColor: ragEnabled ? 'var(--btn-primary-border)' : 'var(--border)',
         }}
       >
         <div className="flex items-center gap-2.5 flex-1">
@@ -35,9 +35,9 @@ export function RagSettingsPopover({
             className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               backgroundColor: ragEnabled
-                ? 'color-mix(in srgb, var(--color-accent-blue) 20%, transparent)'
+                ? 'var(--btn-primary-bg)'
                 : 'var(--surface-elevated)',
-              color: ragEnabled ? 'var(--color-accent-blue-text)' : 'var(--text-tertiary)',
+              color: ragEnabled ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
             }}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -76,8 +76,8 @@ export function RagSettingsPopover({
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}
           `}
           style={{
-            backgroundColor: ragEnabled ? 'var(--color-accent-blue)' : 'var(--border)',
-            boxShadow: ragEnabled ? '0 0 12px -2px var(--color-accent-blue)' : 'none',
+            backgroundColor: ragEnabled ? 'var(--btn-primary-bg)' : 'var(--border)',
+            boxShadow: ragEnabled ? '0 0 12px -2px var(--btn-primary-bg)' : 'none',
           }}
         >
           <span
@@ -112,16 +112,16 @@ export function RagSettingsPopover({
               `}
               style={{
                 backgroundColor: selectedVectorStore === 'PostgreSQL'
-                  ? 'color-mix(in srgb, var(--color-accent-blue) 15%, var(--surface))'
+                  ? 'var(--btn-primary-bg)'
                   : 'var(--surface)',
                 borderColor: selectedVectorStore === 'PostgreSQL'
-                  ? 'var(--color-accent-blue-border)'
+                  ? 'var(--btn-primary-border)'
                   : 'var(--border)',
                 color: selectedVectorStore === 'PostgreSQL'
-                  ? 'var(--color-accent-blue-text)'
+                  ? 'var(--btn-primary-text)'
                   : 'var(--text-secondary)',
                 boxShadow: selectedVectorStore === 'PostgreSQL'
-                  ? '0 0 8px -2px var(--color-accent-blue)'
+                  ? '0 0 8px -2px var(--btn-primary-bg)'
                   : 'none',
               }}
             >
@@ -148,16 +148,16 @@ export function RagSettingsPopover({
               `}
               style={{
                 backgroundColor: selectedVectorStore === 'Pinecone'
-                  ? 'color-mix(in srgb, var(--color-accent-blue) 15%, var(--surface))'
+                  ? 'var(--btn-primary-bg)'
                   : 'var(--surface)',
                 borderColor: selectedVectorStore === 'Pinecone'
-                  ? 'var(--color-accent-blue-border)'
+                  ? 'var(--btn-primary-border)'
                   : 'var(--border)',
                 color: selectedVectorStore === 'Pinecone'
-                  ? 'var(--color-accent-blue-text)'
+                  ? 'var(--btn-primary-text)'
                   : 'var(--text-secondary)',
                 boxShadow: selectedVectorStore === 'Pinecone'
-                  ? '0 0 8px -2px var(--color-accent-blue)'
+                  ? '0 0 8px -2px var(--btn-primary-bg)'
                   : 'none',
               }}
             >

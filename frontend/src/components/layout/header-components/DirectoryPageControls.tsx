@@ -167,7 +167,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const noteCount = headerState?.noteCount ?? 0;
 
   // Fixed width left section to align with sidebar border position
-  const leftSectionWidth = 'w-[18rem] md:w-[12.5rem] justify-end';
+  const leftSectionWidth = 'w-[18rem] md:w-[17.5rem] justify-end';
 
   const renderDropdownMenu = (isOpen: boolean, children: React.ReactNode) => {
     if (!isOpen) return null;
@@ -189,9 +189,10 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   };
 
   const filterButtonStyle = (isActive: boolean) => ({
-    backgroundColor: isActive ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
-    color: isActive ? '#ffffff' : 'var(--text-primary)',
-    border: `1px solid ${isActive ? 'var(--color-brand-600)' : 'var(--border)'}`,
+    backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+    color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+    border: `1px solid ${isActive ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+    boxShadow: isActive ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
   });
 
   return (
@@ -201,11 +202,12 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         {/* Sidebar Toggle */}
         <button
           onClick={toggleDirectorySidebar}
-          className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+          className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: directorySidebarVisible ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
-            color: directorySidebarVisible ? 'var(--color-primary)' : 'var(--text-primary)',
-            border: `1px solid ${directorySidebarVisible ? 'var(--color-primary)' : 'var(--border)'}`,
+            backgroundColor: directorySidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+            color: directorySidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+            border: `1px solid ${directorySidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+            boxShadow: directorySidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={directorySidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -230,7 +232,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           value={searchQuery}
           onChange={handleSearchChange}
           placeholder="Search notes..."
-          className="px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
+          className="px-4 py-2 my-1 rounded-xl border text-sm backdrop-blur-md transition-all focus:outline-none"
           style={{
             backgroundColor: 'var(--surface-elevated)',
             borderColor: 'var(--border)',
@@ -249,7 +251,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         <button
           onClick={toggleSearchMode}
           onMouseDown={(e) => e.preventDefault()}
-          className="flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg border text-xs font-medium transition-all hover:scale-105 active:scale-95"
+          className="flex items-center justify-center gap-1 px-3 py-2.5 my-1 rounded-xl border text-xs font-medium backdrop-blur-md transition-all hover:scale-105 active:scale-95"
           style={filterButtonStyle(true)}
           title={`Search mode: ${getSearchModeTitle()}`}
         >
@@ -274,7 +276,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       <div ref={dateDropdownRef} className="relative flex-shrink-0">
         <button
           onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-1 px-3 py-2.5 my-1 rounded-xl text-xs font-medium backdrop-blur-md transition-all hover:scale-105 active:scale-95"
           style={filterButtonStyle(isDateDropdownOpen || filterState.dateFilter !== 'all')}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -293,8 +295,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
                 onClick={() => handleDateFilterChange(filter)}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
                 style={{
-                  backgroundColor: filterState.dateFilter === filter ? 'var(--color-brand-600)' : 'transparent',
-                  color: filterState.dateFilter === filter ? '#ffffff' : 'var(--text-primary)',
+                  backgroundColor: filterState.dateFilter === filter ? 'var(--btn-primary-bg)' : 'transparent',
+                  color: filterState.dateFilter === filter ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                 }}
               >
                 {filter === 'all' ? 'All time' :
@@ -313,7 +315,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         <div ref={tagDropdownRef} className="relative flex-shrink-0">
           <button
             onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-1 px-3 py-2.5 my-1 rounded-xl text-xs font-medium backdrop-blur-md transition-all hover:scale-105 active:scale-95"
             style={filterButtonStyle(isTagDropdownOpen || filterState.selectedTags.length > 0)}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -322,8 +324,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
             <span className="hidden lg:inline">Tags</span>
             {filterState.selectedTags.length > 0 && (
               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold" style={{
-                backgroundColor: isTagDropdownOpen || filterState.selectedTags.length > 0 ? '#ffffff' : 'var(--color-brand-600)',
-                color: isTagDropdownOpen || filterState.selectedTags.length > 0 ? 'var(--color-brand-600)' : '#ffffff',
+                backgroundColor: isTagDropdownOpen || filterState.selectedTags.length > 0 ? 'var(--btn-primary-text)' : 'var(--btn-primary-bg)',
+                color: isTagDropdownOpen || filterState.selectedTags.length > 0 ? 'var(--btn-primary-bg)' : 'var(--btn-primary-text)',
               }}>
                 {filterState.selectedTags.length}
               </span>
@@ -339,8 +341,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
                   key={tag}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all"
                   style={{
-                    backgroundColor: filterState.selectedTags.includes(tag) ? 'var(--color-brand-600)' : 'transparent',
-                    color: filterState.selectedTags.includes(tag) ? '#ffffff' : 'var(--text-primary)',
+                    backgroundColor: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-bg)' : 'transparent',
+                    color: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                   }}
                 >
                   <input
@@ -361,7 +363,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       <div ref={sortDropdownRef} className="relative flex-shrink-0">
         <button
           onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-1 px-3 py-2.5 my-1 rounded-xl text-xs font-medium backdrop-blur-md transition-all hover:scale-105 active:scale-95"
           style={filterButtonStyle(isSortDropdownOpen || filterState.sortBy !== 'newest')}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -380,8 +382,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
                 onClick={() => handleSortChange(sort)}
                 className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
                 style={{
-                  backgroundColor: filterState.sortBy === sort ? 'var(--color-brand-600)' : 'transparent',
-                  color: filterState.sortBy === sort ? '#ffffff' : 'var(--text-primary)',
+                  backgroundColor: filterState.sortBy === sort ? 'var(--btn-primary-bg)' : 'transparent',
+                  color: filterState.sortBy === sort ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                 }}
               >
                 {sort === 'newest' ? 'Newest first' :
@@ -401,7 +403,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         {/* Select/Bulk Mode Button */}
         <button
           onClick={handleBulkModeToggle}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-1 px-3 py-2.5 my-1 rounded-xl text-xs font-medium backdrop-blur-md transition-all hover:scale-105 active:scale-95"
           style={filterButtonStyle(isBulkMode)}
         >
           {isBulkMode ? (
@@ -422,7 +424,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         </button>
 
         {/* Note count */}
-        <span className="text-xs px-2 py-1 rounded-lg" style={{
+        <span className="text-xs px-3 py-2.5 my-1 rounded-xl backdrop-blur-md" style={{
           color: 'var(--text-secondary)',
           backgroundColor: 'var(--surface-elevated)',
           border: '1px solid var(--border)',

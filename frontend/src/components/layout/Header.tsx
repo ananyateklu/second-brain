@@ -6,6 +6,7 @@ import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
 import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls } from './header-components';
+import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -70,6 +71,10 @@ export function Header() {
   // Insights state
   const activeInsightsTab = useBoundStore((state) => state.activeInsightsTab);
   const setActiveInsightsTab = useBoundStore((state) => state.setActiveInsightsTab);
+
+  // Chat page selection mode state
+  const chatHeaderState = useChatHeaderState();
+  const isChatSelectionMode = isChatPage && chatHeaderState?.isSelectionMode;
 
   return (
     <>
@@ -158,15 +163,17 @@ export function Header() {
         }}
       >
         <div className="flex justify-between w-full pb-2">
-          {/* Left side - Page Title */}
-          <div className="flex items-center h-12">
-            <h1
-              className="text-xl font-medium"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {pageTitle}
-            </h1>
-          </div>
+          {/* Left side - Page Title (hidden in chat selection mode) */}
+          {!isChatSelectionMode && (
+            <div className="flex items-center h-12">
+              <h1
+                className="text-xl font-medium"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {pageTitle}
+              </h1>
+            </div>
+          )}
 
           {/* Right side - Page-specific controls and User Menu */}
           {/* Chat Page - Full-width controls */}
@@ -187,46 +194,51 @@ export function Header() {
               <UserMenu />
             </div>
           ) : (
-            <div className="flex items-center gap-4 h-12">
-              {/* Insights Tab Bar - Only on Insights page */}
-              {isInsightsPage && (
-                <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
-              )}
+            <div className="flex items-start gap-4 min-h-12 flex-1 flex-wrap flex-row-reverse">
+              {/* Fixed right section - Focus, Indicators, User Menu (first in DOM, appears on right due to row-reverse) */}
+              <div className="flex items-center gap-4 shrink-0">
+                {/* Focus Indicator - On all pages except Dashboard (shows when focus is active) */}
+                {!isDashboardPage && <HeaderFocusIndicator />}
+
+                {/* Summary Generation Indicator */}
+                <SummaryIndicator />
+
+                {/* Indexing Indicator */}
+                <IndexingIndicator />
+
+                {/* User Menu */}
+                <UserMenu />
+              </div>
+
+              {/* Page-specific controls - These can wrap when space is limited */}
+
+              {/* GitHub Navigation */}
+              {isGitHubPage && <GitHubNavTabs />}
+
+              {/* GitHub Repo Selector */}
+              {isGitHubPage && <GitHubRepoSelector />}
+
+              {/* GitHub Branch Selector - Only on Code tab */}
+              {isGitHubPage && githubActiveTab === 'code' && <GitHubBranchSelector />}
+
+              {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
+              {showGitControls && <GitNavControls />}
+
+              {/* Settings Navigation - Only on Settings pages */}
+              {isSettingsPage && <SettingsNavTabs />}
 
               {/* RAG Analytics Tab Bar - Only on Analytics page (legacy) */}
               {isRagAnalyticsPage && (
                 <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
               )}
 
-              {/* Settings Navigation - Only on Settings pages */}
-              {isSettingsPage && <SettingsNavTabs />}
-
-              {/* Git Navigation Controls - On GitHub page when Local Changes tab is active */}
-              {showGitControls && <GitNavControls />}
-
-              {/* GitHub Repo Selector - Always visible on GitHub page so users can switch repos even on error */}
-              {isGitHubPage && <GitHubRepoSelector />}
-
-              {/* GitHub Branch Selector - Only on Code tab */}
-              {isGitHubPage && githubActiveTab === 'code' && <GitHubBranchSelector />}
-
-              {/* GitHub Navigation - Only on GitHub page */}
-              {isGitHubPage && <GitHubNavTabs />}
+              {/* Insights Tab Bar - Only on Insights page */}
+              {isInsightsPage && (
+                <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+              )}
 
               {/* Focus Dashboard Controls - Only on Dashboard page */}
               {isDashboardPage && <FocusDashboardControls />}
-
-              {/* Focus Indicator - On all pages except Dashboard (shows when focus is active) */}
-              {!isDashboardPage && <HeaderFocusIndicator />}
-
-              {/* Summary Generation Indicator */}
-              <SummaryIndicator />
-
-              {/* Indexing Indicator */}
-              <IndexingIndicator />
-
-              {/* User Menu */}
-              <UserMenu />
             </div>
           )}
         </div>

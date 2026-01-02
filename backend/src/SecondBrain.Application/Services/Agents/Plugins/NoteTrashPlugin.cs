@@ -12,7 +12,7 @@ namespace SecondBrain.Application.Services.Agents.Plugins;
 
 /// <summary>
 /// Plugin handling trash/soft-delete operations for notes:
-/// ListDeletedNotes, RestoreDeletedNote, PermanentlyDeleteNote.
+/// ManageTrash (list, restore, delete actions).
 /// </summary>
 public class NoteTrashPlugin : NotePluginBase
 {
@@ -35,169 +35,170 @@ public class NoteTrashPlugin : NotePluginBase
     public override string GetSystemPromptAddition() => @"
 ### Trash Management Tools
 
-- **ListDeletedNotes**: View notes in the trash
-  - Shows soft-deleted notes that can be restored
-  - Use when user asks ""show trash"" or ""show deleted notes""
+- **ManageTrash**: Unified trash management (action: 'list'|'restore'|'delete')
+  - action='list': View deleted notes in trash (use when user asks ""show trash"")
+  - action='restore': Recover a deleted note (use when user asks ""restore this note"")
+  - action='delete': Permanently remove a note - CANNOT BE UNDONE (only when user explicitly confirms)
+  - Examples: ""show trash"" -> action='list', ""restore note X"" -> action='restore' + noteId, ""empty this from trash"" -> action='delete' + noteId";
 
-- **RestoreDeletedNote**: Restore a note from trash
-  - Brings the note back to active notes
-  - Use when user asks ""restore this note"" or ""undelete""
-
-- **PermanentlyDeleteNote**: Permanently delete a note from trash
-  - This action cannot be undone - the note is gone forever
-  - Only use when user explicitly confirms permanent deletion";
-
-    [KernelFunction("ListDeletedNotes")]
-    [Description("Lists all notes in the trash (soft-deleted notes). These notes can be restored or permanently deleted.")]
-    public async Task<string> ListDeletedNotesAsync(
-        [Description("Maximum number of deleted notes to list (default: 20)")] int maxResults = 20)
+    [KernelFunction("ManageTrash")]
+    [Description("Manage deleted notes. action='list' to view trash, 'restore' to recover a note, 'delete' to permanently remove (CANNOT BE UNDONE). Examples: 'show trash' -> list, 'restore note X' -> restore, 'empty this from trash' -> delete.")]
+    public async Task<string> ManageTrashAsync(
+        [Description("Action: 'list'|'restore'|'delete'")] string action,
+        [Description("Note ID (for 'restore'/'delete')")] string? noteId = null,
+        [Description("Max results (for 'list')")] int maxResults = 20)
     {
-        var userError = ValidateUserContext("list deleted notes");
+        var userError = ValidateUserContext("manage trash");
         if (userError != null) return userError;
 
-        try
+        var normalizedAction = action.ToLowerInvariant();
+
+        // Handle "list" action
+        if (normalizedAction == "list")
         {
-            var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
-            var notesList = deletedNotes
-                .OrderByDescending(n => n.DeletedAt)
-                .Take(maxResults)
-                .ToList();
-
-            if (!notesList.Any())
+            try
             {
-                return "Your trash is empty. No deleted notes found.";
-            }
+                var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
+                var notesList = deletedNotes
+                    .OrderByDescending(n => n.DeletedAt)
+                    .Take(maxResults)
+                    .ToList();
 
-            var noteData = notesList.Select(n => new
-            {
-                id = n.Id,
-                title = n.Title,
-                preview = GetContentPreview(n.Content),
-                tags = n.Tags,
-                folder = n.Folder,
-                deletedAt = n.DeletedAt,
-                deletedBy = n.DeletedBy,
-                createdAt = n.CreatedAt,
-                updatedAt = n.UpdatedAt
-            }).ToList();
-
-            var response = new
-            {
-                type = "deletedNotes",
-                message = $"Found {notesList.Count} deleted note(s) in trash",
-                notes = noteData,
-                hint = "Use RestoreDeletedNote to restore a note, or PermanentlyDeleteNote to remove it forever."
-            };
-
-            return JsonSerializer.Serialize(response);
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("listing deleted notes", ex.Message);
-        }
-    }
-
-    [KernelFunction("RestoreDeletedNote")]
-    [Description("Restores a soft-deleted note from the trash back to active notes. Use this when the user wants to recover a deleted note.")]
-    public async Task<string> RestoreDeletedNoteAsync(
-        [Description("The ID of the deleted note to restore")] string noteId)
-    {
-        var userError = ValidateUserContext("restore deleted note");
-        if (userError != null) return userError;
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            // Get the deleted notes to verify the note exists in trash
-            var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
-            var deletedNote = deletedNotes.FirstOrDefault(n => n.Id == noteId);
-
-            if (deletedNote == null)
-            {
-                return $"Note with ID \"{noteId}\" not found in trash. It may have already been restored or permanently deleted.";
-            }
-
-            var noteTitle = deletedNote.Title;
-
-            var result = await NoteOperationService.RestoreDeletedAsync(noteId, CurrentUserId, NoteSource.Agent);
-
-            return result.Match(
-                onSuccess: op =>
+                if (!notesList.Any())
                 {
-                    var response = new
+                    return "Your trash is empty. No deleted notes found.";
+                }
+
+                var noteData = notesList.Select(n => new
+                {
+                    id = n.Id,
+                    title = n.Title,
+                    preview = GetContentPreview(n.Content),
+                    tags = n.Tags,
+                    folder = n.Folder,
+                    deletedAt = n.DeletedAt,
+                    deletedBy = n.DeletedBy,
+                    createdAt = n.CreatedAt,
+                    updatedAt = n.UpdatedAt
+                }).ToList();
+
+                return JsonSerializer.Serialize(new
+                {
+                    type = "deletedNotes",
+                    message = $"Found {notesList.Count} deleted note(s) in trash",
+                    notes = noteData,
+                    hint = "Use action='restore' with noteId to restore a note, or action='delete' with noteId to remove it forever."
+                });
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorResponse("listing deleted notes", ex.Message);
+            }
+        }
+
+        // Handle "restore" action
+        if (normalizedAction == "restore")
+        {
+            if (string.IsNullOrWhiteSpace(noteId))
+            {
+                return "Note ID is required for 'restore' action.";
+            }
+
+            if (NoteOperationService == null)
+            {
+                return "Error: Note operation service not available.";
+            }
+
+            try
+            {
+                // Get the deleted notes to verify the note exists in trash
+                var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
+                var deletedNote = deletedNotes.FirstOrDefault(n => n.Id == noteId);
+
+                if (deletedNote == null)
+                {
+                    return $"Note with ID \"{noteId}\" not found in trash. It may have already been restored or permanently deleted.";
+                }
+
+                var noteTitle = deletedNote.Title;
+
+                var result = await NoteOperationService.RestoreDeletedAsync(noteId, CurrentUserId, NoteSource.Agent);
+
+                return result.Match(
+                    onSuccess: op =>
                     {
-                        type = "noteRestored",
-                        message = $"Successfully restored note \"{noteTitle}\" from trash",
-                        noteId = op.Note.Id,
-                        noteTitle = op.Note.Title,
-                        restoredNote = new
+                        return JsonSerializer.Serialize(new
                         {
-                            id = op.Note.Id,
-                            title = op.Note.Title,
-                            preview = GetContentPreview(op.Note.Content),
-                            tags = op.Note.Tags,
-                            folder = op.Note.Folder,
-                            isArchived = op.Note.IsArchived
-                        }
-                    };
-                    return JsonSerializer.Serialize(response);
-                },
-                onFailure: error => $"Error restoring note: {error.Message}"
-            );
-        }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("restoring deleted note", ex.Message);
-        }
-    }
-
-    [KernelFunction("PermanentlyDeleteNote")]
-    [Description("Permanently deletes a note from the trash. WARNING: This action cannot be undone. Only use when the user explicitly confirms permanent deletion.")]
-    public async Task<string> PermanentlyDeleteNoteAsync(
-        [Description("The ID of the deleted note to permanently remove")] string noteId)
-    {
-        var userError = ValidateUserContext("permanently delete note");
-        if (userError != null) return userError;
-
-        if (NoteOperationService == null)
-        {
-            return "Error: Note operation service not available.";
-        }
-
-        try
-        {
-            // Get the deleted notes to verify the note exists in trash
-            var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
-            var deletedNote = deletedNotes.FirstOrDefault(n => n.Id == noteId);
-
-            if (deletedNote == null)
+                            type = "noteRestored",
+                            message = $"Successfully restored note \"{noteTitle}\" from trash",
+                            noteId = op.Note.Id,
+                            noteTitle = op.Note.Title,
+                            restoredNote = new
+                            {
+                                id = op.Note.Id,
+                                title = op.Note.Title,
+                                preview = GetContentPreview(op.Note.Content),
+                                tags = op.Note.Tags,
+                                folder = op.Note.Folder,
+                                isArchived = op.Note.IsArchived
+                            }
+                        });
+                    },
+                    onFailure: error => $"Error restoring note: {error.Message}"
+                );
+            }
+            catch (Exception ex)
             {
-                return $"Note with ID \"{noteId}\" not found in trash. It may have already been permanently deleted or was never in the trash.";
+                return CreateErrorResponse("restoring deleted note", ex.Message);
+            }
+        }
+
+        // Handle "delete" action
+        if (normalizedAction == "delete")
+        {
+            if (string.IsNullOrWhiteSpace(noteId))
+            {
+                return "Note ID is required for 'delete' action.";
             }
 
-            var noteTitle = deletedNote.Title;
+            if (NoteOperationService == null)
+            {
+                return "Error: Note operation service not available.";
+            }
 
-            var result = await NoteOperationService.PermanentDeleteAsync(noteId, CurrentUserId);
+            try
+            {
+                // Get the deleted notes to verify the note exists in trash
+                var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
+                var deletedNote = deletedNotes.FirstOrDefault(n => n.Id == noteId);
 
-            return result.Match(
-                onSuccess: success =>
+                if (deletedNote == null)
                 {
-                    if (success)
+                    return $"Note with ID \"{noteId}\" not found in trash. It may have already been permanently deleted or was never in the trash.";
+                }
+
+                var noteTitle = deletedNote.Title;
+
+                var result = await NoteOperationService.PermanentDeleteAsync(noteId, CurrentUserId);
+
+                return result.Match(
+                    onSuccess: success =>
                     {
-                        return $"Permanently deleted note \"{noteTitle}\" (ID: {noteId}). This action cannot be undone.";
-                    }
-                    return $"Failed to permanently delete note \"{noteTitle}\".";
-                },
-                onFailure: error => $"Error permanently deleting note: {error.Message}"
-            );
+                        if (success)
+                        {
+                            return $"Permanently deleted note \"{noteTitle}\" (ID: {noteId}). This action cannot be undone.";
+                        }
+                        return $"Failed to permanently delete note \"{noteTitle}\".";
+                    },
+                    onFailure: error => $"Error permanently deleting note: {error.Message}"
+                );
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorResponse("permanently deleting note", ex.Message);
+            }
         }
-        catch (Exception ex)
-        {
-            return CreateErrorResponse("permanently deleting note", ex.Message);
-        }
+
+        return $"Unknown action '{action}'. Valid actions are: 'list', 'restore', 'delete'.";
     }
 }
