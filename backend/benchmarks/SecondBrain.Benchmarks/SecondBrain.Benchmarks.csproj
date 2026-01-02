@@ -9,6 +9,8 @@
     <!-- BenchmarkDotNet recommends Release builds -->
     <Configuration>Release</Configuration>
     <Optimize>true</Optimize>
+    <!-- Suppress Grpc.Net.ClientFactory version warning - we don't use gRPC clients directly -->
+    <SuppressCheckGrpcNetClientFactoryVersion>true</SuppressCheckGrpcNetClientFactoryVersion>
   </PropertyGroup>
 
   <ItemGroup>

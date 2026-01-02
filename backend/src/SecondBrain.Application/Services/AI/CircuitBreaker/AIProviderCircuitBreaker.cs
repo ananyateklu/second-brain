@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.CircuitBreaker;
+using SecondBrain.Application.Logging;
 using System.Collections.Concurrent;
 
 namespace SecondBrain.Application.Services.AI.CircuitBreaker;
@@ -18,6 +19,18 @@ public class AIProviderCircuitBreaker
     private readonly CircuitBreakerSettings _settings;
     private readonly TimeProvider _timeProvider;
 
+    /// <summary>
+    /// Callback invoked when circuit breaker state changes. Used for telemetry integration.
+    /// Parameters: (providerName, newState, error)
+    /// </summary>
+    public static Action<string, CircuitBreakerState, string?>? OnStateChange { get; set; }
+
+    /// <summary>
+    /// Callback invoked when a request is rejected by an open circuit breaker.
+    /// Parameter: providerName
+    /// </summary>
+    public static Action<string>? OnRequestRejected { get; set; }
+
     public AIProviderCircuitBreaker(
         ILogger<AIProviderCircuitBreaker> logger,
         IOptions<CircuitBreakerSettings> settings,
@@ -28,6 +41,18 @@ public class AIProviderCircuitBreaker
         _timeProvider = timeProvider ?? TimeProvider.System;
         _circuitBreakers = new ConcurrentDictionary<string, ResiliencePipeline>(StringComparer.OrdinalIgnoreCase);
         _stateInfo = new ConcurrentDictionary<string, CircuitBreakerStateInfo>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Gets all known providers and their current circuit breaker states.
+    /// Useful for telemetry observable gauges.
+    /// </summary>
+    public IEnumerable<(string Provider, CircuitBreakerState State)> GetAllProviderStates()
+    {
+        foreach (var kvp in _stateInfo)
+        {
+            yield return (kvp.Key, kvp.Value.State);
+        }
     }
 
     /// <summary>
@@ -68,6 +93,9 @@ public class AIProviderCircuitBreaker
                 var snapshot = stateInfo.GetSnapshot();
                 retryAfter = snapshot.LastTransitionTime.Add(_settings.BreakDuration) - _timeProvider.GetUtcNow().DateTime;
             }
+
+            // Invoke telemetry callback for rejected request
+            OnRequestRejected?.Invoke(providerName);
 
             _logger.LogWarning(
                 "Circuit breaker open for provider {Provider}. Retry after: {RetryAfter}",
@@ -167,9 +195,11 @@ public class AIProviderCircuitBreaker
                     {
                         stateInfo.TransitionToOpen(args.Outcome.Exception, _timeProvider);
 
-                        _logger.LogWarning(
-                            "Circuit breaker OPENED for provider {Provider}. Duration: {Duration}. Last error: {Error}",
-                            name, args.BreakDuration, args.Outcome.Exception?.Message);
+                        var errorMessage = args.Outcome.Exception?.Message ?? "Unknown error";
+                        _logger.CircuitBreakerOpened(name, (int)args.BreakDuration.TotalSeconds, errorMessage);
+
+                        // Invoke telemetry callback
+                        OnStateChange?.Invoke(name, CircuitBreakerState.Open, errorMessage);
 
                         return ValueTask.CompletedTask;
                     },
@@ -177,9 +207,10 @@ public class AIProviderCircuitBreaker
                     {
                         stateInfo.TransitionToClosed(_timeProvider);
 
-                        _logger.LogInformation(
-                            "Circuit breaker CLOSED for provider {Provider}. Service recovered.",
-                            name);
+                        _logger.CircuitBreakerClosed(name);
+
+                        // Invoke telemetry callback
+                        OnStateChange?.Invoke(name, CircuitBreakerState.Closed, null);
 
                         return ValueTask.CompletedTask;
                     },
@@ -187,18 +218,17 @@ public class AIProviderCircuitBreaker
                     {
                         stateInfo.TransitionToHalfOpen(_timeProvider);
 
-                        _logger.LogInformation(
-                            "Circuit breaker HALF-OPEN for provider {Provider}. Testing recovery...",
-                            name);
+                        _logger.CircuitBreakerHalfOpen(name);
+
+                        // Invoke telemetry callback
+                        OnStateChange?.Invoke(name, CircuitBreakerState.HalfOpen, null);
 
                         return ValueTask.CompletedTask;
                     }
                 })
                 .Build();
 
-            _logger.LogInformation(
-                "Created circuit breaker for provider {Provider}. FailureRatio: {Ratio}, BreakDuration: {Duration}",
-                name, _settings.FailureRatio, _settings.BreakDuration);
+            _logger.CircuitBreakerCreated(name, _settings.FailureRatio, (int)_settings.BreakDuration.TotalSeconds);
 
             return pipeline;
         });
