@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.DTOs.Voice;
 using SecondBrain.Application.Services.Voice;
 using SecondBrain.Application.Services.Voice.GrokRealtime;
 using SecondBrain.Application.Services.Voice.Models;
 using SecondBrain.Application.Services.Voice.Orchestration;
+using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Controllers;
 
@@ -20,6 +22,7 @@ namespace SecondBrain.API.Controllers;
 public class VoiceController : ControllerBase
 {
     private readonly IVoiceSessionManager _sessionManager;
+    private readonly IVoiceSessionRepository _sessionRepository;
     private readonly IVoiceSynthesisServiceFactory _synthesisFactory;
     private readonly IVoiceTranscriptionServiceFactory _transcriptionFactory;
     private readonly IServiceProvider _serviceProvider;
@@ -29,6 +32,7 @@ public class VoiceController : ControllerBase
 
     public VoiceController(
         IVoiceSessionManager sessionManager,
+        IVoiceSessionRepository sessionRepository,
         IVoiceSynthesisServiceFactory synthesisFactory,
         IVoiceTranscriptionServiceFactory transcriptionFactory,
         IServiceProvider serviceProvider,
@@ -37,6 +41,7 @@ public class VoiceController : ControllerBase
         ILogger<VoiceController> logger)
     {
         _sessionManager = sessionManager;
+        _sessionRepository = sessionRepository;
         _synthesisFactory = synthesisFactory;
         _transcriptionFactory = transcriptionFactory;
         _serviceProvider = serviceProvider;
@@ -234,6 +239,134 @@ public class VoiceController : ControllerBase
         };
 
         return Ok(status);
+    }
+
+    // ============================================
+    // Session History Endpoints
+    // ============================================
+
+    /// <summary>
+    /// Get paginated voice session history for the current user.
+    /// Returns sessions without turns for list display.
+    /// </summary>
+    [HttpGet("sessions")]
+    [ProducesResponseType(typeof(VoiceSessionHistoryResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSessionHistory(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetUserId();
+
+        // Validate pagination
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
+
+        var (sessions, totalCount) = await _sessionRepository.GetSessionsPagedAsync(
+            userId, page, pageSize, status, cancellationToken);
+
+        // Map to DTOs with first user message for preview
+        var summaries = new List<VoiceSessionSummary>();
+        foreach (var session in sessions)
+        {
+            var firstMessage = await _sessionRepository.GetFirstUserMessageAsync(session.Id, cancellationToken);
+            summaries.Add(new VoiceSessionSummary(
+                session.Id,
+                session.Provider,
+                session.Model,
+                session.StartedAt,
+                session.EndedAt,
+                session.Status,
+                session.Turns.Count,
+                session.TotalAudioDurationMs,
+                session.TotalInputTokens,
+                session.TotalOutputTokens,
+                firstMessage?.Length > 100 ? firstMessage[..100] + "..." : firstMessage
+            ));
+        }
+
+        var response = new VoiceSessionHistoryResponse(
+            summaries,
+            totalCount,
+            page,
+            pageSize
+        );
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Get a specific session with full transcript.
+    /// Returns all turns ordered by timestamp.
+    /// </summary>
+    [HttpGet("sessions/{sessionId:guid}/transcript")]
+    [ProducesResponseType(typeof(VoiceSessionDetail), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSessionTranscript(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetUserId();
+
+        var session = await _sessionRepository.GetSessionWithTurnsAsync(sessionId, userId, cancellationToken);
+
+        if (session == null)
+        {
+            return NotFound(new { error = "Session not found" });
+        }
+
+        var turns = session.Turns.Select(t => new VoiceTurnDto(
+            t.Id,
+            t.Role,
+            t.Content,
+            t.TranscriptText,
+            t.Timestamp,
+            t.InputTokens,
+            t.OutputTokens,
+            t.AudioDurationMs,
+            t.ToolCallsJson
+        )).ToList();
+
+        var response = new VoiceSessionDetail(
+            session.Id,
+            session.UserId,
+            session.Provider,
+            session.Model,
+            session.StartedAt,
+            session.EndedAt,
+            session.Status,
+            session.TotalInputTokens,
+            session.TotalOutputTokens,
+            session.TotalAudioDurationMs,
+            session.OptionsJson,
+            turns
+        );
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Delete a voice session and its transcript.
+    /// </summary>
+    [HttpDelete("sessions/{sessionId:guid}/history")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteSessionHistory(
+        Guid sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetUserId();
+
+        var deleted = await _sessionRepository.DeleteAsync(sessionId, userId, cancellationToken);
+
+        if (!deleted)
+        {
+            return NotFound(new { error = "Session not found" });
+        }
+
+        return NoContent();
     }
 
     /// <summary>

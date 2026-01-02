@@ -442,6 +442,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISummaryJobRepository, SqlSummaryJobRepository>();
         services.AddScoped<IFocusItemRepository, SqlFocusItemRepository>();
         services.AddScoped<IFocusSuggestionRepository, SqlFocusSuggestionRepository>();
+        services.AddScoped<IVoiceSessionRepository, SqlVoiceSessionRepository>();
 
         // Focus AI service
         services.AddScoped<IFocusAIService, FocusAIService>();

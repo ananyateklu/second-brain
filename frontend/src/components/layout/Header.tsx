@@ -5,8 +5,9 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls } from './header-components';
+import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
 import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
+import { useVoiceHeaderState } from '../../features/voice/context/VoicePageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -59,6 +60,7 @@ export function Header() {
   const isInsightsPage = location.pathname === '/insights';
   const isGitHubPage = location.pathname === '/github';
   const isChatPage = location.pathname === '/chat';
+  const isVoicePage = location.pathname === '/voice';
 
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
@@ -75,6 +77,13 @@ export function Header() {
   // Chat page selection mode state
   const chatHeaderState = useChatHeaderState();
   const isChatSelectionMode = isChatPage && chatHeaderState?.isSelectionMode;
+
+  // Voice page selection mode state
+  const voiceHeaderState = useVoiceHeaderState();
+  const isVoiceSelectionMode = isVoicePage && voiceHeaderState?.isSelectionMode;
+
+  // Hide page title when in any selection mode
+  const isAnySelectionMode = isChatSelectionMode || isVoiceSelectionMode;
 
   return (
     <>
@@ -163,8 +172,8 @@ export function Header() {
         }}
       >
         <div className="flex justify-between w-full pb-2">
-          {/* Left side - Page Title (hidden in chat selection mode) */}
-          {!isChatSelectionMode && (
+          {/* Left side - Page Title (hidden in selection mode) */}
+          {!isAnySelectionMode && (
             <div className="flex items-center h-12">
               <h1
                 className="text-xl font-medium"
@@ -180,6 +189,14 @@ export function Header() {
           {isChatPage ? (
             <div className="flex items-center gap-4 h-12 flex-1">
               <ChatPageControls />
+              <HeaderFocusIndicator />
+              <SummaryIndicator />
+              <IndexingIndicator />
+              <UserMenu />
+            </div>
+          ) : isVoicePage ? (
+            <div className="flex items-center gap-4 h-12 flex-1">
+              <VoicePageControls />
               <HeaderFocusIndicator />
               <SummaryIndicator />
               <IndexingIndicator />

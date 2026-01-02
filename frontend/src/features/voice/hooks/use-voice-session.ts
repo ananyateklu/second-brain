@@ -33,6 +33,7 @@ export interface UseVoiceSessionReturn {
   isConnected: boolean;
   isConnecting: boolean;
   sessionState: VoiceSessionState;
+  sessionId: string | null;
   isMicrophoneEnabled: boolean;
   isAudioPlaying: boolean;
   audioLevel: number;
@@ -468,6 +469,7 @@ export function useVoiceSession(options: UseVoiceSessionOptions = {}): UseVoiceS
     isConnected,
     isConnecting,
     sessionState,
+    sessionId,
     isMicrophoneEnabled,
     isAudioPlaying,
     audioLevel,

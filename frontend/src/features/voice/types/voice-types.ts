@@ -294,3 +294,62 @@ export interface VoiceAgentCapability {
   name: string;
   description: string;
 }
+
+// ============================================================================
+// Session History Types (for sidebar and transcript display)
+// ============================================================================
+
+/** Summary for session list display in sidebar */
+export interface VoiceSessionSummary {
+  id: string;
+  provider: string;
+  model: string;
+  startedAt: string;
+  endedAt?: string;
+  status: 'active' | 'ended' | 'error';
+  turnCount: number;
+  totalAudioDurationMs: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  firstUserMessage?: string;
+}
+
+/** Full session with transcript for detail view */
+export interface VoiceSessionDetail {
+  id: string;
+  userId: string;
+  provider: string;
+  model: string;
+  startedAt: string;
+  endedAt?: string;
+  status: string;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalAudioDurationMs: number;
+  optionsJson?: string;
+  turns: VoiceTurnDto[];
+}
+
+/** Turn data for transcript display */
+export interface VoiceTurnDto {
+  id: string;
+  role: 'user' | 'assistant';
+  content?: string;
+  transcriptText?: string;
+  timestamp: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  audioDurationMs?: number;
+  toolCallsJson?: string;
+}
+
+/** Paginated history response */
+export interface VoiceSessionHistoryResponse {
+  sessions: VoiceSessionSummary[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}

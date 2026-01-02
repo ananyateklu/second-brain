@@ -91,3 +91,11 @@ AGENTS.md
 
 # MCP server config (contains credentials)
 .mcp.json
+tools/mcp-pg-server/package.json
+tools/mcp-pg-server/pnpm-lock.yaml
+.gitignore
+tools/mcp-pg-server/README.md
+tools/mcp-pg-server/test.ts
+tools/mcp-pg-server/tsconfig.json
+tools/mcp-pg-server/src/index.ts
+database/SCHEMA_REFERENCE.md

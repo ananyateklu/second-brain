@@ -16,6 +16,7 @@ import { useUserSettingsEffect } from './hooks/use-user-settings-effect';
 import { isTauri } from './lib/native-notifications';
 import { ChatPageProvider } from './features/chat/context/ChatPageContext';
 import { DirectoryPageProvider } from './features/notes/context/DirectoryPageContext';
+import { VoicePageProvider } from './features/voice/context/VoicePageContext';
 
 // Lazy load notification components - they're not needed immediately
 const AboutModal = lazy(() => import('./components/ui/AboutModal').then(m => ({ default: m.AboutModal })));
@@ -107,17 +108,19 @@ function App() {
   return (
     <ChatPageProvider>
       <DirectoryPageProvider>
-        <RouterProvider router={router} />
-        <Suspense fallback={null}>
-          <AboutModal
-            isOpen={showAboutModal}
-            onClose={() => {
-              setShowAboutModal(false);
-            }}
-          />
-          <IndexingNotification />
-          <SummaryNotification />
-        </Suspense>
+        <VoicePageProvider>
+          <RouterProvider router={router} />
+          <Suspense fallback={null}>
+            <AboutModal
+              isOpen={showAboutModal}
+              onClose={() => {
+                setShowAboutModal(false);
+              }}
+            />
+            <IndexingNotification />
+            <SummaryNotification />
+          </Suspense>
+        </VoicePageProvider>
       </DirectoryPageProvider>
     </ChatPageProvider>
   );

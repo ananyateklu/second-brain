@@ -557,6 +557,12 @@ export interface VoiceSliceState {
   groundingSources: import('../features/voice/types/voice-types').VoiceGroundingSource[];
   isToolExecuting: boolean;
   currentToolName: string | null;
+
+  // Sidebar and history state
+  voiceSidebarVisible: boolean;
+  sessionHistory: import('../features/voice/types/voice-types').VoiceSessionSummary[];
+  selectedHistoricalSessionId: string | null;
+  isLoadingHistory: boolean;
 }
 
 export interface VoiceSliceActions {
@@ -613,6 +619,13 @@ export interface VoiceSliceActions {
   setAvailableGrokVoices: (voices: import('../features/voice/types/voice-types').GrokVoiceInfo[]) => void;
   setEnableGrokWebSearch: (enabled: boolean) => void;
   setEnableGrokXSearch: (enabled: boolean) => void;
+
+  // Sidebar and history actions
+  toggleVoiceSidebar: () => void;
+  setVoiceSidebarVisible: (visible: boolean) => void;
+  setSessionHistory: (sessions: import('../features/voice/types/voice-types').VoiceSessionSummary[]) => void;
+  setSelectedHistoricalSessionId: (id: string | null) => void;
+  setIsLoadingHistory: (loading: boolean) => void;
 }
 
 export type VoiceSlice = VoiceSliceState & VoiceSliceActions;

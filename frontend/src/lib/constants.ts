@@ -292,6 +292,8 @@ export const API_ENDPOINTS = {
   VOICE: {
     SESSIONS: '/voice/sessions',
     SESSION_BY_ID: (sessionId: string) => `/voice/sessions/${sessionId}`,
+    SESSION_TRANSCRIPT: (sessionId: string) => `/voice/sessions/${sessionId}/transcript`,
+    SESSION_DELETE_HISTORY: (sessionId: string) => `/voice/sessions/${sessionId}/history`,
     WEBSOCKET: '/voice/session',
     VOICES: '/voice/voices',
     GROK_VOICES: '/voice/voices/grok',

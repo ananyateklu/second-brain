@@ -13,6 +13,7 @@ import type {
   VoiceThinkingStep,
   VoiceRetrievedNote,
   VoiceGroundingSource,
+  VoiceSessionSummary,
 } from '../../features/voice/types/voice-types';
 import { normalizeState } from '../../features/voice/utils/voice-utils';
 
@@ -81,6 +82,12 @@ const defaultVoiceState = {
   groundingSources: [] as VoiceGroundingSource[],
   isToolExecuting: false,
   currentToolName: null as string | null,
+
+  // Sidebar and history state
+  voiceSidebarVisible: true,
+  sessionHistory: [] as VoiceSessionSummary[],
+  selectedHistoricalSessionId: null as string | null,
+  isLoadingHistory: false,
 };
 
 // ============================================
@@ -307,5 +314,26 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
 
   setEnableGrokXSearch: (enabled: boolean) => {
     set({ enableGrokXSearch: enabled });
+  },
+
+  // Sidebar and history actions
+  toggleVoiceSidebar: () => {
+    set((state) => ({ voiceSidebarVisible: !state.voiceSidebarVisible }));
+  },
+
+  setVoiceSidebarVisible: (visible: boolean) => {
+    set({ voiceSidebarVisible: visible });
+  },
+
+  setSessionHistory: (sessions: VoiceSessionSummary[]) => {
+    set({ sessionHistory: sessions });
+  },
+
+  setSelectedHistoricalSessionId: (id: string | null) => {
+    set({ selectedHistoricalSessionId: id });
+  },
+
+  setIsLoadingHistory: (loading: boolean) => {
+    set({ isLoadingHistory: loading });
   },
 });
