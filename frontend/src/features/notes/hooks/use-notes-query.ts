@@ -1,6 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { notesService, type GetNotesPagedParams } from '../../../services';
-import { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, GenerateSummariesResponse } from '../../../types/notes';
+import {
+  Note,
+  NoteListItem,
+  CreateNoteRequest,
+  UpdateNoteRequest,
+  GenerateSummariesResponse,
+  TrashNotesResponse,
+  BulkRestoreResponse,
+  EmptyTrashResponse,
+} from '../../../types/notes';
 import type { PaginatedResult } from '../../../types/api';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
@@ -418,6 +427,197 @@ export function useGenerateSummaries() {
     {
       errorMessage: 'Failed to generate summaries',
       invalidateQueries: [noteKeys.all],
+    }
+  );
+}
+
+// ============================================
+// Trash (Soft-Deleted Notes) Hooks
+// ============================================
+
+/**
+ * Query: Get all soft-deleted notes (trash)
+ * Returns TrashNotesResponse with items and totalCount
+ */
+export function useNotesTrash() {
+  return useApiQuery<TrashNotesResponse>(
+    noteKeys.trash(),
+    () => notesService.getTrash()
+  );
+}
+
+// Context type for restore mutation
+interface RestoreNoteContext {
+  previousTrash?: TrashNotesResponse;
+}
+
+/**
+ * Mutation: Restore a soft-deleted note from trash
+ */
+export function useRestoreNote() {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<Note, string, RestoreNoteContext>(
+    (id) => notesService.restore(id),
+    {
+      successMessage: 'Note restored successfully',
+      showSuccessToast: true,
+      errorMessage: 'Failed to restore note',
+      onMutate: async (id) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: noteKeys.trash() });
+
+        // Snapshot previous trash
+        const previousTrash = queryClient.getQueryData<TrashNotesResponse>(noteKeys.trash());
+
+        // Optimistically remove from trash
+        if (previousTrash) {
+          queryClient.setQueryData<TrashNotesResponse>(noteKeys.trash(), {
+            items: previousTrash.items.filter((note) => note.id !== id),
+            totalCount: previousTrash.totalCount - 1,
+          });
+        }
+
+        return { previousTrash };
+      },
+      onError: (_error, _id, context) => {
+        // Rollback on error
+        if (context?.previousTrash) {
+          queryClient.setQueryData(noteKeys.trash(), context.previousTrash);
+        }
+      },
+      onSettled: () => {
+        // Refetch both trash and notes lists
+        void queryClient.invalidateQueries({ queryKey: noteKeys.trash() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+      },
+    }
+  );
+}
+
+// Context type for permanent delete mutation
+interface PermanentDeleteContext {
+  previousTrash?: TrashNotesResponse;
+}
+
+/**
+ * Mutation: Permanently delete a note from trash (cannot be undone)
+ */
+export function usePermanentDeleteNote() {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<void, string, PermanentDeleteContext>(
+    (id) => notesService.permanentDelete(id),
+    {
+      successMessage: 'Note permanently deleted',
+      showSuccessToast: true,
+      errorMessage: 'Failed to delete note permanently',
+      onMutate: async (id) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: noteKeys.trash() });
+
+        // Snapshot previous trash
+        const previousTrash = queryClient.getQueryData<TrashNotesResponse>(noteKeys.trash());
+
+        // Optimistically remove from trash
+        if (previousTrash) {
+          queryClient.setQueryData<TrashNotesResponse>(noteKeys.trash(), {
+            items: previousTrash.items.filter((note) => note.id !== id),
+            totalCount: previousTrash.totalCount - 1,
+          });
+        }
+
+        return { previousTrash };
+      },
+      onError: (_error, _id, context) => {
+        // Rollback on error
+        if (context?.previousTrash) {
+          queryClient.setQueryData(noteKeys.trash(), context.previousTrash);
+        }
+      },
+      onSettled: () => {
+        // Refetch trash list
+        void queryClient.invalidateQueries({ queryKey: noteKeys.trash() });
+      },
+    }
+  );
+}
+
+/**
+ * Mutation: Empty the trash - permanently delete all soft-deleted notes
+ */
+export function useEmptyTrash() {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<EmptyTrashResponse, void>(
+    () => notesService.emptyTrash(),
+    {
+      successMessage: (data) => data.message,
+      showSuccessToast: true,
+      errorMessage: 'Failed to empty trash',
+      onMutate: async () => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: noteKeys.trash() });
+
+        // Optimistically clear trash
+        queryClient.setQueryData<TrashNotesResponse>(noteKeys.trash(), {
+          items: [],
+          totalCount: 0,
+        });
+      },
+      onSettled: () => {
+        // Refetch trash list
+        void queryClient.invalidateQueries({ queryKey: noteKeys.trash() });
+      },
+    }
+  );
+}
+
+// Context type for bulk restore mutation
+interface BulkRestoreContext {
+  previousTrash?: TrashNotesResponse;
+}
+
+/**
+ * Mutation: Bulk restore multiple notes from trash
+ */
+export function useBulkRestoreNotes() {
+  const queryClient = useQueryClient();
+
+  return useApiMutation<BulkRestoreResponse, string[], BulkRestoreContext>(
+    (noteIds) => notesService.bulkRestore(noteIds),
+    {
+      successMessage: (data) => data.message,
+      showSuccessToast: true,
+      errorMessage: 'Failed to restore notes',
+      onMutate: async (noteIds) => {
+        // Cancel outgoing refetches
+        await queryClient.cancelQueries({ queryKey: noteKeys.trash() });
+
+        // Snapshot previous trash
+        const previousTrash = queryClient.getQueryData<TrashNotesResponse>(noteKeys.trash());
+
+        // Optimistically remove from trash
+        if (previousTrash) {
+          queryClient.setQueryData<TrashNotesResponse>(noteKeys.trash(), {
+            items: previousTrash.items.filter((note) => !noteIds.includes(note.id)),
+            totalCount: Math.max(0, previousTrash.totalCount - noteIds.length),
+          });
+        }
+
+        return { previousTrash };
+      },
+      onError: (_error, _noteIds, context) => {
+        // Rollback on error
+        if (context?.previousTrash) {
+          queryClient.setQueryData(noteKeys.trash(), context.previousTrash);
+        }
+      },
+      onSettled: () => {
+        // Refetch both trash and notes lists
+        void queryClient.invalidateQueries({ queryKey: noteKeys.trash() });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+      },
     }
   );
 }

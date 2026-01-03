@@ -157,6 +157,9 @@ export const noteKeys = {
 
   /** Key for notes by tag */
   byTag: (tag: string) => [...noteKeys.all, 'tag', tag] as const,
+
+  /** Key for trash (soft-deleted notes) */
+  trash: () => [...noteKeys.all, 'trash'] as const,
 } as const;
 
 /**

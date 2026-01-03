@@ -415,11 +415,20 @@ async fn start_services_internal(app: &AppHandle) -> Result<(), String> {
     if let Ok(app_data_dir) = app.path().app_data_dir() {
         let cached_config = ServiceConfig::load(&app_data_dir);
 
-        // Use cached ports if they're available
-        if is_port_available(cached_config.postgres_port) {
+        // Always prefer default ports (5001 for backend, 5433 for postgres) if available
+        // Only fall back to cached ports if defaults are unavailable
+        let default_postgres_port = 5433u16;
+        let default_backend_port = 5001u16;
+
+        if is_port_available(default_postgres_port) {
+            *state.postgres_port.lock().unwrap() = default_postgres_port;
+        } else if is_port_available(cached_config.postgres_port) {
             *state.postgres_port.lock().unwrap() = cached_config.postgres_port;
         }
-        if is_port_available(cached_config.backend_port) {
+
+        if is_port_available(default_backend_port) {
+            *state.backend_port.lock().unwrap() = default_backend_port;
+        } else if is_port_available(cached_config.backend_port) {
             *state.backend_port.lock().unwrap() = cached_config.backend_port;
         }
 

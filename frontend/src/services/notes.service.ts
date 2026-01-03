@@ -21,6 +21,9 @@ import type {
   GenerateSummariesRequest,
   GenerateSummariesResponse,
   SummaryJobResponse,
+  TrashNotesResponse,
+  BulkRestoreResponse,
+  EmptyTrashResponse,
 } from '../types/notes';
 
 /**
@@ -395,6 +398,52 @@ export const notesService = {
    */
   async cancelSummaryJob(jobId: string): Promise<{ message: string }> {
     return apiClient.post<{ message: string }>(API_ENDPOINTS.NOTES.SUMMARIES_CANCEL(jobId));
+  },
+
+  // ============================================
+  // Trash (Soft-Deleted Notes)
+  // ============================================
+
+  /**
+   * Get all soft-deleted notes (trash)
+   * Returns lightweight response with summary instead of full content
+   */
+  async getTrash(): Promise<TrashNotesResponse> {
+    return apiClient.get<TrashNotesResponse>(API_ENDPOINTS.NOTES.TRASH);
+  },
+
+  /**
+   * Restore a soft-deleted note from trash
+   * @param id - The note ID to restore
+   */
+  async restore(id: string): Promise<NoteResponse> {
+    return apiClient.post<NoteResponse>(API_ENDPOINTS.NOTES.RESTORE(id));
+  },
+
+  /**
+   * Permanently delete a note from trash (cannot be undone)
+   * @param id - The note ID to permanently delete
+   */
+  async permanentDelete(id: string): Promise<void> {
+    return apiClient.delete<undefined>(API_ENDPOINTS.NOTES.PERMANENT_DELETE(id));
+  },
+
+  /**
+   * Empty the trash - permanently delete all soft-deleted notes (cannot be undone)
+   */
+  async emptyTrash(): Promise<EmptyTrashResponse> {
+    return apiClient.delete<EmptyTrashResponse>(API_ENDPOINTS.NOTES.TRASH_EMPTY);
+  },
+
+  /**
+   * Bulk restore multiple notes from trash
+   * @param noteIds - List of note IDs to restore
+   */
+  async bulkRestore(noteIds: string[]): Promise<BulkRestoreResponse> {
+    return apiClient.post<BulkRestoreResponse>(
+      API_ENDPOINTS.NOTES.BULK_RESTORE,
+      { noteIds }
+    );
   },
 };
 

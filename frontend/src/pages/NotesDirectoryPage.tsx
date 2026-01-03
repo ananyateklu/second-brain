@@ -5,7 +5,14 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react';
 import { createPortal } from 'react-dom';
-import { useNotesPaged, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
+import {
+  useNotesPaged,
+  useBulkDeleteNotes,
+  useNotesTrash,
+  useRestoreNote,
+  usePermanentDeleteNote,
+  useEmptyTrash,
+} from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { DirectoryContentSkeleton } from '../features/notes/components/DirectorySkeleton';
@@ -89,6 +96,13 @@ const applyDateFilter = (
 export function NotesDirectoryPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const bulkDeleteMutation = useBulkDeleteNotes();
+
+  // Trash mode state and mutations
+  const [isTrashMode, setIsTrashMode] = useState(false);
+  const { data: trashData, isLoading: isTrashLoading } = useNotesTrash();
+  const restoreMutation = useRestoreNote();
+  const permanentDeleteMutation = usePermanentDeleteNote();
+  const emptyTrashMutation = useEmptyTrash();
 
   // Theme and view mode
   const theme = useBoundStore((state) => state.theme);
@@ -468,9 +482,9 @@ export function NotesDirectoryPage() {
           <div className="flex-1 overflow-y-auto thin-scrollbar">
             {/* All Notes */}
             <button
-              onClick={() => { handleFolderSelect(null, 'all'); }}
+              onClick={() => { handleFolderSelect(null, 'all'); setIsTrashMode(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
-              style={getItemStyle('all', selectedFolder === null && archiveFilter === 'all')}
+              style={getItemStyle('all', selectedFolder === null && archiveFilter === 'all' && !isTrashMode)}
               onMouseEnter={() => { setHoveredItem('all'); }}
               onMouseLeave={() => { setHoveredItem(null); }}
             >
@@ -498,9 +512,9 @@ export function NotesDirectoryPage() {
 
             {/* Active Notes */}
             <button
-              onClick={() => { handleFolderSelect(null, 'not-archived'); }}
+              onClick={() => { handleFolderSelect(null, 'not-archived'); setIsTrashMode(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
-              style={getItemStyle('active', selectedFolder === null && archiveFilter === 'not-archived')}
+              style={getItemStyle('active', selectedFolder === null && archiveFilter === 'not-archived' && !isTrashMode)}
               onMouseEnter={() => { setHoveredItem('active'); }}
               onMouseLeave={() => { setHoveredItem(null); }}
             >
@@ -528,9 +542,9 @@ export function NotesDirectoryPage() {
 
             {/* Archived Notes */}
             <button
-              onClick={() => { handleFolderSelect(null, 'archived'); }}
+              onClick={() => { handleFolderSelect(null, 'archived'); setIsTrashMode(false); }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
-              style={getItemStyle('archived', archiveFilter === 'archived')}
+              style={getItemStyle('archived', archiveFilter === 'archived' && !isTrashMode)}
               onMouseEnter={() => { setHoveredItem('archived'); }}
               onMouseLeave={() => { setHoveredItem(null); }}
             >
@@ -541,7 +555,7 @@ export function NotesDirectoryPage() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                   style={{
-                    color: archiveFilter === 'archived' ? 'var(--color-warning)' : 'currentColor',
+                    color: archiveFilter === 'archived' && !isTrashMode ? 'var(--color-warning)' : 'currentColor',
                   }}
                 >
                   <path
@@ -551,7 +565,7 @@ export function NotesDirectoryPage() {
                     d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                   />
                 </svg>
-                <span style={{ color: archiveFilter === 'archived' ? 'var(--color-warning)' : 'inherit' }}>
+                <span style={{ color: archiveFilter === 'archived' && !isTrashMode ? 'var(--color-warning)' : 'inherit' }}>
                   Archived
                 </span>
               </span>
@@ -559,13 +573,60 @@ export function NotesDirectoryPage() {
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
                   backgroundColor:
-                    archiveFilter === 'archived'
+                    archiveFilter === 'archived' && !isTrashMode
                       ? 'color-mix(in srgb, var(--color-warning) 20%, transparent)'
                       : 'var(--surface-hover)',
-                  color: archiveFilter === 'archived' ? 'var(--color-warning)' : 'var(--text-tertiary)',
+                  color: archiveFilter === 'archived' && !isTrashMode ? 'var(--color-warning)' : 'var(--text-tertiary)',
                 }}
               >
                 {folderStats.archived}
+              </span>
+            </button>
+
+            {/* Trash */}
+            <button
+              onClick={() => {
+                setIsTrashMode(true);
+                setFilterState({ ...filterState, selectedFolder: null, archiveFilter: 'all' });
+                setSelectedNoteIds(new Set());
+              }}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
+              style={getItemStyle('trash', isTrashMode)}
+              onMouseEnter={() => { setHoveredItem('trash'); }}
+              onMouseLeave={() => { setHoveredItem(null); }}
+            >
+              <span className="flex items-center gap-3">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{
+                    color: isTrashMode ? 'var(--color-error)' : 'currentColor',
+                  }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                <span style={{ color: isTrashMode ? 'var(--color-error)' : 'inherit' }}>
+                  Trash
+                </span>
+              </span>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full"
+                style={{
+                  backgroundColor:
+                    isTrashMode
+                      ? 'color-mix(in srgb, var(--color-error) 20%, transparent)'
+                      : 'var(--surface-hover)',
+                  color: isTrashMode ? 'var(--color-error)' : 'var(--text-tertiary)',
+                }}
+              >
+                {trashData?.totalCount ?? 0}
               </span>
             </button>
 
@@ -575,7 +636,7 @@ export function NotesDirectoryPage() {
             {/* Unfiled */}
             {folderStats.unfiled > 0 && (
               <button
-                onClick={() => { handleFolderSelect('', 'not-archived'); }}
+                onClick={() => { handleFolderSelect('', 'not-archived'); setIsTrashMode(false); }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
                 style={getItemStyle('unfiled', isSelected(''))}
                 onMouseEnter={() => { setHoveredItem('unfiled'); }}
@@ -616,7 +677,7 @@ export function NotesDirectoryPage() {
                 {folderList.map((folder) => (
                   <button
                     key={folder}
-                    onClick={() => { handleFolderSelect(folder, 'not-archived'); }}
+                    onClick={() => { handleFolderSelect(folder, 'not-archived'); setIsTrashMode(false); }}
                     className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
                     style={getItemStyle(`folder-${folder}`, isSelected(folder))}
                     onMouseEnter={() => { setHoveredItem(`folder-${folder}`); }}
@@ -652,14 +713,161 @@ export function NotesDirectoryPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
+        {/* Trash Header with Empty Trash Button */}
+        {isTrashMode && trashData && trashData.totalCount > 0 && (
+          <div
+            className="flex items-center justify-between px-6 py-3 border-b"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                style={{ color: 'var(--color-error)' }}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+                Trash ({trashData.totalCount} {trashData.totalCount === 1 ? 'note' : 'notes'})
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to permanently delete all notes in trash? This action cannot be undone.')) {
+                  emptyTrashMutation.mutate();
+                }
+              }}
+              disabled={emptyTrashMutation.isPending}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                color: 'var(--color-error)',
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              {emptyTrashMutation.isPending ? 'Emptying...' : 'Empty Trash'}
+            </button>
+          </div>
+        )}
+
         {/* Notes Content */}
         <div
           ref={scrollableRef}
           className="flex-1 overflow-y-auto p-6 thin-scrollbar transition-opacity duration-200"
           style={{ opacity: isSearchStale || isFetching ? 0.7 : 1 }}
         >
-          {isLoading ? (
+          {(isTrashMode ? isTrashLoading : isLoading) ? (
             <DirectoryContentSkeleton />
+          ) : isTrashMode ? (
+            // Trash Mode Content
+            !trashData || trashData.items.length === 0 ? (
+              <EmptyState
+                icon={
+                  <svg
+                    className="h-8 w-8"
+                    style={{ color: 'var(--text-secondary)' }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                }
+                title="Trash is empty"
+                description="Deleted notes will appear here. You can restore or permanently delete them."
+              />
+            ) : (
+              <div className={`grid gap-4 ${directoryViewMode === 'card' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {trashData.items.map((note) => (
+                  <div
+                    key={note.id}
+                    className="group relative rounded-xl border p-4 transition-all duration-200"
+                    style={{
+                      backgroundColor: 'var(--surface-card)',
+                      borderColor: 'var(--border)',
+                      opacity: 0.85,
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="font-medium truncate mb-1"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {note.title}
+                        </h3>
+                        {note.summary && (
+                          <p
+                            className="text-sm line-clamp-2 mb-2"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
+                            {note.summary}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          <span>Deleted {note.deletedAt ? new Date(note.deletedAt).toLocaleDateString() : 'Unknown'}</span>
+                          {note.folder && (
+                            <>
+                              <span>•</span>
+                              <span>{note.folder}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                      <button
+                        onClick={() => { restoreMutation.mutate(note.id); }}
+                        disabled={restoreMutation.isPending}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
+                          color: 'var(--color-success)',
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Restore
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to permanently delete this note? This action cannot be undone.')) {
+                            permanentDeleteMutation.mutate(note.id);
+                          }
+                        }}
+                        disabled={permanentDeleteMutation.isPending}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                        style={{
+                          backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                          color: 'var(--color-error)',
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : displayedNotes.length === 0 ? (
             <EmptyState
               icon={

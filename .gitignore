@@ -99,13 +99,9 @@ backend/coverage-report
 # - .claude/.claudeignore
 # - .claude/agents/, rules/, hooks/
 
-# MCP server config (contains credentials)
+# MCP server config (contains credentials - use .mcp.json.example as template)
 .mcp.json
-tools/mcp-pg-server/package.json
-tools/mcp-pg-server/pnpm-lock.yaml
-.gitignore
-tools/mcp-pg-server/README.md
-tools/mcp-pg-server/test.ts
-tools/mcp-pg-server/tsconfig.json
-tools/mcp-pg-server/src/index.ts
-database/SCHEMA_REFERENCE.md
+
+# MCP server build artifacts (source code is safe to commit)
+tools/*/node_modules/
+tools/*/dist/

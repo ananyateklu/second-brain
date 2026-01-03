@@ -82,6 +82,12 @@ CREATE INDEX IF NOT EXISTS ix_focus_suggestions_accepted
 ON focus_suggestions (user_id, accepted_at DESC)
 WHERE is_deleted = FALSE AND accepted_at IS NOT NULL;
 
+-- Index for FK lookups on accepted_focus_item_id
+-- Improves JOIN performance when querying relationships
+CREATE INDEX IF NOT EXISTS ix_focus_suggestions_accepted_focus_item_id
+ON focus_suggestions (accepted_focus_item_id)
+WHERE accepted_focus_item_id IS NOT NULL;
+
 -- ============================================
 -- Trigger for auto-updating updated_at
 -- ============================================

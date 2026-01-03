@@ -161,6 +161,12 @@ export const API_ENDPOINTS = {
     VERSION_AT: (id: string) => `/notes/${id}/versions/at`,
     VERSION_DIFF: (id: string) => `/notes/${id}/versions/diff`,
     RESTORE_VERSION: (id: string) => `/notes/${id}/versions/restore`,
+    // Trash (Soft-Deleted Notes)
+    TRASH: '/notes/trash',
+    TRASH_EMPTY: '/notes/trash/empty',
+    RESTORE: (id: string) => `/notes/${id}/restore`,
+    PERMANENT_DELETE: (id: string) => `/notes/${id}/permanent`,
+    BULK_RESTORE: '/notes/bulk-restore',
   },
 
   // Chat / Conversations

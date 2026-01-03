@@ -38,7 +38,7 @@ public class RequestLoggingOptions
     /// <summary>
     /// Paths to exclude from logging (e.g., health checks).
     /// </summary>
-    public string[] ExcludePaths { get; set; } = ["/api/health", "/swagger", "/scalar", "/openapi"];
+    public string[] ExcludePaths { get; set; } = ["/api/health", "/swagger", "/scalar", "/openapi", "/metrics"];
 
     /// <summary>
     /// Patterns to redact from logged bodies (case-insensitive regex).

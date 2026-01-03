@@ -369,3 +369,54 @@ export interface SummaryJobResponse {
   createdAt: string;
   progressPercentage: number;
 }
+
+// ============================================
+// Trash (Soft-Deleted Notes) Types
+// ============================================
+
+/**
+ * Lightweight item for trash note list.
+ * Includes deletion metadata.
+ */
+export interface TrashNoteItem {
+  id: string;
+  title: string;
+  /** AI-generated summary of the note */
+  summary?: string;
+  tags: string[];
+  folder?: string;
+  /** When the note was soft-deleted */
+  deletedAt?: string;
+  /** User ID who deleted the note */
+  deletedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Response from trash (soft-deleted notes) endpoint
+ */
+export interface TrashNotesResponse {
+  /** List of deleted notes */
+  items: TrashNoteItem[];
+  /** Total count of deleted notes */
+  totalCount: number;
+}
+
+/**
+ * Response from bulk restore operation
+ */
+export interface BulkRestoreResponse {
+  restoredCount: number;
+  failedCount: number;
+  failedIds: string[];
+  message: string;
+}
+
+/**
+ * Response from empty trash operation
+ */
+export interface EmptyTrashResponse {
+  deletedCount: number;
+  message: string;
+}
