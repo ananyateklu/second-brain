@@ -44,6 +44,7 @@ export interface VoiceHeaderProps {
   voiceProviderType: VoiceProviderType;
   onVoiceProviderTypeChange: (type: VoiceProviderType) => void;
   grokVoiceAvailable: boolean;
+  standardVoiceAvailable?: boolean;
 
   // Voice Selection
   selectedVoiceId: string | null;
@@ -92,6 +93,7 @@ export function VoiceHeader({
   voiceProviderType,
   onVoiceProviderTypeChange,
   grokVoiceAvailable,
+  standardVoiceAvailable = true,
   selectedVoiceId,
   availableVoices,
   onVoiceChange,
@@ -208,6 +210,7 @@ export function VoiceHeader({
           voiceProviderType={voiceProviderType}
           onVoiceProviderTypeChange={onVoiceProviderTypeChange}
           grokVoiceAvailable={grokVoiceAvailable}
+          standardVoiceAvailable={standardVoiceAvailable}
           disabled={isLoading || isSessionActive}
         />
 

@@ -26,6 +26,7 @@ export { VoiceSessionItem } from './VoiceSessionItem';
 export { VoiceTypePill } from './VoiceTypePill';
 export { VoiceDropdown } from './VoiceDropdown';
 export { VoiceAgentSettingsPopover } from './VoiceAgentSettingsPopover';
+export { VoiceConfigurationBanner } from './VoiceConfigurationBanner';
 
 // Utility
 export { VoiceAgentSkeleton } from './VoiceAgentSkeleton';

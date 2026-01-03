@@ -8,7 +8,7 @@
 
 import { Suspense, useEffect, Component, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { MicrophoneIcon, ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { VoiceAgentInterface, VoiceAgentSkeleton } from '../features/voice/components';
 import { voiceService } from '../services/voice.service';
 import { useBoundStore } from '../store/bound-store';
@@ -106,21 +106,20 @@ class VoiceErrorBoundary extends Component<VoiceErrorBoundaryProps, VoiceErrorBo
 // ============================================================================
 
 export function VoiceAgentPage() {
-  const { setServiceStatus, isServiceAvailable, deepgramAvailable, elevenLabsAvailable } = useBoundStore();
+  const { setServiceStatus } = useBoundStore();
   const titleBarHeight = useTitleBarHeight();
 
   // Calculate height accounting for App Header (~64px) and padding
   // Voice page gets the main App Header from AppLayout
   const containerHeight = `calc(100vh - ${titleBarHeight}px - 80px)`;
 
-  // Check service status on mount
+  // Check service status on mount - configuration status is shown inline by VoiceAgentInterface
   useEffect(() => {
     const checkStatus = async () => {
       try {
         const status = await voiceService.getStatus();
         setServiceStatus(status);
       } catch (error) {
-        
         console.error('Failed to check voice service status:', error);
         setServiceStatus({
           deepgramAvailable: false,
@@ -132,64 +131,6 @@ export function VoiceAgentPage() {
 
     void checkStatus();
   }, [setServiceStatus]);
-
-  // Show service unavailable message
-  if (!isServiceAvailable) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center gap-6 px-4"
-        style={{
-          backgroundColor: 'transparent',
-          height: containerHeight,
-          maxHeight: containerHeight,
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-24 h-24 rounded-full bg-[var(--surface)] flex items-center justify-center"
-        >
-          <MicrophoneIcon className="w-12 h-12 text-[var(--text-tertiary)]" />
-        </motion.div>
-
-        <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
-            Voice Agent Unavailable
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)] mb-4">
-            The voice agent requires Deepgram and ElevenLabs API keys to be configured.
-          </p>
-
-          <div className="space-y-2 text-left bg-[var(--surface)] rounded-lg p-4">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  deepgramAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              />
-              <span className="text-sm text-[var(--text-primary)]">
-                Deepgram STT: {deepgramAvailable ? 'Connected' : 'Not configured'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  elevenLabsAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              />
-              <span className="text-sm text-[var(--text-primary)]">
-                ElevenLabs TTS: {elevenLabsAvailable ? 'Connected' : 'Not configured'}
-              </span>
-            </div>
-          </div>
-
-          <p className="text-xs text-[var(--text-tertiary)] mt-4">
-            Configure the API keys in your backend settings to enable voice conversations.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
