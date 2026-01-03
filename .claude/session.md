@@ -1,119 +1,163 @@
 # Current Session Context
 
-> **Last Updated**: 2026-01-03 12:20:00
-> **Focus**: Backend stress testing and infrastructure optimization - COMPLETED
+> **Last Updated**: 2026-01-03 14:00:00
+> **Focus**: MCP Servers for Claude Code integration - COMPLETE & TESTED
 
 ---
 
 ## Session Summary
 
-### All Enhancements Implemented and Tested Successfully
+### MCP Servers - COMPLETE & VERIFIED
+
+Built two MCP servers for Claude Code integration:
+
+1. **mcp-notes-server** - Notes CRUD, search, version history via REST API
+2. **mcp-pg-server** - Direct PostgreSQL access with safety features
+
+Both servers tested and working. Security audit complete - no hardcoded credentials.
 
 ---
 
-## Implemented Changes
+## MCP Notes Server
 
-### 1. Prometheus Metrics Endpoint
+### Structure
 
-**Files Modified:**
-- `backend/src/SecondBrain.API/SecondBrain.API.csproj` - Added `OpenTelemetry.Exporter.Prometheus.AspNetCore` package
-- `backend/src/SecondBrain.API/Extensions/ServiceCollectionExtensions.cs` - Added `.AddPrometheusExporter()`
-- `backend/src/SecondBrain.API/Program.cs` - Added `app.MapPrometheusScrapingEndpoint().AllowAnonymous()`
-- `backend/src/SecondBrain.API/Middleware/ApiKeyAuthenticationMiddleware.cs` - Added `/metrics` to auth bypass
-- `backend/src/SecondBrain.API/Middleware/RequestLoggingMiddleware.cs` - Added `/metrics` to exclude paths
-
-**Result:** Prometheus now scrapes metrics successfully (verified: `Health: up`)
-
----
-
-### 2. Database Optimizations
-
-**Missing FK Index Added:**
-```sql
-CREATE INDEX ix_focus_suggestions_accepted_focus_item_id
-ON focus_suggestions(accepted_focus_item_id)
-WHERE accepted_focus_item_id IS NOT NULL;
+```
+tools/mcp-notes-server/
+├── package.json              # @modelcontextprotocol/sdk
+├── tsconfig.json             # ES2022, NodeNext modules
+├── README.md                 # Setup with env var docs
+└── src/
+    ├── index.ts              # MCP server entry point (8 tools)
+    ├── types.ts              # TypeScript interfaces
+    ├── api-client.ts         # HTTP client with ApiKey auth
+    └── handlers/
+        ├── index.ts          # Handler exports
+        ├── note-crud.ts      # create, get, update, delete
+        ├── note-list.ts      # list, search
+        └── note-versions.ts  # versions, restore
 ```
 
-**Files Modified:**
-- `database/55_focus_suggestions.sql` - Added index definition
+### Tools (8 total) - ALL TESTED
 
-**VACUUM Results:**
-| Table | Before | After |
-|-------|--------|-------|
-| `chat_sessions` | 107% dead rows | 0% dead rows |
-| `focus_items` | 250% dead rows | 0% dead rows |
+| Tool | Status | Description |
+|------|--------|-------------|
+| `create_note` | ✅ | Create note with title, content, tags, folder |
+| `get_note` | ✅ | Get full note content by ID |
+| `update_note` | ✅ | Partial update of note fields |
+| `delete_note` | ✅ | Soft delete (can be restored) |
+| `list_notes` | ✅ | Paginated list with filters |
+| `search_notes` | ✅ | Text search in notes |
+| `get_note_versions` | ✅ | PostgreSQL 18 temporal version history |
+| `restore_note_version` | ✅ | Non-destructive version restore |
 
 ---
 
-### 3. Connection Pooling Optimization
+## MCP PostgreSQL Server
 
-**Files Modified:**
-- `backend/src/SecondBrain.API/appsettings.json`
-- `backend/src/SecondBrain.API/appsettings.Development.json`
+### Structure
 
-**New Connection String Settings:**
 ```
-Pooling=true;MinPoolSize=5;MaxPoolSize=100;Connection Idle Lifetime=300;No Reset On Close=true
+tools/mcp-pg-server/
+├── package.json              # pg, fastest-levenshtein
+├── tsconfig.json
+├── README.md                 # Env var configuration docs
+├── test.ts                   # Test script (uses DATABASE_URL env)
+└── src/
+    └── index.ts              # 7 tools with safety features
 ```
 
-**Result:** DISCARD ALL calls reduced from 1,739 to 21 (98.8% reduction)
+### Tools (7 total)
+
+| Tool | Description |
+|------|-------------|
+| `execute_sql` | SQL with auto-limit, dry_run, explain, validation |
+| `search_objects` | Schema discovery with fuzzy matching |
+| `get_soft_delete_tables` | List tables using is_deleted pattern |
+| `suggest_table` | Fuzzy table name matching |
+| `get_foreign_keys` | Relationship discovery |
+| `get_table_sizes` | Disk usage statistics |
+| `search_columns` | Cross-table column search |
 
 ---
 
-### 4. Observability Stack Fixes
+## Security Audit - COMPLETE
 
-**Files Modified:**
-- `docker/observability/config/tempo-config.yml` - Fixed deprecated `defaults` field
-- `docker/observability/config/loki-config.yml` - Removed deprecated `enforce_metric_name`
-
-**Stack Status:** All services healthy (Grafana, Prometheus, Loki, Tempo)
-
----
-
-## Test Results
-
-### Stress Test (20 Concurrent Requests)
-
-| Endpoint | Response Times |
-|----------|---------------|
-| `/api/notes` | 594-616ms (consistent) |
-| `/api/chat/conversations` | 243-264ms (consistent) |
-
-### Prometheus Scraping
-- Target: `secondbrain-backend` - Health: **UP**
-- Metrics available at: http://localhost:5001/metrics
-
-### Database Health
-- All tables: 0% dead rows after VACUUM
-- New FK index verified and active
-- Cache hit rates: 95-99%
-
----
-
-## Grafana Dashboards Available
-
-Access Grafana at http://localhost:3001 (admin/admin):
-- **Second Brain - Overview**: Request rates, error rates, latency percentiles
-- **Second Brain - AI Providers**: Provider health, circuit breakers, token usage
-- **Second Brain - RAG Performance**: Query latency, relevance scores
-
----
-
-## Files Changed Summary
+### Credentials Removed
 
 | File | Change |
 |------|--------|
-| `SecondBrain.API.csproj` | +1 package |
-| `ServiceCollectionExtensions.cs` | +1 line |
-| `Program.cs` | +2 lines |
-| `ApiKeyAuthenticationMiddleware.cs` | +1 condition |
-| `RequestLoggingMiddleware.cs` | +1 path |
-| `appsettings.json` | Connection string updated |
-| `appsettings.Development.json` | Connection string updated |
-| `55_focus_suggestions.sql` | +4 lines (index) |
-| `tempo-config.yml` | Fixed deprecated config |
-| `loki-config.yml` | Fixed deprecated config |
+| `tools/mcp-pg-server/test.ts` | Changed hardcoded DSN → `process.env.DATABASE_URL` |
+| `.mcp.json` | Stays in `.gitignore` (contains real credentials) |
+
+### Configuration Pattern
+
+Servers use environment variables (not hardcoded):
+- `DATABASE_URL` - PostgreSQL connection string
+- `SECOND_BRAIN_API_URL` - API base URL
+- `SECOND_BRAIN_API_KEY` - API authentication key
+
+### Files Safe to Commit
+
+- `.mcp.json.example` - Template with placeholders (`YOUR_PASSWORD`, `YOUR_API_KEY_HERE`)
+- All source code in `tools/mcp-*/src/`
+- READMEs with env var documentation
+
+---
+
+## Git Status
+
+### Staged for Commit
+
+```
+.gitignore                           # Updated - allow MCP source, keep .mcp.json ignored
+.mcp.json.example                    # NEW - Template for users
+tools/mcp-notes-server/              # NEW - 8 files
+tools/mcp-pg-server/                 # NEW - 5 files
+.claude/session.md                   # Updated
+frontend/src-tauri/src/lib.rs        # Modified
+```
+
+### Still Ignored
+
+- `.mcp.json` - Contains real credentials
+- `tools/*/node_modules/` - Dependencies
+- `tools/*/dist/` - Build output
+
+---
+
+## Configuration
+
+### .mcp.json.example (Template)
+
+```json
+{
+  "mcpServers": {
+    "pg-docker": {
+      "command": "node",
+      "args": ["./tools/mcp-pg-server/dist/index.js"],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/secondbrain"
+      }
+    },
+    "second-brain-notes": {
+      "command": "node",
+      "args": ["./tools/mcp-notes-server/dist/index.js"],
+      "env": {
+        "SECOND_BRAIN_API_URL": "http://localhost:5001/api",
+        "SECOND_BRAIN_API_KEY": "YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Next Steps
+
+1. Commit the staged changes
+2. Update memory.md with MCP server learnings
 
 ---
 
