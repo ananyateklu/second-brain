@@ -317,6 +317,200 @@ public class NotesController : ControllerBase
     }
 
     // =========================================================================
+    // Trash (Soft-Deleted Notes) Endpoints
+    // =========================================================================
+
+    /// <summary>
+    /// Get all soft-deleted notes (trash) for the authenticated user.
+    /// Returns lightweight response with summary instead of full content.
+    /// </summary>
+    /// <returns>List of deleted notes</returns>
+    [HttpGet("trash")]
+    [ProducesResponseType(typeof(TrashNotesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<TrashNotesResponse>> GetTrash(CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var deletedNotes = await _noteRepository.GetDeletedByUserIdAsync(userId);
+        var notesList = deletedNotes.ToList();
+
+        var response = new TrashNotesResponse
+        {
+            Items = notesList.Select(n => new TrashNoteItem
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Summary = n.Summary,
+                Tags = n.Tags,
+                Folder = n.Folder,
+                DeletedAt = n.DeletedAt,
+                DeletedBy = n.DeletedBy,
+                CreatedAt = n.CreatedAt,
+                UpdatedAt = n.UpdatedAt
+            }).OrderByDescending(n => n.DeletedAt).ToList(),
+            TotalCount = notesList.Count
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Restore a soft-deleted note from trash
+    /// </summary>
+    /// <param name="id">Note ID to restore</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Restored note</returns>
+    [HttpPost("{id}/restore")]
+    [ProducesResponseType(typeof(NoteResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteResponse>> RestoreNote(string id, CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var result = await _noteOperationService.RestoreDeletedAsync(
+            id,
+            userId,
+            Core.Enums.NoteSource.Api,
+            cancellationToken);
+
+        return result.Match<ActionResult<NoteResponse>>(
+            opResult => Ok(opResult.Note.ToResponse()),
+            error => ResultExtensions.ToErrorActionResult<NoteResponse>(error));
+    }
+
+    /// <summary>
+    /// Permanently delete a note from trash (cannot be undone)
+    /// </summary>
+    /// <param name="id">Note ID to permanently delete</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>No content</returns>
+    [HttpDelete("{id}/permanent")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> PermanentDeleteNote(string id, CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var result = await _noteOperationService.PermanentDeleteAsync(id, userId, cancellationToken);
+
+        return result.Match<IActionResult>(
+            _ => NoContent(),
+            error => ResultExtensions.ToErrorActionResult(error));
+    }
+
+    /// <summary>
+    /// Empty the trash - permanently delete all soft-deleted notes (cannot be undone)
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of permanently deleted notes</returns>
+    [HttpDelete("trash/empty")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> EmptyTrash(CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var deletedNotes = await _noteRepository.GetDeletedByUserIdAsync(userId);
+        var noteIds = deletedNotes.Select(n => n.Id).ToList();
+
+        if (noteIds.Count == 0)
+        {
+            return Ok(new { deletedCount = 0, message = "Trash is already empty" });
+        }
+
+        var deletedCount = 0;
+        foreach (var noteId in noteIds)
+        {
+            var result = await _noteOperationService.PermanentDeleteAsync(noteId, userId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                deletedCount++;
+            }
+        }
+
+        return Ok(new { deletedCount, message = $"Permanently deleted {deletedCount} note(s)" });
+    }
+
+    /// <summary>
+    /// Bulk restore multiple notes from trash
+    /// </summary>
+    /// <param name="request">Request containing note IDs to restore</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of restored notes</returns>
+    [HttpPost("bulk-restore")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> BulkRestoreNotes(
+        [FromBody] BulkRestoreNotesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (request.NoteIds == null || request.NoteIds.Count == 0)
+        {
+            return BadRequest(new { error = "At least one note ID is required" });
+        }
+
+        var restoredCount = 0;
+        var failedIds = new List<string>();
+
+        foreach (var noteId in request.NoteIds)
+        {
+            var result = await _noteOperationService.RestoreDeletedAsync(
+                noteId,
+                userId,
+                Core.Enums.NoteSource.Api,
+                cancellationToken);
+
+            if (result.IsSuccess)
+            {
+                restoredCount++;
+            }
+            else
+            {
+                failedIds.Add(noteId);
+            }
+        }
+
+        return Ok(new
+        {
+            restoredCount,
+            failedCount = failedIds.Count,
+            failedIds,
+            message = $"Successfully restored {restoredCount} note(s)"
+        });
+    }
+
+    // =========================================================================
     // Note Summary Generation Endpoints
     // =========================================================================
 
