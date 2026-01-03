@@ -50,9 +50,7 @@ pub async fn get_app_version(app: AppHandle) -> Result<String, String> {
 pub async fn read_claude_session(project_path: String) -> Result<Option<String>, String> {
     use std::path::Path;
 
-    let session_path = Path::new(&project_path)
-        .join(".claude")
-        .join("session.md");
+    let session_path = Path::new(&project_path).join(".claude").join("session.md");
 
     if !session_path.exists() {
         return Ok(None);

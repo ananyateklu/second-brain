@@ -160,14 +160,18 @@ export function VoiceAgentInterface() {
 
   // Watch for disconnect errors and show feedback briefly
   useEffect(() => {
-    if (error && error.toLowerCase().includes('disconnected')) {
-      setShowDisconnected(true);
+    if (error?.toLowerCase().includes('disconnected')) {
+      // Schedule state update asynchronously to avoid cascading renders
+      const showTimer = setTimeout(() => setShowDisconnected(true), 0);
       // Auto-reset after 3 seconds
-      const timer = setTimeout(() => {
+      const hideTimer = setTimeout(() => {
         setShowDisconnected(false);
         _clearError();
       }, 3000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+      };
     }
   }, [error, _clearError]);
 
