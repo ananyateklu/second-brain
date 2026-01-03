@@ -29,6 +29,11 @@ public class RateLimitingMiddleware
     // Configuration - consider moving to appsettings.json for production
     private const int MaxRequestsPerMinute = 60;
     private const int MaxRequestsPer15Minutes = 300;
+
+    // Development mode has much higher limits for stress testing
+    private const int DevMaxRequestsPerMinute = 1000;
+    private const int DevMaxRequestsPer15Minutes = 5000;
+
     private const int CleanupIntervalMinutes = 5;
 
     // Localhost/loopback addresses to skip rate limiting in development/testing
@@ -37,7 +42,9 @@ public class RateLimitingMiddleware
         "127.0.0.1",
         "::1",
         "localhost",
-        "unknown"  // Used in integration tests where RemoteIpAddress is null
+        "unknown",  // Used in integration tests where RemoteIpAddress is null
+        "::ffff:127.0.0.1",  // IPv4-mapped IPv6 format
+        "0.0.0.0"  // Bind-all address
     };
 
     private static DateTime _lastCleanup = DateTime.UtcNow;
@@ -68,8 +75,9 @@ public class RateLimitingMiddleware
             return;
         }
 
-        // Skip rate limiting for localhost in development environment
-        if (_environment.IsDevelopment() && IsLocalhostAddress(ipAddress))
+        // Skip rate limiting for localhost in ALL environments
+        // (localhost traffic is trusted - enables local stress testing)
+        if (IsLocalhostAddress(ipAddress))
         {
             await _next(context);
             return;
@@ -84,7 +92,11 @@ public class RateLimitingMiddleware
 
         var counter = _requestCounts.GetOrAdd(ipAddress, _ => new RequestCounter());
 
-        if (!counter.IsAllowed(MaxRequestsPerMinute, MaxRequestsPer15Minutes))
+        // Use higher limits in development mode for stress testing
+        var limitPerMinute = _environment.IsDevelopment() ? DevMaxRequestsPerMinute : MaxRequestsPerMinute;
+        var limitPer15Minutes = _environment.IsDevelopment() ? DevMaxRequestsPer15Minutes : MaxRequestsPer15Minutes;
+
+        if (!counter.IsAllowed(limitPerMinute, limitPer15Minutes))
         {
             _logger.LogWarning("Rate limit exceeded for IP {IpAddress} on path {Path}", ipAddress, context.Request.Path);
 
@@ -104,10 +116,10 @@ public class RateLimitingMiddleware
         counter.RecordRequest();
 
         // Add rate limit headers
-        context.Response.Headers.Append("X-RateLimit-Limit-Minute", MaxRequestsPerMinute.ToString());
-        context.Response.Headers.Append("X-RateLimit-Limit-15Minutes", MaxRequestsPer15Minutes.ToString());
+        context.Response.Headers.Append("X-RateLimit-Limit-Minute", limitPerMinute.ToString());
+        context.Response.Headers.Append("X-RateLimit-Limit-15Minutes", limitPer15Minutes.ToString());
         context.Response.Headers.Append("X-RateLimit-Remaining-Minute",
-            counter.GetRemainingRequests(MaxRequestsPerMinute, TimeSpan.FromMinutes(1)).ToString());
+            counter.GetRemainingRequests(limitPerMinute, TimeSpan.FromMinutes(1)).ToString());
 
         await _next(context);
     }
@@ -132,7 +144,26 @@ public class RateLimitingMiddleware
 
     private static bool IsLocalhostAddress(string ipAddress)
     {
-        return LocalhostAddresses.Contains(ipAddress);
+        // Quick check against known localhost strings
+        if (LocalhostAddresses.Contains(ipAddress))
+            return true;
+
+        // Parse and check if it's a loopback address (handles all formats)
+        if (IPAddress.TryParse(ipAddress, out var parsedIp))
+        {
+            // Check if it's a loopback address
+            if (IPAddress.IsLoopback(parsedIp))
+                return true;
+
+            // Handle IPv4-mapped IPv6 addresses (::ffff:x.x.x.x)
+            if (parsedIp.IsIPv4MappedToIPv6)
+            {
+                var ipv4 = parsedIp.MapToIPv4();
+                return IPAddress.IsLoopback(ipv4);
+            }
+        }
+
+        return false;
     }
 
     private static void CleanupOldEntries()

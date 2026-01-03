@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
@@ -686,11 +687,22 @@ public static class ServiceCollectionExtensions
         services.AddRateLimiter(options =>
         {
             // Global rate limiter - applies to all endpoints
-            // Uses NoLimiter in Testing environment to avoid flaky integration tests
+            // Bypasses for Testing environment and localhost (stress testing, local dev)
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
                 var environment = context.RequestServices.GetService<IWebHostEnvironment>();
+
+                // Bypass rate limiting in Testing environment (integration tests)
                 if (environment?.EnvironmentName == "Testing")
+                {
+                    return RateLimitPartition.GetNoLimiter(string.Empty);
+                }
+
+                // Bypass rate limiting for localhost in ALL environments
+                // (localhost traffic is trusted - enables local stress testing)
+                var ip = context.Connection.RemoteIpAddress;
+                if (ip != null && (IPAddress.IsLoopback(ip) ||
+                    (ip.IsIPv4MappedToIPv6 && IPAddress.IsLoopback(ip.MapToIPv4()))))
                 {
                     return RateLimitPartition.GetNoLimiter(string.Empty);
                 }
@@ -878,7 +890,8 @@ public static class ServiceCollectionExtensions
                 .AddMeter(TelemetryConfiguration.VoiceMetrics.Name)
                 .AddMeter(TelemetryConfiguration.FocusMetrics.Name)
                 .AddMeter(TelemetryConfiguration.CircuitBreakerMetrics.Name)
-                .AddOtlpExporter());
+                .AddOtlpExporter()
+                .AddPrometheusExporter());
 
         return services;
     }

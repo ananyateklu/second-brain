@@ -40,12 +40,13 @@ public class ApiKeyAuthenticationMiddleware
         IJwtService jwtService,
         HybridCache cache)
     {
-        // Skip authentication for health check endpoints - including versioned routes
+        // Skip authentication for health check and metrics endpoints - including versioned routes
         if (context.Request.Path.StartsWithSegments("/health") ||
             context.Request.Path.StartsWithSegments("/api/health") ||
             context.Request.Path.StartsWithSegments("/api/v1/health") ||
             context.Request.Path.StartsWithSegments("/api/ai/health") ||
-            context.Request.Path.StartsWithSegments("/api/v1/ai/health"))
+            context.Request.Path.StartsWithSegments("/api/v1/ai/health") ||
+            context.Request.Path.StartsWithSegments("/metrics"))
         {
             await _next(context);
             return;

@@ -828,6 +828,9 @@ app.MapHealthChecks("/api/health/live", new HealthCheckOptions
     ResponseWriter = WriteDetailedHealthCheckResponse
 });
 
+// Prometheus metrics endpoint (no authentication required for scraping)
+app.MapPrometheusScrapingEndpoint().AllowAnonymous();
+
 // Health check response writer
 static async Task WriteDetailedHealthCheckResponse(HttpContext context, HealthReport report)
 {
