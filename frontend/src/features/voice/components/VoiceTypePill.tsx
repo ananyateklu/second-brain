@@ -2,6 +2,7 @@
  * VoiceTypePill Component
  * Segmented toggle for switching between GrokVoice and Standard voice modes
  * Both options are always visible, active one has green highlight
+ * Users can switch between modes even when one is unavailable to see configuration status
  */
 
 import type { VoiceProviderType } from '../types/voice-types';
@@ -10,6 +11,7 @@ interface VoiceTypePillProps {
   voiceProviderType: VoiceProviderType;
   onVoiceProviderTypeChange: (type: VoiceProviderType) => void;
   grokVoiceAvailable: boolean;
+  standardVoiceAvailable?: boolean;
   disabled?: boolean;
 }
 
@@ -17,15 +19,30 @@ export function VoiceTypePill({
   voiceProviderType,
   onVoiceProviderTypeChange,
   grokVoiceAvailable,
+  standardVoiceAvailable = true,
   disabled = false,
 }: VoiceTypePillProps) {
   const isGrokMode = voiceProviderType === 'GrokVoice';
 
   const handleSelect = (type: VoiceProviderType) => {
     if (disabled) return;
-    // Only switch to GrokVoice if it's available
-    if (type === 'GrokVoice' && !grokVoiceAvailable) return;
+    // Allow switching between modes even when unavailable (to show config status)
     onVoiceProviderTypeChange(type);
+  };
+
+  // Get tooltip text for each mode
+  const getStandardTooltip = () => {
+    if (!standardVoiceAvailable) {
+      return 'Standard Voice not configured - click to see details';
+    }
+    return undefined;
+  };
+
+  const getGrokTooltip = () => {
+    if (!grokVoiceAvailable) {
+      return 'Grok Voice not configured - click to see details';
+    }
+    return undefined;
   };
 
   return (
@@ -44,6 +61,7 @@ export function VoiceTypePill({
         type="button"
         onClick={() => handleSelect('Standard')}
         disabled={disabled}
+        title={getStandardTooltip()}
         className={`
           flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
           transition-all duration-200
@@ -59,21 +77,26 @@ export function VoiceTypePill({
           boxShadow: !isGrokMode
             ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
             : 'none',
+          // Visual indicator for unavailable mode (subtle opacity when not selected)
+          opacity: !standardVoiceAvailable && isGrokMode ? 0.6 : 1,
         }}
       >
         <span>Standard</span>
+        {!standardVoiceAvailable && (
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Not configured" />
+        )}
       </button>
 
       {/* Grok Voice Option */}
       <button
         type="button"
         onClick={() => handleSelect('GrokVoice')}
-        disabled={disabled || !grokVoiceAvailable}
-        title={!grokVoiceAvailable ? 'Grok Voice is not available - check xAI API key' : undefined}
+        disabled={disabled}
+        title={getGrokTooltip()}
         className={`
           flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
           transition-all duration-200
-          ${disabled || !grokVoiceAvailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+          ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{
           backgroundColor: isGrokMode
@@ -85,9 +108,14 @@ export function VoiceTypePill({
           boxShadow: isGrokMode
             ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
             : 'none',
+          // Visual indicator for unavailable mode (subtle opacity when not selected)
+          opacity: !grokVoiceAvailable && !isGrokMode ? 0.6 : 1,
         }}
       >
         <span>Grok</span>
+        {!grokVoiceAvailable && (
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Not configured" />
+        )}
       </button>
     </div>
   );

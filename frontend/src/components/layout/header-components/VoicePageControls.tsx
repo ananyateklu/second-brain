@@ -23,6 +23,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
   const voiceSidebarVisible = useBoundStore((state) => state.voiceSidebarVisible);
   const toggleVoiceSidebar = useBoundStore((state) => state.toggleVoiceSidebar);
   const grokVoiceAvailable = useBoundStore((state) => state.grokVoiceAvailable);
+  const deepgramAvailable = useBoundStore((state) => state.deepgramAvailable);
+  const elevenLabsAvailable = useBoundStore((state) => state.elevenLabsAvailable);
+  const standardVoiceAvailable = deepgramAvailable && elevenLabsAvailable;
 
   // Extract values for memoization
   const agentEnabled = headerState?.agentEnabled;
@@ -338,6 +341,7 @@ export const VoicePageControls = memo(function VoicePageControls() {
           voiceProviderType={voiceProviderType}
           onVoiceProviderTypeChange={onVoiceProviderTypeChange}
           grokVoiceAvailable={grokVoiceAvailable}
+          standardVoiceAvailable={standardVoiceAvailable}
           disabled={isSessionActive}
         />
 

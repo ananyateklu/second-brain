@@ -30,6 +30,7 @@ import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { VoiceTranscript } from './VoiceTranscript';
 import { VoiceInputBar } from './VoiceInputBar';
 import { VoiceSidebar } from './VoiceSidebar';
+import { VoiceConfigurationBanner } from './VoiceConfigurationBanner';
 import { voiceService } from '../../../services/voice.service';
 import type { VoiceSessionOptions } from '../types/voice-types';
 import type { VoiceHeaderState, VoiceAgentCapability } from '../context/VoicePageContext';
@@ -56,7 +57,9 @@ export function VoiceAgentInterface() {
     currentToolName: _currentToolName,
     // Grok Voice state
     voiceProviderType,
-    grokVoiceAvailable: _grokVoiceAvailable,
+    grokVoiceAvailable,
+    deepgramAvailable,
+    elevenLabsAvailable,
     selectedGrokVoice,
     availableGrokVoices,
     enableGrokWebSearch,
@@ -500,6 +503,12 @@ export function VoiceAgentInterface() {
   // Check if viewing historical session
   const isViewingHistory = !!selectedHistoricalSessionId && !isConnected;
 
+  // Check if current voice mode is configured
+  const standardVoiceAvailable = deepgramAvailable && elevenLabsAvailable;
+  const isCurrentModeConfigured = voiceProviderType === 'GrokVoice'
+    ? grokVoiceAvailable
+    : standardVoiceAvailable;
+
   // Get transcript to display (current or historical)
   const displayTranscriptHistory = isViewingHistory
     ? historicalTranscript?.turns.map((t) => {
@@ -565,17 +574,28 @@ export function VoiceAgentInterface() {
 
       {/* Main Content Area */}
       <div className="flex-1 relative min-h-0 min-w-0">
-        {/* Transcript */}
-        <VoiceTranscript
-          transcriptHistory={displayTranscriptHistory}
-          currentTranscript={isViewingHistory ? '' : currentTranscript}
-          currentAssistantTranscript={isViewingHistory ? '' : currentAssistantTranscript}
-          isTranscribing={isViewingHistory ? false : isTranscribing}
-          sessionState={isViewingHistory ? 'Idle' : sessionState}
-          activeToolExecutions={isViewingHistory ? [] : toolExecutions.filter(t => t.status === 'executing')}
-          activeThinkingSteps={isViewingHistory ? [] : thinkingSteps}
-          activeRetrievedNotes={isViewingHistory ? [] : retrievedNotes}
-        />
+        {/* Configuration Banner - shown when current mode is not configured */}
+        {!isCurrentModeConfigured && !isViewingHistory ? (
+          <VoiceConfigurationBanner
+            voiceProviderType={voiceProviderType}
+            grokVoiceAvailable={grokVoiceAvailable}
+            deepgramAvailable={deepgramAvailable}
+            elevenLabsAvailable={elevenLabsAvailable}
+            onSwitchMode={setVoiceProviderType}
+          />
+        ) : (
+          /* Transcript - shown when mode is configured or viewing history */
+          <VoiceTranscript
+            transcriptHistory={displayTranscriptHistory}
+            currentTranscript={isViewingHistory ? '' : currentTranscript}
+            currentAssistantTranscript={isViewingHistory ? '' : currentAssistantTranscript}
+            isTranscribing={isViewingHistory ? false : isTranscribing}
+            sessionState={isViewingHistory ? 'Idle' : sessionState}
+            activeToolExecutions={isViewingHistory ? [] : toolExecutions.filter(t => t.status === 'executing')}
+            activeThinkingSteps={isViewingHistory ? [] : thinkingSteps}
+            activeRetrievedNotes={isViewingHistory ? [] : retrievedNotes}
+          />
+        )}
 
         {/* Floating Voice Input Bar */}
         {!isViewingHistory && (
