@@ -76,7 +76,7 @@ public class ChatConversation : ISoftDeletable
 }
 
 [Table("chat_messages")]
-public class ChatMessage
+public class ChatMessage : ISoftDeletable
 {
     [Key]
     [Column("id")]
@@ -187,6 +187,17 @@ public class ChatMessage
     [MaxLength(20)]
     public string? MarkdownRenderer { get; set; }
 
+    // Soft delete properties (ISoftDeletable)
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("deleted_by")]
+    [MaxLength(128)]
+    public string? DeletedBy { get; set; }
+
     // Navigation property back to conversation (ignored to prevent circular serialization)
     [ForeignKey("ConversationId")]
     [JsonIgnore]
@@ -229,7 +240,7 @@ public class MessageImage
 }
 
 [Table("tool_calls")]
-public class ToolCall
+public class ToolCall : ISoftDeletable
 {
     [Key]
     [Column("id")]
@@ -269,6 +280,17 @@ public class ToolCall
     /// </summary>
     [Column("thought_signature")]
     public string? ThoughtSignature { get; set; }
+
+    // Soft delete properties (ISoftDeletable)
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("deleted_by")]
+    [MaxLength(128)]
+    public string? DeletedBy { get; set; }
 
     // Navigation property back to message (ignored to prevent circular serialization)
     [ForeignKey("MessageId")]

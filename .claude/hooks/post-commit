@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Post-commit hook - Info only, no write operations
+# Install: cp .claude/hooks/post-commit .git/hooks/post-commit && chmod +x .git/hooks/post-commit
+#
+# NOTE: This hook is READ-ONLY. It does not modify git history.
+# All commits must be done manually by the developer.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+# Silently regenerate auto-context (read-only operation)
+./.claude/auto-context.sh > /dev/null 2>&1
+
+echo "✅ Auto-context updated (read-only)"
+echo "💡 Remember to commit session changes manually if needed"

@@ -18,11 +18,19 @@ public static class TelemetryConfiguration
     public static readonly ActivitySource AgentSource = new("SecondBrain.Agent");
     public static readonly ActivitySource EmbeddingSource = new("SecondBrain.Embedding");
     public static readonly ActivitySource ChatSource = new("SecondBrain.Chat");
+    public static readonly ActivitySource NotesSource = new("SecondBrain.Notes");
+    public static readonly ActivitySource VoiceSource = new("SecondBrain.Voice");
+    public static readonly ActivitySource FocusSource = new("SecondBrain.Focus");
 
     // Meters for Metrics
     public static readonly Meter AIMetrics = new("SecondBrain.AI", ServiceVersion);
     public static readonly Meter RAGMetrics = new("SecondBrain.RAG", ServiceVersion);
     public static readonly Meter CacheMetrics = new("SecondBrain.Cache", ServiceVersion);
+    public static readonly Meter DatabaseMetrics = new("SecondBrain.Database", ServiceVersion);
+    public static readonly Meter NotesMetrics = new("SecondBrain.Notes", ServiceVersion);
+    public static readonly Meter VoiceMetrics = new("SecondBrain.Voice", ServiceVersion);
+    public static readonly Meter FocusMetrics = new("SecondBrain.Focus", ServiceVersion);
+    public static readonly Meter CircuitBreakerMetrics = new("SecondBrain.CircuitBreaker", ServiceVersion);
 
     // AI Provider Counters
     public static readonly Counter<long> AIRequestsTotal = AIMetrics.CreateCounter<long>(
@@ -54,6 +62,29 @@ public static class TelemetryConfiguration
     public static readonly Counter<long> CacheMissesTotal = CacheMetrics.CreateCounter<long>(
         "cache_misses_total",
         description: "Total embedding cache misses");
+
+    // Database Counters
+    public static readonly Counter<long> DbQueriesTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_queries_total",
+        description: "Total database queries executed");
+
+    public static readonly Counter<long> DbErrorsTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_errors_total",
+        description: "Total database errors");
+
+    public static readonly Counter<long> DbBulkOperationsTotal = DatabaseMetrics.CreateCounter<long>(
+        "db_bulk_operations_total",
+        description: "Total bulk database operations (ExecuteUpdate/ExecuteDelete)");
+
+    // Database Histograms
+    public static readonly Histogram<double> DbQueryDuration = DatabaseMetrics.CreateHistogram<double>(
+        "db_query_duration_ms",
+        unit: "ms",
+        description: "Database query duration in milliseconds");
+
+    public static readonly Histogram<int> DbBulkOperationRows = DatabaseMetrics.CreateHistogram<int>(
+        "db_bulk_operation_rows",
+        description: "Number of rows affected by bulk operations");
 
     // AI Response Histograms
     public static readonly Histogram<double> AIResponseDuration = AIMetrics.CreateHistogram<double>(
@@ -110,6 +141,87 @@ public static class TelemetryConfiguration
         "embedding_batch_size",
         description: "Number of texts in embedding batch requests");
 
+    // Notes Metrics
+    public static readonly Counter<long> NotesCreatedTotal = NotesMetrics.CreateCounter<long>(
+        "notes_created_total",
+        description: "Total notes created");
+
+    public static readonly Counter<long> NotesUpdatedTotal = NotesMetrics.CreateCounter<long>(
+        "notes_updated_total",
+        description: "Total note updates");
+
+    public static readonly Counter<long> NotesDeletedTotal = NotesMetrics.CreateCounter<long>(
+        "notes_deleted_total",
+        description: "Total notes deleted (soft delete)");
+
+    public static readonly Counter<long> NotesIndexedTotal = NotesMetrics.CreateCounter<long>(
+        "notes_indexed_total",
+        description: "Total notes indexed for RAG");
+
+    public static readonly Histogram<double> NoteIndexingDuration = NotesMetrics.CreateHistogram<double>(
+        "note_indexing_duration_ms",
+        unit: "ms",
+        description: "Note indexing duration in milliseconds");
+
+    // Voice Metrics
+    public static readonly Counter<long> VoiceSessionsTotal = VoiceMetrics.CreateCounter<long>(
+        "voice_sessions_total",
+        description: "Total voice sessions started");
+
+    public static readonly Counter<long> VoiceTurnsTotal = VoiceMetrics.CreateCounter<long>(
+        "voice_turns_total",
+        description: "Total voice turns (user + assistant)");
+
+    public static readonly Histogram<double> VoiceSessionDuration = VoiceMetrics.CreateHistogram<double>(
+        "voice_session_duration_ms",
+        unit: "ms",
+        description: "Voice session duration in milliseconds");
+
+    public static readonly Histogram<double> TranscriptionDuration = VoiceMetrics.CreateHistogram<double>(
+        "transcription_duration_ms",
+        unit: "ms",
+        description: "Speech-to-text transcription duration");
+
+    public static readonly Histogram<double> SynthesisDuration = VoiceMetrics.CreateHistogram<double>(
+        "synthesis_duration_ms",
+        unit: "ms",
+        description: "Text-to-speech synthesis duration");
+
+    // Focus Metrics
+    public static readonly Counter<long> FocusItemsCreatedTotal = FocusMetrics.CreateCounter<long>(
+        "focus_items_created_total",
+        description: "Total focus items created");
+
+    public static readonly Counter<long> FocusItemsCompletedTotal = FocusMetrics.CreateCounter<long>(
+        "focus_items_completed_total",
+        description: "Total focus items completed");
+
+    public static readonly Counter<long> FocusSuggestionsGeneratedTotal = FocusMetrics.CreateCounter<long>(
+        "focus_suggestions_generated_total",
+        description: "Total AI focus suggestions generated");
+
+    public static readonly Histogram<double> FocusTimerMinutes = FocusMetrics.CreateHistogram<double>(
+        "focus_timer_minutes",
+        unit: "minutes",
+        description: "Focus timer session duration in minutes");
+
+    // Circuit Breaker Metrics
+    public static readonly Counter<long> CircuitBreakerOpenedTotal = CircuitBreakerMetrics.CreateCounter<long>(
+        "circuit_breaker_opened_total",
+        description: "Total times circuit breaker opened");
+
+    public static readonly Counter<long> CircuitBreakerClosedTotal = CircuitBreakerMetrics.CreateCounter<long>(
+        "circuit_breaker_closed_total",
+        description: "Total times circuit breaker closed after recovery");
+
+    public static readonly Counter<long> CircuitBreakerHalfOpenTotal = CircuitBreakerMetrics.CreateCounter<long>(
+        "circuit_breaker_half_open_total",
+        description: "Total times circuit breaker entered half-open state");
+
+    public static readonly Counter<long> CircuitBreakerRejectedTotal = CircuitBreakerMetrics.CreateCounter<long>(
+        "circuit_breaker_rejected_total",
+        description: "Total requests rejected by open circuit breaker");
+
     // Circuit Breaker Gauge
     private static readonly List<Func<IEnumerable<Measurement<int>>>> CircuitBreakerStateCallbacks = new();
 
@@ -161,6 +273,30 @@ public static class TelemetryConfiguration
     {
         var activity = ChatSource.StartActivity(operation, ActivityKind.Internal);
         if (conversationId != null) activity?.SetTag("conversation.id", conversationId);
+        return activity;
+    }
+
+    public static Activity? StartNotesActivity(string operation, string? noteId = null, string? userId = null)
+    {
+        var activity = NotesSource.StartActivity(operation, ActivityKind.Internal);
+        if (noteId != null) activity?.SetTag("note.id", noteId);
+        if (userId != null) activity?.SetTag("user.id", userId);
+        return activity;
+    }
+
+    public static Activity? StartVoiceActivity(string operation, string? sessionId = null, string? userId = null)
+    {
+        var activity = VoiceSource.StartActivity(operation, ActivityKind.Internal);
+        if (sessionId != null) activity?.SetTag("voice.session.id", sessionId);
+        if (userId != null) activity?.SetTag("user.id", userId);
+        return activity;
+    }
+
+    public static Activity? StartFocusActivity(string operation, string? itemId = null, string? userId = null)
+    {
+        var activity = FocusSource.StartActivity(operation, ActivityKind.Internal);
+        if (itemId != null) activity?.SetTag("focus.item.id", itemId);
+        if (userId != null) activity?.SetTag("user.id", userId);
         return activity;
     }
 
@@ -241,5 +377,95 @@ public static class TelemetryConfiguration
     public static void RecordCacheMiss(string cacheType = "embedding")
     {
         CacheMissesTotal.Add(1, new TagList { { "cache_type", cacheType } });
+    }
+
+    // Helper to record notes metrics
+    public static void RecordNoteCreated(string userId)
+    {
+        NotesCreatedTotal.Add(1, new TagList { { "user.id", userId } });
+    }
+
+    public static void RecordNoteUpdated(string userId)
+    {
+        NotesUpdatedTotal.Add(1, new TagList { { "user.id", userId } });
+    }
+
+    public static void RecordNoteDeleted(string userId)
+    {
+        NotesDeletedTotal.Add(1, new TagList { { "user.id", userId } });
+    }
+
+    public static void RecordNoteIndexed(double durationMs, int chunkCount)
+    {
+        NotesIndexedTotal.Add(1);
+        NoteIndexingDuration.Record(durationMs, new TagList { { "chunk_count", chunkCount.ToString() } });
+    }
+
+    // Helper to record voice metrics
+    public static void RecordVoiceSessionStarted(string provider)
+    {
+        VoiceSessionsTotal.Add(1, new TagList { { "provider", provider } });
+    }
+
+    public static void RecordVoiceSessionEnded(string provider, double durationMs, int turnsCount)
+    {
+        var tags = new TagList
+        {
+            { "provider", provider },
+            { "turns", turnsCount.ToString() }
+        };
+        VoiceSessionDuration.Record(durationMs, tags);
+    }
+
+    public static void RecordTranscription(string provider, double durationMs)
+    {
+        TranscriptionDuration.Record(durationMs, new TagList { { "provider", provider } });
+    }
+
+    public static void RecordSynthesis(string provider, double durationMs)
+    {
+        SynthesisDuration.Record(durationMs, new TagList { { "provider", provider } });
+    }
+
+    // Helper to record focus metrics
+    public static void RecordFocusItemCreated(string priority)
+    {
+        FocusItemsCreatedTotal.Add(1, new TagList { { "priority", priority } });
+    }
+
+    public static void RecordFocusItemCompleted(string priority)
+    {
+        FocusItemsCompletedTotal.Add(1, new TagList { { "priority", priority } });
+    }
+
+    public static void RecordFocusSuggestionGenerated(int suggestionCount)
+    {
+        FocusSuggestionsGeneratedTotal.Add(suggestionCount);
+    }
+
+    public static void RecordFocusTimerSession(double minutes, string priority)
+    {
+        FocusTimerMinutes.Record(minutes, new TagList { { "priority", priority } });
+    }
+
+    // Helper to record circuit breaker metrics
+    public static void RecordCircuitBreakerOpened(string provider)
+    {
+        CircuitBreakerOpenedTotal.Add(1, new TagList { { "provider", provider } });
+    }
+
+    public static void RecordCircuitBreakerClosed(string provider)
+    {
+        CircuitBreakerClosedTotal.Add(1, new TagList { { "provider", provider } });
+    }
+
+    public static void RecordCircuitBreakerHalfOpen(string provider)
+    {
+        CircuitBreakerHalfOpenTotal.Add(1, new TagList { { "provider", provider } });
+    }
+
+    public static void RecordCircuitBreakerRejected(string provider)
+    {
+        CircuitBreakerRejectedTotal.Add(1, new TagList { { "provider", provider } });
     }
 }

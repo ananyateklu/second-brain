@@ -142,8 +142,8 @@ public class ApplicationDbContext : DbContext
         // Configure ChatMessage entity
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            // Matching query filter for parent conversation's soft delete
-            entity.HasQueryFilter(m => !m.Conversation!.IsDeleted);
+            // Direct query filter for soft deletes (avoids correlated subquery through Conversation)
+            entity.HasQueryFilter(m => !m.IsDeleted);
 
             // Configure UUIDv7 with database default (PostgreSQL 18)
             entity.Property(e => e.UuidV7)
@@ -186,8 +186,8 @@ public class ApplicationDbContext : DbContext
         // Configure ToolCall entity
         modelBuilder.Entity<ToolCall>(entity =>
         {
-            // Matching query filter for parent message's conversation soft delete
-            entity.HasQueryFilter(t => !t.Message!.Conversation!.IsDeleted);
+            // Direct query filter for soft deletes (avoids correlated subquery through Message->Conversation)
+            entity.HasQueryFilter(t => !t.IsDeleted);
 
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_tool_calls_message_id");
         });

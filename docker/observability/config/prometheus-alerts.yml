@@ -1,0 +1,254 @@
+# Prometheus Alert Rules for Second Brain
+# Production-ready alerting configuration
+
+groups:
+  # ============================================
+  # API Health Alerts
+  # ============================================
+  - name: secondbrain-api
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_request_duration_seconds_count{status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_server_request_duration_seconds_count[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: secondbrain-api
+        annotations:
+          summary: "High error rate detected (>5%)"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+          runbook_url: "https://docs.secondbrain.dev/runbooks/high-error-rate"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: secondbrain-api
+        annotations:
+          summary: "High API latency detected (p95 > 2s)"
+          description: "95th percentile latency is {{ $value | humanizeDuration }}"
+
+      - alert: APIDown
+        expr: up{job="secondbrain-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: secondbrain-api
+        annotations:
+          summary: "Second Brain API is down"
+          description: "The API has been unreachable for more than 1 minute"
+
+  # ============================================
+  # AI Provider Alerts
+  # ============================================
+  - name: secondbrain-ai-providers
+    interval: 30s
+    rules:
+      - alert: CircuitBreakerOpen
+        expr: secondbrain_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: warning
+          service: ai-provider
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.provider }}"
+          description: "Circuit breaker has been open for >1 minute. Provider may be experiencing issues."
+
+      - alert: HighAIProviderErrors
+        expr: |
+          sum(rate(secondbrain_circuit_breaker_requests_rejected_total[5m])) by (provider) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-provider
+        annotations:
+          summary: "High rejection rate for AI provider {{ $labels.provider }}"
+          description: "{{ $value }} requests/second being rejected due to open circuit breaker"
+
+      - alert: AIProviderHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(secondbrain_chat_response_seconds_bucket[5m])) by (le, provider)
+          ) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: ai-provider
+        annotations:
+          summary: "High AI response latency for {{ $labels.provider }}"
+          description: "95th percentile latency is {{ $value | humanizeDuration }}"
+
+      - alert: HighTokenConsumption
+        expr: |
+          sum(increase(secondbrain_tokens_consumed_total[1h])) by (provider) > 100000
+        for: 5m
+        labels:
+          severity: info
+          service: ai-provider
+        annotations:
+          summary: "High token consumption for {{ $labels.provider }}"
+          description: "{{ $value }} tokens consumed in the last hour"
+
+  # ============================================
+  # RAG Pipeline Alerts
+  # ============================================
+  - name: secondbrain-rag
+    interval: 30s
+    rules:
+      - alert: SlowRAGQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(secondbrain_rag_query_seconds_bucket[5m])) by (le)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "RAG queries are slow (p95 > 5s)"
+          description: "95th percentile RAG query latency is {{ $value | humanizeDuration }}"
+
+      - alert: RAGLowRelevanceScores
+        expr: |
+          avg(secondbrain_rag_avg_relevance_score) < 0.3
+        for: 15m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "RAG relevance scores are low"
+          description: "Average relevance score is {{ $value }}, which may indicate poor retrieval quality"
+
+      - alert: EmbeddingIndexingBacklog
+        expr: |
+          sum(secondbrain_indexing_jobs_pending) > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: rag
+        annotations:
+          summary: "Large embedding indexing backlog"
+          description: "{{ $value }} notes are waiting to be indexed"
+
+  # ============================================
+  # Voice Session Alerts
+  # ============================================
+  - name: secondbrain-voice
+    interval: 30s
+    rules:
+      - alert: HighVoiceSessionErrors
+        expr: |
+          sum(rate(secondbrain_voice_sessions_total{status="error"}[5m]))
+          /
+          sum(rate(secondbrain_voice_sessions_total[5m]))
+          > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: voice
+        annotations:
+          summary: "High voice session error rate"
+          description: "{{ $value | humanizePercentage }} of voice sessions are failing"
+
+      - alert: HighTranscriptionLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(secondbrain_transcription_seconds_bucket[5m])) by (le)
+          ) > 3
+        for: 5m
+        labels:
+          severity: warning
+          service: voice
+        annotations:
+          summary: "High transcription latency (p95 > 3s)"
+          description: "95th percentile transcription latency is {{ $value | humanizeDuration }}"
+
+  # ============================================
+  # Database Alerts
+  # ============================================
+  - name: secondbrain-database
+    interval: 30s
+    rules:
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(db_client_operation_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Slow database queries (p95 > 1s)"
+          description: "95th percentile database query latency is {{ $value | humanizeDuration }}"
+
+      - alert: DatabaseConnectionPoolExhaustion
+        expr: |
+          sum(db_client_connections_usage_total{state="used"})
+          /
+          sum(db_client_connections_max)
+          > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of database connections are in use"
+
+  # ============================================
+  # Focus/Productivity Alerts
+  # ============================================
+  - name: secondbrain-focus
+    interval: 60s
+    rules:
+      - alert: FocusSuggestionGenerationFailed
+        expr: |
+          increase(secondbrain_focus_suggestions_generated_total{status="error"}[1h]) > 5
+        for: 5m
+        labels:
+          severity: info
+          service: focus
+        annotations:
+          summary: "Focus suggestion generation is failing"
+          description: "{{ $value }} focus suggestion generation failures in the last hour"
+
+  # ============================================
+  # Infrastructure Alerts
+  # ============================================
+  - name: secondbrain-infrastructure
+    interval: 30s
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          process_resident_memory_bytes{job="secondbrain-backend"}
+          /
+          1024 / 1024 / 1024
+          > 1.5
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High memory usage (>1.5GB)"
+          description: "Backend is using {{ $value | humanize }}GB of memory"
+
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total{job="secondbrain-backend"}[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "Backend CPU usage is {{ $value | humanizePercentage }}"

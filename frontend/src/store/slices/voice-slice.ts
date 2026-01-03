@@ -13,6 +13,7 @@ import type {
   VoiceThinkingStep,
   VoiceRetrievedNote,
   VoiceGroundingSource,
+  VoiceSessionSummary,
 } from '../../features/voice/types/voice-types';
 import { normalizeState } from '../../features/voice/utils/voice-utils';
 
@@ -45,7 +46,15 @@ const defaultVoiceState = {
   currentTranscript: '',
   currentAssistantTranscript: '',
   isTranscribing: false,
-  transcriptHistory: [] as Array<{ role: 'user' | 'assistant'; content: string; timestamp: number }>,
+  transcriptHistory: [] as Array<{
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: number;
+    toolExecutions?: VoiceToolExecution[];
+    thinkingSteps?: VoiceThinkingStep[];
+    retrievedNotes?: VoiceRetrievedNote[];
+    durationMs?: number;
+  }>,
 
   // Settings
   selectedProvider: null as string | null,
@@ -74,6 +83,7 @@ const defaultVoiceState = {
   // Agent mode state
   agentEnabled: true,
   capabilities: ['notes-crud', 'notes-search'] as string[],
+  voiceRagEnabled: true, // RAG enabled by default when agent is enabled
   toolExecutions: [] as VoiceToolExecution[],
   thinkingSteps: [] as VoiceThinkingStep[],
   retrievedNotes: [] as VoiceRetrievedNote[],
@@ -81,6 +91,12 @@ const defaultVoiceState = {
   groundingSources: [] as VoiceGroundingSource[],
   isToolExecuting: false,
   currentToolName: null as string | null,
+
+  // Sidebar and history state
+  voiceSidebarVisible: true,
+  sessionHistory: [] as VoiceSessionSummary[],
+  selectedHistoricalSessionId: null as string | null,
+  isLoadingHistory: false,
 };
 
 // ============================================
@@ -145,12 +161,24 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
     set({ isTranscribing: isTranscribing });
   },
 
-  addTranscriptEntry: (role: 'user' | 'assistant', content: string) => {
+  addTranscriptEntry: (
+    role: 'user' | 'assistant',
+    content: string,
+    agentData?: {
+      toolExecutions?: VoiceToolExecution[];
+      thinkingSteps?: VoiceThinkingStep[];
+      retrievedNotes?: VoiceRetrievedNote[];
+      durationMs?: number;
+    }
+  ) => {
     set((state) => {
-      const newTranscripts = [
-        ...state.transcriptHistory,
-        { role, content, timestamp: Date.now() },
-      ];
+      const entry: typeof state.transcriptHistory[number] = {
+        role,
+        content,
+        timestamp: Date.now(),
+        ...agentData,
+      };
+      const newTranscripts = [...state.transcriptHistory, entry];
       // Keep only the last MAX_TRANSCRIPT_ENTRIES to prevent unbounded memory growth
       if (newTranscripts.length > MAX_TRANSCRIPT_ENTRIES) {
         newTranscripts.splice(0, newTranscripts.length - MAX_TRANSCRIPT_ENTRIES);
@@ -160,7 +188,11 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
   },
 
   clearTranscriptHistory: () => {
-    set({ transcriptHistory: [], currentTranscript: '', currentAssistantTranscript: '' });
+    set({
+      transcriptHistory: [],
+      currentTranscript: '',
+      currentAssistantTranscript: '',
+    });
   },
 
   // Settings actions
@@ -199,7 +231,8 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
     set({ error: null });
   },
 
-  // Reset action
+  // Reset action - preserves transcriptHistory so user can see conversation after ending
+  // Use clearTranscriptHistory() when starting a new session to clear the history
   resetVoiceState: () => {
     set({
       sessionId: null,
@@ -213,7 +246,8 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
       currentTranscript: '',
       currentAssistantTranscript: '',
       isTranscribing: false,
-      transcriptHistory: [],
+      // NOTE: transcriptHistory is intentionally NOT cleared here
+      // It persists so users can review the conversation after ending the session
       error: null,
       // Clear agent state on reset
       toolExecutions: [],
@@ -233,6 +267,10 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
 
   setCapabilities: (capabilities: string[]) => {
     set({ capabilities });
+  },
+
+  setVoiceRagEnabled: (enabled: boolean) => {
+    set({ voiceRagEnabled: enabled });
   },
 
   addToolExecution: (execution: VoiceToolExecution) => {
@@ -307,5 +345,26 @@ export const createVoiceSlice: SliceCreator<VoiceSlice> = (set) => ({
 
   setEnableGrokXSearch: (enabled: boolean) => {
     set({ enableGrokXSearch: enabled });
+  },
+
+  // Sidebar and history actions
+  toggleVoiceSidebar: () => {
+    set((state) => ({ voiceSidebarVisible: !state.voiceSidebarVisible }));
+  },
+
+  setVoiceSidebarVisible: (visible: boolean) => {
+    set({ voiceSidebarVisible: visible });
+  },
+
+  setSessionHistory: (sessions: VoiceSessionSummary[]) => {
+    set({ sessionHistory: sessions });
+  },
+
+  setSelectedHistoricalSessionId: (id: string | null) => {
+    set({ selectedHistoricalSessionId: id });
+  },
+
+  setIsLoadingHistory: (loading: boolean) => {
+    set({ isLoadingHistory: loading });
   },
 });

@@ -17,6 +17,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const titleBarHeight = useTitleBarHeight();
   const isChatPage = location.pathname === '/chat';
   const isDirectoryPage = location.pathname === '/notes';
+  const isVoicePage = location.pathname === '/voice';
   const isGitHubPage = location.pathname === '/github';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
@@ -25,7 +26,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const classes = ['flex-1'];
 
     // Padding classes - remove padding for full-width pages
-    if (isGitHubPage || isChatPage || isDirectoryPage) {
+    if (isGitHubPage || isChatPage || isDirectoryPage || isVoicePage) {
       classes.push('px-0', 'pt-0');
     } else {
       classes.push('px-4', 'md:px-6');
@@ -39,15 +40,15 @@ export function AppLayout({ children }: AppLayoutProps) {
     // Width and margin
     classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
 
-    // Overflow handling - chat and github need overflow hidden for their internal scrolling
-    if (isChatPage || isGitHubPage) {
+    // Overflow handling - chat, voice, and github need overflow hidden for their internal scrolling
+    if (isChatPage || isVoicePage || isGitHubPage) {
       classes.push('overflow-hidden');
     } else {
       classes.push('overflow-y-auto', 'thin-scrollbar');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isGitHubPage, isSettingsPage, isDirectoryPage]);
+  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage]);
 
   return (
     <div

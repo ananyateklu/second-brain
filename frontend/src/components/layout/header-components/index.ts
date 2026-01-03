@@ -10,4 +10,5 @@ export { FocusDashboardControls } from './FocusDashboardControls';
 export { HeaderFocusIndicator } from './HeaderFocusIndicator';
 export { ChatPageControls } from './ChatPageControls';
 export { DirectoryPageControls } from './DirectoryPageControls';
+export { VoicePageControls } from './VoicePageControls';
 export type { TimeRange } from './TimeRangeSelector';

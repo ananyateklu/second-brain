@@ -62,9 +62,12 @@ using SecondBrain.Application.Validators;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
 using SecondBrain.Infrastructure.Repositories;
+using SecondBrain.Infrastructure.Transactions;
 using SecondBrain.Infrastructure.VectorStore;
 using SecondBrain.API.Caching;
 using SecondBrain.API.Controllers;
+using Microsoft.Extensions.Http.Resilience;
+using Polly;
 
 namespace SecondBrain.API.Extensions;
 
@@ -240,6 +243,9 @@ public static class ServiceCollectionExtensions
         services.Configure<AIProvidersSettings>(configuration.GetSection(AIProvidersSettings.SectionName));
         services.Configure<CircuitBreakerSettings>(configuration.GetSection(CircuitBreakerSettings.SectionName));
 
+        // Configure request logging options (body capture, redaction, slow request detection)
+        services.Configure<RequestLoggingOptions>(configuration.GetSection(RequestLoggingOptions.SectionName));
+
         // Register client factories for testability
         services.AddSingleton<IAnthropicClientFactory, AnthropicClientFactory>();
         services.AddSingleton<IOpenAIClientFactory, OpenAIClientFactory>();
@@ -267,6 +273,27 @@ public static class ServiceCollectionExtensions
             var timeProvider = sp.GetRequiredService<TimeProvider>();
             return new AIProviderCircuitBreaker(logger, settings, timeProvider);
         });
+
+        // Wire up circuit breaker telemetry callbacks
+        AIProviderCircuitBreaker.OnStateChange = (provider, state, error) =>
+        {
+            switch (state)
+            {
+                case CircuitBreakerState.Open:
+                    TelemetryConfiguration.RecordCircuitBreakerOpened(provider);
+                    break;
+                case CircuitBreakerState.Closed:
+                    TelemetryConfiguration.RecordCircuitBreakerClosed(provider);
+                    break;
+                case CircuitBreakerState.HalfOpen:
+                    TelemetryConfiguration.RecordCircuitBreakerHalfOpen(provider);
+                    break;
+            }
+        };
+        AIProviderCircuitBreaker.OnRequestRejected = provider =>
+        {
+            TelemetryConfiguration.RecordCircuitBreakerRejected(provider);
+        };
 
         // Register the circuit breaker factory decorator as the IAIProviderFactory
         services.AddSingleton<IAIProviderFactory>(sp =>
@@ -384,8 +411,10 @@ public static class ServiceCollectionExtensions
             workMem: "128MB",
             enableJit: true);
 
-        // Register ApplicationDbContext with PostgreSQL
-        services.AddDbContext<ApplicationDbContext>(options =>
+        // Register ApplicationDbContext with PostgreSQL using DbContext pooling
+        // Context pooling reduces DbContext instantiation overhead by 20-30% by reusing context instances
+        // The pool resets context state between uses, making it safe for scoped injection
+        services.AddDbContextPool<ApplicationDbContext>(options =>
         {
             options.UseNpgsql(connectionString, npgsqlOptions =>
             {
@@ -407,7 +436,7 @@ public static class ServiceCollectionExtensions
             // and may have model changes that haven't been captured in a formal migration yet
             options.ConfigureWarnings(warnings =>
                 warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-        });
+        }, poolSize: 128); // Pool size optimized for concurrent RAG operations
 
         // Register DbContextFactory for parallel operations (thread-safe DbContext creation)
         // This allows creating isolated DbContext instances for concurrent database operations
@@ -432,6 +461,9 @@ public static class ServiceCollectionExtensions
                 warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
+        // Register Unit of Work for explicit transaction management
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         // Register repositories
         services.AddScoped<INoteRepository, SqlNoteRepository>();
         services.AddScoped<INoteImageRepository, SqlNoteImageRepository>();
@@ -442,6 +474,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISummaryJobRepository, SqlSummaryJobRepository>();
         services.AddScoped<IFocusItemRepository, SqlFocusItemRepository>();
         services.AddScoped<IFocusSuggestionRepository, SqlFocusSuggestionRepository>();
+        services.AddScoped<IVoiceSessionRepository, SqlVoiceSessionRepository>();
 
         // Focus AI service
         services.AddScoped<IFocusAIService, FocusAIService>();
@@ -818,7 +851,10 @@ public static class ServiceCollectionExtensions
                 .AddSource(TelemetryConfiguration.RAGPipelineSource.Name)
                 .AddSource(TelemetryConfiguration.AgentSource.Name)
                 .AddSource(TelemetryConfiguration.EmbeddingSource.Name)
-                .AddSource(TelemetryConfiguration.ChatSource.Name);
+                .AddSource(TelemetryConfiguration.ChatSource.Name)
+                .AddSource(TelemetryConfiguration.NotesSource.Name)
+                .AddSource(TelemetryConfiguration.VoiceSource.Name)
+                .AddSource(TelemetryConfiguration.FocusSource.Name);
 
                 // Exporters
                 if (exportToConsole)
@@ -837,6 +873,11 @@ public static class ServiceCollectionExtensions
                 .AddMeter(TelemetryConfiguration.AIMetrics.Name)
                 .AddMeter(TelemetryConfiguration.RAGMetrics.Name)
                 .AddMeter(TelemetryConfiguration.CacheMetrics.Name)
+                .AddMeter(TelemetryConfiguration.DatabaseMetrics.Name)
+                .AddMeter(TelemetryConfiguration.NotesMetrics.Name)
+                .AddMeter(TelemetryConfiguration.VoiceMetrics.Name)
+                .AddMeter(TelemetryConfiguration.FocusMetrics.Name)
+                .AddMeter(TelemetryConfiguration.CircuitBreakerMetrics.Name)
                 .AddOtlpExporter());
 
         return services;
@@ -1076,25 +1117,28 @@ public static class ServiceCollectionExtensions
         // Configure Voice settings
         services.Configure<VoiceSettings>(configuration.GetSection(VoiceSettings.SectionName));
 
-        // Register HTTP clients for STT providers
+        // Register HTTP clients for STT providers with resilience pipeline
         services.AddHttpClient("Deepgram", client =>
         {
             client.BaseAddress = new Uri("https://api.deepgram.com/");
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+            client.Timeout = TimeSpan.FromSeconds(60); // Total timeout handled by resilience pipeline
+        })
+        .AddResilienceHandler("deepgram-resilience", ConfigureVoiceResiliencePipeline);
 
-        // Register HTTP clients for TTS providers
+        // Register HTTP clients for TTS providers with resilience pipeline
         services.AddHttpClient("ElevenLabs", client =>
         {
             client.BaseAddress = new Uri("https://api.elevenlabs.io/");
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .AddResilienceHandler("elevenlabs-resilience", ConfigureVoiceResiliencePipeline);
 
         services.AddHttpClient("OpenAITTS", client =>
         {
             client.BaseAddress = new Uri("https://api.openai.com/");
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+            client.Timeout = TimeSpan.FromSeconds(60);
+        })
+        .AddResilienceHandler("openai-tts-resilience", ConfigureVoiceResiliencePipeline);
 
         // Register voice services
         // Session manager is singleton to maintain state across requests
@@ -1152,6 +1196,42 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGrokVoiceHandler, GrokVoiceHandler>();
 
         return services;
+    }
+
+    /// <summary>
+    /// Configures resilience pipeline for voice HTTP clients.
+    /// Includes retry with exponential backoff, circuit breaker, and timeout.
+    /// </summary>
+    private static void ConfigureVoiceResiliencePipeline(ResiliencePipelineBuilder<HttpResponseMessage> builder)
+    {
+        // Retry with exponential backoff for transient errors
+        builder.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            Delay = TimeSpan.FromSeconds(1),
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true, // Add randomness to prevent thundering herd
+            ShouldHandle = new PredicateBuilder<HttpResponseMessage>()
+                .Handle<HttpRequestException>()
+                .Handle<TaskCanceledException>(ex => !ex.CancellationToken.IsCancellationRequested) // Timeout, not user cancellation
+                .HandleResult(response =>
+                    response.StatusCode is System.Net.HttpStatusCode.TooManyRequests
+                    or System.Net.HttpStatusCode.ServiceUnavailable
+                    or System.Net.HttpStatusCode.GatewayTimeout
+                    or System.Net.HttpStatusCode.RequestTimeout)
+        });
+
+        // Circuit breaker to fail fast when service is unhealthy
+        builder.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            FailureRatio = 0.5, // Open circuit after 50% failure rate
+            SamplingDuration = TimeSpan.FromSeconds(30),
+            MinimumThroughput = 5, // Minimum 5 requests before opening
+            BreakDuration = TimeSpan.FromSeconds(30)
+        });
+
+        // Request timeout
+        builder.AddTimeout(TimeSpan.FromSeconds(30));
     }
 }
 

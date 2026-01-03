@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Pre-push hook - Info only, no write operations
+# Install: cp .claude/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# NOTE: This hook is READ-ONLY. It does not modify git history or prevent pushes.
+# All git operations must be done manually by the developer.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+cd "$PROJECT_ROOT"
+
+echo "🔄 Generating fresh auto-context before push..."
+
+# Regenerate auto-context (read-only operation)
+./.claude/auto-context.sh
+
+echo "✅ Auto-context updated (read-only)"
+echo "💡 Push will proceed - no git operations performed by this hook"

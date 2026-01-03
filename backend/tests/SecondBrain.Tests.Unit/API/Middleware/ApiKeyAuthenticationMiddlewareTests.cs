@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Middleware;
 using SecondBrain.Application.Services.Auth;
@@ -8,11 +9,52 @@ using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Tests.Unit.API.Middleware;
 
+#pragma warning disable EXTEXP0018 // HybridCache is experimental
+
+/// <summary>
+/// A test implementation of HybridCache that simply passes through to the factory.
+/// HybridCache has non-virtual methods so can't be mocked with Moq.
+/// </summary>
+public class PassthroughHybridCache : HybridCache
+{
+    public override ValueTask<T> GetOrCreateAsync<TState, T>(
+        string key,
+        TState state,
+        Func<TState, CancellationToken, ValueTask<T>> factory,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        return factory(state, cancellationToken);
+    }
+
+    public override ValueTask RemoveAsync(string key, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask RemoveByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.CompletedTask;
+    }
+
+    public override ValueTask SetAsync<T>(
+        string key,
+        T value,
+        HybridCacheEntryOptions? options = null,
+        IEnumerable<string>? tags = null,
+        CancellationToken cancellationToken = default)
+    {
+        return ValueTask.CompletedTask;
+    }
+}
+
 public class ApiKeyAuthenticationMiddlewareTests
 {
     private readonly Mock<ILogger<ApiKeyAuthenticationMiddleware>> _mockLogger;
     private readonly Mock<IUserRepository> _mockUserRepository;
     private readonly Mock<IJwtService> _mockJwtService;
+    private readonly HybridCache _cache;
     private bool _nextCalled;
 
     public ApiKeyAuthenticationMiddlewareTests()
@@ -20,6 +62,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockLogger = new Mock<ILogger<ApiKeyAuthenticationMiddleware>>();
         _mockUserRepository = new Mock<IUserRepository>();
         _mockJwtService = new Mock<IJwtService>();
+        _cache = new PassthroughHybridCache();
     }
 
     private async Task NextDelegate(HttpContext context)
@@ -49,7 +92,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         var context = CreateHttpContext(path);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -69,7 +112,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         var context = CreateHttpContext(path);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -87,7 +130,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         var context = CreateHttpContext(path);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -105,7 +148,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         var context = CreateHttpContext("/api/notes");
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -135,7 +178,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -152,7 +195,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         context.Request.Headers["Authorization"] = "Bearer ";
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -170,7 +213,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockJwtService.Setup(s => s.ValidateToken("invalid-token")).Returns((ClaimsPrincipal?)null);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -193,7 +236,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockJwtService.Setup(s => s.ValidateToken("token-without-userid")).Returns(claims);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -218,7 +261,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -244,7 +287,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -263,7 +306,7 @@ public class ApiKeyAuthenticationMiddlewareTests
             .Throws(new Exception("Token validation failed"));
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -289,7 +332,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -313,7 +356,7 @@ public class ApiKeyAuthenticationMiddlewareTests
             .ReturnsAsync(userId);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -331,7 +374,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         context.Request.Headers["Authorization"] = "ApiKey ";
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -350,7 +393,7 @@ public class ApiKeyAuthenticationMiddlewareTests
             .ReturnsAsync((string?)null);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -369,7 +412,7 @@ public class ApiKeyAuthenticationMiddlewareTests
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
@@ -389,7 +432,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         context.Request.Headers["Authorization"] = "InvalidFormat some-token";
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -405,7 +448,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         context.Request.Headers["Authorization"] = "some-token-without-prefix";
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
@@ -438,7 +481,7 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -459,7 +502,7 @@ public class ApiKeyAuthenticationMiddlewareTests
             .ReturnsAsync("user-123");
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
         _nextCalled.Should().BeTrue();
@@ -470,7 +513,7 @@ public class ApiKeyAuthenticationMiddlewareTests
     #region User Context Tests
 
     [Fact]
-    public async Task InvokeAsync_WithJwt_StoresUserObjectInContext()
+    public async Task InvokeAsync_WithJwt_StoresUserIdInContext()
     {
         // Arrange
         var middleware = CreateMiddleware();
@@ -488,10 +531,14 @@ public class ApiKeyAuthenticationMiddlewareTests
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
 
         // Act
-        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object);
+        await middleware.InvokeAsync(context, _mockUserRepository.Object, _mockJwtService.Object, _cache);
 
         // Assert
-        context.Items["User"].Should().Be(user);
+        // Note: The middleware caches minimal user info (CachedUserAuth) for performance,
+        // so only UserId and AuthMethod are stored in context. Full User object is not cached
+        // to reduce serialization overhead and improve performance.
+        context.Items["UserId"].Should().Be(userId);
+        context.Items["AuthMethod"].Should().Be("JWT");
     }
 
     #endregion
@@ -521,4 +568,3 @@ public class ApiKeyAuthenticationMiddlewareTests
 
     #endregion
 }
-

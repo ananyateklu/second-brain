@@ -153,6 +153,11 @@ public class VoiceTurn
     /// Token counts for AI responses
     /// </summary>
     public TokenUsage? TokenUsage { get; set; }
+
+    /// <summary>
+    /// JSON serialized tool calls made during this turn (if any)
+    /// </summary>
+    public string? ToolCallsJson { get; set; }
 }
 
 /// <summary>
@@ -162,6 +167,20 @@ public class TokenUsage
 {
     public int InputTokens { get; set; }
     public int OutputTokens { get; set; }
+}
+
+/// <summary>
+/// Record of a tool call made during a voice turn
+/// </summary>
+public class VoiceToolCallRecord
+{
+    public string ToolId { get; set; } = string.Empty;
+    public string ToolName { get; set; } = string.Empty;
+    public string? Arguments { get; set; }
+    public string? Result { get; set; }
+    public DateTime StartedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
+    public string Status { get; set; } = "pending";
 }
 
 /// <summary>

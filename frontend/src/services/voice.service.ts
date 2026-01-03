@@ -10,6 +10,8 @@ import type {
   ClientVoiceMessage,
   ServerVoiceMessage,
   VoiceSessionState,
+  VoiceSessionHistoryResponse,
+  VoiceSessionDetail,
 } from '../features/voice/types/voice-types';
 
 // ============================================================================
@@ -57,6 +59,46 @@ export const voiceService = {
    */
   async getStatus(): Promise<VoiceServiceStatus> {
     return apiClient.get<VoiceServiceStatus>(API_ENDPOINTS.VOICE.STATUS);
+  },
+
+  // ============================================================================
+  // Session History API
+  // ============================================================================
+
+  /**
+   * Get paginated voice session history
+   */
+  async getSessionHistory(
+    page = 1,
+    pageSize = 20,
+    status?: 'active' | 'ended' | 'error'
+  ): Promise<VoiceSessionHistoryResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (status) {
+      params.append('status', status);
+    }
+    return apiClient.get<VoiceSessionHistoryResponse>(
+      `${API_ENDPOINTS.VOICE.SESSIONS}?${params.toString()}`
+    );
+  },
+
+  /**
+   * Get a specific session with full transcript
+   */
+  async getSessionTranscript(sessionId: string): Promise<VoiceSessionDetail> {
+    return apiClient.get<VoiceSessionDetail>(
+      API_ENDPOINTS.VOICE.SESSION_TRANSCRIPT(sessionId)
+    );
+  },
+
+  /**
+   * Delete a voice session and its transcript history
+   */
+  async deleteSessionHistory(sessionId: string): Promise<void> {
+    return apiClient.delete(API_ENDPOINTS.VOICE.SESSION_DELETE_HISTORY(sessionId));
   },
 
   /**

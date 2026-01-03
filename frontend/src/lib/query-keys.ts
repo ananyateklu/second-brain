@@ -332,6 +332,18 @@ export const agentKeys = {
 } as const;
 
 /**
+ * Filters for voice session history queries
+ */
+export interface VoiceSessionFilters {
+  /** Page number (1-based) */
+  page?: number;
+  /** Items per page */
+  pageSize?: number;
+  /** Filter by session status */
+  status?: 'active' | 'ended' | 'error';
+}
+
+/**
  * Query keys for voice services
  */
 export const voiceKeys = {
@@ -346,6 +358,12 @@ export const voiceKeys = {
 
   /** Key for Grok voices */
   grokVoices: () => [...voiceKeys.all, 'grok-voices'] as const,
+
+  /** Key for voice session history list */
+  sessionHistory: (filters?: VoiceSessionFilters) => [...voiceKeys.all, 'sessions', 'history', filters] as const,
+
+  /** Key for specific session with transcript */
+  sessionTranscript: (sessionId: string) => [...voiceKeys.all, 'sessions', 'transcript', sessionId] as const,
 } as const;
 
 /**
@@ -376,6 +394,17 @@ export const focusKeys = {
 
   /** Key for AI progress summary */
   summary: (period: 'today' | 'week') => [...focusKeys.all, 'ai', 'summary', period] as const,
+} as const;
+
+/**
+ * Query keys for Claude Code session integration
+ */
+export const claudeSessionKeys = {
+  /** Root key for all Claude session queries */
+  all: ['claude-session'] as const,
+
+  /** Key for session at specific project path */
+  byProject: (projectPath: string) => [...claudeSessionKeys.all, projectPath] as const,
 } as const;
 
 /**

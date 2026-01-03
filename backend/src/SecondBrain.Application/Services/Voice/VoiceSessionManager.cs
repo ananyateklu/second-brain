@@ -1,46 +1,88 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Voice.Models;
+using SecondBrain.Core.Entities;
+using SecondBrain.Core.Interfaces;
+using DbVoiceSession = SecondBrain.Core.Entities.VoiceSession;
+using DbVoiceTurn = SecondBrain.Core.Entities.VoiceTurn;
+using MemoryVoiceSession = SecondBrain.Application.Services.Voice.Models.VoiceSession;
+using MemoryVoiceTurn = SecondBrain.Application.Services.Voice.Models.VoiceTurn;
 
 namespace SecondBrain.Application.Services.Voice;
 
 /// <summary>
-/// In-memory voice session manager
+/// Voice session manager with in-memory cache and database persistence.
+/// Uses in-memory cache for real-time operations and persists to database for durability.
 /// </summary>
 public class VoiceSessionManager : IVoiceSessionManager
 {
-    private readonly ConcurrentDictionary<string, VoiceSession> _sessions = new();
+    private readonly ConcurrentDictionary<string, MemoryVoiceSession> _sessions = new();
     private readonly VoiceFeaturesConfig _features;
+    private readonly IVoiceSessionRepository _repository;
     private readonly ILogger<VoiceSessionManager> _logger;
 
     public VoiceSessionManager(
         IOptions<VoiceSettings> voiceSettings,
+        IVoiceSessionRepository repository,
         ILogger<VoiceSessionManager> logger)
     {
         _features = voiceSettings.Value.Features;
+        _repository = repository;
         _logger = logger;
     }
 
-    public Task<VoiceSession> CreateSessionAsync(
+    public async Task<MemoryVoiceSession> CreateSessionAsync(
         string userId,
         VoiceSessionOptions options,
         CancellationToken cancellationToken = default)
     {
-        // Check if user has too many active sessions
-        var activeCount = _sessions.Values
+        // Check if user has too many active sessions (check both in-memory and DB)
+        var memoryActiveCount = _sessions.Values
             .Count(s => s.UserId == userId && s.IsActive);
 
-        if (activeCount >= _features.MaxConcurrentSessionsPerUser)
+        var dbActiveCount = await _repository.GetActiveSessionCountAsync(userId, cancellationToken);
+        var totalActiveCount = Math.Max(memoryActiveCount, dbActiveCount);
+
+        if (totalActiveCount >= _features.MaxConcurrentSessionsPerUser)
         {
             throw new InvalidOperationException(
                 $"Maximum concurrent sessions ({_features.MaxConcurrentSessionsPerUser}) reached for user");
         }
 
-        var session = new VoiceSession
+        // Create UUIDv7 for time-ordered IDs
+        var sessionId = Guid.CreateVersion7();
+
+        // Persist to database first
+        var dbSession = new DbVoiceSession
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = sessionId,
+            UserId = userId,
+            Provider = options.Provider,
+            Model = options.Model,
+            Status = VoiceSessionStatus.Active,
+            StartedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.UtcNow,
+            OptionsJson = JsonSerializer.Serialize(options)
+        };
+
+        try
+        {
+            await _repository.CreateAsync(dbSession, cancellationToken);
+            _logger.LogDebug("Persisted voice session to database. SessionId: {SessionId}", sessionId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist voice session to database. SessionId: {SessionId}. Continuing with in-memory only.", sessionId);
+            // Continue with in-memory session even if DB persistence fails
+        }
+
+        // Create in-memory session for real-time operations
+        var session = new MemoryVoiceSession
+        {
+            Id = sessionId.ToString(),
             UserId = userId,
             State = VoiceSessionState.Idle,
             Provider = options.Provider,
@@ -60,23 +102,23 @@ public class VoiceSessionManager : IVoiceSessionManager
             "Created voice session {SessionId} for user {UserId} with provider {Provider}/{Model}",
             session.Id, userId, options.Provider, options.Model);
 
-        return Task.FromResult(session);
+        return session;
     }
 
-    public Task<VoiceSession?> GetSessionAsync(string sessionId)
+    public Task<MemoryVoiceSession?> GetSessionAsync(string sessionId)
     {
         _sessions.TryGetValue(sessionId, out var session);
         return Task.FromResult(session);
     }
 
-    public Task<VoiceSession?> GetSessionForUserAsync(string sessionId, string userId)
+    public Task<MemoryVoiceSession?> GetSessionForUserAsync(string sessionId, string userId)
     {
         if (_sessions.TryGetValue(sessionId, out var session) && session.UserId == userId)
         {
-            return Task.FromResult<VoiceSession?>(session);
+            return Task.FromResult<MemoryVoiceSession?>(session);
         }
 
-        return Task.FromResult<VoiceSession?>(null);
+        return Task.FromResult<MemoryVoiceSession?>(null);
     }
 
     public Task UpdateSessionStateAsync(
@@ -103,19 +145,47 @@ public class VoiceSessionManager : IVoiceSessionManager
         return Task.CompletedTask;
     }
 
-    public Task AddTurnAsync(string sessionId, VoiceTurn turn)
+    public async Task AddTurnAsync(string sessionId, MemoryVoiceTurn turn)
     {
         if (_sessions.TryGetValue(sessionId, out var session))
         {
+            // Add to in-memory session
             session.Turns.Add(turn);
             session.LastActivityAt = DateTime.UtcNow;
 
             _logger.LogDebug(
                 "Added {Role} turn to session {SessionId}: {Content}",
                 turn.Role, sessionId, turn.Content.Length > 50 ? turn.Content[..50] + "..." : turn.Content);
-        }
 
-        return Task.CompletedTask;
+            // Persist turn to database
+            if (Guid.TryParse(sessionId, out var sessionGuid))
+            {
+                var dbTurn = new DbVoiceTurn
+                {
+                    Id = Guid.CreateVersion7(),
+                    SessionId = sessionGuid,
+                    Role = turn.Role,
+                    Content = turn.Content,
+                    TranscriptText = turn.Content,
+                    Timestamp = turn.Timestamp,
+                    InputTokens = turn.TokenUsage?.InputTokens,
+                    OutputTokens = turn.TokenUsage?.OutputTokens,
+                    AudioDurationMs = turn.DurationSeconds.HasValue ? (int)(turn.DurationSeconds.Value * 1000) : null,
+                    ToolCallsJson = turn.ToolCallsJson
+                };
+
+                try
+                {
+                    await _repository.AddTurnAsync(sessionGuid, dbTurn);
+                    _logger.LogDebug("Persisted turn to database. SessionId: {SessionId}, TurnId: {TurnId}", sessionId, dbTurn.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to persist turn to database. SessionId: {SessionId}", sessionId);
+                    // Continue even if DB persistence fails - turn is still in memory
+                }
+            }
+        }
     }
 
     public Task TouchSessionAsync(string sessionId)
@@ -128,7 +198,7 @@ public class VoiceSessionManager : IVoiceSessionManager
         return Task.CompletedTask;
     }
 
-    public Task EndSessionAsync(string sessionId)
+    public async Task EndSessionAsync(string sessionId)
     {
         if (_sessions.TryGetValue(sessionId, out var session))
         {
@@ -138,18 +208,49 @@ public class VoiceSessionManager : IVoiceSessionManager
             _logger.LogInformation(
                 "Ended voice session {SessionId} for user {UserId} (duration: {Duration})",
                 sessionId, session.UserId, session.Duration);
-        }
 
-        return Task.CompletedTask;
+            // Update database
+            if (Guid.TryParse(sessionId, out var sessionGuid))
+            {
+                try
+                {
+                    var dbSession = await _repository.GetByIdAsync(sessionGuid);
+                    if (dbSession != null)
+                    {
+                        dbSession.Status = VoiceSessionStatus.Ended;
+                        dbSession.EndedAt = session.EndedAt;
+
+                        // Aggregate token counts from in-memory turns
+                        dbSession.TotalInputTokens = session.Turns
+                            .Where(t => t.TokenUsage != null)
+                            .Sum(t => t.TokenUsage!.InputTokens);
+                        dbSession.TotalOutputTokens = session.Turns
+                            .Where(t => t.TokenUsage != null)
+                            .Sum(t => t.TokenUsage!.OutputTokens);
+                        dbSession.TotalAudioDurationMs = session.Turns
+                            .Where(t => t.DurationSeconds.HasValue)
+                            .Sum(t => (int)(t.DurationSeconds!.Value * 1000));
+
+                        await _repository.UpdateAsync(dbSession);
+                        _logger.LogDebug("Updated voice session in database. SessionId: {SessionId}, Status: {Status}",
+                            sessionId, dbSession.Status);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to update voice session in database. SessionId: {SessionId}", sessionId);
+                }
+            }
+        }
     }
 
-    public Task<IReadOnlyList<VoiceSession>> GetActiveSessionsAsync(string userId)
+    public Task<IReadOnlyList<MemoryVoiceSession>> GetActiveSessionsAsync(string userId)
     {
         var sessions = _sessions.Values
             .Where(s => s.UserId == userId && s.IsActive)
             .ToList();
 
-        return Task.FromResult<IReadOnlyList<VoiceSession>>(sessions);
+        return Task.FromResult<IReadOnlyList<MemoryVoiceSession>>(sessions);
     }
 
     public Task<int> GetActiveSessionCountAsync(string userId)
@@ -160,7 +261,7 @@ public class VoiceSessionManager : IVoiceSessionManager
         return Task.FromResult(count);
     }
 
-    public Task<int> CleanupExpiredSessionsAsync(
+    public async Task<int> CleanupExpiredSessionsAsync(
         int idleTimeoutMinutes,
         CancellationToken cancellationToken = default)
     {
@@ -182,7 +283,21 @@ public class VoiceSessionManager : IVoiceSessionManager
                 session.Id, session.LastActivityAt);
         }
 
-        // Also remove very old ended sessions (> 1 hour)
+        // Also cleanup in database
+        try
+        {
+            var dbCleaned = await _repository.EndExpiredSessionsAsync(idleTimeoutMinutes, cancellationToken);
+            if (dbCleaned > 0)
+            {
+                _logger.LogDebug("Cleaned up {Count} expired sessions in database", dbCleaned);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to cleanup expired sessions in database");
+        }
+
+        // Remove very old ended sessions from memory (> 1 hour)
         var oldCutoff = DateTime.UtcNow.AddHours(-1);
         var oldSessions = _sessions.Values
             .Where(s => !s.IsActive && s.EndedAt < oldCutoff)
@@ -196,9 +311,9 @@ public class VoiceSessionManager : IVoiceSessionManager
 
         if (oldSessions.Count > 0)
         {
-            _logger.LogDebug("Removed {Count} old ended sessions", oldSessions.Count);
+            _logger.LogDebug("Removed {Count} old ended sessions from memory", oldSessions.Count);
         }
 
-        return Task.FromResult(cleaned);
+        return cleaned;
     }
 }
