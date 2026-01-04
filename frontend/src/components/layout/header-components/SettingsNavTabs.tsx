@@ -73,36 +73,27 @@ export const SettingsNavTabs = () => {
     <div
       className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {SETTINGS_NAV_ITEMS.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
-          className="px-2 py-1.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-1.5 relative"
+          className="px-2 py-1.5 rounded-lg text-sm transition-all duration-200 flex items-center gap-1.5 relative hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
           style={({ isActive }) => ({
-            backgroundColor: isActive ? 'var(--surface-card)' : 'transparent',
-            color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
+            backgroundColor: isActive ? 'var(--color-brand-600)' : undefined,
+            color: isActive ? '#ffffff' : 'var(--text-tertiary)',
             fontWeight: isActive ? 600 : 400,
           })}
         >
           {({ isActive }) => (
             <>
-              <span
-                className="transition-colors duration-200"
-                style={{ color: isActive ? 'var(--color-brand-400)' : 'inherit' }}
-              >
+              <span className="transition-colors duration-200">
                 {item.icon}
               </span>
               {item.label}
-              {isActive && (
-                <div
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
-                  style={{ backgroundColor: 'var(--color-brand-400)' }}
-                />
-              )}
             </>
           )}
         </NavLink>

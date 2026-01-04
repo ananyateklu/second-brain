@@ -66,7 +66,7 @@ export const GitHubBranchesList = ({
         <span
           className="px-2 py-0.5 rounded-full text-xs font-medium"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-secondary)',
           }}
         >
@@ -130,9 +130,9 @@ const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps)
       }`}
       style={{
         backgroundColor: isSelected
-          ? 'var(--surface-elevated)'
-          : 'var(--surface-card)',
-        borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+          ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+          : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: isSelected ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps)
           style={{
             backgroundColor: branch.isDefault
               ? 'var(--status-success-bg)'
-              : 'var(--surface-elevated)',
+              : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           }}
         >
           <svg
@@ -206,7 +206,7 @@ const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps)
           <code
             className="text-xs px-1.5 py-0.5 rounded shrink-0"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -222,8 +222,14 @@ const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps)
               window.open(`https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branch.name)}`, '_blank');
             }
           }}
-          className="p-1 rounded-md transition-all hover:bg-white/5 shrink-0"
+          className="p-1 rounded-md transition-all shrink-0"
           style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

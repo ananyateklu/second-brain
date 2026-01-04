@@ -77,7 +77,7 @@ export const GitHubIssuesList = ({
           <span
             className="px-2 py-0.5 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -88,7 +88,7 @@ export const GitHubIssuesList = ({
         {/* State Filter */}
         <div
           className="flex items-center gap-1 p-1 rounded-lg"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         >
           {(['open', 'closed', 'all'] as IssueFilter[]).map((state) => (
             <button
@@ -102,7 +102,7 @@ export const GitHubIssuesList = ({
               }`}
               style={{
                 backgroundColor:
-                  stateFilter === state ? 'var(--surface-card)' : 'transparent',
+                  stateFilter === state ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
                 color:
                   stateFilter === state
                     ? 'var(--text-primary)'
@@ -178,9 +178,9 @@ const IssueRow = ({ issue, isSelected, onClick }: IssueRowProps) => {
       }`}
       style={{
         backgroundColor: isSelected
-          ? 'var(--surface-elevated)'
-          : 'var(--surface-card)',
-        borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+          ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+          : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: isSelected ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ const IssueRow = ({ issue, isSelected, onClick }: IssueRowProps) => {
           <span
             className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >

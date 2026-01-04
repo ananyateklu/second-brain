@@ -55,17 +55,17 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 50%, transparent)' }}
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-md rounded-2xl overflow-hidden"
+        className="relative w-full max-w-md rounded-2xl overflow-hidden backdrop-blur-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          backdropFilter: 'blur(20px)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
         }}
       >
         {/* Ambient glow effect */}
@@ -79,7 +79,7 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: '1px solid var(--border)' }}
+          style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <div className="flex items-center gap-4">
             <div
@@ -106,8 +106,8 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
             onClick={onClose}
             className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -166,8 +166,8 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
             <div
               className="rounded-xl overflow-hidden"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <div className="max-h-32 overflow-y-auto thin-scrollbar">
@@ -175,7 +175,7 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
                   <div
                     key={file.filePath}
                     className="flex items-center gap-2 px-4 py-2"
-                    style={{ borderBottom: '1px solid var(--border)' }}
+                    style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                   >
                     <span
                       className="text-xs font-mono truncate flex-1"
@@ -193,14 +193,14 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
         {/* Footer */}
         <div
           className="flex items-center justify-end gap-3 px-6 py-4"
-          style={{ borderTop: '1px solid var(--border)' }}
+          style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <button
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >

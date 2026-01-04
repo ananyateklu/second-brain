@@ -91,17 +91,17 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
       {/* Backdrop */}
       <div
         className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 50%, transparent)' }}
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          backdropFilter: 'blur(20px)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
         }}
       >
         {/* Ambient glow effect */}
@@ -114,7 +114,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: '1px solid var(--border)' }}
+          style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <div className="flex items-center gap-4">
             <div
@@ -141,8 +141,8 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
             onClick={onClose}
             className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -182,8 +182,8 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
                 placeholder="/Users/username/projects/my-repo"
                 className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-mono transition-all duration-200 focus:outline-none"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-primary)',
                 }}
                 onFocus={(e) => {
@@ -192,7 +192,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
                   e.currentTarget.style.outlineOffset = '-1px';
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
                   e.currentTarget.style.outline = 'none';
                 }}
                 autoFocus
@@ -256,7 +256,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         {/* Footer */}
         <div
           className="flex items-center justify-between px-6 py-4"
-          style={{ borderTop: '1px solid var(--border)' }}
+          style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <button
             onClick={handleClear}
@@ -274,8 +274,8 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
               onClick={onClose}
               className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-secondary)',
               }}
             >

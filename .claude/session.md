@@ -1,13 +1,13 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat Page, and Insights Page Complete
+> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat, Insights, Git, and GitHub Pages Complete
 
 ---
 
 ## Overview
 
-The Dashboard (Focus) page, Notes Directory page, **Chat page**, and **Insights page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
+The Dashboard (Focus) page, Notes Directory page, **Chat page**, **Insights page**, **Git page**, and **GitHub integration page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
 
 ---
 
@@ -223,6 +223,57 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Topic Distribution Card | `TopicDistributionCard.tsx` |
 | Query Logs Table | `QueryLogsTable.tsx` (headers, rows, expanded view, pagination) |
 
+### Git Page ✅
+
+| Component | File |
+|-----------|------|
+| Git Status Panel | `GitStatusPanel.tsx` (ActionButton hover, input backgrounds, footer) |
+| Git Branch Bar | `GitBranchBar.tsx` (card backgrounds, buttons, replaced #22c55e) |
+| Git Branch Selector | `GitBranchSelector.tsx` (dropdown with backdrop-blur, hover states) |
+| Git File Item | `GitFileItem.tsx` (hover state color-mix) |
+| Git Discard Dialog | `GitDiscardDialog.tsx` (modal backdrop, container styling) |
+| Git Commit Dialog | `GitCommitDialog.tsx` (modal backdrop, inputs, borders) |
+| Git Settings Panel | `GitSettingsPanel.tsx` (modal styling) |
+| Git Empty State | `GitEmptyState.tsx` (feature cards styling) |
+| Git Diff Viewer | `GitDiffViewer.tsx` (header, content backgrounds) |
+| Git Page Skeleton | `GitPageSkeleton.tsx` (skeleton backgrounds and borders) |
+
+### GitHub Integration Page ✅
+
+| Component | File |
+|-----------|------|
+| GitHub Branches List | `GitHubBranchesList.tsx` (row backgrounds, badges) |
+| GitHub Commits List | `GitHubCommitsList.tsx` (row backgrounds, status colors) |
+| GitHub Pull Request List | `GitHubPullRequestList.tsx` (row styling, status colors) |
+| GitHub Issues List | `GitHubIssuesList.tsx` (row styling) |
+| GitHub Actions Panel | `GitHubActionsPanel.tsx` (select/input backgrounds, status indicators) |
+| GitHub Code Browser | `GitHubCodeBrowser.tsx` (already using color-mix) |
+| GitHub Comments View | `GitHubCommentsView.tsx` (comment cards, badges) |
+| GitHub PR Files View | `GitHubPRFilesView.tsx` (file rows, change bars) |
+| GitHub Repo Selector | `GitHubRepoSelector.tsx` (dropdown styling, removed hardcoded blue) |
+| GitHub Empty State | `GitHubEmptyState.tsx` (card styling) |
+| GitHub List Skeleton | `GitHubListSkeleton.tsx` (skeleton styling) |
+| GitHub Page Skeleton | `GitHubPageSkeleton.tsx` (page skeleton) |
+| File Tree View | `code-browser/FileTreeView.tsx` (sidebar background) |
+| Code Viewer | `code-browser/CodeViewer.tsx` (header/container backgrounds) |
+| File Tree Node | `code-browser/FileTreeNode.tsx` (selection states, file icon colors via CSS vars) |
+| File Search Input | `code-browser/FileSearchInput.tsx` (input styling) |
+
+**Additional Changes:**
+- Added file icon CSS variables to `colors.css` for theme-adaptive file type icons (TypeScript, JavaScript, CSS, HTML, JSON, Markdown, Image, Config, Default)
+
+### Header Components ✅
+
+| Component | File |
+|-----------|------|
+| Header (mobile) | `layout/Header.tsx` (mobile header card, hamburger button) |
+| Git Nav Controls | `header-components/GitNavControls.tsx` (container, buttons, replaced #22c55e) |
+| GitHub Nav Tabs | `header-components/GitHubNavTabs.tsx` (tab bar, active state) |
+| GitHub Branch Selector | `header-components/GitHubBranchSelector.tsx` (dropdown, search input, removed blue theme hack) |
+| GitHub Repo Selector | `header-components/GitHubRepoSelector.tsx` (dropdown, search input, removed blue theme hack) |
+| Settings Nav Tabs | `header-components/SettingsNavTabs.tsx` (tab bar, active state) |
+| Insights Tab Bar | `header-components/InsightsTabBar.tsx` (already using color-mix) |
+
 ---
 
 ## Components To Update
@@ -231,8 +282,9 @@ Use the patterns above to update these:
 
 - [x] ~~Chat page components~~ (completed)
 - [x] ~~Insights page components~~ (completed)
+- [x] ~~Git page components~~ (completed)
+- [x] ~~GitHub integration components~~ (completed)
 - [ ] **Settings page components** ← NEXT
-- [ ] GitHub integration components
 - [ ] Voice components
 - [ ] Other modals and dialogs
 

@@ -45,7 +45,8 @@ export class NotesPage extends BasePage {
 
   get noteContentEditor() {
     // TipTap/ProseMirror editor with contenteditable
-    return this.page.locator('.ProseMirror, .tiptap, [contenteditable="true"]');
+    // The editor renders as .tiptap containing .ProseMirror with contenteditable
+    return this.page.locator('.ProseMirror[contenteditable="true"]').first();
   }
 
   get saveNoteButton() {
@@ -106,14 +107,22 @@ export class NotesPage extends BasePage {
 
   async createNote(title: string, content: string, options?: { tags?: string[]; folder?: string }) {
     await this.scrollAndClick(this.createNoteButton);
-    await expect(this.noteEditor).toBeVisible();
+    await expect(this.noteEditor).toBeVisible({ timeout: 10000 });
 
-    await this.fillField(this.noteTitleInput, title);
+    // Wait for the title input to be ready and fill it
+    const titleInput = this.noteTitleInput;
+    await expect(titleInput).toBeVisible({ timeout: 5000 });
+    await titleInput.clear();
+    await titleInput.fill(title);
+    // Verify the title was set
+    await expect(titleInput).toHaveValue(title);
 
-    // Handle TipTap or textarea content
+    // Handle TipTap ProseMirror editor - use keyboard typing for contenteditable
     const contentEditor = this.noteContentEditor;
+    await expect(contentEditor).toBeVisible({ timeout: 5000 });
     await contentEditor.click();
-    await contentEditor.fill(content);
+    // For contenteditable, use keyboard.type instead of fill
+    await this.page.keyboard.type(content);
 
     // Add tags if provided
     if (options?.tags) {
@@ -143,16 +152,17 @@ export class NotesPage extends BasePage {
   async updateNote(newTitle?: string, newContent?: string) {
     // TipTap/contenteditable works better with Playwright's keyboard events than
     // react-hook-form controlled inputs. So we prioritize content updates.
-    // If only title update is needed, we still try it but may fall back to content.
 
     let madeChanges = false;
 
     // Update content if provided - TipTap editors work well with keyboard events
     if (newContent) {
       const contentEditor = this.noteContentEditor;
+      await expect(contentEditor).toBeVisible({ timeout: 5000 });
       await contentEditor.click();
-      // Select all and delete existing content
-      await this.page.keyboard.press('Meta+a');
+      // Select all and delete existing content (Playwright uses Meta for macOS, Control for others)
+      // Using ControlOrMeta modifier works cross-platform
+      await this.page.keyboard.press('ControlOrMeta+a');
       await this.page.keyboard.press('Backspace');
       // Type new content - this triggers TipTap's onChange which updates react-hook-form
       await this.page.keyboard.type(newContent);
@@ -164,6 +174,7 @@ export class NotesPage extends BasePage {
       // Also append some content to ensure TipTap triggers form dirty state
       if (!newContent) {
         const contentEditor = this.noteContentEditor;
+        await expect(contentEditor).toBeVisible({ timeout: 5000 });
         await contentEditor.click();
         // Add a space and some text to trigger dirty state via TipTap
         await this.page.keyboard.press('End');
@@ -171,20 +182,10 @@ export class NotesPage extends BasePage {
         madeChanges = true;
       }
 
-      // Try to update title via native value + event dispatch
+      // Update title using clear and fill
       const titleInput = this.noteTitleInput;
-      await titleInput.evaluate((el, value) => {
-        const input = el as HTMLInputElement;
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          'value'
-        )?.set;
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(input, value);
-          input.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-          input.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        }
-      }, newTitle);
+      await titleInput.clear();
+      await titleInput.fill(newTitle);
     }
 
     if (!madeChanges) {
@@ -199,9 +200,7 @@ export class NotesPage extends BasePage {
     await expect(updateButton).toBeVisible({ timeout: 5000 });
     await updateButton.click();
 
-    // Wait for the mutation to complete and check for success
-    // The modal doesn't auto-close after update, so we wait for the mutation
-    // and then close it manually
+    // Wait for the mutation to complete
     await this.page.waitForTimeout(2000);
 
     // Close the modal manually since it stays open after save
@@ -214,21 +213,27 @@ export class NotesPage extends BasePage {
   async deleteNote(title: string) {
     // Delete button is on the note card itself, not in modal
     const noteCard = this.noteCards.filter({ hasText: title }).first();
+    await expect(noteCard).toBeVisible({ timeout: 5000 });
 
-    // Hover to reveal the delete button (it's hidden by default)
+    // Hover to reveal the delete button (it's hidden by default with opacity-0)
     await noteCard.hover();
-    await this.page.waitForTimeout(300); // Wait for opacity animation
+    await this.page.waitForTimeout(500); // Wait for opacity transition
 
     // Click the delete button within this card
     const deleteBtn = noteCard.locator('button[aria-label="Delete note"]');
+    await expect(deleteBtn).toBeVisible({ timeout: 5000 });
     await deleteBtn.click();
 
-    // Wait for and click the confirmation toast button
-    const confirmBtn = this.confirmDeleteButton;
+    // Wait for the confirmation toast to appear
+    // The toast uses role="alert" and has an action button with the confirmText
+    const confirmBtn = this.page.locator('[role="alert"] button').filter({ hasText: 'Delete' }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 5000 });
     await confirmBtn.click();
 
-    // Wait for the note to be removed from the list
+    // Wait for the toast to dismiss and API to complete
+    await this.page.waitForTimeout(1000);
+
+    // Wait for the note to be removed from the list (soft delete)
     await expect(this.noteCards.filter({ hasText: title })).not.toBeVisible({ timeout: 10000 });
   }
 

@@ -187,14 +187,18 @@ export const GitBranchSelector = memo(function GitBranchSelector({
     return (
       <div
         key={branch.name}
-        className={`group flex items-center gap-2 px-3 py-2 cursor-pointer transition-all duration-150 ${branch.isCurrent ? 'bg-green-500/10' : 'hover:bg-[var(--surface-hover)]'
-          }`}
+        className={`group flex items-center gap-2 px-3 py-2 cursor-pointer transition-all duration-150`}
+        style={{
+          backgroundColor: branch.isCurrent ? 'color-mix(in srgb, var(--color-success) 10%, transparent)' : 'transparent',
+        }}
+        onMouseEnter={(e) => { if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'; }}
+        onMouseLeave={(e) => { if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'transparent'; }}
         onClick={() => !isDeleting && handleSwitchBranch(branch)}
       >
         {/* Branch icon / Check mark */}
         <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
           {branch.isCurrent ? (
-            <Check className="w-4 h-4 text-green-500" />
+            <Check className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
           ) : branch.isRemote ? (
             <Cloud className="w-3.5 h-3.5" style={{ color: 'var(--text-tertiary)' }} />
           ) : (
@@ -206,7 +210,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
         <div className="flex-1 min-w-0">
           <span
             className={`text-sm truncate block ${branch.isCurrent ? 'font-semibold' : ''}`}
-            style={{ color: branch.isCurrent ? '#22c55e' : 'var(--text-primary)' }}
+            style={{ color: branch.isCurrent ? 'var(--color-success)' : 'var(--text-primary)' }}
           >
             {branch.name}
           </span>
@@ -230,7 +234,13 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                     e.stopPropagation();
                     handleDeleteBranch(branch.name);
                   }}
-                  className="px-2 py-1 text-xs font-medium rounded bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors"
+                  className="px-2 py-1 text-xs font-medium rounded transition-colors"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-error) 20%, transparent)',
+                    color: 'var(--color-error)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 30%, transparent)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 20%, transparent)'; }}
                 >
                   Delete
                 </button>
@@ -239,8 +249,10 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                     e.stopPropagation();
                     setDeleteConfirm(null);
                   }}
-                  className="px-2 py-1 text-xs font-medium rounded hover:bg-[var(--surface-hover)] transition-colors"
+                  className="px-2 py-1 text-xs font-medium rounded transition-colors"
                   style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   Cancel
                 </button>
@@ -272,10 +284,13 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                       e.stopPropagation();
                       setDeleteConfirm(branch.name);
                     }}
-                    className="p-1 rounded hover:bg-red-500/20 transition-colors"
+                    className="p-1 rounded transition-colors"
+                    style={{ color: 'var(--color-error)' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 20%, transparent)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     title="Delete branch"
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
               </>
@@ -296,19 +311,20 @@ export const GitBranchSelector = memo(function GitBranchSelector({
   const dropdownContent = isOpen ? (
     <div
       ref={dropdownRef}
-      className="fixed w-80 max-h-96 overflow-hidden rounded-xl z-[9999]"
+      className="fixed w-80 max-h-96 overflow-hidden rounded-xl z-[9999] backdrop-blur-xl"
       style={{
         top: dropdownPosition.top,
         left: dropdownPosition.left,
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
       }}
       onKeyDown={handleKeyDown}
     >
       {/* Search / Create input */}
       <div
         className="p-2"
-        style={{ borderBottom: '1px solid var(--border)' }}
+        style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         {isCreating ? (
           <div className="flex items-center gap-2">
@@ -320,8 +336,8 @@ export const GitBranchSelector = memo(function GitBranchSelector({
               placeholder="New branch name..."
               className="flex-1 px-3 py-2 text-sm rounded-lg bg-transparent outline-none"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-primary)',
               }}
             />
@@ -345,7 +361,9 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                 setIsCreating(false);
                 setNewBranchName('');
               }}
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
+              className="p-2 rounded-lg transition-colors"
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
               <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
             </button>
@@ -365,16 +383,18 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                 placeholder="Search branches..."
                 className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-transparent outline-none"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-primary)',
                 }}
               />
             </div>
             <button
               onClick={() => setIsCreating(true)}
-              className="p-2 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
+              className="p-2 rounded-lg transition-colors"
               style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
               title="Create new branch"
             >
               <Plus className="w-4 h-4" />
@@ -411,7 +431,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                   className="px-3 py-2 text-xs font-semibold uppercase tracking-wide"
                   style={{
                     color: 'var(--text-tertiary)',
-                    borderTop: filteredBranches.local.length > 0 ? '1px solid var(--border)' : 'none',
+                    borderTop: filteredBranches.local.length > 0 ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : 'none',
                   }}
                 >
                   Remote
@@ -440,9 +460,9 @@ export const GitBranchSelector = memo(function GitBranchSelector({
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
         style={{
-          backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
+          backgroundColor: isOpen ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
         }}
       >
         <GitBranch className="w-4 h-4" style={{ color: 'var(--color-brand-400)' }} />

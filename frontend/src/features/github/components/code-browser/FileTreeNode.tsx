@@ -139,7 +139,7 @@ export const FileTreeNode = memo(function FileTreeNode({
           backgroundColor: isSelected
             ? 'var(--color-primary-alpha)'
             : isHovered
-            ? 'color-mix(in srgb, var(--foreground) 5%, transparent)'
+            ? 'color-mix(in srgb, var(--text-primary) 3%, transparent)'
             : 'transparent',
           color: isSelected
             ? 'var(--color-brand-400)'

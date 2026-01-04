@@ -62,15 +62,15 @@ export function FileSearchInput({
           placeholder={placeholder}
           className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: isFocused ? 'var(--input-focus-border)' : 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: isFocused ? 'var(--input-focus-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         />
         {localValue && (
           <button
             onClick={handleClear}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all duration-150 hover:text-[var(--text-secondary)] hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all duration-150 hover:text-[var(--text-secondary)] hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
             style={{ color: 'var(--text-tertiary)' }}
             aria-label="Clear search"
           >

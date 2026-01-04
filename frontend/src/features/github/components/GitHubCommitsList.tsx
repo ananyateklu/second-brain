@@ -77,7 +77,7 @@ export const GitHubCommitsList = ({
           <span
             className="px-2 py-0.5 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -95,8 +95,8 @@ export const GitHubCommitsList = ({
             }}
             className="px-3 py-1.5 rounded-lg text-sm border outline-none transition-all focus:ring-2 focus:ring-primary/50"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >
@@ -176,16 +176,16 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
       }`}
       style={{
         backgroundColor: isSelected
-          ? 'var(--surface-elevated)'
-          : 'var(--surface-card)',
-        borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+          ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+          : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: isSelected ? 'var(--primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-center gap-2">
         {/* Commit Icon */}
         <div
           className="p-1 rounded-md"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         >
           <svg
             className="w-3.5 h-3.5"
@@ -217,7 +217,7 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
           <code
             className="text-xs px-1.5 py-0.5 rounded shrink-0"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -236,7 +236,7 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
             <span
               className="text-xs px-1.5 py-0.5 rounded shrink-0"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: 'var(--text-tertiary)',
               }}
               title="Files changed"
@@ -246,8 +246,8 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
           )}
           {(commit.additions > 0 || commit.deletions > 0) && (
             <span className="flex items-center gap-1">
-              <span className="text-green-500">+{commit.additions}</span>
-              <span className="text-red-500">-{commit.deletions}</span>
+              <span style={{ color: 'var(--color-success)' }}>+{commit.additions}</span>
+              <span style={{ color: 'var(--color-error)' }}>-{commit.deletions}</span>
             </span>
           )}
         </div>

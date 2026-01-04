@@ -82,11 +82,10 @@ export const GitBranchBar = memo(function GitBranchBar({
 
   return (
     <div
-      className="flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden"
+      className="flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        backdropFilter: 'blur(20px)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Left: Branch info */}
@@ -98,8 +97,8 @@ export const GitBranchBar = memo(function GitBranchBar({
         <div
           className="flex items-center gap-2 px-3 h-10 rounded-xl"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {/* Case 1: No remote configured */}
@@ -137,7 +136,7 @@ export const GitBranchBar = memo(function GitBranchBar({
               <button
                 onClick={handleRefresh}
                 disabled={isFetching}
-                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors disabled:opacity-50"
                 title="Sync with remote"
               >
                 <RefreshCw
@@ -182,7 +181,7 @@ export const GitBranchBar = memo(function GitBranchBar({
 
               {/* Up to date indicator */}
               {status.ahead === 0 && status.behind === 0 && (
-                <Check className="w-3.5 h-3.5 ml-1" style={{ color: '#22c55e' }} />
+                <Check className="w-3.5 h-3.5 ml-1" style={{ color: 'var(--color-success)' }} />
               )}
             </div>
           )}
@@ -197,8 +196,8 @@ export const GitBranchBar = memo(function GitBranchBar({
           disabled={isFetching}
           className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
           title="Refresh status"
         >
@@ -217,10 +216,10 @@ export const GitBranchBar = memo(function GitBranchBar({
           style={{
             backgroundColor: canPull
               ? 'color-mix(in srgb, var(--color-git-modified) 20%, transparent)'
-              : 'var(--surface-elevated)',
+              : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: canPull
               ? '1px solid color-mix(in srgb, var(--color-git-modified) 40%, transparent)'
-              : '1px solid var(--border)',
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: canPull ? 'var(--color-git-modified)' : 'var(--text-secondary)',
           }}
           title="Pull from remote"
@@ -242,10 +241,10 @@ export const GitBranchBar = memo(function GitBranchBar({
           style={{
             backgroundColor: canPush
               ? 'color-mix(in srgb, var(--color-git-add) 20%, transparent)'
-              : 'var(--surface-elevated)',
+              : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: canPush
               ? '1px solid color-mix(in srgb, var(--color-git-add) 40%, transparent)'
-              : '1px solid var(--border)',
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: canPush ? 'var(--color-git-add)' : 'var(--text-secondary)',
           }}
           title="Push to remote"
@@ -263,8 +262,8 @@ export const GitBranchBar = memo(function GitBranchBar({
           onClick={onOpenSettings}
           className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
           title="Git settings"
         >

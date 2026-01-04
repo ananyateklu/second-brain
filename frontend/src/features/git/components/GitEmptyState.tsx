@@ -74,8 +74,8 @@ export const GitEmptyState = memo(function GitEmptyState({
               key={label}
               className="flex flex-col items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <Icon className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />

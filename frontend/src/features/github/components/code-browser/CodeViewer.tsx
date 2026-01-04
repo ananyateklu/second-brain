@@ -163,7 +163,7 @@ export function CodeViewer({
       <div
         className="flex items-center justify-between px-4 py-[15px] flex-shrink-0"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -177,7 +177,7 @@ export function CodeViewer({
             <span
               className="text-xs px-2 py-0.5 rounded"
               style={{
-                backgroundColor: 'var(--surface-card)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -205,7 +205,7 @@ export function CodeViewer({
       </div>
 
       {/* Code content - container provides themed background */}
-      <div className="flex-1 overflow-auto thin-scrollbar" style={{ backgroundColor: 'var(--surface-card)' }}>
+      <div className="flex-1 overflow-auto thin-scrollbar" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' }}>
         <SyntaxHighlighter
           language={language}
           style={isDarkMode ? oneDark : oneLight}

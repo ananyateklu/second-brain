@@ -15,11 +15,10 @@ const generateRandomWidths = (count: number) => {
 function SkeletonBranchBar() {
   return (
     <div
-      className="flex items-center justify-between px-5 py-4 rounded-2xl border relative overflow-hidden"
+      className="flex items-center justify-between px-5 py-4 rounded-2xl border relative overflow-hidden backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        backdropFilter: 'blur(20px)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Left: Branch info */}
@@ -31,8 +30,8 @@ function SkeletonBranchBar() {
         <div
           className="flex items-center gap-2 px-3 h-10 rounded-xl"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <ShimmerBlock className="h-4 w-4 rounded" />
@@ -57,11 +56,10 @@ function SkeletonBranchBar() {
 function SkeletonStatusPanel() {
   return (
     <div
-      className="h-full flex flex-col overflow-hidden relative"
+      className="h-full flex flex-col overflow-hidden relative backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--glass-bg)',
-        backdropFilter: 'blur(var(--glass-blur))',
-        borderRight: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Commit Input Section */}
@@ -138,14 +136,13 @@ function SkeletonDiffViewer() {
 
   return (
     <div
-      className="h-full flex flex-col relative overflow-hidden"
+      className="h-full flex flex-col relative overflow-hidden backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--glass-bg)',
-        backdropFilter: 'blur(var(--glass-blur))',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
       }}
     >
       {/* Header */}
-      <div className="px-4 py-4 border-b relative z-10" style={{ borderColor: 'var(--border)' }}>
+      <div className="px-4 py-4 border-b relative z-10" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShimmerBlock className="h-5 w-5 rounded" />

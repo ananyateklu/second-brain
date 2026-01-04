@@ -79,11 +79,11 @@ export const GitNavControls = memo(function GitNavControls() {
       <div
         className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
           <GitBranch className="w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
           <span className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
             No repository
@@ -91,7 +91,7 @@ export const GitNavControls = memo(function GitNavControls() {
         </div>
         <button
           onClick={openGitSettings}
-          className="flex items-center justify-center px-2 py-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
+          className="flex items-center justify-center px-2 py-1.5 rounded-lg hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors"
           title="Git settings"
         >
           <Settings className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -104,15 +104,15 @@ export const GitNavControls = memo(function GitNavControls() {
     <div
       className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Branch selector */}
       <GitBranchSelector currentBranch={status?.branch ?? ''} />
 
       {/* Remote status pill */}
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg">
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg">
         {/* Case 1: No remote configured */}
         {!status?.hasRemote && (
           <>
@@ -148,7 +148,7 @@ export const GitNavControls = memo(function GitNavControls() {
             <button
               onClick={handleRefresh}
               disabled={isFetching}
-              className="flex items-center justify-center w-5 h-5 rounded-md hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-5 h-5 rounded-md hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors disabled:opacity-50"
               title="Sync with remote"
             >
               <RefreshCw
@@ -193,7 +193,7 @@ export const GitNavControls = memo(function GitNavControls() {
 
             {/* Up to date indicator */}
             {status.ahead === 0 && status.behind === 0 && (
-              <Check className="w-3 h-3 ml-0.5" style={{ color: '#22c55e' }} />
+              <Check className="w-3 h-3 ml-0.5" style={{ color: 'var(--color-success)' }} />
             )}
           </div>
         )}
@@ -203,9 +203,9 @@ export const GitNavControls = memo(function GitNavControls() {
       <button
         onClick={handlePull}
         disabled={isPulling || !status?.hasRemote}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
-          backgroundColor: canPull ? 'var(--surface-card)' : 'transparent',
+          backgroundColor: canPull ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
           color: canPull ? 'var(--color-git-modified)' : 'var(--text-secondary)',
         }}
         title="Pull from remote"
@@ -222,9 +222,9 @@ export const GitNavControls = memo(function GitNavControls() {
       <button
         onClick={handlePush}
         disabled={isPushing || !status?.hasRemote}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         style={{
-          backgroundColor: canPush ? 'var(--surface-card)' : 'transparent',
+          backgroundColor: canPush ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
           color: canPush ? 'var(--color-git-add)' : 'var(--text-secondary)',
         }}
         title="Push to remote"
@@ -240,7 +240,7 @@ export const GitNavControls = memo(function GitNavControls() {
       {/* Settings button */}
       <button
         onClick={openGitSettings}
-        className="flex items-center justify-center px-2 py-1.5 rounded-lg transition-all duration-200 hover:bg-[var(--surface-card)]"
+        className="flex items-center justify-center px-2 py-1.5 rounded-lg transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
         title="Git settings"
       >
         <Settings

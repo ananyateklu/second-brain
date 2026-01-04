@@ -159,7 +159,7 @@ export const GitFileItem = memo(function GitFileItem({
         backgroundColor: isActive
           ? 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)'
           : isHovered
-            ? 'color-mix(in srgb, var(--surface-hover) 70%, transparent)'
+            ? 'color-mix(in srgb, var(--text-primary) 3%, transparent)'
             : 'transparent',
         transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
       }}

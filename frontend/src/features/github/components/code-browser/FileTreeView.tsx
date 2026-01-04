@@ -168,9 +168,9 @@ export function FileTreeView({
       <div
         className="px-3 py-2 text-xs flex-shrink-0 border-t"
         style={{
-          borderColor: 'var(--border)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           color: 'var(--text-tertiary)',
-          backgroundColor: 'var(--surface-card)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         }}
       >
         {totalFileCount.toLocaleString()} files

@@ -14,7 +14,7 @@ function SkeletonHeader() {
         {/* GitHub Icon */}
         <ShimmerBlock
           className="w-12 h-12 rounded-xl"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         />
 
         <div className="flex-1">
@@ -31,7 +31,7 @@ function SkeletonHeader() {
       {/* Tab Navigation */}
       <div
         className="flex items-center gap-1 p-1 rounded-xl w-fit"
-        style={{ backgroundColor: 'var(--surface-elevated)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         {Array.from({ length: 5 }).map((_, i) => (
           <ShimmerBlock
@@ -50,8 +50,8 @@ function SkeletonListItem() {
     <div
       className="flex items-center gap-2 px-3 py-2 rounded-lg border"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Status indicator */}
@@ -92,7 +92,7 @@ function SkeletonContentArea() {
       </div>
 
       {/* Pagination - Fixed at bottom */}
-      <div className="flex-shrink-0 flex items-center justify-center gap-4 pt-4 mt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+      <div className="flex-shrink-0 flex items-center justify-center gap-4 pt-4 mt-4 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
         <ShimmerBlock className="h-8 w-20 rounded-lg" />
         <ShimmerBlock className="h-4 w-12" />
         <ShimmerBlock className="h-8 w-20 rounded-lg" />

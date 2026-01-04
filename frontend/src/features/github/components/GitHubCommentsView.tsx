@@ -60,7 +60,7 @@ export const GitHubCommentsView = ({
         <span
           className="px-2 py-0.5 rounded-full text-xs font-medium"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-secondary)',
           }}
         >
@@ -107,16 +107,16 @@ const CommentCard = ({ comment }: CommentCardProps) => {
     <div
       className="rounded-xl border overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Comment Header */}
       <div
         className="flex items-center gap-3 px-4 py-3 border-b"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <img
@@ -167,7 +167,7 @@ const CommentCard = ({ comment }: CommentCardProps) => {
                       <code
                         key={j}
                         className="px-1.5 py-0.5 rounded text-xs font-mono"
-                        style={{ backgroundColor: 'var(--surface-elevated)' }}
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                       >
                         {part}
                       </code>
@@ -236,7 +236,7 @@ const CommentCard = ({ comment }: CommentCardProps) => {
                   key={i}
                   className="border-l-2 pl-3 my-2 italic"
                   style={{
-                    borderColor: 'var(--border)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
                 >
