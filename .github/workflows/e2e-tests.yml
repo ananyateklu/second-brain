@@ -1,0 +1,245 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/e2e-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/e2e-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: secondbrain_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Install Playwright browsers
+        run: cd frontend && pnpm exec playwright install chromium --with-deps
+
+      - name: Initialize database extensions
+        run: |
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+
+      - name: Restore backend dependencies
+        run: cd backend && dotnet restore
+
+      - name: Build backend
+        run: cd backend/src/SecondBrain.API && dotnet build --configuration Release --no-restore
+
+      - name: Start backend
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://localhost:5001
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_e2e;Username=testuser;Password=testpassword"
+          Jwt__SecretKey: "e2e-test-secret-key-must-be-at-least-32-characters-long"
+          Jwt__Issuer: "SecondBrain-E2E"
+          Jwt__Audience: "SecondBrain-E2E"
+          Jwt__ExpiryMinutes: "60"
+        run: |
+          cd backend/src/SecondBrain.API
+          dotnet run --configuration Release --no-build &
+          echo "Waiting for backend to start..."
+          for i in {1..60}; do
+            if curl -s http://localhost:5001/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+
+      - name: Build frontend
+        run: cd frontend && pnpm build
+
+      - name: Start frontend
+        run: |
+          cd frontend
+          pnpm preview --port 3000 &
+          echo "Waiting for frontend to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Create test user
+        env:
+          API_URL: http://localhost:5001/api
+        run: |
+          # Register a test user for E2E tests
+          curl -X POST "$API_URL/auth/register" \
+            -H "Content-Type: application/json" \
+            -d '{"email": "e2e-test@example.com", "password": "E2ETestPassword123!", "displayName": "E2E Test User"}' \
+            || echo "User may already exist"
+
+      - name: Run E2E tests
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_API_URL: http://localhost:5001/api
+          E2E_TEST_EMAIL: e2e-test@example.com
+          E2E_TEST_PASSWORD: E2ETestPassword123!
+        run: cd frontend && pnpm e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: frontend/test-results/
+          retention-days: 30
+
+  e2e-smoke:
+    name: E2E Smoke Tests (Fast)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request'
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: secondbrain_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install frontend dependencies
+        run: cd frontend && pnpm install
+
+      - name: Install Playwright browsers
+        run: cd frontend && pnpm exec playwright install chromium --with-deps
+
+      - name: Initialize database extensions
+        run: |
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+
+      - name: Build and start backend
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://localhost:5001
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_smoke;Username=testuser;Password=testpassword"
+          Jwt__SecretKey: "e2e-test-secret-key-must-be-at-least-32-characters-long"
+          Jwt__Issuer: "SecondBrain-E2E"
+          Jwt__Audience: "SecondBrain-E2E"
+        run: |
+          cd backend/src/SecondBrain.API
+          dotnet run &
+          sleep 30
+
+      - name: Start frontend
+        run: |
+          cd frontend
+          pnpm build && pnpm preview --port 3000 &
+          sleep 10
+
+      - name: Create test user
+        run: |
+          curl -X POST "http://localhost:5001/api/auth/register" \
+            -H "Content-Type: application/json" \
+            -d '{"email": "e2e-test@example.com", "password": "E2ETestPassword123!", "displayName": "E2E Test User"}' \
+            || true
+
+      - name: Run smoke tests only
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_API_URL: http://localhost:5001/api
+          E2E_TEST_EMAIL: e2e-test@example.com
+          E2E_TEST_PASSWORD: E2ETestPassword123!
+        run: cd frontend && pnpm exec playwright test smoke --project=chromium
+
+      - name: Upload smoke test report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-test-report
+          path: frontend/playwright-report/
+          retention-days: 7

@@ -7,6 +7,14 @@ node_modules/
 coverage/
 backend/TestResults/
 
+# Playwright E2E
+frontend/playwright-report/
+frontend/playwright/.cache/
+frontend/e2e/.auth/
+frontend/e2e/screenshots/
+frontend/test-results/
+blob-report/
+
 # Production builds
 dist/
 build/
