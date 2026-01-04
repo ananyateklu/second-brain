@@ -231,9 +231,9 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Git Branch Bar | `GitBranchBar.tsx` (card backgrounds, buttons, replaced #22c55e) |
 | Git Branch Selector | `GitBranchSelector.tsx` (dropdown with backdrop-blur, hover states) |
 | Git File Item | `GitFileItem.tsx` (hover state color-mix) |
-| Git Discard Dialog | `GitDiscardDialog.tsx` (modal backdrop, container styling) |
-| Git Commit Dialog | `GitCommitDialog.tsx` (modal backdrop, inputs, borders) |
-| Git Settings Panel | `GitSettingsPanel.tsx` (modal styling) |
+| Git Discard Dialog | `GitDiscardDialog.tsx` (glass CSS vars: --glass-bg, --glass-header, --glass-body) |
+| Git Commit Dialog | `GitCommitDialog.tsx` (glass CSS vars: --glass-bg, --glass-header, --glass-body) |
+| Git Settings Panel | `GitSettingsPanel.tsx` (glass CSS vars: --glass-bg, --glass-header, --glass-body) |
 | Git Empty State | `GitEmptyState.tsx` (feature cards styling) |
 | Git Diff Viewer | `GitDiffViewer.tsx` (header, content backgrounds) |
 | Git Page Skeleton | `GitPageSkeleton.tsx` (skeleton backgrounds and borders) |

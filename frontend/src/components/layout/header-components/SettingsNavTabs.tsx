@@ -88,14 +88,12 @@ export const SettingsNavTabs = () => {
             fontWeight: isActive ? 600 : 400,
           })}
         >
-          {({ isActive }) => (
-            <>
-              <span className="transition-colors duration-200">
-                {item.icon}
-              </span>
-              {item.label}
-            </>
-          )}
+          <>
+            <span className="transition-colors duration-200">
+              {item.icon}
+            </span>
+            {item.label}
+          </>
         </NavLink>
       ))}
     </div>

@@ -91,16 +91,14 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
       {/* Backdrop */}
       <div
         className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 50%, transparent)' }}
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl"
+        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl bg-[var(--glass-bg)]"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          border: '1px solid var(--border)',
           boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
         }}
       >
@@ -113,8 +111,8 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         />
         {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-5"
-          style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          className="flex items-center justify-between px-6 py-5 bg-[var(--glass-header)]"
+          style={{ borderBottom: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-4">
             <div
@@ -150,7 +148,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 bg-[var(--glass-body)]">
           {/* Path input */}
           <div>
             <label
@@ -256,7 +254,7 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         {/* Footer */}
         <div
           className="flex items-center justify-between px-6 py-4"
-          style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          style={{ borderTop: '1px solid var(--border)' }}
         >
           <button
             onClick={handleClear}
