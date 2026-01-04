@@ -151,28 +151,49 @@ export class NotesPage extends BasePage {
     // Wait for the dialog to appear
     await expect(this.noteEditor).toBeVisible({ timeout: 10000 });
 
-    // Wait for loading state to complete - EditNoteModal shows "Loading note..." while fetching
-    // The loading state shows a spinner and "Loading note..." text
-    // We need to wait for either:
-    // 1. The loading text to disappear (fast path - loading is done)
-    // 2. The form content to appear (content loaded)
-    // Use Promise.race to handle both scenarios
-    const loadingText = this.page.locator('[role="dialog"]').getByText('Loading note...');
-    const formContent = this.page.locator('input#title, .ProseMirror[contenteditable="true"]');
+    // EditNoteModal has 3 states:
+    // 1. Loading: shows spinner + "Loading note..."
+    // 2. Error: shows "Failed to load note"
+    // 3. Success: shows form with input#title and .ProseMirror editor
+    //
+    // We need to wait for either form content OR error to appear
+    const dialog = this.page.locator('[role="dialog"]');
+    const formContent = dialog.locator('input#title');
+    const errorState = dialog.getByText('Failed to load note');
+    const loadingState = dialog.getByText('Loading note...');
 
-    // First, give the dialog a moment to show its content
-    await this.page.waitForTimeout(500);
+    // Wait for loading to complete - use a polling approach for reliability in CI
+    // Poll until either: form appears, error appears, or timeout
+    const maxWaitTime = 45000; // 45 seconds for slow CI
+    const pollInterval = 500;
+    const startTime = Date.now();
 
-    // If loading text is visible, wait for it to disappear
-    if (await loadingText.isVisible().catch(() => false)) {
-      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+    while (Date.now() - startTime < maxWaitTime) {
+      // Check if form content is visible (success)
+      if (await formContent.isVisible().catch(() => false)) {
+        // Form is ready
+        await this.page.waitForTimeout(300); // Small settle time
+        return;
+      }
+
+      // Check if error state is visible (failure)
+      if (await errorState.isVisible().catch(() => false)) {
+        throw new Error('EditNoteModal failed to load note - API error or note not found');
+      }
+
+      // Still loading, wait and retry
+      await this.page.waitForTimeout(pollInterval);
     }
 
-    // Now wait for the form content to be visible
-    await expect(formContent.first()).toBeVisible({ timeout: 15000 });
+    // Timeout - get current state for debugging
+    const isLoading = await loadingState.isVisible().catch(() => false);
+    const hasForm = await formContent.isVisible().catch(() => false);
+    const hasError = await errorState.isVisible().catch(() => false);
 
-    // Additional wait for form to be fully rendered
-    await this.page.waitForTimeout(500);
+    throw new Error(
+      `openNote timed out after ${maxWaitTime}ms. ` +
+      `State: loading=${isLoading}, hasForm=${hasForm}, hasError=${hasError}`
+    );
   }
 
   async updateNote(newTitle?: string, newContent?: string) {
@@ -181,7 +202,9 @@ export class NotesPage extends BasePage {
 
     // First ensure the dialog and form content are fully loaded
     await expect(this.noteEditor).toBeVisible({ timeout: 5000 });
-    await this.page.waitForSelector('.ProseMirror[contenteditable="true"]', { timeout: 10000 });
+    // Wait for editor to be ready - use locator-based wait for consistency
+    const editor = this.page.locator('.ProseMirror[contenteditable="true"]');
+    await expect(editor.first()).toBeVisible({ timeout: 15000 });
 
     let madeChanges = false;
 
