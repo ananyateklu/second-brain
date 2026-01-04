@@ -63,24 +63,13 @@ jobs:
       - name: Install Playwright browsers
         run: cd frontend && pnpm exec playwright install chromium --with-deps
 
-      - name: Initialize database extensions
+      - name: Apply database schema
         run: |
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+          cd database
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_e2e -f schema.sql
 
       - name: Restore backend dependencies
         run: cd backend && dotnet restore
-
-      - name: Install EF Core tools
-        run: dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
-
-      - name: Apply database migrations
-        env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_e2e;Username=testuser;Password=testpassword"
-        run: |
-          cd backend/src/SecondBrain.API
-          dotnet ef database update --project ../SecondBrain.Infrastructure/SecondBrain.Infrastructure.csproj --startup-project .
 
       - name: Build backend
         run: cd backend/src/SecondBrain.API && dotnet build --configuration Release --no-restore
@@ -227,24 +216,13 @@ jobs:
       - name: Install Playwright browsers
         run: cd frontend && pnpm exec playwright install chromium --with-deps
 
-      - name: Initialize database extensions
+      - name: Apply database schema
         run: |
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS vector;"
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
-          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
+          cd database
+          PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -f schema.sql
 
       - name: Restore backend dependencies
         run: cd backend && dotnet restore
-
-      - name: Install EF Core tools
-        run: dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
-
-      - name: Apply database migrations
-        env:
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_smoke;Username=testuser;Password=testpassword"
-        run: |
-          cd backend/src/SecondBrain.API
-          dotnet ef database update --project ../SecondBrain.Infrastructure/SecondBrain.Infrastructure.csproj --startup-project .
 
       - name: Build backend
         run: cd backend/src/SecondBrain.API && dotnet build --configuration Release
