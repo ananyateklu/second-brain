@@ -58,11 +58,11 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     }
   }, [user?.userId, loadPreferencesFromBackend]);
 
-  // Get available providers from health data
+  // Get available providers from health data (excluding Cohere)
   const availableProviders = useMemo((): ProviderInfo[] => (
     Array.isArray(healthData?.providers)
       ? healthData.providers
-        .filter((p) => p?.isHealthy)
+        .filter((p) => p?.isHealthy && p.provider !== 'Cohere')
         .map((p) => ({
           provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),
           isHealthy: p.isHealthy,

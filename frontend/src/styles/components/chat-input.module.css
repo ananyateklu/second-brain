@@ -276,7 +276,7 @@
 }
 
 .container::-webkit-scrollbar-thumb {
-  background-color: var(--border);
+  background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
   border-radius: 3px;
 }
 
@@ -303,7 +303,7 @@
 .textarea {
   transition: color 200ms ease;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: color-mix(in srgb, var(--text-primary) 10%, transparent) transparent;
   -webkit-overflow-scrolling: touch;
   user-select: text;
   -webkit-user-select: text;
@@ -325,7 +325,7 @@
 }
 
 .textarea::-webkit-scrollbar-thumb {
-  background-color: var(--border);
+  background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
   border-radius: 3px;
   border: 1px solid transparent;
 }
@@ -385,7 +385,7 @@
 
 .scrollArea {
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: color-mix(in srgb, var(--text-primary) 10%, transparent) transparent;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
@@ -399,7 +399,7 @@
 }
 
 .scrollArea::-webkit-scrollbar-thumb {
-  background-color: var(--border);
+  background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
   border-radius: 3px;
 }
 

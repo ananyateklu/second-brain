@@ -123,8 +123,8 @@ export function ChatHeader({
     <div
       className="flex-shrink-0 flex items-center gap-3 pt-4.5 pb-4.5 border-b z-10"
       style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--surface-card)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         paddingLeft: '2rem',
         paddingRight: '2rem',
       }}
@@ -137,9 +137,9 @@ export function ChatHeader({
             onClick={onToggleSidebar}
             className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
             style={{
-              backgroundColor: 'var(--surface-card)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
             title="Show sidebar"
           >
@@ -175,7 +175,7 @@ export function ChatHeader({
         {/* Separator */}
         <div
           className="h-6 w-px flex-shrink-0"
-          style={{ backgroundColor: 'var(--border)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         />
 
         {/* Feature Mode Pills */}

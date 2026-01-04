@@ -42,21 +42,30 @@
 
 ## UI Styling Patterns
 
-### Frosted Glass (Blue Theme)
+### Subtle Frosted Glass (All Themes)
 
-Use `color-mix()` CSS function for transparent tints:
+Use `color-mix()` CSS function with **low percentages** for subtle transparency:
 
 | Use Case | Value |
 |----------|-------|
-| Floating containers | `var(--glass-bg)` + `backdrop-blur: 20px` |
-| Buttons/inputs | `color-mix(in srgb, var(--text-primary) 8%, transparent)` |
-| Hover states | `color-mix(in srgb, var(--text-primary) 10%, transparent)` |
-| Borders/dividers | `color-mix(in srgb, var(--text-primary) 15%, transparent)` |
-| Error states | `color-mix(in srgb, var(--color-error) 20%, transparent)` + red text |
-| Selected states | Solid `var(--color-brand-600)` + white text |
+| Card backgrounds | `color-mix(in srgb, var(--text-primary) 2%, transparent)` |
+| Button/input backgrounds | `color-mix(in srgb, var(--text-primary) 4%, transparent)` |
+| Hover states | `color-mix(in srgb, var(--text-primary) 3%, transparent)` |
+| Borders/dividers | `color-mix(in srgb, var(--text-primary) 6%, transparent)` |
+| Dropdown backgrounds | `color-mix(in srgb, var(--background) 90%, transparent)` + blur |
+| Sidebar background | `color-mix(in srgb, var(--background) 85%, transparent)` + `backdrop-blur-xl` |
+| Selected states | Solid `var(--color-brand-600)` + white text + glow shadow |
+| Error backgrounds | `color-mix(in srgb, var(--color-error) 20%, transparent)` + red text |
+| Error borders | `color-mix(in srgb, var(--color-error) 40%, transparent)` |
 
-Glass variables defined in `surfaces.css`:
-- `--glass-bg`, `--glass-header`, `--glass-body`
+**Key Pattern**: Use `var(--text-primary)` as the tint base - it adapts to each theme automatically.
+
+**Backdrop Blur**: Add to floating elements (sidebar, dropdowns, modals):
+
+```css
+backdrop-filter: blur(20px) saturate(180%);
+-webkit-backdrop-filter: blur(20px) saturate(180%);
+```
 
 ---
 

@@ -33,7 +33,7 @@ function ToolbarButton({
       className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative"
       style={{
         color: active ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
-        backgroundColor: active ? 'var(--color-primary-alpha)' : 'transparent',
+        backgroundColor: active ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' : 'transparent',
       }}
       title={title}
     >

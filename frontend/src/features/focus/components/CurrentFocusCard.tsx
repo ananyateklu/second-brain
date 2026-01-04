@@ -57,8 +57,8 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
           className
         )}
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div
@@ -92,7 +92,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
   return (
     <div
       className={cn(
-        'relative rounded-2xl border-2 overflow-hidden min-h-[180px]',
+        'relative rounded-2xl border overflow-hidden min-h-[180px]',
         'transition-all duration-200',
         disabled && 'pointer-events-none opacity-50',
         className
@@ -105,7 +105,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 12%, var(--surface-card)) 0%, var(--surface-card) 60%, color-mix(in srgb, var(--color-primary) 5%, var(--surface-card)) 100%)',
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, transparent) 0%, color-mix(in srgb, var(--text-primary) 2%, transparent) 60%, color-mix(in srgb, var(--color-primary) 5%, transparent) 100%)',
         }}
       />
 
@@ -216,8 +216,16 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
             size="md"
             onClick={handleClearFocus}
             disabled={disabled}
-            className="gap-2"
-            style={{ color: 'var(--text-secondary)' }}
+            className="gap-2 hover:backdrop-blur-sm transition-all duration-200"
+            style={{
+              color: 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <X className="h-4 w-4" />
             Clear Focus

@@ -269,9 +269,9 @@ function StatsDisplay({ stats }: { stats: NoteStatistics }) {
                 key={tag.name}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <span>{tag.name}</span>
@@ -305,9 +305,9 @@ function StatsDisplay({ stats }: { stats: NoteStatistics }) {
                 key={folder.name}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <span className="flex items-center gap-1" style={{ color: 'var(--text-secondary)' }}>
@@ -338,8 +338,8 @@ function StatItem({ label, value, icon }: { label: string; value: number; icon: 
     <div
       className="p-2 rounded-lg"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-center gap-1.5">
@@ -370,8 +370,8 @@ function GenericResponseDisplay({ response }: { response: GenericResponse }) {
     <div
       className="p-3 rounded-lg"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div
@@ -671,8 +671,8 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                         key={img.id || index}
                         className="relative rounded-lg overflow-hidden"
                         style={{
-                          backgroundColor: 'var(--surface-card)',
-                          border: '1px solid var(--border)',
+                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }}
                       >
                         <AuthenticatedImage
@@ -705,9 +705,9 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                   <div
                     className="p-3 rounded-lg text-xs"
                     style={{
-                      backgroundColor: 'var(--surface-card)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                       color: 'var(--text-tertiary)',
-                      border: '1px solid var(--border)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
                   >
                     No images attached to this note.
@@ -730,9 +730,9 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                 <div
                   className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
                   style={{
-                    backgroundColor: 'var(--surface-card)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                     color: 'var(--text-secondary)',
-                    border: '1px solid var(--border)'
+                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)'
                   }}
                 >
                   {hasNoteReferences ? (

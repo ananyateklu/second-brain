@@ -35,8 +35,17 @@ export function ProcessTimeline({
                 <div className="flex items-center gap-2 mb-2">
                     <button
                         onClick={() => { setUserExpanded(!userExpanded); }}
-                        className="text-xs font-medium flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-elevated)] transition-colors"
-                        style={{ color: 'var(--text-secondary)' }}
+                        className="text-xs font-medium flex items-center gap-1.5 px-2 py-1 rounded transition-colors"
+                        style={{
+                            color: 'var(--text-secondary)',
+                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
+                        }}
                     >
                         <div
                             className={`flex items-center justify-center w-4 h-4 rounded transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
@@ -63,7 +72,7 @@ export function ProcessTimeline({
                 {/* Vertical Line - centered at 15px to align with icon/dot centers */}
                 <div
                     className={`absolute ${TIMELINE_LINE.LEFT} ${TIMELINE_LINE.TOP} ${TIMELINE_LINE.BOTTOM} w-px`}
-                    style={{ backgroundColor: 'var(--border)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
                 />
 
                 <div className="space-y-0">

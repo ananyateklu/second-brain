@@ -173,14 +173,12 @@ export function CombinedModelSelector({
             ref={dropdownRef}
             className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden"
             style={{
-              backgroundColor: isBlueTheme
-                ? 'rgba(10, 22, 40, 0.98)'
-                : 'var(--surface-card-solid)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               boxShadow:
-                'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
-              backdropFilter: 'blur(12px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+                '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             }}
           >
             <ProviderTabs

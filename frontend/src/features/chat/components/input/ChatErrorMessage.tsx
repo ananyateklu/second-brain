@@ -37,9 +37,9 @@ export function ChatErrorMessage({
     <div
       className="mb-2 px-4 py-2.5 rounded-xl text-sm animate-in fade-in duration-200"
       style={{
-        backgroundColor: 'var(--error-bg)',
-        color: 'var(--error-text)',
-        border: '1px solid var(--error-border)',
+        backgroundColor: 'color-mix(in srgb, var(--color-error) 10%, transparent)',
+        color: 'var(--color-error)',
+        border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
       }}
     >
       <div className="flex items-center gap-2">

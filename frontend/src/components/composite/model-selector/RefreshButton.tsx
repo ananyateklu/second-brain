@@ -29,9 +29,9 @@ export function RefreshButton({
         'disabled:opacity-50 disabled:cursor-not-allowed'
       )}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         color: isRefreshing ? 'var(--color-primary)' : 'var(--text-secondary)',
-        border: '1px solid var(--border)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
       title={
         isRefreshing ? 'Refreshing providers...' : 'Refresh providers & models'

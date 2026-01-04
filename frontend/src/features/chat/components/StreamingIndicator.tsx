@@ -335,9 +335,9 @@ export function StreamingIndicator({
           <div
             className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
-              backgroundColor: 'var(--color-error-light)',
+              backgroundColor: 'color-mix(in srgb, var(--color-error) 10%, transparent)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--color-error-border)',
+              border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
             }}
           >
             <div className="flex items-start gap-3">
@@ -397,7 +397,7 @@ export function LoadingMessageSkeleton() {
               <div
                 key={i}
                 className="h-3 rounded-md relative overflow-hidden"
-                style={{ width: `${width}%`, backgroundColor: 'var(--border)', opacity: 0.3 }}
+                style={{ width: `${width}%`, backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', opacity: 0.3 }}
               >
                 <div
                   className="absolute inset-0 -translate-x-full"
@@ -447,7 +447,7 @@ export function ImageGenerationLoadingSkeleton({ isGeneratingImage }: { isGenera
           </div>
           <div
             className="relative w-full aspect-square max-w-[320px] rounded-xl overflow-hidden"
-            style={{ backgroundColor: 'var(--border)', opacity: 0.3 }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', opacity: 0.3 }}
           >
             <div
               className="absolute inset-0 -translate-x-full"

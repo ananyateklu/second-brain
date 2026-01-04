@@ -32,9 +32,6 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const setFilterState = useBoundStore((state) => state.setFilterState);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const setBulkMode = useBoundStore((state) => state.setBulkMode);
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
-
   // Get notes for tag list
   const { data: notes } = useNotes();
 
@@ -176,8 +173,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       <div
         className="absolute top-full left-0 mt-2 min-w-[160px] rounded-xl border shadow-xl z-50"
         style={{
-          backgroundColor: 'var(--glass-bg)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
@@ -188,9 +185,9 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   };
 
   const filterButtonStyle = (isActive: boolean) => ({
-    backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+    backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
     color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-    border: `1px solid ${isActive ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+    border: `1px solid ${isActive ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
     boxShadow: isActive ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
   });
 
@@ -203,9 +200,9 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           onClick={toggleDirectorySidebar}
           className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: directorySidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            backgroundColor: directorySidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: directorySidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-            border: `1px solid ${directorySidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
+            border: `1px solid ${directorySidebarVisible ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
             boxShadow: directorySidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={directorySidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
@@ -221,7 +218,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       </div>
 
       {/* Separator */}
-      <div className="h-6 w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="h-6 w-px flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Search Input */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -233,8 +230,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           placeholder="Search notes..."
           className="px-4 py-2 my-1 rounded-xl border text-sm backdrop-blur-md transition-all focus:outline-none"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
             width: '280px',
           }}
@@ -269,7 +266,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       />
 
       {/* Separator */}
-      <div className="h-6 w-px flex-shrink-0" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="h-6 w-px flex-shrink-0" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Date Filter */}
       <div ref={dateDropdownRef} className="relative flex-shrink-0">
@@ -425,8 +422,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
         {/* Note count */}
         <span className="text-xs px-3 py-2.5 my-1 rounded-xl backdrop-blur-md" style={{
           color: 'var(--text-secondary)',
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}>
           {noteCount} {noteCount === 1 ? 'note' : 'notes'}
         </span>

@@ -26,7 +26,7 @@ export const ViewModeToggle = memo(({
     <div
       className={`flex items-center my-1 rounded-xl border overflow-hidden ${className}`}
       style={{
-        borderColor: 'var(--border)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <button
@@ -34,7 +34,7 @@ export const ViewModeToggle = memo(({
         onClick={() => onViewModeChange('card')}
         className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
         style={{
-          backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
         }}
         title="Grid view"
@@ -55,7 +55,7 @@ export const ViewModeToggle = memo(({
         onClick={() => onViewModeChange('list')}
         className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
         style={{
-          backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
         }}
         title="List view"

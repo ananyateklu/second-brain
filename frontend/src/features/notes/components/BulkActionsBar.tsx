@@ -48,7 +48,7 @@ export const BulkActionsBar = memo(({
 
   const content = (
     <div
-      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-2xl"
+      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-xl border shadow-2xl"
       style={{
         left: '50%',
         bottom: '1.5rem',
@@ -81,14 +81,15 @@ export const BulkActionsBar = memo(({
       <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }} />
 
       {/* Select All / Deselect All */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={onSelectAll}
           disabled={isProcessing || selectedCount === totalCount}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -98,9 +99,10 @@ export const BulkActionsBar = memo(({
           type="button"
           onClick={onDeselectAll}
           disabled={isProcessing || selectedCount === 0}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -116,11 +118,11 @@ export const BulkActionsBar = memo(({
         type="button"
         onClick={() => { void handleDeleteClick(); }}
         disabled={isProcessing || selectedCount === 0}
-        className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="px-4 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         style={{
-          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          borderColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           color: selectedCount > 0 ? 'var(--color-error)' : 'var(--text-tertiary)',
-          border: selectedCount > 0 ? '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)' : 'none',
         }}
       >
         {isProcessing ? (
@@ -177,4 +179,6 @@ export const BulkActionsBar = memo(({
   // This ensures fixed positioning works relative to viewport, not a parent container
   return typeof document !== 'undefined' ? createPortal(content, document.body) : content;
 });
+
+BulkActionsBar.displayName = 'BulkActionsBar';
 

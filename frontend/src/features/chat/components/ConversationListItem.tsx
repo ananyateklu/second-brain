@@ -146,13 +146,15 @@ export const ConversationListItem = memo(function ConversationListItem({
     }
   };
 
-  // Determine background color based on selection state
+  // Determine background color based on selection state (matches FolderSidebar pattern)
   const getBackgroundColor = () => {
     if (isSelectionMode && isChecked) {
-      return 'color-mix(in srgb, var(--surface-card) 40%, transparent)';
+      return 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)';
     }
     if (isSelected && !isSelectionMode) {
-      return 'var(--surface-card)';
+      return isDarkMode
+        ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)';
     }
     return 'transparent';
   };
@@ -167,13 +169,13 @@ export const ConversationListItem = memo(function ConversationListItem({
     }
     if (isSelected && !isSelectionMode) {
       return {
-        width: '4px',
-        color: 'var(--btn-primary-bg)',
+        width: '3px',
+        color: 'var(--color-brand-600)',
       };
     }
     return {
-      width: '0.25px',
-      color: 'color-mix(in srgb, var(--border) 50%, transparent)',
+      width: '0px',
+      color: 'transparent',
     };
   };
 
@@ -181,19 +183,13 @@ export const ConversationListItem = memo(function ConversationListItem({
 
   return (
     <div
-        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}`}
+        className={`group px-4 py-2.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
         style={{
           backgroundColor: getBackgroundColor(),
           borderLeftWidth: leftBorder.width,
           borderLeftColor: leftBorder.color,
-          borderTopWidth: '0.1px',
-          borderTopColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
-          borderRightWidth: '0.1px',
-          borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)',
-          borderBottomWidth: '0.1px',
-          borderBottomColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
-          cursor: isSelectionMode ? 'pointer' : 'pointer',
-          boxShadow: 'none',
+          borderLeftStyle: 'solid',
+          cursor: 'pointer',
         }}
         onClick={handleClick}
       >
@@ -265,13 +261,10 @@ export const ConversationListItem = memo(function ConversationListItem({
           <div className="flex items-center justify-between gap-1.5">
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <span
-                className="inline-flex items-center gap-2 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
+                className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
                 style={{
-                  backgroundColor: isDarkMode
-                    ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                  color: isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)',
-                  opacity: isDarkMode ? 1 : 0.7,
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  color: 'var(--text-secondary)',
                 }}
               >
                 {(() => {

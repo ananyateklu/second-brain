@@ -40,16 +40,17 @@ export function ChatAttachmentGallery({
 
   return (
     <div
-      className="mb-3 flex flex-wrap gap-3 p-3 rounded-2xl transition-all duration-200"
+      className="mb-3 flex flex-wrap gap-3 p-3 rounded-3xl transition-all duration-200 backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)',
+        boxShadow: 'var(--glass-shadow)',
       }}
     >
       {files.map((file, index) => (
         <div
           key={file.id}
-          className={`${styles.attachment} relative group rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105`}
+          className={`${styles.attachment} relative group rounded-2xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105`}
           style={{
             width: '100px',
             height: '100px',
@@ -66,7 +67,7 @@ export function ChatAttachmentGallery({
           ) : (
             <div
               className="w-full h-full flex flex-col items-center justify-center p-2"
-              style={{ backgroundColor: 'var(--surface-card)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' }}
             >
               {FILE_ICONS[file.fileCategory] || FILE_ICONS.other}
               <span
@@ -114,11 +115,11 @@ export function ChatAttachmentGallery({
       {/* Add more button */}
       <button
         onClick={onAddMore}
-        className="flex flex-col items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+        className="flex flex-col items-center justify-center rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
         style={{
           width: '100px',
           height: '100px',
-          border: '2px dashed var(--border)',
+          border: '2px dashed color-mix(in srgb, var(--text-primary) 10%, transparent)',
           color: 'var(--text-tertiary)',
         }}
         title="Add more files"

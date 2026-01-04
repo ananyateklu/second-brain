@@ -92,7 +92,7 @@ export const NoteListItem = memo(({
     if (isHovered) {
       return 'var(--color-brand-500)';
     }
-    return 'var(--border)';
+    return 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
   };
 
   const getBackgroundStyle = () => {
@@ -101,7 +101,7 @@ export const NoteListItem = memo(({
         ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
         : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'transparent';
+    return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
   return (
@@ -224,7 +224,7 @@ export const NoteListItem = memo(({
             className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)] ${isHovered ? 'opacity-100' : 'opacity-0'
               }`}
             style={{
-              backgroundColor: 'var(--surface-hover)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
             aria-label="Delete note"

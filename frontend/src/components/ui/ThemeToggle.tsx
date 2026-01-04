@@ -18,8 +18,8 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className="group relative flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
       aria-label={getAriaLabel()}
     >

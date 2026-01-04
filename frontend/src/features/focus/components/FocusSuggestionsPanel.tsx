@@ -116,8 +116,8 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
         className
       )}
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
@@ -133,7 +133,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
         }}
         className={cn(
           'w-full flex items-center justify-between p-4 text-left cursor-pointer',
-          'hover:bg-[var(--surface-hover)] transition-colors'
+          'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors'
         )}
       >
         <div className="flex items-center gap-2">
@@ -195,8 +195,8 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
             backgroundColor: lastGenerationStats.newSuggestionsAdded > 0
               ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
               : 'color-mix(in srgb, var(--color-warning, #f59e0b) 10%, transparent)',
-            borderTop: '1px solid var(--border)',
-            borderBottom: '1px solid var(--border)',
+            borderTop: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 4%, transparent)',
           }}
         >
           <span className="text-xs" style={{
@@ -217,7 +217,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
           </span>
           <button
             onClick={() => setShowStats(false)}
-            className="p-1 rounded hover:bg-[var(--surface-hover)]"
+            className="p-1 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]"
           >
             <X className="h-3 w-3" style={{ color: 'var(--text-tertiary)' }} />
           </button>
@@ -226,7 +226,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
 
       {/* Content */}
       {isExpanded && (
-        <div className="border-t flex-1 flex flex-col min-h-0 overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-t flex-1 flex flex-col min-h-0 overflow-hidden" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
           {/* Loading state */}
           {isLoading && !suggestions.length && (
             <div className="p-4 space-y-3">
@@ -234,16 +234,16 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
                 <div key={i} className="animate-pulse flex gap-3">
                   <div
                     className="w-8 h-8 rounded-lg"
-                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                   />
                   <div className="flex-1 space-y-2">
                     <div
                       className="h-4 rounded w-3/4"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                     />
                     <div
                       className="h-3 rounded w-1/2"
-                      style={{ backgroundColor: 'var(--surface-hover)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                     />
                   </div>
                 </div>
@@ -381,7 +381,7 @@ const SuggestionItem = memo(function SuggestionItem({
 
   return (
     <div
-      className="group p-4 hover:bg-[var(--surface-hover)] transition-colors"
+      className="group p-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors"
     >
       <div className="flex items-start gap-3">
         {/* Priority indicator */}

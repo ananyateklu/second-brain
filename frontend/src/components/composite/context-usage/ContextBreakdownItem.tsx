@@ -23,9 +23,13 @@ export function ContextBreakdownItem({
     <div
       className={cn(
         'flex items-center gap-3 px-2 py-1.5 rounded-lg',
-        'transition-colors duration-150',
-        'hover:bg-[var(--surface)]'
+        'transition-colors duration-150'
       )}
+      style={{
+        ['--hover-bg' as string]: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
     >
       <div style={{ color: 'var(--color-brand-400)' }}>
         <Icon className="w-4 h-4" />

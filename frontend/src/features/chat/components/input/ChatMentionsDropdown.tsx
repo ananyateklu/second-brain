@@ -35,16 +35,16 @@ export function ChatMentionsDropdown({
 
   return (
     <div
-      className={`${styles.mentionsDropdown} absolute bottom-full left-4 right-4 mb-2 rounded-xl overflow-hidden z-50`}
+      className={`${styles.mentionsDropdown} absolute bottom-full left-4 right-4 mb-2 rounded-2xl overflow-hidden z-50 backdrop-blur-xl`}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)',
+        boxShadow: 'var(--glass-shadow)',
       }}
     >
       <div
         className="px-3 py-2 text-xs font-medium"
-        style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border)' }}
+        style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--glass-border)' }}
       >
         Notes
       </div>
@@ -52,11 +52,20 @@ export function ChatMentionsDropdown({
         <button
           key={note.id}
           onClick={() => { onSelect(note); }}
-          className={`w-full px-3 py-2.5 text-left text-sm transition-colors flex items-center gap-2 ${index === selectedIndex ? 'bg-white/10' : ''
-            }`}
+          className={`w-full px-3 py-2.5 text-left text-sm transition-colors flex items-center gap-2`}
           style={{
             color: 'var(--text-primary)',
-            backgroundColor: index === selectedIndex ? 'var(--color-primary-alpha)' : 'transparent',
+            backgroundColor: index === selectedIndex ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' : 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            if (index !== selectedIndex) {
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (index !== selectedIndex) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
           }}
         >
           <svg
@@ -77,7 +86,7 @@ export function ChatMentionsDropdown({
           {note.tags.length > 0 && (
             <span
               className="text-xs px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-tertiary)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', color: 'var(--text-tertiary)' }}
             >
               {note.tags[0]}
             </span>

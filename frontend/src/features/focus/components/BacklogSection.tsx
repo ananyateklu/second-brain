@@ -56,7 +56,7 @@ const BacklogItem = memo(function BacklogItem({
       className={cn(
         'group flex items-center gap-3 py-1.5 px-3 rounded-lg',
         'transition-all duration-150',
-        'hover:bg-[var(--surface-elevated)]',
+        'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]',
         disabled && 'pointer-events-none opacity-50'
       )}
     >
@@ -133,9 +133,14 @@ const PriorityFilters = memo(function PriorityFilters({
         className={cn(
           'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors',
           selectedPriority === null
-            ? 'bg-[var(--surface-elevated)] text-[var(--text-primary)]'
-            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]'
+            ? 'text-[var(--text-primary)]'
+            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
         )}
+        style={{
+          backgroundColor: selectedPriority === null
+            ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+            : 'transparent',
+        }}
       >
         All ({totalCount})
       </button>
@@ -228,8 +233,8 @@ export const BacklogSection = memo(function BacklogSection({
     <div
       className={cn('rounded-2xl border flex flex-col', className)}
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
@@ -238,7 +243,7 @@ export const BacklogSection = memo(function BacklogSection({
           'px-4 py-3 flex items-center justify-between flex-shrink-0',
           !isCollapsed && 'border-b'
         )}
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -255,7 +260,7 @@ export const BacklogSection = memo(function BacklogSection({
             <span
               className="px-1.5 py-0.5 rounded text-xs font-medium"
               style={{
-                backgroundColor: 'var(--muted)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: 'var(--text-secondary)',
               }}
             >
@@ -286,7 +291,7 @@ export const BacklogSection = memo(function BacklogSection({
           {/* Filters */}
           <div
             className="px-4 py-2 border-b flex-shrink-0"
-            style={{ borderColor: 'var(--border)' }}
+            style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
           >
             <PriorityFilters
               countByPriority={countByPriority}

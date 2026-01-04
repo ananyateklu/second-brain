@@ -31,22 +31,29 @@ export function ChatFormattingToolbar({
 
   return (
     <div
-      className={`${styles.toolbar} mb-2 flex items-center gap-1 px-3 py-2 rounded-xl`}
+      className={`${styles.toolbar} mb-2 flex items-center gap-1 px-3 py-2 rounded-2xl backdrop-blur-xl`}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)',
+        boxShadow: 'var(--glass-shadow)',
       }}
     >
       {actions.map((action, index) => (
         <React.Fragment key={action.id}>
           {action.separator && index > 0 && (
-            <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--glass-border)' }} />
           )}
           <button
             onClick={() => { onFormat(action.before, action.after); }}
-            className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+            className="p-1.5 rounded-lg transition-colors"
             title={action.title}
             style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             {action.icon}
           </button>

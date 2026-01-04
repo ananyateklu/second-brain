@@ -1,213 +1,204 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: Blue Theme Frosted Glass UI Implementation Guide
+> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, and Chat Page Complete
 
 ---
 
 ## Overview
 
-The Notes Directory page has been fully updated with frosted glass styling for the blue theme. Use this as the reference implementation for styling other pages and components.
+The Dashboard (Focus) page, Notes Directory page, and **Chat page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
 
 ---
 
-## Frosted Glass Implementation Guide
+## Subtle Frosted Glass Implementation Guide
 
 ### Core Principles
 
-1. **Transparency over opacity** - Use `color-mix()` for semi-transparent tints instead of solid backgrounds
-2. **Backdrop blur** - Add `backdrop-blur: 20px` to floating/overlay elements
-3. **Consistent tint levels** - Follow the standard percentages below
+1. **Subtle transparency** - Use very low `color-mix()` percentages for a refined look
+2. **Backdrop blur** - Add `backdrop-blur-xl` to sidebar and floating elements
+3. **Consistent tint levels** - Follow the refined percentages below
 4. **Brand colors for selections** - Use solid `var(--color-brand-600)` for active/selected states
 
 ---
 
-### Standard Color-Mix Values
+### Standard Color-Mix Values (SUBTLE)
 
 ```css
+/* Card/Container Backgrounds */
+background-color: color-mix(in srgb, var(--text-primary) 2%, transparent);
+
 /* Button & Input Backgrounds */
-background-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
+background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
 
 /* Hover States */
-background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+background-color: color-mix(in srgb, var(--text-primary) 3%, transparent);
 
 /* Borders & Dividers */
-border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
+border-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
 
-/* Floating Containers (dropdowns, modals, floating bars) */
-background-color: var(--glass-bg);
+/* Blockquote/Stronger Borders */
+border-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+
+/* Floating Containers (dropdowns, modals) */
+background-color: color-mix(in srgb, var(--background) 90%, transparent);
 backdrop-filter: blur(20px) saturate(180%);
 -webkit-backdrop-filter: blur(20px) saturate(180%);
 
-/* Error/Destructive Actions */
-background-color: color-mix(in srgb, var(--color-error) 20%, transparent);
-color: var(--color-error);
-border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
+/* Sidebar with Blur */
+background-color: color-mix(in srgb, var(--background) 85%, transparent);
+backdrop-filter: blur(24px);
 
 /* Selected/Active States */
 background-color: var(--color-brand-600);
 color: #ffffff;
 ```
 
-### Glass CSS Variables (`surfaces.css`)
-
-```css
---glass-bg: color-mix(in srgb, var(--color-blue-900) 60%, transparent);
---glass-header: color-mix(in srgb, var(--color-blue-900) 40%, transparent);
---glass-body: color-mix(in srgb, var(--color-blue-900) 30%, transparent);
-```
-
 ---
 
 ## Reference Implementations
 
-### Floating Bars (Pagination, Bulk Actions)
+### Note Cards
 
-**File**: `NotesDirectoryPage.tsx`, `BulkActionsBar.tsx`
+**File**: `NoteCard.tsx`, `NoteListItem.tsx`
 
 ```tsx
-<div
-  className="fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl"
-  style={{
-    backgroundColor: 'var(--glass-bg)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-    boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  }}
->
+// Default state
+style={{
+  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+}}
+
+// Hover state - brand color border
+borderColor: 'var(--color-brand-500)'
 ```
 
-### Toggle Buttons (Grid/List)
+### Header Controls (Buttons, Inputs, Badges)
 
-**File**: `ViewModeToggle.tsx`
+**File**: `DirectoryPageControls.tsx`, `FocusDashboardControls.tsx`
 
 ```tsx
-// Container - transparent, border only
-<div
-  className="flex items-center rounded-xl border overflow-hidden"
-  style={{ borderColor: 'var(--border)' }}
->
-  {/* Each button gets its own background */}
-  <button
-    style={{
-      backgroundColor: isActive
-        ? 'var(--color-brand-600)'
-        : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-      color: isActive ? '#ffffff' : 'var(--text-secondary)',
-    }}
-  />
+// Button/Input background
+backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+```
 
-  {/* Full-height separator */}
-  <div
-    className="w-px self-stretch"
-    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
-  />
-</div>
+### Toggle Components (View Mode, Theme)
+
+**File**: `ViewModeToggle.tsx`, `ThemeToggle.tsx`
+
+```tsx
+// Container border
+borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+
+// Inactive button
+backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+
+// Active button
+backgroundColor: 'var(--color-brand-600)',
+color: '#ffffff',
+```
+
+### Sidebar
+
+**File**: `Sidebar.tsx`
+
+```tsx
+// Main sidebar with blur
+style={{
+  backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+  boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 10%, transparent)',
+}}
+className="backdrop-blur-xl"
+
+// Nav link hover (non-active)
+backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
 ```
 
 ### Dropdown Menus
 
-**File**: `NotesFilter.tsx`, `DirectoryPageControls.tsx`, `user-menu/index.tsx`
+**File**: `NotesFilter.tsx`, `DirectoryPageControls.tsx`
 
 ```tsx
-<div
-  className="absolute rounded-xl border overflow-hidden"
-  style={{
-    backgroundColor: 'var(--glass-bg)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-  }}
->
-  {/* Menu items */}
-  <button
-    className="hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]"
-    style={{
-      backgroundColor: 'transparent',
-      color: 'var(--text-primary)',
-    }}
-  />
-</div>
+style={{
+  backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+  backdropFilter: 'blur(20px) saturate(180%)',
+}}
 ```
 
-### Standard Buttons/Inputs
+### Dashboard Cards
 
-**File**: `NotesFilter.tsx`, `Pagination.tsx`
-
-```tsx
-<button
-  style={{
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-    color: 'var(--text-primary)',
-  }}
-/>
-```
-
-### Destructive/Error Buttons
-
-**File**: `BulkActionsBar.tsx`
+**File**: `CurrentFocusCard.tsx`, `TodaysPlanList.tsx`, `BacklogSection.tsx`, etc.
 
 ```tsx
-<button
-  style={{
-    backgroundColor: isEnabled
-      ? 'color-mix(in srgb, var(--color-error) 20%, transparent)'
-      : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-    color: isEnabled ? 'var(--color-error)' : 'var(--text-tertiary)',
-    border: isEnabled
-      ? '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)'
-      : 'none',
-  }}
-/>
-```
+style={{
+  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+}}
 
-### Modals/Dialogs
-
-**File**: `Dialog.tsx`, `EditNoteModal.tsx`
-
-```tsx
-// Dialog content
-<div className="bg-[var(--glass-bg)] backdrop-blur-xl">
-  {/* Header */}
-  <div className="bg-[var(--glass-header)]" />
-
-  {/* Body */}
-  <div className="bg-[var(--glass-body)]" />
-</div>
-```
-
-### Badges/Pills
-
-**File**: `NotesDirectoryPage.tsx`
-
-```tsx
-<span
-  style={{
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-    color: 'var(--text-secondary)',
-  }}
-/>
+// Internal borders/dividers
+borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 ```
 
 ---
 
 ## Components Fully Updated ✅
 
+### Notes Directory Page
+
 | Component | File |
 |-----------|------|
 | Note Cards | `NoteCard.tsx`, `NoteListItem.tsx` |
-| Edit Note Modal | `EditNoteModal.tsx`, `Dialog.tsx` |
-| Rich Text Editor | `RichTextEditor.tsx` |
-| Version History | `NoteVersionHistoryPanel.tsx`, `NoteVersionTimeline.tsx`, `NoteVersionDiffViewer.tsx` |
 | Notes Filter | `NotesFilter.tsx` |
 | View Mode Toggle | `ViewModeToggle.tsx` |
 | Directory Controls | `DirectoryPageControls.tsx` |
 | Pagination | `Pagination.tsx` |
 | Bulk Actions Bar | `BulkActionsBar.tsx` |
-| User Menu | `user-menu/index.tsx`, `ApiKeySection.tsx` |
-| Floating Pagination | `NotesDirectoryPage.tsx` |
+
+### Dashboard (Focus) Page
+
+| Component | File |
+|-----------|------|
+| Current Focus Card | `CurrentFocusCard.tsx` |
+| Today's Plan List | `TodaysPlanList.tsx` |
+| Backlog Section | `BacklogSection.tsx` |
+| Focus Suggestions Panel | `FocusSuggestionsPanel.tsx` |
+| Progress Summary | `ProgressSummary.tsx` |
+| Claude Session Card | `ClaudeSessionCard.tsx` |
+| Dashboard Controls | `FocusDashboardControls.tsx` |
+| Dashboard Page (error state) | `DashboardPage.tsx` |
+
+### Global Components
+
+| Component | File |
+|-----------|------|
+| Sidebar | `Sidebar.tsx` |
+| Theme Toggle | `ThemeToggle.tsx` |
+
+### Chat Page ✅
+
+| Component | File |
+|-----------|------|
+| Chat Sidebar | `ChatSidebar.tsx` |
+| Chat Header | `ChatHeader.tsx` |
+| Conversation List Item | `ConversationListItem.tsx` |
+| Message Bubble | `MessageBubble.tsx` |
+| Process Timeline | `ProcessTimeline.tsx` |
+| Retrieved Notes Card | `RetrievedNotesCard.tsx` |
+| Streaming Indicator | `StreamingIndicator.tsx` |
+| Image Generation Panel | `ImageGenerationPanel.tsx` |
+| Chat Mentions Dropdown | `ChatMentionsDropdown.tsx` |
+| Chat Formatting Toolbar | `ChatFormattingToolbar.tsx` |
+| Chat Smart Prompts | `ChatInputSmartPrompts.tsx` |
+| Thinking Step Card | `ThinkingStepCard.tsx` |
+| Tool Execution Card | `ToolExecutionCard.tsx` |
+| Chat Attachment Gallery | `ChatAttachmentGallery.tsx` |
+| Chat Toolbar Buttons | `ChatInputToolbarButton.tsx` |
+| Chat Error Message | `ChatErrorMessage.tsx` |
+| Chat Input CSS Module | `chat-input.module.css` |
 
 ---
 
@@ -215,25 +206,26 @@ color: #ffffff;
 
 Use the patterns above to update these:
 
-- [ ] Chat page components
-- [ ] Focus page components
+- [x] ~~Chat page components~~ (completed)
 - [ ] Settings page components
-- [ ] Dashboard components
 - [ ] Insights page components
 - [ ] GitHub integration components
 - [ ] Voice components
-- [ ] Other dropdowns and modals
+- [ ] Other modals and dialogs
 
 ---
 
-## Tips
+## Quick Reference: Old → New Values
 
-1. **Replace `var(--surface-elevated)`** with `color-mix(in srgb, var(--text-primary) 8%, transparent)`
-2. **Replace `var(--surface-hover)`** with `color-mix(in srgb, var(--text-primary) 10%, transparent)`
-3. **Replace `var(--border)`** with `color-mix(in srgb, var(--text-primary) 15%, transparent)` for floating elements
-4. **Replace `var(--color-success)`** with `var(--color-brand-500)` for consistency
-5. **Add backdrop-blur** to any floating/overlay element
-6. **Use `self-stretch`** for full-height separators in flex containers
+| Old Value | New Value |
+|-----------|-----------|
+| `8%` (buttons/inputs) | `4%` |
+| `10%` (hover) | `3%` |
+| `15%` (borders) | `6%` |
+| `var(--border)` | `color-mix(in srgb, var(--text-primary) 6%, transparent)` |
+| `var(--surface-elevated)` | `color-mix(in srgb, var(--text-primary) 4%, transparent)` |
+| `var(--surface-hover)` | `color-mix(in srgb, var(--text-primary) 4%, transparent)` |
+| `transparent` (cards) | `color-mix(in srgb, var(--text-primary) 2%, transparent)` |
 
 ---
 
