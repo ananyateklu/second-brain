@@ -129,8 +129,8 @@ describe('ChatUsageChart', () => {
       render(<ChatUsageChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
-      // Selected buttons use CSS classes for styling
-      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should call onTimeRangeChange when button clicked', () => {
@@ -212,7 +212,7 @@ describe('ChatUsageChart', () => {
       );
 
       // Container should have opacity 0 when not ready
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toHaveStyle({ opacity: '0' });
     });
 
@@ -221,7 +221,7 @@ describe('ChatUsageChart', () => {
         <ChatUsageChart {...defaultProps} isAnimationReady={true} />
       );
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toHaveStyle({ opacity: '1' });
     });
   });
@@ -233,7 +233,7 @@ describe('ChatUsageChart', () => {
     it('should have rounded corners on container', () => {
       const { container } = render(<ChatUsageChart {...defaultProps} />);
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toBeInTheDocument();
     });
 
@@ -287,8 +287,8 @@ describe('ChatUsageChart', () => {
       render(<ChatUsageChart {...defaultProps} selectedTimeRange={365} />);
 
       const button1Y = screen.getByText('1Y');
-      // Selected buttons use CSS classes for styling
-      expect(button1Y.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(button1Y).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
   });
 });

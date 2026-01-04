@@ -11,7 +11,7 @@ const sizeClasses = {
  * User avatar with gradient background and initials.
  * Uses CSS hover classes instead of inline handlers.
  */
-export function UserAvatar({ user, size = 'sm', className, isActive }: UserAvatarProps) {
+export function UserAvatar({ user, size = 'sm', className, isActive: _isActive }: UserAvatarProps) {
   const initial = user.displayName?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U';
 
   return (

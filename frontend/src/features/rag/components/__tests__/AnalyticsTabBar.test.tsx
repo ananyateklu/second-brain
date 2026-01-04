@@ -51,21 +51,21 @@ describe('AnalyticsTabBar', () => {
       render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const performanceTab = screen.getByText('Performance').closest('button');
-      expect(performanceTab).toHaveStyle({ backgroundColor: 'var(--surface-card)' });
+      expect(performanceTab).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should highlight Topics tab when active', () => {
       render(<AnalyticsTabBar activeTab="topics" onTabChange={mockOnTabChange} />);
 
       const topicsTab = screen.getByText('Topics').closest('button');
-      expect(topicsTab).toHaveStyle({ backgroundColor: 'var(--surface-card)' });
+      expect(topicsTab).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should highlight Query Logs tab when active', () => {
       render(<AnalyticsTabBar activeTab="logs" onTabChange={mockOnTabChange} />);
 
       const logsTab = screen.getByText('Query Logs').closest('button');
-      expect(logsTab).toHaveStyle({ backgroundColor: 'var(--surface-card)' });
+      expect(logsTab).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should show active indicator line under active tab', () => {
@@ -84,11 +84,11 @@ describe('AnalyticsTabBar', () => {
       expect(indicator).not.toBeInTheDocument();
     });
 
-    it('should use primary color for active tab text', () => {
+    it('should use white color for active tab text', () => {
       render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const performanceTab = screen.getByText('Performance').closest('button');
-      expect(performanceTab).toHaveStyle({ color: 'var(--text-primary)' });
+      expect(performanceTab).toHaveStyle({ color: '#ffffff' });
     });
 
     it('should use tertiary color for inactive tab text', () => {

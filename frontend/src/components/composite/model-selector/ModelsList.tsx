@@ -13,7 +13,7 @@ export function ModelsList({
   focusedIndex,
   onModelSelect,
   onModelHover,
-  isBlueTheme,
+  isBlueTheme: _isBlueTheme,
 }: ModelsListProps) {
   const selectedModelRef = useRef<HTMLButtonElement>(null);
 

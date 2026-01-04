@@ -27,7 +27,7 @@ const StatCard = memo(({
   value,
   subtitle,
   icon,
-  accentColor = 'var(--color-primary)',
+  accentColor: _accentColor = 'var(--color-primary)',
   trend,
 }: StatCardProps) => {
   const trendColors = {

@@ -262,7 +262,7 @@ describe('PieChartTooltip', () => {
       );
 
       const tooltip = container.firstChild as HTMLElement;
-      expect(tooltip).toHaveStyle({ borderRadius: '8px' });
+      expect(tooltip).toHaveStyle({ borderRadius: '12px' });
       expect(tooltip).toHaveStyle({ padding: '10px 14px' });
       expect(tooltip).toHaveStyle({ minWidth: '180px' });
     });
@@ -276,8 +276,8 @@ describe('PieChartTooltip', () => {
       );
 
       const tooltip = container.firstChild as HTMLElement;
-      expect(tooltip).toHaveStyle({ backgroundColor: 'var(--surface-elevated)' });
-      expect(tooltip).toHaveStyle({ border: '1px solid var(--border)' });
+      expect(tooltip).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)' });
+      expect(tooltip).toHaveStyle({ border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' });
     });
 
     it('should have bold model name', () => {
