@@ -919,7 +919,6 @@ export function NotesDirectoryPage() {
             bottom: isBulkMode ? '5.75rem' : '1.5rem',
             backgroundColor: 'var(--glass-bg)',
             borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-            boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             opacity: showPagination ? 1 : 0,

@@ -158,11 +158,6 @@ describe('FeedbackSummaryCard', () => {
       expect(card).toHaveClass('backdrop-blur-md');
     });
 
-    it('should have ambient glow element', () => {
-      const { container } = render(<FeedbackSummaryCard stats={createMockStats()} />);
-      expect(container.querySelector('.opacity-15.blur-3xl')).toBeInTheDocument();
-    });
-
     it('should use positive color for positive feedback', () => {
       render(<FeedbackSummaryCard stats={createMockStats()} />);
       const positiveValue = screen.getByText('Positive Feedback')

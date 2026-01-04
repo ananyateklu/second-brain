@@ -238,19 +238,6 @@ describe('NotesChart', () => {
       expect(chartContainer).toBeInTheDocument();
     });
 
-    it('should render ambient glow effect', () => {
-      const { container } = render(<NotesChart {...defaultProps} />);
-
-      const glow = container.querySelector('.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
-
-    it('should have relative overflow hidden on container', () => {
-      const { container } = render(<NotesChart {...defaultProps} />);
-
-      const chartContainer = container.querySelector('.overflow-hidden');
-      expect(chartContainer).toBeInTheDocument();
-    });
   });
 
   // ============================================

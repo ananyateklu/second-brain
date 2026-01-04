@@ -47,12 +47,13 @@ export function PieChartTooltip({
   return (
     <div
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
-        borderRadius: '8px',
+        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        borderRadius: '12px',
         padding: '10px 14px',
-        boxShadow: 'var(--shadow-lg)',
         minWidth: '180px',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
       }}
     >
       <p style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontWeight: 600, fontSize: '14px' }}>

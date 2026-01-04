@@ -36,57 +36,35 @@ export const StatCard = memo(({
   if (!show) return null;
 
   // Optimized styles based on platform
-  // WebKit (Tauri) uses reduced blur and simpler effects for performance
   const cardStyles: CSSProperties = {
-    backgroundColor: 'var(--surface-card)',
-    borderColor: 'var(--border)',
-    // Reduced shadow complexity for WebKit
-    boxShadow: isWebKit
-      ? 'var(--shadow-lg)'
-      : 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     minHeight: '80px',
     // Smooth opacity-only transition for seamless skeleton blending
-    // No translateY/scale since skeleton already matches exact layout
-    // No stagger delay - all cards load simultaneously
     opacity: isAnimationReady ? 1 : 0,
-    // Only opacity transition - no movement since skeleton is in place
-    transitionProperty: 'opacity, box-shadow, border-color',
+    transitionProperty: 'opacity, border-color',
     transitionDuration: '200ms',
     transitionTimingFunction: 'ease-out',
     transitionDelay: '0ms',
-    // GPU acceleration hints
     willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
-    // Override with custom animation style if provided
     ...animationStyle,
   };
-
-  // Glow effect styles - only show on non-WebKit platforms
-  const glowStyles: CSSProperties = isWebKit
-    ? { display: 'none' }
-    : {
-      background: 'radial-gradient(circle, var(--color-primary), transparent)',
-      opacity: 0.15,
-    };
 
   return (
     <div
       className={`
-        rounded-2xl border p-4 
-        hover:-translate-y-0.5 hover:border-[var(--color-brand-500)]
-        flex flex-col h-full relative overflow-hidden
+        rounded-2xl border p-4
+        hover:-translate-y-0.5
+        flex flex-col h-full
+        transition-all duration-200
         ${isWebKit ? '' : 'backdrop-blur-md'}
       `}
       style={cardStyles}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
     >
-      {/* Ambient glow effect - hidden on WebKit for performance */}
-      <div
-        className="absolute -top-16 -right-16 w-32 h-32 rounded-full blur-2xl pointer-events-none"
-        style={glowStyles}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="flex flex-col h-full">
         <div className="flex items-start justify-between mb-1">
           <h3
             className="text-[11px] font-medium flex-1 min-w-0 pr-2"

@@ -85,7 +85,6 @@ export function AgentSettingsPopover({
           `}
           style={{
             backgroundColor: agentEnabled ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-            boxShadow: agentEnabled ? '0 0 8px -3px var(--color-brand-500)' : 'none',
           }}
         >
           <span
@@ -172,7 +171,6 @@ export function AgentSettingsPopover({
                 `}
                 style={{
                   backgroundColor: capability.enabled ? 'var(--color-notes)' : 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-                  boxShadow: capability.enabled ? '0 0 6px -3px var(--color-notes)' : 'none',
                 }}
               >
                 <span

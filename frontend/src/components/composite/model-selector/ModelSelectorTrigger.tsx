@@ -120,7 +120,6 @@ export const ModelSelectorTrigger = forwardRef<
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         color: 'var(--text-primary)',
         border: `1px solid ${isRefreshing ? 'var(--color-primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg)' : 'none',
       }}
       aria-expanded={isOpen}
       aria-haspopup="listbox"

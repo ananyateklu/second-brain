@@ -338,7 +338,6 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                 style={{
                   backgroundColor: isCurrent ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   borderColor: isCurrent ? 'var(--color-brand-600)' : 'var(--border)',
-                  boxShadow: isCurrent ? '0 0 0 3px color-mix(in srgb, var(--color-brand-600) 20%, transparent)' : 'none',
                 }}
               >
                 {isCurrent && (

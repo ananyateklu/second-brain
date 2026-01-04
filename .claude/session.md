@@ -1,13 +1,13 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, and Chat Page Complete
+> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat Page, and Insights Page Complete
 
 ---
 
 ## Overview
 
-The Dashboard (Focus) page, Notes Directory page, and **Chat page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
+The Dashboard (Focus) page, Notes Directory page, **Chat page**, and **Insights page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
 
 ---
 
@@ -182,9 +182,14 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 
 | Component | File |
 |-----------|------|
-| Chat Sidebar | `ChatSidebar.tsx` |
+| Chat Sidebar | `ChatSidebar.tsx` (fully transparent) |
 | Chat Header | `ChatHeader.tsx` |
-| Conversation List Item | `ConversationListItem.tsx` |
+| Conversation List Item | `ConversationListItem.tsx` (brand color selection) |
+| Chat Page Controls | `ChatPageControls.tsx` (bulk actions) |
+| Model Selector | `model-selector/index.tsx`, `ModelSelectorTrigger.tsx`, `ProviderTabs.tsx`, `ModelsList.tsx`, `RefreshButton.tsx` |
+| Feature Mode Pill | `FeatureModePill.tsx` (RAG/Agent toggles) |
+| Agent Settings Popover | `AgentSettingsPopover.tsx` (subtle green) |
+| Context Usage Indicator | `context-usage/index.tsx`, `ContextBreakdownItem.tsx` (token counter) |
 | Message Bubble | `MessageBubble.tsx` |
 | Process Timeline | `ProcessTimeline.tsx` |
 | Retrieved Notes Card | `RetrievedNotesCard.tsx` |
@@ -200,6 +205,24 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Chat Error Message | `ChatErrorMessage.tsx` |
 | Chat Input CSS Module | `chat-input.module.css` |
 
+**Additional Changes:**
+- Hidden Cohere from provider list (`use-chat-provider-selection.ts`)
+
+### Insights Page ✅
+
+| Component | File |
+|-----------|------|
+| Stat Card | `StatCard.tsx` (shared dashboard card) |
+| Chat Tab | `ChatTab.tsx` (skeletons, tooltips, progress bars, model cards) |
+| Agent Tab | `AgentTab.tsx` (skeletons, tooltips, tables) |
+| Overview Tab | `OverviewTab.tsx` (error state) |
+| Analytics Tab Bar | `AnalyticsTabBar.tsx` (RAG sub-tab navigation) |
+| RAG Stats Cards | `RagStatsCards.tsx` |
+| Score Correlation Card | `ScoreCorrelationCard.tsx` |
+| Feedback Summary Card | `FeedbackSummaryCard.tsx` |
+| Topic Distribution Card | `TopicDistributionCard.tsx` |
+| Query Logs Table | `QueryLogsTable.tsx` (headers, rows, expanded view, pagination) |
+
 ---
 
 ## Components To Update
@@ -207,8 +230,8 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 Use the patterns above to update these:
 
 - [x] ~~Chat page components~~ (completed)
-- [ ] Settings page components
-- [ ] Insights page components
+- [x] ~~Insights page components~~ (completed)
+- [ ] **Settings page components** ← NEXT
 - [ ] GitHub integration components
 - [ ] Voice components
 - [ ] Other modals and dialogs

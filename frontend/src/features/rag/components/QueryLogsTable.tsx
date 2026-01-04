@@ -24,7 +24,7 @@ const FeedbackBadge = memo(({ feedback }: { feedback: RagFeedbackType | null }) 
       <span
         className="text-xs px-2.5 py-1 rounded-full font-medium"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: 'var(--text-tertiary)',
         }}
       >
@@ -75,9 +75,9 @@ const FeatureBadge = memo(({ label }: { label: string }) => {
     <span
       className="text-xs px-2 py-0.5 rounded-md font-medium"
       style={{
-        backgroundColor: 'var(--surface-card)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         color: 'var(--text-secondary)',
-        border: '1px solid var(--border)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {label}
@@ -100,25 +100,16 @@ export const QueryLogsTable = memo(({
 
   return (
     <div
-      className="rounded-2xl backdrop-blur-md relative overflow-hidden flex flex-col h-full"
+      className="rounded-2xl backdrop-blur-md flex flex-col h-full"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
-      {/* Ambient glow */}
-      <div
-        className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full opacity-10 blur-3xl pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, var(--color-brand-400), transparent)',
-        }}
-      />
-
       {/* Header */}
       <div
-        className="px-5 py-2 border-b flex items-center justify-between relative z-10 flex-shrink-0"
-        style={{ borderColor: 'var(--border)' }}
+        className="px-5 py-2 border-b flex items-center justify-between flex-shrink-0"
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         <div className="flex items-center gap-3">
           <div
@@ -163,8 +154,8 @@ export const QueryLogsTable = memo(({
           <div
             className="relative w-5 h-5 rounded-md transition-all duration-200"
             style={{
-              backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : 'var(--surface-elevated)',
-              border: feedbackOnly ? 'none' : '1px solid var(--border)',
+              backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: feedbackOnly ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <input
@@ -198,7 +189,7 @@ export const QueryLogsTable = memo(({
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 overflow-hidden relative z-10 flex flex-col">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         <div className="overflow-x-auto overflow-y-auto thin-scrollbar flex-1">
           <table className="w-full">
             <thead className="sticky top-0 z-20">
@@ -207,7 +198,7 @@ export const QueryLogsTable = memo(({
                   className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Query
@@ -216,7 +207,7 @@ export const QueryLogsTable = memo(({
                   className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Time
@@ -225,7 +216,7 @@ export const QueryLogsTable = memo(({
                   className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Results
@@ -234,7 +225,7 @@ export const QueryLogsTable = memo(({
                   className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Top Score
@@ -243,7 +234,7 @@ export const QueryLogsTable = memo(({
                   className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Feedback
@@ -252,7 +243,7 @@ export const QueryLogsTable = memo(({
                   className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
                   style={{
                     color: 'var(--text-secondary)',
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   Date
@@ -267,7 +258,7 @@ export const QueryLogsTable = memo(({
                       <div
                         className="w-8 h-8 border-2 rounded-full animate-spin"
                         style={{
-                          borderColor: 'var(--border)',
+                          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                           borderTopColor: 'var(--color-brand-400)',
                         }}
                       />
@@ -288,7 +279,7 @@ export const QueryLogsTable = memo(({
                   >
                     <div
                       className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: 'var(--surface-elevated)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                     >
                       <svg
                         className="w-6 h-6 opacity-50"
@@ -323,11 +314,11 @@ export const QueryLogsTable = memo(({
                 logs.map((log, index) => (
                   <Fragment key={log.id}>
                     <tr
-                      className={`cursor-pointer transition-colors duration-150 ${expandedRow !== log.id ? 'hover:bg-[color-mix(in_srgb,var(--surface-elevated)_30%,transparent)]' : ''}`}
+                      className={`cursor-pointer transition-colors duration-150 ${expandedRow !== log.id ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                       style={{
-                        borderTop: index > 0 ? '1px solid var(--border)' : undefined,
+                        borderTop: index > 0 ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : undefined,
                         backgroundColor: expandedRow === log.id
-                          ? 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)'
+                          ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
                           : 'transparent',
                       }}
                       onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
@@ -390,16 +381,16 @@ export const QueryLogsTable = memo(({
                           colSpan={6}
                           className="px-5 py-2.5"
                           style={{
-                            backgroundColor: 'var(--surface-elevated)',
-                            borderTop: '1px solid var(--border)',
+                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                            borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                           }}
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
                             <div
                               className="p-4 rounded-xl"
                               style={{
-                                backgroundColor: 'var(--surface-card)',
-                                border: '1px solid var(--border)',
+                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               <p
@@ -419,8 +410,8 @@ export const QueryLogsTable = memo(({
                             <div
                               className="p-4 rounded-xl"
                               style={{
-                                backgroundColor: 'var(--surface-card)',
-                                border: '1px solid var(--border)',
+                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               <p
@@ -443,8 +434,8 @@ export const QueryLogsTable = memo(({
                             <div
                               className="p-4 rounded-xl"
                               style={{
-                                backgroundColor: 'var(--surface-card)',
-                                border: '1px solid var(--border)',
+                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                               }}
                             >
                               <p
@@ -476,8 +467,8 @@ export const QueryLogsTable = memo(({
                               <div
                                 className="p-4 rounded-xl"
                                 style={{
-                                  backgroundColor: 'var(--surface-card)',
-                                  border: '1px solid var(--border)',
+                                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                 }}
                               >
                                 <p
@@ -514,8 +505,8 @@ export const QueryLogsTable = memo(({
       {/* Pagination */}
       {totalPages > 1 && (
         <div
-          className="px-5 py-2 border-t flex items-center justify-between relative z-10 flex-shrink-0"
-          style={{ borderColor: 'var(--border)' }}
+          className="px-5 py-2 border-t flex items-center justify-between flex-shrink-0"
+          style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <p
             className="text-sm tabular-nums"
@@ -529,9 +520,9 @@ export const QueryLogsTable = memo(({
               disabled={page <= 1}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: page <= 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                border: '1px solid var(--border)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               ← Previous
@@ -572,9 +563,9 @@ export const QueryLogsTable = memo(({
               disabled={page >= totalPages}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: page >= totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                border: '1px solid var(--border)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               Next →

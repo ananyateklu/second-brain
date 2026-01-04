@@ -148,7 +148,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
                 : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: selectedConversationIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedConversationIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
               border: selectedConversationIds.size > 0 ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               opacity: selectedConversationIds.size === 0 ? 0.6 : 1,
               cursor: selectedConversationIds.size === 0 ? 'not-allowed' : 'pointer',
@@ -192,7 +191,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
             backgroundColor: chatSidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: chatSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
             border: `1px solid ${chatSidebarVisible ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-            boxShadow: chatSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={chatSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -231,7 +229,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
             border: '1px solid var(--btn-primary-border)',
-            boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
           }}
           title="New Chat"
         >
@@ -315,7 +312,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
                 backgroundColor: featureColors.image.bg,
                 color: featureColors.image.text,
                 border: `1px solid ${featureColors.image.border}`,
-                boxShadow: `0 0 12px -4px ${featureColors.image.border}`,
               }}
             >
               <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">

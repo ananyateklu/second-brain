@@ -235,7 +235,6 @@ export const VoicePageControls = memo(function VoicePageControls() {
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
                 : 'var(--surface-elevated)',
               color: selectedSessionIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedSessionIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
               border: selectedSessionIds.size > 0 ? 'none' : '1px solid var(--border)',
               opacity: selectedSessionIds.size === 0 ? 0.6 : 1,
               cursor: selectedSessionIds.size === 0 ? 'not-allowed' : 'pointer',
@@ -279,7 +278,6 @@ export const VoicePageControls = memo(function VoicePageControls() {
             backgroundColor: voiceSidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
             color: voiceSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
             border: `1px solid ${voiceSidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
-            boxShadow: voiceSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={voiceSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -318,7 +316,6 @@ export const VoicePageControls = memo(function VoicePageControls() {
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
             border: '1px solid var(--btn-primary-border)',
-            boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
           }}
           title="New Voice Session"
         >

@@ -52,8 +52,8 @@ export const AnalyticsTabBar = memo(({
     <div
       className="flex items-center p-1 rounded-xl backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {TABS.map((tab) => (
@@ -62,15 +62,14 @@ export const AnalyticsTabBar = memo(({
           onClick={() => { onTabChange(tab.id); }}
           className="flex items-center gap-2 px-5 py-2.5 text-sm rounded-lg transition-all duration-200 relative"
           style={{
-            backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',
-            color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
+            backgroundColor: activeTab === tab.id ? 'var(--color-brand-600)' : 'transparent',
+            color: activeTab === tab.id ? '#ffffff' : 'var(--text-tertiary)',
             fontWeight: activeTab === tab.id ? 600 : 400,
-            boxShadow: activeTab === tab.id ? 'var(--shadow-sm)' : 'none',
           }}
         >
           <span
             className="transition-colors duration-200"
-            style={{ color: activeTab === tab.id ? 'var(--color-brand-400)' : 'inherit' }}
+            style={{ color: activeTab === tab.id ? '#ffffff' : 'inherit' }}
           >
             {tab.icon}
           </span>

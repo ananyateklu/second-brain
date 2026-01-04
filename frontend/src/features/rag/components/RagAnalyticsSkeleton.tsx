@@ -9,23 +9,14 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonStatCard() {
   return (
     <div
-      className="rounded-2xl border p-3 relative overflow-hidden backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
+      className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         minHeight: '80px',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
       }}
     >
-      {/* Ambient glow */}
-      <div
-        className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-20 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="relative z-10">
+      <div>
         {/* Icon positioned top-right */}
         <div className="absolute top-0 right-0">
           <ShimmerBlock className="h-5 w-5 rounded" />
@@ -47,19 +38,18 @@ function SkeletonStatCard() {
 function SkeletonCorrelationCard() {
   return (
     <div
-      className="rounded-2xl border p-4 relative overflow-hidden backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200 group"
+      className="rounded-2xl border p-4 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
-      <div className="relative z-10">
+      <div>
         {/* Header with icon wrapper */}
         <div className="flex items-center gap-2 mb-4">
           <div
             className="p-2.5 rounded-xl"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)' }}
           >
             <ShimmerBlock className="h-5 w-5 rounded" />
           </div>
@@ -90,7 +80,7 @@ function SkeletonCorrelationCard() {
         </div>
 
         {/* Footer text */}
-        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
           <ShimmerBlock className="h-2 w-48" />
         </div>
       </div>
@@ -101,14 +91,13 @@ function SkeletonCorrelationCard() {
 function SkeletonFeedbackCard() {
   return (
     <div
-      className="rounded-2xl border p-3 relative overflow-hidden backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200 group"
+      className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
-      <div className="relative z-10">
+      <div>
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
           <ShimmerBlock className="h-5 w-5 rounded" />
@@ -132,7 +121,7 @@ function SkeletonFeedbackCard() {
         </div>
 
         {/* Footer text with border-top */}
-        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
           <ShimmerBlock className="h-2 w-36" />
         </div>
       </div>

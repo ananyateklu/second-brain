@@ -20,7 +20,6 @@ function DropdownButton({ label, isOpen, onClick, count }: DropdownButtonProps) 
         backgroundColor: isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         color: isOpen ? '#ffffff' : 'var(--text-primary)',
         border: `1px solid ${isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'none',
       }}
     >
       <span>{label}</span>
@@ -300,7 +299,6 @@ export function NotesFilter({
         style={{
           backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-          boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
           animation: 'scaleIn 0.2s ease-out',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
@@ -693,7 +691,6 @@ export function NotesFilter({
             backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',
             border: `1px solid ${isBulkMode ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-            boxShadow: isBulkMode ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'none',
           }}
         >
           {isBulkMode ? (

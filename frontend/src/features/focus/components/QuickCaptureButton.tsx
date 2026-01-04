@@ -53,7 +53,6 @@ export const QuickCaptureButton = memo(function QuickCaptureButton({
       style={{
         backgroundColor: 'var(--color-primary)',
         color: 'white',
-        boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.25), 0 0 20px -5px var(--color-primary-alpha)',
       }}
       aria-label="Quick capture new focus item"
       title="Quick capture (⌘⇧F)"

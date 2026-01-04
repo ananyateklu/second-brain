@@ -71,9 +71,8 @@ export const RagTab = memo(function RagTab() {
         <div
           className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md"
           style={{
-            backgroundColor: 'var(--color-error-light)',
-            border: '1px solid var(--color-error-border)',
-            boxShadow: '0 0 40px -15px color-mix(in srgb, var(--color-error) 30%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
           }}
         >
           <div className="flex items-center justify-center gap-2 mb-2">

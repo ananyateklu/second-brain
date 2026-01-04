@@ -63,21 +63,16 @@ function CircularCheckbox({
         border: checked
           ? '2px solid var(--btn-primary-bg)'
           : '2px solid var(--text-tertiary)',
-        boxShadow: checked
-          ? '0 2px 8px -2px rgba(54, 105, 61, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1)'
-          : 'none',
         focusVisibleRingColor: 'var(--btn-primary-bg)',
       } as React.CSSProperties}
       onMouseEnter={(e) => {
         if (!checked) {
           e.currentTarget.style.borderColor = 'var(--color-brand-400)';
-          e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--color-brand-600) 15%, transparent)';
         }
       }}
       onMouseLeave={(e) => {
         if (!checked) {
           e.currentTarget.style.borderColor = 'var(--text-tertiary)';
-          e.currentTarget.style.boxShadow = 'none';
         }
       }}
     >

@@ -81,7 +81,6 @@ export function ChatInputSmartPromptsPanel() {
             background: 'var(--glass-bg)',
             color: promptsGenerated ? 'var(--text-secondary)' : 'var(--color-brand-400)',
             border: promptsGenerated ? '1px solid var(--glass-border)' : '1px solid var(--color-brand-400)',
-            boxShadow: 'var(--glass-shadow)',
           }}
         >
           {isLoadingPrompts ? (
@@ -130,7 +129,6 @@ export function ChatInputSmartPromptsPanel() {
                 : 'var(--glass-bg)',
               color: promptsGenerated ? 'var(--prompt-chip-text)' : 'var(--text-secondary)',
               border: promptsGenerated ? '1px solid var(--prompt-chip-border)' : '1px solid var(--glass-border)',
-              boxShadow: 'var(--glass-shadow)',
             } as React.CSSProperties}
             title={prompt.promptTemplate}
           >

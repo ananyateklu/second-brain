@@ -294,13 +294,6 @@ describe('ModelUsageSection', () => {
       expect(section).toBeInTheDocument();
     });
 
-    it('should render ambient glow effect', () => {
-      const { container } = render(<ModelUsageSection {...defaultProps} />);
-
-      const glow = container.querySelector('.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
-
     it('should use 3-column grid layout', () => {
       const { container } = render(<ModelUsageSection {...defaultProps} />);
 

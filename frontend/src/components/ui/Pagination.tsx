@@ -133,9 +133,6 @@ export const Pagination = memo(({
                     : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: isActive ? 'white' : 'var(--text-primary)',
-                  boxShadow: isActive
-                    ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)'
-                    : 'none',
                 }}
                 aria-label={`Page ${page}`}
                 aria-current={isActive ? 'page' : undefined}

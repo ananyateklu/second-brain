@@ -115,9 +115,6 @@ export function FeatureModePill({
           backgroundColor: isActive ? activeColor.bg : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: isActive ? activeColor.text : 'var(--text-secondary)',
           border: `1px solid ${isActive ? activeColor.border : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-          boxShadow: isActive
-            ? `0 0 12px -4px ${activeColor.border}`
-            : 'none',
         }}
         data-feature={featureId}
       >
@@ -190,7 +187,6 @@ export function FeatureModePill({
             style={{
               backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
               borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-              boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
               minWidth: popoverWidth,
               backdropFilter: 'blur(20px) saturate(180%)',
               WebkitBackdropFilter: 'blur(20px) saturate(180%)',

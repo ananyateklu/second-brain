@@ -113,7 +113,6 @@ export function ImageGenerationPanel({
       style={{
         backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
       }}
     >
       {/* Header */}

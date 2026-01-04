@@ -86,7 +86,6 @@ class VoiceErrorBoundary extends Component<VoiceErrorBoundaryProps, VoiceErrorBo
                 backgroundColor: 'var(--btn-primary-bg)',
                 color: 'var(--btn-primary-text)',
                 border: '1px solid var(--btn-primary-border)',
-                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
               }}
             >
               <ArrowPathIcon className="w-3.5 h-3.5" />

@@ -52,11 +52,13 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-[transform,background-color,color,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-      isSelected
-        ? 'scale-105 bg-[var(--color-brand-600)] text-white border border-[var(--color-brand-600)]'
-        : 'hover:scale-105 bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-    }`}
+    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    style={{
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+      color: isSelected ? 'white' : 'var(--text-secondary)',
+      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+    }}
   >
     {option.label}
   </button>
@@ -80,12 +82,8 @@ export function ChatUsageChart({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'var(--surface-card)',
-    borderColor: 'var(--border)',
-    // Simpler shadow for WebKit
-    boxShadow: isWebKit
-      ? 'var(--shadow-lg)'
-      : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -96,32 +94,14 @@ export function ChatUsageChart({
     backfaceVisibility: 'hidden',
   }), [isWebKit, isAnimationReady, animationDelay]);
 
-  // Glow effect styles - disabled on WebKit
-  const glowStyles = useMemo<CSSProperties>(() =>
-    isWebKit
-      ? { display: 'none' }
-      : {
-        background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        opacity: 0.2,
-      },
-    [isWebKit]
-  );
-
   if (chatUsageChartData.length === 0) return null;
 
   return (
     <div
-      className={`rounded-3xl border p-6 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+      className={`rounded-2xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
       style={containerStyles}
     >
-      {/* Ambient glow effect - hidden on WebKit for performance */}
-      <div
-        className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-        style={glowStyles}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10">
+      <div>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <svg
@@ -162,7 +142,7 @@ export function ChatUsageChart({
         <div className="min-w-0">
           <ResponsiveContainer width="100%" height={192}>
             <LineChart data={chatUsageChartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="color-mix(in srgb, var(--text-primary) 6%, transparent)" />
               <XAxis
                 dataKey="date"
                 stroke="var(--text-secondary)"
@@ -188,10 +168,12 @@ export function ChatUsageChart({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  borderRadius: '12px',
                   color: 'var(--text-primary)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
                 }}
                 labelStyle={{ color: 'var(--text-primary)' }}
                 formatter={(value: number, name: string) => [

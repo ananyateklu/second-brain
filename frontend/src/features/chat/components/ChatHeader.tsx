@@ -220,7 +220,6 @@ export function ChatHeader({
                 backgroundColor: featureColors.image.bg,
                 color: featureColors.image.text,
                 border: `1px solid ${featureColors.image.border}`,
-                boxShadow: `0 0 12px -4px ${featureColors.image.border}`,
               }}
             >
               <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">

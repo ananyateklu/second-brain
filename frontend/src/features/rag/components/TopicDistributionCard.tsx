@@ -45,25 +45,18 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
 
   return (
     <div
-      className="rounded-2xl transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
     >
-      {/* Ambient glow */}
-      <div
-        className="absolute -top-20 -left-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none transition-opacity duration-500 group-hover:opacity-25"
-        style={{
-          background: 'radial-gradient(circle, var(--color-accent-blue), transparent)',
-        }}
-      />
-
       {/* Header */}
       <div
-        className="px-3 py-2 border-b flex items-center justify-between relative z-10"
-        style={{ borderColor: 'var(--border)' }}
+        className="px-3 py-2 border-b flex items-center justify-between"
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         <div className="flex items-center gap-2">
           <div
@@ -102,9 +95,9 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             onChange={(e) => { setClusterCount(Number(e.target.value)); }}
             className="px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             {[3, 5, 7, 10].map((n) => (
@@ -118,7 +111,6 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
-              boxShadow: 'var(--btn-primary-shadow)',
             }}
           >
             {clusterMutation.isPending ? (
@@ -135,13 +127,13 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
       </div>
 
       {/* Content */}
-      <div className="p-3 relative z-10">
+      <div className="p-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-6">
             <div
               className="w-6 h-6 border-2 rounded-full animate-spin"
               style={{
-                borderColor: 'var(--border)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 borderTopColor: 'var(--color-brand-400)',
               }}
             />
@@ -153,7 +145,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
           >
             <div
               className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'var(--surface-elevated)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
             >
               <svg
                 className="w-6 h-6 opacity-50"
@@ -189,7 +181,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                   <div
                     key={topic.clusterId}
                     className="space-y-1 p-2 rounded-lg transition-colors duration-200 hover:bg-opacity-50"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                   >
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
@@ -197,7 +189,6 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                           className="w-2.5 h-2.5 rounded-full"
                           style={{
                             backgroundColor: colors.main,
-                            boxShadow: `0 0 0 1px var(--surface-card), 0 0 0 2px ${colors.main}`,
                           }}
                         />
                         <span
@@ -237,7 +228,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                     </div>
                     <div
                       className="h-2 rounded-full overflow-hidden"
-                      style={{ backgroundColor: 'var(--surface-elevated)' }}
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
                     >
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
@@ -265,11 +256,11 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             {/* Summary stats */}
             <div
               className="pt-2 border-t grid grid-cols-2 gap-2"
-              style={{ borderColor: 'var(--border)' }}
+              style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             >
               <div
                 className="p-2 rounded-lg"
-                style={{ backgroundColor: 'var(--surface-elevated)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
               >
                 <p
                   className="text-[10px] uppercase tracking-wide"
@@ -286,7 +277,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
               </div>
               <div
                 className="p-2 rounded-lg"
-                style={{ backgroundColor: 'var(--surface-elevated)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
               >
                 <p
                   className="text-[10px] uppercase tracking-wide"
@@ -308,8 +299,8 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
               <div
                 className="p-2 rounded-lg"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <div className="flex items-center gap-1.5 mb-1">

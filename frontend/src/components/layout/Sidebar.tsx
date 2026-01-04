@@ -191,7 +191,6 @@ export function Sidebar() {
         backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
         border: isActive ? '1px solid var(--color-brand-600)' : '1px solid transparent',
         color: isActive ? '#ffffff' : 'var(--text-secondary)',
-        boxShadow: isActive ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)' : 'none',
       })}
       onMouseEnter={(e) => {
         const link = e.currentTarget;
@@ -202,7 +201,6 @@ export function Sidebar() {
           link.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
           link.style.color = 'var(--text-primary)';
           link.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-          link.style.boxShadow = '0 4px 12px -4px var(--color-primary-alpha)';
         }
       }}
       onMouseLeave={(e) => {
@@ -213,7 +211,6 @@ export function Sidebar() {
           link.style.backgroundColor = 'transparent';
           link.style.color = 'var(--text-secondary)';
           link.style.borderColor = 'transparent';
-          link.style.boxShadow = 'none';
         }
       }}
       title={isCollapsed ? label : undefined}
@@ -369,7 +366,6 @@ export function Sidebar() {
             className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] ${isCollapsed && !isMobileMenuOpen ? 'md:px-3.5 md:py-3.5' : ''} px-6 py-4`}
             style={{
               color: 'var(--btn-primary-text)',
-              boxShadow: 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)',
             }}
             title={isCollapsed ? 'Create New Note' : undefined}
           >
@@ -415,7 +411,6 @@ export function Sidebar() {
             backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
             border: isActive ? '1px solid var(--color-brand-600)' : '1px solid transparent',
             color: isActive ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: isActive ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)' : 'none',
           })}
           onMouseEnter={(e) => {
             const link = e.currentTarget;
@@ -425,7 +420,6 @@ export function Sidebar() {
               link.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
               link.style.color = 'var(--text-primary)';
               link.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              link.style.boxShadow = '0 4px 12px -4px var(--color-primary-alpha)';
             }
           }}
           onMouseLeave={(e) => {
@@ -436,7 +430,6 @@ export function Sidebar() {
               link.style.backgroundColor = 'transparent';
               link.style.color = 'var(--text-secondary)';
               link.style.borderColor = 'transparent';
-              link.style.boxShadow = 'none';
             }
           }}
           title={isCollapsed ? 'Settings' : undefined}
@@ -535,7 +528,6 @@ export function Sidebar() {
             backgroundColor: 'color-mix(in srgb, var(--background) 80%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
             borderLeft: 'none',
-            boxShadow: '4px 0 12px -4px color-mix(in srgb, var(--text-primary) 10%, transparent)',
             color: 'var(--text-primary)',
           }}
           aria-label="Open sidebar"
@@ -570,7 +562,6 @@ export function Sidebar() {
           style={{
             backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 10%, transparent)',
           }}
           onMouseEnter={handleTemporarySidebarEnter}
           onMouseLeave={handleTemporarySidebarLeave}
@@ -644,7 +635,6 @@ export function Sidebar() {
                 className="group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl px-6 py-4 text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)]"
                 style={{
                   color: 'var(--btn-primary-text)',
-                  boxShadow: 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)',
                 }}
               >
                 {/* Animated gradient background */}
@@ -712,7 +702,6 @@ export function Sidebar() {
           style={{
             backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 10%, transparent)',
           }}
         >
           {sidebarContent}
@@ -743,7 +732,6 @@ export function Sidebar() {
         style={{
           backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
           borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-          boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 10%, transparent)',
         }}
       >
         {sidebarContent}
@@ -759,7 +747,6 @@ export function Sidebar() {
           maxHeight: maxHeight,
           backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-          boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 10%, transparent)',
           paddingTop: isCollapsed ? '0.8rem' : '1.5rem',
           transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}

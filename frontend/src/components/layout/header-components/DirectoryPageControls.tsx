@@ -188,7 +188,6 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
     backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
     color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
     border: `1px solid ${isActive ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-    boxShadow: isActive ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
   });
 
   return (
@@ -203,7 +202,6 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
             backgroundColor: directorySidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: directorySidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
             border: `1px solid ${directorySidebarVisible ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
-            boxShadow: directorySidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
           }}
           title={directorySidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -237,11 +235,9 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-            e.currentTarget.style.boxShadow = '0 0 0 2px var(--input-focus-ring)';
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'var(--border)';
-            e.currentTarget.style.boxShadow = 'none';
           }}
         />
         <button

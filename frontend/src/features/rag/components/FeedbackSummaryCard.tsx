@@ -15,22 +15,15 @@ interface FeedbackSummaryCardProps {
 export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
   return (
     <div
-      className="rounded-2xl p-3 transition-transform duration-200 hover:-translate-y-0.5 backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl p-3 transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
     >
-      {/* Ambient glow */}
-      <div
-        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none transition-opacity duration-500 group-hover:opacity-25"
-        style={{
-          background: 'radial-gradient(circle, var(--color-brand-400), transparent)',
-        }}
-      />
-
-      <div className="relative z-10">
+      <div>
         <div className="flex items-center gap-2 mb-3">
           <div
             className="p-2 rounded-lg"
@@ -80,7 +73,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'var(--surface-elevated)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             >
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
@@ -107,7 +100,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'var(--surface-elevated)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             >
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
@@ -134,7 +127,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
             </div>
             <div
               className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'var(--surface-elevated)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             >
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
@@ -151,7 +144,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
         <div
           className="mt-3 pt-2 border-t text-[10px] leading-relaxed"
           style={{
-            borderColor: 'var(--border)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-tertiary)'
           }}
         >

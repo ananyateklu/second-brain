@@ -44,7 +44,6 @@ export function ChatAttachmentGallery({
       style={{
         background: 'var(--glass-bg)',
         border: '1px solid var(--glass-border)',
-        boxShadow: 'var(--glass-shadow)',
       }}
     >
       {files.map((file, index) => (

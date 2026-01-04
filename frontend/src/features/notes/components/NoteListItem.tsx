@@ -112,11 +112,8 @@ export const NoteListItem = memo(({
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        boxShadow: isHovered
-          ? 'var(--shadow-md), 0 0 20px -10px var(--color-primary-alpha)'
-          : 'var(--shadow-sm)',
         transform: isHovered ? 'scale-[1.005]' : 'none',
-        willChange: 'transform, box-shadow',
+        willChange: 'transform',
       }}
       onClick={handleItemClick}
       onMouseEnter={() => { setIsHovered(true); }}

@@ -226,11 +226,8 @@ export const NoteCard = memo(({
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        boxShadow: isHovered
-          ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
-          : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card)'),
         transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
-        willChange: 'transform, box-shadow',
+        willChange: 'transform',
       }}
       onClick={handleCardClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -243,7 +240,6 @@ export const NoteCard = memo(({
           style={{
             backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
             borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
-            boxShadow: isSelected ? '0 2px 8px -2px var(--color-primary-alpha)' : 'var(--shadow-sm)',
           }}
         >
           {isSelected && (

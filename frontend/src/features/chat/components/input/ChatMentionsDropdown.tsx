@@ -39,7 +39,6 @@ export function ChatMentionsDropdown({
       style={{
         background: 'var(--glass-bg)',
         border: '1px solid var(--glass-border)',
-        boxShadow: 'var(--glass-shadow)',
       }}
     >
       <div

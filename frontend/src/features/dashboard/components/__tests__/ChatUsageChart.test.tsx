@@ -251,12 +251,6 @@ describe('ChatUsageChart', () => {
       expect(chartContainer).toBeInTheDocument();
     });
 
-    it('should render ambient glow effect', () => {
-      const { container } = render(<ChatUsageChart {...defaultProps} />);
-
-      const glow = container.querySelector('.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
   });
 
   // ============================================

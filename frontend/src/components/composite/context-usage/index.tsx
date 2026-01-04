@@ -128,7 +128,6 @@ export function ContextUsageIndicator({
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           borderColor: warningLevel !== 'normal' ? colors.border : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-          boxShadow: isExpanded ? '0 0 0 2px color-mix(in srgb, var(--text-primary) 8%, transparent)' : 'none',
         }}
       >
         {/* Token icon */}
@@ -178,7 +177,6 @@ export function ContextUsageIndicator({
           style={{
             backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
             borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             width: buttonWidth ? `${buttonWidth}px` : undefined,

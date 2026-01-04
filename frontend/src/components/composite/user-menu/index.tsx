@@ -71,7 +71,6 @@ export function UserMenu() {
           className="w-80 rounded-2xl py-2 overflow-hidden backdrop-blur-xl"
           style={{
             backgroundColor: 'var(--glass-bg)',
-            boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
           }}
           sideOffset={8}
         >

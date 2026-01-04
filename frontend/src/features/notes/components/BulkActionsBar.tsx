@@ -55,7 +55,6 @@ export const BulkActionsBar = memo(({
         transform: 'translate(-50%, 0)',
         backgroundColor: 'var(--glass-bg)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
-        boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         animation: 'bulkBarSlideUp 0.3s ease-out',
