@@ -160,12 +160,7 @@ export function CodeViewer({
   return (
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
       {/* File header */}
-      <div
-        className="flex items-center justify-between px-4 py-[15px] flex-shrink-0"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-        }}
-      >
+      <div className="flex items-center justify-between px-4 py-[15px] flex-shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="text-sm font-medium truncate"

@@ -152,8 +152,24 @@ export class NotesPage extends BasePage {
     await expect(this.noteEditor).toBeVisible({ timeout: 10000 });
 
     // Wait for loading state to complete - EditNoteModal shows "Loading note..." while fetching
-    // We need to wait for the title input OR content editor to appear (form content loaded)
-    await this.page.waitForSelector('input#title, .ProseMirror[contenteditable="true"]', { timeout: 15000 });
+    // The loading state shows a spinner and "Loading note..." text
+    // We need to wait for either:
+    // 1. The loading text to disappear (fast path - loading is done)
+    // 2. The form content to appear (content loaded)
+    // Use Promise.race to handle both scenarios
+    const loadingText = this.page.locator('[role="dialog"]').getByText('Loading note...');
+    const formContent = this.page.locator('input#title, .ProseMirror[contenteditable="true"]');
+
+    // First, give the dialog a moment to show its content
+    await this.page.waitForTimeout(500);
+
+    // If loading text is visible, wait for it to disappear
+    if (await loadingText.isVisible().catch(() => false)) {
+      await expect(loadingText).not.toBeVisible({ timeout: 30000 });
+    }
+
+    // Now wait for the form content to be visible
+    await expect(formContent.first()).toBeVisible({ timeout: 15000 });
 
     // Additional wait for form to be fully rendered
     await this.page.waitForTimeout(500);
@@ -229,6 +245,15 @@ export class NotesPage extends BasePage {
     const noteCard = this.noteCards.filter({ hasText: title }).first();
     await expect(noteCard).toBeVisible({ timeout: 5000 });
 
+    // Wait for any lingering toasts from note creation to disappear first
+    // This prevents the strict mode violation when multiple alerts are present
+    const existingToasts = this.page.locator('[role="alert"]');
+    const existingToastCount = await existingToasts.count();
+    if (existingToastCount > 0) {
+      // Wait for existing toasts to clear (they auto-dismiss)
+      await expect(existingToasts.first()).not.toBeVisible({ timeout: 10000 });
+    }
+
     // Hover to reveal the delete button (it's hidden by default with opacity-0)
     await noteCard.hover();
     await this.page.waitForTimeout(500); // Wait for opacity transition
@@ -237,15 +262,14 @@ export class NotesPage extends BasePage {
     const deleteBtn = noteCard.locator('button[aria-label="Delete note"]');
     await deleteBtn.click({ force: true, timeout: 5000 });
 
-    // Wait for the confirmation toast to appear
-    // The toast uses role="alert" and has action buttons inside a flex container
-    // Looking for button with exact "Delete" text that's the confirmation action
-    const toastAlert = this.page.locator('[role="alert"]');
-    await expect(toastAlert).toBeVisible({ timeout: 5000 });
+    // Wait for the delete confirmation toast to appear
+    // Use filter to specifically target the "Delete Note" confirmation toast
+    // This avoids strict mode violations if other toasts are present
+    const deleteConfirmToast = this.page.locator('[role="alert"]').filter({ hasText: 'Delete Note' });
+    await expect(deleteConfirmToast).toBeVisible({ timeout: 5000 });
 
-    // The action button is styled with bg-[var(--btn-primary-bg)] and contains the label
-    // Find all buttons in the toast and click the one with "Delete" text
-    const confirmBtn = toastAlert.locator('button').filter({ hasText: /^Delete$/ }).first();
+    // Find the "Delete" action button within the confirmation toast
+    const confirmBtn = deleteConfirmToast.locator('button').filter({ hasText: /^Delete$/ }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 5000 });
     await confirmBtn.click({ force: true });
 
