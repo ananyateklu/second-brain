@@ -52,8 +52,8 @@ export function VoiceTypePill({
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Standard Option */}

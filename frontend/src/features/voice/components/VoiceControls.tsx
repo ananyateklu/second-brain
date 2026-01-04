@@ -48,8 +48,8 @@ export function VoiceControls({
         disabled={isConnecting}
         className="flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         style={isActive ? {
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
-          color: '#ef4444',
+          backgroundColor: 'color-mix(in srgb, var(--color-error) 20%, transparent)',
+          color: 'var(--color-error)',
         } : {
           backgroundColor: 'var(--btn-primary-bg)',
           color: 'var(--btn-primary-text)',
@@ -88,15 +88,18 @@ export function VoiceControls({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onToggleMicrophone}
-          className={`
-            p-3 rounded-full transition-colors duration-200
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
-            ${
-              isMicrophoneEnabled
-                ? 'bg-[var(--surface)] text-[var(--text-primary)] hover:bg-[var(--surface-elevated)] focus-visible:ring-[var(--color-primary)]'
-                : 'bg-red-500/20 text-red-500 hover:bg-red-500/30 focus-visible:ring-red-500'
-            }
-          `}
+          className="p-3 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          style={
+            isMicrophoneEnabled
+              ? {
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  color: 'var(--text-primary)',
+                }
+              : {
+                  backgroundColor: 'color-mix(in srgb, var(--color-error) 20%, transparent)',
+                  color: 'var(--color-error)',
+                }
+          }
           aria-label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
         >
           {isMicrophoneEnabled ? (
@@ -116,11 +119,11 @@ export function VoiceControls({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onInterrupt}
-          className="
-            p-3 rounded-full bg-amber-500/20 text-amber-500
-            hover:bg-amber-500/30 transition-colors duration-200
-            focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2
-          "
+          className="p-3 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-warning) 20%, transparent)',
+            color: 'var(--color-warning)',
+          }}
           aria-label="Interrupt AI"
         >
           <HandRaisedIcon className="w-6 h-6" />

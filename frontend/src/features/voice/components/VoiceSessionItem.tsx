@@ -152,18 +152,20 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
     onSelect();
   };
 
-  // Determine background color based on selection state (matches chat exactly)
+  // Determine background color based on selection state (matches ConversationListItem exactly)
   const getBackgroundColor = () => {
     if (isSelectionMode && isChecked) {
-      return 'color-mix(in srgb, var(--surface-card) 40%, transparent)';
+      return 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)';
     }
     if (isSelected && !isSelectionMode) {
-      return 'var(--surface-card)';
+      return isDarkMode
+        ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)';
     }
     return 'transparent';
   };
 
-  // Determine left border styling (matches chat exactly)
+  // Determine left border styling (matches ConversationListItem exactly)
   const getLeftBorderStyle = () => {
     if (isSelectionMode && isChecked) {
       return {
@@ -173,13 +175,13 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
     }
     if (isSelected && !isSelectionMode) {
       return {
-        width: '4px',
-        color: 'var(--btn-primary-bg)',
+        width: '3px',
+        color: 'var(--color-brand-600)',
       };
     }
     return {
-      width: '0.25px',
-      color: 'color-mix(in srgb, var(--border) 50%, transparent)',
+      width: '0px',
+      color: 'transparent',
     };
   };
 
@@ -190,17 +192,12 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
 
   return (
     <div
-      className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--surface-card)_50%,transparent)]' : ''}`}
+      className={`group px-4 py-2.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
       style={{
         backgroundColor: getBackgroundColor(),
         borderLeftWidth: leftBorder.width,
         borderLeftColor: leftBorder.color,
-        borderTopWidth: '0.1px',
-        borderTopColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
-        borderRightWidth: '0.1px',
-        borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)',
-        borderBottomWidth: '0.1px',
-        borderBottomColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+        borderLeftStyle: 'solid',
         cursor: 'pointer',
       }}
       onClick={handleClick}
@@ -255,7 +252,7 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
                 }}
                 className="p-1.5 rounded-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
                 style={{
-                  color: 'rgb(239, 68, 68)',
+                  color: 'var(--color-error)',
                   backgroundColor: 'transparent',
                   width: '28px',
                   height: '28px',

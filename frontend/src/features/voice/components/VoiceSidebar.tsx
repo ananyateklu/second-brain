@@ -42,7 +42,7 @@ export function VoiceSidebar({
       style={{
         borderRightWidth: '0.5px',
         borderRightStyle: 'solid',
-        borderRightColor: 'var(--border)',
+        borderRightColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Session List - Scrollable (matches ChatSidebar) */}
@@ -57,16 +57,16 @@ export function VoiceSidebar({
               >
                 <div
                   className="w-10 h-10 rounded-xl"
-                  style={{ backgroundColor: 'var(--surface-elevated)' }}
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                 />
                 <div className="flex-1 space-y-2">
                   <div
                     className="h-4 rounded"
-                    style={{ backgroundColor: 'var(--surface-elevated)', width: '60%' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', width: '60%' }}
                   />
                   <div
                     className="h-3 rounded"
-                    style={{ backgroundColor: 'var(--surface-elevated)', width: '40%' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', width: '40%' }}
                   />
                 </div>
               </div>

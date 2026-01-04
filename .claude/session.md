@@ -1,7 +1,7 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat, Insights, Git, and GitHub Pages Complete
+> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat, Insights, Git, GitHub, and Voice Agent Pages Complete
 
 ---
 
@@ -206,6 +206,7 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Chat Input CSS Module | `chat-input.module.css` |
 
 **Additional Changes:**
+
 - Hidden Cohere from provider list (`use-chat-provider-selection.ts`)
 
 ### Insights Page ✅
@@ -260,6 +261,7 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | File Search Input | `code-browser/FileSearchInput.tsx` (input styling) |
 
 **Additional Changes:**
+
 - Added file icon CSS variables to `colors.css` for theme-adaptive file type icons (TypeScript, JavaScript, CSS, HTML, JSON, Markdown, Image, Config, Default)
 
 ### Header Components ✅
@@ -274,6 +276,21 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Settings Nav Tabs | `header-components/SettingsNavTabs.tsx` (tab bar, active state) |
 | Insights Tab Bar | `header-components/InsightsTabBar.tsx` (already using color-mix) |
 
+### Voice Agent Page ✅
+
+| Component | File |
+|-----------|------|
+| Voice Header | `VoiceHeader.tsx` (header container, buttons, separator, status indicator) |
+| Voice Input Bar | `VoiceInputBar.tsx` (floating bar, button colors via CSS variables) |
+| Voice Controls | `VoiceControls.tsx` (replaced Tailwind color classes with color-mix) |
+| Voice Dropdown | `VoiceDropdown.tsx` (trigger, menu, removed blue theme hack) |
+| Voice Type Pill | `VoiceTypePill.tsx` (mode toggle container) |
+| Voice Tool Chip | `VoiceToolChip.tsx` (tool execution chip) |
+| Voice Sidebar | `VoiceSidebar.tsx` (border, skeleton backgrounds) |
+| Voice Session Item | `VoiceSessionItem.tsx` (selection styling matches ConversationListItem exactly) |
+| Voice Page Controls | `header-components/VoicePageControls.tsx` (sidebar toggle, bulk button, separators, status indicator) |
+| Voice Process Timeline | `VoiceProcessTimeline.tsx` (timeline dots, vertical line, note cards, tag badges, tool results) |
+
 ---
 
 ## Components To Update
@@ -284,8 +301,8 @@ Use the patterns above to update these:
 - [x] ~~Insights page components~~ (completed)
 - [x] ~~Git page components~~ (completed)
 - [x] ~~GitHub integration components~~ (completed)
+- [x] ~~Voice Agent page components~~ (completed)
 - [ ] **Settings page components** ← NEXT
-- [ ] Voice components
 - [ ] Other modals and dialogs
 
 ---
