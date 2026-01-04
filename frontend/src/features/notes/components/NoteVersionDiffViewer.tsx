@@ -291,7 +291,7 @@ function DiffSection({
               : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
             border: changed
               ? '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)'
-              : '1px solid var(--border)',
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             opacity: changed ? 1 : 0.75,
           }}
         >
@@ -347,7 +347,7 @@ function DiffSection({
               : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
             border: changed
               ? '1px solid color-mix(in srgb, var(--color-brand-500) 20%, transparent)'
-              : '1px solid var(--border)',
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             opacity: changed ? 1 : 0.75,
           }}
         >

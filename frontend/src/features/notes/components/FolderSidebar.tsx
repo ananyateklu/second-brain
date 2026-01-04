@@ -62,7 +62,7 @@ export function FolderSidebar({
         ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
         : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)'
       : hoveredItem === itemId
-        ? 'var(--surface-hover)'
+        ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
         : 'transparent',
     color: selected
       ? 'var(--color-brand-600)'
@@ -77,15 +77,15 @@ export function FolderSidebar({
       <div
         className="h-full flex flex-col items-center py-4 border-r"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           width: '48px',
         }}
       >
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-2 rounded-lg transition-colors mb-4 hover:bg-[var(--surface-hover)]"
+            className="p-2 rounded-lg transition-colors mb-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]"
             style={{ color: 'var(--text-secondary)' }}
             title="Expand sidebar"
           >
@@ -140,14 +140,14 @@ export function FolderSidebar({
     <div
       className="h-full flex flex-col border-r overflow-hidden w-[23rem]"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3 border-b"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         <h3
           className="text-sm font-semibold"
@@ -158,7 +158,7 @@ export function FolderSidebar({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
+            className="p-1.5 rounded-lg transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]"
             style={{ color: 'var(--text-secondary)' }}
             title="Collapse sidebar"
           >
@@ -191,7 +191,7 @@ export function FolderSidebar({
           <span
             className="text-xs px-2 py-0.5 rounded-full"
             style={{
-              backgroundColor: 'var(--surface-hover)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -219,7 +219,7 @@ export function FolderSidebar({
           <span
             className="text-xs px-2 py-0.5 rounded-full"
             style={{
-              backgroundColor: 'var(--surface-hover)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -259,7 +259,7 @@ export function FolderSidebar({
             style={{
               backgroundColor: archiveFilter === 'archived'
                 ? 'color-mix(in srgb, var(--color-warning) 20%, transparent)'
-                : 'var(--surface-hover)',
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: archiveFilter === 'archived'
                 ? 'var(--color-warning)'
                 : 'var(--text-tertiary)',
@@ -272,7 +272,7 @@ export function FolderSidebar({
         {/* Divider */}
         <div
           className="mx-4 my-2 border-t"
-          style={{ borderColor: 'var(--border)' }}
+          style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         />
 
         {/* Unfiled */}
@@ -296,7 +296,7 @@ export function FolderSidebar({
             <span
               className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                backgroundColor: 'var(--surface-hover)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: 'var(--text-tertiary)',
               }}
             >
@@ -335,7 +335,7 @@ export function FolderSidebar({
                 <span
                   className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
                   style={{
-                    backgroundColor: 'var(--surface-hover)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
                 >

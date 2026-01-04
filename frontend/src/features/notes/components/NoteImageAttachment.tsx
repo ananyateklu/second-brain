@@ -168,7 +168,7 @@ export function NoteImageAttachment({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--surface-hover)]"
+        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]"
       >
         <div className="flex items-center gap-2">
           <svg
@@ -365,7 +365,7 @@ export function NoteImageAttachment({
               style={{
                 width: '100px',
                 height: '100px',
-                border: '2px dashed var(--border)',
+                border: '2px dashed color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-tertiary)',
               }}
               title="Add more images"
@@ -387,7 +387,7 @@ export function NoteImageAttachment({
             isDragging ? 'scale-[1.02]' : ''
           }`}
           style={{
-            borderColor: isDragging ? 'var(--color-brand-500)' : 'var(--border)',
+            borderColor: isDragging ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             backgroundColor: isDragging ? 'var(--color-brand-50)' : 'transparent',
           }}
           onDragOver={handleDragOver}

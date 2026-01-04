@@ -316,7 +316,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
       {/* Main timeline line */}
       <div
         className="absolute left-[11px] top-3 bottom-3 w-[2px] rounded-full"
-        style={{ backgroundColor: 'var(--border)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       />
 
       <div className="space-y-0.5">
@@ -337,7 +337,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                   }`}
                 style={{
                   backgroundColor: isCurrent ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
-                  borderColor: isCurrent ? 'var(--color-brand-600)' : 'var(--border)',
+                  borderColor: isCurrent ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 {isCurrent && (
@@ -357,7 +357,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
                   border: isCurrent
                     ? '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)'
-                    : '1px solid var(--border)',
+                    : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 {/* Header */}
@@ -492,7 +492,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       style={{
                         backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                         color: 'var(--text-secondary)',
-                        border: '1px solid var(--border)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                       }}
                     >
                       <svg

@@ -18,7 +18,7 @@ function DropdownButton({ label, isOpen, onClick, count }: DropdownButtonProps) 
       className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
       style={{
         backgroundColor: isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-        color: isOpen ? '#ffffff' : 'var(--text-primary)',
+        color: isOpen ? 'var(--btn-primary-text)' : 'var(--text-primary)',
         border: `1px solid ${isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
       }}
     >
@@ -27,8 +27,8 @@ function DropdownButton({ label, isOpen, onClick, count }: DropdownButtonProps) 
         <span
           className="px-2 py-0.5 rounded-full text-xs font-semibold"
           style={{
-            backgroundColor: isOpen ? '#ffffff' : 'var(--color-brand-600)',
-            color: isOpen ? 'var(--color-brand-600)' : '#ffffff',
+            backgroundColor: isOpen ? 'var(--btn-primary-text)' : 'var(--color-brand-600)',
+            color: isOpen ? 'var(--color-brand-600)' : 'var(--btn-primary-text)',
           }}
         >
           {count}
@@ -317,7 +317,7 @@ export function NotesFilter({
         top: topPosition,
         backgroundColor: 'transparent',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         marginTop: '-1rem', // Offset main padding
         marginLeft: '-1rem', // Offset main padding (px-4 = 1rem)
         marginRight: '-1rem', // Offset main padding
@@ -344,13 +344,13 @@ export function NotesFilter({
                 key={filter}
                 type="button"
                 onClick={() => { handleDateFilterChange(filter); }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.dateFilter !== filter ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.dateFilter !== filter ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                 style={{
                   backgroundColor: filterState.dateFilter === filter
                     ? 'var(--color-brand-600)'
                     : 'transparent',
                   color: filterState.dateFilter === filter
-                    ? '#ffffff'
+                    ? 'var(--btn-primary-text)'
                     : 'var(--text-primary)',
                 }}
               >
@@ -368,15 +368,15 @@ export function NotesFilter({
                 onFilterChange({ ...filterState, dateFilter: 'custom' });
                 setIsDateDropdownOpen(false);
               }}
-              className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm mt-1 border-t ${filterState.dateFilter !== 'custom' ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+              className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm mt-1 border-t ${filterState.dateFilter !== 'custom' ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
               style={{
                 backgroundColor: filterState.dateFilter === 'custom'
                   ? 'var(--color-brand-600)'
                   : 'transparent',
                 color: filterState.dateFilter === 'custom'
-                  ? '#ffffff'
+                  ? 'var(--btn-primary-text)'
                   : 'var(--text-primary)',
-                borderColor: 'var(--border)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               Custom range
@@ -428,13 +428,13 @@ export function NotesFilter({
               {allTags.map((tag) => (
                 <label
                   key={tag}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-150 text-sm cursor-pointer ${!filterState.selectedTags.includes(tag) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-150 text-sm cursor-pointer ${!filterState.selectedTags.includes(tag) ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedTags.includes(tag)
                       ? 'var(--color-brand-600)'
                       : 'transparent',
                     color: filterState.selectedTags.includes(tag)
-                      ? '#ffffff'
+                      ? 'var(--btn-primary-text)'
                       : 'var(--text-primary)',
                   }}
                 >
@@ -469,13 +469,13 @@ export function NotesFilter({
                 key={sort}
                 type="button"
                 onClick={() => { handleSortChange(sort); }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.sortBy !== sort ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.sortBy !== sort ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                 style={{
                   backgroundColor: filterState.sortBy === sort
                     ? 'var(--color-brand-600)'
                     : 'transparent',
                   color: filterState.sortBy === sort
-                    ? '#ffffff'
+                    ? 'var(--btn-primary-text)'
                     : 'var(--text-primary)',
                 }}
               >
@@ -503,13 +503,13 @@ export function NotesFilter({
                 key={filter}
                 type="button"
                 onClick={() => { handleArchiveFilterChange(filter); }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.archiveFilter !== filter ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm ${filterState.archiveFilter !== filter ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                 style={{
                   backgroundColor: filterState.archiveFilter === filter
                     ? 'var(--color-brand-600)'
                     : 'transparent',
                   color: filterState.archiveFilter === filter
-                    ? '#ffffff'
+                    ? 'var(--btn-primary-text)'
                     : 'var(--text-primary)',
                 }}
               >
@@ -536,13 +536,13 @@ export function NotesFilter({
               <button
                 type="button"
                 onClick={() => { handleFolderFilterChange(null); }}
-                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== null && filterState.selectedFolder !== undefined ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== null && filterState.selectedFolder !== undefined ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                 style={{
                   backgroundColor: filterState.selectedFolder === null || filterState.selectedFolder === undefined
                     ? 'var(--color-brand-600)'
                     : 'transparent',
                   color: filterState.selectedFolder === null || filterState.selectedFolder === undefined
-                    ? '#ffffff'
+                    ? 'var(--btn-primary-text)'
                     : 'var(--text-primary)',
                 }}
               >
@@ -560,13 +560,13 @@ export function NotesFilter({
                 <button
                   type="button"
                   onClick={() => { handleFolderFilterChange(''); }}
-                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== '' ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== '' ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedFolder === ''
                       ? 'var(--color-brand-600)'
                       : 'transparent',
                     color: filterState.selectedFolder === ''
-                      ? '#ffffff'
+                      ? 'var(--btn-primary-text)'
                       : 'var(--text-primary)',
                   }}
                 >
@@ -582,7 +582,7 @@ export function NotesFilter({
 
               {/* Divider if there are folders */}
               {allFolders.length > 0 && (
-                <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
+                <div className="border-t my-1" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
               )}
 
               {/* Individual folders */}
@@ -591,13 +591,13 @@ export function NotesFilter({
                   key={folder}
                   type="button"
                   onClick={() => { handleFolderFilterChange(folder); }}
-                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== folder ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+                  className={`w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between ${filterState.selectedFolder !== folder ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
                   style={{
                     backgroundColor: filterState.selectedFolder === folder
                       ? 'var(--color-brand-600)'
                       : 'transparent',
                     color: filterState.selectedFolder === folder
-                      ? '#ffffff'
+                      ? 'var(--btn-primary-text)'
                       : 'var(--text-primary)',
                   }}
                 >
@@ -620,7 +620,7 @@ export function NotesFilter({
         <button
           type="button"
           onClick={clearFilters}
-          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] hover:text-[var(--text-primary)]"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-secondary)',
@@ -648,7 +648,7 @@ export function NotesFilter({
             className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
               backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-              color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
+              color: viewMode === 'card' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
             }}
             title="Card view"
             aria-label="Card view"
@@ -668,7 +668,7 @@ export function NotesFilter({
             className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
               backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-              color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
+              color: viewMode === 'list' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
             }}
             title="List view"
             aria-label="List view"
@@ -689,7 +689,7 @@ export function NotesFilter({
           className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ${!isBulkMode ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] hover:text-[var(--text-primary)]' : ''}`}
           style={{
             backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',
+            color: isBulkMode ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
             border: `1px solid ${isBulkMode ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
           }}
         >

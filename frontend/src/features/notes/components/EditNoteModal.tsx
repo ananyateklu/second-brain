@@ -298,14 +298,29 @@ export function EditNoteModal() {
         {/* Folder Dropdown */}
         {isFolderDropdownOpen && (
           <div
-            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border border-[var(--border)] shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200 backdrop-blur-xl"
+            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             style={{
-              backgroundColor: 'var(--glass-bg)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             }}
           >
             {/* Search/Create input at top */}
-            <div className="p-2 border-b border-[var(--border)]" style={{ backgroundColor: 'var(--glass-header)' }}>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[color-mix(in_srgb,var(--text-primary)_5%,transparent)] border border-[var(--border)] focus-within:border-[var(--color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--color-brand-500)]/20 transition-all duration-150">
+            <div
+              className="p-2 border-b"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border focus-within:border-[var(--color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--color-brand-500)]/20 transition-all duration-150"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                }}
+              >
                 <svg className="w-4 h-4 text-[var(--text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -493,7 +508,7 @@ export function EditNoteModal() {
               <div
                 className="w-8 h-8 border-2 rounded-full animate-spin"
                 style={{
-                  borderColor: 'var(--border)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   borderTopColor: 'var(--color-brand-500)',
                 }}
               />

@@ -239,7 +239,7 @@ export const NoteCard = memo(({
           className="absolute top-3 left-3 z-20 flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-200"
           style={{
             backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
-            borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
+            borderColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {isSelected && (

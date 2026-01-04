@@ -60,8 +60,8 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
         placeholder="Search notes..."
         className="px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           color: 'var(--text-primary)',
           width: '300px',
         }}
@@ -71,7 +71,7 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
           e.currentTarget.style.outlineOffset = '-1px';
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = 'var(--border)';
+          e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
           e.currentTarget.style.outline = 'none';
         }}
       />
@@ -83,21 +83,21 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
         }}
         className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95 bg-[var(--color-brand-600)] border-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] hover:border-[var(--color-brand-700)]"
         style={{
-          color: '#ffffff',
+          color: 'var(--btn-primary-text)',
         }}
         title={`Search mode: ${getSearchModeTitle()}`}
         aria-label={`Search mode: ${getSearchModeTitle()}`}
       >
         <svg
           className="h-4 w-4"
-          style={{ color: '#ffffff' }}
+          style={{ color: 'var(--btn-primary-text)' }}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
           {getSearchModeIcon()}
         </svg>
-        <span className="hidden sm:inline" style={{ color: '#ffffff' }}>
+        <span className="hidden sm:inline" style={{ color: 'var(--btn-primary-text)' }}>
           {getSearchModeLabel()}
         </span>
       </button>
@@ -145,8 +145,8 @@ export const NotesPageControlsMobile = () => {
           placeholder="Search notes..."
           className="flex-1 px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
           onFocus={(e) => {
@@ -155,7 +155,7 @@ export const NotesPageControlsMobile = () => {
             e.currentTarget.style.outlineOffset = '-1px';
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border)';
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
             e.currentTarget.style.outline = 'none';
           }}
         />
@@ -167,8 +167,8 @@ export const NotesPageControlsMobile = () => {
         }}
         className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           color: 'var(--text-primary)',
         }}
       >

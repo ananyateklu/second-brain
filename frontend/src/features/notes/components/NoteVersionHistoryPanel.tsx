@@ -64,14 +64,14 @@ export function NoteVersionHistoryPanel({
           minWidth: '380px',
           height: '100%',
           backgroundColor: 'transparent',
-          borderColor: 'var(--border)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
           style={{
-            borderColor: 'var(--border)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             backgroundColor: 'transparent',
           }}
         >
@@ -108,7 +108,7 @@ export function NoteVersionHistoryPanel({
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[var(--surface-card)] hover:text-[var(--text-primary)]"
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] hover:text-[var(--text-primary)]"
             style={{
               color: 'var(--text-tertiary)',
             }}
@@ -178,7 +178,7 @@ export function NoteVersionHistoryPanel({
         <div
           className="px-4 py-2 border-t flex-shrink-0 rounded-br-3xl"
           style={{
-            borderColor: 'var(--border)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             backgroundColor: 'transparent',
           }}
         >

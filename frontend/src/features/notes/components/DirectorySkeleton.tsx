@@ -54,7 +54,7 @@ export function DirectorySkeleton() {
       {/* Folder Sidebar Skeleton - matches NotesDirectoryPage sidebar */}
       <div
         className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-[23rem]"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         {/* Navigation Items - no header, controls are in Header component */}
         <div className="flex-1 overflow-y-auto thin-scrollbar">
@@ -66,7 +66,7 @@ export function DirectorySkeleton() {
           <SkeletonSidebarItem />
 
           {/* Divider */}
-          <div className="mx-4 my-2 border-t" style={{ borderColor: 'var(--border)' }} />
+          <div className="mx-4 my-2 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
           {/* Unfiled */}
           <SkeletonSidebarItem />
