@@ -202,7 +202,13 @@ jobs:
           PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
           PGPASSWORD=testpassword psql -h localhost -U testuser -d secondbrain_smoke -c "CREATE EXTENSION IF NOT EXISTS btree_gist;"
 
-      - name: Build and start backend
+      - name: Restore backend dependencies
+        run: cd backend && dotnet restore
+
+      - name: Build backend
+        run: cd backend/src/SecondBrain.API && dotnet build --configuration Release
+
+      - name: Start backend
         env:
           ASPNETCORE_ENVIRONMENT: Development
           ASPNETCORE_URLS: http://localhost:5001
@@ -210,23 +216,43 @@ jobs:
           Jwt__SecretKey: "e2e-test-secret-key-must-be-at-least-32-characters-long"
           Jwt__Issuer: "SecondBrain-E2E"
           Jwt__Audience: "SecondBrain-E2E"
+          Jwt__ExpiryMinutes: "60"
         run: |
           cd backend/src/SecondBrain.API
-          dotnet run &
-          sleep 30
+          dotnet run --configuration Release --no-build &
+          echo "Waiting for backend to start..."
+          for i in {1..60}; do
+            if curl -s http://localhost:5001/api/health > /dev/null 2>&1; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+
+      - name: Build frontend
+        run: cd frontend && pnpm build
 
       - name: Start frontend
         run: |
           cd frontend
-          pnpm build && pnpm preview --port 3000 &
-          sleep 10
+          pnpm preview --port 3000 &
+          echo "Waiting for frontend to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "Frontend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
 
       - name: Create test user
         run: |
           curl -X POST "http://localhost:5001/api/auth/register" \
             -H "Content-Type: application/json" \
             -d '{"email": "e2e-test@example.com", "password": "E2ETestPassword123!", "displayName": "E2E Test User"}' \
-            || true
+            || echo "User may already exist"
 
       - name: Run smoke tests only
         env:
