@@ -31,7 +31,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U testuser"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -86,16 +86,37 @@ jobs:
           Jwt__ExpiryMinutes: "60"
         run: |
           cd backend/src/SecondBrain.API
-          dotnet run --configuration Release --no-build &
+          # Start backend and capture PID
+          dotnet run --configuration Release --no-build > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "Backend started with PID: $BACKEND_PID"
+
           echo "Waiting for backend to start..."
+          BACKEND_READY=false
           for i in {1..60}; do
+            # Check if process is still running
+            if ! kill -0 $BACKEND_PID 2>/dev/null; then
+              echo "ERROR: Backend process died!"
+              echo "=== Backend logs ==="
+              cat backend.log || true
+              exit 1
+            fi
+
             if curl -s http://localhost:5001/api/health > /dev/null 2>&1; then
               echo "Backend is ready!"
+              BACKEND_READY=true
               break
             fi
             echo "Waiting... ($i/60)"
             sleep 2
           done
+
+          if [ "$BACKEND_READY" != "true" ]; then
+            echo "ERROR: Backend failed to start within timeout!"
+            echo "=== Backend logs ==="
+            cat backend.log || true
+            exit 1
+          fi
 
       - name: Build frontend
         run: cd frontend && pnpm build
@@ -164,7 +185,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U testuser"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -219,16 +240,37 @@ jobs:
           Jwt__ExpiryMinutes: "60"
         run: |
           cd backend/src/SecondBrain.API
-          dotnet run --configuration Release --no-build &
+          # Start backend and capture PID
+          dotnet run --configuration Release --no-build > backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "Backend started with PID: $BACKEND_PID"
+
           echo "Waiting for backend to start..."
+          BACKEND_READY=false
           for i in {1..60}; do
+            # Check if process is still running
+            if ! kill -0 $BACKEND_PID 2>/dev/null; then
+              echo "ERROR: Backend process died!"
+              echo "=== Backend logs ==="
+              cat backend.log || true
+              exit 1
+            fi
+
             if curl -s http://localhost:5001/api/health > /dev/null 2>&1; then
               echo "Backend is ready!"
+              BACKEND_READY=true
               break
             fi
             echo "Waiting... ($i/60)"
             sleep 2
           done
+
+          if [ "$BACKEND_READY" != "true" ]; then
+            echo "ERROR: Backend failed to start within timeout!"
+            echo "=== Backend logs ==="
+            cat backend.log || true
+            exit 1
+          fi
 
       - name: Build frontend
         run: cd frontend && pnpm build
