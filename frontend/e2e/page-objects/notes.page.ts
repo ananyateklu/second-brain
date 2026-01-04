@@ -137,11 +137,34 @@ export class NotesPage extends BasePage {
       await this.folderSelect.selectOption(options.folder);
     }
 
-    await this.saveNoteButton.click();
+    // Wait for both the POST (create) and subsequent GET (refetch) to complete
+    // The optimistic update uses a temp-ID, so we need to wait for the refetch
+    // to ensure the card has the real ID before we try to open it
+    await Promise.all([
+      this.page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/notes') &&
+          response.request().method() === 'POST' &&
+          response.status() === 201,
+        { timeout: 15000 }
+      ),
+      this.saveNoteButton.click(),
+    ]);
+
     await expect(this.noteEditor).not.toBeVisible({ timeout: 10000 });
-    // Wait for the note list to update and backend to fully persist the note
-    // CI environments may need extra time for the note to be queryable
-    await this.page.waitForTimeout(2000);
+
+    // After successful creation, wait for the notes list refetch to complete
+    // This ensures the optimistic temp-ID is replaced with the real ID
+    await this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/notes') &&
+        response.request().method() === 'GET' &&
+        response.status() === 200,
+      { timeout: 15000 }
+    );
+
+    // Small settle time for React state to update
+    await this.page.waitForTimeout(500);
   }
 
   async openNote(title: string, retryCount = 0): Promise<void> {
