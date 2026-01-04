@@ -44,7 +44,8 @@ export default defineConfig({
   // Shared settings for all the projects below
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:3000',
+    // Default to HTTPS since the local dev server uses self-signed certs
+    baseURL: process.env.E2E_BASE_URL || 'https://localhost:3000',
 
     // Ignore HTTPS errors (for self-signed certs in dev)
     ignoreHTTPSErrors: true,

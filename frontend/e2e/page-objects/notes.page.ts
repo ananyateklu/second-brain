@@ -271,7 +271,11 @@ export class NotesPage extends BasePage {
     // Find the "Delete" action button within the confirmation toast
     const confirmBtn = deleteConfirmToast.locator('button').filter({ hasText: /^Delete$/ }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 5000 });
-    await confirmBtn.click({ force: true });
+
+    // Scroll the button into view and click it
+    // The toast may be positioned outside the viewport initially
+    await confirmBtn.scrollIntoViewIfNeeded();
+    await confirmBtn.click();
 
     // Wait for the API to complete and UI to update
     await this.page.waitForTimeout(2000);
