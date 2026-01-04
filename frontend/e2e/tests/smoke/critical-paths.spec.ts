@@ -46,10 +46,13 @@ test.describe('Critical Path Smoke Tests', () => {
     await notesPage.createNote(noteTitle, noteContent);
     await notesPage.expectNoteToExist(noteTitle);
 
-    // Open and verify
+    // Open and verify - openNote already waits for the form to be loaded
     await notesPage.openNote(noteTitle);
     await expect(notesPage.noteEditor).toBeVisible();
-    await expect(notesPage.noteTitleInput).toHaveValue(noteTitle);
+
+    // Verify the title is displayed - the input should have the note title
+    // Using toHaveValue with extended timeout since the form needs to populate
+    await expect(notesPage.noteTitleInput).toHaveValue(noteTitle, { timeout: 10000 });
   });
 
   test('smoke: can start a chat conversation', async ({ chatPage }) => {

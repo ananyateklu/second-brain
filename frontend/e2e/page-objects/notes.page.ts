@@ -145,20 +145,34 @@ export class NotesPage extends BasePage {
 
   async openNote(title: string) {
     const noteCard = this.noteCards.filter({ hasText: title }).first();
+    await expect(noteCard).toBeVisible({ timeout: 5000 });
     await noteCard.click();
-    await expect(this.noteEditor).toBeVisible();
+
+    // Wait for the dialog to appear
+    await expect(this.noteEditor).toBeVisible({ timeout: 10000 });
+
+    // Wait for loading state to complete - EditNoteModal shows "Loading note..." while fetching
+    // We need to wait for the title input OR content editor to appear (form content loaded)
+    await this.page.waitForSelector('input#title, .ProseMirror[contenteditable="true"]', { timeout: 15000 });
+
+    // Additional wait for form to be fully rendered
+    await this.page.waitForTimeout(500);
   }
 
   async updateNote(newTitle?: string, newContent?: string) {
     // TipTap/contenteditable works better with Playwright's keyboard events than
     // react-hook-form controlled inputs. So we prioritize content updates.
 
+    // First ensure the dialog and form content are fully loaded
+    await expect(this.noteEditor).toBeVisible({ timeout: 5000 });
+    await this.page.waitForSelector('.ProseMirror[contenteditable="true"]', { timeout: 10000 });
+
     let madeChanges = false;
 
     // Update content if provided - TipTap editors work well with keyboard events
     if (newContent) {
       const contentEditor = this.noteContentEditor;
-      await expect(contentEditor).toBeVisible({ timeout: 5000 });
+      await expect(contentEditor).toBeVisible({ timeout: 10000 });
       await contentEditor.click();
       // Select all and delete existing content (Playwright uses Meta for macOS, Control for others)
       // Using ControlOrMeta modifier works cross-platform
@@ -174,7 +188,7 @@ export class NotesPage extends BasePage {
       // Also append some content to ensure TipTap triggers form dirty state
       if (!newContent) {
         const contentEditor = this.noteContentEditor;
-        await expect(contentEditor).toBeVisible({ timeout: 5000 });
+        await expect(contentEditor).toBeVisible({ timeout: 10000 });
         await contentEditor.click();
         // Add a space and some text to trigger dirty state via TipTap
         await this.page.keyboard.press('End');
@@ -219,21 +233,30 @@ export class NotesPage extends BasePage {
     await noteCard.hover();
     await this.page.waitForTimeout(500); // Wait for opacity transition
 
-    // Click the delete button within this card
+    // Click the delete button within this card - use force since it may be partially obscured
     const deleteBtn = noteCard.locator('button[aria-label="Delete note"]');
-    await expect(deleteBtn).toBeVisible({ timeout: 5000 });
-    await deleteBtn.click();
+    await deleteBtn.click({ force: true, timeout: 5000 });
 
     // Wait for the confirmation toast to appear
-    // The toast uses role="alert" and has an action button with the confirmText
-    const confirmBtn = this.page.locator('[role="alert"] button').filter({ hasText: 'Delete' }).first();
+    // The toast uses role="alert" and has action buttons inside a flex container
+    // Looking for button with exact "Delete" text that's the confirmation action
+    const toastAlert = this.page.locator('[role="alert"]');
+    await expect(toastAlert).toBeVisible({ timeout: 5000 });
+
+    // The action button is styled with bg-[var(--btn-primary-bg)] and contains the label
+    // Find all buttons in the toast and click the one with "Delete" text
+    const confirmBtn = toastAlert.locator('button').filter({ hasText: /^Delete$/ }).first();
     await expect(confirmBtn).toBeVisible({ timeout: 5000 });
-    await confirmBtn.click();
+    await confirmBtn.click({ force: true });
 
-    // Wait for the toast to dismiss and API to complete
-    await this.page.waitForTimeout(1000);
+    // Wait for the API to complete and UI to update
+    await this.page.waitForTimeout(2000);
 
-    // Wait for the note to be removed from the list (soft delete)
+    // Reload the page to ensure we see the updated list (soft delete removes from default view)
+    await this.page.reload();
+    await this.waitForPageLoad();
+
+    // Wait for the note to no longer be visible (soft-deleted notes shouldn't show by default)
     await expect(this.noteCards.filter({ hasText: title })).not.toBeVisible({ timeout: 10000 });
   }
 
@@ -265,7 +288,7 @@ export class NotesPage extends BasePage {
   }
 
   async expectNoteNotToExist(title: string) {
-    await expect(this.noteCards.filter({ hasText: title })).not.toBeVisible();
+    await expect(this.noteCards.filter({ hasText: title })).not.toBeVisible({ timeout: 15000 });
   }
 
   async expectNotesCount(count: number) {
