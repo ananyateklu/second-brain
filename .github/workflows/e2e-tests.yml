@@ -31,7 +31,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U testuser"
+          --health-cmd "pg_isready -U testuser -d secondbrain_e2e"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -71,6 +71,16 @@ jobs:
 
       - name: Restore backend dependencies
         run: cd backend && dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
+
+      - name: Apply database migrations
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_e2e;Username=testuser;Password=testpassword"
+        run: |
+          cd backend/src/SecondBrain.API
+          dotnet ef database update --project ../SecondBrain.Infrastructure/SecondBrain.Infrastructure.csproj --startup-project .
 
       - name: Build backend
         run: cd backend/src/SecondBrain.API && dotnet build --configuration Release --no-restore
@@ -185,7 +195,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U testuser"
+          --health-cmd "pg_isready -U testuser -d secondbrain_smoke"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -225,6 +235,16 @@ jobs:
 
       - name: Restore backend dependencies
         run: cd backend && dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef || dotnet tool update --global dotnet-ef
+
+      - name: Apply database migrations
+        env:
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=secondbrain_smoke;Username=testuser;Password=testpassword"
+        run: |
+          cd backend/src/SecondBrain.API
+          dotnet ef database update --project ../SecondBrain.Infrastructure/SecondBrain.Infrastructure.csproj --startup-project .
 
       - name: Build backend
         run: cd backend/src/SecondBrain.API && dotnet build --configuration Release
