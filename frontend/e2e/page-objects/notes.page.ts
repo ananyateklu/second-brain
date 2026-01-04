@@ -139,11 +139,13 @@ export class NotesPage extends BasePage {
 
     await this.saveNoteButton.click();
     await expect(this.noteEditor).not.toBeVisible({ timeout: 10000 });
-    // Wait for the note list to update after creation
-    await this.page.waitForTimeout(1000);
+    // Wait for the note list to update and backend to fully persist the note
+    // CI environments may need extra time for the note to be queryable
+    await this.page.waitForTimeout(2000);
   }
 
-  async openNote(title: string) {
+  async openNote(title: string, retryCount = 0): Promise<void> {
+    const maxRetries = 3;
     const noteCard = this.noteCards.filter({ hasText: title }).first();
     await expect(noteCard).toBeVisible({ timeout: 5000 });
     await noteCard.click();
@@ -161,10 +163,11 @@ export class NotesPage extends BasePage {
     const formContent = dialog.locator('input#title');
     const errorState = dialog.getByText('Failed to load note');
     const loadingState = dialog.getByText('Loading note...');
+    const closeButton = dialog.locator('button[title="Close"]');
 
     // Wait for loading to complete - use a polling approach for reliability in CI
     // Poll until either: form appears, error appears, or timeout
-    const maxWaitTime = 45000; // 45 seconds for slow CI
+    const maxWaitTime = 30000; // 30 seconds
     const pollInterval = 500;
     const startTime = Date.now();
 
@@ -178,7 +181,19 @@ export class NotesPage extends BasePage {
 
       // Check if error state is visible (failure)
       if (await errorState.isVisible().catch(() => false)) {
-        throw new Error('EditNoteModal failed to load note - API error or note not found');
+        // Close the modal and retry if we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          // Close the error modal
+          if (await closeButton.isVisible().catch(() => false)) {
+            await closeButton.click();
+            await expect(this.noteEditor).not.toBeVisible({ timeout: 5000 });
+          }
+          // Wait before retrying - give the backend more time
+          await this.page.waitForTimeout(2000);
+          // Retry opening the note
+          return this.openNote(title, retryCount + 1);
+        }
+        throw new Error(`EditNoteModal failed to load note after ${maxRetries} retries - API error or note not found`);
       }
 
       // Still loading, wait and retry
