@@ -65,7 +65,6 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
         style={{
           backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 60px -20px var(--color-primary-alpha)',
           backdropFilter: 'blur(20px)',
         }}
       >
@@ -87,7 +86,6 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
               className="flex items-center justify-center w-10 h-10 rounded-xl"
               style={{
                 background: 'linear-gradient(135deg, var(--color-error), var(--color-error-text))',
-                boxShadow: '0 2px 8px var(--color-error-border)',
               }}
             >
               <AlertTriangle className="w-5 h-5 text-white" />
@@ -215,7 +213,6 @@ export const GitDiscardDialog = memo(function GitDiscardDialog({
             style={{
               backgroundColor: 'var(--color-error)',
               color: 'white',
-              boxShadow: '0 2px 8px var(--color-error-border)',
             }}
           >
             {/* Shimmer effect */}

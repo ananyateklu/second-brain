@@ -65,7 +65,6 @@ export function FileSearchInput({
             backgroundColor: 'var(--surface-card)',
             borderColor: isFocused ? 'var(--input-focus-border)' : 'var(--border)',
             color: 'var(--text-primary)',
-            boxShadow: isFocused ? '0 0 0 3px var(--input-focus-ring)' : 'none',
           }}
         />
         {localValue && (

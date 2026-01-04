@@ -13,7 +13,6 @@ function SkeletonProviderSection() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -80,7 +79,6 @@ function SkeletonGenerationSection() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -114,7 +112,6 @@ function SkeletonRAGSection() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -148,7 +145,6 @@ function SkeletonSuggestionSection() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">

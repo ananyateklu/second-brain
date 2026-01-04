@@ -31,7 +31,6 @@ export const GitEmptyState = memo(function GitEmptyState({
             className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500"
             style={{
               background: 'linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600))',
-              boxShadow: '0 8px 32px var(--color-primary-alpha)',
               transform: isHovered ? 'scale(1.05) rotate(3deg)' : 'scale(1) rotate(0deg)',
             }}
             onMouseEnter={() => setIsHovered(true)}
@@ -94,7 +93,6 @@ export const GitEmptyState = memo(function GitEmptyState({
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
-            boxShadow: 'var(--btn-primary-shadow)',
           }}
         >
           {/* Shimmer effect */}

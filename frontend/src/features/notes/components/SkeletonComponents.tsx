@@ -21,7 +21,6 @@ export function NoteCardSkeleton() {
         borderColor: 'var(--border)',
         borderWidth: '1px',
         padding: '22px',
-        boxShadow: 'var(--shadow-card)',
       }}
     >
       <div className="relative z-10 flex flex-col h-full">

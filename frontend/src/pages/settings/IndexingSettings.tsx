@@ -26,7 +26,6 @@ export function IndexingSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -81,7 +80,6 @@ export function IndexingSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -124,7 +122,6 @@ export function IndexingSettings() {
               backgroundColor: 'var(--btn-primary-bg)',
               borderColor: 'var(--btn-primary-border)',
               color: 'var(--btn-primary-text)',
-              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
             }}
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -55,7 +55,6 @@ export function GeneralSettings() {
                 style={{
                     backgroundColor: 'var(--surface-card)',
                     borderColor: 'var(--border)',
-                    boxShadow: 'var(--shadow-lg)',
                 }}
             >
                 <div className="flex flex-col gap-4">
@@ -112,9 +111,6 @@ export function GeneralSettings() {
                                                     : 'var(--surface-elevated)',
                                                 borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
                                                 color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -148,9 +144,6 @@ export function GeneralSettings() {
                                                     : 'var(--surface-elevated)',
                                                 borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
                                                 color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -193,9 +186,6 @@ export function GeneralSettings() {
                                                     : 'var(--surface-elevated)',
                                                 borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
                                                 color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -261,7 +251,6 @@ export function GeneralSettings() {
                     style={{
                         backgroundColor: 'var(--surface-card)',
                         borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow-lg)',
                     }}
                 >
                     <div className="flex flex-col gap-3">
@@ -311,7 +300,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-success)',
                                             borderColor: 'var(--color-status-success-border)',
                                             color: 'var(--color-status-success-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-success) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -329,7 +317,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-error)',
                                             borderColor: 'var(--color-status-error-border)',
                                             color: 'var(--color-status-error-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-error) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -347,7 +334,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-warning)',
                                             borderColor: 'var(--color-status-warning-border)',
                                             color: 'var(--color-status-warning-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-warning) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -365,7 +351,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-info)',
                                             borderColor: 'var(--color-status-info-border)',
                                             color: 'var(--color-status-info-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-info) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -474,7 +459,6 @@ export function GeneralSettings() {
                     style={{
                         backgroundColor: 'var(--surface-card)',
                         borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow-lg)',
                     }}
                 >
                     <div className="flex flex-col gap-3">

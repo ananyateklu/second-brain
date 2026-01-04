@@ -104,7 +104,6 @@ export function AISettings() {
             style={{
               backgroundColor: 'var(--surface-card)',
               borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-lg)',
             }}
           >
             {/* Header */}
@@ -166,7 +165,6 @@ export function AISettings() {
             style={{
               backgroundColor: 'var(--surface-card)',
               borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-lg)',
             }}
           >
             {/* Header */}
@@ -310,7 +308,6 @@ const VoiceProviderCard = ({ provider, logo, isProviderConfigured, onClick }: Vo
                 style={{
                   backgroundColor: isConfigured ? '#10b981' : '#f59e0b',
                   borderColor: 'var(--surface-elevated)',
-                  boxShadow: `0 0 0 2px ${isConfigured ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`,
                 }}
               />
             </div>

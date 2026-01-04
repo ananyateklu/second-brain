@@ -111,7 +111,6 @@ export function VoiceToolChip({
           style={{
             backgroundColor: 'var(--surface-elevated)',
             border: '1px solid var(--border)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           }}
         >
           {/* Icon with animation */}

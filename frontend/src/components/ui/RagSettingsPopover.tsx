@@ -77,7 +77,6 @@ export function RagSettingsPopover({
           `}
           style={{
             backgroundColor: ragEnabled ? 'var(--btn-primary-bg)' : 'var(--border)',
-            boxShadow: ragEnabled ? '0 0 12px -2px var(--btn-primary-bg)' : 'none',
           }}
         >
           <span
@@ -120,9 +119,6 @@ export function RagSettingsPopover({
                 color: selectedVectorStore === 'PostgreSQL'
                   ? 'var(--btn-primary-text)'
                   : 'var(--text-secondary)',
-                boxShadow: selectedVectorStore === 'PostgreSQL'
-                  ? '0 0 8px -2px var(--btn-primary-bg)'
-                  : 'none',
               }}
             >
               <div className="flex items-center justify-center gap-1.5">
@@ -156,9 +152,6 @@ export function RagSettingsPopover({
                 color: selectedVectorStore === 'Pinecone'
                   ? 'var(--btn-primary-text)'
                   : 'var(--text-secondary)',
-                boxShadow: selectedVectorStore === 'Pinecone'
-                  ? '0 0 8px -2px var(--btn-primary-bg)'
-                  : 'none',
               }}
             >
               <div className="flex items-center justify-center gap-1.5">

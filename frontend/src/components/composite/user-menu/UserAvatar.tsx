@@ -23,9 +23,6 @@ export function UserAvatar({ user, size = 'sm', className, isActive }: UserAvata
       )}
       style={{
         background: 'linear-gradient(135deg, var(--color-brand-600) 0%, var(--color-brand-500) 100%)',
-        boxShadow: isActive
-          ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)'
-          : '0 2px 8px color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
       }}
     >
       {initial}

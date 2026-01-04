@@ -86,7 +86,6 @@ export const SettingsNavTabs = () => {
             backgroundColor: isActive ? 'var(--surface-card)' : 'transparent',
             color: isActive ? 'var(--text-primary)' : 'var(--text-tertiary)',
             fontWeight: isActive ? 600 : 400,
-            boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
           })}
         >
           {({ isActive }) => (

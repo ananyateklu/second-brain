@@ -299,7 +299,6 @@ export function SummaryNotification() {
           backgroundColor:
             'color-mix(in srgb, var(--surface-elevated) 95%, transparent)',
           border: '1px solid var(--border)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         }}
       >
         {/* Header */}

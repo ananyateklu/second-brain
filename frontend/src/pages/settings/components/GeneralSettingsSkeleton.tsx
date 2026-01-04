@@ -13,7 +13,6 @@ function SkeletonDisplaySettings() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -83,7 +82,6 @@ function SkeletonNotificationTesting() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -139,7 +137,6 @@ function SkeletonAutoSave() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">

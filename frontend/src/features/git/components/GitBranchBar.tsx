@@ -86,7 +86,6 @@ export const GitBranchBar = memo(function GitBranchBar({
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 0 40px -15px var(--color-primary-alpha)',
         backdropFilter: 'blur(20px)',
       }}
     >

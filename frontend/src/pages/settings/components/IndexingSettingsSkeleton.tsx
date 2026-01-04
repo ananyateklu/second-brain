@@ -13,7 +13,6 @@ function SkeletonManualIndexing() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -121,7 +120,6 @@ function SkeletonIndexHealth() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">

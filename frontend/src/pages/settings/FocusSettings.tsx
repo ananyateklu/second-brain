@@ -340,7 +340,6 @@ export function FocusSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -407,9 +406,6 @@ export function FocusSettings() {
                       color: isSelected
                         ? 'var(--btn-primary-text)'
                         : 'var(--text-primary)',
-                      boxShadow: isSelected
-                        ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                        : '0 1px 3px color-mix(in srgb, var(--color-brand-950) 12%, transparent)',
                     }}
                   >
                     {provider.name}
@@ -477,7 +473,6 @@ export function FocusSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -520,7 +515,6 @@ export function FocusSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -563,7 +557,6 @@ export function FocusSettings() {
         style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">

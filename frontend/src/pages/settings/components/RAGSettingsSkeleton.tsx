@@ -13,7 +13,6 @@ function SkeletonRerankingProvider() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -51,7 +50,6 @@ function SkeletonHydeProvider() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -89,7 +87,6 @@ function SkeletonQueryExpansionProvider() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -127,7 +124,6 @@ function SkeletonVectorStore() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -160,7 +156,6 @@ function SkeletonPipelineFeatures() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -194,7 +189,6 @@ function SkeletonAdvancedSettings() {
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex flex-col gap-4">

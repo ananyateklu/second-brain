@@ -121,7 +121,6 @@ export function AppLoadingScreen({
                 style={{
                   backgroundColor: 'var(--color-brand-600)',
                   color: 'white',
-                  boxShadow: 'var(--shadow-md)',
                 }}
               >
                 Retry Connection

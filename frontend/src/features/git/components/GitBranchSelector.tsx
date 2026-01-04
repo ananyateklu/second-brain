@@ -302,7 +302,6 @@ export const GitBranchSelector = memo(function GitBranchSelector({
         left: dropdownPosition.left,
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-2xl), 0 25px 50px -12px rgba(0, 0, 0, 0.25)',
       }}
       onKeyDown={handleKeyDown}
     >
@@ -444,7 +443,6 @@ export const GitBranchSelector = memo(function GitBranchSelector({
         className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
         style={{
           backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
-          boxShadow: isOpen ? 'var(--shadow-sm)' : 'none',
         }}
       >
         <GitBranch className="w-4 h-4" style={{ color: 'var(--color-brand-400)' }} />

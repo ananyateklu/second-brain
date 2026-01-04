@@ -103,7 +103,6 @@ export function VoiceInputBar({
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid var(--border)',
-            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)',
           }}
         >
           {/* Start/Stop Button */}
@@ -131,7 +130,6 @@ export function VoiceInputBar({
                       backgroundColor: 'var(--btn-primary-bg)',
                       color: 'var(--btn-primary-text)',
                       border: '1px solid var(--btn-primary-border)',
-                      boxShadow: '0 2px 8px -2px rgba(54, 105, 61, 0.3)',
                     }
             }
             aria-label={showDisconnected ? 'Connection closed' : isActive ? 'End session' : 'Start session'}

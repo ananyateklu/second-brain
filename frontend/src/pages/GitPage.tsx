@@ -52,7 +52,6 @@ export function GitPage() {
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-2xl)',
             height: containerHeight,
             maxHeight: containerHeight,
           }}
@@ -80,7 +79,6 @@ export function GitPage() {
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-2xl)',
             height: containerHeight,
             maxHeight: containerHeight,
           }}

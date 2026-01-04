@@ -101,7 +101,6 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
         style={{
           backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 60px -20px var(--color-primary-alpha)',
           backdropFilter: 'blur(20px)',
         }}
       >
@@ -122,7 +121,6 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
               className="flex items-center justify-center w-10 h-10 rounded-xl"
               style={{
                 background: 'linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600))',
-                boxShadow: '0 2px 8px var(--color-primary-alpha)',
               }}
             >
               <FolderGit className="w-5 h-5 text-white" />
@@ -190,11 +188,12 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
                 }}
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-primary-alpha)';
+                  e.currentTarget.style.outline = '3px solid var(--color-primary-alpha)';
+                  e.currentTarget.style.outlineOffset = '-1px';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.outline = 'none';
                 }}
                 autoFocus
               />
@@ -289,7 +288,6 @@ export const GitSettingsPanel = memo(function GitSettingsPanel({
               style={{
                 backgroundColor: 'var(--btn-primary-bg)',
                 color: 'var(--btn-primary-text)',
-                boxShadow: 'var(--btn-primary-shadow)',
               }}
             >
               {/* Shimmer effect */}

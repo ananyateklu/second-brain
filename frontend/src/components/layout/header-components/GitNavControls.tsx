@@ -207,7 +207,6 @@ export const GitNavControls = memo(function GitNavControls() {
         style={{
           backgroundColor: canPull ? 'var(--surface-card)' : 'transparent',
           color: canPull ? 'var(--color-git-modified)' : 'var(--text-secondary)',
-          boxShadow: canPull ? 'var(--shadow-sm)' : 'none',
         }}
         title="Pull from remote"
       >
@@ -227,7 +226,6 @@ export const GitNavControls = memo(function GitNavControls() {
         style={{
           backgroundColor: canPush ? 'var(--surface-card)' : 'transparent',
           color: canPush ? 'var(--color-git-add)' : 'var(--text-secondary)',
-          boxShadow: canPush ? 'var(--shadow-sm)' : 'none',
         }}
         title="Push to remote"
       >

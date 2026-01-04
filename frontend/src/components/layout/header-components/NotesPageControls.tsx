@@ -64,15 +64,15 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
           borderColor: 'var(--border)',
           color: 'var(--text-primary)',
           width: '300px',
-          boxShadow: 'none',
         }}
         onFocus={(e) => {
           e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-          e.currentTarget.style.boxShadow = '0 0 0 2px var(--input-focus-ring)';
+          e.currentTarget.style.outline = '2px solid var(--input-focus-ring)';
+          e.currentTarget.style.outlineOffset = '-1px';
         }}
         onBlur={(e) => {
           e.currentTarget.style.borderColor = 'var(--border)';
-          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.outline = 'none';
         }}
       />
       <button
@@ -84,7 +84,6 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
         className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-all hover:scale-105 active:scale-95 bg-[var(--color-brand-600)] border-[var(--color-brand-600)] hover:bg-[var(--color-brand-700)] hover:border-[var(--color-brand-700)]"
         style={{
           color: '#ffffff',
-          boxShadow: 'none',
         }}
         title={`Search mode: ${getSearchModeTitle()}`}
         aria-label={`Search mode: ${getSearchModeTitle()}`}
@@ -149,15 +148,15 @@ export const NotesPageControlsMobile = () => {
             backgroundColor: 'var(--surface-elevated)',
             borderColor: 'var(--border)',
             color: 'var(--text-primary)',
-            boxShadow: 'none',
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-            e.currentTarget.style.boxShadow = '0 0 0 2px var(--input-focus-ring)';
+            e.currentTarget.style.outline = '2px solid var(--input-focus-ring)';
+            e.currentTarget.style.outlineOffset = '-1px';
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'var(--border)';
-            e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.outline = 'none';
           }}
         />
       </div>

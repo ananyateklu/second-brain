@@ -20,7 +20,6 @@ export function WebDisabledNotice({ icon, title, description, reason }: WebDisab
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
       }}
     >
       <div className="flex items-start gap-3">

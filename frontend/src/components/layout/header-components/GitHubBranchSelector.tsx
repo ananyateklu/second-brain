@@ -118,7 +118,6 @@ export const GitHubBranchSelector = () => {
               ? 'rgba(10, 22, 40, 0.98)'
               : 'var(--surface-card-solid)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-xl)',
             backdropFilter: 'blur(12px) saturate(180%)',
             WebkitBackdropFilter: 'blur(12px) saturate(180%)',
           }}

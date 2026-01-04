@@ -130,7 +130,6 @@ export function NoteSummaryBackfill() {
             style={{
                 backgroundColor: 'var(--surface-card)',
                 borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-lg)',
             }}
         >
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -174,7 +173,6 @@ export function NoteSummaryBackfill() {
                                         backgroundColor: 'var(--surface-elevated)',
                                         borderColor: 'var(--color-success)',
                                         color: 'var(--text-secondary)',
-                                        boxShadow: 'var(--shadow-lg)',
                                     }}
                                 >
                                     <p>

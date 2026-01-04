@@ -33,7 +33,6 @@ export function ContextProgressBar({
         style={{
           width: `${Math.min(100, percentUsed)}%`,
           backgroundColor: colors.bar,
-          boxShadow: isStreaming ? `0 0 8px ${colors.barGlow}` : 'none',
         }}
       />
       {/* Animated shimmer effect when streaming */}

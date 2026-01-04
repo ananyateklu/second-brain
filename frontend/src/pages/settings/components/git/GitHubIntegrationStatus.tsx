@@ -60,7 +60,6 @@ export function GitHubIntegrationStatus() {
             style={{
               backgroundColor: statusColor.bg,
               borderColor: 'var(--surface-elevated)',
-              boxShadow: `0 0 0 2px ${statusColor.shadow}`,
             }}
           />
         </div>

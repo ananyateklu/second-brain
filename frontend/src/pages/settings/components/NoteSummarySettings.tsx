@@ -132,7 +132,6 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                             style={{
                                 backgroundColor: 'var(--surface-elevated)',
                                 borderColor: 'var(--border)',
-                                boxShadow: 'var(--shadow-xl)',
                             }}
                         >
                             <div className="max-h-60 overflow-y-auto thin-scrollbar">
@@ -387,7 +386,6 @@ export function NoteSummarySettings() {
             style={{
                 backgroundColor: 'var(--surface-card)',
                 borderColor: 'var(--border)',
-                boxShadow: 'var(--shadow-lg)',
             }}
         >
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -452,9 +450,6 @@ export function NoteSummarySettings() {
                             className="relative inline-flex h-7 w-13 items-center rounded-full transition-all duration-300 flex-shrink-0 ml-2 pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                                 backgroundColor: noteSummaryEnabled ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--border) 60%, transparent)',
-                                boxShadow: noteSummaryEnabled
-                                    ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)'
-                                    : 'none',
                             }}
                         >
                             <span
@@ -506,9 +501,6 @@ export function NoteSummarySettings() {
                                                             : 'var(--surface-elevated)',
                                                         borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
                                                         color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                        boxShadow: isActive
-                                                            ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                            : 'none',
                                                         transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                                     }}
                                                 >
@@ -683,9 +675,6 @@ export function NoteSummarySettings() {
                                             borderColor: selectedNotes.has(note.id)
                                                 ? 'var(--color-brand-600)'
                                                 : 'var(--border)',
-                                            boxShadow: selectedNotes.has(note.id)
-                                                ? '0 2px 8px color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-                                                : 'var(--shadow-sm)',
                                         }}
                                         onClick={() => handleSelectNote(note.id)}
                                     >

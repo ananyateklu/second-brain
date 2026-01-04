@@ -99,7 +99,6 @@ export function Header() {
           style={{
             border: `1px solid var(--border)`,
             backgroundColor: 'var(--surface-card)',
-            boxShadow: 'var(--shadow-xl)',
           }}
         >
           <div className="flex h-16 sm:h-20 items-center justify-between px-5 sm:px-8">

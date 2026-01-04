@@ -281,11 +281,12 @@ export const GitStatusPanel = memo(function GitStatusPanel({
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-              e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-primary-alpha)';
+              e.currentTarget.style.outline = '2px solid var(--color-primary-alpha)';
+              e.currentTarget.style.outlineOffset = '-1px';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.outline = 'none';
             }}
           />
 

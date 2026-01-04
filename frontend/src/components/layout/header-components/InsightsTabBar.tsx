@@ -72,7 +72,6 @@ export const InsightsTabBar = memo(function InsightsTabBar({
             backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',
             color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
             fontWeight: activeTab === tab.id ? 600 : 400,
-            boxShadow: activeTab === tab.id ? 'var(--shadow-sm)' : 'none',
           }}
         >
           <span

@@ -16,7 +16,6 @@ export function GitSettingsSkeleton() {
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-lg)',
           }}
         >
           <div className="flex flex-col gap-4">
@@ -54,7 +53,6 @@ export function GitSettingsSkeleton() {
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-lg)',
           }}
         >
           <div className="flex flex-col gap-4">
