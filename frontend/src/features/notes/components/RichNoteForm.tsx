@@ -65,7 +65,7 @@ export function RichNoteForm({
   return (
     <div className="flex flex-col h-full">
       {/* Title - Sticky at top, using Controller for controlled input */}
-      <div className="shrink-0 bg-[var(--surface-elevated)] -mx-2 px-2 pb-2">
+      <div className="shrink-0 bg-transparent -mx-2 px-2 pb-2">
         <Controller
           name="title"
           control={control}

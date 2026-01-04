@@ -85,7 +85,7 @@ const DialogContent = React.forwardRef<
         ref={ref}
         className={cn(
           "fixed left-1/2 top-1/2 z-50 grid w-full max-w-2xl",
-          "rounded-3xl border border-[var(--border)] bg-[var(--surface-card)] shadow-2xl",
+          "rounded-3xl border border-[var(--border)] bg-[var(--glass-bg)] backdrop-blur-xl shadow-2xl",
           // Use morph animation when sourceRect is provided, otherwise use default
           sourceRect
             ? "animate-dialog-morph-in data-[state=closed]:animate-dialog-morph-out"
@@ -139,7 +139,7 @@ const DialogHeader = ({
   <div
     className={cn(
       "flex flex-col space-y-1.5 border-b border-[var(--border)] px-6 py-5",
-      "rounded-t-3xl bg-[var(--surface-elevated)]",
+      "rounded-t-3xl bg-[var(--glass-header)]",
       className
     )}
     {...props}
@@ -221,7 +221,7 @@ const DialogBody = ({
   <div
     className={cn(
       "p-6 rounded-b-3xl flex-1 overflow-hidden flex flex-col",
-      "bg-[var(--surface-elevated)]",
+      "bg-[var(--glass-body)]",
       className
     )}
     {...props}

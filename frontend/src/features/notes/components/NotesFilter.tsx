@@ -18,10 +18,10 @@ function DropdownButton({ label, isOpen, onClick, count }: DropdownButtonProps) 
       onClick={onClick}
       className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
       style={{
-        backgroundColor: isOpen ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
+        backgroundColor: isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
         color: isOpen ? '#ffffff' : 'var(--text-primary)',
         border: `1px solid ${isOpen ? 'var(--color-brand-600)' : 'var(--border)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'var(--shadow-md)',
+        boxShadow: isOpen ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'none',
       }}
     >
       <span>{label}</span>
@@ -301,14 +301,12 @@ export function NotesFilter({
       <div
         className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-40"
         style={{
-          backgroundColor: isBlueTheme
-            ? 'rgba(10, 22, 40, 0.98)' // Darker blue for blue theme - less transparent
-            : 'var(--surface-card-solid)',
+          backgroundColor: 'var(--glass-bg)',
           borderColor: 'var(--border)',
           boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
           animation: 'scaleIn 0.2s ease-out',
-          backdropFilter: 'blur(12px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
       >
         {children}
@@ -401,7 +399,7 @@ export function NotesFilter({
             onChange={(e) => { onFilterChange({ ...filterState, customDateStart: e.target.value }); }}
             className="px-3 py-2 rounded-xl text-sm border"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: 'var(--text-primary)',
               borderColor: 'var(--border)',
             }}
@@ -413,7 +411,7 @@ export function NotesFilter({
             onChange={(e) => { onFilterChange({ ...filterState, customDateEnd: e.target.value }); }}
             className="px-3 py-2 rounded-xl text-sm border"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: 'var(--text-primary)',
               borderColor: 'var(--border)',
             }}
@@ -646,16 +644,15 @@ export function NotesFilter({
         <div
           className="flex items-center rounded-xl border overflow-hidden ml-auto"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
             borderColor: 'var(--border)',
           }}
         >
           <button
             type="button"
             onClick={() => { onViewModeChange('card'); }}
-            className={`flex items-center justify-center w-9 h-9 transition-all duration-200 ${viewMode !== 'card' ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
+            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
-              backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
+              backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
             }}
             title="Card view"
@@ -668,14 +665,14 @@ export function NotesFilter({
           </button>
           <div
             className="w-px h-5"
-            style={{ backgroundColor: 'var(--border)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
           />
           <button
             type="button"
             onClick={() => { onViewModeChange('list'); }}
-            className={`flex items-center justify-center w-9 h-9 transition-all duration-200 ${viewMode !== 'list' ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
+            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
-              backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',
+              backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
             }}
             title="List view"
@@ -694,7 +691,7 @@ export function NotesFilter({
         <button
           type="button"
           onClick={onBulkModeToggle}
-          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ${!isBulkMode ? 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' : ''}`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ${!isBulkMode ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] hover:text-[var(--text-primary)]' : ''}`}
           style={{
             backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'transparent',
             color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',

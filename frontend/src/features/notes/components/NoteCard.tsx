@@ -212,10 +212,10 @@ export const NoteCard = memo(({
   const getBackgroundStyle = () => {
     if (isBulkMode && isSelected) {
       return isDarkMode
-        ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-card))'
-        : 'color-mix(in srgb, var(--color-brand-100) 30%, var(--surface-card))';
+        ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'var(--surface-card)';
+    return 'transparent';
   };
 
   return (
@@ -241,7 +241,7 @@ export const NoteCard = memo(({
         <div
           className="absolute top-3 left-3 z-20 flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-200"
           style={{
-            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-card)',
+            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
             borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
             boxShadow: isSelected ? '0 2px 8px -2px var(--color-primary-alpha)' : 'var(--shadow-sm)',
           }}

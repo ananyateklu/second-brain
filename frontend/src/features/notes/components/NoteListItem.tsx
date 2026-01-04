@@ -98,10 +98,10 @@ export const NoteListItem = memo(({
   const getBackgroundStyle = () => {
     if (isBulkMode && isSelected) {
       return isDarkMode
-        ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-card))'
-        : 'color-mix(in srgb, var(--color-brand-100) 30%, var(--surface-card))';
+        ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'var(--surface-card)';
+    return 'transparent';
   };
 
   return (
@@ -128,7 +128,7 @@ export const NoteListItem = memo(({
           <div
             className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all duration-200"
             style={{
-              backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-card)',
+              backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
               borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
             }}
           >

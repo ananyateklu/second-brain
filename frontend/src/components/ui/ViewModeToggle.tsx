@@ -24,23 +24,18 @@ export const ViewModeToggle = memo(({
 
   return (
     <div
-      className={`flex items-center my-1 rounded-xl border overflow-hidden backdrop-blur-md ${className}`}
+      className={`flex items-center my-1 rounded-xl border overflow-hidden ${className}`}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
         borderColor: 'var(--border)',
       }}
     >
       <button
         type="button"
         onClick={() => onViewModeChange('card')}
-        className={`flex items-center justify-center ${buttonSize} transition-all duration-200 ${
-          viewMode === 'card'
-            ? ''
-            : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-        }`}
+        className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
         style={{
-          backgroundColor: viewMode === 'card' ? 'var(--btn-primary-bg)' : 'transparent',
-          color: viewMode === 'card' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
+          backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
         }}
         title="Grid view"
         aria-label="Grid view"
@@ -52,20 +47,16 @@ export const ViewModeToggle = memo(({
         </svg>
       </button>
       <div
-        className="w-px h-5"
-        style={{ backgroundColor: 'var(--border)' }}
+        className="w-px self-stretch"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
       />
       <button
         type="button"
         onClick={() => onViewModeChange('list')}
-        className={`flex items-center justify-center ${buttonSize} transition-all duration-200 ${
-          viewMode === 'list'
-            ? ''
-            : 'hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-        }`}
+        className={`flex items-center justify-center ${buttonSize} transition-all duration-200`}
         style={{
-          backgroundColor: viewMode === 'list' ? 'var(--btn-primary-bg)' : 'transparent',
-          color: viewMode === 'list' ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
+          backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
         }}
         title="List view"
         aria-label="List view"

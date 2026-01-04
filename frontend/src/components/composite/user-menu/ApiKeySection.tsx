@@ -5,7 +5,7 @@ import type { ApiKeySectionProps } from './types';
  * Displays the user's API key with a copy button.
  * Uses CSS hover classes instead of inline handlers.
  */
-export function ApiKeySection({ apiKey, onCopy, isBlueTheme }: ApiKeySectionProps) {
+export function ApiKeySection({ apiKey, onCopy }: ApiKeySectionProps) {
   return (
     <div className="px-4 pt-1 pb-2">
       <div className="flex items-center gap-2 mb-2">
@@ -28,13 +28,11 @@ export function ApiKeySection({ apiKey, onCopy, isBlueTheme }: ApiKeySectionProp
       </div>
       <div className="flex items-center gap-2">
         <code
-          className={cn(
-            'flex-1 text-xs px-3 py-2 rounded-lg font-mono truncate border transition-all duration-200',
-            'text-[var(--text-primary)]',
-            isBlueTheme
-              ? 'bg-[rgba(74,109,153,0.15)] border-[rgba(74,109,153,0.3)]'
-              : 'bg-[var(--surface-elevated)] border-[var(--border)]'
-          )}
+          className="flex-1 text-xs px-3 py-2 rounded-lg font-mono truncate border transition-all duration-200 text-[var(--text-primary)]"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+          }}
         >
           {apiKey.substring(0, 32)}...
         </code>

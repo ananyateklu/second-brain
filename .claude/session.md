@@ -1,337 +1,240 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: E2E Test Fixes & Validation
+> **Focus**: Blue Theme Frosted Glass UI Implementation Guide
 
 ---
 
-## Session Summary
+## Overview
 
-### E2E Test Fixes - COMPLETE ✅
-
-Fixed all critical page object selectors and test flows. Tests now pass reliably.
-
-### Current Test Status (Smoke Tests)
-
-| Status | Count | Tests |
-|--------|-------|-------|
-| ✅ Passed | 13 | Dashboard, Navigation, Notes CRUD (create, update, delete), Chat, Logout, Search, AI Response, Focus, Settings, API health, Session |
-
-**Pass Rate: 100% (13/13)**
-
-### Selector Fixes Made
-
-**Sidebar selectors** (`dashboard.page.ts`):
-- Changed from `aside.md\\:flex` to `aside.sticky` to target visible desktop sidebar
-- Fixed nav links to use `aside.sticky` prefix (avoids hidden temporary sidebar)
-
-**Note card selectors** (`notes.page.ts`):
-- Changed from `.rounded-xl` to `div.cursor-pointer[class*="rounded-"]`
-- Now matches both `rounded-xl` (micro) and `rounded-3xl` (full) variants
-
-**Chat message selectors** (`chat.page.ts`):
-- Updated from data-testid to `.flex.justify-end > div[class*="rounded-2xl"]` (user)
-- Updated to `.flex.justify-start > div[class*="rounded-2xl"]` (assistant)
-
-**Delete note flow** (`notes.page.ts`):
-- Fixed to hover on note card first (delete button hidden by default)
-- Updated confirmation to use toast: `[role="alert"] button:has-text("Delete")`
-
-**Logout flow** (`dashboard.page.ts`):
-- Added proper waits for dropdown menu before clicking logout
-
-**Global setup** (`global-setup.ts`):
-- Added localStorage settings for consistent sidebar state during tests
-
-### Note Update Test - FIXED ✅
-
-Fixed the note update test by updating content (TipTap) instead of title:
-
-- **Problem**: react-hook-form's Controller for title input doesn't properly detect DOM-level changes from Playwright
-- **Solution**: Update the TipTap content editor instead, which uses keyboard events that properly trigger form dirty state
-- **Additional fix**: Modal doesn't auto-close after save, so we manually close it after the mutation completes
-- The title update via Controller still has issues, but content updates work reliably
-
-### Test Infrastructure - Previously Completed
-
-- ES Module compatibility fixes (`fileURLToPath` for `__dirname`)
-- Playwright config with `globalSetup`/`globalTeardown`
-- `ignoreHTTPSErrors: true` for self-signed dev SSL
-- Test user: `e2e-test@example.com` / `E2ETestPassword123`
+The Notes Directory page has been fully updated with frosted glass styling for the blue theme. Use this as the reference implementation for styling other pages and components.
 
 ---
 
-### E2E Testing Infrastructure - COMPLETE (Previous Session)
+## Frosted Glass Implementation Guide
 
-Implemented comprehensive testing infrastructure including:
+### Core Principles
 
-1. **Playwright E2E Tests** - Full user flow testing with Page Objects
-2. **API Contract Testing** - OpenAPI spec + TypeScript type generation
-3. **Visual Regression Testing** - Screenshot comparison with Playwright
-4. **Performance Testing** - k6 load and smoke tests
-5. **Test Documentation** - TESTING.md comprehensive guide
+1. **Transparency over opacity** - Use `color-mix()` for semi-transparent tints instead of solid backgrounds
+2. **Backdrop blur** - Add `backdrop-blur: 20px` to floating/overlay elements
+3. **Consistent tint levels** - Follow the standard percentages below
+4. **Brand colors for selections** - Use solid `var(--color-brand-600)` for active/selected states
 
 ---
 
-## E2E Testing (Playwright)
+### Standard Color-Mix Values
 
-### Structure
+```css
+/* Button & Input Backgrounds */
+background-color: color-mix(in srgb, var(--text-primary) 8%, transparent);
 
-```
-frontend/e2e/
-├── playwright.config.ts          # Main config (Chromium, retries, traces)
-├── global-setup.ts               # Auth + test data seeding
-├── global-teardown.ts            # Cleanup
-├── fixtures/
-│   └── base.fixture.ts           # Extended test with page objects
-├── page-objects/
-│   ├── base.page.ts              # Common methods (goto, waitFor, etc.)
-│   ├── login.page.ts             # Login flow interactions
-│   ├── dashboard.page.ts         # Dashboard navigation
-│   ├── notes.page.ts             # Notes CRUD operations
-│   ├── chat.page.ts              # Chat + streaming
-│   └── focus.page.ts             # Focus task management
-├── tests/
-│   ├── auth/
-│   │   ├── login.spec.ts         # Login validation, errors, persistence
-│   │   └── logout.spec.ts        # Logout + session clearing
-│   ├── notes/
-│   │   ├── crud.spec.ts          # Create, read, update, delete notes
-│   │   └── versions.spec.ts      # Version history + restore
-│   ├── chat/
-│   │   ├── conversation.spec.ts  # Conversation management
-│   │   └── streaming.spec.ts     # SSE streaming, RAG, agents
-│   ├── focus/
-│   │   └── tasks.spec.ts         # Task CRUD, timer, completion
-│   └── smoke/
-│       └── critical-paths.spec.ts # Fast P0 smoke tests
-├── utils/
-│   ├── api-helpers.ts            # Direct API calls for setup
-│   ├── test-data.ts              # Test data generators
-│   └── wait-helpers.ts           # Custom wait utilities
-├── visual/
-│   ├── playwright.visual.config.ts
-│   ├── pages.spec.ts             # Page screenshots
-│   └── themes.spec.ts            # Light/dark mode
-└── README.md                     # E2E documentation
+/* Hover States */
+background-color: color-mix(in srgb, var(--text-primary) 10%, transparent);
+
+/* Borders & Dividers */
+border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
+
+/* Floating Containers (dropdowns, modals, floating bars) */
+background-color: var(--glass-bg);
+backdrop-filter: blur(20px) saturate(180%);
+-webkit-backdrop-filter: blur(20px) saturate(180%);
+
+/* Error/Destructive Actions */
+background-color: color-mix(in srgb, var(--color-error) 20%, transparent);
+color: var(--color-error);
+border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
+
+/* Selected/Active States */
+background-color: var(--color-brand-600);
+color: #ffffff;
 ```
 
-### Test Coverage
+### Glass CSS Variables (`surfaces.css`)
 
-| Suite | Tests | Description |
-|-------|-------|-------------|
-| Auth | 12+ | Login, logout, session, protected routes |
-| Notes | 15+ | CRUD, tags, search, versions, restore |
-| Chat | 10+ | Conversations, streaming, RAG, agents |
-| Focus | 12+ | Tasks, priorities, timer, completion |
-| Smoke | 15+ | Critical paths, navigation, API health |
-
-### Scripts Added
-
-```json
-"e2e": "playwright test",
-"e2e:ui": "playwright test --ui",
-"e2e:headed": "playwright test --headed",
-"e2e:debug": "playwright test --debug",
-"e2e:report": "playwright show-report",
-"e2e:smoke": "playwright test smoke --project=chromium",
-"e2e:visual": "playwright test --config=e2e/visual/playwright.visual.config.ts",
-"e2e:visual:update": "playwright test --config=e2e/visual/... --update-snapshots"
+```css
+--glass-bg: color-mix(in srgb, var(--color-blue-900) 60%, transparent);
+--glass-header: color-mix(in srgb, var(--color-blue-900) 40%, transparent);
+--glass-body: color-mix(in srgb, var(--color-blue-900) 30%, transparent);
 ```
 
 ---
 
-## Contract Testing
+## Reference Implementations
 
-### Structure
+### Floating Bars (Pagination, Bulk Actions)
 
-```
-contracts/
-├── generate-types.sh             # Fetch OpenAPI + generate types
-├── openapi.json                  # Exported OpenAPI spec (version controlled)
-└── README.md                     # Contract testing documentation
-```
+**File**: `NotesDirectoryPage.tsx`, `BulkActionsBar.tsx`
 
-### Workflow
-
-1. Backend exposes `/openapi/v1.json`
-2. Run `./contracts/generate-types.sh`
-3. Types generated to `frontend/src/types/api-generated.ts`
-4. CI can detect spec drift
-
-### Script Added
-
-```json
-"generate:api-types": "openapi-typescript ../contracts/openapi.json -o ./src/types/api-generated.ts"
+```tsx
+<div
+  className="fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl"
+  style={{
+    backgroundColor: 'var(--glass-bg)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+    boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  }}
+>
 ```
 
----
+### Toggle Buttons (Grid/List)
 
-## Visual Regression Testing
+**File**: `ViewModeToggle.tsx`
 
-### Configuration
+```tsx
+// Container - transparent, border only
+<div
+  className="flex items-center rounded-xl border overflow-hidden"
+  style={{ borderColor: 'var(--border)' }}
+>
+  {/* Each button gets its own background */}
+  <button
+    style={{
+      backgroundColor: isActive
+        ? 'var(--color-brand-600)'
+        : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+      color: isActive ? '#ffffff' : 'var(--text-secondary)',
+    }}
+  />
 
-- Separate config: `e2e/visual/playwright.visual.config.ts`
-- 1% pixel diff threshold
-- Desktop + mobile viewports
-- Animations disabled for consistency
-
-### Tests
-
-| File | Coverage |
-|------|----------|
-| `pages.spec.ts` | Dashboard, Notes, Chat, Focus, Insights |
-| `themes.spec.ts` | Light/dark variants of main pages |
-
----
-
-## Performance Testing (k6)
-
-### Structure
-
-```
-performance/
-├── k6/
-│   ├── scripts/
-│   │   ├── smoke.js              # 10 VUs, 1 min, p95 < 500ms
-│   │   └── load.js               # 50 VUs, 5 min, p95 < 1000ms
-│   ├── helpers/
-│   │   ├── auth.js               # JWT token acquisition
-│   │   └── data.js               # Test data generators
-│   └── config/
-│       └── thresholds.json       # Target metrics
-└── README.md                     # k6 usage documentation
+  {/* Full-height separator */}
+  <div
+    className="w-px self-stretch"
+    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }}
+  />
+</div>
 ```
 
-### Thresholds
+### Dropdown Menus
 
-| Test | p95 Response | Error Rate |
-|------|--------------|------------|
-| Smoke | < 500ms | < 1% |
-| Load | < 1000ms | < 2% |
+**File**: `NotesFilter.tsx`, `DirectoryPageControls.tsx`, `user-menu/index.tsx`
 
-### Running
-
-```bash
-k6 run -e BASE_URL=http://localhost:5001 performance/k6/scripts/smoke.js
+```tsx
+<div
+  className="absolute rounded-xl border overflow-hidden"
+  style={{
+    backgroundColor: 'var(--glass-bg)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+  }}
+>
+  {/* Menu items */}
+  <button
+    className="hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]"
+    style={{
+      backgroundColor: 'transparent',
+      color: 'var(--text-primary)',
+    }}
+  />
+</div>
 ```
 
----
+### Standard Buttons/Inputs
 
-## CI/CD Integration
+**File**: `NotesFilter.tsx`, `Pagination.tsx`
 
-### New Workflow: `.github/workflows/e2e-tests.yml`
-
-**Jobs:**
-
-1. **e2e-tests** (Full suite)
-   - Trigger: Push to main/develop
-   - PostgreSQL 18 + pgvector service
-   - Backend + frontend startup
-   - All Playwright tests
-   - Artifacts: playwright-report, test-results
-
-2. **e2e-smoke** (Fast check)
-   - Trigger: PRs to main
-   - Smoke tests only (~2 min)
-   - Quick validation before merge
-
----
-
-## Documentation
-
-### TESTING.md (Project Root)
-
-Comprehensive guide covering:
-- Quick start commands
-- Test architecture diagram
-- Backend patterns (xUnit, Moq, Testcontainers)
-- Frontend patterns (Vitest, RTL, MSW)
-- E2E patterns (Playwright, Page Objects)
-- Visual regression usage
-- Performance testing with k6
-- CI/CD integration
-- Troubleshooting guide
-
----
-
-## Files Created/Modified
-
-### New Files (35+)
-
-```
-frontend/
-├── playwright.config.ts
-├── e2e/
-│   ├── global-setup.ts
-│   ├── global-teardown.ts
-│   ├── README.md
-│   ├── fixtures/base.fixture.ts
-│   ├── page-objects/*.ts (6 files)
-│   ├── tests/**/*.spec.ts (8 files)
-│   ├── utils/*.ts (3 files)
-│   └── visual/*.ts (3 files)
-
-contracts/
-├── generate-types.sh
-└── README.md
-
-performance/
-├── README.md
-└── k6/**/* (5 files)
-
-.github/workflows/
-└── e2e-tests.yml
-
-TESTING.md
+```tsx
+<button
+  style={{
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+    color: 'var(--text-primary)',
+  }}
+/>
 ```
 
-### Modified Files
+### Destructive/Error Buttons
 
+**File**: `BulkActionsBar.tsx`
+
+```tsx
+<button
+  style={{
+    backgroundColor: isEnabled
+      ? 'color-mix(in srgb, var(--color-error) 20%, transparent)'
+      : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+    color: isEnabled ? 'var(--color-error)' : 'var(--text-tertiary)',
+    border: isEnabled
+      ? '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)'
+      : 'none',
+  }}
+/>
 ```
-frontend/package.json      # Added e2e scripts, openapi-typescript
-.gitignore                 # Added Playwright artifacts
+
+### Modals/Dialogs
+
+**File**: `Dialog.tsx`, `EditNoteModal.tsx`
+
+```tsx
+// Dialog content
+<div className="bg-[var(--glass-bg)] backdrop-blur-xl">
+  {/* Header */}
+  <div className="bg-[var(--glass-header)]" />
+
+  {/* Body */}
+  <div className="bg-[var(--glass-body)]" />
+</div>
 ```
 
-### Dependencies Added
+### Badges/Pills
 
-```json
-"@playwright/test": "^1.57.0",
-"dotenv": "^17.2.3",
-"openapi-typescript": "^7.10.1"
+**File**: `NotesDirectoryPage.tsx`
+
+```tsx
+<span
+  style={{
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+    color: 'var(--text-secondary)',
+  }}
+/>
 ```
 
 ---
 
-## Running Tests
+## Components Fully Updated ✅
 
-```bash
-# E2E (requires backend + frontend)
-cd frontend && pnpm e2e
-
-# Smoke tests only
-cd frontend && pnpm e2e:smoke
-
-# Visual regression
-cd frontend && pnpm e2e:visual
-
-# Performance
-k6 run -e BASE_URL=http://localhost:5001 performance/k6/scripts/smoke.js
-
-# Contract types
-./contracts/generate-types.sh
-```
+| Component | File |
+|-----------|------|
+| Note Cards | `NoteCard.tsx`, `NoteListItem.tsx` |
+| Edit Note Modal | `EditNoteModal.tsx`, `Dialog.tsx` |
+| Rich Text Editor | `RichTextEditor.tsx` |
+| Version History | `NoteVersionHistoryPanel.tsx`, `NoteVersionTimeline.tsx`, `NoteVersionDiffViewer.tsx` |
+| Notes Filter | `NotesFilter.tsx` |
+| View Mode Toggle | `ViewModeToggle.tsx` |
+| Directory Controls | `DirectoryPageControls.tsx` |
+| Pagination | `Pagination.tsx` |
+| Bulk Actions Bar | `BulkActionsBar.tsx` |
+| User Menu | `user-menu/index.tsx`, `ApiKeySection.tsx` |
+| Floating Pagination | `NotesDirectoryPage.tsx` |
 
 ---
 
-## Previous Session: MCP Servers
+## Components To Update
 
-> Completed in previous session - see commit history
+Use the patterns above to update these:
 
-Built two MCP servers for Claude Code:
-- **mcp-notes-server** - 8 tools for Notes API
-- **mcp-pg-server** - 7 tools for PostgreSQL access
+- [ ] Chat page components
+- [ ] Focus page components
+- [ ] Settings page components
+- [ ] Dashboard components
+- [ ] Insights page components
+- [ ] GitHub integration components
+- [ ] Voice components
+- [ ] Other dropdowns and modals
 
 ---
 
-**Remember**: This file is for current session work. Long-term learnings go in `.claude/memory.md`.
+## Tips
+
+1. **Replace `var(--surface-elevated)`** with `color-mix(in srgb, var(--text-primary) 8%, transparent)`
+2. **Replace `var(--surface-hover)`** with `color-mix(in srgb, var(--text-primary) 10%, transparent)`
+3. **Replace `var(--border)`** with `color-mix(in srgb, var(--text-primary) 15%, transparent)` for floating elements
+4. **Replace `var(--color-success)`** with `var(--color-brand-500)` for consistency
+5. **Add backdrop-blur** to any floating/overlay element
+6. **Use `self-stretch`** for full-height separators in flex containers
+
+---
+
+**Remember**: This file is for current session work. Long-term learnings are in `.claude/memory.md`.

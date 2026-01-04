@@ -205,7 +205,7 @@ export function NoteImageAttachment({
         <div
           className="flex flex-wrap gap-2 p-2 rounded-xl transition-all duration-200"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'transparent',
           }}
         >
           {/* Existing images */}

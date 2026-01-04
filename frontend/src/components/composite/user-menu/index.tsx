@@ -24,8 +24,6 @@ export function UserMenu() {
   const navigate = useNavigate();
   const user = useBoundStore((state) => state.user);
   const signOut = useBoundStore((state) => state.signOut);
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
   const { copyApiKey } = useApiKey();
 
   const handleSignOut = () => {
@@ -48,10 +46,10 @@ export function UserMenu() {
             className={cn(
               'flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200',
               'hover:scale-105 active:scale-95',
-              'hover:bg-[var(--surface-elevated)]',
+              'hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-600)]',
               'text-[var(--text-primary)]',
-              'data-[state=open]:bg-[var(--surface-elevated)]'
+              'data-[state=open]:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]'
             )}
             aria-label="User menu"
           >
@@ -70,14 +68,9 @@ export function UserMenu() {
 
         <DropdownMenuContent
           align="end"
-          className={cn(
-            'w-80 rounded-2xl py-2 overflow-hidden',
-            isBlueTheme
-              ? 'bg-[rgba(10,22,40,0.98)]'
-              : 'bg-[var(--surface-card-solid)]',
-            'backdrop-blur-xl saturate-[1.8]'
-          )}
+          className="w-80 rounded-2xl py-2 overflow-hidden backdrop-blur-xl"
           style={{
+            backgroundColor: 'var(--glass-bg)',
             boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
           }}
           sideOffset={8}
@@ -124,7 +117,6 @@ export function UserMenu() {
               <ApiKeySection
                 apiKey={user.apiKey}
                 onCopy={copyApiKey}
-                isBlueTheme={isBlueTheme}
               />
             )}
 

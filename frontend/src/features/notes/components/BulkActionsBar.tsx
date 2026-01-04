@@ -53,11 +53,11 @@ export const BulkActionsBar = memo(({
         left: '50%',
         bottom: '1.5rem',
         transform: 'translate(-50%, 0)',
-        backgroundColor: 'var(--surface-card-solid)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'var(--glass-bg)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
         boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
-        backdropFilter: 'blur(12px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         animation: 'bulkBarSlideUp 0.3s ease-out',
       }}
     >
@@ -66,7 +66,7 @@ export const BulkActionsBar = memo(({
         <span
           className="px-3 py-1 rounded-full text-sm font-semibold"
           style={{
-            backgroundColor: selectedCount > 0 ? 'var(--color-brand-600)' : 'var(--surface-hover)',
+            backgroundColor: selectedCount > 0 ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
             color: selectedCount > 0 ? '#ffffff' : 'var(--text-secondary)',
           }}
         >
@@ -78,7 +78,7 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }} />
 
       {/* Select All / Deselect All */}
       <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export const BulkActionsBar = memo(({
           disabled={isProcessing || selectedCount === totalCount}
           className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           style={{
-            backgroundColor: 'var(--surface-hover)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -100,7 +100,7 @@ export const BulkActionsBar = memo(({
           disabled={isProcessing || selectedCount === 0}
           className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           style={{
-            backgroundColor: 'var(--surface-hover)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -109,7 +109,7 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }} />
 
       {/* Delete Button */}
       <button
@@ -118,9 +118,9 @@ export const BulkActionsBar = memo(({
         disabled={isProcessing || selectedCount === 0}
         className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         style={{
-          backgroundColor: selectedCount > 0 ? 'var(--color-error-text)' : 'var(--surface-hover)',
-          color: selectedCount > 0 ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
-          boxShadow: selectedCount > 0 ? '0 4px 14px -4px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
+          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          color: selectedCount > 0 ? 'var(--color-error)' : 'var(--text-tertiary)',
+          border: selectedCount > 0 ? '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)' : 'none',
         }}
       >
         {isProcessing ? (

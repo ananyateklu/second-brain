@@ -126,8 +126,8 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
         props.items.map((item: string, index: number) => (
           <button
             className={`w-full text-left px-3 py-2 text-sm transition-colors ${index === selectedIndex
-              ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--text-primary)]'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-card)]'
+              ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]'
               }`}
             key={index}
             onClick={() => { selectItem(index); }}
@@ -584,12 +584,12 @@ export function RichTextEditor({
   return (
     <div className="rich-text-editor relative">
       {editor && editable && (
-        <div className="sticky top-0 z-10 mb-2 flex flex-wrap gap-1 p-2 rounded-2xl border border-[var(--border)] bg-[var(--surface-elevated)] shadow-sm backdrop-blur-sm">
+        <div className="sticky top-0 z-10 mb-2 flex flex-wrap gap-1 p-2 rounded-2xl border border-[var(--border)] bg-[var(--glass-header)] shadow-sm backdrop-blur-xl">
           {/* Heading */}
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Heading 1"
           >
@@ -598,7 +598,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Heading 2"
           >
@@ -611,7 +611,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('bold') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bold') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Bold"
           >
@@ -620,7 +620,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('italic') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('italic') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Italic"
           >
@@ -629,7 +629,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('underline') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('underline') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Underline"
           >
@@ -638,7 +638,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('strike') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('strike') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Strikethrough"
           >
@@ -647,7 +647,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleHighlight().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('highlight') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('highlight') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Highlight"
           >
@@ -660,7 +660,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('bulletList') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bulletList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Bullet List"
           >
@@ -669,7 +669,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('orderedList') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('orderedList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Ordered List"
           >
@@ -678,7 +678,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleTaskList().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('taskList') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('taskList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Task List (Checkboxes)"
           >
@@ -691,7 +691,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Align Left"
           >
@@ -700,7 +700,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Align Center"
           >
@@ -709,7 +709,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Align Right"
           >
@@ -722,7 +722,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('blockquote') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('blockquote') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Blockquote"
           >
@@ -731,7 +731,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('codeBlock') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('codeBlock') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Code Block"
           >
@@ -745,7 +745,7 @@ export function RichTextEditor({
                 editor.chain().focus().setImage({ src: url }).run();
               }
             }}
-            className="p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors text-[var(--text-secondary)]"
+            className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
             title="Insert Image"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -758,7 +758,7 @@ export function RichTextEditor({
                 editor.chain().focus().setLink({ href: url }).run();
               }
             }}
-            className={`p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors ${editor.isActive('link') ? 'bg-[var(--color-brand-100)] dark:bg-[var(--color-brand-900)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+            className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('link') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
               }`}
             title="Insert Link"
           >
@@ -767,7 +767,7 @@ export function RichTextEditor({
           <button
             type="button"
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            className="p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors text-[var(--text-secondary)]"
+            className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
             title="Horizontal Rule"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" /></svg>
@@ -781,7 +781,7 @@ export function RichTextEditor({
                 editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
               }
             }}
-            className="p-1.5 rounded hover:bg-[var(--surface-card)] transition-colors text-[var(--text-secondary)]"
+            className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
             title="Insert Table"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>

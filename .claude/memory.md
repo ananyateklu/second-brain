@@ -40,6 +40,26 @@
 
 ---
 
+## UI Styling Patterns
+
+### Frosted Glass (Blue Theme)
+
+Use `color-mix()` CSS function for transparent tints:
+
+| Use Case | Value |
+|----------|-------|
+| Floating containers | `var(--glass-bg)` + `backdrop-blur: 20px` |
+| Buttons/inputs | `color-mix(in srgb, var(--text-primary) 8%, transparent)` |
+| Hover states | `color-mix(in srgb, var(--text-primary) 10%, transparent)` |
+| Borders/dividers | `color-mix(in srgb, var(--text-primary) 15%, transparent)` |
+| Error states | `color-mix(in srgb, var(--color-error) 20%, transparent)` + red text |
+| Selected states | Solid `var(--color-brand-600)` + white text |
+
+Glass variables defined in `surfaces.css`:
+- `--glass-bg`, `--glass-header`, `--glass-body`
+
+---
+
 ## Quick Commands
 
 ```bash
