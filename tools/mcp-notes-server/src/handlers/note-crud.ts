@@ -24,6 +24,8 @@ export async function handleCreateNote(
     tags: Array.isArray(tags) ? tags.filter(t => typeof t === 'string') : [],
     folder: typeof folder === 'string' ? folder : undefined,
     isArchived: typeof isArchived === 'boolean' ? isArchived : false,
+    source: 'mcp',
+    mcpServerName: 'second-brain-notes',
   };
 
   const result = await client.createNote(request);
@@ -95,7 +97,10 @@ export async function handleUpdateNote(
     return { success: false, error: 'Note ID is required', code: 'VALIDATION_ERROR' };
   }
 
-  const request: UpdateNoteRequest = {};
+  const request: UpdateNoteRequest = {
+    source: 'mcp',
+    mcpServerName: 'second-brain-notes',
+  };
 
   if (typeof title === 'string') request.title = title.trim();
   if (typeof content === 'string') request.content = content;
@@ -110,8 +115,9 @@ export async function handleUpdateNote(
     request.folder = folder;
   }
 
-  // Check if there's anything to update
-  if (Object.keys(request).length === 0) {
+  // Check if there's anything to update (excluding source metadata)
+  const updateFields = Object.keys(request).filter(k => k !== 'source' && k !== 'mcpServerName');
+  if (updateFields.length === 0) {
     return {
       success: false,
       error: 'No fields to update provided',

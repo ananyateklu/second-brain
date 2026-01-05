@@ -61,6 +61,11 @@ public sealed record CreateNoteOperationRequest
     public string? AiModel { get; init; }
 
     /// <summary>
+    /// MCP server name when created via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
+
+    /// <summary>
     /// External ID for imported notes (iOS Notes, etc.).
     /// Used to detect duplicates during import.
     /// </summary>
@@ -114,6 +119,11 @@ public sealed record UpdateNoteOperationRequest
     /// AI model identifier when updated by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash").
     /// </summary>
     public string? AiModel { get; init; }
+
+    /// <summary>
+    /// MCP server name when updated via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
 
     /// <summary>
     /// New title (null = no change).
@@ -206,6 +216,11 @@ public sealed record AppendToNoteOperationRequest
     public string? AiModel { get; init; }
 
     /// <summary>
+    /// MCP server name when appended via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
+
+    /// <summary>
     /// Whether to add a newline before the appended content.
     /// </summary>
     public bool AddNewline { get; init; } = true;
@@ -253,6 +268,11 @@ public sealed record ReplaceInNoteOperationRequest
     public string? AiModel { get; init; }
 
     /// <summary>
+    /// MCP server name when modified via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
+
+    /// <summary>
     /// If true, allows replacement of multiple occurrences. Default is false (single match only).
     /// </summary>
     public bool AllowMultiple { get; init; } = false;
@@ -298,6 +318,11 @@ public sealed record InsertInNoteOperationRequest
     /// AI model identifier when modified by an agent.
     /// </summary>
     public string? AiModel { get; init; }
+
+    /// <summary>
+    /// MCP server name when modified via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
 }
 
 /// <summary>
@@ -334,6 +359,11 @@ public sealed record PrependToNoteOperationRequest
     /// AI model identifier when prepended by an agent.
     /// </summary>
     public string? AiModel { get; init; }
+
+    /// <summary>
+    /// MCP server name when prepended via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; init; }
 
     /// <summary>
     /// Whether to add a newline after the prepended content.

@@ -212,6 +212,18 @@ function getProviderColor(provider: string): string {
   return 'var(--color-accent-purple)'; // Default purple for unknown agents
 }
 
+// Get display name for MCP servers
+function getMcpDisplayName(serverName?: string | null): string {
+  switch (serverName) {
+    case 'second-brain-notes':
+      return 'CC Notes';
+    case 'pg-docker':
+      return 'CC DB';
+    default:
+      return 'Claude Code';
+  }
+}
+
 // Get source display info with AI provider context
 interface SourceInfo {
   label: string;
@@ -225,7 +237,8 @@ function getSourceInfo(
   source: string,
   aiProvider?: string | null,
   aiModel?: string | null,
-  isDarkMode?: boolean
+  isDarkMode?: boolean,
+  mcpServerName?: string | null
 ): SourceInfo {
   // Handle agent source with provider info
   if (source === 'agent' && aiProvider) {
@@ -287,6 +300,17 @@ function getSourceInfo(
           </svg>
         ),
         color: 'var(--color-brand-500)',
+      };
+    case 'mcp':
+      return {
+        label: getMcpDisplayName(mcpServerName),
+        icon: (
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        ),
+        color: 'var(--color-accent-orange, #d97706)',
+        tooltip: mcpServerName ? `${mcpServerName} MCP Server` : 'Claude Code MCP Server',
       };
     default:
       return {
@@ -416,7 +440,8 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       version.source,
                       version.aiProvider,
                       version.aiModel,
-                      isDarkMode
+                      isDarkMode,
+                      version.mcpServerName
                     );
                     return (
                       <div

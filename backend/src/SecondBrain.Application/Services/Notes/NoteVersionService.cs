@@ -62,12 +62,15 @@ public class NoteVersionService : INoteVersionService
         string? changeSummary = null,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default)
     {
+        var sourceInfo = aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" :
+                         mcpServerName != null ? $" (MCP: {mcpServerName})" : "";
         _logger.LogInformation(
-            "Creating new version for note {NoteId} by {ModifiedBy}{AiInfo}",
-            note.Id, modifiedBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
-        return await _repository.CreateVersionAsync(note, modifiedBy, changeSummary, aiProvider, aiModel, cancellationToken);
+            "Creating new version for note {NoteId} by {ModifiedBy}{SourceInfo}",
+            note.Id, modifiedBy, sourceInfo);
+        return await _repository.CreateVersionAsync(note, modifiedBy, changeSummary, aiProvider, aiModel, mcpServerName, cancellationToken);
     }
 
     public async Task<NoteVersionResponse> CreateInitialVersionAsync(
@@ -75,12 +78,15 @@ public class NoteVersionService : INoteVersionService
         string createdBy,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default)
     {
+        var sourceInfo = aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" :
+                         mcpServerName != null ? $" (MCP: {mcpServerName})" : "";
         _logger.LogInformation(
-            "Creating initial version for note {NoteId} by {CreatedBy}{AiInfo}",
-            note.Id, createdBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
-        var version = await _repository.CreateInitialVersionAsync(note, createdBy, aiProvider, aiModel, cancellationToken);
+            "Creating initial version for note {NoteId} by {CreatedBy}{SourceInfo}",
+            note.Id, createdBy, sourceInfo);
+        var version = await _repository.CreateInitialVersionAsync(note, createdBy, aiProvider, aiModel, mcpServerName, cancellationToken);
         return MapToResponse(version);
     }
 
@@ -237,6 +243,7 @@ public class NoteVersionService : INoteVersionService
             Source = version.Source,
             AiProvider = version.AiProvider,
             AiModel = version.AiModel,
+            McpServerName = version.McpServerName,
             ImageIds = version.ImageIds,
             CreatedAt = version.CreatedAt
         };

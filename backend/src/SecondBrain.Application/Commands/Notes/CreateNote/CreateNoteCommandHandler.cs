@@ -32,7 +32,7 @@ public class CreateNoteCommandHandler : IRequestHandler<CreateNoteCommand, Resul
     {
         _logger.LogDebug("Creating note for user {UserId}. Title: {Title}", request.UserId, request.Title);
 
-        // Map command to operation request - Web source for API requests
+        // Map command to operation request - use provided source or default to Web
         var operationRequest = new CreateNoteOperationRequest
         {
             UserId = request.UserId,
@@ -45,7 +45,8 @@ public class CreateNoteCommandHandler : IRequestHandler<CreateNoteCommand, Resul
             Folder = request.Folder,
             IsArchived = request.IsArchived,
             Images = request.Images,
-            Source = NoteSource.Web // Web API always uses Web source
+            Source = request.Source ?? NoteSource.Web,
+            McpServerName = request.McpServerName
         };
 
         var result = await _noteOperationService.CreateAsync(operationRequest, cancellationToken);

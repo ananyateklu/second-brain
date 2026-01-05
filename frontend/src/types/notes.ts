@@ -21,6 +21,7 @@ import type { JSONContent } from '@tiptap/react';
  * - 'system': System-generated operations
  * - 'restored': Restored from a previous version
  * - 'api': Created/modified via direct API calls
+ * - 'mcp': Created/modified via MCP server (Claude Code)
  */
 export type NoteSource =
   | 'web'
@@ -29,7 +30,8 @@ export type NoteSource =
   | 'import'
   | 'system'
   | 'restored'
-  | 'api';
+  | 'api'
+  | 'mcp';
 
 /**
  * Human-readable labels for note sources (for UI display)
@@ -42,6 +44,7 @@ export const NoteSourceLabels: Record<NoteSource, string> = {
   system: 'System',
   restored: 'Restored',
   api: 'API',
+  mcp: 'MCP',
 };
 
 /**
@@ -257,12 +260,14 @@ export interface NoteVersion {
   folder: string | null;
   modifiedBy: string;
   changeSummary: string | null;
-  /** Source of this version (web, agent, ios_notes, import, etc.) */
+  /** Source of this version (web, agent, ios_notes, import, mcp, etc.) */
   source: NoteSource;
   /** AI provider name when modified by an agent (e.g., "Anthropic", "Google", "OpenAI") */
   aiProvider?: string | null;
   /** AI model identifier when modified by an agent (e.g., "claude-3-5-sonnet", "gemini-2.0-flash") */
   aiModel?: string | null;
+  /** MCP server name when modified via MCP (e.g., "second-brain-notes", "pg-docker") */
+  mcpServerName?: string | null;
   /** IDs of images attached to the note at this version */
   imageIds: string[];
   createdAt: string;

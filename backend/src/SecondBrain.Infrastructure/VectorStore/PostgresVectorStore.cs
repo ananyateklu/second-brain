@@ -414,7 +414,9 @@ public class PostgresVectorStore : IVectorStore
             var lastIndexed = embeddings.Count > 0
                 ? embeddings.Max(e => e.CreatedAt)
                 : (DateTime?)null;
-            var provider = embeddings.FirstOrDefault()?.EmbeddingProvider ?? string.Empty;
+            var firstEmbedding = embeddings.FirstOrDefault();
+            var provider = firstEmbedding?.EmbeddingProvider ?? string.Empty;
+            var dimensions = firstEmbedding?.EmbeddingDimensions;
 
             return new IndexStats
             {
@@ -423,7 +425,8 @@ public class PostgresVectorStore : IVectorStore
                 UniqueNotes = uniqueNotes,
                 LastIndexedAt = lastIndexed,
                 EmbeddingProvider = provider,
-                VectorStoreProvider = "PostgreSQL"
+                VectorStoreProvider = "PostgreSQL",
+                Dimensions = dimensions
             };
         }
         catch (Exception ex)

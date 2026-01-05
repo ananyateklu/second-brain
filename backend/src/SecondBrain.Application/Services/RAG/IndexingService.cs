@@ -1,7 +1,9 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.DTOs.Events;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.VectorStore;
 using SecondBrain.Core.Common;
@@ -21,6 +23,13 @@ public class IndexingService : IIndexingService
     private readonly EmbeddingProvidersSettings _settings;
     private readonly ILogger<IndexingService> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+
+    /// <summary>
+    /// Thread-safe registry of active streaming job cancellation tokens.
+    /// Used to cancel streaming jobs via the cancel API endpoint.
+    /// </summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, CancellationTokenSource>
+        _streamingJobCancellations = new();
 
     public IndexingService(
         INoteRepository noteRepository,
@@ -449,6 +458,16 @@ public class IndexingService : IIndexingService
     {
         try
         {
+            // First check if this is a streaming job (not stored in DB)
+            if (_streamingJobCancellations.TryRemove(jobId, out var streamingCts))
+            {
+                _logger.LogInformation("Cancelling streaming indexing job. JobId: {JobId}", jobId);
+                await streamingCts.CancelAsync();
+                streamingCts.Dispose();
+                return true;
+            }
+
+            // Otherwise check the database for non-streaming jobs
             var job = await _indexingJobRepository.GetByIdAsync(jobId);
 
             if (job == null)
@@ -483,6 +502,335 @@ public class IndexingService : IIndexingService
         {
             _logger.LogError(ex, "Error cancelling indexing job. JobId: {JobId}", jobId);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Stream indexing progress via SSE events for real-time UI updates.
+    /// Unlike StartIndexingAsync, this method processes notes synchronously and yields events.
+    /// </summary>
+    public async IAsyncEnumerable<object> StreamIndexingAsync(
+        string userId,
+        string vectorStoreProvider,
+        string embeddingProvider,
+        string embeddingModel,
+        int? customDimensions = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var jobId = UuidV7.NewId();
+        var startTime = DateTime.UtcNow;
+
+        // Create a linked cancellation token source that can be cancelled via API or HTTP disconnect
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var linkedToken = linkedCts.Token;
+
+        // Register this job's cancellation token for API-based cancellation
+        _streamingJobCancellations[jobId] = linkedCts;
+
+        _logger.LogInformation(
+            "Starting streaming indexing. JobId: {JobId}, UserId: {UserId}, VectorStore: {VectorStore}, Provider: {Provider}, Model: {Model}",
+            jobId, userId, vectorStoreProvider, embeddingProvider, embeddingModel);
+
+        try
+        {
+            // Initialize result - will be populated by helper method
+            var initResult = await InitializeStreamingIndexingAsync(
+                jobId, userId, vectorStoreProvider, embeddingProvider, embeddingModel, customDimensions, linkedToken);
+
+            // If initialization failed, yield error and exit
+            if (initResult.Error != null)
+            {
+                yield return initResult.Error;
+                yield break;
+            }
+
+            // Yield start event
+            yield return new IndexingStartEvent(
+                JobId: jobId,
+                VectorStore: vectorStoreProvider,
+                TotalNotes: initResult.NotesToIndex.Count,
+                SkippedNotes: initResult.SkippedCount,
+                DeletedNotes: initResult.DeletedCount,
+                EmbeddingProvider: embeddingProvider,
+                EmbeddingModel: initResult.ActualModel,
+                StartedAt: startTime
+            );
+
+            // Process notes and yield progress events
+            var processedCount = 0;
+            var failedCount = 0;
+            var embeddingsCreated = 0;
+
+            foreach (var note in initResult.NotesToIndex)
+            {
+                if (linkedToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Streaming indexing cancelled. JobId: {JobId}", jobId);
+                    yield break;
+                }
+
+                // Index the note (failures are logged internally)
+                var noteResult = await IndexNoteAndCountEmbeddingsAsync(
+                    note, initResult.EmbeddingProvider, _vectorStore, linkedToken, customDimensions, initResult.ActualModel);
+
+                if (noteResult >= 0)
+                {
+                    embeddingsCreated += noteResult;
+                    processedCount++;
+                }
+                else
+                {
+                    failedCount++;
+                }
+
+                // Yield progress event after each note
+                yield return new IndexingProgressEvent(
+                    JobId: jobId,
+                    ProcessedCount: processedCount,
+                    TotalCount: initResult.NotesToIndex.Count,
+                    EmbeddingsCreated: embeddingsCreated,
+                    CurrentNoteTitle: note.Title,
+                    ProgressPercent: initResult.NotesToIndex.Count > 0 ? (double)processedCount / initResult.NotesToIndex.Count * 100 : 100
+                );
+
+                // Yield stats event every 5 notes for UI updates
+                if (processedCount % 5 == 0)
+                {
+                    var stats = await _vectorStore.GetIndexStatsAsync(userId, linkedToken);
+                    yield return new IndexingStatsEvent(
+                        IndexedCount: stats.UniqueNotes,
+                        PendingCount: stats.NotIndexedCount,
+                        TotalNotes: stats.TotalNotesInSystem,
+                        Dimensions: stats.Dimensions ?? 0,
+                        LastIndexedAt: stats.LastIndexedAt,
+                        VectorStore: vectorStoreProvider
+                    );
+                }
+            }
+
+            // Get final stats
+            var finalStats = await _vectorStore.GetIndexStatsAsync(userId, linkedToken);
+            var duration = DateTime.UtcNow - startTime;
+
+            // Yield complete event
+            yield return new IndexingCompleteEvent(
+                JobId: jobId,
+                TotalProcessed: processedCount,
+                EmbeddingsCreated: embeddingsCreated,
+                SkippedNotes: initResult.SkippedCount,
+                DeletedNotes: initResult.DeletedCount,
+                FailedCount: failedCount,
+                Duration: duration,
+                FinalStats: new IndexingStatsEvent(
+                    IndexedCount: finalStats.UniqueNotes,
+                    PendingCount: finalStats.NotIndexedCount,
+                    TotalNotes: finalStats.TotalNotesInSystem,
+                    Dimensions: finalStats.Dimensions ?? 0,
+                    LastIndexedAt: finalStats.LastIndexedAt,
+                    VectorStore: vectorStoreProvider
+                )
+            );
+
+            _logger.LogInformation(
+                "Streaming indexing completed. JobId: {JobId}, Processed: {Processed}, Embeddings: {Embeddings}, Duration: {Duration}ms",
+                jobId, processedCount, embeddingsCreated, duration.TotalMilliseconds);
+        }
+        finally
+        {
+            // Always clean up the registration
+            _streamingJobCancellations.TryRemove(jobId, out _);
+        }
+    }
+
+    /// <summary>
+    /// Result from initializing streaming indexing
+    /// </summary>
+    private record StreamingIndexingInitResult(
+        List<Note> NotesToIndex,
+        IEmbeddingProvider EmbeddingProvider,
+        string ActualModel,
+        int SkippedCount,
+        int DeletedCount,
+        IndexingErrorEvent? Error = null
+    );
+
+    /// <summary>
+    /// Initialize streaming indexing - validates provider, fetches notes, handles cleanup
+    /// </summary>
+    private async Task<StreamingIndexingInitResult> InitializeStreamingIndexingAsync(
+        string jobId,
+        string userId,
+        string vectorStoreProvider,
+        string embeddingProvider,
+        string embeddingModel,
+        int? customDimensions,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Get embedding provider instance
+            var embeddingProviderInstance = _embeddingProviderFactory.GetProvider(embeddingProvider);
+            int effectiveDimensions;
+            string actualModel;
+
+            if (!string.IsNullOrEmpty(embeddingModel))
+            {
+                var availableModels = (await embeddingProviderInstance.GetAvailableModelsAsync(cancellationToken)).ToList();
+                var selectedModel = availableModels.FirstOrDefault(m =>
+                    m.ModelId.Equals(embeddingModel, StringComparison.OrdinalIgnoreCase));
+
+                if (selectedModel == null)
+                {
+                    return new StreamingIndexingInitResult(
+                        new List<Note>(), embeddingProviderInstance, embeddingModel, 0, 0,
+                        new IndexingErrorEvent(jobId, "InvalidModel",
+                            $"Model '{embeddingModel}' is not available for provider '{embeddingProvider}'"));
+                }
+
+                effectiveDimensions = customDimensions ?? selectedModel.Dimensions;
+                actualModel = selectedModel.ModelId;
+            }
+            else
+            {
+                effectiveDimensions = customDimensions ?? embeddingProviderInstance.Dimensions;
+                actualModel = embeddingProviderInstance.ModelName;
+            }
+
+            // Validate Pinecone dimensions
+            if ((vectorStoreProvider == "Pinecone" || vectorStoreProvider == "Both") && effectiveDimensions != PineconeDimensions)
+            {
+                return new StreamingIndexingInitResult(
+                    new List<Note>(), embeddingProviderInstance, actualModel, 0, 0,
+                    new IndexingErrorEvent(jobId, "DimensionMismatch",
+                        $"Pinecone requires {PineconeDimensions} dimensions. {embeddingProvider}/{actualModel} produces {effectiveDimensions} dimensions."));
+            }
+
+            // Configure vector store override if provided
+            if (!string.IsNullOrEmpty(vectorStoreProvider) && _vectorStore is CompositeVectorStore compositeStore)
+            {
+                compositeStore.SetProviderOverride(vectorStoreProvider);
+            }
+
+            // Fetch notes with images for the specific user
+            var allNotes = (await _noteRepository.GetByUserIdWithImagesAsync(userId)).ToList();
+            var currentNoteIds = allNotes.Select(n => n.Id).ToHashSet();
+
+            // Cleanup deleted notes from index
+            var indexedNoteIds = await _vectorStore.GetIndexedNoteIdsAsync(userId, cancellationToken);
+            var deletedNoteIds = indexedNoteIds.Except(currentNoteIds).ToList();
+            var deletedCount = deletedNoteIds.Count;
+
+            foreach (var deletedNoteId in deletedNoteIds)
+            {
+                try
+                {
+                    await _vectorStore.DeleteByNoteIdAsync(deletedNoteId, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to remove embeddings for deleted note. NoteId: {NoteId}", deletedNoteId);
+                }
+            }
+
+            // Filter to notes that need indexing (incremental)
+            var notesToIndex = new List<Note>();
+            var skippedCount = 0;
+
+            foreach (var note in allNotes)
+            {
+                var existingUpdatedAt = await _vectorStore.GetNoteUpdatedAtAsync(note.Id, cancellationToken);
+                if (existingUpdatedAt.HasValue && existingUpdatedAt.Value >= note.UpdatedAt)
+                {
+                    skippedCount++;
+                }
+                else
+                {
+                    notesToIndex.Add(note);
+                }
+            }
+
+            return new StreamingIndexingInitResult(
+                notesToIndex, embeddingProviderInstance, actualModel, skippedCount, deletedCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error initializing streaming indexing");
+            return new StreamingIndexingInitResult(
+                new List<Note>(), null!, "", 0, 0,
+                new IndexingErrorEvent(jobId, "InitializationError", ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Index a note and return the count of embeddings created (for streaming progress tracking).
+    /// Returns -1 on failure.
+    /// </summary>
+    private async Task<int> IndexNoteAndCountEmbeddingsAsync(
+        Note note,
+        IEmbeddingProvider embeddingProvider,
+        IVectorStore vectorStore,
+        CancellationToken cancellationToken,
+        int? customDimensions = null,
+        string? modelOverride = null)
+    {
+        try
+        {
+            var effectiveModel = !string.IsNullOrEmpty(modelOverride) ? modelOverride : embeddingProvider.ModelName;
+
+            // Delete existing embeddings for this note
+            await vectorStore.DeleteByNoteIdAsync(note.Id, cancellationToken);
+
+            // Chunk the note
+            var chunks = _chunkingService.ChunkNote(note);
+
+            // Generate embeddings for each chunk
+            var embeddings = new List<NoteEmbedding>();
+
+            foreach (var chunk in chunks)
+            {
+                var embeddingResponse = await embeddingProvider.GenerateEmbeddingAsync(
+                    chunk.Content, cancellationToken, customDimensions, modelOverride);
+
+                if (!embeddingResponse.Success)
+                {
+                    continue;
+                }
+
+                var actualModel = !string.IsNullOrEmpty(embeddingResponse.Model) ? embeddingResponse.Model : effectiveModel;
+
+                var noteEmbedding = new NoteEmbedding
+                {
+                    Id = $"{note.Id}_chunk_{chunk.ChunkIndex}",
+                    NoteId = note.Id,
+                    UserId = note.UserId,
+                    ChunkIndex = chunk.ChunkIndex,
+                    Content = chunk.Content,
+                    Embedding = new Pgvector.Vector(embeddingResponse.Embedding.Select(d => (float)d).ToArray()),
+                    EmbeddingDimensions = embeddingResponse.Embedding.Count,
+                    EmbeddingProvider = embeddingProvider.ProviderName,
+                    EmbeddingModel = actualModel,
+                    CreatedAt = DateTime.UtcNow,
+                    NoteUpdatedAt = note.UpdatedAt,
+                    NoteTitle = note.Title,
+                    NoteTags = note.Tags,
+                    NoteSummary = note.Summary
+                };
+
+                embeddings.Add(noteEmbedding);
+            }
+
+            // Store embeddings in vector store
+            if (embeddings.Any())
+            {
+                await vectorStore.UpsertBatchAsync(embeddings, cancellationToken);
+            }
+
+            return embeddings.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error indexing note. NoteId: {NoteId}", note.Id);
+            return -1; // Indicate failure
         }
     }
 }

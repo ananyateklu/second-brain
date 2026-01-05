@@ -126,6 +126,14 @@ public class NoteVersion
     public string? AiModel { get; set; }
 
     /// <summary>
+    /// MCP server name when created via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// Null for non-MCP sources.
+    /// </summary>
+    [Column("mcp_server_name")]
+    [MaxLength(100)]
+    public string? McpServerName { get; set; }
+
+    /// <summary>
     /// IDs of images attached to the note at this version.
     /// Tracks which images existed when this version was created.
     /// </summary>
@@ -174,6 +182,7 @@ public class NoteVersion
     /// <param name="source">Source of the change (web, agent, etc.).</param>
     /// <param name="aiProvider">AI provider name when created by an agent.</param>
     /// <param name="aiModel">AI model identifier when created by an agent.</param>
+    /// <param name="mcpServerName">MCP server name when created via MCP.</param>
     public static NoteVersion FromNote(
         Note note,
         string modifiedBy,
@@ -181,7 +190,8 @@ public class NoteVersion
         string? changeSummary = null,
         string? source = null,
         string? aiProvider = null,
-        string? aiModel = null)
+        string? aiModel = null,
+        string? mcpServerName = null)
     {
         return new NoteVersion
         {
@@ -201,6 +211,7 @@ public class NoteVersion
             Source = source ?? note.Source ?? "web",
             AiProvider = aiProvider,
             AiModel = aiModel,
+            McpServerName = mcpServerName,
             ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
             CreatedAt = DateTime.UtcNow
         };

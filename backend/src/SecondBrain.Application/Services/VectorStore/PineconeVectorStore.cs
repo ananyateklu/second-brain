@@ -365,7 +365,8 @@ public class PineconeVectorStore : IVectorStore
                 UniqueNotes = uniqueNotes.Count,
                 LastIndexedAt = lastIndexed,
                 EmbeddingProvider = embeddingProvider,
-                VectorStoreProvider = "Pinecone"
+                VectorStoreProvider = "Pinecone",
+                Dimensions = (int)dimension
             };
         }
         catch (Exception ex)

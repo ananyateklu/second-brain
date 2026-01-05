@@ -1,3 +1,4 @@
+using SecondBrain.Application.DTOs.Events;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Models;
 
@@ -5,6 +6,17 @@ namespace SecondBrain.Application.Services.RAG;
 
 public interface IIndexingService
 {
+    /// <summary>
+    /// Stream indexing progress via SSE events for real-time UI updates
+    /// </summary>
+    IAsyncEnumerable<object> StreamIndexingAsync(
+        string userId,
+        string vectorStoreProvider,
+        string embeddingProvider,
+        string embeddingModel,
+        int? customDimensions = null,
+        CancellationToken cancellationToken = default);
+
     Task<IndexingJob> StartIndexingAsync(
         string userId,
         string? embeddingProvider = null,

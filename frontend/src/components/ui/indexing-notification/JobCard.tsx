@@ -1,11 +1,12 @@
 /**
  * Job Card Component
- * Displays a single indexing job with progress and controls
+ * Displays a single indexing job with progress and controls.
+ * Note: Status updates come from SSE streaming via the global IndexingStreamManager,
+ * which updates the Zustand store directly. No polling needed.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useBoundStore } from '../../../store/bound-store';
-import { useIndexingStatus, useCancelIndexing } from '../../../features/rag/hooks/use-indexing';
+import { useCancelIndexing } from '../../../features/rag/hooks/use-indexing';
 import { toast } from '../../../hooks/use-toast';
 import {
   DatabaseIcon,
@@ -21,17 +22,6 @@ export function JobCard({ job, onClear, onRefreshStats }: JobCardProps) {
   const [isCancelling, setIsCancelling] = useState(false);
   const completionHandledRef = useRef<string | null>(null);
   const cancelMutation = useCancelIndexing();
-  const { updateJobStatus } = useBoundStore();
-
-  // Poll for status updates
-  const { data: polledStatus } = useIndexingStatus(job.jobId, !!job.jobId);
-
-  // Update store when polled status changes
-  useEffect(() => {
-    if (polledStatus && job.jobId) {
-      updateJobStatus(polledStatus, job.vectorStore);
-    }
-  }, [polledStatus, job.jobId, job.vectorStore, updateJobStatus]);
 
   const status = job.status;
   const isIndexing = status?.status === 'running' || status?.status === 'pending';

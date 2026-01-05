@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { IndexingButton } from '../../features/rag/components/indexing';
-import { IndexingStats } from '../../components/ui/IndexingStats';
+import { IndexHealthDashboard } from '../../components/data-display/index-health';
 import { useBoundStore } from '../../store/bound-store';
 import { indexingKeys } from '../../lib/query-keys';
 
@@ -131,7 +131,7 @@ export function IndexingSettings() {
           </button>
         </div>
 
-        <IndexingStats userId={user.userId} />
+        <IndexHealthDashboard userId={user.userId} />
       </section>
     </div>
   );

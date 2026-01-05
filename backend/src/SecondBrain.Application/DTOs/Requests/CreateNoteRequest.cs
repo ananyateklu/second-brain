@@ -43,5 +43,16 @@ public sealed class CreateNoteRequest
     /// Images to attach to the note
     /// </summary>
     public List<NoteImageDto>? Images { get; set; }
+
+    /// <summary>
+    /// Source of the change (e.g., "web", "mcp", "agent").
+    /// If not provided, defaults to "web".
+    /// </summary>
+    public string? Source { get; set; }
+
+    /// <summary>
+    /// MCP server name when created via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; set; }
 }
 

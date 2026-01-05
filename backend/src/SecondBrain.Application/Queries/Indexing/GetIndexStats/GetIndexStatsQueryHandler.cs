@@ -84,7 +84,8 @@ public class GetIndexStatsQueryHandler : IRequestHandler<GetIndexStatsQuery, Res
                     VectorStoreProvider = postgresStats.VectorStoreProvider,
                     TotalNotesInSystem = totalNotesCount,
                     NotIndexedCount = postgresNotIndexedCount,
-                    StaleNotesCount = postgresStaleCount
+                    StaleNotesCount = postgresStaleCount,
+                    Dimensions = postgresStats.Dimensions
                 };
             }
             catch (Exception ex)
@@ -125,7 +126,8 @@ public class GetIndexStatsQueryHandler : IRequestHandler<GetIndexStatsQuery, Res
                     VectorStoreProvider = pineconeStats.VectorStoreProvider,
                     TotalNotesInSystem = totalNotesCount,
                     NotIndexedCount = pineconeNotIndexedCount,
-                    StaleNotesCount = pineconeStaleCount
+                    StaleNotesCount = pineconeStaleCount,
+                    Dimensions = pineconeStats.Dimensions
                 };
             }
             catch (Exception ex)

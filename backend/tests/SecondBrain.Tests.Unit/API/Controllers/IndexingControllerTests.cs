@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
 using SecondBrain.Application.Commands.Indexing.CancelIndexing;
 using SecondBrain.Application.Commands.Indexing.DeleteIndexedNotes;
@@ -10,6 +11,7 @@ using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Queries.Indexing.GetEmbeddingProviders;
 using SecondBrain.Application.Queries.Indexing.GetIndexingStatus;
 using SecondBrain.Application.Queries.Indexing.GetIndexStats;
+using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Models;
@@ -19,12 +21,16 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 public class IndexingControllerTests
 {
     private readonly Mock<IMediator> _mockMediator;
+    private readonly Mock<IIndexingService> _mockIndexingService;
+    private readonly Mock<ILogger<IndexingController>> _mockLogger;
     private readonly IndexingController _sut;
 
     public IndexingControllerTests()
     {
         _mockMediator = new Mock<IMediator>();
-        _sut = new IndexingController(_mockMediator.Object);
+        _mockIndexingService = new Mock<IIndexingService>();
+        _mockLogger = new Mock<ILogger<IndexingController>>();
+        _sut = new IndexingController(_mockMediator.Object, _mockIndexingService.Object, _mockLogger.Object);
         SetupUnauthenticatedUser();
     }
 

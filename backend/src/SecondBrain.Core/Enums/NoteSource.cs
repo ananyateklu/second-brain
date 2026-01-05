@@ -50,7 +50,13 @@ public enum NoteSource
     /// API-based operation.
     /// Direct API calls not from web UI (external integrations, CLI tools).
     /// </summary>
-    Api = 6
+    Api = 6,
+
+    /// <summary>
+    /// MCP (Model Context Protocol) server operation.
+    /// Notes created/modified via Claude Code or other MCP integrations.
+    /// </summary>
+    Mcp = 7
 }
 
 /// <summary>
@@ -72,6 +78,7 @@ public static class NoteSourceExtensions
         NoteSource.System => "system",
         NoteSource.Restored => "restored",
         NoteSource.Api => "api",
+        NoteSource.Mcp => "mcp",
         _ => "web"
     };
 
@@ -89,6 +96,7 @@ public static class NoteSourceExtensions
         "system" => NoteSource.System,
         "restored" => NoteSource.Restored,
         "api" => NoteSource.Api,
+        "mcp" => NoteSource.Mcp,
         _ => NoteSource.Web
     };
 
@@ -106,6 +114,7 @@ public static class NoteSourceExtensions
         NoteSource.System => "System",
         NoteSource.Restored => "Restored Version",
         NoteSource.Api => "API",
+        NoteSource.Mcp => "MCP",
         _ => "Unknown"
     };
 

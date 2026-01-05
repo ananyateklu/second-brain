@@ -381,13 +381,19 @@
 \echo ''
 
 -- Step 61: Chat messages and tool calls soft delete
-\echo 'Step 61/62: Adding soft delete to chat_messages and tool_calls...'
+\echo 'Step 61/63: Adding soft delete to chat_messages and tool_calls...'
 \i 61_chat_messages_soft_delete.sql
 \echo 'Soft delete columns added successfully.'
 \echo ''
 
--- Step 62: Final statistics update
-\echo 'Step 62/62: Updating statistics...'
+-- Step 62: MCP server name for note versions
+\echo 'Step 62/63: Adding MCP server tracking to note versions...'
+\i 63_note_version_mcp_server.sql
+\echo 'MCP server name column added successfully.'
+\echo ''
+
+-- Step 63: Final statistics update
+\echo 'Step 63/63: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

@@ -36,6 +36,8 @@ export interface CreateNoteRequest {
   tags?: string[];
   isArchived?: boolean;
   folder?: string;
+  source?: string;
+  mcpServerName?: string;
 }
 
 export interface UpdateNoteRequest {
@@ -45,6 +47,8 @@ export interface UpdateNoteRequest {
   isArchived?: boolean;
   folder?: string;
   updateFolder?: boolean;
+  source?: string;
+  mcpServerName?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -73,6 +77,7 @@ export interface NoteVersion {
   source: string;
   aiProvider?: string;
   aiModel?: string;
+  mcpServerName?: string;
   createdAt: string;
 }
 
