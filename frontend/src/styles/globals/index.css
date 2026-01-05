@@ -10,6 +10,9 @@
 @import './theme/buttons.css';
 @import './theme/shadcn-bridge.css';
 
+/* Component Design Tokens */
+@import '../components/chat-tokens.css';
+
 /* Animations */
 @import './animations/core.css';
 @import './animations/utilities.css';

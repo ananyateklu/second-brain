@@ -110,8 +110,9 @@ export function VoiceDropdown({
     <div ref={containerRef} className="relative">
       {/* Trigger Button */}
       <div
-        className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
+        className="flex items-center p-1 my-1 backdrop-blur-md"
         style={{
+          borderRadius: 'var(--chat-radius-md)',
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
@@ -122,22 +123,30 @@ export function VoiceDropdown({
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={`
-            flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors
+            flex items-center gap-2 px-2 py-1.5 text-sm
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-opacity-80'}
           `}
           style={{
+            borderRadius: 'var(--chat-radius-sm)',
             backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
             color: 'var(--text-primary)',
+            transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
           }}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
         >
-          <SpeakerWaveIcon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-brand-500)' }} />
+          <SpeakerWaveIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)', color: 'var(--color-brand-500)', flexShrink: 0 }} />
           <span className="font-medium truncate max-w-[120px]" title={currentVoice?.name || 'Select voice'}>
             {currentVoice?.name || 'Select voice'}
           </span>
           <ChevronDownIcon
-            className={`w-3 h-3 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            style={{
+              width: 'var(--chat-icon-xs)',
+              height: 'var(--chat-icon-xs)',
+              flexShrink: 0,
+              transition: `transform var(--chat-duration-fast) var(--chat-ease-out)`,
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            }}
           />
         </button>
       </div>
@@ -145,17 +154,25 @@ export function VoiceDropdown({
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 w-72 rounded-xl border shadow-lg z-50 overflow-hidden"
+          className="absolute top-full left-0 mt-2 w-72 z-50 overflow-hidden"
           style={{
+            borderRadius: 'var(--chat-radius-lg)',
             backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            boxShadow: 'var(--chat-shadow-lg)',
           }}
           role="listbox"
         >
           {/* Header */}
-          <div className="px-3 py-2.5 border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+          <div
+            className="px-3 py-2.5"
+            style={{
+              borderBottom: '1px solid',
+              borderImage: 'linear-gradient(to right, transparent, color-mix(in srgb, var(--text-primary) 10%, transparent), transparent) 1',
+            }}
+          >
             <h3
               className="text-xs font-medium uppercase tracking-wider"
               style={{ color: 'var(--text-tertiary)' }}
@@ -169,7 +186,7 @@ export function VoiceDropdown({
             {/* Empty state */}
             {((isGrokMode && availableGrokVoices.length === 0) || (!isGrokMode && availableVoices.length === 0)) && (
               <div className="p-4 text-center">
-                <SpeakerWaveIcon className="w-8 h-8 mx-auto mb-2 opacity-40" style={{ color: 'var(--text-tertiary)' }} />
+                <SpeakerWaveIcon style={{ width: 'var(--chat-icon-xl)', height: 'var(--chat-icon-xl)', margin: '0 auto 8px', opacity: 0.4, color: 'var(--text-tertiary)' }} />
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   No voices available
                 </p>

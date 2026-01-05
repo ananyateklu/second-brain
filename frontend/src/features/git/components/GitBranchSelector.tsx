@@ -181,18 +181,26 @@ export const GitBranchSelector = memo(function GitBranchSelector({
     [isCreating, handleCreateBranch]
   );
 
-  const renderBranchItem = (branch: GitBranchType) => {
+  const renderBranchItem = (branch: GitBranchType, index: number) => {
     const isDeleting = deleteConfirm === branch.name;
 
     return (
       <div
         key={branch.name}
-        className={`group flex items-center gap-2 px-3 py-2 cursor-pointer transition-all duration-150`}
+        className="group flex items-center gap-2 px-3 py-2 cursor-pointer transition-all duration-200 transform-gpu animate-in fade-in slide-in-from-left-2"
         style={{
           backgroundColor: branch.isCurrent ? 'color-mix(in srgb, var(--color-success) 10%, transparent)' : 'transparent',
+          animationDelay: `${index * 30}ms`,
+          animationFillMode: 'both',
         }}
-        onMouseEnter={(e) => { if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'; }}
-        onMouseLeave={(e) => { if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'transparent'; }}
+        onMouseEnter={(e) => {
+          if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 5%, transparent)';
+          e.currentTarget.style.transform = 'translateX(2px)';
+        }}
+        onMouseLeave={(e) => {
+          if (!branch.isCurrent) e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.transform = 'translateX(0)';
+        }}
         onClick={() => !isDeleting && handleSwitchBranch(branch)}
       >
         {/* Branch icon / Check mark */}
@@ -226,7 +234,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
 
         {/* Actions for local branches */}
         {!branch.isRemote && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 transform-gpu">
             {isDeleting ? (
               <div className="flex items-center gap-1">
                 <button
@@ -267,7 +275,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                       handlePublishBranch(branch.name);
                     }}
                     disabled={publishBranch.isPending}
-                    className="p-1 rounded hover:bg-[var(--color-brand-500)]/20 transition-colors disabled:opacity-50"
+                    className="p-1 rounded hover:bg-[var(--color-brand-500)]/20 transition-all duration-200 transform-gpu hover:scale-110 active:scale-95 disabled:opacity-50"
                     title="Publish branch to remote"
                   >
                     {publishBranch.isPending ? (
@@ -284,7 +292,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                       e.stopPropagation();
                       setDeleteConfirm(branch.name);
                     }}
-                    className="p-1 rounded transition-colors"
+                    className="p-1 rounded transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                     style={{ color: 'var(--color-error)' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 20%, transparent)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
@@ -311,7 +319,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
   const dropdownContent = isOpen ? (
     <div
       ref={dropdownRef}
-      className="fixed w-80 max-h-96 overflow-hidden rounded-xl z-[9999] backdrop-blur-xl"
+      className="fixed w-80 max-h-96 overflow-hidden rounded-xl z-[9999] backdrop-blur-xl transform-gpu animate-in fade-in slide-in-from-top-2 duration-200"
       style={{
         top: dropdownPosition.top,
         left: dropdownPosition.left,
@@ -420,7 +428,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                 >
                   Local
                 </div>
-                {filteredBranches.local.map(renderBranchItem)}
+                {filteredBranches.local.map((branch, index) => renderBranchItem(branch, index))}
               </div>
             )}
 
@@ -436,7 +444,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
                 >
                   Remote
                 </div>
-                {filteredBranches.remote.map(renderBranchItem)}
+                {filteredBranches.remote.map((branch, index) => renderBranchItem(branch, index))}
               </div>
             )}
 
@@ -460,7 +468,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
+        className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200 transform-gpu hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] hover:scale-[1.02] active:scale-[0.98]"
         style={{
           backgroundColor: isOpen ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
         }}
@@ -470,7 +478,7 @@ export const GitBranchSelector = memo(function GitBranchSelector({
           {currentBranch || 'No branch'}
         </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 transition-transform duration-200 transform-gpu ${isOpen ? 'rotate-180' : ''}`}
           style={{ color: 'var(--text-tertiary)' }}
         />
       </button>

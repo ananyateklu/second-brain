@@ -97,9 +97,9 @@ export const GitHubPullRequestList = ({
               setStateFilter(filter);
               setPage(1);
             }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${stateFilter === filter
-                ? 'bg-primary/10 text-primary'
-                : 'hover:bg-surface-elevated'
+            className={`px-4 py-2 rounded-lg text-sm font-medium transform-gpu transition-all duration-200 ${stateFilter === filter
+                ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/30 shadow-sm'
+                : 'hover:bg-surface-elevated hover:scale-[1.02] active:scale-[0.98]'
               }`}
             style={{
               backgroundColor:
@@ -119,7 +119,7 @@ export const GitHubPullRequestList = ({
             e.preventDefault();
             void refetch();
           }}
-          className="p-2 rounded-lg hover:bg-surface-elevated transition-colors"
+          className="p-2 rounded-lg hover:bg-surface-elevated transform-gpu transition-all duration-200"
           title="Refresh"
         >
           <svg
@@ -143,7 +143,7 @@ export const GitHubPullRequestList = ({
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 space-y-2 thin-scrollbar">
         {!data?.pullRequests || data.pullRequests.length === 0 ? (
           <div
-            className="text-center py-12 rounded-xl border"
+            className="text-center py-12 rounded-xl border animate-in fade-in duration-300"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -168,13 +168,15 @@ export const GitHubPullRequestList = ({
             </p>
           </div>
         ) : (
-          data.pullRequests.map((pr) => (
+          data.pullRequests.map((pr, index) => (
             <button
               key={pr.number}
               onClick={() => onSelectPR?.(pr)}
-              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-sm ${selectedPRNumber === pr.number ? 'ring-1 ring-inset ring-primary' : ''
+              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 ${selectedPRNumber === pr.number ? 'ring-1 ring-inset ring-primary' : ''
                 }`}
               style={{
+                animationDelay: `${index * 50}ms`,
+                animationFillMode: 'both',
                 backgroundColor:
                   selectedPRNumber === pr.number
                     ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'

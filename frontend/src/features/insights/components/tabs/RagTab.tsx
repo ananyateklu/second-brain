@@ -67,9 +67,9 @@ export const RagTab = memo(function RagTab() {
 
   if (error) {
     return (
-      <div className="p-6 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64 p-4">
         <div
-          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md"
+          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
             border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
@@ -77,7 +77,7 @@ export const RagTab = memo(function RagTab() {
         >
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
-              className="h-5 w-5"
+              className="h-5 w-5 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -94,14 +94,14 @@ export const RagTab = memo(function RagTab() {
               className="text-base font-semibold"
               style={{ color: 'var(--color-error)' }}
             >
-              Error loading analytics
+              Failed to load RAG analytics
             </p>
           </div>
           <p
             className="text-sm"
             style={{ color: 'var(--text-secondary)' }}
           >
-            {error instanceof Error ? error.message : 'Failed to load RAG analytics data'}
+            {error instanceof Error ? error.message : 'Please check your connection and try again'}
           </p>
         </div>
       </div>

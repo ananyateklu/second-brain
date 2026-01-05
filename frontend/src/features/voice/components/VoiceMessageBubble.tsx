@@ -41,17 +41,15 @@ export function VoiceMessageBubble({
         initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
         animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 py-2.5 ${
-          isUser ? 'rounded-br-md' : 'rounded-bl-md'
-        }`}
+        className={`${isUser ? 'max-w-[85%]' : 'w-full'} px-4 py-2.5 transition-colors duration-150`}
         style={{
-          backgroundColor: isUser
-            ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)'
-            : 'transparent',
+          borderRadius: isUser
+            ? 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm) var(--chat-radius-lg)'
+            : 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm)',
+          backgroundColor: isUser ? 'var(--chat-bubble-user-bg)' : 'var(--chat-bubble-assistant-bg)',
           color: 'var(--text-primary)',
-          ...(isUser && {
-            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
-          }),
+          boxShadow: isUser ? 'var(--chat-bubble-user-glow)' : undefined,
+          border: isUser ? '1px solid var(--chat-bubble-user-border)' : undefined,
         }}
       >
         {isUser ? (
@@ -167,8 +165,9 @@ export function VoiceLiveTranscriptionIndicator({ text }: { text: string }) {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="max-w-[85%] rounded-2xl rounded-br-md px-4 py-2.5"
+        className="max-w-[85%] px-4 py-2.5"
         style={{
+          borderRadius: 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm) var(--chat-radius-lg)',
           backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)',
           border: '1px dashed color-mix(in srgb, var(--color-primary) 30%, transparent)',
           color: 'var(--text-secondary)',
@@ -181,10 +180,9 @@ export function VoiceLiveTranscriptionIndicator({ text }: { text: string }) {
             transition={{ duration: 1, repeat: Infinity }}
           >
             <svg
-              className="w-3.5 h-3.5"
+              style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }}
               fill="currentColor"
               viewBox="0 0 20 20"
-              style={{ color: 'var(--color-primary)' }}
             >
               <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" />
             </svg>

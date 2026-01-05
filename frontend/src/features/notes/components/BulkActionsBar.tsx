@@ -48,16 +48,17 @@ export const BulkActionsBar = memo(({
 
   const content = (
     <div
-      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-xl border shadow-2xl"
+      className="fixed z-50 flex items-center gap-4 px-6 py-3.5 rounded-2xl border"
       style={{
         left: '50%',
         bottom: '1.5rem',
         transform: 'translate(-50%, 0)',
-        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-        animation: 'bulkBarSlideUp 0.3s ease-out',
+        animation: 'bulkBarSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 20px 50px -15px rgba(0, 0, 0, 0.25), 0 8px 20px -8px rgba(0, 0, 0, 0.15)',
       }}
     >
       {/* Selection Count */}
@@ -80,16 +81,26 @@ export const BulkActionsBar = memo(({
       <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Select All / Deselect All */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={onSelectAll}
           disabled={isProcessing || selectedCount === totalCount}
-          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
+          className="px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 5%, transparent)';
           }}
         >
           Select All
@@ -98,11 +109,21 @@ export const BulkActionsBar = memo(({
           type="button"
           onClick={onDeselectAll}
           disabled={isProcessing || selectedCount === 0}
-          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
+          className="px-3.5 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 5%, transparent)';
           }}
         >
           Deselect All
@@ -117,11 +138,23 @@ export const BulkActionsBar = memo(({
         type="button"
         onClick={() => { void handleDeleteClick(); }}
         disabled={isProcessing || selectedCount === 0}
-        className="px-4 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="px-4 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
         style={{
-          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-          borderColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 15%, transparent)' : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+          borderColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 30%, transparent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
           color: selectedCount > 0 ? 'var(--color-error)' : 'var(--text-tertiary)',
+        }}
+        onMouseEnter={(e) => {
+          if (!e.currentTarget.disabled && selectedCount > 0) {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 25%, transparent)';
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-error) 50%, transparent)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (selectedCount > 0) {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-error) 15%, transparent)';
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-error) 30%, transparent)';
+          }
         }}
       >
         {isProcessing ? (

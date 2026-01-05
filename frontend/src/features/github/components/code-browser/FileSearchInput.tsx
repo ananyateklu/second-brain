@@ -60,11 +60,13 @@ export function FileSearchInput({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border transition-all duration-200 focus:outline-none"
+          className="w-full pl-9 pr-8 py-2 text-sm rounded-lg border transition-all duration-200 transform-gpu"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            borderColor: isFocused ? 'var(--input-focus-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            borderColor: isFocused ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
+            outline: isFocused ? '2px solid var(--color-primary-alpha)' : 'none',
+            outlineOffset: '0px',
           }}
         />
         {localValue && (

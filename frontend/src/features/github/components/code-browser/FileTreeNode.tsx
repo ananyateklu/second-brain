@@ -133,13 +133,13 @@ export const FileTreeNode = memo(function FileTreeNode({
         onKeyDown={handleKeyDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="flex items-center py-1 px-2 cursor-pointer transition-all duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
+        className="flex items-center py-1.5 px-2 cursor-pointer transition-all duration-200 select-none transform-gpu focus-visible:outline-2 focus-visible:outline-offset-[-2px]"
         style={{
           paddingLeft,
           backgroundColor: isSelected
             ? 'var(--color-primary-alpha)'
             : isHovered
-            ? 'color-mix(in srgb, var(--text-primary) 3%, transparent)'
+            ? 'color-mix(in srgb, var(--text-primary) 5%, transparent)'
             : 'transparent',
           color: isSelected
             ? 'var(--color-brand-400)'
@@ -148,13 +148,14 @@ export const FileTreeNode = memo(function FileTreeNode({
             ? '3px solid var(--color-brand-500)'
             : '3px solid transparent',
           outlineColor: 'var(--color-brand-500)',
+          transform: isHovered && !isSelected ? 'translateX(2px)' : 'translateX(0)',
         }}
       >
         {/* Expand/collapse chevron for directories */}
         {node.type === 'directory' ? (
           <span className="mr-1 flex-shrink-0">
             <ChevronRight
-              className={`h-4 w-4 transition-transform duration-200 ease-out ${isExpanded ? 'rotate-90' : ''}`}
+              className={`h-4 w-4 transition-transform duration-200 ease-out transform-gpu ${isExpanded ? 'rotate-90' : ''}`}
               style={{ color: 'var(--text-tertiary)' }}
             />
           </span>

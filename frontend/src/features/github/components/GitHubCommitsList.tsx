@@ -93,7 +93,7 @@ export const GitHubCommitsList = ({
               setSelectedBranch(e.target.value || undefined);
               setPage(1);
             }}
-            className="px-3 py-1.5 rounded-lg text-sm border outline-none transition-all focus:ring-2 focus:ring-primary/50"
+            className="px-3 py-1.5 rounded-lg text-sm border outline-none transform-gpu transition-all duration-200 focus:ring-2 focus:ring-primary/50"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -112,7 +112,7 @@ export const GitHubCommitsList = ({
       {/* Commits List - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 thin-scrollbar">
       {commits.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 animate-in fade-in duration-300">
           <svg
             className="w-12 h-12 mx-auto mb-4"
             fill="none"
@@ -131,12 +131,13 @@ export const GitHubCommitsList = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {commits.map((commit) => (
+          {commits.map((commit, index) => (
             <CommitRow
               key={commit.sha}
               commit={commit}
               isSelected={selectedSha === commit.sha}
               onClick={() => onSelectCommit?.(commit)}
+              index={index}
             />
           ))}
         </div>
@@ -161,9 +162,10 @@ interface CommitRowProps {
   commit: CommitSummary;
   isSelected: boolean;
   onClick: () => void;
+  index: number;
 }
 
-const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
+const CommitRow = ({ commit, isSelected, onClick, index }: CommitRowProps) => {
   // Split message into title only
   const [title] = commit.message.split('\n');
   const hasMoreLines = commit.message.includes('\n');
@@ -171,10 +173,12 @@ const CommitRow = ({ commit, isSelected, onClick }: CommitRowProps) => {
   return (
     <div
       onClick={onClick}
-      className={`px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+      className={`px-3 py-2 rounded-lg cursor-pointer transform-gpu transition-all duration-200 border hover:-translate-y-[1px] hover:shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 ${
         isSelected ? 'ring-1 ring-inset ring-primary/50' : ''
       }`}
       style={{
+        animationDelay: `${index * 50}ms`,
+        animationFillMode: 'both',
         backgroundColor: isSelected
           ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
           : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',

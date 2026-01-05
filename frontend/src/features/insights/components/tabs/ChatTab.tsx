@@ -104,10 +104,12 @@ export const ChatTab = memo(function ChatTab() {
     return statsService.getConversationTrend(stats);
   }, [stats]);
 
-  // Card container styles - frosted glass
+  // Card container styles - frosted glass with subtle shadow
   const cardStyles = useMemo<CSSProperties>(() => ({
     backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
     borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
   }), []);
 
   if (isLoading) {
@@ -116,12 +118,31 @@ export const ChatTab = memo(function ChatTab() {
 
   if (error || !stats) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <svg className="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--text-tertiary)' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <p style={{ color: 'var(--text-secondary)' }}>Failed to load chat analytics</p>
+      <div className="flex items-center justify-center h-64 p-4">
+        <div
+          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg
+              className="h-5 w-5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              style={{ color: 'var(--color-error)' }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-base font-semibold" style={{ color: 'var(--color-error)' }}>
+              Failed to load chat analytics
+            </p>
+          </div>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {error instanceof Error ? error.message : 'Please check your connection and try again'}
+          </p>
         </div>
       </div>
     );
@@ -192,8 +213,16 @@ export const ChatTab = memo(function ChatTab() {
         {/* Chat Usage Over Time */}
         {chatTypeData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+            }}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -248,8 +277,16 @@ export const ChatTab = memo(function ChatTab() {
         {/* Provider Usage */}
         {providerPieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+            }}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -313,8 +350,16 @@ export const ChatTab = memo(function ChatTab() {
 
         {/* Feature Usage Breakdown */}
         <div
-          className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+          }}
         >
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -398,8 +443,16 @@ export const ChatTab = memo(function ChatTab() {
       {/* Model Usage Summary */}
       {Object.keys(stats.modelUsageCounts).length > 0 && (
         <div
-          className={`rounded-3xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-3xl border p-6 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+          }}
         >
           <div>
             <div className="flex items-center gap-2 mb-4">

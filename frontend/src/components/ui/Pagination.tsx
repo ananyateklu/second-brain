@@ -92,11 +92,21 @@ export const Pagination = memo(({
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
+          className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 5%, transparent)';
           }}
           aria-label="Previous page"
         >
@@ -126,13 +136,25 @@ export const Pagination = memo(({
                 key={page}
                 type="button"
                 onClick={() => onPageChange(page)}
-                className="min-w-[2rem] px-2 py-1 rounded-lg border text-xs font-medium transition-all duration-200"
+                className="min-w-[2rem] px-2 py-1 rounded-lg border text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
                   backgroundColor: isActive
                     ? 'var(--color-brand-600)'
                     : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: isActive ? 'white' : 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-500) 12%, transparent)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+                  }
                 }}
                 aria-label={`Page ${page}`}
                 aria-current={isActive ? 'page' : undefined}
@@ -148,11 +170,21 @@ export const Pagination = memo(({
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
+          className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: 'var(--text-primary)',
+          }}
+          onMouseEnter={(e) => {
+            if (!e.currentTarget.disabled) {
+              e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 5%, transparent)';
           }}
           aria-label="Next page"
         >

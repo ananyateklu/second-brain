@@ -218,7 +218,7 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             void refetch();
           }}
-          className={`p-2 rounded-lg hover:bg-surface-elevated transition-colors ${isFetching ? 'animate-spin' : ''
+          className={`p-2 rounded-lg hover:bg-surface-elevated transform-gpu transition-all duration-200 ${isFetching ? 'animate-spin' : ''
             }`}
           title="Refresh"
           disabled={isFetching}
@@ -245,26 +245,35 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             setAutoRefresh(!autoRefresh);
           }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transform-gpu transition-all duration-200 border backdrop-blur-sm"
           style={{
-            backgroundColor: autoRefresh ? 'var(--color-primary-alpha)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            backgroundColor: autoRefresh
+              ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
+              : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: autoRefresh
+              ? 'color-mix(in srgb, var(--color-primary) 30%, transparent)'
+              : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
             color: autoRefresh ? 'var(--color-primary)' : 'var(--text-secondary)',
+            boxShadow: autoRefresh
+              ? '0 0 12px color-mix(in srgb, var(--color-primary) 20%, transparent)'
+              : 'none',
           }}
           title={autoRefresh ? 'Auto-refresh is ON' : 'Auto-refresh is OFF'}
         >
           <div
-            className="w-2 h-2 rounded-full"
+            className="w-2 h-2 rounded-full transition-all duration-300"
             style={{
               backgroundColor: autoRefresh ? 'var(--color-success)' : 'var(--text-tertiary)',
+              boxShadow: autoRefresh ? '0 0 6px var(--color-success)' : 'none',
               animation: autoRefresh ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
             }}
           />
           <span>Auto</span>
           {autoRefresh && inProgressCount > 0 && (
             <span
-              className="px-1.5 py-0.5 text-xs rounded-full"
+              className="px-1.5 py-0.5 text-xs rounded-full font-medium"
               style={{
-                backgroundColor: 'var(--warning-bg)',
+                backgroundColor: 'color-mix(in srgb, var(--warning-text) 15%, transparent)',
                 color: 'var(--warning-text)',
               }}
             >
@@ -303,7 +312,7 @@ export const GitHubActionsPanel = ({
             </p>
           </div>
         ) : (
-          data.workflowRuns.map((run) => (
+          data.workflowRuns.map((run, index) => (
             <div
               key={run.id}
               role="button"
@@ -315,9 +324,11 @@ export const GitHubActionsPanel = ({
                   onSelectRun?.(run);
                 }
               }}
-              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-sm cursor-pointer ${selectedRunId === run.id ? 'ring-1 ring-inset ring-primary' : ''
+              className={`w-full text-left px-3 py-2 rounded-lg border transform-gpu transition-all duration-200 hover:-translate-y-[1px] hover:shadow-sm cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-300 ${selectedRunId === run.id ? 'ring-1 ring-inset ring-primary' : ''
                 }`}
               style={{
+                animationDelay: `${index * 50}ms`,
+                animationFillMode: 'both',
                 backgroundColor:
                   selectedRunId === run.id
                     ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
@@ -328,10 +339,19 @@ export const GitHubActionsPanel = ({
               <div className="flex items-center gap-2">
                 {/* Status Icon */}
                 <div
-                  className={`p-1.5 rounded-md ${getWorkflowStatusBgColor(
+                  className={`p-1.5 rounded-md transition-all duration-200 ${getWorkflowStatusBgColor(
                     run.status,
                     run.conclusion as WorkflowConclusion
                   )}`}
+                  style={{
+                    boxShadow: run.status === 'in_progress'
+                      ? '0 0 8px color-mix(in srgb, var(--color-warning) 40%, transparent)'
+                      : run.conclusion === 'success'
+                        ? '0 0 6px color-mix(in srgb, var(--color-success) 30%, transparent)'
+                        : run.conclusion === 'failure'
+                          ? '0 0 6px color-mix(in srgb, var(--color-error) 30%, transparent)'
+                          : 'none',
+                  }}
                 >
                   <span
                     className={getWorkflowStatusColor(

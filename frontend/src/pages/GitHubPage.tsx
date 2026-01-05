@@ -126,7 +126,7 @@ export const GitHubPage = () => {
 
   return (
     <div
-      className="flex flex-col overflow-hidden h-full"
+      className="flex flex-col overflow-hidden h-full transform-gpu"
       style={{
         backgroundColor: 'transparent',
       }}
@@ -136,19 +136,19 @@ export const GitHubPage = () => {
       {/* Local Changes tab - Git status and diff viewer */}
       {activeTab === 'local-changes' && (
         !repositoryPath ? (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 transform-gpu transition-all duration-200">
             <GitEmptyState onOpenSettings={openGitSettings} />
           </div>
         ) : (
-          <div className="flex flex-1 min-h-0">
+          <div className="flex flex-1 min-h-0 transform-gpu transition-all duration-200">
             {/* Left panel: File status - matches FileTreeView sidebar */}
-            <div className="w-120 flex-shrink-0 overflow-hidden">
+            <div className="w-120 flex-shrink-0 overflow-hidden transition-all duration-200">
               {gitStatus && (
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}
             </div>
             {/* Right panel: Diff viewer - matches CodeViewer */}
-            <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200">
               <GitDiffViewer
                 diff={selectedDiff ?? null}
                 isLoading={isDiffLoading}
@@ -161,7 +161,7 @@ export const GitHubPage = () => {
 
       {/* Code tab takes full width without padding */}
       {activeTab === 'code' && (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 transform-gpu transition-all duration-200">
           <GitHubCodeBrowser
             owner={repoInfo?.owner}
             repo={repoInfo?.repo}
@@ -169,7 +169,7 @@ export const GitHubPage = () => {
         </div>
       )}
       {/* Other tabs have padding */}
-      <div className={`flex-1 min-h-0 px-6 py-6 overflow-y-auto thin-scrollbar ${activeTab === 'code' || activeTab === 'local-changes' ? 'hidden' : ''}`}>
+      <div className={`flex-1 min-h-0 px-6 py-6 overflow-y-auto thin-scrollbar transform-gpu transition-all duration-200 ${activeTab === 'code' || activeTab === 'local-changes' ? 'hidden' : ''}`}>
         {activeTab === 'pull-requests' && (
           <GitHubPullRequestList
             owner={repoInfo?.owner}

@@ -3,7 +3,34 @@
  * Reusable skeleton for GitHub list views (PRs, Issues, Actions, Commits, Branches)
  */
 
-import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
+import { ShimmerBlock } from '../../../components/ui/Shimmer';
+
+// Enhanced shimmer styles with staggered delays
+function EnhancedShimmerStyles() {
+  return (
+    <style>
+      {`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes skeleton-fade-in {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        .skeleton-stagger-1 { animation: skeleton-fade-in 0.4s ease-out 0.05s both, skeleton-pulse 2s ease-in-out infinite; }
+        .skeleton-stagger-2 { animation: skeleton-fade-in 0.4s ease-out 0.1s both, skeleton-pulse 2s ease-in-out 0.1s infinite; }
+        .skeleton-stagger-3 { animation: skeleton-fade-in 0.4s ease-out 0.15s both, skeleton-pulse 2s ease-in-out 0.2s infinite; }
+        .skeleton-stagger-4 { animation: skeleton-fade-in 0.4s ease-out 0.2s both, skeleton-pulse 2s ease-in-out 0.3s infinite; }
+        .skeleton-stagger-5 { animation: skeleton-fade-in 0.4s ease-out 0.25s both, skeleton-pulse 2s ease-in-out 0.4s infinite; }
+      `}
+    </style>
+  );
+}
 
 interface GitHubListSkeletonProps {
   /** Number of list items to show */
@@ -16,11 +43,13 @@ interface GitHubListSkeletonProps {
   variant?: 'default' | 'compact' | 'actions';
 }
 
-function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'compact' | 'actions' }) {
+function SkeletonListItem({ variant = 'default', index = 0 }: { variant?: 'default' | 'compact' | 'actions'; index?: number }) {
+  const staggerClass = `skeleton-stagger-${Math.min(index + 1, 5)}`;
+
   if (variant === 'compact') {
     return (
       <div
-        className="flex items-center gap-3 px-3 py-2 rounded-lg border"
+        className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${staggerClass}`}
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -48,7 +77,7 @@ function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'comp
   if (variant === 'actions') {
     return (
       <div
-        className="flex items-start gap-3 px-3 py-2 rounded-lg border"
+        className={`flex items-start gap-3 px-3 py-2 rounded-lg border ${staggerClass}`}
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -96,7 +125,7 @@ function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'comp
   // Default variant (PRs, Issues) - compact single-row layout
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2 rounded-lg border"
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${staggerClass}`}
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -143,7 +172,7 @@ export function GitHubListSkeleton({
 }: GitHubListSkeletonProps) {
   return (
     <div className="flex flex-col h-full">
-      <ShimmerStyles />
+      <EnhancedShimmerStyles />
 
       {/* Header - Fixed at top */}
       {showHeader && (
@@ -175,7 +204,7 @@ export function GitHubListSkeleton({
       {/* List items - Scrollable */}
       <div className="flex-1 overflow-y-auto space-y-2 thin-scrollbar">
         {Array.from({ length: count }).map((_, i) => (
-          <SkeletonListItem key={i} variant={variant} />
+          <SkeletonListItem key={i} variant={variant} index={i} />
         ))}
       </div>
 

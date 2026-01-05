@@ -172,12 +172,13 @@ export function VoiceHeader({
 
   return (
     <div
-      className="flex-shrink-0 flex items-center gap-3 pt-4.5 pb-4.5 border-b z-10"
+      className="flex-shrink-0 flex items-center gap-3 py-3.5 border-b z-10"
       style={{
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        paddingLeft: '2rem',
-        paddingRight: '2rem',
+        boxShadow: 'var(--chat-shadow-xs)',
+        paddingLeft: 'var(--chat-space-xl)',
+        paddingRight: 'var(--chat-space-xl)',
       }}
     >
       {/* Left side: Sidebar Toggle, Voice Type, Model Selector (Standard), Voice Dropdown, Agent */}
@@ -186,15 +187,32 @@ export function VoiceHeader({
         {!showSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+            className="flex-shrink-0 flex items-center justify-center"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--chat-radius-sm)',
+              backgroundColor: 'var(--chat-hover-bg)',
               color: 'var(--text-primary)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              transition: 'all var(--chat-duration-fast) var(--chat-ease-out)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--chat-active-bg)';
+              e.currentTarget.style.transform = 'scale(1.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--chat-hover-bg)';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
             title="Show sidebar"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }}
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -238,8 +256,12 @@ export function VoiceHeader({
 
         {/* Separator */}
         <div
-          className="h-6 w-px flex-shrink-0"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          className="flex-shrink-0"
+          style={{
+            width: '1px',
+            height: '24px',
+            background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--text-primary) 10%, transparent), transparent)',
+          }}
         />
 
         {/* Voice Dropdown */}
@@ -286,28 +308,30 @@ export function VoiceHeader({
           <div className="flex items-center gap-1.5">
             {enableGrokWebSearch && (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
+                className="flex items-center gap-1 px-2 py-1 text-xs"
                 style={{
+                  borderRadius: 'var(--chat-radius-sm)',
                   backgroundColor: 'color-mix(in srgb, var(--color-blue-500) 15%, transparent)',
                   color: 'var(--color-blue-500)',
                 }}
                 title="Web search enabled"
               >
-                <span className="w-3.5 h-3.5">
+                <span style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }}>
                   <FeatureIcons.Web />
                 </span>
               </div>
             )}
             {enableGrokXSearch && (
               <div
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
+                className="flex items-center gap-1 px-2 py-1 text-xs"
                 style={{
+                  borderRadius: 'var(--chat-radius-sm)',
                   backgroundColor: 'color-mix(in srgb, var(--color-purple-500) 15%, transparent)',
                   color: 'var(--color-purple-500)',
                 }}
                 title="X search enabled"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <svg style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }} viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                 </svg>
               </div>
@@ -323,16 +347,22 @@ export function VoiceHeader({
       <div className="flex items-center gap-3 flex-shrink-0">
         {/* Session Status Indicator */}
         <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium"
           style={{
+            borderRadius: 'var(--chat-radius-lg)',
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: status.color,
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnecting || isSessionActive ? 'animate-pulse' : ''}`}
-            style={{ backgroundColor: status.color }}
+            className={`flex-shrink-0 ${isConnecting || isSessionActive ? 'animate-pulse' : ''}`}
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: 'var(--chat-radius-full)',
+              backgroundColor: status.color,
+            }}
           />
           <span>{status.text}</span>
         </div>

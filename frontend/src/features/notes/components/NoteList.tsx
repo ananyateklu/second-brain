@@ -29,10 +29,11 @@ export const NoteList = memo(({
   if (viewMode === 'list') {
     return (
       <div className="flex flex-col gap-2">
-        {notes.map((note) => (
+        {notes.map((note, index) => (
           <NoteListItem
             key={note.id}
             note={note}
+            index={index}
             isBulkMode={isBulkMode}
             isSelected={selectedNoteIds?.has(note.id) ?? false}
             onSelect={onNoteSelect}
@@ -44,10 +45,11 @@ export const NoteList = memo(({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-      {notes.map((note) => (
+      {notes.map((note, index) => (
         <NoteCard
           key={note.id}
           note={note}
+          index={index}
           isBulkMode={isBulkMode}
           isSelected={selectedNoteIds?.has(note.id) ?? false}
           onSelect={onNoteSelect}

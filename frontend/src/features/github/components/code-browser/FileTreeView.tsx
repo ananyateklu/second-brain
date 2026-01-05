@@ -106,8 +106,15 @@ export function FileTreeView({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search input */}
-      <div className="p-3 flex-shrink-0">
+      {/* Search input with glass effect header - aligned with CodeViewer header */}
+      <div
+        className="p-3 flex-shrink-0 backdrop-blur-md border-b"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          minHeight: '48px',
+        }}
+      >
         <FileSearchInput
           value={searchQuery}
           onChange={setSearchQuery}
@@ -149,16 +156,24 @@ export function FileTreeView({
           </div>
         ) : (
           <div className="py-1">
-            {filteredTree.map((node) => (
-              <FileTreeNode
+            {filteredTree.map((node, index) => (
+              <div
                 key={node.path}
-                node={node}
-                depth={0}
-                selectedPath={selectedPath}
-                expandedPaths={expandedPaths}
-                onSelect={handleSelect}
-                onToggle={handleToggle}
-              />
+                className="animate-fadeInSlideUp"
+                style={{
+                  animationDelay: `${Math.min(index * 20, 300)}ms`,
+                  animationFillMode: 'backwards',
+                }}
+              >
+                <FileTreeNode
+                  node={node}
+                  depth={0}
+                  selectedPath={selectedPath}
+                  expandedPaths={expandedPaths}
+                  onSelect={handleSelect}
+                  onToggle={handleToggle}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -166,11 +181,11 @@ export function FileTreeView({
 
       {/* File count footer */}
       <div
-        className="px-3 py-2 text-xs flex-shrink-0 border-t"
+        className="px-3 py-2.5 text-xs flex-shrink-0 backdrop-blur-sm"
         style={{
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          borderTop: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
           color: 'var(--text-tertiary)',
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 60%, transparent)',
         }}
       >
         {totalFileCount.toLocaleString()} files

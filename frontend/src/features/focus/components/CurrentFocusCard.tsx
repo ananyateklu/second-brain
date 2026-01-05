@@ -94,6 +94,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
       className={cn(
         'relative rounded-2xl border overflow-hidden min-h-[180px]',
         'transition-all duration-200',
+        'hover:shadow-lg hover:-translate-y-0.5',
         disabled && 'pointer-events-none opacity-50',
         className
       )}
@@ -216,16 +217,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
             size="md"
             onClick={handleClearFocus}
             disabled={disabled}
-            className="gap-2 hover:backdrop-blur-sm transition-all duration-200"
-            style={{
-              color: 'var(--text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 8%, transparent)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
+            className="gap-2 text-[var(--text-secondary)] hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)] transition-all duration-200"
           >
             <X className="h-4 w-4" />
             Clear Focus

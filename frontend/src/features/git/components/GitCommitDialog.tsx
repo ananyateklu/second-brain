@@ -72,7 +72,7 @@ export const GitCommitDialog = memo(function GitCommitDialog({
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl bg-[var(--glass-bg)]"
+        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl bg-[var(--glass-bg)] transform-gpu animate-in fade-in zoom-in-95 slide-in-from-bottom-4 duration-300"
         style={{
           border: '1px solid var(--border)',
           boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
@@ -113,13 +113,13 @@ export const GitCommitDialog = memo(function GitCommitDialog({
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 transform-gpu hover:scale-105 active:scale-95"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
-            <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            <X className="w-4 h-4 transition-transform duration-200" style={{ color: 'var(--text-secondary)' }} />
           </button>
         </div>
 
@@ -232,7 +232,7 @@ export const GitCommitDialog = memo(function GitCommitDialog({
         >
           <button
             onClick={onClose}
-            className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+            className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 transform-gpu hover:scale-105 active:scale-95"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -244,7 +244,7 @@ export const GitCommitDialog = memo(function GitCommitDialog({
           <button
             onClick={handleCommit}
             disabled={!message.trim() || stagedFiles.length === 0 || commit.isPending}
-            className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
+            className="group relative flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 transform-gpu hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 overflow-hidden"
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',

@@ -95,6 +95,8 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
       <div
         className={cn(
           'rounded-2xl border p-4 transition-all duration-200',
+          'hover:border-[var(--color-success)]',
+          'hover:shadow-md hover:-translate-y-0.5',
           className
         )}
         style={{
@@ -157,6 +159,8 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
     <div
       className={cn(
         'rounded-2xl border transition-all duration-200',
+        'hover:border-[var(--color-success)]',
+        'hover:shadow-md hover:-translate-y-0.5',
         className
       )}
       style={{

@@ -10,6 +10,8 @@ import { useState, memo, useMemo, useRef, useCallback } from 'react';
 interface NoteCardProps {
   /** Note data - can be NoteListItem (summary only) or full Note (with content) */
   note: Note | NoteListItem;
+  /** Index for staggered animation */
+  index?: number;
   variant?: 'full' | 'compact' | 'micro';
   relevanceScore?: number;
   chunkIndex?: number;
@@ -77,6 +79,7 @@ const getRelevanceBg = (score: number) => {
 
 export const NoteCard = memo(({
   note,
+  index = 0,
   variant = 'full',
   relevanceScore,
   chunkIndex,
@@ -218,16 +221,26 @@ export const NoteCard = memo(({
     return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
+  // Calculate animation delay based on index (max 500ms)
+  const animationDelay = `${Math.min(index * 40, 400)}ms`;
+
   return (
     <div
       ref={cardRef}
-      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
+      className={`group relative border cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
-        willChange: 'transform',
+        transform: isHovered && !isSmall ? 'translateY(-6px) scale(1.01)' : (isHovered && isSmall ? 'scale(1.005)' : 'none'),
+        willChange: 'transform, opacity',
+        animation: 'cardFadeIn 0.35s ease-out forwards',
+        animationDelay,
+        opacity: 0,
+        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease',
+        boxShadow: isHovered && !isSmall
+          ? '0 8px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -6px rgba(0, 0, 0, 0.1)'
+          : 'none',
       }}
       onClick={handleCardClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -297,7 +310,13 @@ export const NoteCard = memo(({
 
             {showDeleteButton && !isSmall && (
               <div
-                className={`flex items-center gap-1.5 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
+                className="flex items-center gap-1.5"
+                style={{
+                  opacity: isHovered ? 1 : 0,
+                  transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  transitionDelay: isHovered ? '0.1s' : '0s',
+                }}
               >
                 {/* Archive/Unarchive Button */}
                 <button

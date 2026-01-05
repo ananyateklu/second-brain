@@ -82,7 +82,7 @@ export const GitBranchBar = memo(function GitBranchBar({
 
   return (
     <div
-      className="flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden backdrop-blur-xl"
+      className="flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 relative overflow-hidden backdrop-blur-xl transform-gpu shadow-[var(--glass-shadow)]"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -95,7 +95,7 @@ export const GitBranchBar = memo(function GitBranchBar({
 
         {/* Remote status */}
         <div
-          className="flex items-center gap-2 px-3 h-10 rounded-xl"
+          className="flex items-center gap-2 px-3 h-10 rounded-xl transition-all duration-200 transform-gpu"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -136,7 +136,7 @@ export const GitBranchBar = memo(function GitBranchBar({
               <button
                 onClick={handleRefresh}
                 disabled={isFetching}
-                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors disabled:opacity-50"
+                className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-all duration-200 transform-gpu disabled:opacity-50 hover:scale-105 active:scale-95"
                 title="Sync with remote"
               >
                 <RefreshCw
@@ -194,7 +194,7 @@ export const GitBranchBar = memo(function GitBranchBar({
         <button
           onClick={handleRefresh}
           disabled={isFetching}
-          className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 transform-gpu hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -211,7 +211,7 @@ export const GitBranchBar = memo(function GitBranchBar({
         <button
           onClick={handlePull}
           disabled={isPulling || !status?.hasRemote}
-          className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${canPull ? 'shadow-lg' : ''
+          className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 transform-gpu hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${canPull ? 'shadow-lg' : ''
             }`}
           style={{
             backgroundColor: canPull
@@ -236,7 +236,7 @@ export const GitBranchBar = memo(function GitBranchBar({
         <button
           onClick={handlePush}
           disabled={isPushing || !status?.hasRemote}
-          className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${canPush ? 'shadow-lg' : ''
+          className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 transform-gpu hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${canPush ? 'shadow-lg' : ''
             }`}
           style={{
             backgroundColor: canPush
@@ -260,7 +260,7 @@ export const GitBranchBar = memo(function GitBranchBar({
         {/* Settings */}
         <button
           onClick={onOpenSettings}
-          className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+          className="group relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 transform-gpu hover:scale-105 active:scale-95"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',

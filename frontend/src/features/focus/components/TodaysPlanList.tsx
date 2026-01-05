@@ -196,7 +196,10 @@ export const TodaysPlanList = memo(function TodaysPlanList({
     return (
       <div
         className={cn(
-          'rounded-2xl border p-6 text-center h-full flex flex-col items-center justify-center',
+          'group rounded-2xl border p-6 text-center h-full flex flex-col items-center justify-center',
+          'transition-all duration-200',
+          'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
+          'hover:shadow-md hover:-translate-y-0.5',
           className
         )}
         style={{
@@ -205,7 +208,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
         }}
       >
         <div
-          className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3"
+          className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 transition-all duration-200 group-hover:scale-110"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-tertiary) 10%, transparent)',
           }}
@@ -233,7 +236,13 @@ export const TodaysPlanList = memo(function TodaysPlanList({
 
   return (
     <div
-      className={cn('rounded-2xl border flex flex-col h-full', className)}
+      className={cn(
+        'group rounded-2xl border flex flex-col h-full',
+        'transition-all duration-200',
+        'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
+        'hover:shadow-md',
+        className
+      )}
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',

@@ -97,7 +97,7 @@ export const GitHubIssuesList = ({
                 setStateFilter(state);
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all capitalize ${
+              className={`px-3 py-1 rounded-md text-xs font-medium transform-gpu transition-all duration-200 capitalize ${
                 stateFilter === state ? 'shadow-sm' : ''
               }`}
               style={{
@@ -118,7 +118,7 @@ export const GitHubIssuesList = ({
       {/* Issues List - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 thin-scrollbar">
       {issues.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 animate-in fade-in duration-300">
           <svg
             className="w-12 h-12 mx-auto mb-4"
             fill="none"
@@ -137,12 +137,13 @@ export const GitHubIssuesList = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {issues.map((issue) => (
+          {issues.map((issue, index) => (
             <IssueRow
               key={issue.number}
               issue={issue}
               isSelected={selectedIssueNumber === issue.number}
               onClick={() => onSelectIssue?.(issue)}
+              index={index}
             />
           ))}
         </div>
@@ -167,16 +168,19 @@ interface IssueRowProps {
   issue: IssueSummary;
   isSelected: boolean;
   onClick: () => void;
+  index: number;
 }
 
-const IssueRow = ({ issue, isSelected, onClick }: IssueRowProps) => {
+const IssueRow = ({ issue, isSelected, onClick, index }: IssueRowProps) => {
   return (
     <div
       onClick={onClick}
-      className={`px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+      className={`px-3 py-2 rounded-lg cursor-pointer transform-gpu transition-all duration-200 border hover:-translate-y-[1px] hover:shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 ${
         isSelected ? 'ring-1 ring-inset ring-primary/50' : ''
       }`}
       style={{
+        animationDelay: `${index * 50}ms`,
+        animationFillMode: 'both',
         backgroundColor: isSelected
           ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
           : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',

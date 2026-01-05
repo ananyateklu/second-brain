@@ -3,7 +3,7 @@ import { TimelineStatusIcon } from './TimelineStatusIcon';
 
 // Centralized positioning constants for timeline alignment
 const TIMELINE = {
-  // Container padding
+  // Container padding - uses design tokens
   CONTAINER_PADDING: 'pl-12 py-2',
   // Icon positioning (16px icon centered on line)
   ICON_LEFT: 'left-[7px]',
@@ -13,6 +13,9 @@ const TIMELINE = {
   DOT_TOP: 'top-[26px]',
   DOT_SIZE: 'w-2.5 h-2.5',
 } as const;
+
+// Animation class from chat-input.module.css
+import styles from '../../../styles/components/chat-input.module.css';
 
 interface TimelineItemProps {
   children: ReactNode;
@@ -48,7 +51,12 @@ export const TimelineItem = memo(function TimelineItem({
   className = '',
 }: TimelineItemProps) {
   return (
-    <div className={`relative ${TIMELINE.CONTAINER_PADDING} group ${className}`}>
+    <div
+      className={`relative ${TIMELINE.CONTAINER_PADDING} group ${styles.timelineRevealAnimation} ${className}`}
+      style={{
+        animationFillMode: 'backwards',
+      }}
+    >
       {/* Timeline marker */}
       {variant === 'status' ? (
         <div className={`absolute ${TIMELINE.ICON_LEFT} ${TIMELINE.ICON_TOP}`}>
@@ -57,7 +65,10 @@ export const TimelineItem = memo(function TimelineItem({
       ) : (
         <div
           className={`absolute ${TIMELINE.DOT_LEFT} ${TIMELINE.DOT_TOP} ${TIMELINE.DOT_SIZE} rounded-full`}
-          style={{ backgroundColor: 'var(--color-brand-500)' }}
+          style={{
+            backgroundColor: isLoading ? 'var(--chat-timeline-dot-pending)' : 'var(--chat-timeline-dot)',
+            transition: 'background-color var(--chat-duration-normal) var(--chat-ease-out)',
+          }}
         />
       )}
       {/* Content */}

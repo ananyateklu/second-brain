@@ -48,10 +48,11 @@ export function VoiceTypePill({
   return (
     <div
       className={`
-        inline-flex items-center gap-0.5 p-0.5 rounded-lg
+        inline-flex items-center gap-0.5 p-0.5
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       style={{
+        borderRadius: 'var(--chat-radius-sm)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
@@ -63,24 +64,26 @@ export function VoiceTypePill({
         disabled={disabled}
         title={getStandardTooltip()}
         className={`
-          flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
-          transition-all duration-200
+          flex items-center gap-1.5 text-xs font-medium
           ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{
+          padding: 'var(--chat-space-xs) var(--chat-space-md)',
+          borderRadius: 'var(--chat-radius-xs)',
           backgroundColor: !isGrokMode
             ? 'var(--btn-primary-bg)'
             : 'transparent',
           color: !isGrokMode
             ? 'var(--btn-primary-text)'
             : 'var(--text-secondary)',
+          transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
           // Visual indicator for unavailable mode (subtle opacity when not selected)
           opacity: !standardVoiceAvailable && isGrokMode ? 0.6 : 1,
         }}
       >
         <span>Standard</span>
         {!standardVoiceAvailable && (
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Not configured" />
+          <span style={{ width: '6px', height: '6px', borderRadius: 'var(--chat-radius-full)', backgroundColor: 'var(--color-warning)' }} title="Not configured" />
         )}
       </button>
 
@@ -91,24 +94,26 @@ export function VoiceTypePill({
         disabled={disabled}
         title={getGrokTooltip()}
         className={`
-          flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium
-          transition-all duration-200
+          flex items-center gap-1.5 text-xs font-medium
           ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{
+          padding: 'var(--chat-space-xs) var(--chat-space-md)',
+          borderRadius: 'var(--chat-radius-xs)',
           backgroundColor: isGrokMode
             ? 'var(--btn-primary-bg)'
             : 'transparent',
           color: isGrokMode
             ? 'var(--btn-primary-text)'
             : 'var(--text-secondary)',
+          transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
           // Visual indicator for unavailable mode (subtle opacity when not selected)
           opacity: !grokVoiceAvailable && !isGrokMode ? 0.6 : 1,
         }}
       >
         <span>Grok</span>
         {!grokVoiceAvailable && (
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="Not configured" />
+          <span style={{ width: '6px', height: '6px', borderRadius: 'var(--chat-radius-full)', backgroundColor: 'var(--color-warning)' }} title="Not configured" />
         )}
       </button>
     </div>

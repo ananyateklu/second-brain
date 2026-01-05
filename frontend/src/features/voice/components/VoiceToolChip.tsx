@@ -24,10 +24,10 @@ interface VoiceToolChipProps {
 }
 
 // Render tool icon using shared path data
-function ToolIcon({ toolName, className = '' }: { toolName: string; className?: string }) {
+function ToolIcon({ toolName, className = '', style }: { toolName: string; className?: string; style?: React.CSSProperties }) {
   const iconPath = getToolIconPath(toolName);
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg className={className} style={style} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath.d} />
       {iconPath.d2 && (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath.d2} />
@@ -37,9 +37,9 @@ function ToolIcon({ toolName, className = '' }: { toolName: string; className?: 
 }
 
 // Spinner icon for executing state
-function SpinnerIcon({ className = '' }: { className?: string }) {
+function SpinnerIcon({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none">
+    <svg className={className} style={style} viewBox="0 0 24 24" fill="none">
       <circle
         className="opacity-25"
         cx="12"
@@ -107,10 +107,13 @@ export function VoiceToolChip({
               ? { duration: 0.15 }
               : { type: 'spring', stiffness: 400, damping: 25 }
           }
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+          className="flex items-center gap-2"
           style={{
+            padding: 'var(--chat-space-xs) var(--chat-space-md)',
+            borderRadius: 'var(--chat-radius-full)',
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            boxShadow: 'var(--chat-shadow-sm)',
           }}
         >
           {/* Icon with animation */}
@@ -129,11 +132,11 @@ export function VoiceToolChip({
             }
           >
             {isCompleted ? (
-              <CheckIcon className="w-3.5 h-3.5" />
+              <CheckIcon style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }} />
             ) : isExecuting ? (
-              <SpinnerIcon className="w-3.5 h-3.5 animate-spin" />
+              <SpinnerIcon style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }} className="animate-spin" />
             ) : (
-              <ToolIcon toolName={tool.toolName} className="w-3.5 h-3.5" />
+              <ToolIcon toolName={tool.toolName} style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }} />
             )}
           </motion.div>
 
@@ -150,8 +153,12 @@ export function VoiceToolChip({
             <motion.div
               animate={prefersReducedMotion ? {} : { opacity: [1, 0.4, 1] }}
               transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: getStatusColor() }}
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: 'var(--chat-radius-full)',
+                backgroundColor: getStatusColor(),
+              }}
             />
           )}
         </motion.div>

@@ -358,13 +358,16 @@ export function NotesDirectoryPage() {
   const getItemStyle = (itemId: string, selected: boolean) => ({
     backgroundColor: selected
       ? isDarkMode
-        ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
-        : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)'
+        ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 40%, transparent)'
       : hoveredItem === itemId
-        ? 'var(--surface-hover)'
+        ? isDarkMode
+          ? 'color-mix(in srgb, var(--text-primary) 5%, transparent)'
+          : 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
         : 'transparent',
     color: selected ? 'var(--color-brand-600)' : 'var(--text-primary)',
     borderLeft: selected ? '3px solid var(--color-brand-600)' : '3px solid transparent',
+    transition: 'all 0.15s ease',
   });
 
   const handleFolderSelect = useCallback((folder: FolderFilter, archive: ArchiveFilter = 'not-archived') => {
@@ -631,7 +634,12 @@ export function NotesDirectoryPage() {
             </button>
 
             {/* Divider */}
-            <div className="mx-4 my-2 border-t" style={{ borderColor: 'var(--border)' }} />
+            <div
+              className="mx-4 my-3 h-px"
+              style={{
+                background: 'linear-gradient(to right, transparent, color-mix(in srgb, var(--text-primary) 10%, transparent), transparent)',
+              }}
+            />
 
             {/* Unfiled */}
             {folderStats.unfiled > 0 && (
@@ -668,11 +676,19 @@ export function NotesDirectoryPage() {
             {/* Folder List */}
             {folderList.length > 0 && (
               <>
-                <div
-                  className="px-4 py-2 text-xs font-medium uppercase tracking-wider"
-                  style={{ color: 'var(--text-tertiary)' }}
-                >
-                  Folders
+                <div className="px-4 pt-3 pb-2 flex items-center gap-2">
+                  <span
+                    className="text-[11px] font-semibold uppercase tracking-wider"
+                    style={{ color: 'var(--text-tertiary)' }}
+                  >
+                    Folders
+                  </span>
+                  <div
+                    className="flex-1 h-px"
+                    style={{
+                      background: 'linear-gradient(to right, color-mix(in srgb, var(--text-primary) 8%, transparent), transparent)',
+                    }}
+                  />
                 </div>
                 {folderList.map((folder) => (
                   <button
@@ -716,26 +732,45 @@ export function NotesDirectoryPage() {
         {/* Trash Header with Empty Trash Button */}
         {isTrashMode && trashData && trashData.totalCount > 0 && (
           <div
-            className="flex items-center justify-between px-6 py-3 border-b"
-            style={{ borderColor: 'var(--border)' }}
+            className="flex items-center justify-between px-6 py-3"
+            style={{
+              borderBottom: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
+              background: 'color-mix(in srgb, var(--color-error) 5%, transparent)',
+            }}
           >
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                style={{ color: 'var(--color-error)' }}
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ color: 'var(--color-error)' }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </div>
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                Trash ({trashData.totalCount} {trashData.totalCount === 1 ? 'note' : 'notes'})
+                Trash
+              </span>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-medium"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                  color: 'var(--color-error)',
+                }}
+              >
+                {trashData.totalCount} {trashData.totalCount === 1 ? 'note' : 'notes'}
               </span>
             </div>
             <button
@@ -745,10 +780,11 @@ export function NotesDirectoryPage() {
                 }
               }}
               disabled={emptyTrashMutation.isPending}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
                 color: 'var(--color-error)',
+                border: '1px solid color-mix(in srgb, var(--color-error) 25%, transparent)',
               }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
