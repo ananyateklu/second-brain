@@ -9,6 +9,7 @@ import { ReactElement, ReactNode } from 'react';
 import { render, RenderOptions, RenderResult } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import { ToastProviderWithRef } from '../components/ui/Toast';
 
 /**
  * Create a fresh QueryClient for each test
@@ -44,9 +45,11 @@ function AllProviders({ children, queryClient }: AllProvidersProps): ReactElemen
 
     return (
         <QueryClientProvider client={client}>
-            <BrowserRouter>
-                {children}
-            </BrowserRouter>
+            <ToastProviderWithRef>
+                <BrowserRouter>
+                    {children}
+                </BrowserRouter>
+            </ToastProviderWithRef>
         </QueryClientProvider>
     );
 }
@@ -139,4 +142,3 @@ export function createMockAuthResponse(overrides = {}) {
 export async function waitForAsync(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 0));
 }
-

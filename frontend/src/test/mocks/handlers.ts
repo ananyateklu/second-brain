@@ -518,9 +518,23 @@ export const handlers = [
     return new HttpResponse(null, { status: 404 });
   }),
 
-  // Note: /api/ai/ollama/pull is intentionally NOT handled here
-  // The ai.service tests mock fetch directly for fine-grained control over pull responses
-  // MSW warning for unhandled requests is acceptable
+  http.post(`${API_BASE}/ai/ollama/pull`, () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode('data: {"status":"success","isComplete":true}\n\n'));
+        controller.close();
+      },
+    });
+
+    return new HttpResponse(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  }),
 
   // ============================================
   // Indexing Endpoints
@@ -653,4 +667,3 @@ export const handlers = [
 ];
 
 export { mockNotes, mockUser, mockConversations, mockAIProviders, mockIndexingStats, mockRagAnalytics, mockVersionHistory };
-

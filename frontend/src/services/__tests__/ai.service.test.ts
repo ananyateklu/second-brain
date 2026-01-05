@@ -50,16 +50,17 @@ const createMockHealthResponse = (overrides: Partial<AIHealthResponse> = {}): AI
 
 // Mock fetch for pullModel tests
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
 
 describe('aiService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockReset();
+    vi.stubGlobal('fetch', mockFetch);
   });
 
   afterEach(() => {
     vi.resetAllMocks();
+    vi.unstubAllGlobals();
   });
 
   // ============================================

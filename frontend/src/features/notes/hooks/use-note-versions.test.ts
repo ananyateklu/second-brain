@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createElement, type ReactNode } from 'react';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/mocks/server';
+import { ToastProviderWithRef } from '../../../components/ui/Toast';
 // Note: mockVersionHistory is defined in handlers.ts and used via the server mock handlers
 import type { } from '../../../test/mocks/handlers';
 import {
@@ -31,7 +32,11 @@ function createWrapper() {
   });
 
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      createElement(ToastProviderWithRef, null, children)
+    );
   };
 }
 

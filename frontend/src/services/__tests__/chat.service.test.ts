@@ -28,6 +28,7 @@ vi.mock('../../lib/api-client', () => ({
     post: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
+    stream: vi.fn(),
   },
 }));
 
@@ -427,8 +428,6 @@ describe('chatService', () => {
   // ============================================
   describe('streamMessage', () => {
     let callbacks: StreamingCallbacks;
-    let mockFetch: ReturnType<typeof vi.fn>;
-
     beforeEach(() => {
       callbacks = {
         onToken: vi.fn(),
@@ -437,19 +436,10 @@ describe('chatService', () => {
         onError: vi.fn(),
         onRag: vi.fn(),
       };
-      mockFetch = vi.fn();
-      vi.stubGlobal('fetch', mockFetch);
-    });
-
-    afterEach(() => {
-      vi.unstubAllGlobals();
     });
 
     it('should throw error for non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+      vi.mocked(apiClient.stream).mockRejectedValueOnce(new Error('HTTP error! status: 500'));
 
       const request: SendMessageRequest = {
         content: 'Test message',
@@ -463,10 +453,10 @@ describe('chatService', () => {
     });
 
     it('should throw error if response body is not readable', async () => {
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(apiClient.stream).mockResolvedValueOnce({
         ok: true,
         body: null,
-      });
+      } as Response);
 
       const request: SendMessageRequest = {
         content: 'Test message',
@@ -482,7 +472,7 @@ describe('chatService', () => {
     it('should handle AbortError silently', async () => {
       const abortError = new Error('Aborted');
       abortError.name = 'AbortError';
-      mockFetch.mockRejectedValueOnce(abortError);
+      vi.mocked(apiClient.stream).mockRejectedValueOnce(abortError);
 
       const request: SendMessageRequest = {
         content: 'Test message',
@@ -498,7 +488,7 @@ describe('chatService', () => {
     });
 
     it('should call onError for non-Error exceptions', async () => {
-      mockFetch.mockRejectedValueOnce('string error');
+      vi.mocked(apiClient.stream).mockRejectedValueOnce('string error');
 
       const request: SendMessageRequest = {
         content: 'Test message',
@@ -520,12 +510,12 @@ describe('chatService', () => {
         'event: end\ndata: {}\n\n',
       ]);
 
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(apiClient.stream).mockResolvedValueOnce({
         ok: true,
         body: {
           getReader: () => mockReader,
         },
-      });
+      } as Response);
 
       const request: SendMessageRequest = {
         content: 'Test message',

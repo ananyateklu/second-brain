@@ -5,18 +5,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { agentService } from '../agent.service';
+import { apiClient } from '../../lib/api-client';
 import type {
   AgentStreamingCallbacks,
   AgentMessageRequest,
   ToolExecution,
 } from '../../types/agent';
 
-// Mock the bound store for auth token
-vi.mock('../../store/bound-store', () => ({
-  useBoundStore: {
-    getState: () => ({
-      token: 'test-token',
-    }),
+// Mock the apiClient
+vi.mock('../../lib/api-client', () => ({
+  apiClient: {
+    stream: vi.fn(),
   },
 }));
 
@@ -144,8 +143,6 @@ describe('agentService', () => {
   // ============================================
   describe('streamAgentMessage', () => {
     let callbacks: AgentStreamingCallbacks;
-    let mockFetch: ReturnType<typeof vi.fn>;
-
     beforeEach(() => {
       callbacks = {
         onToken: vi.fn(),
@@ -155,19 +152,10 @@ describe('agentService', () => {
         onThinking: vi.fn(),
         onToolExecution: vi.fn(),
       };
-      mockFetch = vi.fn();
-      vi.stubGlobal('fetch', mockFetch);
-    });
-
-    afterEach(() => {
-      vi.unstubAllGlobals();
     });
 
     it('should throw error for non-ok response', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+      vi.mocked(apiClient.stream).mockRejectedValueOnce(new Error('HTTP error! status: 500'));
 
       const request: AgentMessageRequest = {
         content: 'Test message',
@@ -182,10 +170,10 @@ describe('agentService', () => {
     });
 
     it('should throw error if response body is not readable', async () => {
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(apiClient.stream).mockResolvedValueOnce({
         ok: true,
         body: null,
-      });
+      } as Response);
 
       const request: AgentMessageRequest = {
         content: 'Test message',
@@ -202,7 +190,7 @@ describe('agentService', () => {
     it('should handle AbortError silently', async () => {
       const abortError = new Error('Aborted');
       abortError.name = 'AbortError';
-      mockFetch.mockRejectedValueOnce(abortError);
+      vi.mocked(apiClient.stream).mockRejectedValueOnce(abortError);
 
       const request: AgentMessageRequest = {
         content: 'Test message',
@@ -219,7 +207,7 @@ describe('agentService', () => {
     });
 
     it('should call onError for non-Error exceptions', async () => {
-      mockFetch.mockRejectedValueOnce('string error');
+      vi.mocked(apiClient.stream).mockRejectedValueOnce('string error');
 
       const request: AgentMessageRequest = {
         content: 'Test message',
@@ -242,12 +230,12 @@ describe('agentService', () => {
         'event: end\ndata: {}\n\n',
       ]);
 
-      mockFetch.mockResolvedValueOnce({
+      vi.mocked(apiClient.stream).mockResolvedValueOnce({
         ok: true,
         body: {
           getReader: () => mockReader,
         },
-      });
+      } as Response);
 
       const request: AgentMessageRequest = {
         content: 'Test message',

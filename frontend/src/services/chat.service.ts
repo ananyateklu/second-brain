@@ -4,8 +4,7 @@
  */
 
 import { apiClient } from '../lib/api-client';
-import { API_ENDPOINTS, DEFAULT_USER_ID, getApiBaseUrl } from '../lib/constants';
-import { useBoundStore } from '../store/bound-store';
+import { API_ENDPOINTS, DEFAULT_USER_ID } from '../lib/constants';
 import { loggers } from '../utils/logger';
 import type { PaginatedResult } from '../types/api';
 import type {
@@ -117,27 +116,13 @@ export const chatService = {
     callbacks: StreamingCallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    const apiUrl = getApiBaseUrl();
-    const url = `${apiUrl}${API_ENDPOINTS.CHAT.STREAM_MESSAGES(conversationId)}`;
-
-    const authStore = useBoundStore.getState();
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (authStore.token) {
-      headers['Authorization'] = `Bearer ${authStore.token}`;
-    }
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(request),
-        signal,
-        credentials: 'include',
-      });
+      const response = await apiClient.stream(
+        API_ENDPOINTS.CHAT.STREAM_MESSAGES(conversationId),
+        request,
+        {},
+        signal
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -508,4 +493,3 @@ export const chatService = {
     return notes !== undefined && notes.length > 0;
   },
 };
-

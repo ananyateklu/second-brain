@@ -1,4 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
+import { hashQueryKey } from './query-key-normalizer';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -8,10 +9,10 @@ export const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
+      queryKeyHashFn: hashQueryKey,
     },
     mutations: {
       retry: 0,
     },
   },
 });
-
