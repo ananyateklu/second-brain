@@ -314,7 +314,8 @@ describe('ThinkingStepCard', () => {
       // Find the content area (the div that wraps the content)
       const contentArea = container.querySelector('.mt-2.p-3');
       expect(contentArea).toBeInTheDocument();
-      expect(contentArea).toHaveClass('rounded-lg', 'text-xs', 'font-mono');
+      // Note: border-radius is applied via inline style (var(--chat-radius-md)), not a class
+      expect(contentArea).toHaveClass('text-xs', 'font-mono', 'overflow-x-auto');
     });
 
     it('should have timeline icon container', () => {
