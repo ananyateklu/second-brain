@@ -198,8 +198,8 @@ export const VoicePageControls = memo(function VoicePageControls() {
               color: isAllSelected ? 'var(--btn-primary-text)' : 'var(--text-primary)',
               backgroundColor: isAllSelected
                 ? 'var(--btn-primary-bg)'
-                : 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: `1px solid ${isAllSelected ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
             }}
             title={isAllSelected ? 'Deselect all' : 'Select all'}
           >
@@ -233,10 +233,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
             style={{
               background: selectedSessionIds.size > 0
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
-                : 'var(--surface-elevated)',
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: selectedSessionIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedSessionIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
-              border: selectedSessionIds.size > 0 ? 'none' : '1px solid var(--border)',
+              border: selectedSessionIds.size > 0 ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               opacity: selectedSessionIds.size === 0 ? 0.6 : 1,
               cursor: selectedSessionIds.size === 0 ? 'not-allowed' : 'pointer',
             }}
@@ -252,9 +251,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
             onClick={onExitSelectionMode}
             className="flex items-center justify-center px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             Cancel
@@ -276,10 +275,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
           onClick={toggleVoiceSidebar}
           className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: voiceSidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+            backgroundColor: voiceSidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: voiceSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-            border: `1px solid ${voiceSidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
-            boxShadow: voiceSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
+            border: `1px solid ${voiceSidebarVisible ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
           }}
           title={voiceSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -298,9 +296,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
             onClick={onToggleSelectionMode}
             className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
             title="Select sessions"
           >
@@ -318,7 +316,6 @@ export const VoicePageControls = memo(function VoicePageControls() {
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
             border: '1px solid var(--btn-primary-border)',
-            boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
           }}
           title="New Voice Session"
         >
@@ -331,7 +328,7 @@ export const VoicePageControls = memo(function VoicePageControls() {
       {/* Separator */}
       <div
         className="h-6 w-px flex-shrink-0"
-        style={{ backgroundColor: 'var(--border)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       />
 
       {/* Middle controls */}
@@ -368,7 +365,7 @@ export const VoicePageControls = memo(function VoicePageControls() {
         {/* Separator */}
         <div
           className="h-6 w-px flex-shrink-0"
-          style={{ backgroundColor: 'var(--border)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         />
 
         {/* Voice Dropdown */}
@@ -450,9 +447,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
           <div
             className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <span>{transcriptCount} msg{transcriptCount !== 1 ? 's' : ''}</span>
@@ -463,9 +460,9 @@ export const VoicePageControls = memo(function VoicePageControls() {
         <div
           className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: status.color,
-            border: '1px solid var(--border)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <span

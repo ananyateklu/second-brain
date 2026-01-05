@@ -87,37 +87,25 @@ export const GitHubNavTabs = memo(() => {
     <div
       className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {GITHUB_TABS.map((tab) => (
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
-          className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-200 relative"
+          className="flex items-center gap-1.5 px-2 py-1.5 text-sm rounded-lg transition-all duration-200 relative hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
           style={{
-            backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',
-            color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
+            backgroundColor: activeTab === tab.id ? 'var(--color-brand-600)' : undefined,
+            color: activeTab === tab.id ? '#ffffff' : 'var(--text-tertiary)',
             fontWeight: activeTab === tab.id ? 600 : 400,
-            boxShadow: activeTab === tab.id ? 'var(--shadow-sm)' : 'none',
           }}
         >
-          <span
-            className="transition-colors duration-200"
-            style={{
-              color: activeTab === tab.id ? 'var(--color-brand-400)' : 'inherit',
-            }}
-          >
+          <span className="transition-colors duration-200">
             {tab.icon}
           </span>
           {tab.label}
-          {activeTab === tab.id && (
-            <div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
-              style={{ backgroundColor: 'var(--color-brand-400)' }}
-            />
-          )}
         </button>
       ))}
     </div>

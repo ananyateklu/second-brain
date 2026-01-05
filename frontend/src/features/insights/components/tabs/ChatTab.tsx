@@ -35,20 +35,26 @@ const ChatTabSkeleton = memo(function ChatTabSkeleton() {
           <div
             key={i}
             className="rounded-2xl border p-4 h-20"
-            style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            }}
           >
-            <div className="h-3 w-20 rounded bg-[var(--surface-hover)] mb-2" />
-            <div className="h-6 w-16 rounded bg-[var(--surface-hover)]" />
+            <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+            <div className="h-6 w-16 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
           </div>
         ))}
       </div>
       {/* Chart Skeleton */}
       <div
         className="rounded-3xl border p-6 h-80"
-        style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        }}
       >
-        <div className="h-5 w-48 rounded bg-[var(--surface-hover)] mb-4" />
-        <div className="h-48 rounded bg-[var(--surface-hover)]" />
+        <div className="h-5 w-48 rounded mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+        <div className="h-48 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
       </div>
     </div>
   );
@@ -98,14 +104,11 @@ export const ChatTab = memo(function ChatTab() {
     return statsService.getConversationTrend(stats);
   }, [stats]);
 
-  // Card container styles
+  // Card container styles - frosted glass
   const cardStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'var(--surface-card)',
-    borderColor: 'var(--border)',
-    boxShadow: isWebKit
-      ? 'var(--shadow-lg)'
-      : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
-  }), [isWebKit]);
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+  }), []);
 
   if (isLoading) {
     return <ChatTabSkeleton />;
@@ -189,10 +192,10 @@ export const ChatTab = memo(function ChatTab() {
         {/* Chat Usage Over Time */}
         {chatTypeData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
           >
-            <div className="relative z-10">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -215,11 +218,12 @@ export const ChatTab = memo(function ChatTab() {
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={30} tick={{ fontSize: 9 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      borderRadius: '12px',
                       color: 'var(--text-primary)',
                       fontSize: '12px',
+                      backdropFilter: 'blur(20px)',
                     }}
                     labelStyle={{ color: 'var(--text-primary)' }}
                     isAnimationActive={!isWebKit}
@@ -244,10 +248,10 @@ export const ChatTab = memo(function ChatTab() {
         {/* Provider Usage */}
         {providerPieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
           >
-            <div className="relative z-10">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -275,11 +279,12 @@ export const ChatTab = memo(function ChatTab() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'var(--surface-elevated)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
+                        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                        borderRadius: '12px',
                         color: 'var(--text-primary)',
                         fontSize: '12px',
+                        backdropFilter: 'blur(20px)',
                       }}
                       isAnimationActive={!isWebKit}
                     />
@@ -308,10 +313,10 @@ export const ChatTab = memo(function ChatTab() {
 
         {/* Feature Usage Breakdown */}
         <div
-          className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
         >
-          <div className="relative z-10">
+          <div>
             <div className="flex items-center gap-2 mb-3">
               <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -333,7 +338,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.ragConversationsCount} ({statsService.formatPercentage(statsService.getRagUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -354,7 +359,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.agentConversationsCount} ({statsService.formatPercentage(statsService.getAgentUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -375,7 +380,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.imageGenerationConversationsCount} ({stats.totalImagesGenerated} imgs)
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--surface-hover)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -393,10 +398,10 @@ export const ChatTab = memo(function ChatTab() {
       {/* Model Usage Summary */}
       {Object.keys(stats.modelUsageCounts).length > 0 && (
         <div
-          className={`rounded-3xl border p-6 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-3xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
         >
-          <div className="relative z-10">
+          <div>
             <div className="flex items-center gap-2 mb-4">
               <svg className="h-5 w-5" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
@@ -411,7 +416,10 @@ export const ChatTab = memo(function ChatTab() {
                 <div
                   key={model.model}
                   className="p-3 rounded-xl"
-                  style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  }}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div

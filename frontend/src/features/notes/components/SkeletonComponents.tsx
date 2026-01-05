@@ -17,11 +17,10 @@ export function NoteCardSkeleton() {
     <div
       className="rounded-3xl border flex flex-col relative overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         borderWidth: '1px',
         padding: '22px',
-        boxShadow: 'var(--shadow-card)',
       }}
     >
       <div className="relative z-10 flex flex-col h-full">

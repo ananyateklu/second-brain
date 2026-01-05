@@ -111,7 +111,7 @@ const DiffLineComponent = memo(function DiffLineComponent({ line }: { line: Diff
       lineNumBg: 'transparent',
     },
     header: {
-      bg: 'var(--surface-elevated)',
+      bg: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
       borderLeft: '3px solid var(--color-brand-500)',
       text: 'var(--text-secondary)',
       lineNumBg: 'transparent',
@@ -167,7 +167,7 @@ const DiffLineComponent = memo(function DiffLineComponent({ line }: { line: Diff
           className="w-12 text-right px-2 py-0.5"
           style={{
             color: 'var(--text-tertiary)',
-            borderRight: '1px solid var(--border)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {line.oldLineNum ?? ''}
@@ -176,7 +176,7 @@ const DiffLineComponent = memo(function DiffLineComponent({ line }: { line: Diff
           className="w-12 text-right px-2 py-0.5"
           style={{
             color: 'var(--text-tertiary)',
-            borderRight: '1px solid var(--border)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {line.newLineNum ?? ''}
@@ -268,12 +268,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
   return (
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
       {/* File header */}
-      <div
-        className="flex items-center justify-between px-4 py-[16px] flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--surface-elevated)',
-        }}
-      >
+      <div className="flex items-center justify-between px-4 py-[16px] flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <MaterialFileIcon fileName={fileName} />
           <div className="flex items-center gap-2 min-w-0">
@@ -314,7 +309,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md transition-colors hover:bg-[var(--surface-hover)]"
+            className="p-1.5 rounded-md transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
             title="Close diff"
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -325,7 +320,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
       {/* Diff content */}
       <div
         className="flex-1 overflow-auto thin-scrollbar"
-        style={{ backgroundColor: 'var(--surface-card)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' }}
       >
         {parsedLines.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12">

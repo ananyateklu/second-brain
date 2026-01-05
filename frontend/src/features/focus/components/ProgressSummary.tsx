@@ -92,8 +92,8 @@ export const ProgressSummary = memo(function ProgressSummary({
         className
       )}
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
@@ -109,7 +109,7 @@ export const ProgressSummary = memo(function ProgressSummary({
         }}
         className={cn(
           'w-full flex items-center justify-between p-4 text-left cursor-pointer',
-          'hover:bg-[var(--surface-hover)] transition-colors'
+          'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors'
         )}
       >
         <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export const ProgressSummary = memo(function ProgressSummary({
           {/* Period selector */}
           <div
             className="flex rounded-lg p-0.5"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >
@@ -160,7 +160,7 @@ export const ProgressSummary = memo(function ProgressSummary({
                   : ''
               )}
               style={{
-                backgroundColor: period === 'today' ? 'var(--surface-card)' : 'transparent',
+                backgroundColor: period === 'today' ? 'color-mix(in srgb, var(--text-primary) 6%, transparent)' : 'transparent',
                 color: period === 'today' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}
             >
@@ -179,7 +179,7 @@ export const ProgressSummary = memo(function ProgressSummary({
                   : ''
               )}
               style={{
-                backgroundColor: period === 'week' ? 'var(--surface-card)' : 'transparent',
+                backgroundColor: period === 'week' ? 'color-mix(in srgb, var(--text-primary) 6%, transparent)' : 'transparent',
                 color: period === 'week' ? 'var(--text-primary)' : 'var(--text-secondary)',
               }}
             >
@@ -209,7 +209,7 @@ export const ProgressSummary = memo(function ProgressSummary({
 
       {/* Content */}
       {isExpanded && (
-        <div className="border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
           {/* Loading state */}
           {isLoading && (
             <div className="p-4 space-y-4">
@@ -218,18 +218,18 @@ export const ProgressSummary = memo(function ProgressSummary({
                   <div
                     key={i}
                     className="flex-1 h-16 rounded-lg"
-                    style={{ backgroundColor: 'var(--surface-hover)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                   />
                 ))}
               </div>
               <div className="animate-pulse space-y-2">
                 <div
                   className="h-4 rounded w-full"
-                  style={{ backgroundColor: 'var(--surface-hover)' }}
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                 />
                 <div
                   className="h-4 rounded w-3/4"
-                  style={{ backgroundColor: 'var(--surface-hover)' }}
+                  style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                 />
               </div>
             </div>
@@ -286,7 +286,7 @@ export const ProgressSummary = memo(function ProgressSummary({
                 <div
                   className="p-3 rounded-lg"
                   style={{
-                    backgroundColor: 'var(--surface-hover)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   <div className="flex items-start gap-2">

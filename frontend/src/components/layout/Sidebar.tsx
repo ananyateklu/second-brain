@@ -188,10 +188,9 @@ export function Sidebar() {
         }`
       }
       style={({ isActive }) => ({
-        backgroundColor: isActive ? 'var(--surface-elevated)' : 'transparent',
-        border: isActive ? '1px solid var(--border)' : '1px solid transparent',
-        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-        boxShadow: isActive ? '0 4px 12px -2px var(--color-primary-alpha), inset 0 1px 0 0 rgba(255,255,255,0.1)' : 'none',
+        backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
+        border: isActive ? '1px solid var(--color-brand-600)' : '1px solid transparent',
+        color: isActive ? '#ffffff' : 'var(--text-secondary)',
       })}
       onMouseEnter={(e) => {
         const link = e.currentTarget;
@@ -199,10 +198,9 @@ export function Sidebar() {
         setHoveredLink(routeKey);
         prefetchRouteData(routeKey);
         if (!isActive) {
-          link.style.backgroundColor = 'var(--surface-elevated)';
+          link.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
           link.style.color = 'var(--text-primary)';
-          link.style.borderColor = 'var(--border)';
-          link.style.boxShadow = '0 4px 12px -4px var(--color-primary-alpha)';
+          link.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
         }
       }}
       onMouseLeave={(e) => {
@@ -213,7 +211,6 @@ export function Sidebar() {
           link.style.backgroundColor = 'transparent';
           link.style.color = 'var(--text-secondary)';
           link.style.borderColor = 'transparent';
-          link.style.boxShadow = 'none';
         }
       }}
       title={isCollapsed ? label : undefined}
@@ -276,15 +273,14 @@ export function Sidebar() {
             onClick={closeMobileMenu}
             className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--btn-primary-bg)',
-              border: '1px solid var(--btn-primary-border)',
-              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
             }}
             aria-label="Close menu"
           >
             <svg
               className="h-5 w-5"
-              style={{ color: 'var(--btn-primary-text)' }}
+              style={{ color: 'var(--text-primary)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -370,7 +366,6 @@ export function Sidebar() {
             className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] ${isCollapsed && !isMobileMenuOpen ? 'md:px-3.5 md:py-3.5' : ''} px-6 py-4`}
             style={{
               color: 'var(--btn-primary-text)',
-              boxShadow: 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)',
             }}
             title={isCollapsed ? 'Create New Note' : undefined}
           >
@@ -401,7 +396,7 @@ export function Sidebar() {
       </div>
 
       {/* Settings Link */}
-      <div className="pb-3 px-4 border-b transition-all duration-500" style={{ borderColor: 'var(--border)' }}>
+      <div className="pb-3 px-4 border-b transition-all duration-500" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
         <NavLink
           to="/settings"
           onClick={handleNavClick}
@@ -413,20 +408,18 @@ export function Sidebar() {
             }`
           }
           style={({ isActive }) => ({
-            backgroundColor: isActive ? 'var(--surface-elevated)' : 'transparent',
-            border: isActive ? '1px solid var(--border)' : '1px solid transparent',
-            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-            boxShadow: isActive ? '0 4px 12px -2px var(--color-primary-alpha), inset 0 1px 0 0 rgba(255,255,255,0.1)' : 'none',
+            backgroundColor: isActive ? 'var(--color-brand-600)' : 'transparent',
+            border: isActive ? '1px solid var(--color-brand-600)' : '1px solid transparent',
+            color: isActive ? '#ffffff' : 'var(--text-secondary)',
           })}
           onMouseEnter={(e) => {
             const link = e.currentTarget;
             const isActive = link.getAttribute('aria-current') === 'page';
             setHoveredLink('settings');
             if (!isActive) {
-              link.style.backgroundColor = 'var(--surface-elevated)';
+              link.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
               link.style.color = 'var(--text-primary)';
-              link.style.borderColor = 'var(--border)';
-              link.style.boxShadow = '0 4px 12px -4px var(--color-primary-alpha)';
+              link.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
             }
           }}
           onMouseLeave={(e) => {
@@ -437,7 +430,6 @@ export function Sidebar() {
               link.style.backgroundColor = 'transparent';
               link.style.color = 'var(--text-secondary)';
               link.style.borderColor = 'transparent';
-              link.style.boxShadow = 'none';
             }
           }}
           title={isCollapsed ? 'Settings' : undefined}
@@ -483,20 +475,19 @@ export function Sidebar() {
             onClick={handleToggleClick}
             className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-lg transition-all duration-300 overflow-hidden hover:scale-110 active:scale-95"
             style={{
-              backgroundColor: 'var(--btn-primary-bg)',
-              border: '1px solid var(--btn-primary-border)',
-              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
             }}
             aria-label={isCollapsed ? 'Close sidebar' : 'Open sidebar'}
           >
             {/* Ripple effect on hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             {/* Icon: X when collapsed, arrows when closed */}
             {isCollapsed ? (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--btn-primary-text)' }}
+                style={{ color: 'var(--text-primary)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -506,7 +497,7 @@ export function Sidebar() {
             ) : (
               <svg
                 className="h-5 w-5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
-                style={{ color: 'var(--btn-primary-text)' }}
+                style={{ color: 'var(--text-primary)' }}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -531,17 +522,20 @@ export function Sidebar() {
         {/* Desktop closed state button */}
         <button
           onClick={handleEdgeClick}
-          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-5 h-10 items-center justify-center rounded-r-xl transition-all duration-500 group overflow-hidden bg-[var(--btn-primary-bg)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)] hover:w-7 hover:shadow-2xl active:scale-95"
+          className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-5 h-10 items-center justify-center rounded-r-xl transition-all duration-500 group overflow-hidden backdrop-blur-md hover:w-7 active:scale-95"
           style={{
             top: '50vh',
-            color: 'var(--btn-primary-text)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 80%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+            borderLeft: 'none',
+            color: 'var(--text-primary)',
           }}
           aria-label="Open sidebar"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           <svg
             className="h-3.5 w-3.5 transition-all duration-300 group-hover:translate-x-0.5 group-hover:scale-110 relative z-10"
-            style={{ color: 'var(--btn-primary-text)' }}
+            style={{ color: 'var(--text-primary)' }}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -562,14 +556,12 @@ export function Sidebar() {
         {/* Temporary sidebar that appears on hover */}
         <aside
           ref={temporarySidebarRef}
-          className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-[23rem] flex-col p-6 transform transition-all duration-300 ease-out ${
+          className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-[23rem] flex-col p-6 transform transition-all duration-300 ease-out backdrop-blur-xl ${
             isTemporarilyOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
           }`}
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderRight: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-2xl), 0 0 80px -20px var(--color-primary-alpha)',
-            backdropFilter: 'blur(20px)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
           onMouseEnter={handleTemporarySidebarEnter}
           onMouseLeave={handleTemporarySidebarLeave}
@@ -643,7 +635,6 @@ export function Sidebar() {
                 className="group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl px-6 py-4 text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)]"
                 style={{
                   color: 'var(--btn-primary-text)',
-                  boxShadow: 'var(--btn-primary-shadow), 0 0 30px -10px var(--color-primary)',
                 }}
               >
                 {/* Animated gradient background */}
@@ -670,8 +661,8 @@ export function Sidebar() {
                 onClick={handleNavClick}
                 className="group flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 hover:scale-110 active:scale-95"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
                 title="Settings"
               >
@@ -706,12 +697,11 @@ export function Sidebar() {
 
         {/* Mobile Menu Drawer */}
         <aside
-          className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 backdrop-blur-xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderRight: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-2xl)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {sidebarContent}
@@ -737,12 +727,11 @@ export function Sidebar() {
 
       {/* Mobile Menu Drawer */}
       <aside
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 backdrop-blur-xl ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderRight: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {sidebarContent}
@@ -750,19 +739,16 @@ export function Sidebar() {
 
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-[23rem] px-6'
+        className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden backdrop-blur-xl ${isCollapsed ? 'w-20' : 'w-[23rem] px-6'
           }`}
         style={{
           top: topPosition,
           height: sidebarHeight,
           maxHeight: maxHeight,
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 80px -20px var(--color-primary-alpha)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           paddingTop: isCollapsed ? '0.8rem' : '1.5rem',
           transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',
-          backdropFilter: 'blur(20px)',
-          background: `linear-gradient(to bottom, var(--surface-card), var(--surface-card))`,
         }}
       >
         {sidebarContent}

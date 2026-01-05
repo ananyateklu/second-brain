@@ -29,6 +29,11 @@
   --surface-elevated-solid: #080c08;
   --surface-card-solid: #060a06;
 
+  /* Frosted glass effect variables */
+  --glass-bg: color-mix(in srgb, var(--background) 70%, transparent);
+  --glass-header: color-mix(in srgb, var(--background) 50%, transparent);
+  --glass-body: color-mix(in srgb, var(--background) 40%, transparent);
+
   /* Border variables */
   --border: color-mix(in srgb, var(--foreground) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
@@ -53,6 +58,11 @@
   --surface-solid: #ffffff;
   --surface-elevated-solid: #ffffff;
   --surface-card-solid: #ffffff;
+
+  /* Frosted glass effect - lighter tint for light theme */
+  --glass-bg: color-mix(in srgb, #ffffff 85%, transparent);
+  --glass-header: color-mix(in srgb, #ffffff 75%, transparent);
+  --glass-body: color-mix(in srgb, #ffffff 70%, transparent);
 
   --border: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-950) 25%, transparent);
@@ -86,6 +96,11 @@
   --surface-elevated-solid: #080c08;
   --surface-card-solid: #060a06;
 
+  /* Frosted glass effect - darker tint for dark theme */
+  --glass-bg: color-mix(in srgb, #050805 70%, transparent);
+  --glass-header: color-mix(in srgb, #050805 50%, transparent);
+  --glass-body: color-mix(in srgb, #050805 40%, transparent);
+
   --border: color-mix(in srgb, var(--color-brand-50) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-50) 25%, transparent);
 
@@ -109,6 +124,11 @@
   --surface-solid: var(--color-blue-950);
   --surface-elevated-solid: var(--color-blue-950);
   --surface-card-solid: var(--color-blue-950);
+
+  /* Frosted glass effect - blue tint for blue theme */
+  --glass-bg: color-mix(in srgb, var(--color-blue-900) 60%, transparent);
+  --glass-header: color-mix(in srgb, var(--color-blue-900) 40%, transparent);
+  --glass-body: color-mix(in srgb, var(--color-blue-900) 30%, transparent);
 
   --border: color-mix(in srgb, var(--color-blue-50) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-blue-50) 25%, transparent);

@@ -69,7 +69,7 @@ export const GitHubPRFilesView = ({
           <span
             className="px-2 py-0.5 rounded-full text-xs font-medium"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -110,8 +110,12 @@ const FileRow = ({ file }: FileRowProps) => {
 
   return (
     <div
-      className="flex items-center gap-3 p-2 rounded-lg transition-all hover:bg-white/5"
-      style={{ backgroundColor: 'var(--surface-card)' }}
+      className="flex items-center gap-3 p-2 rounded-lg transition-all"
+      style={{
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+      }}
+      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)'}
+      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 2%, transparent)'}
     >
       {/* Status Icon */}
       <span
@@ -157,19 +161,24 @@ const FileRow = ({ file }: FileRowProps) => {
       </div>
 
       {/* Change Bar */}
-      <div className="w-16 h-2 rounded-full overflow-hidden flex bg-gray-700/30">
+      <div
+        className="w-16 h-2 rounded-full overflow-hidden flex"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)' }}
+      >
         {file.changes > 0 && (
           <>
             <div
-              className="h-full bg-green-500"
+              className="h-full"
               style={{
                 width: `${(file.additions / file.changes) * 100}%`,
+                backgroundColor: 'var(--color-success)',
               }}
             />
             <div
-              className="h-full bg-red-500"
+              className="h-full"
               style={{
                 width: `${(file.deletions / file.changes) * 100}%`,
+                backgroundColor: 'var(--color-error)',
               }}
             />
           </>

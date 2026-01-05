@@ -62,7 +62,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
           src={imageUrl}
           alt={image.revisedPrompt || 'Generated image'}
           className="w-full h-full object-cover"
-          style={{ backgroundColor: 'var(--surface-card)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         />
 
         {/* Hover overlay with actions */}
@@ -132,7 +132,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
         <p
           className="mt-2 text-xs italic px-3 py-2 rounded-lg"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-tertiary)',
             maxWidth: image.width ? Math.min(image.width, 512) : 512,
           }}
@@ -211,7 +211,7 @@ function GroundingSourcesDisplay({ sources }: { sources: GroundingSource[] }) {
   return (
     <div
       className="mt-3 pt-3"
-      style={{ borderTop: '1px solid var(--border)' }}
+      style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
     >
       <button
         onClick={() => { setIsExpanded(!isExpanded); }}
@@ -266,7 +266,7 @@ function CodeExecutionDisplay({ result }: { result: { code: string; language: st
   return (
     <div
       className="mt-3 pt-3"
-      style={{ borderTop: '1px solid var(--border)' }}
+      style={{ borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
     >
       <button
         onClick={() => { setIsExpanded(!isExpanded); }}
@@ -302,8 +302,8 @@ function CodeExecutionDisplay({ result }: { result: { code: string; language: st
         <div
           className="mt-2 p-2 rounded text-xs font-mono overflow-x-auto thin-scrollbar"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <pre className="whitespace-pre-wrap break-words" style={{ color: 'var(--text-secondary)' }}>

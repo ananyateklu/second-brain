@@ -109,9 +109,8 @@ export function VoiceToolChip({
           }
           className="flex items-center gap-2 px-3 py-1.5 rounded-full"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {/* Icon with animation */}

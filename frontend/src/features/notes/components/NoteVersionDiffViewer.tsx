@@ -174,8 +174,8 @@ interface NoteVersionDiffViewerProps {
 function ChangeBadge({ type, variant }: { type: string; variant: 'added' | 'removed' | 'changed' | 'neutral' }) {
   const styles = {
     added: {
-      bg: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
-      text: 'var(--color-success)',
+      bg: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+      text: 'var(--color-brand-500)',
       icon: (
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -201,7 +201,7 @@ function ChangeBadge({ type, variant }: { type: string; variant: 'added' | 'remo
       ),
     },
     neutral: {
-      bg: 'var(--surface-elevated)',
+      bg: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
       text: 'var(--text-secondary)',
       icon: (
         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -269,7 +269,7 @@ function DiffSection({
           <span
             className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -287,11 +287,11 @@ function DiffSection({
           className={`rounded-lg ${compact ? "px-2.5 py-1.5" : "p-3"} transition-all duration-200`}
           style={{
             backgroundColor: changed
-              ? 'color-mix(in srgb, var(--color-error) 5%, var(--surface-card))'
-              : 'var(--surface-card)',
+              ? 'color-mix(in srgb, var(--color-error) 5%, transparent)'
+              : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
             border: changed
               ? '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)'
-              : '1px solid var(--border)',
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             opacity: changed ? 1 : 0.75,
           }}
         >
@@ -311,7 +311,7 @@ function DiffSection({
                     style={{
                       backgroundColor: removedTags?.includes(tag)
                         ? 'color-mix(in srgb, var(--color-error) 15%, transparent)'
-                        : 'var(--surface-elevated)',
+                        : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                       color: removedTags?.includes(tag)
                         ? 'var(--color-error)'
                         : 'var(--text-secondary)',
@@ -343,11 +343,11 @@ function DiffSection({
           className={`rounded-lg ${compact ? "px-2.5 py-1.5" : "p-3"} transition-all duration-200`}
           style={{
             backgroundColor: changed
-              ? 'color-mix(in srgb, var(--color-success) 5%, var(--surface-card))'
-              : 'var(--surface-card)',
+              ? 'color-mix(in srgb, var(--color-brand-500) 5%, transparent)'
+              : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
             border: changed
-              ? '1px solid color-mix(in srgb, var(--color-success) 20%, transparent)'
-              : '1px solid var(--border)',
+              ? '1px solid color-mix(in srgb, var(--color-brand-500) 20%, transparent)'
+              : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             opacity: changed ? 1 : 0.75,
           }}
         >
@@ -364,10 +364,10 @@ function DiffSection({
                     className="text-xs px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor: addedTags?.includes(tag)
-                        ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
-                        : 'var(--surface-elevated)',
+                        ? 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)'
+                        : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                       color: addedTags?.includes(tag)
-                        ? 'var(--color-success)'
+                        ? 'var(--color-brand-500)'
                         : 'var(--text-secondary)',
                     }}
                   >
@@ -587,7 +587,7 @@ export function NoteVersionDiffViewer({
         <div className="flex flex-col items-center justify-center h-64">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)' }}
           >
             <svg
               className="w-8 h-8"

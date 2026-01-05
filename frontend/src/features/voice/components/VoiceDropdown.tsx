@@ -6,7 +6,6 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { SpeakerWaveIcon, ChevronDownIcon, PlayIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { useBoundStore } from '../../../store/bound-store';
 import type { VoiceInfo, GrokVoiceInfo, VoiceProviderType } from '../types/voice-types';
 
 interface VoiceDropdownProps {
@@ -35,8 +34,6 @@ export function VoiceDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
 
   const isGrokMode = voiceProviderType === 'GrokVoice';
 
@@ -115,8 +112,8 @@ export function VoiceDropdown({
       <div
         className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <button
@@ -150,18 +147,15 @@ export function VoiceDropdown({
         <div
           className="absolute top-full left-0 mt-2 w-72 rounded-xl border shadow-lg z-50 overflow-hidden"
           style={{
-            backgroundColor: isBlueTheme
-              ? 'rgba(10, 22, 40, 0.98)'
-              : 'var(--surface-card-solid)',
-            borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-xl)',
-            backdropFilter: 'blur(12px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           }}
           role="listbox"
         >
           {/* Header */}
-          <div className="px-3 py-2.5 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div className="px-3 py-2.5 border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <h3
               className="text-xs font-medium uppercase tracking-wider"
               style={{ color: 'var(--text-tertiary)' }}

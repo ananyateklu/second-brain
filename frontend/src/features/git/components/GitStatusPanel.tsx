@@ -132,9 +132,9 @@ const ActionButton = ({
   const baseStyles = 'text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-50';
   const variantStyles = {
     default: '',
-    stage: 'hover:bg-green-500/10 hover:text-green-500',
-    unstage: 'hover:bg-red-500/10 hover:text-red-500',
-    discard: 'hover:bg-red-500/10 hover:text-red-500',
+    stage: 'hover:bg-[color-mix(in_srgb,var(--color-success)_10%,transparent)] hover:text-[var(--color-success)]',
+    unstage: 'hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] hover:text-[var(--color-error)]',
+    discard: 'hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)] hover:text-[var(--color-error)]',
   };
 
   return (
@@ -272,8 +272,8 @@ export const GitStatusPanel = memo(function GitStatusPanel({
             rows={1}
             className="flex-1 px-3 py-2 rounded-xl text-sm resize-none transition-all duration-200 focus:outline-none"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
               minHeight: '36px',
               maxHeight: '120px',
@@ -281,11 +281,12 @@ export const GitStatusPanel = memo(function GitStatusPanel({
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-              e.currentTarget.style.boxShadow = '0 0 0 2px var(--color-primary-alpha)';
+              e.currentTarget.style.outline = '2px solid var(--color-primary-alpha)';
+              e.currentTarget.style.outlineOffset = '-1px';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+              e.currentTarget.style.outline = 'none';
             }}
           />
 
@@ -295,9 +296,9 @@ export const GitStatusPanel = memo(function GitStatusPanel({
             disabled={!commitMessage.trim() || status.stagedChanges.length === 0 || commit.isPending}
             className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'var(--surface-elevated)',
+              backgroundColor: status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: status.stagedChanges.length > 0 && commitMessage.trim() ? 'white' : 'var(--text-secondary)',
-              border: '1px solid var(--border)',
+              border: `1px solid ${status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
             }}
             title="Commit staged changes (Cmd+Enter)"
           >
@@ -421,9 +422,9 @@ export const GitStatusPanel = memo(function GitStatusPanel({
         <div
           className="px-3 py-2 text-xs flex-shrink-0 border-t"
           style={{
-            borderColor: 'var(--border)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-tertiary)',
-            backgroundColor: 'var(--surface-card)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           }}
         >
           {status.stagedChanges.length + status.unstagedChanges.length + status.untrackedFiles.length} changed files

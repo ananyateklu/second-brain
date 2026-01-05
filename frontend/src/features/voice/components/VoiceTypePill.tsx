@@ -52,8 +52,8 @@ export function VoiceTypePill({
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Standard Option */}
@@ -74,9 +74,6 @@ export function VoiceTypePill({
           color: !isGrokMode
             ? 'var(--btn-primary-text)'
             : 'var(--text-secondary)',
-          boxShadow: !isGrokMode
-            ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-            : 'none',
           // Visual indicator for unavailable mode (subtle opacity when not selected)
           opacity: !standardVoiceAvailable && isGrokMode ? 0.6 : 1,
         }}
@@ -105,9 +102,6 @@ export function VoiceTypePill({
           color: isGrokMode
             ? 'var(--btn-primary-text)'
             : 'var(--text-secondary)',
-          boxShadow: isGrokMode
-            ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-            : 'none',
           // Visual indicator for unavailable mode (subtle opacity when not selected)
           opacity: !grokVoiceAvailable && !isGrokMode ? 0.6 : 1,
         }}

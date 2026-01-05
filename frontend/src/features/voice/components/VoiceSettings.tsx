@@ -183,7 +183,6 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
                 backgroundColor: 'var(--btn-primary-bg)',
                 color: 'var(--btn-primary-text)',
                 border: '1px solid var(--btn-primary-border)',
-                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
                 opacity: disabled || !grokVoiceAvailable ? 0.5 : 1,
                 cursor: disabled || !grokVoiceAvailable ? 'not-allowed' : 'pointer',
               } : {
@@ -205,7 +204,6 @@ export function VoiceSettings({ disabled = false }: VoiceSettingsProps) {
                 backgroundColor: 'var(--btn-primary-bg)',
                 color: 'var(--btn-primary-text)',
                 border: '1px solid var(--btn-primary-border)',
-                boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
                 opacity: disabled ? 0.5 : 1,
                 cursor: disabled ? 'not-allowed' : 'pointer',
               } : {

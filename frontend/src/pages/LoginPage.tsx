@@ -123,7 +123,6 @@ export function LoginPage() {
           style={{
             backgroundColor: 'var(--surface-card)',
             borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-2xl), 0 0 80px -30px var(--color-primary-alpha)',
           }}
         >
           {/* Logo and Title */}
@@ -332,7 +331,6 @@ export function LoginPage() {
               style={{
                 backgroundColor: 'var(--color-brand-600)',
                 color: 'white',
-                boxShadow: 'var(--shadow-md)',
               }}
             >
               {isLoading ? (

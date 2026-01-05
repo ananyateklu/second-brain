@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
@@ -16,21 +17,22 @@ namespace SecondBrain.Application.Services.Voice;
 /// <summary>
 /// Voice session manager with in-memory cache and database persistence.
 /// Uses in-memory cache for real-time operations and persists to database for durability.
+/// Uses IServiceScopeFactory to access scoped repository from singleton context.
 /// </summary>
 public class VoiceSessionManager : IVoiceSessionManager
 {
     private readonly ConcurrentDictionary<string, MemoryVoiceSession> _sessions = new();
     private readonly VoiceFeaturesConfig _features;
-    private readonly IVoiceSessionRepository _repository;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<VoiceSessionManager> _logger;
 
     public VoiceSessionManager(
         IOptions<VoiceSettings> voiceSettings,
-        IVoiceSessionRepository repository,
+        IServiceScopeFactory scopeFactory,
         ILogger<VoiceSessionManager> logger)
     {
         _features = voiceSettings.Value.Features;
-        _repository = repository;
+        _scopeFactory = scopeFactory;
         _logger = logger;
     }
 
@@ -43,7 +45,12 @@ public class VoiceSessionManager : IVoiceSessionManager
         var memoryActiveCount = _sessions.Values
             .Count(s => s.UserId == userId && s.IsActive);
 
-        var dbActiveCount = await _repository.GetActiveSessionCountAsync(userId, cancellationToken);
+        int dbActiveCount;
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var repository = scope.ServiceProvider.GetRequiredService<IVoiceSessionRepository>();
+            dbActiveCount = await repository.GetActiveSessionCountAsync(userId, cancellationToken);
+        }
         var totalActiveCount = Math.Max(memoryActiveCount, dbActiveCount);
 
         if (totalActiveCount >= _features.MaxConcurrentSessionsPerUser)
@@ -70,7 +77,9 @@ public class VoiceSessionManager : IVoiceSessionManager
 
         try
         {
-            await _repository.CreateAsync(dbSession, cancellationToken);
+            using var scope = _scopeFactory.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IVoiceSessionRepository>();
+            await repository.CreateAsync(dbSession, cancellationToken);
             _logger.LogDebug("Persisted voice session to database. SessionId: {SessionId}", sessionId);
         }
         catch (Exception ex)
@@ -176,7 +185,9 @@ public class VoiceSessionManager : IVoiceSessionManager
 
                 try
                 {
-                    await _repository.AddTurnAsync(sessionGuid, dbTurn);
+                    using var scope = _scopeFactory.CreateScope();
+                    var repository = scope.ServiceProvider.GetRequiredService<IVoiceSessionRepository>();
+                    await repository.AddTurnAsync(sessionGuid, dbTurn);
                     _logger.LogDebug("Persisted turn to database. SessionId: {SessionId}, TurnId: {TurnId}", sessionId, dbTurn.Id);
                 }
                 catch (Exception ex)
@@ -214,7 +225,9 @@ public class VoiceSessionManager : IVoiceSessionManager
             {
                 try
                 {
-                    var dbSession = await _repository.GetByIdAsync(sessionGuid);
+                    using var scope = _scopeFactory.CreateScope();
+                    var repository = scope.ServiceProvider.GetRequiredService<IVoiceSessionRepository>();
+                    var dbSession = await repository.GetByIdAsync(sessionGuid);
                     if (dbSession != null)
                     {
                         dbSession.Status = VoiceSessionStatus.Ended;
@@ -231,7 +244,7 @@ public class VoiceSessionManager : IVoiceSessionManager
                             .Where(t => t.DurationSeconds.HasValue)
                             .Sum(t => (int)(t.DurationSeconds!.Value * 1000));
 
-                        await _repository.UpdateAsync(dbSession);
+                        await repository.UpdateAsync(dbSession);
                         _logger.LogDebug("Updated voice session in database. SessionId: {SessionId}, Status: {Status}",
                             sessionId, dbSession.Status);
                     }
@@ -286,7 +299,9 @@ public class VoiceSessionManager : IVoiceSessionManager
         // Also cleanup in database
         try
         {
-            var dbCleaned = await _repository.EndExpiredSessionsAsync(idleTimeoutMinutes, cancellationToken);
+            using var scope = _scopeFactory.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IVoiceSessionRepository>();
+            var dbCleaned = await repository.EndExpiredSessionsAsync(idleTimeoutMinutes, cancellationToken);
             if (dbCleaned > 0)
             {
                 _logger.LogDebug("Cleaned up {Count} expired sessions in database", dbCleaned);

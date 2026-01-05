@@ -99,11 +99,10 @@ export function VoiceInputBar({
           transition={{ duration: 0.3 }}
           className="inline-flex items-center gap-3 px-4 py-3 rounded-full"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--surface-card) 85%, transparent)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid var(--border)',
-            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {/* Start/Stop Button */}
@@ -117,21 +116,20 @@ export function VoiceInputBar({
             style={
               showDisconnected
                 ? {
-                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                    color: 'rgb(239, 68, 68)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                    color: 'var(--color-error)',
+                    border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
                   }
                 : isActive
                   ? {
-                      backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                      color: 'rgb(239, 68, 68)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                      color: 'var(--color-error)',
+                      border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
                     }
                   : {
                       backgroundColor: 'var(--btn-primary-bg)',
                       color: 'var(--btn-primary-text)',
                       border: '1px solid var(--btn-primary-border)',
-                      boxShadow: '0 2px 8px -2px rgba(54, 105, 61, 0.3)',
                     }
             }
             aria-label={showDisconnected ? 'Connection closed' : isActive ? 'End session' : 'Start session'}
@@ -239,14 +237,14 @@ export function VoiceInputBar({
                   style={
                     isMicrophoneEnabled
                       ? {
-                          backgroundColor: 'var(--surface-elevated)',
+                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: 'var(--text-primary)',
-                          border: '1px solid var(--border)',
+                          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }
                       : {
-                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                          color: 'rgb(239, 68, 68)',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
+                          color: 'var(--color-error)',
+                          border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
                         }
                   }
                   aria-label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
@@ -270,9 +268,9 @@ export function VoiceInputBar({
                       onClick={onInterrupt}
                       className="p-2 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                       style={{
-                        backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                        color: 'rgb(245, 158, 11)',
-                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+                        color: 'var(--color-warning)',
+                        border: '1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)',
                       }}
                       aria-label="Interrupt AI"
                     >

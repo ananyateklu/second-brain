@@ -56,7 +56,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             var sql = @"
                 SELECT id, note_id, valid_period, title, content, content_json, content_format,
                        tags, is_archived, folder, modified_by, version_number, change_summary,
-                       source, image_ids, ai_provider, ai_model, created_at
+                       source, image_ids, ai_provider, ai_model, mcp_server_name, created_at
                 FROM note_versions
                 WHERE note_id = @noteId
                   AND valid_period @> @timestamp::timestamptz";
@@ -144,6 +144,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
         string? changeSummary = null,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -166,7 +167,8 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                     @contentFormat,
                     @imageIds,
                     @aiProvider,
-                    @aiModel
+                    @aiModel,
+                    @mcpServerName
                 )";
 
             var connection = _context.Database.GetDbConnection();
@@ -197,13 +199,16 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 command.Parameters.Add(new NpgsqlParameter("@imageIds", note.Images?.Select(i => i.Id).ToArray() ?? Array.Empty<string>()));
                 command.Parameters.Add(new NpgsqlParameter("@aiProvider", (object?)aiProvider ?? DBNull.Value));
                 command.Parameters.Add(new NpgsqlParameter("@aiModel", (object?)aiModel ?? DBNull.Value));
+                command.Parameters.Add(new NpgsqlParameter("@mcpServerName", (object?)mcpServerName ?? DBNull.Value));
 
                 var result = await command.ExecuteScalarAsync(cancellationToken);
                 var newVersionNumber = Convert.ToInt32(result);
 
+                var sourceInfo = aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" :
+                                 mcpServerName != null ? $" (MCP: {mcpServerName})" : "";
                 _logger.LogInformation(
-                    "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}{AiInfo}",
-                    newVersionNumber, note.Id, modifiedBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
+                    "Created version {VersionNumber} for note {NoteId} by {ModifiedBy}{SourceInfo}",
+                    newVersionNumber, note.Id, modifiedBy, sourceInfo);
 
                 return newVersionNumber;
             }
@@ -228,6 +233,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
         string createdBy,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -258,6 +264,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
                 Source = note.Source ?? "web",
                 AiProvider = aiProvider,
                 AiModel = aiModel,
+                McpServerName = mcpServerName,
                 ImageIds = note.Images?.Select(i => i.Id).ToList() ?? new List<string>(),
                 CreatedAt = now
             };
@@ -265,9 +272,11 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             _context.NoteVersions.Add(version);
             await _context.SaveChangesAsync(cancellationToken);
 
+            var sourceInfo = aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" :
+                             mcpServerName != null ? $" (MCP: {mcpServerName})" : "";
             _logger.LogInformation(
-                "Created initial version for note {NoteId} by {CreatedBy}{AiInfo}",
-                note.Id, createdBy, aiProvider != null ? $" (AI: {aiProvider}/{aiModel})" : "");
+                "Created initial version for note {NoteId} by {CreatedBy}{SourceInfo}",
+                note.Id, createdBy, sourceInfo);
 
             return version;
         }
@@ -341,7 +350,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             };
 
             var changeSummary = $"Restored from version {targetVersionNumber}";
-            var newVersionNumber = await CreateVersionAsync(note, restoredBy, changeSummary, null, null, cancellationToken);
+            var newVersionNumber = await CreateVersionAsync(note, restoredBy, changeSummary, null, null, null, cancellationToken);
 
             _logger.LogInformation(
                 "Restored note {NoteId} to version {TargetVersion}, created version {NewVersion}",

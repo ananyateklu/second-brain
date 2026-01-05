@@ -146,11 +146,11 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
   return (
     <div className="relative pl-12 py-2 group">
       {/* Timeline icon */}
-      <div 
+      <div
         className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isStreaming ? 'animate-pulse' : ''}`}
-        style={{ 
-          backgroundColor: 'var(--surface-card)',
-          borderColor: isStreaming ? 'var(--color-brand-500)' : 'var(--border)'
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: isStreaming ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'
         }}
       >
         <svg 
@@ -204,16 +204,16 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
         {isExpanded && (
           <div className="mt-1.5">
             {isLoading ? (
-              <div 
-                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+              <div
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed"
+                style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', color: 'var(--text-secondary)' }}
               >
                 Loading notes data...
               </div>
             ) : notesWithData.length === 0 ? (
-              <div 
-                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+              <div
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed"
+                style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', color: 'var(--text-secondary)' }}
               >
                 Note data not available
               </div>

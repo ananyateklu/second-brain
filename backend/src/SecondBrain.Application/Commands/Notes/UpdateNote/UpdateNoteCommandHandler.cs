@@ -32,7 +32,7 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
     {
         _logger.LogDebug("Updating note {NoteId} for user {UserId}", request.NoteId, request.UserId);
 
-        // Map command to operation request - Web source for API requests
+        // Map command to operation request - use provided source or default to Web
         var operationRequest = new UpdateNoteOperationRequest
         {
             NoteId = request.NoteId,
@@ -49,7 +49,8 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
             IsArchived = request.IsArchived,
             Images = request.Images,
             DeletedImageIds = request.DeletedImageIds,
-            Source = NoteSource.Web // Web API always uses Web source
+            Source = request.Source ?? NoteSource.Web,
+            McpServerName = request.McpServerName
         };
 
         var result = await _noteOperationService.UpdateAsync(operationRequest, cancellationToken);

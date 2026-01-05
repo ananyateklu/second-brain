@@ -192,12 +192,6 @@ describe('ScoreCorrelationCard', () => {
       expect(card).toHaveClass('hover:-translate-y-0.5');
     });
 
-    it('should have ambient glow', () => {
-      const { container } = render(<ScoreCorrelationCard stats={createMockStats()} />);
-      const glow = container.querySelector('.opacity-15.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
-
     it('should render icon', () => {
       const { container } = render(<ScoreCorrelationCard stats={createMockStats()} />);
       const icon = container.querySelector('svg.w-5.h-5');

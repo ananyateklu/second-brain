@@ -175,7 +175,6 @@ export function SummaryIndicator() {
             backgroundColor: 'var(--surface-card)',
             color: 'var(--text-secondary)',
             border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-md)',
           }}
         >
           Click to show details

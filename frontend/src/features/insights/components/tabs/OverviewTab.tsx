@@ -60,21 +60,21 @@ export const OverviewTab = memo(function OverviewTab() {
   if (error) {
     return (
       <div
-        className="rounded-3xl border p-6 text-center shadow-sm"
+        className="rounded-2xl p-6 text-center backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--color-error-light)',
-          borderColor: 'var(--color-error-border)',
+          backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
         }}
       >
         <div className="flex items-center justify-center gap-2 mb-2">
-          <svg className="h-5 w-5" style={{ color: 'var(--color-error-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-5 w-5" style={{ color: 'var(--color-error)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-base font-semibold" style={{ color: 'var(--color-error-text)' }}>
+          <p className="text-base font-semibold" style={{ color: 'var(--color-error)' }}>
             Error: {error instanceof Error ? error.message : 'Failed to load dashboard data'}
           </p>
         </div>
-        <p className="text-sm" style={{ color: 'var(--color-error-text-light)' }}>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
           Please check that the backend server is running and accessible
         </p>
       </div>

@@ -3,6 +3,7 @@ using MediatR;
 using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Common;
+using SecondBrain.Core.Enums;
 
 namespace SecondBrain.Application.Commands.Notes.CreateNote;
 
@@ -17,5 +18,7 @@ public record CreateNoteCommand(
     string? Folder,
     string UserId,
     List<NoteImageDto>? Images = null,
-    JsonElement? ContentJson = null
+    JsonElement? ContentJson = null,
+    NoteSource? Source = null,
+    string? McpServerName = null
 ) : IRequest<Result<NoteResponse>>;

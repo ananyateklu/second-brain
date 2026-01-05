@@ -206,16 +206,16 @@ export const NoteCard = memo(({
     if (isHovered) {
       return relevanceScore && relevanceScore > 0.8 && isSmall ? 'var(--color-brand-400)' : 'var(--color-brand-500)';
     }
-    return 'var(--border)';
+    return 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
   };
 
   const getBackgroundStyle = () => {
     if (isBulkMode && isSelected) {
       return isDarkMode
-        ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-card))'
-        : 'color-mix(in srgb, var(--color-brand-100) 30%, var(--surface-card))';
+        ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'var(--surface-card)';
+    return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
   return (
@@ -226,11 +226,8 @@ export const NoteCard = memo(({
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        boxShadow: isHovered
-          ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
-          : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card)'),
         transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
-        willChange: 'transform, box-shadow',
+        willChange: 'transform',
       }}
       onClick={handleCardClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -241,9 +238,8 @@ export const NoteCard = memo(({
         <div
           className="absolute top-3 left-3 z-20 flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-200"
           style={{
-            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-card)',
-            borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
-            boxShadow: isSelected ? '0 2px 8px -2px var(--color-primary-alpha)' : 'var(--shadow-sm)',
+            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
+            borderColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {isSelected && (
@@ -312,7 +308,7 @@ export const NoteCard = memo(({
                       : 'hover:bg-[color-mix(in_srgb,var(--color-warning)_15%,transparent)] hover:text-[var(--color-warning)]'
                   }`}
                   style={{
-                    backgroundColor: 'var(--surface-hover)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
                   aria-label={note.isArchived ? 'Restore note' : 'Archive note'}
@@ -336,7 +332,7 @@ export const NoteCard = memo(({
                   onClick={(e) => { void handleDelete(e); }}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)]"
                   style={{
-                    backgroundColor: 'var(--surface-hover)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
                   aria-label="Delete note"
@@ -397,10 +393,10 @@ export const NoteCard = memo(({
                   <em className="italic" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 code: ({ node: _node, ...props }) => (
-                  <code className="px-1 py-0.5 rounded" style={{ fontSize: contentFontSize, backgroundColor: 'var(--surface-elevated)' }} {...props} />
+                  <code className="px-1 py-0.5 rounded" style={{ fontSize: contentFontSize, backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} {...props} />
                 ),
                 blockquote: ({ node: _node, ...props }) => (
-                  <blockquote className="border-l-2 pl-2 italic my-0.5" style={{ fontSize: contentFontSize, borderColor: 'var(--border)' }} {...props} />
+                  <blockquote className="border-l-2 pl-2 italic my-0.5" style={{ fontSize: contentFontSize, borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)' }} {...props} />
                 ),
                 // Hide complex elements in preview
                 table: () => null,
@@ -482,14 +478,14 @@ export const NoteCard = memo(({
             {isSmall && chunkCount !== undefined && chunkCount > 0 ? (
               <span
                 className={`${isMicro ? 'text-[8px] px-1' : 'text-[9px] px-1.5'} font-medium py-0.5 rounded`}
-                style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', color: 'var(--text-tertiary)' }}
               >
                 {chunkCount} chunk{chunkCount !== 1 ? 's' : ''}
               </span>
             ) : isSmall && chunkIndex !== undefined ? (
               <span
                 className={`${isMicro ? 'text-[8px] px-1' : 'text-[9px] px-1.5'} font-medium py-0.5 rounded`}
-                style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', color: 'var(--text-tertiary)' }}
               >
                 Chunk {chunkIndex + 1}
               </span>

@@ -16,9 +16,8 @@ export const ComingSoonPlaceholder = memo(function ComingSoonPlaceholder({
       <div
         className="flex flex-col items-center text-center max-w-md p-8 rounded-3xl backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Icon with gradient background */}

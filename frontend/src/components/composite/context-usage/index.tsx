@@ -126,9 +126,8 @@ export function ContextUsageIndicator({
           'hover:scale-[1.02] active:scale-[0.98]'
         )}
         style={{
-          backgroundColor: isExpanded ? 'var(--surface-elevated)' : 'var(--surface-elevated)',
-          borderColor: colors.border,
-          boxShadow: isExpanded ? '0 0 0 2px var(--color-primary-alpha)' : 'none',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          borderColor: warningLevel !== 'normal' ? colors.border : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Token icon */}
@@ -176,8 +175,10 @@ export function ContextUsageIndicator({
             'animate-in fade-in slide-in-from-top-2 duration-200'
           )}
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             width: buttonWidth ? `${buttonWidth}px` : undefined,
             minWidth: buttonWidth ? `${buttonWidth}px` : undefined,
           }}
@@ -185,7 +186,7 @@ export function ContextUsageIndicator({
           {/* Header */}
           <div
             className="px-4 py-3 border-b"
-            style={{ borderColor: 'var(--border)' }}
+            style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
           >
             <div className="flex items-center justify-between">
               <h3
@@ -253,7 +254,7 @@ export function ContextUsageIndicator({
             <div
               className="px-4 py-2 border-t text-xs"
               style={{
-                borderColor: 'var(--border)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 backgroundColor: colors.bg,
               }}
             >

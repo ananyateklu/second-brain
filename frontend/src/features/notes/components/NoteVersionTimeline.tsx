@@ -112,17 +112,17 @@ function getBadgeStyle(badge: string): { bg: string; text: string } {
     case 'tags':
       return { bg: 'color-mix(in srgb, var(--color-accent-purple) 15%, transparent)', text: 'var(--color-accent-purple)' };
     case 'archived':
-      return { bg: 'var(--surface-elevated)', text: 'var(--text-secondary)' };
+      return { bg: 'color-mix(in srgb, var(--text-primary) 10%, transparent)', text: 'var(--text-secondary)' };
     case 'folder':
       return { bg: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)', text: 'var(--color-brand-500)' };
     case 'images':
       return { bg: 'color-mix(in srgb, var(--color-accent-teal) 15%, transparent)', text: 'var(--color-accent-teal)' };
     case 'created':
-      return { bg: 'color-mix(in srgb, var(--color-success) 15%, transparent)', text: 'var(--color-success)' };
+      return { bg: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)', text: 'var(--color-brand-500)' };
     case 'restored':
       return { bg: 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)', text: 'var(--color-brand-400)' };
     default:
-      return { bg: 'var(--surface-elevated)', text: 'var(--text-secondary)' };
+      return { bg: 'color-mix(in srgb, var(--text-primary) 10%, transparent)', text: 'var(--text-secondary)' };
   }
 }
 
@@ -212,6 +212,18 @@ function getProviderColor(provider: string): string {
   return 'var(--color-accent-purple)'; // Default purple for unknown agents
 }
 
+// Get display name for MCP servers
+function getMcpDisplayName(serverName?: string | null): string {
+  switch (serverName) {
+    case 'second-brain-notes':
+      return 'CC Notes';
+    case 'pg-docker':
+      return 'CC DB';
+    default:
+      return 'Claude Code';
+  }
+}
+
 // Get source display info with AI provider context
 interface SourceInfo {
   label: string;
@@ -225,7 +237,8 @@ function getSourceInfo(
   source: string,
   aiProvider?: string | null,
   aiModel?: string | null,
-  isDarkMode?: boolean
+  isDarkMode?: boolean,
+  mcpServerName?: string | null
 ): SourceInfo {
   // Handle agent source with provider info
   if (source === 'agent' && aiProvider) {
@@ -286,7 +299,18 @@ function getSourceInfo(
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
           </svg>
         ),
-        color: 'var(--color-success)',
+        color: 'var(--color-brand-500)',
+      };
+    case 'mcp':
+      return {
+        label: getMcpDisplayName(mcpServerName),
+        icon: (
+          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        ),
+        color: 'var(--color-accent-orange, #d97706)',
+        tooltip: mcpServerName ? `${mcpServerName} MCP Server` : 'Claude Code MCP Server',
       };
     default:
       return {
@@ -316,7 +340,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
       {/* Main timeline line */}
       <div
         className="absolute left-[11px] top-3 bottom-3 w-[2px] rounded-full"
-        style={{ backgroundColor: 'var(--border)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       />
 
       <div className="space-y-0.5">
@@ -336,9 +360,8 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                 className={`absolute left-[6px] top-2.5 w-[12px] h-[12px] rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isCurrent ? 'scale-110' : 'group-hover:scale-110'
                   }`}
                 style={{
-                  backgroundColor: isCurrent ? 'var(--color-brand-600)' : 'var(--surface-card)',
-                  borderColor: isCurrent ? 'var(--color-brand-600)' : 'var(--border)',
-                  boxShadow: isCurrent ? '0 0 0 3px color-mix(in srgb, var(--color-brand-600) 20%, transparent)' : 'none',
+                  backgroundColor: isCurrent ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                  borderColor: isCurrent ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 {isCurrent && (
@@ -354,11 +377,11 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                 className="rounded-lg p-2 transition-all duration-200 group-hover:shadow-md"
                 style={{
                   backgroundColor: isCurrent
-                    ? 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-card))'
-                    : 'var(--surface-card)',
+                    ? 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)'
+                    : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
                   border: isCurrent
                     ? '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)'
-                    : '1px solid var(--border)',
+                    : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 {/* Header */}
@@ -417,7 +440,8 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                       version.source,
                       version.aiProvider,
                       version.aiModel,
-                      isDarkMode
+                      isDarkMode,
+                      version.mcpServerName
                     );
                     return (
                       <div
@@ -489,11 +513,11 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => { onCompare(version.versionNumber, currentVersion); }}
-                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:!text-[var(--color-brand-600)] hover:!border-[var(--color-brand-400)] hover:![background-color:rgba(255,255,255,0.95)]"
+                      className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:!text-white hover:!border-white/50"
                       style={{
-                        backgroundColor: 'var(--surface-elevated)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                         color: 'var(--text-secondary)',
-                        border: '1px solid var(--border)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                       }}
                     >
                       <svg
@@ -514,10 +538,10 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
                     <button
                       onClick={() => { onRestore(version.versionNumber); }}
                       disabled={isRestoring}
-                      className="group/restore flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:!bg-[var(--color-success)] hover:!text-white"
+                      className="group/restore flex items-center gap-1 text-[10px] px-2 py-1 rounded-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 hover:!bg-[var(--color-brand-600)] hover:!text-white"
                       style={{
-                        backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
-                        color: 'var(--color-success)',
+                        backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                        color: 'var(--color-brand-500)',
                       }}
                     >
                       {isRestoring ? (

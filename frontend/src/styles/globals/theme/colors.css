@@ -66,6 +66,17 @@
   --color-git-modified: var(--color-warning);
   --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 10%, transparent);
 
+  /* File type icon colors for code browser */
+  --file-icon-typescript: #60a5fa;
+  --file-icon-javascript: #facc15;
+  --file-icon-css: #f472b6;
+  --file-icon-html: #fb923c;
+  --file-icon-json: #fbbf24;
+  --file-icon-markdown: #94a3b8;
+  --file-icon-image: #a78bfa;
+  --file-icon-config: #9ca3af;
+  --file-icon-default: #64748b;
+
   /* Notes capability colors */
   --color-notes: var(--color-brand-300);
   --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);

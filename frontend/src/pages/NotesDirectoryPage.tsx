@@ -502,7 +502,7 @@ export function NotesDirectoryPage() {
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
-                  backgroundColor: 'var(--surface-hover)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   color: 'var(--text-tertiary)',
                 }}
               >
@@ -532,7 +532,7 @@ export function NotesDirectoryPage() {
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
                 style={{
-                  backgroundColor: 'var(--surface-hover)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   color: 'var(--text-tertiary)',
                 }}
               >
@@ -575,7 +575,7 @@ export function NotesDirectoryPage() {
                   backgroundColor:
                     archiveFilter === 'archived' && !isTrashMode
                       ? 'color-mix(in srgb, var(--color-warning) 20%, transparent)'
-                      : 'var(--surface-hover)',
+                      : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   color: archiveFilter === 'archived' && !isTrashMode ? 'var(--color-warning)' : 'var(--text-tertiary)',
                 }}
               >
@@ -622,7 +622,7 @@ export function NotesDirectoryPage() {
                   backgroundColor:
                     isTrashMode
                       ? 'color-mix(in srgb, var(--color-error) 20%, transparent)'
-                      : 'var(--surface-hover)',
+                      : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   color: isTrashMode ? 'var(--color-error)' : 'var(--text-tertiary)',
                 }}
               >
@@ -697,7 +697,7 @@ export function NotesDirectoryPage() {
                     <span
                       className="text-xs px-2 py-0.5 rounded-full flex-shrink-0"
                       style={{
-                        backgroundColor: 'var(--surface-hover)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
                         color: 'var(--text-tertiary)',
                       }}
                     >
@@ -797,7 +797,7 @@ export function NotesDirectoryPage() {
                     key={note.id}
                     className="group relative rounded-xl border p-4 transition-all duration-200"
                     style={{
-                      backgroundColor: 'var(--surface-card)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
                       borderColor: 'var(--border)',
                       opacity: 0.85,
                     }}
@@ -836,8 +836,8 @@ export function NotesDirectoryPage() {
                         disabled={restoreMutation.isPending}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                         style={{
-                          backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
-                          color: 'var(--color-success)',
+                          backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                          color: 'var(--color-brand-500)',
                         }}
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -917,11 +917,10 @@ export function NotesDirectoryPage() {
           style={{
             left: '50%',
             bottom: isBulkMode ? '5.75rem' : '1.5rem',
-            backgroundColor: 'var(--surface-card-solid)',
-            borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
-            backdropFilter: 'blur(12px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             opacity: showPagination ? 1 : 0,
             transform: `translate(-50%, ${showPagination ? '0' : '20px'})`,
             pointerEvents: showPagination ? 'auto' : 'none',

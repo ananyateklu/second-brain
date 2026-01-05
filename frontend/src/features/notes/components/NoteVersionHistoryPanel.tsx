@@ -63,16 +63,16 @@ export function NoteVersionHistoryPanel({
           width: '380px',
           minWidth: '380px',
           height: '100%',
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'transparent',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
           style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--surface-elevated)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'transparent',
           }}
         >
           <div className="flex items-center gap-2.5">
@@ -108,7 +108,7 @@ export function NoteVersionHistoryPanel({
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[var(--surface-card)] hover:text-[var(--text-primary)]"
+            className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] hover:text-[var(--text-primary)]"
             style={{
               color: 'var(--text-tertiary)',
             }}
@@ -130,7 +130,7 @@ export function NoteVersionHistoryPanel({
             <div className="flex flex-col items-center justify-center h-48 px-4 text-center">
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-                style={{ backgroundColor: 'var(--surface-elevated)' }}
+                style={{ backgroundColor: 'transparent' }}
               >
                 <svg
                   className="w-6 h-6"
@@ -178,8 +178,8 @@ export function NoteVersionHistoryPanel({
         <div
           className="px-4 py-2 border-t flex-shrink-0 rounded-br-3xl"
           style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'var(--surface-elevated)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'transparent',
           }}
         >
           <div className="flex items-center gap-1.5">

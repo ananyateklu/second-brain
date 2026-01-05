@@ -3,6 +3,7 @@ using MediatR;
 using SecondBrain.Application.DTOs;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Core.Common;
+using SecondBrain.Core.Enums;
 
 namespace SecondBrain.Application.Commands.Notes.UpdateNote;
 
@@ -21,5 +22,7 @@ public record UpdateNoteCommand(
     List<NoteImageDto>? Images = null,
     List<string>? DeletedImageIds = null,
     JsonElement? ContentJson = null,
-    bool UpdateContentJson = false
+    bool UpdateContentJson = false,
+    NoteSource? Source = null,
+    string? McpServerName = null
 ) : IRequest<Result<NoteResponse>>;

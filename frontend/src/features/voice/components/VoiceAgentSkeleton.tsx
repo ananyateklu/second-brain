@@ -76,7 +76,6 @@ function VoiceInputBarSkeleton() {
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid var(--border)',
-            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.05)',
           }}
         >
           {/* Start button placeholder */}

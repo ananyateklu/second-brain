@@ -59,9 +59,9 @@ export function ChatSuggestedPrompts({
           className={`${styles.promptChip} px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5`}
           style={{
             '--chip-index': index,
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           } as React.CSSProperties}
           title={prompt.promptTemplate}
         >

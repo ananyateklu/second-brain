@@ -149,8 +149,7 @@ function buildBoxStyles(props: BoxStyleProps): React.CSSProperties {
   if (props.overflowX !== undefined) styles.overflowX = props.overflowX;
   if (props.overflowY !== undefined) styles.overflowY = props.overflowY;
 
-  // Shadow
-  if (props.shadow !== undefined) styles.boxShadow = props.shadow;
+  // Shadow - removed boxShadow support
 
   // Opacity
   if (props.opacity !== undefined) styles.opacity = props.opacity;

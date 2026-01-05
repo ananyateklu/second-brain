@@ -28,7 +28,6 @@ function ChatInputSkeleton() {
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
             border: '1px solid var(--border)',
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
           }}
         >
           {/* Input Row */}

@@ -45,7 +45,7 @@ export function DimensionSlider({
               "text-xs font-mono px-2 py-0.5 rounded-lg border",
               isPineconeValue
                 ? "bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] text-[var(--color-success)] border-[var(--color-success)]"
-                : "bg-[var(--surface-elevated)] text-[var(--text-primary)] border-[var(--border)]"
+                : "bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] text-[var(--text-primary)] border-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]"
             )}
           >
             {effectiveDimensions}d
@@ -85,7 +85,7 @@ export function DimensionSlider({
           style={{
             left: `calc(${getPositionPercent(currentValue)}% + ${(50 - getPositionPercent(currentValue)) * 0.12}px)`,
             transform: 'translateX(-50%)',
-            backgroundColor: 'var(--surface-card)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--color-brand-600)',
           }}
           onClick={() => !isDisabled && handleDimensionChange(currentValue)}
@@ -103,7 +103,7 @@ export function DimensionSlider({
             style={{
               left: `calc(${getPositionPercent(PINECONE_REQUIRED_DIMENSIONS)}% + ${(50 - getPositionPercent(PINECONE_REQUIRED_DIMENSIONS)) * 0.12}px)`,
               transform: 'translateX(-50%)',
-              backgroundColor: 'var(--surface-card)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--color-success)',
             }}
           >

@@ -43,7 +43,6 @@ export function ChatInputSendButton() {
         border: isStreaming
           ? '1px solid var(--error-border)'
           : '1px solid var(--btn-primary-border)',
-        boxShadow: 'var(--btn-primary-shadow)',
       }}
       title={
         isStreaming

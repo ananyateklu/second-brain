@@ -61,29 +61,29 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           className
         )}
         style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-center gap-3 mb-3">
           <div
             className="w-8 h-8 rounded-lg"
-            style={{ backgroundColor: 'var(--bg-tertiary)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
           />
           <div className="flex-1 space-y-2">
             <div
               className="h-4 rounded w-1/3"
-              style={{ backgroundColor: 'var(--bg-tertiary)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
             />
             <div
               className="h-3 rounded w-1/2"
-              style={{ backgroundColor: 'var(--bg-tertiary)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
             />
           </div>
         </div>
         <div
           className="h-16 rounded"
-          style={{ backgroundColor: 'var(--bg-tertiary)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         />
       </div>
     );
@@ -98,8 +98,8 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           className
         )}
         style={{
-          backgroundColor: 'var(--bg-secondary)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-center gap-3 mb-3">
@@ -160,14 +160,14 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
         className
       )}
       style={{
-        backgroundColor: 'var(--bg-secondary)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
       <div
         className="flex items-center justify-between p-4 border-b"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center gap-3">
           <span

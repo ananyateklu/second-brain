@@ -33,20 +33,26 @@ const AgentTabSkeleton = memo(function AgentTabSkeleton() {
           <div
             key={i}
             className="rounded-2xl border p-4 h-20"
-            style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            }}
           >
-            <div className="h-3 w-20 rounded bg-[var(--surface-hover)] mb-2" />
-            <div className="h-6 w-16 rounded bg-[var(--surface-hover)]" />
+            <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+            <div className="h-6 w-16 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
           </div>
         ))}
       </div>
       {/* Chart Skeleton */}
       <div
         className="rounded-3xl border p-6 h-80"
-        style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        }}
       >
-        <div className="h-5 w-48 rounded bg-[var(--surface-hover)] mb-4" />
-        <div className="h-48 rounded bg-[var(--surface-hover)]" />
+        <div className="h-5 w-48 rounded mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+        <div className="h-48 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
       </div>
     </div>
   );
@@ -107,14 +113,11 @@ export const AgentTab = memo(function AgentTab() {
       .sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
   }, [toolStats]);
 
-  // Card container styles
+  // Card container styles - frosted glass
   const cardStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'var(--surface-card)',
-    borderColor: 'var(--border)',
-    boxShadow: isWebKit
-      ? 'var(--shadow-lg)'
-      : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
-  }), [isWebKit]);
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+  }), []);
 
   if (isLoading) {
     return <AgentTabSkeleton />;
@@ -202,10 +205,10 @@ export const AgentTab = memo(function AgentTab() {
         {/* Tool Calls Over Time */}
         {dailyToolCallsData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
           >
-            <div className="relative z-10">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -228,11 +231,12 @@ export const AgentTab = memo(function AgentTab() {
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={30} tick={{ fontSize: 9 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      borderRadius: '12px',
                       color: 'var(--text-primary)',
                       fontSize: '12px',
+                      backdropFilter: 'blur(20px)',
                     }}
                     labelStyle={{ color: 'var(--text-primary)' }}
                     formatter={(value: number) => [`${value} calls`, 'Tool Calls']}
@@ -256,10 +260,10 @@ export const AgentTab = memo(function AgentTab() {
         {/* Tool Usage Breakdown */}
         {toolUsagePieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
           >
-            <div className="relative z-10">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -287,11 +291,12 @@ export const AgentTab = memo(function AgentTab() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: 'var(--surface-elevated)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
+                        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                        borderRadius: '12px',
                         color: 'var(--text-primary)',
                         fontSize: '12px',
+                        backdropFilter: 'blur(20px)',
                       }}
                       isAnimationActive={!isWebKit}
                     />
@@ -321,10 +326,10 @@ export const AgentTab = memo(function AgentTab() {
         {/* Hourly Distribution */}
         {hourlyData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+            className={`rounded-2xl border p-4 ${isWebKit ? '' : 'backdrop-blur-md'}`}
             style={cardStyles}
           >
-            <div className="relative z-10">
+            <div>
               <div className="flex items-center gap-2 mb-3">
                 <svg className="h-4 w-4" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -347,11 +352,12 @@ export const AgentTab = memo(function AgentTab() {
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={25} tick={{ fontSize: 9 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      borderRadius: '12px',
                       color: 'var(--text-primary)',
                       fontSize: '12px',
+                      backdropFilter: 'blur(20px)',
                     }}
                     isAnimationActive={!isWebKit}
                   />
@@ -371,10 +377,10 @@ export const AgentTab = memo(function AgentTab() {
       {/* Tool Details Table */}
       {toolStats.toolUsageByName.length > 0 && (
         <div
-          className={`rounded-3xl border p-6 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-3xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
         >
-          <div className="relative z-10">
+          <div>
             <div className="flex items-center gap-2 mb-4">
               <svg className="h-5 w-5" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -387,7 +393,7 @@ export const AgentTab = memo(function AgentTab() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                     <th className="text-left py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Tool</th>
                     <th className="text-right py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Calls</th>
                     <th className="text-right py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Success</th>
@@ -400,8 +406,10 @@ export const AgentTab = memo(function AgentTab() {
                   {toolStats.toolUsageByName.slice(0, 10).map((tool, index) => (
                     <tr
                       key={tool.toolName}
-                      style={{ borderBottom: '1px solid var(--border)' }}
-                      className="hover:bg-[var(--surface-hover)] transition-colors"
+                      style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+                      className="transition-colors"
+                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                     >
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
@@ -448,10 +456,10 @@ export const AgentTab = memo(function AgentTab() {
       {/* Top Errors */}
       {toolStats.topErrors && toolStats.topErrors.length > 0 && (
         <div
-          className={`rounded-3xl border p-6 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+          className={`rounded-3xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
           style={cardStyles}
         >
-          <div className="relative z-10">
+          <div>
             <div className="flex items-center gap-2 mb-4">
               <svg className="h-5 w-5" style={{ color: FAILURE_COLOR }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -466,7 +474,10 @@ export const AgentTab = memo(function AgentTab() {
                 <div
                   key={`${error.toolName}-${error.errorType}-${index}`}
                   className="p-3 rounded-xl"
-                  style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  }}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">

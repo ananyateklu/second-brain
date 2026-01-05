@@ -109,11 +109,10 @@ export function ImageGenerationPanel({
 
   return (
     <div
-      className="rounded-2xl p-4 animate-in slide-in-from-bottom-2 duration-200"
+      className="rounded-2xl p-4 animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
@@ -121,7 +120,7 @@ export function ImageGenerationPanel({
         <div className="flex items-center gap-2">
           <div
             className="p-2 rounded-lg"
-            style={{ backgroundColor: 'var(--color-primary-alpha)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' }}
           >
             <svg
               className="w-5 h-5"
@@ -149,8 +148,14 @@ export function ImageGenerationPanel({
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+          className="p-1.5 rounded-lg transition-colors"
           style={{ color: 'var(--text-tertiary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -168,8 +173,8 @@ export function ImageGenerationPanel({
           rows={3}
           className="w-full px-3 py-2.5 rounded-xl text-sm resize-none outline-none transition-colors"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
           onKeyDown={(e) => {
@@ -197,8 +202,8 @@ export function ImageGenerationPanel({
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >
@@ -224,8 +229,8 @@ export function ImageGenerationPanel({
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >
@@ -251,8 +256,8 @@ export function ImageGenerationPanel({
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >
@@ -279,8 +284,8 @@ export function ImageGenerationPanel({
               disabled={isGenerating}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
               style={{
-                backgroundColor: 'var(--surface-card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-primary)',
               }}
             >
@@ -308,8 +313,8 @@ export function ImageGenerationPanel({
               disabled={isGenerating}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
               style={{
-                backgroundColor: 'var(--surface-card)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-primary)',
               }}
             >
@@ -328,7 +333,7 @@ export function ImageGenerationPanel({
         <p
           className="text-xs mb-4 px-3 py-2 rounded-lg"
           style={{
-            backgroundColor: 'var(--surface-card)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
             color: 'var(--text-tertiary)',
           }}
         >
@@ -341,9 +346,9 @@ export function ImageGenerationPanel({
         <div
           className="mb-4 px-3 py-2 rounded-lg text-sm"
           style={{
-            backgroundColor: 'var(--error-bg)',
-            color: 'var(--error-text)',
-            border: '1px solid var(--error-border)',
+            backgroundColor: 'color-mix(in srgb, var(--color-error) 10%, transparent)',
+            color: 'var(--color-error)',
+            border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
           }}
         >
           {error}

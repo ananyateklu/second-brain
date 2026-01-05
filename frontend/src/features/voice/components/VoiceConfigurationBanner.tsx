@@ -120,7 +120,6 @@ export function VoiceConfigurationBanner({
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
               border: '1px solid var(--btn-primary-border)',
-              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
             }}
           >
             Switch to {otherModeName}

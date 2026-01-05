@@ -1,0 +1,71 @@
+{
+  "smoke": {
+    "description": "Quick sanity check - 10 VUs for 1 minute",
+    "thresholds": {
+      "http_req_duration": {
+        "p95": 500,
+        "description": "95% of requests under 500ms"
+      },
+      "http_req_failed": {
+        "rate": 0.01,
+        "description": "Less than 1% errors"
+      }
+    }
+  },
+  "load": {
+    "description": "Normal load - 50 VUs for 5 minutes",
+    "thresholds": {
+      "http_req_duration": {
+        "p95": 1000,
+        "description": "95% of requests under 1 second"
+      },
+      "http_req_failed": {
+        "rate": 0.02,
+        "description": "Less than 2% errors"
+      },
+      "notes_latency": {
+        "p95": 500,
+        "description": "Notes endpoint p95 under 500ms"
+      },
+      "chat_latency": {
+        "p95": 800,
+        "description": "Chat endpoint p95 under 800ms"
+      }
+    }
+  },
+  "stress": {
+    "description": "Stress test - ramp to 100+ VUs",
+    "thresholds": {
+      "http_req_duration": {
+        "p95": 2000,
+        "description": "95% of requests under 2 seconds"
+      },
+      "http_req_failed": {
+        "rate": 0.05,
+        "description": "Less than 5% errors under stress"
+      }
+    }
+  },
+  "endpoints": {
+    "health": {
+      "target_p95_ms": 100,
+      "max_error_rate": 0.001
+    },
+    "notes_list": {
+      "target_p95_ms": 300,
+      "max_error_rate": 0.01
+    },
+    "notes_create": {
+      "target_p95_ms": 500,
+      "max_error_rate": 0.01
+    },
+    "chat_conversations": {
+      "target_p95_ms": 500,
+      "max_error_rate": 0.01
+    },
+    "vector_search": {
+      "target_p95_ms": 500,
+      "max_error_rate": 0.02
+    }
+  }
+}

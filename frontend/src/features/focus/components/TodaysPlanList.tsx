@@ -71,7 +71,7 @@ const PlanItem = memo(function PlanItem({
       className={cn(
         'group flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg',
         'transition-all duration-150',
-        'hover:bg-[var(--surface-elevated)]',
+        'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]',
         isCompleted && 'opacity-60',
         disabled && 'pointer-events-none opacity-50'
       )}
@@ -200,8 +200,8 @@ export const TodaysPlanList = memo(function TodaysPlanList({
           className
         )}
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div
@@ -235,14 +235,14 @@ export const TodaysPlanList = memo(function TodaysPlanList({
     <div
       className={cn('rounded-2xl border flex flex-col h-full', className)}
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header with progress */}
       <div
         className="px-4 py-3 border-b flex-shrink-0"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center justify-between mb-2">
           <h3
@@ -262,7 +262,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
         {/* Progress bar */}
         <div
           className="h-1.5 rounded-full overflow-hidden"
-          style={{ backgroundColor: 'var(--muted)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         >
           <div
             className="h-full rounded-full transition-all duration-300 ease-out"
@@ -310,8 +310,8 @@ export const TodaysPlanList = memo(function TodaysPlanList({
         <div
           className="px-4 py-3 border-t flex-shrink-0"
           style={{
-            borderColor: 'var(--border)',
-            backgroundColor: 'color-mix(in srgb, var(--color-success) 5%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--color-success) 8%, transparent)',
           }}
         >
           <div className="flex items-center justify-center gap-2">

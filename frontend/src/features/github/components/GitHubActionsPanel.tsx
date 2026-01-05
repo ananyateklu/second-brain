@@ -186,8 +186,8 @@ export const GitHubActionsPanel = ({
           }}
           className="px-3 py-2 rounded-lg text-sm"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -207,8 +207,8 @@ export const GitHubActionsPanel = ({
           }}
           className="flex-1 px-3 py-2 rounded-lg text-sm"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         />
@@ -245,17 +245,19 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             setAutoRefresh(!autoRefresh);
           }}
-          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${autoRefresh ? 'bg-green-500/10' : ''
-            }`}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
           style={{
-            backgroundColor: autoRefresh ? 'var(--color-primary-alpha)' : 'var(--surface-elevated)',
+            backgroundColor: autoRefresh ? 'var(--color-primary-alpha)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: autoRefresh ? 'var(--color-primary)' : 'var(--text-secondary)',
           }}
           title={autoRefresh ? 'Auto-refresh is ON' : 'Auto-refresh is OFF'}
         >
           <div
-            className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
-              }`}
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: autoRefresh ? 'var(--color-success)' : 'var(--text-tertiary)',
+              animation: autoRefresh ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
+            }}
           />
           <span>Auto</span>
           {autoRefresh && inProgressCount > 0 && (
@@ -278,8 +280,8 @@ export const GitHubActionsPanel = ({
           <div
             className="text-center py-12 rounded-xl border"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <svg
@@ -318,9 +320,9 @@ export const GitHubActionsPanel = ({
               style={{
                 backgroundColor:
                   selectedRunId === run.id
-                    ? 'var(--surface-elevated)'
-                    : 'var(--surface-card)',
-                borderColor: 'var(--border)',
+                    ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+                    : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <div className="flex items-center gap-2">
@@ -352,7 +354,7 @@ export const GitHubActionsPanel = ({
                   <span
                     className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       color: 'var(--text-tertiary)',
                     }}
                   >
@@ -447,13 +449,13 @@ export const GitHubActionsPanel = ({
 
               {/* Jobs (when selected) */}
               {selectedRunId === run.id && selectedRun?.jobs && selectedRun.jobs.length > 0 && (
-                <div className="mt-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                <div className="mt-2 pt-2 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                   <div className="flex flex-wrap gap-2">
                     {selectedRun.jobs.map((job) => (
                       <div
                         key={job.id}
                         className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-md"
-                        style={{ backgroundColor: 'var(--surface-elevated)' }}
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                       >
                         <span
                           className={getWorkflowStatusColor(

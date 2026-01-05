@@ -33,11 +33,11 @@ const Checkbox = React.forwardRef<
       ref={ref}
       id={checkboxId}
       className={cn(
-        "peer h-5 w-5 shrink-0 rounded-md border shadow-sm",
-        "border-[var(--border)] bg-[var(--surface-elevated)]",
+        "peer h-5 w-5 shrink-0 rounded-md border",
+        "border-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "data-[state=checked]:bg-[var(--primary)] data-[state=checked]:border-[var(--primary)] data-[state=checked]:text-[var(--primary-foreground)]",
+        "data-[state=checked]:bg-[var(--color-brand-600)] data-[state=checked]:border-[var(--color-brand-600)] data-[state=checked]:text-white",
         className
       )}
       {...props}

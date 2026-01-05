@@ -72,6 +72,7 @@ public interface INoteVersionRepository
     /// <param name="changeSummary">Optional description of changes</param>
     /// <param name="aiProvider">AI provider name when modified by an agent</param>
     /// <param name="aiModel">AI model identifier when modified by an agent</param>
+    /// <param name="mcpServerName">MCP server name when modified via MCP</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The new version number</returns>
     Task<int> CreateVersionAsync(
@@ -80,6 +81,7 @@ public interface INoteVersionRepository
         string? changeSummary = null,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -90,6 +92,7 @@ public interface INoteVersionRepository
     /// <param name="createdBy">User who created the note</param>
     /// <param name="aiProvider">AI provider name when created by an agent</param>
     /// <param name="aiModel">AI model identifier when created by an agent</param>
+    /// <param name="mcpServerName">MCP server name when created via MCP</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The created version (version 1)</returns>
     Task<NoteVersion> CreateInitialVersionAsync(
@@ -97,6 +100,7 @@ public interface INoteVersionRepository
         string createdBy,
         string? aiProvider = null,
         string? aiModel = null,
+        string? mcpServerName = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

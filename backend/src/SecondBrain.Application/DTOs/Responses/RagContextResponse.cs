@@ -41,6 +41,11 @@ public class IndexStatsData
     /// Number of notes that are indexed but have been modified since last indexing
     /// </summary>
     public int StaleNotesCount { get; set; }
+
+    /// <summary>
+    /// Vector embedding dimensions (e.g., 768, 1024, 1536, 3072)
+    /// </summary>
+    public int? Dimensions { get; set; }
 }
 
 public class IndexingJobResponse

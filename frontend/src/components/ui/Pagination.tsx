@@ -94,8 +94,8 @@ export const Pagination = memo(({
           disabled={currentPage === 1}
           className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
           aria-label="Previous page"
@@ -130,12 +130,9 @@ export const Pagination = memo(({
                 style={{
                   backgroundColor: isActive
                     ? 'var(--color-brand-600)'
-                    : 'var(--surface-elevated)',
-                  borderColor: isActive ? 'var(--color-brand-600)' : 'var(--border)',
+                    : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: isActive ? 'white' : 'var(--text-primary)',
-                  boxShadow: isActive
-                    ? '0 4px 12px color-mix(in srgb, var(--color-brand-600) 30%, transparent)'
-                    : 'none',
                 }}
                 aria-label={`Page ${page}`}
                 aria-current={isActive ? 'page' : undefined}
@@ -153,8 +150,8 @@ export const Pagination = memo(({
           disabled={currentPage === totalPages}
           className="p-2 rounded-lg border transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
           aria-label="Next page"

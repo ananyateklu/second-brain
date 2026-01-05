@@ -145,8 +145,8 @@ export const GitHubPullRequestList = ({
           <div
             className="text-center py-12 rounded-xl border"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <svg
@@ -177,9 +177,9 @@ export const GitHubPullRequestList = ({
               style={{
                 backgroundColor:
                   selectedPRNumber === pr.number
-                    ? 'var(--surface-elevated)'
-                    : 'var(--surface-card)',
-                borderColor: 'var(--border)',
+                    ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
+                    : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <div className="flex items-center gap-2">
@@ -226,7 +226,7 @@ export const GitHubPullRequestList = ({
                     <span
                       className="px-1.5 py-0.5 text-xs rounded-full shrink-0"
                       style={{
-                        backgroundColor: 'var(--surface-elevated)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                         color: 'var(--text-tertiary)',
                       }}
                     >
@@ -236,7 +236,7 @@ export const GitHubPullRequestList = ({
                   <span
                     className="text-xs px-1.5 py-0.5 rounded-full shrink-0"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       color: 'var(--text-tertiary)',
                     }}
                   >
@@ -273,13 +273,13 @@ export const GitHubPullRequestList = ({
                   const status = getCheckStatus(pr);
                   if (!status) return null;
                   const statusConfig = {
-                    success: { icon: '✓', color: 'text-green-500' },
-                    failure: { icon: '✗', color: 'text-red-500' },
-                    pending: { icon: '○', color: 'text-yellow-500' },
-                    neutral: { icon: '−', color: 'text-gray-500' },
+                    success: { icon: '✓', color: 'var(--color-success)' },
+                    failure: { icon: '✗', color: 'var(--color-error)' },
+                    pending: { icon: '○', color: 'var(--color-warning)' },
+                    neutral: { icon: '−', color: 'var(--text-tertiary)' },
                   }[status];
                   return (
-                    <span className={`text-xs ${statusConfig.color}`} title="Checks">
+                    <span className="text-xs" style={{ color: statusConfig.color }} title="Checks">
                       <span className="sr-only">Checks</span>
                       {statusConfig.icon}
                     </span>
@@ -311,8 +311,8 @@ export const GitHubPullRequestList = ({
 
                 {/* File Changes */}
                 <div className="flex items-center gap-1 text-xs shrink-0">
-                  <span className="text-green-500">+{pr.additions}</span>
-                  <span className="text-red-500">-{pr.deletions}</span>
+                  <span style={{ color: 'var(--color-success)' }}>+{pr.additions}</span>
+                  <span style={{ color: 'var(--color-error)' }}>-{pr.deletions}</span>
                 </div>
 
                 {/* Author */}

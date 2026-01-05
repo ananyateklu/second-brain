@@ -11,9 +11,8 @@ function SkeletonRerankingProvider() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -30,7 +29,7 @@ function SkeletonRerankingProvider() {
         <div className="flex items-center gap-2">
           <div
             className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
           >
             {['OpenAI', 'Anthropic', 'Gemini', 'xAI', 'Cohere'].map((_, i) => (
               <ShimmerBlock key={i} className="px-2 py-1 rounded-lg h-[26px] w-[60px]" />
@@ -49,9 +48,8 @@ function SkeletonHydeProvider() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -68,7 +66,7 @@ function SkeletonHydeProvider() {
         <div className="flex items-center gap-2">
           <div
             className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
           >
             {['OpenAI', 'Anthropic', 'Gemini', 'xAI', 'Ollama'].map((_, i) => (
               <ShimmerBlock key={i} className="px-2 py-1 rounded-lg h-[26px] w-[60px]" />
@@ -87,9 +85,8 @@ function SkeletonQueryExpansionProvider() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -106,7 +103,7 @@ function SkeletonQueryExpansionProvider() {
         <div className="flex items-center gap-2">
           <div
             className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
           >
             {['OpenAI', 'Anthropic', 'Gemini', 'xAI', 'Ollama'].map((_, i) => (
               <ShimmerBlock key={i} className="px-2 py-1 rounded-lg h-[26px] w-[60px]" />
@@ -125,9 +122,8 @@ function SkeletonVectorStore() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -142,7 +138,7 @@ function SkeletonVectorStore() {
 
         <div
           className="flex flex-wrap items-center gap-2 p-1 rounded-xl"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
         >
           {['PostgreSQL', 'Pinecone'].map((_, i) => (
             <ShimmerBlock key={i} className="px-2.5 py-1.5 rounded-lg h-[32px] w-[100px]" />
@@ -158,9 +154,8 @@ function SkeletonPipelineFeatures() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -176,7 +171,7 @@ function SkeletonPipelineFeatures() {
         {/* Inline button-style toggles */}
         <div
           className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
         >
           {['HyDE', 'Query Expansion', 'Hybrid Search', 'Reranking', 'Analytics'].map((_, i) => (
             <ShimmerBlock key={i} className="px-2 py-1 rounded-lg h-[26px] w-[85px]" />
@@ -192,9 +187,8 @@ function SkeletonAdvancedSettings() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -221,8 +215,8 @@ function SkeletonAdvancedSettings() {
                 key={i}
                 className="flex flex-col gap-3 p-4 rounded-2xl border"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <div className="flex items-center gap-1">
@@ -249,8 +243,8 @@ function SkeletonAdvancedSettings() {
                 key={i}
                 className="flex flex-col gap-3 p-4 rounded-2xl border"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <div className="flex items-center gap-1">

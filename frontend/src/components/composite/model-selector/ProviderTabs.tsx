@@ -15,7 +15,7 @@ export function ProviderTabs({
     <div
       className="flex border-b"
       style={{
-        borderColor: 'var(--border)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {providers.map((provider) => {

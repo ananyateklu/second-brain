@@ -151,7 +151,7 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
       className="flex overflow-hidden -mx-6 -mt-6 rounded-b-3xl"
       style={{
         height: 'calc(100% + 24px)',
-        backgroundColor: 'var(--surface-elevated)',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Form area */}
@@ -298,14 +298,29 @@ export function EditNoteModal() {
         {/* Folder Dropdown */}
         {isFolderDropdownOpen && (
           <div
-            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border border-[var(--border)] shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             style={{
-              backgroundColor: 'var(--surface-card-solid)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             }}
           >
             {/* Search/Create input at top */}
-            <div className="p-2 border-b border-[var(--border)]">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--surface-elevated)] border border-[var(--border)] focus-within:border-[var(--color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--color-brand-500)]/20 transition-all duration-150">
+            <div
+              className="p-2 border-b"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border focus-within:border-[var(--color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--color-brand-500)]/20 transition-all duration-150"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                }}
+              >
                 <svg className="w-4 h-4 text-[var(--text-tertiary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -334,10 +349,10 @@ export function EditNoteModal() {
               <button
                 type="button"
                 onClick={() => { void handleFolderChange(null); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]"
                 style={{ color: 'var(--text-primary)' }}
               >
-                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--surface-elevated)]">
+                <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)]">
                   <svg className="w-4 h-4 text-[var(--text-tertiary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
@@ -356,7 +371,7 @@ export function EditNoteModal() {
                   key={folder}
                   type="button"
                   onClick={() => { void handleFolderChange(folder); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[var(--surface-hover)]"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   <div
@@ -364,7 +379,7 @@ export function EditNoteModal() {
                     style={{
                       backgroundColor: currentFolder === folder
                         ? 'var(--color-brand-500)'
-                        : 'var(--surface-elevated)',
+                        : 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
                     }}
                   >
                     <svg
@@ -493,7 +508,7 @@ export function EditNoteModal() {
               <div
                 className="w-8 h-8 border-2 rounded-full animate-spin"
                 style={{
-                  borderColor: 'var(--border)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   borderTopColor: 'var(--color-brand-500)',
                 }}
               />

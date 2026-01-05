@@ -256,8 +256,8 @@ export const DashboardPage = memo(function DashboardPage() {
         <div
           className="flex flex-col items-center text-center max-w-md p-8 rounded-2xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div

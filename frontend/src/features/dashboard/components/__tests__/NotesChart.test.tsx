@@ -121,16 +121,16 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
-      // Selected buttons use CSS classes for styling
-      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should not highlight unselected buttons', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
-      // Unselected buttons use CSS classes for styling
-      expect(button7D.className).toContain('bg-[var(--surface-elevated)]');
+      // Unselected buttons use inline styles for styling - color-mix pattern
+      expect(button7D).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' });
     });
 
     it('should call onTimeRangeChange when button clicked', () => {
@@ -192,7 +192,7 @@ describe('NotesChart', () => {
         <NotesChart {...defaultProps} isAnimationReady={false} />
       );
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toHaveStyle({ opacity: '0' });
     });
 
@@ -201,14 +201,14 @@ describe('NotesChart', () => {
         <NotesChart {...defaultProps} isAnimationReady={true} />
       );
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toHaveStyle({ opacity: '1' });
     });
 
     it('should default isAnimationReady to true', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toHaveStyle({ opacity: '1' });
     });
   });
@@ -220,7 +220,7 @@ describe('NotesChart', () => {
     it('should have rounded corners on container', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
 
-      const chartContainer = container.querySelector('.rounded-3xl');
+      const chartContainer = container.querySelector('.rounded-2xl');
       expect(chartContainer).toBeInTheDocument();
     });
 
@@ -238,19 +238,6 @@ describe('NotesChart', () => {
       expect(chartContainer).toBeInTheDocument();
     });
 
-    it('should render ambient glow effect', () => {
-      const { container } = render(<NotesChart {...defaultProps} />);
-
-      const glow = container.querySelector('.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
-
-    it('should have relative overflow hidden on container', () => {
-      const { container } = render(<NotesChart {...defaultProps} />);
-
-      const chartContainer = container.querySelector('.overflow-hidden');
-      expect(chartContainer).toBeInTheDocument();
-    });
   });
 
   // ============================================
@@ -320,16 +307,16 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={365} />);
 
       const button1Y = screen.getByText('1Y');
-      // Selected buttons use CSS classes for styling
-      expect(button1Y.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(button1Y).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should handle "All" time range (0 days)', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={0} />);
 
       const buttonAll = screen.getByText('All');
-      // Selected buttons use CSS classes for styling
-      expect(buttonAll.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(buttonAll).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
   });
 
@@ -337,23 +324,22 @@ describe('NotesChart', () => {
   // Button Interaction Tests
   // ============================================
   describe('button interactions', () => {
-    it('should have hover classes on unselected buttons', () => {
+    it('should have transition classes on buttons', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
 
-      // Unselected buttons have hover classes defined in CSS
-      expect(button7D.className).toContain('hover:bg-[var(--surface-hover)]');
+      // Buttons have transition classes
+      expect(button7D.className).toContain('transition-all');
     });
 
-    it('should not have hover background classes on selected button', () => {
+    it('should use brand color for selected button', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button30D = screen.getByText('30D');
 
-      // Selected button has brand color background and no hover:bg class for changing background
-      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
-      expect(button30D.className).not.toContain('hover:bg-[var(--surface-hover)]');
+      // Selected button has brand color background via inline style
+      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
   });
 });

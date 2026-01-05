@@ -678,7 +678,11 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         // RAG embedding provider settings for user preferences
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_provider character varying(50)",
         "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_model character varying(100)",
-        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_dimensions integer"
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS rag_embedding_dimensions integer",
+
+        // === AddNoteVersionMcpServer ===
+        // MCP server name tracking for note versions
+        "ALTER TABLE note_versions ADD COLUMN IF NOT EXISTS mcp_server_name character varying(100)"
     };
 
     var allSucceeded = true;

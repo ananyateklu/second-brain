@@ -215,6 +215,7 @@ export const API_ENDPOINTS = {
   // RAG / Indexing
   INDEXING: {
     START: '/indexing/start',
+    STREAM: '/indexing/start/stream',
     STATUS: (jobId: string) => `/indexing/status/${jobId}`,
     CANCEL: (jobId: string) => `/indexing/cancel/${jobId}`,
     STATS: '/indexing/stats',

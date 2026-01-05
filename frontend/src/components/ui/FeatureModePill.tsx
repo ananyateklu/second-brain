@@ -112,12 +112,9 @@ export function FeatureModePill({
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.03] active:scale-[0.97]'}
         `}
         style={{
-          backgroundColor: isActive ? activeColor.bg : 'var(--surface-elevated)',
+          backgroundColor: isActive ? activeColor.bg : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: isActive ? activeColor.text : 'var(--text-secondary)',
-          border: `1px solid ${isActive ? activeColor.border : 'var(--border)'}`,
-          boxShadow: isActive
-            ? `0 0 12px -4px ${activeColor.border}`
-            : 'none',
+          border: `1px solid ${isActive ? activeColor.border : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
         }}
         data-feature={featureId}
       >
@@ -140,7 +137,7 @@ export function FeatureModePill({
                   style={{
                     backgroundColor: isActive
                       ? `color-mix(in srgb, ${item.color} 20%, transparent)`
-                      : 'var(--surface-elevated)',
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: item.color,
                   }}
                 >
@@ -188,12 +185,11 @@ export function FeatureModePill({
           <div
             className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
             style={{
-              backgroundColor: 'var(--surface-card-solid, var(--surface-card))',
-              borderColor: 'var(--border)',
-              boxShadow: 'var(--shadow-xl), 0 0 40px -10px rgba(0, 0, 0, 0.3)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               minWidth: popoverWidth,
-              backdropFilter: 'blur(16px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+              backdropFilter: 'blur(20px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             }}
             role="dialog"
             aria-label={popoverTitle || `${label} settings`}
@@ -203,8 +199,8 @@ export function FeatureModePill({
               <div
                 className="px-4 py-3 border-b flex items-center justify-between"
                 style={{
-                  borderColor: 'var(--border)',
-                  backgroundColor: 'color-mix(in srgb, var(--surface) 50%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                 }}
               >
                 <h3
@@ -219,7 +215,7 @@ export function FeatureModePill({
                   className="p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
                   style={{
                     color: 'var(--text-tertiary)',
-                    backgroundColor: 'var(--surface)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   }}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -303,31 +303,97 @@
 \echo ''
 
 -- Step 48: RAG embedding settings
-\echo 'Step 48/50: Adding RAG embedding settings to user_preferences...'
+\echo 'Step 48/62: Adding RAG embedding settings to user_preferences...'
 \i 48_rag_embedding_settings.sql
 \echo 'RAG embedding settings added successfully.'
 \echo ''
 
--- Step 49: Thought signature for Gemini 3 function calling
-\echo 'Step 49/51: Adding thought_signature column for Gemini 3...'
+-- Step 49: Query expansion provider settings
+\echo 'Step 49/62: Adding query expansion provider settings...'
+\i 49_query_expansion_provider_settings.sql
+\echo 'Query expansion provider settings added successfully.'
+\echo ''
+
+-- Step 50: Dimension-specific indexes
+\echo 'Step 50/62: Creating dimension-specific indexes...'
+\i 50_dimension_specific_indexes.sql
+\echo 'Dimension-specific indexes created successfully.'
+\echo ''
+
+-- Step 51: Message markdown renderer
+\echo 'Step 51/62: Adding message markdown renderer...'
+\i 51_message_markdown_renderer.sql
+\echo 'Message markdown renderer added successfully.'
+\echo ''
+
+-- Step 52: Markdown renderer setting
+\echo 'Step 52/62: Adding markdown renderer setting...'
+\i 52_markdown_renderer.sql
+\echo 'Markdown renderer setting added successfully.'
+\echo ''
+
+-- Step 53: Note version AI provider tracking
+\echo 'Step 53/62: Adding note version AI provider tracking...'
+\i 53_note_version_ai_provider.sql
+\echo 'Note version AI provider tracking added successfully.'
+\echo ''
+
+-- Step 54: Focus items table
+\echo 'Step 54/62: Creating focus_items table...'
+\i 54_focus_items.sql
+\echo 'Focus items table created successfully.'
+\echo ''
+
+-- Step 55: Focus suggestions table
+\echo 'Step 55/62: Creating focus_suggestions table...'
+\i 55_focus_suggestions.sql
+\echo 'Focus suggestions table created successfully.'
+\echo ''
+
+-- Step 56: Focus suggestions variable dimensions
+\echo 'Step 56/62: Adding variable dimensions to focus_suggestions...'
+\i 56_focus_suggestions_variable_dimensions.sql
+\echo 'Variable dimensions added to focus_suggestions successfully.'
+\echo ''
+
+-- Step 57: Focus timer tracking
+\echo 'Step 57/62: Adding focus timer tracking...'
+\i 57_focus_timer_tracking.sql
+\echo 'Focus timer tracking added successfully.'
+\echo ''
+
+-- Step 58: Focus AI user settings
+\echo 'Step 58/62: Adding Focus AI user settings...'
+\i 58_focus_ai_user_settings.sql
+\echo 'Focus AI user settings added successfully.'
+\echo ''
+
+-- Step 59: Thought signature for Gemini 3 function calling
+\echo 'Step 59/62: Adding thought_signature column for Gemini 3...'
 \i 59_thought_signature.sql
 \echo 'Thought signature column added successfully.'
 \echo ''
 
--- Step 50: Focus suggestions vector index
-\echo 'Step 50/52: Creating HNSW vector index for focus_suggestions...'
+-- Step 60: Focus suggestions vector index
+\echo 'Step 60/62: Creating HNSW vector index for focus_suggestions...'
 \i 60_focus_suggestions_vector_index.sql
 \echo 'Focus suggestions vector index created successfully.'
 \echo ''
 
--- Step 51: Chat messages and tool calls soft delete
-\echo 'Step 51/52: Adding soft delete to chat_messages and tool_calls...'
+-- Step 61: Chat messages and tool calls soft delete
+\echo 'Step 61/63: Adding soft delete to chat_messages and tool_calls...'
 \i 61_chat_messages_soft_delete.sql
 \echo 'Soft delete columns added successfully.'
 \echo ''
 
--- Step 52: Final statistics update
-\echo 'Step 52/52: Updating statistics...'
+-- Step 62: MCP server name for note versions
+\echo 'Step 62/63: Adding MCP server tracking to note versions...'
+\i 63_note_version_mcp_server.sql
+\echo 'MCP server name column added successfully.'
+\echo ''
+
+-- Step 63: Final statistics update
+\echo 'Step 63/63: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''

@@ -190,8 +190,8 @@ describe('ModelUsageSection', () => {
       render(<ModelUsageSection {...defaultProps} />);
 
       const button30D = screen.getByText('30D');
-      // Selected buttons use CSS classes for styling
-      expect(button30D.className).toContain('bg-[var(--color-brand-600)]');
+      // Selected buttons use inline styles for styling
+      expect(button30D).toHaveStyle({ backgroundColor: 'var(--color-brand-600)' });
     });
 
     it('should call getFilteredModelUsageData with selected time range', () => {
@@ -262,7 +262,7 @@ describe('ModelUsageSection', () => {
         <ModelUsageSection {...defaultProps} isAnimationReady={false} />
       );
 
-      const section = container.querySelector('.rounded-3xl');
+      const section = container.querySelector('.rounded-2xl');
       expect(section).toHaveStyle({ opacity: '0' });
     });
 
@@ -271,7 +271,7 @@ describe('ModelUsageSection', () => {
         <ModelUsageSection {...defaultProps} isAnimationReady={true} />
       );
 
-      const section = container.querySelector('.rounded-3xl');
+      const section = container.querySelector('.rounded-2xl');
       expect(section).toHaveStyle({ opacity: '1' });
     });
   });
@@ -283,7 +283,7 @@ describe('ModelUsageSection', () => {
     it('should have rounded corners on container', () => {
       const { container } = render(<ModelUsageSection {...defaultProps} />);
 
-      const section = container.querySelector('.rounded-3xl');
+      const section = container.querySelector('.rounded-2xl');
       expect(section).toBeInTheDocument();
     });
 
@@ -292,13 +292,6 @@ describe('ModelUsageSection', () => {
 
       const section = container.querySelector('.border');
       expect(section).toBeInTheDocument();
-    });
-
-    it('should render ambient glow effect', () => {
-      const { container } = render(<ModelUsageSection {...defaultProps} />);
-
-      const glow = container.querySelector('.blur-3xl');
-      expect(glow).toBeInTheDocument();
     });
 
     it('should use 3-column grid layout', () => {

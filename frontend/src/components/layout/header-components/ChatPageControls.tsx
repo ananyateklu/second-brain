@@ -111,8 +111,8 @@ export const ChatPageControls = memo(function ChatPageControls() {
               color: isAllSelected ? 'var(--btn-primary-text)' : 'var(--text-primary)',
               backgroundColor: isAllSelected
                 ? 'var(--btn-primary-bg)'
-                : 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: `1px solid ${isAllSelected ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
             }}
             title={isAllSelected ? 'Deselect all' : 'Select all'}
           >
@@ -146,10 +146,9 @@ export const ChatPageControls = memo(function ChatPageControls() {
             style={{
               background: selectedConversationIds.size > 0
                 ? 'linear-gradient(135deg, var(--color-error), var(--color-error-dark, rgb(185, 28, 28)))'
-                : 'var(--surface-elevated)',
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: selectedConversationIds.size > 0 ? 'white' : 'var(--text-tertiary)',
-              boxShadow: selectedConversationIds.size > 0 ? '0 4px 12px -2px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
-              border: selectedConversationIds.size > 0 ? 'none' : '1px solid var(--border)',
+              border: selectedConversationIds.size > 0 ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               opacity: selectedConversationIds.size === 0 ? 0.6 : 1,
               cursor: selectedConversationIds.size === 0 ? 'not-allowed' : 'pointer',
             }}
@@ -165,9 +164,9 @@ export const ChatPageControls = memo(function ChatPageControls() {
             onClick={onExitSelectionMode}
             className="flex items-center justify-center px-3 py-2.5 my-1 rounded-xl backdrop-blur-md text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             Cancel
@@ -189,10 +188,9 @@ export const ChatPageControls = memo(function ChatPageControls() {
           onClick={toggleChatSidebar}
           className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
           style={{
-            backgroundColor: chatSidebarVisible ? 'var(--btn-primary-bg)' : 'var(--surface-elevated)',
+            backgroundColor: chatSidebarVisible ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: chatSidebarVisible ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-            border: `1px solid ${chatSidebarVisible ? 'var(--btn-primary-border)' : 'var(--border)'}`,
-            boxShadow: chatSidebarVisible ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)' : 'none',
+            border: `1px solid ${chatSidebarVisible ? 'var(--btn-primary-border)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
           }}
           title={chatSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
         >
@@ -211,9 +209,9 @@ export const ChatPageControls = memo(function ChatPageControls() {
             onClick={onToggleSelectionMode}
             className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
             title="Select conversations"
           >
@@ -231,7 +229,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
             border: '1px solid var(--btn-primary-border)',
-            boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
           }}
           title="New Chat"
         >
@@ -244,7 +241,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
       {/* Separator - aligned with sidebar border */}
       <div
         className="h-6 w-px flex-shrink-0"
-        style={{ backgroundColor: 'var(--border)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       />
 
       {/* Middle controls - Model selector and feature pills */}
@@ -270,7 +267,7 @@ export const ChatPageControls = memo(function ChatPageControls() {
         {/* Separator */}
         <div
           className="h-6 w-px flex-shrink-0"
-          style={{ backgroundColor: 'var(--border)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         />
 
         {/* Feature Mode Pills */}
@@ -315,7 +312,6 @@ export const ChatPageControls = memo(function ChatPageControls() {
                 backgroundColor: featureColors.image.bg,
                 color: featureColors.image.text,
                 border: `1px solid ${featureColors.image.border}`,
-                boxShadow: `0 0 12px -4px ${featureColors.image.border}`,
               }}
             >
               <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">

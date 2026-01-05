@@ -11,8 +11,8 @@ function SkeletonProviderCard() {
     <div
       className="rounded-3xl border px-4 py-4"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
@@ -67,9 +67,8 @@ function SkeletonProviderGrid() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -103,9 +102,8 @@ function SkeletonNoteSummarySettings() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-lg)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Header */}
@@ -171,7 +169,7 @@ function SkeletonNoteSummarySettings() {
             {/* Select All Toggle */}
             <div
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl ml-2"
-              style={{ backgroundColor: 'var(--surface-elevated)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
             >
               <ShimmerBlock className="w-4 h-4 rounded-xl" />
               <ShimmerBlock className="h-3 w-16" />
@@ -188,7 +186,7 @@ function SkeletonNoteSummarySettings() {
         {/* Notes Grid */}
         <div
           className="max-h-[18.2rem] overflow-hidden rounded-xl p-1.5"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
         >
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5">
             {Array.from({ length: 12 }).map((_, i) => (

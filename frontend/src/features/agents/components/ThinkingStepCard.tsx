@@ -71,7 +71,7 @@ const thinkingMarkdownComponents: Components = {
         <code
           className="block p-2 rounded text-xs overflow-x-auto thin-scrollbar"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-primary)',
           }}
           {...props}
@@ -82,7 +82,7 @@ const thinkingMarkdownComponents: Components = {
       <code
         className="px-1 py-0.5 rounded text-xs"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: 'var(--text-primary)',
         }}
         {...props}
@@ -94,7 +94,7 @@ const thinkingMarkdownComponents: Components = {
     <pre
       className="p-2 rounded overflow-x-auto thin-scrollbar text-xs [&:not(:last-child)]:mb-2"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
       }}
       {...props}
     />
@@ -104,7 +104,7 @@ const thinkingMarkdownComponents: Components = {
     <blockquote
       className="border-l-2 pl-3 italic [&:not(:first-child)]:mt-2 [&:not(:last-child)]:mb-2"
       style={{
-        borderColor: 'var(--border)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
         color: 'var(--text-tertiary)',
       }}
       {...props}
@@ -228,9 +228,9 @@ export const ThinkingStepCard = memo(function ThinkingStepCard({ step, isStreami
           <div
             className="mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto thinking-content"
             style={{
-              backgroundColor: 'var(--surface-card)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border)'
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)'
             }}
           >
             <div className="[&>*:last-child]:!mb-0 [&>*:last-child>*:last-child]:!mb-0">

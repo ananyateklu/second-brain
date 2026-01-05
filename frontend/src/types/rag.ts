@@ -107,6 +107,8 @@ export interface IndexStatsData {
   notIndexedCount: number;
   /** Number of notes that are indexed but have been modified since last indexing */
   staleNotesCount: number;
+  /** Vector embedding dimensions (e.g., 768, 1024, 1536, 3072) */
+  dimensions?: number;
 }
 
 /**

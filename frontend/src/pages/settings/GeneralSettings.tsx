@@ -53,9 +53,8 @@ export function GeneralSettings() {
             <section
                 className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
                 style={{
-                    backgroundColor: 'var(--surface-card)',
-                    borderColor: 'var(--border)',
-                    boxShadow: 'var(--shadow-lg)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
             >
                 <div className="flex flex-col gap-4">
@@ -108,13 +107,10 @@ export function GeneralSettings() {
                                             className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'var(--btn-primary-bg)'
-                                                    : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
-                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
+                                                    ? 'var(--color-brand-600)'
+                                                    : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                                                color: isActive ? '#ffffff' : 'var(--text-primary)',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -144,13 +140,10 @@ export function GeneralSettings() {
                                             className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'var(--btn-primary-bg)'
-                                                    : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
-                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
+                                                    ? 'var(--color-brand-600)'
+                                                    : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                                                color: isActive ? '#ffffff' : 'var(--text-primary)',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -189,13 +182,10 @@ export function GeneralSettings() {
                                             className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 flex items-center gap-2"
                                             style={{
                                                 backgroundColor: isActive
-                                                    ? 'var(--btn-primary-bg)'
-                                                    : 'var(--surface-elevated)',
-                                                borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
-                                                color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                                                boxShadow: isActive
-                                                    ? '0 4px 12px -2px rgba(54, 105, 61, 0.3)'
-                                                    : 'none',
+                                                    ? 'var(--color-brand-600)'
+                                                    : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                                borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                                                color: isActive ? '#ffffff' : 'var(--text-primary)',
                                                 transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                             }}
                                         >
@@ -241,9 +231,10 @@ export function GeneralSettings() {
                                     step={5}
                                     value={itemsPerPage}
                                     onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value, 10))}
-                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[color:var(--color-brand-600)]"
                                     style={{
-                                        background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) ${((itemsPerPage - 5) / 95) * 100}%, var(--surface-elevated) 100%)`,
+                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((itemsPerPage - 5) / 95) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) ${((itemsPerPage - 5) / 95) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) 100%)`,
+                                        accentColor: 'var(--color-brand-600)',
                                     }}
                                 />
                                 <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>100</span>
@@ -259,9 +250,8 @@ export function GeneralSettings() {
                 <section
                     className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
                     style={{
-                        backgroundColor: 'var(--surface-card)',
-                        borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow-lg)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
                 >
                     <div className="flex flex-col gap-3">
@@ -311,7 +301,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-success)',
                                             borderColor: 'var(--color-status-success-border)',
                                             color: 'var(--color-status-success-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-success) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -329,7 +318,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-error)',
                                             borderColor: 'var(--color-status-error-border)',
                                             color: 'var(--color-status-error-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-error) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -347,7 +335,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-warning)',
                                             borderColor: 'var(--color-status-warning-border)',
                                             color: 'var(--color-status-warning-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-warning) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -365,7 +352,6 @@ export function GeneralSettings() {
                                             backgroundColor: 'var(--color-status-info)',
                                             borderColor: 'var(--color-status-info-border)',
                                             color: 'var(--color-status-info-text)',
-                                            boxShadow: '0 4px 12px -2px color-mix(in srgb, var(--color-status-info) 30%, transparent)',
                                         }}
                                     >
                                         <div className="flex items-center justify-center gap-1.5">
@@ -379,7 +365,7 @@ export function GeneralSettings() {
                             </div>
 
                             {/* Advanced Features */}
-                            <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+                            <div className="pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                                 <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
                                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -400,8 +386,8 @@ export function GeneralSettings() {
                                         }}
                                         className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'var(--surface-elevated)',
-                                            borderColor: 'var(--border)',
+                                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                             color: 'var(--text-primary)',
                                         }}
                                     >
@@ -426,8 +412,8 @@ export function GeneralSettings() {
                                         }}
                                         className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'var(--surface-elevated)',
-                                            borderColor: 'var(--border)',
+                                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                             color: 'var(--text-primary)',
                                         }}
                                     >
@@ -451,8 +437,8 @@ export function GeneralSettings() {
                                         }}
                                         className="px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.02] active:scale-95"
                                         style={{
-                                            backgroundColor: 'var(--surface-elevated)',
-                                            borderColor: 'var(--border)',
+                                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                             color: 'var(--text-primary)',
                                         }}
                                     >
@@ -472,9 +458,8 @@ export function GeneralSettings() {
                 <section
                     className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
                     style={{
-                        backgroundColor: 'var(--surface-card)',
-                        borderColor: 'var(--border)',
-                        boxShadow: 'var(--shadow-lg)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
                 >
                     <div className="flex flex-col gap-3">
@@ -506,7 +491,7 @@ export function GeneralSettings() {
                             </div>
                         </div>
 
-                        <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
                                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
@@ -533,9 +518,10 @@ export function GeneralSettings() {
                                     step={500}
                                     value={autoSaveInterval}
                                     onChange={(e) => handleAutoSaveChange(parseInt(e.target.value, 10))}
-                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer transition-all duration-200"
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[color:var(--color-brand-600)]"
                                     style={{
-                                        background: `linear-gradient(to right, var(--btn-primary-bg) 0%, var(--btn-primary-bg) ${((autoSaveInterval - 500) / 9500) * 100}%, var(--surface-elevated) ${((autoSaveInterval - 500) / 9500) * 100}%, var(--surface-elevated) 100%)`,
+                                        background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) ${((autoSaveInterval - 500) / 9500) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) 100%)`,
+                                        accentColor: 'var(--color-brand-600)',
                                     }}
                                 />
                                 <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>10s</span>

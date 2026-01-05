@@ -97,9 +97,8 @@ export function Header() {
         <header
           className="mx-auto max-w-[95%] sm:max-w-[92%] rounded-[2.5rem] backdrop-blur-xl shadow-xl"
           style={{
-            border: `1px solid var(--border)`,
-            backgroundColor: 'var(--surface-card)',
-            boxShadow: 'var(--shadow-xl)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           }}
         >
           <div className="flex h-16 sm:h-20 items-center justify-between px-5 sm:px-8">
@@ -108,8 +107,8 @@ export function Header() {
               onClick={toggleMobileMenu}
               className="group relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
               aria-label="Toggle menu"
             >

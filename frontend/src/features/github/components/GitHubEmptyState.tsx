@@ -17,7 +17,7 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
       {/* GitHub Logo */}
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
-        style={{ backgroundColor: 'var(--surface-card)' }}
+        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' }}
       >
         <svg
           className="w-12 h-12"
@@ -73,8 +73,8 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
         <div
           className="w-full max-w-md p-4 rounded-xl mb-6"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <h3
@@ -113,8 +113,8 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
                 2
               </span>
               <span>
-                Generate a new token with <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>repo</code> and{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>workflow</code> scopes
+                Generate a new token with <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>repo</code> and{' '}
+                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>workflow</code> scopes
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -128,8 +128,8 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
                 3
               </span>
               <span>
-                Add the token to your <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>appsettings.json</code> under{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>GitHub:PersonalAccessToken</code>
+                Add the token to your <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>appsettings.json</code> under{' '}
+                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:PersonalAccessToken</code>
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -143,8 +143,8 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
                 4
               </span>
               <span>
-                Set <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>GitHub:DefaultOwner</code> and{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'var(--surface-elevated)' }}>GitHub:DefaultRepo</code> to your repository
+                Set <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultOwner</code> and{' '}
+                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultRepo</code> to your repository
               </span>
             </li>
           </ol>

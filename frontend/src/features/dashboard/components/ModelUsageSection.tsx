@@ -53,11 +53,13 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-[transform,background-color,color,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-      isSelected
-        ? 'scale-105 bg-[var(--color-brand-600)] text-white border border-[var(--color-brand-600)]'
-        : 'hover:scale-105 bg-[var(--surface-elevated)] text-[var(--text-secondary)] border border-[var(--border)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]'
-    }`}
+    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    style={{
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+      color: isSelected ? 'white' : 'var(--text-secondary)',
+      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+    }}
   >
     {option.label}
   </button>
@@ -77,20 +79,21 @@ const LegendButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-[transform,background-color,opacity,border-color] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] hover:bg-[var(--surface-hover)] hover:scale-105 ${
-      isHidden
-        ? 'bg-[var(--surface-hover)] opacity-50 border border-[var(--border)]'
-        : 'bg-transparent opacity-100 border border-transparent'
-    }`}
+    className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-all duration-200"
+    style={{
+      backgroundColor: isHidden ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)' : 'transparent',
+      opacity: isHidden ? 0.5 : 1,
+      border: isHidden ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : '1px solid transparent',
+    }}
   >
     <div
       className="w-3 h-3 rounded-full flex-shrink-0"
       style={{ backgroundColor: entry.color }}
     />
-    <span className="text-xs font-medium text-[var(--text-primary)]">
+    <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
       {entry.name}
     </span>
-    <span className="text-xs text-[var(--text-secondary)]">
+    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
       ({entry.value} msgs)
     </span>
   </button>
@@ -113,12 +116,8 @@ export function ModelUsageSection({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'var(--surface-card)',
-    borderColor: 'var(--border)',
-    // Simpler shadow for WebKit
-    boxShadow: isWebKit
-      ? 'var(--shadow-lg)'
-      : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
+    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -128,17 +127,6 @@ export function ModelUsageSection({
     willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
   }), [isWebKit, isAnimationReady, animationDelay]);
-
-  // Glow effect styles - disabled on WebKit
-  const glowStyles = useMemo<CSSProperties>(() =>
-    isWebKit
-      ? { display: 'none' }
-      : {
-        background: 'radial-gradient(circle, var(--color-primary), transparent)',
-        opacity: 0.2,
-      },
-    [isWebKit]
-  );
 
   // Get filtered and aggregated data
   const { data: filteredData, allFilteredModels, modelDataMap } = useMemo(
@@ -274,16 +262,9 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-3xl border p-[19px] relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        className={`rounded-2xl border p-[19px] relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
         style={containerStyles}
       >
-        {/* Ambient glow effect - hidden on WebKit for performance */}
-        <div
-          className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-          style={glowStyles}
-          aria-hidden="true"
-        />
-
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -332,8 +313,8 @@ export function ModelUsageSection({
                 <div
                   className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    border: '1px solid var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   }}
                 >
                   <div className="space-y-4">
@@ -345,7 +326,7 @@ export function ModelUsageSection({
                             className="text-sm font-semibold mb-2 pb-1 border-b"
                             style={{
                               color: 'var(--text-primary)',
-                              borderColor: 'var(--border)',
+                              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                             }}
                           >
                             {provider}
@@ -382,7 +363,7 @@ export function ModelUsageSection({
                                     <span
                                       className="text-[10px] px-1.5 py-0.5 rounded-full"
                                       style={{
-                                        backgroundColor: 'var(--surface-hover)',
+                                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                                         color: 'var(--text-tertiary)'
                                       }}
                                       title={`${entry.tokens.toLocaleString()} tokens`}
@@ -524,7 +505,7 @@ export function ModelUsageSection({
                 <div
                   className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}
                 >
                   {dataWithColors.map((entry) => (

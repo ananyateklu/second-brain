@@ -265,7 +265,19 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
             // Column already exists - ignore
         }
 
-        // Create/replace the versioning function with all 14 parameters (including AI provider info)
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE note_versions
+                ADD COLUMN IF NOT EXISTS mcp_server_name VARCHAR(100) DEFAULT NULL;
+            ");
+        }
+        catch (Npgsql.PostgresException ex) when (ex.SqlState == "42701")
+        {
+            // Column already exists - ignore
+        }
+
+        // Create/replace the versioning function with all 15 parameters (including AI provider and MCP server info)
         // Even CREATE OR REPLACE can fail with 23505 in concurrent environments
         try
         {
@@ -284,7 +296,8 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                     p_content_format INTEGER DEFAULT 0,
                     p_image_ids TEXT[] DEFAULT ARRAY[]::TEXT[],
                     p_ai_provider VARCHAR(50) DEFAULT NULL,
-                    p_ai_model VARCHAR(100) DEFAULT NULL
+                    p_ai_model VARCHAR(100) DEFAULT NULL,
+                    p_mcp_server_name VARCHAR(100) DEFAULT NULL
                 )
                 RETURNS INT AS $$
                 DECLARE
@@ -322,6 +335,7 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         image_ids,
                         ai_provider,
                         ai_model,
+                        mcp_server_name,
                         created_at
                     ) VALUES (
                         gen_random_uuid()::text,
@@ -341,6 +355,7 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
                         p_image_ids,
                         p_ai_provider,
                         p_ai_model,
+                        p_mcp_server_name,
                         v_now
                     );
 

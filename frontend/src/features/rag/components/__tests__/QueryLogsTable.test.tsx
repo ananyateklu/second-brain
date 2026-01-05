@@ -326,10 +326,5 @@ describe('QueryLogsTable', () => {
       expect(wrapper).toHaveClass('backdrop-blur-md', 'rounded-2xl');
     });
 
-    it('should have ambient glow element', () => {
-      const { container } = render(<QueryLogsTable {...defaultProps} />);
-      const glow = container.querySelector('.opacity-10.blur-3xl');
-      expect(glow).toBeInTheDocument();
-    });
   });
 });

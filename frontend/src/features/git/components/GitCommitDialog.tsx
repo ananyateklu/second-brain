@@ -67,18 +67,15 @@ export const GitCommitDialog = memo(function GitCommitDialog({
       {/* Backdrop */}
       <div
         className="absolute inset-0 backdrop-blur-sm transition-opacity duration-300"
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden"
+        className="relative w-full max-w-lg rounded-2xl overflow-hidden backdrop-blur-xl bg-[var(--glass-bg)]"
         style={{
-          backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-2xl), 0 0 60px -20px var(--color-primary-alpha)',
-          backdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
         }}
       >
         {/* Ambient glow effect */}
@@ -90,7 +87,7 @@ export const GitCommitDialog = memo(function GitCommitDialog({
         />
         {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-5"
+          className="flex items-center justify-between px-6 py-5 bg-[var(--glass-header)]"
           style={{ borderBottom: '1px solid var(--border)' }}
         >
           <div className="flex items-center gap-4">
@@ -98,7 +95,6 @@ export const GitCommitDialog = memo(function GitCommitDialog({
               className="flex items-center justify-center w-10 h-10 rounded-xl"
               style={{
                 background: 'linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600))',
-                boxShadow: '0 2px 8px var(--color-primary-alpha)',
               }}
             >
               <GitCommit className="w-5 h-5 text-white" />
@@ -119,8 +115,8 @@ export const GitCommitDialog = memo(function GitCommitDialog({
             onClick={onClose}
             className="flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -128,18 +124,18 @@ export const GitCommitDialog = memo(function GitCommitDialog({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 bg-[var(--glass-body)]">
           {/* Staged files summary */}
           <div
             className="rounded-xl overflow-hidden"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <div
               className="flex items-center gap-3 px-4 py-3"
-              style={{ borderBottom: '1px solid var(--border)' }}
+              style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             >
               <FileCheck className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />
               <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -203,17 +199,18 @@ export const GitCommitDialog = memo(function GitCommitDialog({
               rows={4}
               className="w-full px-4 py-3 rounded-xl text-sm resize-none transition-all duration-200 focus:outline-none"
               style={{
-                backgroundColor: 'var(--surface-elevated)',
-                border: '1px solid var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-primary)',
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-                e.currentTarget.style.boxShadow = '0 0 0 3px var(--color-primary-alpha)';
+                e.currentTarget.style.outline = '3px solid var(--color-primary-alpha)';
+                e.currentTarget.style.outlineOffset = '-1px';
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                e.currentTarget.style.outline = 'none';
               }}
               autoFocus
             />
@@ -237,8 +234,8 @@ export const GitCommitDialog = memo(function GitCommitDialog({
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >
@@ -251,7 +248,6 @@ export const GitCommitDialog = memo(function GitCommitDialog({
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
-              boxShadow: 'var(--btn-primary-shadow)',
             }}
           >
             {/* Shimmer effect */}

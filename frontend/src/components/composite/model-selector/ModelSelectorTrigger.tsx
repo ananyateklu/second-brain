@@ -117,10 +117,9 @@ export const ModelSelectorTrigger = forwardRef<
         'flex items-center gap-2 max-w-[280px]'
       )}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         color: 'var(--text-primary)',
-        border: `1px solid ${isRefreshing ? 'var(--color-primary)' : 'var(--border)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg)' : 'none',
+        border: `1px solid ${isRefreshing ? 'var(--color-primary)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
       }}
       aria-expanded={isOpen}
       aria-haspopup="listbox"

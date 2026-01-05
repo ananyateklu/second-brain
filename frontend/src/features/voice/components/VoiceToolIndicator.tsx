@@ -38,7 +38,6 @@ export function VoiceToolIndicator({ isExecuting, toolName, className = '' }: Vo
           style={{
             backgroundColor: 'var(--surface-elevated)',
             border: '1px solid var(--border)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
           }}
         >
           {/* Spinning indicator */}

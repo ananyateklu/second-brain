@@ -76,11 +76,11 @@ export function ChatInputSmartPromptsPanel() {
         <button
           onClick={onGenerateSmartPrompts}
           disabled={isLoadingPrompts}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-xl"
           style={{
-            backgroundColor: promptsGenerated ? 'var(--surface-card-solid)' : 'var(--surface-card-solid)',
+            background: 'var(--glass-bg)',
             color: promptsGenerated ? 'var(--text-secondary)' : 'var(--color-brand-400)',
-            border: promptsGenerated ? '1px solid var(--border)' : '1px solid var(--color-brand-400)',
+            border: promptsGenerated ? '1px solid var(--glass-border)' : '1px solid var(--color-brand-400)',
           }}
         >
           {isLoadingPrompts ? (
@@ -121,14 +121,14 @@ export function ChatInputSmartPromptsPanel() {
           <button
             key={prompt.id}
             onClick={() => { onPromptClick(prompt); }}
-            className={`${styles.promptChip} px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate`}
+            className={`${styles.promptChip} px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate backdrop-blur-xl`}
             style={{
               '--chip-index': index,
-              backgroundColor: promptsGenerated
+              background: promptsGenerated
                 ? 'var(--prompt-chip-bg)'
-                : 'var(--surface-elevated)',
+                : 'var(--glass-bg)',
               color: promptsGenerated ? 'var(--prompt-chip-text)' : 'var(--text-secondary)',
-              border: promptsGenerated ? '1px solid var(--prompt-chip-border)' : '1px solid var(--border)',
+              border: promptsGenerated ? '1px solid var(--prompt-chip-border)' : '1px solid var(--glass-border)',
             } as React.CSSProperties}
             title={prompt.promptTemplate}
           >

@@ -226,7 +226,8 @@ describe('SessionStatsSection', () => {
 
       const { container } = render(<SessionStatsSection />);
 
-      const pulseIndicator = container.querySelector('.bg-green-500.animate-pulse');
+      // Component uses inline style for color with animate-pulse class
+      const pulseIndicator = container.querySelector('.w-2.h-2.rounded-full.animate-pulse');
       expect(pulseIndicator).toBeInTheDocument();
     });
   });

@@ -33,8 +33,6 @@ export const GitHubRepoSelector = () => {
   const githubOwner = useBoundStore((state) => state.githubOwner);
   const githubRepo = useBoundStore((state) => state.githubRepo);
   const setGitHubRepo = useBoundStore((state) => state.setGitHubRepo);
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
 
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -145,8 +143,8 @@ export const GitHubRepoSelector = () => {
       <div
         className="flex items-center p-1 my-1 rounded-xl backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <button
@@ -156,9 +154,9 @@ export const GitHubRepoSelector = () => {
               setTimeout(() => inputRef.current?.focus(), 100);
             }
           }}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
           style={{
-            backgroundColor: isOpen ? 'var(--surface-card)' : 'transparent',
+            backgroundColor: isOpen ? 'color-mix(in srgb, var(--text-primary) 2%, transparent)' : 'transparent',
             color: 'var(--text-primary)',
           }}
         >
@@ -182,19 +180,14 @@ export const GitHubRepoSelector = () => {
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 w-80 rounded-xl border shadow-lg z-50 overflow-hidden"
+          className="absolute top-full left-0 mt-2 w-80 rounded-xl border shadow-lg z-50 overflow-hidden backdrop-blur-xl"
           style={{
-            backgroundColor: isBlueTheme
-              ? 'rgba(10, 22, 40, 0.98)'
-              : 'var(--surface-card-solid)',
-            borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-xl)',
-            backdropFilter: 'blur(12px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {/* Search Input */}
-          <div className="p-3 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div className="p-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -221,18 +214,18 @@ export const GitHubRepoSelector = () => {
                 placeholder="Search or enter owner/repo"
                 className="w-full pl-10 pr-3 py-2 rounded-lg text-sm outline-none"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               />
             </div>
             {inputValue.includes('/') && (
               <button
                 onClick={() => handleSubmit(inputValue)}
-                className="mt-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+                className="mt-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -268,13 +261,13 @@ export const GitHubRepoSelector = () => {
                       <button
                         key={repo.id}
                         onClick={() => handleSelectRepo(repo)}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
                         style={{
                           backgroundColor:
                             repo.fullName === fullName
-                              ? 'var(--color-primary-alpha)'
+                              ? 'var(--color-brand-600)'
                               : 'transparent',
-                          color: 'var(--text-primary)',
+                          color: repo.fullName === fullName ? '#ffffff' : 'var(--text-primary)',
                         }}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -303,7 +296,7 @@ export const GitHubRepoSelector = () => {
 
                 {/* External Recent Repos */}
                 {externalRecentRepos.length > 0 && !inputValue && (
-                  <div className="p-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="p-2 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                     <p
                       className="text-xs font-medium px-2 py-1 uppercase tracking-wider"
                       style={{ color: 'var(--text-tertiary)' }}
@@ -314,13 +307,13 @@ export const GitHubRepoSelector = () => {
                       <button
                         key={repo.fullName}
                         onClick={() => handleSelectRepo(repo)}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
                         style={{
                           backgroundColor:
                             repo.fullName === fullName
-                              ? 'var(--color-primary-alpha)'
+                              ? 'var(--color-brand-600)'
                               : 'transparent',
-                          color: 'var(--text-primary)',
+                          color: repo.fullName === fullName ? '#ffffff' : 'var(--text-primary)',
                         }}
                       >
                         <span className="truncate" title={repo.fullName}>
@@ -344,7 +337,7 @@ export const GitHubRepoSelector = () => {
           </div>
 
           {/* Bottom actions */}
-          <div className="p-2 border-t flex items-center gap-2" style={{ borderColor: 'var(--border)' }}>
+          <div className="p-2 border-t flex items-center gap-2" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <button
               onClick={() => void refetch()}
               disabled={isFetching}

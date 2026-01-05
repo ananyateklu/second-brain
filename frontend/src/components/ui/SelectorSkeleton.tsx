@@ -10,7 +10,6 @@ export function SelectorSkeleton({ text = 'Loading options...' }: SelectorSkelet
         style={{
           backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-md)',
         }}
       >
         {/* Text */}

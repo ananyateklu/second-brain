@@ -1,164 +1,168 @@
 # Current Session Context
 
-> **Last Updated**: 2026-01-03 14:00:00
-> **Focus**: MCP Servers for Claude Code integration - COMPLETE & TESTED
+> **Last Updated**: 2026-01-04
+> **Focus**: SSE Streaming Refinements & Stop Button
 
 ---
 
-## Session Summary
+## Current Work: Real-Time Stats Persistence
 
-### MCP Servers - COMPLETE & VERIFIED
+### Status: FIXED
 
-Built two MCP servers for Claude Code integration:
+After indexing completes, the final stats from SSE now persist correctly in the UI.
 
-1. **mcp-notes-server** - Notes CRUD, search, version history via REST API
-2. **mcp-pg-server** - Direct PostgreSQL access with safety features
+### Issues Found & Fixed
 
-Both servers tested and working. Security audit complete - no hardcoded credentials.
+1. **Immediate invalidation overwrote cache**: We were calling `invalidateQueries` right after `setQueryData`, which triggered a refetch that overwrote the cache with stale data.
+   - **Fix**: Only invalidate when we DON'T have finalStats (error/cancel cases)
 
----
-
-## MCP Notes Server
-
-### Structure
-
-```
-tools/mcp-notes-server/
-├── package.json              # @modelcontextprotocol/sdk
-├── tsconfig.json             # ES2022, NodeNext modules
-├── README.md                 # Setup with env var docs
-└── src/
-    ├── index.ts              # MCP server entry point (8 tools)
-    ├── types.ts              # TypeScript interfaces
-    ├── api-client.ts         # HTTP client with ApiKey auth
-    └── handlers/
-        ├── index.ts          # Handler exports
-        ├── note-crud.ts      # create, get, update, delete
-        ├── note-list.ts      # list, search
-        └── note-versions.ts  # versions, restore
-```
-
-### Tools (8 total) - ALL TESTED
-
-| Tool | Status | Description |
-|------|--------|-------------|
-| `create_note` | ✅ | Create note with title, content, tags, folder |
-| `get_note` | ✅ | Get full note content by ID |
-| `update_note` | ✅ | Partial update of note fields |
-| `delete_note` | ✅ | Soft delete (can be restored) |
-| `list_notes` | ✅ | Paginated list with filters |
-| `search_notes` | ✅ | Text search in notes |
-| `get_note_versions` | ✅ | PostgreSQL 18 temporal version history |
-| `restore_note_version` | ✅ | Non-destructive version restore |
+2. **Hardcoded userId**: Was using `'default-user'` instead of actual userId from Zustand store.
+   - **Fix**: Get userId from `useBoundStore.getState().user?.userId`
 
 ---
 
-## MCP PostgreSQL Server
+## Completed Today: SSE Streaming Refinements
 
-### Structure
+### 1. Navigation Persistence Fix
 
+**Problem**: UI broke when navigating away from Settings page during indexing - SSE stream stopped.
+
+**Solution**: Refactored `useIndexingStream` hook to use `useSyncExternalStore` for proper React synchronization with the global `IndexingStreamManager`.
+
+**Files Changed**:
+- `use-indexing.ts` - Added snapshot caching, stable getSnapshot functions per vector store
+- Uses `useSyncExternalStore(subscribeToManager, getSnapshot, getSnapshot)` pattern
+
+### 2. Removed 404 Polling Errors
+
+**Problem**: Failed requests to `/api/indexing/status/{jobId}` showing 404 errors.
+
+**Solution**: Removed redundant `useIndexingStatus` polling from `JobCard.tsx` since SSE streaming updates the Zustand store directly.
+
+### 3. Fixed Excessive Stats Polling
+
+**Problem**: `/api/indexing/stats` endpoint was being polled every 2 seconds during indexing, taking 1.8-6 seconds to respond.
+
+**Solution**: Changed polling logic to NEVER poll during SSE streaming:
+```typescript
+const shouldPollStats = !isStreaming && (finalizingPostgres || finalizingPinecone);
 ```
-tools/mcp-pg-server/
-├── package.json              # pg, fastest-levenshtein
-├── tsconfig.json
-├── README.md                 # Env var configuration docs
-├── test.ts                   # Test script (uses DATABASE_URL env)
-└── src/
-    └── index.ts              # 7 tools with safety features
-```
 
-### Tools (7 total)
+### 4. Stop Button Implementation
 
-| Tool | Description |
-|------|-------------|
-| `execute_sql` | SQL with auto-limit, dry_run, explain, validation |
-| `search_objects` | Schema discovery with fuzzy matching |
-| `get_soft_delete_tables` | List tables using is_deleted pattern |
-| `suggest_table` | Fuzzy table name matching |
-| `get_foreign_keys` | Relationship discovery |
-| `get_table_sizes` | Disk usage statistics |
-| `search_columns` | Cross-table column search |
+**Problem**: No way to stop indexing once started.
 
----
+**Solution**: Added stop button to `IndexHealthCard` with full backend cancellation support.
 
-## Security Audit - COMPLETE
-
-### Credentials Removed
-
+**Frontend Changes**:
 | File | Change |
 |------|--------|
-| `tools/mcp-pg-server/test.ts` | Changed hardcoded DSN → `process.env.DATABASE_URL` |
-| `.mcp.json` | Stays in `.gitignore` (contains real credentials) |
+| `IndexHealthCard.tsx` | Added `onStopIndexing`, `isStoppingIndexing` props, red Stop button UI |
+| `IndexHealthDashboard.tsx` | Added `handleStopIndexing` callback, stopping state per vector store |
+| `indexing-stream-manager.ts` | Made `stopStream` async, calls backend cancel API |
 
-### Configuration Pattern
+**Backend Changes**:
+| File | Change |
+|------|--------|
+| `IndexingService.cs` | Added `_streamingJobCancellations` static dictionary to track streaming jobs |
+| `IndexingService.cs` | `StreamIndexingAsync` registers linked CTS, cleans up in finally block |
+| `IndexingService.cs` | `CancelIndexingAsync` checks streaming registry first, then database |
 
-Servers use environment variables (not hardcoded):
-- `DATABASE_URL` - PostgreSQL connection string
-- `SECOND_BRAIN_API_URL` - API base URL
-- `SECOND_BRAIN_API_KEY` - API authentication key
+**Flow**:
+1. User clicks Stop → Frontend calls `cancelIndexing(vectorStore)`
+2. Frontend calls `POST /api/indexing/cancel/{jobId}`
+3. Backend finds streaming job's CTS in registry
+4. Backend calls `CancelAsync()` on the CTS
+5. Linked token triggers `IsCancellationRequested` in streaming loop
+6. Streaming stops at next note boundary
 
-### Files Safe to Commit
+### 5. Final Stats Cache Update (Partial)
 
-- `.mcp.json.example` - Template with placeholders (`YOUR_PASSWORD`, `YOUR_API_KEY_HERE`)
-- All source code in `tools/mcp-*/src/`
-- READMEs with env var documentation
+**Problem**: After indexing completes, UI waits for slow `/api/indexing/stats` endpoint instead of using `finalStats` from SSE `complete` event.
 
----
+**Solution Implemented**:
+- Updated `StreamListener` type to include optional `finalStats` parameter
+- On `complete` event, passes `completeData.finalStats` to listeners
+- Hook uses `queryClient.setQueryData()` to update cache immediately
 
-## Git Status
-
-### Staged for Commit
-
-```
-.gitignore                           # Updated - allow MCP source, keep .mcp.json ignored
-.mcp.json.example                    # NEW - Template for users
-tools/mcp-notes-server/              # NEW - 8 files
-tools/mcp-pg-server/                 # NEW - 5 files
-.claude/session.md                   # Updated
-frontend/src-tauri/src/lib.rs        # Modified
-```
-
-### Still Ignored
-
-- `.mcp.json` - Contains real credentials
-- `tools/*/node_modules/` - Dependencies
-- `tools/*/dist/` - Build output
+**Status**: Implemented but not working as expected - stats not persisting.
 
 ---
 
-## Configuration
+## Architecture: Global SSE Manager
 
-### .mcp.json.example (Template)
+The `IndexingStreamManager` class manages SSE connections outside React component lifecycle:
 
-```json
-{
-  "mcpServers": {
-    "pg-docker": {
-      "command": "node",
-      "args": ["./tools/mcp-pg-server/dist/index.js"],
-      "env": {
-        "DATABASE_URL": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/secondbrain"
-      }
-    },
-    "second-brain-notes": {
-      "command": "node",
-      "args": ["./tools/mcp-notes-server/dist/index.js"],
-      "env": {
-        "SECOND_BRAIN_API_URL": "http://localhost:5001/api",
-        "SECOND_BRAIN_API_KEY": "YOUR_API_KEY_HERE"
-      }
-    }
-  }
+```typescript
+class IndexingStreamManager {
+  private activeStreams: Map<VectorStoreProvider, ActiveStream>;
+  private listeners: Set<StreamListener>;
+
+  async startStream(params): Promise<void>;      // Start SSE for a vector store
+  async stopStream(vectorStore, cancelBackendJob): Promise<void>;  // Cancel SSE stream + backend job
+  isStreaming(vectorStore): boolean;              // Check if streaming
+  getProgress(vectorStore): Progress | null;      // Get current progress
+  getStats(vectorStore): Stats | null;            // Get current stats
+  subscribe(listener): () => void;                // Subscribe to updates (includes finalStats)
 }
+
+export const indexingStreamManager = new IndexingStreamManager();
+```
+
+The React hook `useIndexingStream()` uses `useSyncExternalStore` to subscribe to this manager with proper React synchronization.
+
+---
+
+## Previous: Index Health Dashboard Redesign
+
+### Status: COMPLETE
+
+Redesigned the Index Health section in Settings > Indexing with a modern, polished UI featuring ring progress visualization, side-by-side vector store cards, and enhanced metrics.
+
+### New Components Created
+
+**Location**: `frontend/src/components/data-display/index-health/`
+
+| Component | Purpose |
+|-----------|---------|
+| `RingProgress.tsx` | SVG circular progress showing indexed coverage (0-100%) |
+| `MetricsRow.tsx` | 4-column grid: Not Indexed, Stale, Embeddings, Dimensions |
+| `StorageEstimate.tsx` | Calculates & displays storage size (embeddings × dims × 4 bytes) |
+| `ActivitySparkline.tsx` | Mini line chart showing 7-day activity trend |
+| `StatusFooter.tsx` | Health status with icon + text + last indexed + provider |
+| `IndexHealthCard.tsx` | Main card combining all above components |
+| `IndexHealthCardSkeleton.tsx` | Loading skeleton matching card structure |
+| `PineconeSetupCard.tsx` | Setup prompt for Tauri/desktop mode |
+| `IndexHealthDashboard.tsx` | Container rendering side-by-side cards |
+| `index.ts` | Barrel export |
+
+---
+
+## Completed: Subtle Frosted Glass UI (FINALIZED)
+
+All pages have been updated with subtle frosted glass styling. See patterns below for reference.
+
+### Standard Color-Mix Values
+
+```css
+/* Card/Container Backgrounds */
+background-color: color-mix(in srgb, var(--text-primary) 2%, transparent);
+
+/* Button & Input Backgrounds */
+background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+
+/* Borders & Dividers */
+border-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
+
+/* Floating Containers (dropdowns, modals) */
+background-color: color-mix(in srgb, var(--background) 90%, transparent);
+backdrop-filter: blur(20px) saturate(180%);
+
+/* Selected/Active States */
+background-color: var(--color-brand-600);
+color: #ffffff;
 ```
 
 ---
 
-## Next Steps
-
-1. Commit the staged changes
-2. Update memory.md with MCP server learnings
-
----
-
-**Remember**: This file is for current session work. Long-term learnings go in `.claude/memory.md`.
+**Remember**: This file is for current session work. Long-term learnings are in `.claude/memory.md`.

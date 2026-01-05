@@ -13,7 +13,7 @@ export function ModelsList({
   focusedIndex,
   onModelSelect,
   onModelHover,
-  isBlueTheme,
+  isBlueTheme: _isBlueTheme,
 }: ModelsListProps) {
   const selectedModelRef = useRef<HTMLButtonElement>(null);
 
@@ -47,13 +47,11 @@ export function ModelsList({
         <div key={group.category}>
           {/* Category Header */}
           <div
-            className="px-4 py-2 text-xs font-semibold uppercase tracking-wider sticky top-0"
+            className="px-4 py-2 text-xs font-semibold uppercase tracking-wider sticky top-0 backdrop-blur-md"
             style={{
-              backgroundColor: isBlueTheme
-                ? 'rgba(10, 22, 40, 0.98)'
-                : 'var(--surface-card-solid)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
               color: 'var(--text-secondary)',
-              borderBottom: '1px solid var(--border)',
+              borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             {group.displayName}
@@ -75,12 +73,11 @@ export function ModelsList({
                 onClick={() => onModelSelect(model)}
                 onMouseEnter={() => onModelHover(flatIndex)}
                 className={cn(
-                  'w-full text-left px-4 py-2.5 transition-colors duration-150 text-sm',
-                  isFocused && 'bg-[var(--surface-elevated)]'
+                  'w-full text-left px-4 py-2.5 transition-colors duration-150 text-sm'
                 )}
                 style={{
                   backgroundColor: isFocused
-                    ? 'var(--surface-elevated)'
+                    ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
                     : 'transparent',
                   color: isSelected
                     ? 'var(--color-brand-400)'

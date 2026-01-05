@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { IndexingButton } from '../../features/rag/components/indexing';
-import { IndexingStats } from '../../components/ui/IndexingStats';
+import { IndexHealthDashboard } from '../../components/data-display/index-health';
 import { useBoundStore } from '../../store/bound-store';
 import { indexingKeys } from '../../lib/query-keys';
 
@@ -24,9 +24,8 @@ export function IndexingSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -79,9 +78,8 @@ export function IndexingSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
@@ -124,7 +122,6 @@ export function IndexingSettings() {
               backgroundColor: 'var(--btn-primary-bg)',
               borderColor: 'var(--btn-primary-border)',
               color: 'var(--btn-primary-text)',
-              boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
             }}
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -134,7 +131,7 @@ export function IndexingSettings() {
           </button>
         </div>
 
-        <IndexingStats userId={user.userId} />
+        <IndexHealthDashboard userId={user.userId} />
       </section>
     </div>
   );

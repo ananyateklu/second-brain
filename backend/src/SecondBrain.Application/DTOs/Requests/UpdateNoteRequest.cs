@@ -59,5 +59,16 @@ public sealed class UpdateNoteRequest
     /// IDs of existing images to delete from the note
     /// </summary>
     public List<string>? DeletedImageIds { get; set; }
+
+    /// <summary>
+    /// Source of the change (e.g., "web", "mcp", "agent").
+    /// If not provided, defaults to "web".
+    /// </summary>
+    public string? Source { get; set; }
+
+    /// <summary>
+    /// MCP server name when updated via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// </summary>
+    public string? McpServerName { get; set; }
 }
 

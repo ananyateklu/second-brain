@@ -92,16 +92,16 @@ export const NoteListItem = memo(({
     if (isHovered) {
       return 'var(--color-brand-500)';
     }
-    return 'var(--border)';
+    return 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
   };
 
   const getBackgroundStyle = () => {
     if (isBulkMode && isSelected) {
       return isDarkMode
-        ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-card))'
-        : 'color-mix(in srgb, var(--color-brand-100) 30%, var(--surface-card))';
+        ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
+        : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'var(--surface-card)';
+    return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
   return (
@@ -112,11 +112,8 @@ export const NoteListItem = memo(({
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        boxShadow: isHovered
-          ? 'var(--shadow-md), 0 0 20px -10px var(--color-primary-alpha)'
-          : 'var(--shadow-sm)',
         transform: isHovered ? 'scale-[1.005]' : 'none',
-        willChange: 'transform, box-shadow',
+        willChange: 'transform',
       }}
       onClick={handleItemClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -128,8 +125,8 @@ export const NoteListItem = memo(({
           <div
             className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded border-2 transition-all duration-200"
             style={{
-              backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-card)',
-              borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
+              backgroundColor: isSelected ? 'var(--color-brand-600)' : 'transparent',
+              borderColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             {isSelected && (
@@ -224,7 +221,7 @@ export const NoteListItem = memo(({
             className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)] ${isHovered ? 'opacity-100' : 'opacity-0'
               }`}
             style={{
-              backgroundColor: 'var(--surface-hover)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
             aria-label="Delete note"

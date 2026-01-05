@@ -22,7 +22,6 @@ export function HealthIndicator({ isHealthy, hasData }: HealthIndicatorProps) {
       className="w-1.5 h-1.5 rounded-full"
       style={{
         backgroundColor: color,
-        boxShadow: `0 0 0 2px color-mix(in srgb, ${color} 20%, transparent)`,
       }}
       title={isHealthy ? 'Healthy' : 'Needs attention'}
     />

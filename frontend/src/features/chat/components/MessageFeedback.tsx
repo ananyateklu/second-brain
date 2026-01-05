@@ -198,8 +198,8 @@ export function MessageFeedback({
         <div
           className="mt-3 p-3 rounded-lg border"
           style={{
-            backgroundColor: 'var(--surface-elevated)',
-            borderColor: 'var(--border-secondary)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <p
@@ -219,13 +219,12 @@ export function MessageFeedback({
                   }`}
                 style={{
                   backgroundColor: selectedCategory === cat.value
-                    ? 'var(--accent-primary-bg)'
-                    : 'var(--surface-card)',
+                    ? 'var(--color-brand-600)'
+                    : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: selectedCategory === cat.value
-                    ? 'var(--accent-primary)'
+                    ? '#ffffff'
                     : 'var(--text-secondary)',
-                  borderColor: 'var(--border-primary)',
-                  border: '1px solid var(--border-primary)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 {cat.label}
@@ -242,9 +241,9 @@ export function MessageFeedback({
                 placeholder="Add additional details (optional)"
                 className="w-full px-3 py-2 rounded-lg text-sm resize-none"
                 style={{
-                  backgroundColor: 'var(--surface-card)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-primary)',
-                  border: '1px solid var(--border-primary)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
                 rows={2}
                 maxLength={500}

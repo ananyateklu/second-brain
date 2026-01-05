@@ -289,7 +289,6 @@ const HealthStatusSection = ({ health, isDisabled, isVoiceProvider, voiceProvide
             className="w-2 h-2 rounded-full flex-shrink-0"
             style={{
               backgroundColor: isDisabled ? '#f59e0b' : isHealthy ? '#10b981' : '#ef4444',
-              boxShadow: `0 0 0 2px ${isDisabled ? 'rgba(245, 158, 11, 0.2)' : isHealthy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
             }}
           />
           <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>

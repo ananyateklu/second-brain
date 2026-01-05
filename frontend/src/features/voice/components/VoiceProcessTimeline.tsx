@@ -50,8 +50,14 @@ export function VoiceProcessTimeline({
       {!isStreaming && (
         <button
           onClick={() => setUserExpanded(!userExpanded)}
-          className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded hover:bg-[var(--surface-elevated)] transition-colors"
+          className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded transition-colors"
           style={{ color: 'var(--text-secondary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <motion.div
             animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -63,7 +69,7 @@ export function VoiceProcessTimeline({
           <span
             className="px-1.5 py-0.5 rounded-full text-[10px]"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
             }}
           >
@@ -85,7 +91,7 @@ export function VoiceProcessTimeline({
             {/* Vertical line */}
             <div
               className="absolute left-[7px] top-4 bottom-2 w-px"
-              style={{ backgroundColor: 'var(--border)' }}
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
             />
 
             <div className="space-y-2">
@@ -129,8 +135,8 @@ function TimelineItemWrapper({
           isActive ? 'animate-pulse' : ''
         }`}
         style={{
-          borderColor: isActive ? 'var(--color-brand-500)' : 'var(--border)',
-          backgroundColor: isActive ? 'var(--color-brand-500)' : 'var(--surface-card)',
+          borderColor: isActive ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          backgroundColor: isActive ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         }}
       />
       {children}
@@ -244,8 +250,8 @@ function VoiceRetrievedNotesItem({ notes }: { notes: VoiceRetrievedNote[] }) {
                 key={note.noteId}
                 className="p-2 rounded-lg text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-card)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <div
@@ -267,7 +273,7 @@ function VoiceRetrievedNotesItem({ notes }: { notes: VoiceRetrievedNote[] }) {
                         key={tag}
                         className="px-1.5 py-0.5 rounded text-[10px]"
                         style={{
-                          backgroundColor: 'var(--surface-elevated)',
+                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: 'var(--text-secondary)',
                         }}
                       >
@@ -430,8 +436,8 @@ function VoiceToolExecutionItem({ tool }: { tool: VoiceToolExecution }) {
               <div
                 className="p-2 rounded-lg text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-card)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -441,8 +447,8 @@ function VoiceToolExecutionItem({ tool }: { tool: VoiceToolExecution }) {
               <pre
                 className="p-2 rounded-lg text-[11px] font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
                 style={{
-                  backgroundColor: 'var(--surface-card)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-secondary)',
                   maxHeight: '200px',
                 }}

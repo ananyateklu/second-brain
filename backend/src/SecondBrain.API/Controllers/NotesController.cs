@@ -16,6 +16,7 @@ using SecondBrain.Application.Queries.Notes.GetNotesPaged;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.Notes.Models;
 using SecondBrain.Application.Services.RAG.Interfaces;
+using SecondBrain.Core.Enums;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.API.Controllers;
@@ -198,6 +199,11 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
+        // Parse source from request if provided
+        NoteSource? source = string.IsNullOrEmpty(request.Source)
+            ? null
+            : NoteSourceExtensions.ParseNoteSource(request.Source);
+
         var command = new CreateNoteCommand(
             request.Title,
             request.Content,
@@ -206,7 +212,9 @@ public class NotesController : ControllerBase
             request.Folder,
             userId,
             request.Images,
-            request.ContentJson);
+            request.ContentJson,
+            source,
+            request.McpServerName);
 
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -237,6 +245,11 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
+        // Parse source from request if provided
+        NoteSource? source = string.IsNullOrEmpty(request.Source)
+            ? null
+            : NoteSourceExtensions.ParseNoteSource(request.Source);
+
         var command = new UpdateNoteCommand(
             id,
             request.Title,
@@ -249,7 +262,9 @@ public class NotesController : ControllerBase
             request.Images,
             request.DeletedImageIds,
             request.ContentJson,
-            request.UpdateContentJson);
+            request.UpdateContentJson,
+            source,
+            request.McpServerName);
 
         var result = await _mediator.Send(command, cancellationToken);
 

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useGitHubRepositories } from '../hooks';
-import { useBoundStore } from '../../../store/bound-store';
 import type { RepositorySummary } from '../../../types/github';
 
 interface RepoConfig {
@@ -47,9 +46,6 @@ export const GitHubRepoSelector = ({
   const prevRepoRef = useRef<string | undefined>(undefined);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
-
   // Fetch user's repositories
   const { data: reposData, isLoading: isLoadingRepos, refetch, isFetching } = useGitHubRepositories({
     sort: 'pushed',
@@ -141,7 +137,7 @@ export const GitHubRepoSelector = ({
         }}
         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80 min-w-0 max-w-[20rem]"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: 'var(--text-primary)',
         }}
       >
@@ -164,19 +160,16 @@ export const GitHubRepoSelector = ({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-hidden"
+          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-hidden backdrop-blur-xl"
           style={{
-            backgroundColor: isBlueTheme
-              ? 'rgba(10, 22, 40, 0.98)'
-              : 'var(--surface-card-solid)',
-            borderColor: 'var(--border)',
-            boxShadow: 'var(--shadow-xl)',
-            backdropFilter: 'blur(12px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
           }}
         >
           {/* Search Input */}
-          <div className="p-3 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div className="p-3 border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
@@ -203,9 +196,9 @@ export const GitHubRepoSelector = ({
                 placeholder="Search or enter owner/repo"
                 className="w-full pl-10 pr-3 py-2 rounded-lg text-sm outline-none transition-all duration-200 focus:ring-2 focus:ring-[color:var(--color-primary)] focus:ring-opacity-50 focus:border-[color:var(--color-primary)]"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               />
             </div>
@@ -214,7 +207,7 @@ export const GitHubRepoSelector = ({
                 onClick={() => handleSubmit(inputValue)}
                 className="mt-2 w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -311,7 +304,7 @@ export const GitHubRepoSelector = ({
 
                 {/* External Recent Repos (not in user's repos) */}
                 {externalRecentRepos.length > 0 && !inputValue && (
-                  <div className="p-2 border-t" style={{ borderColor: 'var(--border)' }}>
+                  <div className="p-2 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                     <p
                       className="text-xs font-medium px-2 py-1 uppercase tracking-wider"
                       style={{ color: 'var(--text-tertiary)' }}
@@ -378,7 +371,7 @@ export const GitHubRepoSelector = ({
           </div>
 
           {/* Bottom actions */}
-          <div className="p-2 border-t flex items-center gap-2" style={{ borderColor: 'var(--border)' }}>
+          <div className="p-2 border-t flex items-center gap-2" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <button
               onClick={() => void refetch()}
               disabled={isFetching}

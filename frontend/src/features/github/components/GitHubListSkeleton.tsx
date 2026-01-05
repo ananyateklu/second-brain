@@ -22,8 +22,8 @@ function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'comp
       <div
         className="flex items-center gap-3 px-3 py-2 rounded-lg border"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Icon */}
@@ -50,8 +50,8 @@ function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'comp
       <div
         className="flex items-start gap-3 px-3 py-2 rounded-lg border"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {/* Status Icon */}
@@ -98,8 +98,8 @@ function SkeletonListItem({ variant = 'default' }: { variant?: 'default' | 'comp
     <div
       className="flex items-center gap-3 px-3 py-2 rounded-lg border"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* State Icon */}
@@ -182,7 +182,7 @@ export function GitHubListSkeleton({
       {/* Pagination - Fixed at bottom */}
       <div
         className="flex-shrink-0 flex flex-col sm:flex-row justify-between items-center gap-3 py-4 mt-4 border-t"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         {/* Left side - Item count */}
         <div className="flex items-center gap-2">

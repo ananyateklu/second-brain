@@ -46,8 +46,8 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
       <div
         className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
-          border: '1px solid var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <Calendar
@@ -80,9 +80,9 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
         title="Refresh"
         className="p-2.5 my-1 rounded-xl backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50"
         style={{
-          backgroundColor: 'var(--surface-elevated)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: 'var(--text-secondary)',
-          border: '1px solid var(--border)',
+          border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <RefreshCw
@@ -98,7 +98,6 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
           backgroundColor: 'var(--btn-primary-bg)',
           color: 'var(--btn-primary-text)',
           border: '1px solid var(--btn-primary-border)',
-          boxShadow: '0 4px 12px -2px rgba(54, 105, 61, 0.3)',
         }}
       >
         <Plus className="h-4 w-4" />

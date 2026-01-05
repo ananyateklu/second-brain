@@ -39,11 +39,24 @@ export function SessionStatsSection() {
 
   if (statsLoading || activeLoading) {
     return (
-      <div className="animate-pulse rounded-2xl border p-6" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
-        <div className="h-6 w-48 rounded bg-gray-200 dark:bg-gray-700 mb-4" />
+      <div
+        className="animate-pulse rounded-2xl border p-6"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        }}
+      >
+        <div
+          className="h-6 w-48 rounded mb-4"
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+        />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-xl bg-gray-200 dark:bg-gray-700" />
+            <div
+              key={i}
+              className="h-24 rounded-xl"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+            />
           ))}
         </div>
       </div>
@@ -56,8 +69,8 @@ export function SessionStatsSection() {
     <div
       className="rounded-2xl border p-6"
       style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--surface-card)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
       }}
     >
       <div className="flex items-center gap-2 mb-4">
@@ -90,7 +103,7 @@ export function SessionStatsSection() {
           icon={<ActivityIcon />}
           subtitle={
             stats.activeSessions > 0 ? (
-              <span className="text-green-500 text-xs animate-pulse">● Live</span>
+              <span className="text-xs animate-pulse" style={{ color: 'var(--color-success)' }}>● Live</span>
             ) : undefined
           }
           show={true}
@@ -111,7 +124,7 @@ export function SessionStatsSection() {
 
       {/* Active Sessions List */}
       {activeSessions && activeSessions.length > 0 && (
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
           <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
             Active Sessions
           </h4>
@@ -120,10 +133,10 @@ export function SessionStatsSection() {
               <div
                 key={session.id}
                 className="flex items-center justify-between p-2 rounded-lg"
-                style={{ backgroundColor: 'var(--surface-elevated)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-success)' }} />
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                     {session.deviceInfo?.browser || 'Unknown device'}
                   </span>

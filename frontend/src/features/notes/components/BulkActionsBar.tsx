@@ -48,16 +48,15 @@ export const BulkActionsBar = memo(({
 
   const content = (
     <div
-      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-2xl border shadow-2xl"
+      className="fixed z-50 flex items-center gap-4 px-6 py-3 rounded-xl border shadow-2xl"
       style={{
         left: '50%',
         bottom: '1.5rem',
         transform: 'translate(-50%, 0)',
-        backgroundColor: 'var(--surface-card-solid)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-xl), 0 0 60px -20px var(--color-primary-alpha)',
-        backdropFilter: 'blur(12px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         animation: 'bulkBarSlideUp 0.3s ease-out',
       }}
     >
@@ -66,7 +65,7 @@ export const BulkActionsBar = memo(({
         <span
           className="px-3 py-1 rounded-full text-sm font-semibold"
           style={{
-            backgroundColor: selectedCount > 0 ? 'var(--color-brand-600)' : 'var(--surface-hover)',
+            backgroundColor: selectedCount > 0 ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
             color: selectedCount > 0 ? '#ffffff' : 'var(--text-secondary)',
           }}
         >
@@ -78,17 +77,18 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Select All / Deselect All */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={onSelectAll}
           disabled={isProcessing || selectedCount === totalCount}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'var(--surface-hover)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -98,9 +98,10 @@ export const BulkActionsBar = memo(({
           type="button"
           onClick={onDeselectAll}
           disabled={isProcessing || selectedCount === 0}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+          className="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] disabled:hover:border-[color:var(--border)]"
           style={{
-            backgroundColor: 'var(--surface-hover)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -109,18 +110,18 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Delete Button */}
       <button
         type="button"
         onClick={() => { void handleDeleteClick(); }}
         disabled={isProcessing || selectedCount === 0}
-        className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+        className="px-4 py-1.5 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         style={{
-          backgroundColor: selectedCount > 0 ? 'var(--color-error-text)' : 'var(--surface-hover)',
-          color: selectedCount > 0 ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
-          boxShadow: selectedCount > 0 ? '0 4px 14px -4px color-mix(in srgb, var(--color-error) 40%, transparent)' : 'none',
+          backgroundColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 20%, transparent)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+          borderColor: selectedCount > 0 ? 'color-mix(in srgb, var(--color-error) 40%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          color: selectedCount > 0 ? 'var(--color-error)' : 'var(--text-tertiary)',
         }}
       >
         {isProcessing ? (
@@ -177,4 +178,6 @@ export const BulkActionsBar = memo(({
   // This ensures fixed positioning works relative to viewport, not a parent container
   return typeof document !== 'undefined' ? createPortal(content, document.body) : content;
 });
+
+BulkActionsBar.displayName = 'BulkActionsBar';
 

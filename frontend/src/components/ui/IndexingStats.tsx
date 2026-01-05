@@ -119,16 +119,16 @@ function EmptyState() {
     <div
       className="p-4 rounded-2xl border text-center"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex justify-center mb-2">
         <div
           className="flex h-10 w-10 items-center justify-center rounded-xl border"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
           }}
         >
           <svg

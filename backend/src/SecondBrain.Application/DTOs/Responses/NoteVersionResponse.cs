@@ -97,6 +97,12 @@ public class NoteVersionResponse
     public string? AiModel { get; set; }
 
     /// <summary>
+    /// MCP server name when modified via MCP (e.g., "second-brain-notes", "pg-docker").
+    /// Null for non-MCP changes.
+    /// </summary>
+    public string? McpServerName { get; set; }
+
+    /// <summary>
     /// IDs of images attached to the note at this version.
     /// </summary>
     public List<string> ImageIds { get; set; } = new();

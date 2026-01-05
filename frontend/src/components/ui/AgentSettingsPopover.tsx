@@ -33,9 +33,9 @@ export function AgentSettingsPopover({
         className="flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all duration-200"
         style={{
           backgroundColor: agentEnabled
-            ? 'color-mix(in srgb, var(--color-brand-500) 10%, var(--surface))'
-            : 'var(--surface)',
-          borderColor: agentEnabled ? 'var(--color-brand-500)' : 'var(--border)',
+            ? 'color-mix(in srgb, var(--color-brand-500) 5%, transparent)'
+            : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: agentEnabled ? 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-center gap-2.5 flex-1">
@@ -43,8 +43,8 @@ export function AgentSettingsPopover({
             className="w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
               backgroundColor: agentEnabled
-                ? 'color-mix(in srgb, var(--color-brand-500) 20%, transparent)'
-                : 'var(--surface-elevated)',
+                ? 'color-mix(in srgb, var(--color-brand-500) 12%, transparent)'
+                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: agentEnabled ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
             }}
           >
@@ -84,8 +84,7 @@ export function AgentSettingsPopover({
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}
           `}
           style={{
-            backgroundColor: agentEnabled ? 'var(--color-brand-500)' : 'var(--border)',
-            boxShadow: agentEnabled ? '0 0 12px -2px var(--color-brand-500)' : 'none',
+            backgroundColor: agentEnabled ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
           }}
         >
           <span
@@ -114,9 +113,9 @@ export function AgentSettingsPopover({
               className="flex items-center justify-between gap-2.5 p-2.5 rounded-xl border transition-all duration-200"
               style={{
                 backgroundColor: capability.enabled
-                  ? 'color-mix(in srgb, var(--color-notes) 10%, var(--surface))'
-                  : 'var(--surface)',
-                borderColor: capability.enabled ? 'var(--color-notes-border)' : 'var(--border)',
+                  ? 'color-mix(in srgb, var(--color-notes) 5%, transparent)'
+                  : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: capability.enabled ? 'color-mix(in srgb, var(--color-notes) 30%, transparent)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -124,8 +123,8 @@ export function AgentSettingsPopover({
                   className="w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{
                     backgroundColor: capability.enabled
-                      ? 'color-mix(in srgb, var(--color-notes) 20%, transparent)'
-                      : 'var(--surface-elevated)',
+                      ? 'color-mix(in srgb, var(--color-notes) 12%, transparent)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: capability.enabled
                       ? 'var(--color-notes-text)'
                       : 'var(--text-tertiary)',
@@ -171,8 +170,7 @@ export function AgentSettingsPopover({
                   ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
                 style={{
-                  backgroundColor: capability.enabled ? 'var(--color-notes)' : 'var(--border)',
-                  boxShadow: capability.enabled ? '0 0 8px -2px var(--color-notes)' : 'none',
+                  backgroundColor: capability.enabled ? 'var(--color-notes)' : 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
                 }}
               >
                 <span

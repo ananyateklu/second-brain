@@ -1,10 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { ragService } from '../../../services';
 import { IndexingJobResponse, IndexStatsResponse, VectorStoreProvider, EmbeddingProvider, EmbeddingProviderResponse } from '../../../types/rag';
 import { indexingKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
+import { useBoundStore } from '../../../store/bound-store';
+import {
+  indexingStreamManager,
+  type StreamingProgress,
+  type StreamingStats,
+  type StartIndexingParams,
+} from '../services/indexing-stream-manager';
 
 // Store active timers for cleanup on unmount
 const activeTimers = new Map<string, { interval: ReturnType<typeof setInterval>; timeout: ReturnType<typeof setTimeout> }>();
@@ -230,3 +237,189 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
 
   return activeVectorStores;
 };
+
+// ============================================
+// SSE Streaming Types (re-exported from manager)
+// ============================================
+
+// Re-export types for consumers
+export type { StreamingProgress, StreamingStats };
+export type StartIndexingStreamParams = StartIndexingParams;
+
+export interface IndexingStreamState {
+  isStreaming: boolean;
+  vectorStore: VectorStoreProvider | null;
+  progress: StreamingProgress | null;
+  streamingStats: StreamingStats | null;
+}
+
+// Snapshot of streaming state for a specific vector store
+interface VectorStoreStreamSnapshot {
+  isStreaming: boolean;
+  progress: StreamingProgress | null;
+  stats: StreamingStats | null;
+}
+
+// Cache for snapshots to avoid creating new objects on every call
+// This is necessary for useSyncExternalStore to work correctly
+const snapshotCache = new Map<VectorStoreProvider, VectorStoreStreamSnapshot>();
+
+// Create a snapshot of the manager's state for a specific vector store
+// Returns cached snapshot if nothing has changed
+function getVectorStoreSnapshot(vectorStore: VectorStoreProvider): VectorStoreStreamSnapshot {
+  const isStreaming = indexingStreamManager.isStreaming(vectorStore);
+  const progress = indexingStreamManager.getProgress(vectorStore);
+  const stats = indexingStreamManager.getStats(vectorStore);
+
+  const cached = snapshotCache.get(vectorStore);
+
+  // Return cached if nothing changed (reference equality for progress/stats from manager)
+  if (cached?.isStreaming === isStreaming &&
+      cached?.progress === progress &&
+      cached?.stats === stats) {
+    return cached;
+  }
+
+  // Create new snapshot and cache it
+  const snapshot: VectorStoreStreamSnapshot = { isStreaming, progress, stats };
+  snapshotCache.set(vectorStore, snapshot);
+  return snapshot;
+}
+
+// Subscribe function for useSyncExternalStore
+function subscribeToManager(callback: () => void): () => void {
+  // The manager's subscribe notifies on any change, we just need to trigger a re-render
+  return indexingStreamManager.subscribe(() => callback());
+}
+
+// Stable getSnapshot functions for each vector store
+const getPostgresSnapshot = () => getVectorStoreSnapshot('PostgreSQL');
+const getPineconeSnapshot = () => getVectorStoreSnapshot('Pinecone');
+
+/**
+ * Hook to get streaming state for a specific vector store.
+ * Uses useSyncExternalStore to properly sync with the global manager.
+ */
+export function useVectorStoreStream(vectorStore: VectorStoreProvider): VectorStoreStreamSnapshot {
+  // Use stable function references based on vector store
+  const getSnapshot = vectorStore === 'PostgreSQL' ? getPostgresSnapshot : getPineconeSnapshot;
+
+  return useSyncExternalStore(
+    subscribeToManager,
+    getSnapshot,
+    getSnapshot // Server snapshot (same as client for this use case)
+  );
+}
+
+/**
+ * Hook for SSE-based real-time indexing progress updates.
+ * Uses global IndexingStreamManager to persist streams across page navigation.
+ * Uses useSyncExternalStore for proper React synchronization.
+ */
+export function useIndexingStream() {
+  const queryClient = useQueryClient();
+
+  // Track query invalidation after completion
+  const [lastCompletedStore, setLastCompletedStore] = useState<VectorStoreProvider | null>(null);
+
+  // Subscribe to manager for completion events to update cache with final stats
+  useEffect(() => {
+    const unsubscribe = indexingStreamManager.subscribe((vectorStore, progress, stats, finalStats) => {
+      if (progress === null && stats === null) {
+        // Stream ended
+        setLastCompletedStore(vectorStore);
+
+        // If we have finalStats, update the cache directly (no slow refetch needed)
+        if (finalStats) {
+          // Get userId from store to match the query key used by useIndexStats
+          const user = useBoundStore.getState().user;
+          const userId = user?.userId ?? 'default-user';
+
+          // Update the stats cache with the final stats from SSE
+          queryClient.setQueryData<IndexStatsResponse>(
+            indexingKeys.stats({ userId }),
+            (oldData) => {
+              if (!oldData) return oldData;
+
+              const storeKey = vectorStore === 'PostgreSQL' ? 'postgreSQL' : 'pinecone';
+
+              // Map IndexingStatsEvent to IndexStatsData
+              const newStatsData = {
+                totalEmbeddings: finalStats.indexedCount,
+                uniqueNotes: finalStats.indexedCount,
+                lastIndexedAt: finalStats.lastIndexedAt,
+                embeddingProvider: oldData[storeKey]?.embeddingProvider ?? '',
+                vectorStoreProvider: finalStats.vectorStore,
+                totalNotesInSystem: finalStats.totalNotes,
+                notIndexedCount: finalStats.pendingCount,
+                staleNotesCount: 0, // After fresh indexing, no stale notes
+                dimensions: finalStats.dimensions,
+              };
+
+              return {
+                ...oldData,
+                [storeKey]: newStatsData,
+              };
+            }
+          );
+          // Don't invalidate when we have finalStats - we already have the correct data
+          // This prevents the slow endpoint from overwriting our cache
+        } else {
+          // Only invalidate if we don't have finalStats (error case, etc.)
+          void queryClient.invalidateQueries({ queryKey: indexingKeys.all });
+        }
+      }
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
+  // Get current streaming state for both stores
+  const postgresStream = useVectorStoreStream('PostgreSQL');
+  const pineconeStream = useVectorStoreStream('Pinecone');
+
+  // Aggregate state
+  const isStreaming = postgresStream.isStreaming || pineconeStream.isStreaming;
+  const vectorStore: VectorStoreProvider | null =
+    postgresStream.isStreaming ? 'PostgreSQL' :
+    pineconeStream.isStreaming ? 'Pinecone' : null;
+
+  const startIndexing = useCallback(async (params: StartIndexingStreamParams) => {
+    // Start stream via global manager - persists across navigation
+    await indexingStreamManager.startStream(params);
+  }, []);
+
+  const cancelIndexing = useCallback(async (vs?: VectorStoreProvider): Promise<void> => {
+    const targetStore = vs || vectorStore;
+    if (targetStore) {
+      await indexingStreamManager.stopStream(targetStore);
+    }
+  }, [vectorStore]);
+
+  // Check if a specific vector store is streaming (reactive)
+  const isStreamingVectorStore = useCallback((vs: VectorStoreProvider): boolean => {
+    return vs === 'PostgreSQL' ? postgresStream.isStreaming : pineconeStream.isStreaming;
+  }, [postgresStream.isStreaming, pineconeStream.isStreaming]);
+
+  // Get progress for a specific vector store (reactive)
+  const getProgressForVectorStore = useCallback((vs: VectorStoreProvider): StreamingProgress | null => {
+    return vs === 'PostgreSQL' ? postgresStream.progress : pineconeStream.progress;
+  }, [postgresStream.progress, pineconeStream.progress]);
+
+  // Get stats for a specific vector store (reactive)
+  const getStatsForVectorStore = useCallback((vs: VectorStoreProvider): StreamingStats | null => {
+    return vs === 'PostgreSQL' ? postgresStream.stats : pineconeStream.stats;
+  }, [postgresStream.stats, pineconeStream.stats]);
+
+  return {
+    isStreaming,
+    vectorStore,
+    progress: vectorStore === 'PostgreSQL' ? postgresStream.progress : pineconeStream.progress,
+    streamingStats: vectorStore === 'PostgreSQL' ? postgresStream.stats : pineconeStream.stats,
+    startIndexing,
+    cancelIndexing,
+    isStreamingVectorStore,
+    getProgressForVectorStore,
+    getStatsForVectorStore,
+    lastCompletedStore,
+  };
+}
