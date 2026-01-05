@@ -1,4 +1,3 @@
-import { Note, NoteListItem } from '../types/note';
 import { useBoundStore } from '../../../store/bound-store';
 import { useDeleteNote, useArchiveNote, useUnarchiveNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
@@ -6,25 +5,11 @@ import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useState, memo, useMemo, useRef, useCallback, useOptimistic, startTransition } from 'react';
+import type { NoteCardProps } from '../types/note-card.types';
+import { isBrowseMode, isSearchMode } from '../types/note-card.types';
 
-interface NoteCardProps {
-  /** Note data - can be NoteListItem (summary only) or full Note (with content) */
-  note: Note | NoteListItem;
-  /** Index for staggered animation */
-  index?: number;
-  variant?: 'full' | 'compact' | 'micro';
-  relevanceScore?: number;
-  chunkIndex?: number;
-  chunkCount?: number;
-  chunkContent?: string;
-  content?: string;
-  createdOn?: string | null;
-  modifiedOn?: string | null;
-  showDeleteButton?: boolean;
-  isBulkMode?: boolean;
-  isSelected?: boolean;
-  onSelect?: (noteId: string) => void;
-}
+// Re-export types for consumers
+export type { NoteCardProps } from '../types/note-card.types';
 
 // Regex-based HTML stripping (safer than innerHTML and faster)
 const stripHtmlTags = (html: string): string => {
@@ -77,21 +62,27 @@ const getRelevanceBg = (score: number) => {
   return 'var(--color-brand-100)'; // Lightest background for low scores
 };
 
-export const NoteCard = memo(({
-  note,
-  index = 0,
-  variant = 'full',
-  relevanceScore,
-  chunkIndex,
-  chunkCount,
-  chunkContent,
-  content,
-  createdOn,
-  showDeleteButton = true,
-  isBulkMode = false,
-  isSelected = false,
-  onSelect,
-}: NoteCardProps) => {
+export const NoteCard = memo((props: NoteCardProps) => {
+  // Extract common props
+  const { note, index = 0 } = props;
+
+  // Extract mode-specific props with defaults
+  const variant = props.variant ?? (isBrowseMode(props) ? 'full' : 'micro');
+  const relevanceScore = isSearchMode(props) ? props.relevanceScore : undefined;
+  const chunkIndex = isSearchMode(props) ? props.chunkIndex : undefined;
+  const chunkCount = isSearchMode(props) ? props.chunkCount : undefined;
+  const chunkContent = isSearchMode(props) ? props.chunkContent : undefined;
+  const content = isSearchMode(props) || props.mode === 'display' ? (props as { content?: string }).content : undefined;
+  const createdOn = isSearchMode(props) || props.mode === 'display' ? (props as { createdOn?: string | null }).createdOn : undefined;
+
+  // Browse mode specific props
+  const isBulkMode = isBrowseMode(props) ? (props.isBulkMode ?? false) : false;
+  const isSelected = isBrowseMode(props) ? (props.isSelected ?? false) : false;
+  const onSelect = isBrowseMode(props) ? props.onSelect : undefined;
+
+  // Derive showDeleteButton from mode (only show in browse mode)
+  const showDeleteButton = isBrowseMode(props);
+
   const openEditModal = useBoundStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const archiveNoteMutation = useArchiveNote();

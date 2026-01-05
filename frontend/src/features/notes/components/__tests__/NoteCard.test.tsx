@@ -146,8 +146,8 @@ describe('NoteCard', () => {
     });
 
     it('should render micro variant', () => {
-      // Act
-      render(<NoteCard note={createMockNote()} variant="micro" />, {
+      // Act - micro variant requires display or search mode
+      render(<NoteCard note={createMockNote()} mode="display" variant="micro" />, {
         wrapper: createWrapper(),
       });
 
@@ -158,13 +158,13 @@ describe('NoteCard', () => {
   });
 
   // ============================================
-  // Relevance Score Tests
+  // Relevance Score Tests (Search Mode)
   // ============================================
   describe('relevance score', () => {
-    it('should display relevance score in compact variant', () => {
+    it('should display relevance score in compact search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.85} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.85} />,
         { wrapper: createWrapper() }
       );
 
@@ -172,10 +172,10 @@ describe('NoteCard', () => {
       expect(screen.getByText('85%')).toBeInTheDocument();
     });
 
-    it('should display relevance score in micro variant', () => {
+    it('should display relevance score in micro search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="micro" relevanceScore={0.5} />,
+        <NoteCard note={createMockNote()} mode="search" variant="micro" relevanceScore={0.5} />,
         { wrapper: createWrapper() }
       );
 
@@ -183,25 +183,25 @@ describe('NoteCard', () => {
       expect(screen.getByText('50%')).toBeInTheDocument();
     });
 
-    it('should not display relevance score in full variant', () => {
-      // Act
-      render(<NoteCard note={createMockNote()} relevanceScore={0.85} />, {
+    it('should not display relevance score in browse mode', () => {
+      // Act - browse mode doesn't support relevanceScore
+      render(<NoteCard note={createMockNote()} />, {
         wrapper: createWrapper(),
       });
 
       // Assert
-      expect(screen.queryByText('85%')).not.toBeInTheDocument();
+      expect(screen.queryByText('%')).not.toBeInTheDocument();
     });
   });
 
   // ============================================
-  // Chunk Index Tests
+  // Chunk Index Tests (Search Mode)
   // ============================================
   describe('chunk index', () => {
-    it('should display chunk index in compact variant', () => {
+    it('should display chunk index in compact search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" chunkIndex={2} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.8} chunkIndex={2} />,
         { wrapper: createWrapper() }
       );
 
@@ -209,10 +209,10 @@ describe('NoteCard', () => {
       expect(screen.getByText('Chunk 3')).toBeInTheDocument();
     });
 
-    it('should display chunk index in micro variant', () => {
+    it('should display chunk index in micro search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="micro" chunkIndex={0} />,
+        <NoteCard note={createMockNote()} mode="search" variant="micro" relevanceScore={0.8} chunkIndex={0} />,
         { wrapper: createWrapper() }
       );
 
@@ -239,7 +239,7 @@ describe('NoteCard', () => {
   // Delete Button Tests
   // ============================================
   describe('delete button', () => {
-    it('should show delete button in full variant', () => {
+    it('should show delete button in browse mode (full variant)', () => {
       // Act
       render(<NoteCard note={createMockNote()} />, { wrapper: createWrapper() });
 
@@ -247,9 +247,9 @@ describe('NoteCard', () => {
       expect(screen.getByLabelText('Delete note')).toBeInTheDocument();
     });
 
-    it('should not show delete button when showDeleteButton is false', () => {
-      // Act
-      render(<NoteCard note={createMockNote()} showDeleteButton={false} />, {
+    it('should not show delete button in search mode', () => {
+      // Act - search mode derives showDeleteButton=false
+      render(<NoteCard note={createMockNote()} mode="search" relevanceScore={0.8} />, {
         wrapper: createWrapper(),
       });
 
@@ -257,7 +257,17 @@ describe('NoteCard', () => {
       expect(screen.queryByLabelText('Delete note')).not.toBeInTheDocument();
     });
 
-    it('should not show delete button in compact variant', () => {
+    it('should not show delete button in display mode', () => {
+      // Act - display mode derives showDeleteButton=false
+      render(<NoteCard note={createMockNote()} mode="display" />, {
+        wrapper: createWrapper(),
+      });
+
+      // Assert
+      expect(screen.queryByLabelText('Delete note')).not.toBeInTheDocument();
+    });
+
+    it('should not show delete button in compact browse variant', () => {
       // Act
       render(<NoteCard note={createMockNote()} variant="compact" />, {
         wrapper: createWrapper(),
@@ -324,13 +334,13 @@ describe('NoteCard', () => {
   });
 
   // ============================================
-  // Content Display Tests
+  // Content Display Tests (Search/Display Mode)
   // ============================================
   describe('content display', () => {
-    it('should use custom content when provided', () => {
+    it('should use custom content when provided in search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} content="Custom content here" variant="compact" />,
+        <NoteCard note={createMockNote()} mode="search" content="Custom content here" relevanceScore={0.8} variant="compact" />,
         { wrapper: createWrapper() }
       );
 
@@ -338,11 +348,13 @@ describe('NoteCard', () => {
       expect(screen.getByText('Custom content here')).toBeInTheDocument();
     });
 
-    it('should use chunkContent when provided in compact variant', () => {
+    it('should use chunkContent when provided in search mode', () => {
       // Act
       render(
         <NoteCard
           note={createMockNote()}
+          mode="search"
+          relevanceScore={0.8}
           chunkContent="Chunk specific content"
           variant="compact"
         />,
@@ -352,17 +364,38 @@ describe('NoteCard', () => {
       // Assert
       expect(screen.getByText('Chunk specific content')).toBeInTheDocument();
     });
+
+    it('should use custom content in display mode', () => {
+      // Act
+      render(
+        <NoteCard note={createMockNote()} mode="display" content="Display content here" variant="micro" />,
+        { wrapper: createWrapper() }
+      );
+
+      // Assert
+      expect(screen.getByText('Display content here')).toBeInTheDocument();
+    });
   });
 
   // ============================================
-  // Date Display Tests
+  // Date Display Tests (Search/Display Mode)
   // ============================================
   describe('date display', () => {
-    it('should use custom createdOn date when provided', () => {
+    it('should use custom createdOn date when provided in search mode', () => {
       // This test verifies that the component accepts custom dates
       // The actual date formatting is tested in date-utils tests
       render(
-        <NoteCard note={createMockNote()} createdOn="2024-12-25T12:00:00Z" />,
+        <NoteCard note={createMockNote()} mode="search" relevanceScore={0.8} createdOn="2024-12-25T12:00:00Z" />,
+        { wrapper: createWrapper() }
+      );
+
+      // The component should render without errors
+      expect(screen.getByText('Test Note Title')).toBeInTheDocument();
+    });
+
+    it('should use custom createdOn date when provided in display mode', () => {
+      render(
+        <NoteCard note={createMockNote()} mode="display" createdOn="2024-12-25T12:00:00Z" />,
         { wrapper: createWrapper() }
       );
 
@@ -412,8 +445,8 @@ describe('NoteCard', () => {
         tags: ['tag1', 'tag2', 'tag3', 'tag4'],
       });
 
-      // Act
-      render(<NoteCard note={note} variant="micro" />, { wrapper: createWrapper() });
+      // Act - micro variant requires display or search mode
+      render(<NoteCard note={note} mode="display" variant="micro" />, { wrapper: createWrapper() });
 
       // Assert
       expect(screen.getByText('tag1')).toBeInTheDocument();
@@ -562,13 +595,13 @@ describe('NoteCard', () => {
   });
 
   // ============================================
-  // Chunk Count Tests
+  // Chunk Count Tests (Search Mode)
   // ============================================
   describe('chunk count', () => {
-    it('should display chunk count in compact variant', () => {
+    it('should display chunk count in compact search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" chunkCount={5} />,
+        <NoteCard note={createMockNote()} mode="search" relevanceScore={0.8} variant="compact" chunkCount={5} />,
         { wrapper: createWrapper() }
       );
 
@@ -579,7 +612,7 @@ describe('NoteCard', () => {
     it('should display singular chunk for count of 1', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" chunkCount={1} />,
+        <NoteCard note={createMockNote()} mode="search" relevanceScore={0.8} variant="compact" chunkCount={1} />,
         { wrapper: createWrapper() }
       );
 
@@ -587,10 +620,10 @@ describe('NoteCard', () => {
       expect(screen.getByText('1 chunk')).toBeInTheDocument();
     });
 
-    it('should display chunk count in micro variant', () => {
+    it('should display chunk count in micro search mode', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="micro" chunkCount={3} />,
+        <NoteCard note={createMockNote()} mode="search" relevanceScore={0.8} variant="micro" chunkCount={3} />,
         { wrapper: createWrapper() }
       );
 
@@ -624,13 +657,13 @@ describe('NoteCard', () => {
   });
 
   // ============================================
-  // Relevance Score Color Tests
+  // Relevance Score Color Tests (Search Mode)
   // ============================================
   describe('relevance score colors', () => {
     it('should display high relevance score (>=0.9)', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.95} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.95} />,
         { wrapper: createWrapper() }
       );
 
@@ -641,7 +674,7 @@ describe('NoteCard', () => {
     it('should display medium-high relevance score (>=0.8)', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.82} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.82} />,
         { wrapper: createWrapper() }
       );
 
@@ -652,7 +685,7 @@ describe('NoteCard', () => {
     it('should display medium relevance score (>=0.7)', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.75} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.75} />,
         { wrapper: createWrapper() }
       );
 
@@ -663,7 +696,7 @@ describe('NoteCard', () => {
     it('should display medium-low relevance score (>=0.6)', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.65} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.65} />,
         { wrapper: createWrapper() }
       );
 
@@ -674,7 +707,7 @@ describe('NoteCard', () => {
     it('should display low relevance score (<0.5)', () => {
       // Act
       render(
-        <NoteCard note={createMockNote()} variant="compact" relevanceScore={0.45} />,
+        <NoteCard note={createMockNote()} mode="search" variant="compact" relevanceScore={0.45} />,
         { wrapper: createWrapper() }
       );
 

@@ -146,6 +146,8 @@ function getErrorCodeFromStatus(status: number): ApiErrorCode {
       return ApiErrorCode.NOT_FOUND;
     case 409:
       return ApiErrorCode.ALREADY_EXISTS;
+    case 429:
+      return ApiErrorCode.RATE_LIMITED;
     case 503:
       return ApiErrorCode.SERVICE_UNAVAILABLE;
     default:
@@ -274,7 +276,39 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * Parse Retry-After header value to milliseconds
+ * Supports both delay-seconds and HTTP-date formats
+ */
+function parseRetryAfter(value: string | null): number | null {
+  if (!value) return null;
+
+  // Try parsing as seconds (most common for 429)
+  const seconds = parseInt(value, 10);
+  if (!isNaN(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+
+  // Try parsing as HTTP-date
+  const date = Date.parse(value);
+  if (!isNaN(date)) {
+    const delay = date - Date.now();
+    return delay > 0 ? delay : 0;
+  }
+
+  return null;
+}
+
+/**
+ * Check if an error/status is retryable
+ * Server errors (5xx) and rate limiting (429) are retryable
+ */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/**
  * Make a fetch request with retry support
+ * Includes exponential backoff and respects Retry-After header for 429 responses
  */
 async function fetchWithRetry<T>(
   url: string,
@@ -306,15 +340,29 @@ async function fetchWithRetry<T>(
         clearTimeout(timeoutId);
       }
 
+      // Handle rate limiting (429) with retry before throwing
+      if (response.status === 429 && attempt < retries) {
+        const retryAfterMs = parseRetryAfter(response.headers.get('Retry-After'));
+        const delay = retryAfterMs ?? calculateBackoff(attempt, retryDelay);
+        // Cap the delay at MAX_DELAY to avoid excessive waits
+        await sleep(Math.min(delay, RETRY.MAX_DELAY));
+        continue;
+      }
+
       return await handleResponse<T>(response);
     } catch (error) {
       lastError = error as Error;
 
-      // Don't retry on abort or client errors
+      // Don't retry on abort
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+
+      // Don't retry on non-retryable client errors (4xx except 429)
       if (
-        error instanceof Error &&
-        (error.name === 'AbortError' ||
-          (error instanceof ApiError && error.status !== undefined && error.status < 500))
+        error instanceof ApiError &&
+        error.status !== undefined &&
+        !isRetryableStatus(error.status)
       ) {
         throw error;
       }

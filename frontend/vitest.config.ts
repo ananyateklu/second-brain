@@ -30,6 +30,16 @@ export default defineConfig({
                 '**/*.config.*',
                 '**/types/**',
             ],
+            // Enforce minimum coverage thresholds
+            thresholds: {
+                // High thresholds to maintain quality - current coverage is ~75%
+                lines: 60,
+                functions: 60,
+                branches: 55,
+                statements: 60,
+                // Per-file thresholds - fail if any file drops below these minimums
+                perFile: false, // Set to true for stricter enforcement
+            },
         },
         // Improve test isolation
         isolate: true,

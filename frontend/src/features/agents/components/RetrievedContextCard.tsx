@@ -134,11 +134,11 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
                   <NoteCard
                     key={note.id}
                     note={note}
+                    mode="search"
                     variant="micro"
                     relevanceScore={relevanceScore}
                     chunkContent={chunkContent}
                     content={content}
-                    showDeleteButton={false}
                   />
                 ))}
               </div>

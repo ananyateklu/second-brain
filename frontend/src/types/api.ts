@@ -80,7 +80,10 @@ export enum ApiErrorCode {
   // Server errors
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  
+
+  // Rate limiting
+  RATE_LIMITED = 'RATE_LIMITED',
+
   // Network errors
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT = 'TIMEOUT',
@@ -167,6 +170,9 @@ export class ApiError extends Error {
         break;
       case 409:
         code = ApiErrorCode.ALREADY_EXISTS;
+        break;
+      case 429:
+        code = ApiErrorCode.RATE_LIMITED;
         break;
       case 503:
         code = ApiErrorCode.SERVICE_UNAVAILABLE;
