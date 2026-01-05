@@ -11,8 +11,8 @@ function SkeletonCard() {
     <div
       className="rounded-2xl border p-4 flex flex-col h-full relative overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         minHeight: '80px',
       }}
     >
@@ -36,8 +36,8 @@ function SkeletonChart() {
     <div
       className="rounded-3xl border p-6 relative overflow-hidden"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="relative z-10">
@@ -77,8 +77,8 @@ function SkeletonModelUsage() {
       <div
         className="rounded-3xl border p-[19px] relative overflow-hidden"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="relative z-10">
@@ -108,8 +108,8 @@ function SkeletonModelUsage() {
                 <div
                   className="h-full rounded-lg p-4"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    border: '1px solid var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   }}
                 >
                   <div className="space-y-4">
@@ -117,7 +117,7 @@ function SkeletonModelUsage() {
                       <div key={i} className="space-y-2">
                         <ShimmerBlock
                           className="h-4 w-24 mb-2"
-                          style={{ backgroundColor: 'var(--surface-card)' }}
+                          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                         />
                         <div className="space-y-1.5">
                           {[1, 2].map((j) => (
@@ -128,15 +128,15 @@ function SkeletonModelUsage() {
                             >
                               <ShimmerBlock
                                 className="w-2.5 h-2.5 rounded-full"
-                                style={{ backgroundColor: 'var(--surface-card)' }}
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                               />
                               <ShimmerBlock
                                 className="h-3 flex-1"
-                                style={{ backgroundColor: 'var(--surface-card)' }}
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                               />
                               <ShimmerBlock
                                 className="h-3 w-12"
-                                style={{ backgroundColor: 'var(--surface-card)' }}
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
                               />
                             </div>
                           ))}
@@ -168,7 +168,7 @@ function SkeletonModelUsage() {
                 <div
                   className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                   }}
                 >
                   {Array.from({ length: 6 }).map((_, i) => (
@@ -178,7 +178,7 @@ function SkeletonModelUsage() {
                       style={{
                         height: '28px',
                         width: '100px',
-                        backgroundColor: 'var(--surface-card)',
+                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       }}
                     />
                   ))}

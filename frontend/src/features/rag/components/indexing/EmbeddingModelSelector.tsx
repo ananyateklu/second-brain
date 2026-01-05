@@ -59,11 +59,11 @@ export function EmbeddingModelSelector({
                   "-translate-y-px"
                 ],
                 !isActive && !modelDisabled && [
-                  "bg-[var(--surface-elevated)] border-[var(--border)] text-[var(--text-primary)]",
-                  "shadow-[0_1px_3px_color-mix(in_srgb,var(--color-brand-950)_12%,transparent)]",
-                  "hover:bg-[color-mix(in_srgb,var(--color-brand-600)_12%,var(--surface-elevated))]",
-                  "hover:border-[color-mix(in_srgb,var(--color-brand-600)_60%,var(--border))]",
-                  "hover:shadow-[0_4px_12px_color-mix(in_srgb,var(--color-brand-900)_18%,transparent)]",
+                  "bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] border-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] text-[var(--text-primary)]",
+                  "shadow-[0_1px_3px_color-mix(in_srgb,var(--text-primary)_8%,transparent)]",
+                  "hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]",
+                  "hover:border-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]",
+                  "hover:shadow-[0_4px_12px_color-mix(in_srgb,var(--text-primary)_12%,transparent)]",
                   "hover:-translate-y-[0.5px]"
                 ],
                 modelDisabled && !isDisabled && "opacity-50 line-through",

@@ -7,15 +7,15 @@ export function PineconeSetupCard({ onSetup }: { onSetup: () => void }) {
     <div
       className="relative p-3 rounded-2xl border overflow-hidden group transition-all duration-300"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Background gradient */}
       <div
         className="absolute inset-0 opacity-5"
         style={{
-          background: 'linear-gradient(135deg, var(--color-brand-500) 0%, transparent 100%)',
+          background: 'linear-gradient(135deg, var(--text-primary) 0%, transparent 100%)',
         }}
       />
 
@@ -45,8 +45,8 @@ export function PineconeSetupCard({ onSetup }: { onSetup: () => void }) {
           <div
             className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl border mb-3"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
             }}
           >
             <svg

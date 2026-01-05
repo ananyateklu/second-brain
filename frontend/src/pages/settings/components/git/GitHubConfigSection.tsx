@@ -51,8 +51,8 @@ export function GitHubConfigSection({
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -136,8 +136,8 @@ export function GitHubConfigSection({
               <div
                 className="px-3 py-2 rounded-xl border text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-secondary)',
                 }}
               >
@@ -188,8 +188,8 @@ export function GitHubConfigSection({
               <div
                 className="px-3 py-2 rounded-xl border text-xs"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-secondary)',
                 }}
               >

@@ -14,8 +14,8 @@ export function GitSettingsSkeleton() {
         <section
           className="rounded-3xl border p-4"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-4">
@@ -51,8 +51,8 @@ export function GitSettingsSkeleton() {
         <section
           className="rounded-3xl border p-4"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-4">
@@ -86,8 +86,8 @@ export function GitSettingsSkeleton() {
           <div
             className="rounded-2xl border p-4"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <div className="flex items-center gap-3">
@@ -101,8 +101,8 @@ export function GitSettingsSkeleton() {
           <div
             className="rounded-2xl border p-4"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <div className="flex items-center gap-3">

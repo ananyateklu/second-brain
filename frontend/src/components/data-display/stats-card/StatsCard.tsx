@@ -67,12 +67,12 @@ export function StatsCard({
         isIndexing && 'animate-pulse'
       )}
       style={{
-        backgroundColor: 'var(--surface-elevated)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
         borderColor: isDeleting
-          ? 'color-mix(in srgb, var(--color-error) 40%, var(--border))'
+          ? 'color-mix(in srgb, var(--color-error) 40%, transparent)'
           : isIndexing
-            ? 'color-mix(in srgb, var(--color-brand-600) 40%, var(--border))'
-            : 'var(--border)',
+            ? 'color-mix(in srgb, var(--color-brand-600) 40%, transparent)'
+            : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Background gradient */}
@@ -86,7 +86,7 @@ export function StatsCard({
               : 'opacity-5 group-hover:opacity-[0.08]'
         )}
         style={{
-          background: 'linear-gradient(135deg, var(--color-brand-500) 0%, transparent 100%)',
+          background: 'linear-gradient(135deg, var(--text-primary) 0%, transparent 100%)',
         }}
       />
 
@@ -114,9 +114,9 @@ export function StatsCard({
             <span
               className="text-xs px-2 py-0.5 rounded-xl font-medium border"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                color: 'var(--color-brand-600)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+                color: 'var(--text-secondary)',
               }}
             >
               {stats.vectorStoreProvider}
@@ -138,7 +138,7 @@ export function StatsCard({
         <div
           className="flex items-center justify-between p-2 rounded-xl mb-2.5"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           }}
         >
           <div className="flex items-center gap-1">
@@ -184,14 +184,14 @@ function EmptyStatsCard({ title }: { title: string }) {
     <div
       className="relative p-3 rounded-2xl border overflow-hidden group transition-all duration-300"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div
         className="absolute inset-0 opacity-5"
         style={{
-          background: 'linear-gradient(135deg, var(--color-brand-500) 0%, transparent 100%)',
+          background: 'linear-gradient(135deg, var(--text-primary) 0%, transparent 100%)',
         }}
       />
       <div className="relative">
@@ -203,7 +203,7 @@ function EmptyStatsCard({ title }: { title: string }) {
           <div
             className="px-1.5 py-0.5 rounded-xl text-[10px] font-medium flex items-center gap-1"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
               color: 'var(--text-secondary)',
             }}
           >

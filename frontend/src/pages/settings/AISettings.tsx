@@ -102,8 +102,8 @@ export function AISettings() {
           <section
             className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             {/* Header */}
@@ -163,8 +163,8 @@ export function AISettings() {
           <section
             className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             {/* Header */}
@@ -279,7 +279,7 @@ const VoiceProviderCard = ({ provider, logo, isProviderConfigured, onClick }: Vo
       <button
         type="button"
         onClick={onClick}
-        className="w-full rounded-3xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] focus-visible:ring-offset-[color:var(--surface-card)] hover:-translate-y-1 hover:shadow-lg bg-[var(--surface-elevated)] border-[var(--border)] hover:bg-[color-mix(in_srgb,var(--color-brand-600)_8%,var(--surface-elevated))] hover:border-[color-mix(in_srgb,var(--color-brand-600)_40%,var(--border))] hover:shadow-[0_8px_20px_color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]"
+        className="w-full rounded-3xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] focus-visible:ring-offset-[color:var(--surface-card)] hover:-translate-y-1 hover:shadow-lg bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] border-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-brand-600)_8%,transparent)] hover:border-[color-mix(in_srgb,var(--color-brand-600)_40%,transparent)] hover:shadow-[0_8px_20px_color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]"
       >
         <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
           <div className="flex items-center gap-2 min-w-0">

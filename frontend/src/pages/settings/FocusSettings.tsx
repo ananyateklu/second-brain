@@ -338,8 +338,8 @@ export function FocusSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -398,13 +398,13 @@ export function FocusSettings() {
                     }`}
                     style={{
                       backgroundColor: isSelected
-                        ? 'var(--btn-primary-bg)'
-                        : 'var(--surface-elevated)',
+                        ? 'var(--color-brand-600)'
+                        : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       borderColor: isSelected
-                        ? 'var(--btn-primary-border)'
-                        : 'var(--border)',
+                        ? 'var(--color-brand-600)'
+                        : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                       color: isSelected
-                        ? 'var(--btn-primary-text)'
+                        ? '#ffffff'
                         : 'var(--text-primary)',
                     }}
                   >
@@ -428,8 +428,8 @@ export function FocusSettings() {
                 disabled={isHealthLoading || availableModels.length === 0}
                 className="w-full px-3 py-2 text-sm text-left rounded-xl border transition-all duration-200 flex items-center justify-between"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: focusAIModel ? 'var(--text-primary)' : 'var(--text-secondary)',
                 }}
               >
@@ -441,10 +441,10 @@ export function FocusSettings() {
 
               {isModelOpen && availableModels.length > 0 && (
                 <div
-                  className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border shadow-lg"
+                  className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border shadow-lg backdrop-blur-md"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   }}
                 >
                   {availableModels.map((model) => (
@@ -471,8 +471,8 @@ export function FocusSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -513,8 +513,8 @@ export function FocusSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -555,8 +555,8 @@ export function FocusSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex items-start gap-3 mb-4">
@@ -600,10 +600,10 @@ export function FocusSettings() {
             onClick={() => void handleResetToDefaults()}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
-              backgroundColor: 'var(--surface-elevated)',
-              borderColor: 'var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

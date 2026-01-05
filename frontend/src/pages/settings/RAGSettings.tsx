@@ -570,8 +570,8 @@ export function RAGSettings() {
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-3">
@@ -602,7 +602,7 @@ export function RAGSettings() {
 
             {/* Provider + Model inline */}
             <div className="flex items-center gap-2">
-              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                 {RERANKING_PROVIDER_OPTIONS.map((option) => {
                   const isActive = rerankingProvider === option.id;
                   return (
@@ -627,15 +627,15 @@ export function RAGSettings() {
                         disabled={isSavingRerankingProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
                         <span>{option.name}</span>
                         {'badge' in option && option.badge && (
                           <span className="text-[8px] font-semibold px-1 py-0.5 rounded" style={{
-                            backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                            color: isActive ? 'white' : 'var(--color-brand-600)',
+                            backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'color-mix(in srgb, var(--text-primary) 10%, transparent)',
+                            color: isActive ? 'white' : 'var(--text-secondary)',
                           }}>{option.badge}</span>
                         )}
                       </button>
@@ -651,8 +651,8 @@ export function RAGSettings() {
                   disabled={rerankingModels.length === 0 || (rerankingProvider !== 'Cohere' && isHealthLoading)}
                   className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: isRerankingModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: isRerankingModelOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-primary)',
                   }}
                 >
@@ -678,14 +678,16 @@ export function RAGSettings() {
                 </button>
                 {isRerankingModelOpen && rerankingModels.length > 0 && (
                   <div
-                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                    className="absolute top-full right-0 mt-2 rounded-xl border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      backdropFilter: 'blur(20px) saturate(180%)',
+                      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                       minWidth: '280px',
                     }}
                   >
-                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar p-1.5">
                       {rerankingModels.map((model) => {
                         const isSelected = model === ragRerankingModel;
                         const cohereInfo = rerankingProvider === 'Cohere' ? getCohereModelInfo(model) : null;
@@ -694,9 +696,9 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleRerankingModelSelect(model)}
-                            className={`w-full flex flex-col gap-0.5 px-2.5 py-2 text-left transition-all ${isSelected
-                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
-                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                            className={`w-full flex flex-col gap-0.5 px-3 py-2 text-left transition-all rounded-lg ${isSelected
+                                ? 'bg-[var(--color-primary-alpha)]'
+                                : 'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]'
                               }`}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -737,8 +739,8 @@ export function RAGSettings() {
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-3">
@@ -769,7 +771,7 @@ export function RAGSettings() {
 
             {/* Provider + Model inline */}
             <div className="flex items-center gap-2">
-              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                 {HYDE_PROVIDER_OPTIONS.map((option) => {
                   const isActive = ragHydeProvider === option.id;
                   return (
@@ -794,7 +796,7 @@ export function RAGSettings() {
                         disabled={isSavingHydeProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
@@ -812,8 +814,8 @@ export function RAGSettings() {
                   disabled={hydeModels.length === 0 || isHealthLoading}
                   className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: isHydeModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: isHydeModelOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-primary)',
                   }}
                 >
@@ -839,14 +841,16 @@ export function RAGSettings() {
                 </button>
                 {isHydeModelOpen && hydeModels.length > 0 && (
                   <div
-                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                    className="absolute top-full right-0 mt-2 rounded-xl border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      backdropFilter: 'blur(20px) saturate(180%)',
+                      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                       minWidth: '220px',
                     }}
                   >
-                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar p-1.5">
                       {hydeModels.map((model) => {
                         const isSelected = model === ragHydeModel;
                         return (
@@ -854,9 +858,9 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleHydeModelSelect(model)}
-                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${isSelected
-                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
-                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-left transition-all rounded-lg ${isSelected
+                                ? 'bg-[var(--color-primary-alpha)]'
+                                : 'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]'
                               }`}
                             style={{
                               color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
@@ -883,8 +887,8 @@ export function RAGSettings() {
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-3">
@@ -915,7 +919,7 @@ export function RAGSettings() {
 
             {/* Provider + Model inline */}
             <div className="flex items-center gap-2">
-              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                 {QUERY_EXPANSION_PROVIDER_OPTIONS.map((option) => {
                   const isActive = ragQueryExpansionProvider === option.id;
                   return (
@@ -940,7 +944,7 @@ export function RAGSettings() {
                         disabled={isSavingQueryExpansionProvider}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                         style={{
-                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                          backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                         }}
                       >
@@ -958,8 +962,8 @@ export function RAGSettings() {
                   disabled={queryExpansionModels.length === 0 || isHealthLoading}
                   className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)] min-w-[140px]"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: isQueryExpansionModelOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: isQueryExpansionModelOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-primary)',
                   }}
                 >
@@ -985,14 +989,16 @@ export function RAGSettings() {
                 </button>
                 {isQueryExpansionModelOpen && queryExpansionModels.length > 0 && (
                   <div
-                    className="absolute top-full right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                    className="absolute top-full right-0 mt-2 rounded-xl border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                      backdropFilter: 'blur(20px) saturate(180%)',
+                      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                       minWidth: '220px',
                     }}
                   >
-                    <div className="max-h-64 overflow-y-auto thin-scrollbar">
+                    <div className="max-h-64 overflow-y-auto thin-scrollbar p-1.5">
                       {queryExpansionModels.map((model) => {
                         const isSelected = model === ragQueryExpansionModel;
                         return (
@@ -1000,9 +1006,9 @@ export function RAGSettings() {
                             key={model}
                             type="button"
                             onClick={() => void handleQueryExpansionModelSelect(model)}
-                            className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 text-xs text-left transition-all ${isSelected
-                                ? 'bg-[color:color-mix(in_srgb,var(--color-brand-600)_12%,transparent)]'
-                                : 'hover:bg-[color:color-mix(in_srgb,var(--color-brand-600)_8%,transparent)]'
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-xs text-left transition-all rounded-lg ${isSelected
+                                ? 'bg-[var(--color-primary-alpha)]'
+                                : 'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]'
                               }`}
                             style={{
                               color: isSelected ? 'var(--color-brand-600)' : 'var(--text-primary)',
@@ -1032,8 +1038,8 @@ export function RAGSettings() {
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-3">
@@ -1062,7 +1068,7 @@ export function RAGSettings() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+            <div className="flex flex-wrap items-center gap-2 p-1 rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
               {VECTOR_STORE_OPTIONS.map((option) => {
                 const isActive = vectorStoreProvider === option.id;
                 const needsSetup = option.id === 'Pinecone' && isTauri() && !isPineconeConfigured;
@@ -1093,7 +1099,7 @@ export function RAGSettings() {
                       disabled={isSavingVectorStore}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
                       style={{
-                        backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                        backgroundColor: isActive ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                         color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                       }}
                     >
@@ -1136,8 +1142,8 @@ export function RAGSettings() {
         <section
           className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            borderColor: 'var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           <div className="flex flex-col gap-3">
@@ -1163,7 +1169,7 @@ export function RAGSettings() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
               {RAG_FEATURE_TOGGLES.map((feature) => {
                 const isEnabled = getFeatureValue(feature.key);
                 const isSaving = savingFeature === feature.id;
@@ -1176,7 +1182,7 @@ export function RAGSettings() {
                       disabled={isSaving}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all disabled:opacity-50"
                       style={{
-                        backgroundColor: isEnabled ? 'var(--btn-primary-bg)' : 'transparent',
+                        backgroundColor: isEnabled ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                         color: isEnabled ? 'var(--btn-primary-text)' : 'var(--text-primary)',
                       }}
                     >
@@ -1196,8 +1202,8 @@ export function RAGSettings() {
       <section
         className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         <div className="flex flex-col gap-4">
@@ -1279,8 +1285,8 @@ export function RAGSettings() {
                         key={setting.id}
                         className="flex flex-col gap-3 p-4 rounded-2xl border"
                         style={{
-                          backgroundColor: 'var(--surface-elevated)',
-                          borderColor: 'var(--border)',
+                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }}
                       >
                         <div className="flex items-center gap-1">
@@ -1352,8 +1358,8 @@ export function RAGSettings() {
                   <div
                     className="flex flex-col gap-3 p-4 rounded-2xl border"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
                   >
                     <div className="flex items-center gap-1">
@@ -1441,8 +1447,8 @@ export function RAGSettings() {
                         key={setting.id}
                         className="flex flex-col gap-3 p-4 rounded-2xl border"
                         style={{
-                          backgroundColor: 'var(--surface-elevated)',
-                          borderColor: 'var(--border)',
+                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+                          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }}
                       >
                         <div className="flex items-center gap-1">
@@ -1513,9 +1519,9 @@ export function RAGSettings() {
                     disabled={savingAdvancedSetting === 'reset'}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                       color: 'var(--text-secondary)',
-                      border: '1px solid var(--border)',
+                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
                   >
                     <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

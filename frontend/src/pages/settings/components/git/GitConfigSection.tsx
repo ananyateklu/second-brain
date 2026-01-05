@@ -69,8 +69,8 @@ export function GitConfigSection({
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -128,7 +128,7 @@ export function GitConfigSection({
                   <div
                     key={`${path}-${index}`}
                     className="flex items-center gap-2 px-3 py-2 rounded-xl"
-                    style={{ backgroundColor: 'var(--surface-elevated)' }}
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                   >
                     <span className="flex-1 text-xs font-mono truncate" style={{ color: 'var(--text-primary)' }}>
                       {path}
@@ -158,8 +158,8 @@ export function GitConfigSection({
                 placeholder="/path/to/repositories"
                 className="flex-1 px-3 py-2 rounded-xl border text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[color:var(--color-brand-600)]"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  borderColor: 'var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   color: 'var(--text-primary)',
                 }}
               />
@@ -196,9 +196,9 @@ export function GitConfigSection({
               className="flex items-center gap-3 w-full px-3 py-2 rounded-xl border text-left transition-all duration-200 hover:-translate-y-0.5"
               style={{
                 backgroundColor: requireUserScoped
-                  ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-elevated))'
-                  : 'var(--surface-elevated)',
-                borderColor: requireUserScoped ? 'var(--color-brand-600)' : 'var(--border)',
+                  ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
+                  : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                borderColor: requireUserScoped ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               <div

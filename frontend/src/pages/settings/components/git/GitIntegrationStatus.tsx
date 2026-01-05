@@ -38,8 +38,8 @@ export function GitIntegrationStatus({ isTauri }: GitIntegrationStatusProps) {
     <div
       className="rounded-2xl border p-4 transition-all duration-200"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-center gap-3">

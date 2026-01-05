@@ -73,7 +73,7 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                         </svg>
                         Model
                     </label>
-                    <div className="px-2.5 py-1.5 rounded-lg text-xs w-48" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-secondary)' }}>
+                    <div className="px-2.5 py-1.5 rounded-lg text-xs w-48" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)', color: 'var(--text-secondary)' }}>
                         {noteSummaryProvider ? 'No models available' : 'Select provider first'}
                     </div>
                 </div>
@@ -99,8 +99,8 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                         disabled={disabled}
                         className="w-56 flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)]"
                         style={{
-                            backgroundColor: 'var(--surface-elevated)',
-                            borderColor: isOpen ? 'var(--color-brand-600)' : 'var(--border)',
+                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                            borderColor: isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                             color: 'var(--text-primary)',
                         }}
                     >
@@ -128,10 +128,10 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                     {/* Dropdown Menu */}
                     {isOpen && (
                         <div
-                            className="absolute top-full left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                            className="absolute top-full left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200 backdrop-blur-md"
                             style={{
-                                backgroundColor: 'var(--surface-elevated)',
-                                borderColor: 'var(--border)',
+                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                             }}
                         >
                             <div className="max-h-60 overflow-y-auto thin-scrollbar">
@@ -384,8 +384,8 @@ export function NoteSummarySettings() {
         <section
             className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
             style={{
-                backgroundColor: 'var(--surface-card)',
-                borderColor: 'var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}
         >
             <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
@@ -430,7 +430,7 @@ export function NoteSummarySettings() {
                 {/* Generate on Create/Update Toggle, Provider, and Model - Inline */}
                 <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
                     {/* Generate on Create/Update Toggle */}
-                    <div className="flex items-center justify-between rounded-xl min-w-0" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                    <div className="flex items-center justify-between rounded-xl min-w-0" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                         <div className="flex items-center gap-2 min-w-0">
                             <div className="flex h-7 w-7 items-center justify-center rounded-xl flex-shrink-0" style={{ backgroundColor: 'var(--surface-card)' }}>
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: noteSummaryEnabled ? 'var(--color-brand-600)' : 'var(--text-secondary)' }}>
@@ -473,7 +473,7 @@ export function NoteSummarySettings() {
                                     AI Provider
                                 </label>
                                 {isHealthLoading ? (
-                                    <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-secondary)' }}>
+                                    <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)', color: 'var(--text-secondary)' }}>
                                         <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -481,7 +481,7 @@ export function NoteSummarySettings() {
                                         <span className="text-xs">Loading providers...</span>
                                     </div>
                                 ) : availableProviders.length === 0 ? (
-                                    <div className="p-2 rounded-lg text-xs" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-secondary)' }}>
+                                    <div className="p-2 rounded-lg text-xs" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)', color: 'var(--text-secondary)' }}>
                                         No providers available
                                     </div>
                                 ) : (
@@ -497,10 +497,10 @@ export function NoteSummarySettings() {
                                                     className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     style={{
                                                         backgroundColor: isActive
-                                                            ? 'var(--btn-primary-bg)'
-                                                            : 'var(--surface-elevated)',
-                                                        borderColor: isActive ? 'var(--btn-primary-border)' : 'var(--border)',
-                                                        color: isActive ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                                                            ? 'var(--color-brand-600)'
+                                                            : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                                                        borderColor: isActive ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                                                        color: isActive ? '#ffffff' : 'var(--text-primary)',
                                                         transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
                                                     }}
                                                 >
@@ -540,7 +540,7 @@ export function NoteSummarySettings() {
                         {notesWithoutSummaries.length > 0 && (
                             <div
                                 className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg ml-2"
-                                style={{ backgroundColor: 'var(--surface-elevated)' }}
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                             >
                                 <button
                                     type="button"
@@ -553,7 +553,7 @@ export function NoteSummarySettings() {
                                         style={{
                                             borderColor: selectedNotes.size === notesWithoutSummaries.length
                                                 ? 'var(--color-brand-600)'
-                                                : 'var(--border)',
+                                                : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                             backgroundColor: selectedNotes.size === notesWithoutSummaries.length
                                                 ? 'var(--color-brand-600)'
                                                 : 'transparent',
@@ -604,13 +604,13 @@ export function NoteSummarySettings() {
                                         className="px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                                         style={{
                                             backgroundColor: selectedNotes.size > 0
-                                                ? 'var(--btn-primary-bg)'
-                                                : 'var(--surface-elevated)',
+                                                ? 'var(--color-brand-600)'
+                                                : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                                             borderColor: selectedNotes.size > 0
-                                                ? 'var(--btn-primary-border)'
-                                                : 'var(--border)',
+                                                ? 'var(--color-brand-600)'
+                                                : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                             color: selectedNotes.size > 0
-                                                ? 'var(--btn-primary-text)'
+                                                ? '#ffffff'
                                                 : 'var(--text-secondary)',
                                         }}
                                     >
@@ -644,7 +644,7 @@ export function NoteSummarySettings() {
                 ) : notesWithoutSummaries.length === 0 ? (
                     <div
                         className="flex flex-col items-center justify-center py-6 rounded-xl"
-                        style={{ backgroundColor: 'var(--surface-elevated)' }}
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                     >
                         <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{ color: 'var(--color-brand-600)' }}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -661,7 +661,7 @@ export function NoteSummarySettings() {
                         {/* Notes Grid */}
                         <div
                             className="max-h-[18.2rem] overflow-y-auto thin-scrollbar rounded-xl p-1.5"
-                            style={{ backgroundColor: 'var(--surface-elevated)' }}
+                            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                         >
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5">
                                 {notesWithoutSummaries.map((note: NoteListItem) => (
@@ -670,11 +670,11 @@ export function NoteSummarySettings() {
                                         className="relative group rounded-xl border p-1.5 transition-all duration-200 cursor-pointer hover:shadow-md hover:-translate-y-0.5"
                                         style={{
                                             backgroundColor: selectedNotes.has(note.id)
-                                                ? 'color-mix(in srgb, var(--color-brand-600) 8%, var(--surface-card))'
-                                                : 'var(--surface-card)',
+                                                ? 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)'
+                                                : 'color-mix(in srgb, var(--text-primary) 5%, transparent)',
                                             borderColor: selectedNotes.has(note.id)
                                                 ? 'var(--color-brand-600)'
-                                                : 'var(--border)',
+                                                : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                         }}
                                         onClick={() => handleSelectNote(note.id)}
                                     >
@@ -685,7 +685,7 @@ export function NoteSummarySettings() {
                                                 style={{
                                                     borderColor: selectedNotes.has(note.id)
                                                         ? 'var(--color-brand-600)'
-                                                        : 'var(--border)',
+                                                        : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                                                     backgroundColor: selectedNotes.has(note.id)
                                                         ? 'var(--color-brand-600)'
                                                         : 'transparent',

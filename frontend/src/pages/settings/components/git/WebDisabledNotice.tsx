@@ -18,8 +18,8 @@ export function WebDisabledNotice({ icon, title, description, reason }: WebDisab
     <section
       className="rounded-3xl border p-4 opacity-60"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex items-start gap-3">
@@ -52,7 +52,7 @@ export function WebDisabledNotice({ icon, title, description, reason }: WebDisab
           </p>
           <div
             className="text-xs px-3 py-2 rounded-xl"
-            style={{ backgroundColor: 'var(--surface-elevated)' }}
+            style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
           >
             <span className="font-medium">Why?</span> {reason}
           </div>

@@ -11,8 +11,8 @@ function SkeletonProviderSection() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -77,8 +77,8 @@ function SkeletonGenerationSection() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -110,8 +110,8 @@ function SkeletonRAGSection() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -143,8 +143,8 @@ function SkeletonSuggestionSection() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">

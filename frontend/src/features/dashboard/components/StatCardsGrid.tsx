@@ -205,7 +205,7 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
       value: sessionStats?.activeSessions || 0,
       icon: <ActivityIcon />,
       subtitle: sessionStats?.activeSessions ? (
-        <span className="text-green-500 animate-pulse text-xs">● Live</span>
+        <span className="animate-pulse text-xs" style={{ color: 'var(--color-success)' }}>● Live</span>
       ) : undefined,
       show: !!sessionStats,
     },

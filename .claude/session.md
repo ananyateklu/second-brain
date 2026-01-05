@@ -1,13 +1,13 @@
 # Current Session Context
 
 > **Last Updated**: 2026-01-04
-> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat, Insights, Git, GitHub, and Voice Agent Pages Complete
+> **Focus**: Subtle Frosted Glass UI - Dashboard, Notes Directory, Chat, Insights, Git, GitHub, Voice Agent, and Settings Pages Complete
 
 ---
 
 ## Overview
 
-The Dashboard (Focus) page, Notes Directory page, **Chat page**, **Insights page**, **Git page**, and **GitHub integration page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
+The Dashboard (Focus) page, Notes Directory page, **Chat page**, **Insights page**, **Git page**, **GitHub integration page**, and **Settings page** have been fully updated with **subtle** frosted glass styling. The styling is now consistent across all three themes (light, dark, blue).
 
 ---
 
@@ -171,6 +171,14 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Dashboard Controls | `FocusDashboardControls.tsx` |
 | Dashboard Page (error state) | `DashboardPage.tsx` |
 
+### Dashboard Analytics Components ✅
+
+| Component | File |
+|-----------|------|
+| Session Stats Section | `SessionStatsSection.tsx` (skeleton, Live indicators, card styling) |
+| Stat Cards Grid | `StatCardsGrid.tsx` (Live indicator) |
+| Dashboard Skeleton | `DashboardSkeleton.tsx` (all skeleton backgrounds/borders) |
+
 ### Global Components
 
 | Component | File |
@@ -223,6 +231,9 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Feedback Summary Card | `FeedbackSummaryCard.tsx` |
 | Topic Distribution Card | `TopicDistributionCard.tsx` |
 | Query Logs Table | `QueryLogsTable.tsx` (headers, rows, expanded view, pagination) |
+| Dashboard Skeleton | `DashboardSkeleton.tsx` (loading states for Overview tab) |
+| Stats Card Skeleton | `StatsCardSkeleton.tsx` (loading states for stat cards) |
+| Session Stats Section | `SessionStatsSection.tsx` (session analytics section) |
 
 ### Git Page ✅
 
@@ -276,6 +287,30 @@ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
 | Settings Nav Tabs | `header-components/SettingsNavTabs.tsx` (tab bar, active state) |
 | Insights Tab Bar | `header-components/InsightsTabBar.tsx` (already using color-mix) |
 
+### Settings Page ✅
+
+| Component | File |
+|-----------|------|
+| General Settings | `GeneralSettings.tsx` (sections, buttons, dividers, auto-save card) |
+| AI Settings | `AISettings.tsx` (sections, provider cards, voice provider card) |
+| RAG Settings | `RAGSettings.tsx` (sections, provider toggles, dropdowns, sliders) |
+| Indexing Settings | `IndexingSettings.tsx` (sections, stats cards) |
+| Focus Settings | `FocusSettings.tsx` (sections, provider buttons, model dropdown) |
+| Git Settings | `GitSettings.tsx` (loading skeleton) |
+| Note Summary Settings | `NoteSummarySettings.tsx` (section, toggles, provider buttons, dropdowns, note cards) |
+| Provider Card | `ai/ProviderCard.tsx` (AI provider cards) |
+| Git Config Section | `git/GitConfigSection.tsx` (inputs, dropdowns) |
+| GitHub Config Section | `git/GitHubConfigSection.tsx` (inputs) |
+| Git Integration Status | `git/GitIntegrationStatus.tsx` (status card) |
+| GitHub Integration Status | `git/GitHubIntegrationStatus.tsx` (status card) |
+| Web Disabled Notice | `git/WebDisabledNotice.tsx` (notice card) |
+| General Settings Skeleton | `GeneralSettingsSkeleton.tsx` |
+| AI Settings Skeleton | `AISettingsSkeleton.tsx` |
+| RAG Settings Skeleton | `RAGSettingsSkeleton.tsx` |
+| Indexing Settings Skeleton | `IndexingSettingsSkeleton.tsx` |
+| Focus Settings Skeleton | `FocusSettingsSkeleton.tsx` |
+| Git Settings Skeleton | `GitSettingsSkeleton.tsx` |
+
 ### Voice Agent Page ✅
 
 | Component | File |
@@ -302,7 +337,7 @@ Use the patterns above to update these:
 - [x] ~~Git page components~~ (completed)
 - [x] ~~GitHub integration components~~ (completed)
 - [x] ~~Voice Agent page components~~ (completed)
-- [ ] **Settings page components** ← NEXT
+- [x] ~~Settings page components~~ (completed)
 - [ ] Other modals and dialogs
 
 ---

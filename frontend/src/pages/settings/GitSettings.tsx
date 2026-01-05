@@ -94,17 +94,17 @@ export function GitSettings() {
     return (
       <div className="space-y-4">
         {/* Loading skeleton */}
-        <div className="rounded-3xl border p-4 animate-pulse" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
-          <div className="h-8 w-48 rounded-lg mb-4" style={{ backgroundColor: 'var(--surface-elevated)' }} />
-          <div className="h-10 w-full rounded-xl mb-2" style={{ backgroundColor: 'var(--surface-elevated)' }} />
-          <div className="h-10 w-full rounded-xl" style={{ backgroundColor: 'var(--surface-elevated)' }} />
+        <div className="rounded-3xl border p-4 animate-pulse" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)', borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+          <div className="h-8 w-48 rounded-lg mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+          <div className="h-10 w-full rounded-xl mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+          <div className="h-10 w-full rounded-xl" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border p-4 animate-pulse" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border)' }}>
-            <div className="h-6 w-24 rounded-lg" style={{ backgroundColor: 'var(--surface-card)' }} />
+          <div className="rounded-2xl border p-4 animate-pulse" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)', borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+            <div className="h-6 w-24 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)' }} />
           </div>
-          <div className="rounded-2xl border p-4 animate-pulse" style={{ backgroundColor: 'var(--surface-elevated)', borderColor: 'var(--border)' }}>
-            <div className="h-6 w-24 rounded-lg" style={{ backgroundColor: 'var(--surface-card)' }} />
+          <div className="rounded-2xl border p-4 animate-pulse" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)', borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+            <div className="h-6 w-24 rounded-lg" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 5%, transparent)' }} />
           </div>
         </div>
       </div>

@@ -11,8 +11,8 @@ function SkeletonDisplaySettings() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-4">
@@ -80,8 +80,8 @@ function SkeletonNotificationTesting() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -113,7 +113,7 @@ function SkeletonNotificationTesting() {
           </div>
 
           {/* Advanced Features */}
-          <div className="pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
+          <div className="pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
             <div className="flex items-center gap-1.5 mb-2">
               <ShimmerBlock className="h-3.5 w-3.5" />
               <ShimmerBlock className="h-3 w-28" />
@@ -135,8 +135,8 @@ function SkeletonAutoSave() {
     <section
       className="rounded-3xl border p-4 transition-all duration-200 hover:shadow-xl"
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       <div className="flex flex-col gap-3">
@@ -155,7 +155,7 @@ function SkeletonAutoSave() {
 
         <div
           className="rounded-xl p-3"
-          style={{ backgroundColor: 'var(--surface-elevated)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
