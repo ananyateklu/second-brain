@@ -24,6 +24,7 @@ import type {
   TrashNotesResponse,
   BulkRestoreResponse,
   EmptyTrashResponse,
+  NoteStatsResponse,
 } from '../types/notes';
 
 /**
@@ -72,6 +73,14 @@ export const notesService = {
     return apiClient.get<PaginatedResult<NoteListItem>>(
       `${API_ENDPOINTS.NOTES.PAGED}?${queryParams.toString()}`
     );
+  },
+
+  /**
+   * Get folder statistics (counts for all folders)
+   * Returns accurate counts without pagination limits
+   */
+  async getStats(): Promise<NoteStatsResponse> {
+    return apiClient.get<NoteStatsResponse>(API_ENDPOINTS.NOTES.STATS);
   },
 
   /**

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useActionState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useBoundStore } from '../store/bound-store';
@@ -7,29 +7,35 @@ import { Button } from '@/components/ui/Button';
 import { TitleBar } from '@/components/layout/TitleBar';
 import brainLogo from '../assets/brain-top-tab.png';
 
+interface FormState {
+  errors?: {
+    identifier?: string;
+    username?: string;
+    password?: string;
+    confirmPassword?: string;
+    general?: string;
+  };
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useBoundStore((state) => state.login);
   const register = useBoundStore((state) => state.register);
-  const isLoading = useBoundStore((state) => state.isLoading);
   const isAuthenticated = useBoundStore((state) => state.isAuthenticated);
-  const error = useBoundStore((state) => state.error);
+  const storeError = useBoundStore((state) => state.error);
   const clearError = useBoundStore((state) => state.clearError);
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Controlled inputs are still useful for clearing/resetting form state when toggling modes
+  // but we will primarily use formData in the action
   const [identifier, setIdentifier] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<{
-    identifier?: string;
-    username?: string;
-    password?: string;
-    confirmPassword?: string;
-  }>({});
 
   useEffect(() => {
     // Redirect if already authenticated
@@ -43,51 +49,69 @@ export function LoginPage() {
     return () => { clearError(); };
   }, [clearError]);
 
-  const validateForm = (): boolean => {
-    const errors: typeof fieldErrors = {};
+  const handleLoginOrRegister = async (_prevState: FormState, formData: FormData): Promise<FormState> => {
+    const errors: FormState['errors'] = {};
+    
+    const identifierVal = formData.get('identifier') as string;
+    const passwordVal = formData.get('password') as string;
+    const usernameVal = formData.get('username') as string;
+    const displayNameVal = formData.get('displayName') as string;
+    const confirmPasswordVal = formData.get('confirmPassword') as string;
 
-    if (!identifier.trim()) {
+    // Validation
+    if (!identifierVal?.trim()) {
       errors.identifier = isRegisterMode ? 'Email is required' : 'Email or Username is required';
     } else if (isRegisterMode) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(identifier)) {
+      if (!emailRegex.test(identifierVal)) {
         errors.identifier = 'Please enter a valid email address';
       }
     }
 
-    if (isRegisterMode && username && !/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+    if (isRegisterMode && usernameVal && !/^[a-zA-Z0-9_-]{3,20}$/.test(usernameVal)) {
       errors.username = 'Username must be 3-20 characters (letters, numbers, _, -)';
     }
 
-    if (!password) {
+    if (!passwordVal) {
       errors.password = 'Password is required';
-    } else if (password.length < 6) {
+    } else if (passwordVal.length < 6) {
       errors.password = 'Password must be at least 6 characters';
     }
 
-    if (isRegisterMode && password !== confirmPassword) {
+    if (isRegisterMode && passwordVal !== confirmPasswordVal) {
       errors.confirmPassword = 'Passwords do not match';
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
+    if (Object.keys(errors).length > 0) {
+      return { errors };
+    }
 
     try {
       if (isRegisterMode) {
-        await register(identifier, password, displayName || undefined, username || undefined);
+        await register(identifierVal, passwordVal, displayNameVal || undefined, usernameVal || undefined);
       } else {
-        await login(identifier, password);
+        await login(identifierVal, passwordVal);
       }
       void navigate('/', { replace: true });
-    } catch {
-      // Error is already handled in the store
+      return {};
+    } catch (_e) {
+      // Store handles setting the global error, but we can also reflect it here if needed
+      return { errors: { general: 'Authentication failed' } };
     }
+  };
+
+  const [formState, formAction, isPending] = useActionState(handleLoginOrRegister, {});
+
+  // Reset form when switching modes
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    clearError();
+    // formState is immutable, so we can't clear its errors directly, 
+    // but re-rendering with new inputs usually clears visual error states if they are bound to input values
   };
 
   return (
@@ -134,7 +158,7 @@ export function LoginPage() {
             </div>
 
             {/* Server Error Message */}
-            {error && (
+            {(storeError || formState.errors?.general) && (
               <div className="mb-6 p-4 rounded-xl border flex items-start gap-3 bg-[var(--color-error-light)] border-[var(--color-error-border)] animate-in fade-in slide-in-from-top-2 duration-300">
                 <svg
                   className="w-5 h-5 flex-shrink-0 mt-0.5 text-[var(--color-error-text)]"
@@ -150,37 +174,40 @@ export function LoginPage() {
                   />
                 </svg>
                 <p className="text-sm text-[var(--color-error-text)]">
-                  {error}
+                  {storeError || formState.errors?.general}
                 </p>
               </div>
             )}
 
             {/* Login/Register Form */}
-            <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
+            <form action={formAction} className="space-y-4">
               {/* Email/Identifier Input */}
               <Input
+                name="identifier"
+                id="identifier"
                 label={isRegisterMode ? 'Email' : 'Email or Username'}
                 type={isRegisterMode ? 'email' : 'text'}
                 value={identifier}
                 onChange={(e) => { setIdentifier(e.target.value); }}
                 placeholder={isRegisterMode ? 'you@example.com' : 'Email or Username'}
                 autoComplete={isRegisterMode ? 'email' : 'username'}
-                disabled={isLoading}
-                error={fieldErrors.identifier}
+                disabled={isPending}
+                error={formState.errors?.identifier}
                 required
               />
 
               {/* Username (Register only) */}
               {isRegisterMode && (
                 <Input
+                  name="username"
                   label="Username (optional)"
                   type="text"
                   value={username}
                   onChange={(e) => { setUsername(e.target.value); }}
                   placeholder="unique_username"
                   autoComplete="username"
-                  disabled={isLoading}
-                  error={fieldErrors.username}
+                  disabled={isPending}
+                  error={formState.errors?.username}
                   helperText="3-20 characters, letters, numbers, underscores, hyphens"
                 />
               )}
@@ -188,27 +215,30 @@ export function LoginPage() {
               {/* Display Name (Register only) */}
               {isRegisterMode && (
                 <Input
+                  name="displayName"
                   label="Display Name (optional)"
                   type="text"
                   value={displayName}
                   onChange={(e) => { setDisplayName(e.target.value); }}
                   placeholder="Your name"
                   autoComplete="name"
-                  disabled={isLoading}
+                  disabled={isPending}
                 />
               )}
 
               {/* Password Input */}
               <div className="relative">
                 <Input
+                  name="password"
+                  id="password"
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); }}
                   placeholder="Enter your password"
                   autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-                  disabled={isLoading}
-                  error={fieldErrors.password}
+                  disabled={isPending}
+                  error={formState.errors?.password}
                   required
                   className="pr-12"
                 />
@@ -227,14 +257,15 @@ export function LoginPage() {
               {isRegisterMode && (
                 <div className="relative">
                   <Input
+                    name="confirmPassword"
                     label="Confirm Password"
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); }}
                     placeholder="Confirm your password"
                     autoComplete="new-password"
-                    disabled={isLoading}
-                    error={fieldErrors.confirmPassword}
+                    disabled={isPending}
+                    error={formState.errors?.confirmPassword}
                     required
                     className="pr-12"
                   />
@@ -254,10 +285,10 @@ export function LoginPage() {
               <Button
                 type="submit"
                 size="lg"
-                isLoading={isLoading}
+                isLoading={isPending}
                 className="w-full !mt-6"
               >
-                {isLoading
+                {isPending
                   ? (isRegisterMode ? 'Creating account...' : 'Signing in...')
                   : (isRegisterMode ? 'Create Account' : 'Sign In')
                 }
@@ -271,16 +302,8 @@ export function LoginPage() {
                 <Button
                   variant="link"
                   size="sm"
-                  onClick={() => {
-                    setIsRegisterMode(!isRegisterMode);
-                    setPassword('');
-                    setConfirmPassword('');
-                    setShowPassword(false);
-                    setShowConfirmPassword(false);
-                    setFieldErrors({});
-                    clearError();
-                  }}
-                  disabled={isLoading}
+                  onClick={toggleMode}
+                  disabled={isPending}
                   className="px-0 h-auto"
                 >
                   {isRegisterMode ? 'Sign in' : 'Create one'}

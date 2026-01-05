@@ -9,6 +9,7 @@ import {
   TrashNotesResponse,
   BulkRestoreResponse,
   EmptyTrashResponse,
+  NoteStatsResponse,
 } from '../../../types/notes';
 import type { PaginatedResult } from '../../../types/api';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
@@ -65,6 +66,28 @@ export function useNotesPaged(
     }
   );
 }
+
+/**
+ * Query: Get comprehensive note statistics
+ * Returns counts, organization stats, activity metrics, and content insights.
+ * This is a dedicated endpoint that doesn't have the 100-item pageSize limit.
+ * Used by sidebar, directory page, dashboard, and other components.
+ */
+export function useNotesStats() {
+  return useApiQuery<NoteStatsResponse>(
+    noteKeys.stats(),
+    () => notesService.getStats(),
+    {
+      // Refresh stats when notes change
+      staleTime: 30000, // 30 seconds
+    }
+  );
+}
+
+/**
+ * @deprecated Use useNotesStats instead
+ */
+export const useNotesFolderStats = useNotesStats;
 
 // Query: Get note by ID
 export function useNote(id: string) {

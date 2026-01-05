@@ -107,12 +107,20 @@ const routes = [
   {
     path: '/notes',
     loader: async () => {
-      // Prefetch notes while route loads for instant display
-      await queryClient.prefetchQuery({
-        queryKey: noteKeys.all,
-        queryFn: () => notesService.getAll(),
-        staleTime: CACHE.STALE_TIME,
-      });
+      // Prefetch folder stats and first page of notes for instant display
+      // Note: We use stats + paged instead of getAll() to avoid fetching all 600+ notes
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: noteKeys.stats(),
+          queryFn: () => notesService.getStats(),
+          staleTime: CACHE.STALE_TIME,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: noteKeys.paged({ page: 1, pageSize: 20, includeArchived: false }),
+          queryFn: () => notesService.getPaged({ page: 1, pageSize: 20, includeArchived: false }),
+          staleTime: CACHE.STALE_TIME,
+        }),
+      ]);
       return null;
     },
     hydrateFallbackElement: <PageLoader />,
@@ -156,6 +164,7 @@ const routes = [
     path: '/insights',
     loader: async () => {
       // Prefetch insights data while route loads
+      // Note: We use stats endpoint instead of all notes to avoid fetching 600+ notes
       await Promise.all([
         queryClient.prefetchQuery({
           queryKey: statsKeys.ai(),
@@ -163,8 +172,8 @@ const routes = [
           staleTime: CACHE.STALE_TIME,
         }),
         queryClient.prefetchQuery({
-          queryKey: noteKeys.all,
-          queryFn: () => notesService.getAll(),
+          queryKey: noteKeys.stats(),
+          queryFn: () => notesService.getStats(),
           staleTime: CACHE.STALE_TIME,
         }),
       ]);

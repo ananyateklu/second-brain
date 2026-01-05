@@ -160,6 +160,9 @@ export const noteKeys = {
 
   /** Key for trash (soft-deleted notes) */
   trash: () => [...noteKeys.all, 'trash'] as const,
+
+  /** Key for folder statistics (sidebar counts) */
+  stats: () => [...noteKeys.all, 'stats'] as const,
 } as const;
 
 /**

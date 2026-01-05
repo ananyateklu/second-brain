@@ -3,11 +3,11 @@
  * Renders directory controls (search, filters, view toggle, bulk mode) in the main header
  */
 
-import { memo, useRef, useEffect, useState, useMemo } from 'react';
+import { memo, useRef, useEffect, useState } from 'react';
 import { ViewModeToggle } from '../../ui/ViewModeToggle';
 import { useDirectoryHeaderState } from '../../../features/notes/context/DirectoryPageContext';
 import { useBoundStore } from '../../../store/bound-store';
-import { useNotes } from '../../../features/notes/hooks/use-notes-query';
+import { useNotesFolderStats } from '../../../features/notes/hooks/use-notes-query';
 import type { NotesViewMode } from '../../../store/types';
 
 type DateFilter = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'last90days' | 'custom';
@@ -32,8 +32,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const setFilterState = useBoundStore((state) => state.setFilterState);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const setBulkMode = useBoundStore((state) => state.setBulkMode);
-  // Get notes for tag list
-  const { data: notes } = useNotes();
+  // Get folder stats (includes all tags) - more efficient than fetching all notes
+  const { data: folderStats } = useNotesFolderStats();
 
   // Dropdown states
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
@@ -44,11 +44,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get all unique tags from notes
-  const allTags = useMemo(() =>
-    Array.from(new Set((notes || []).flatMap(note => note.tags || []))).sort(),
-    [notes]
-  );
+  // Get all unique tags from stats endpoint (already sorted)
+  const allTags = folderStats?.allTags ?? [];
 
   // Focus search input on mount
   useEffect(() => {

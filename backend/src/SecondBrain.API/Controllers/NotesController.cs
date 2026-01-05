@@ -131,6 +131,90 @@ public class NotesController : ControllerBase
     }
 
     /// <summary>
+    /// Get comprehensive statistics for the authenticated user's notes.
+    /// Returns counts, organization stats, activity metrics, and content insights.
+    /// Used by sidebar, directory page, and dashboard.
+    /// </summary>
+    /// <returns>Comprehensive note statistics</returns>
+    [HttpGet("stats")]
+    [ProducesResponseType(typeof(NoteStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteStatsResponse>> GetStats(CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Get all notes for the user (including archived, excluding deleted)
+        var notes = (await _noteRepository.GetByUserIdAsync(userId)).ToList();
+
+        // Get trash count separately (soft-deleted notes)
+        var deletedNotes = await _noteRepository.GetDeletedByUserIdAsync(userId);
+        var trashCount = deletedNotes.Count();
+
+        // Calculate date boundaries for activity stats
+        var now = DateTime.UtcNow;
+        var oneWeekAgo = now.AddDays(-7);
+        var oneMonthAgo = now.AddDays(-30);
+        var oneYearAgo = now.AddDays(-365);
+
+        // Calculate all tags
+        var allTags = notes
+            .SelectMany(n => n.Tags ?? [])
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList();
+
+        // Calculate folder counts
+        var folderCounts = notes
+            .Where(n => !n.IsArchived && !string.IsNullOrEmpty(n.Folder))
+            .GroupBy(n => n.Folder!)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        // Calculate daily note creation counts (last 365 days for chart data)
+        var dailyNoteCounts = notes
+            .Where(n => n.CreatedAt >= oneYearAgo)
+            .GroupBy(n => n.CreatedAt.ToString("yyyy-MM-dd"))
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var response = new NoteStatsResponse
+        {
+            // Count statistics
+            TotalCount = notes.Count,
+            ActiveCount = notes.Count(n => !n.IsArchived),
+            ArchivedCount = notes.Count(n => n.IsArchived),
+            UnfiledCount = notes.Count(n => !n.IsArchived && string.IsNullOrEmpty(n.Folder)),
+            TrashCount = trashCount,
+
+            // Organization statistics
+            FolderCounts = folderCounts,
+            AllTags = allTags,
+            FolderCount = folderCounts.Count,
+            TagCount = allTags.Count,
+
+            // Activity statistics
+            CreatedThisWeek = notes.Count(n => n.CreatedAt >= oneWeekAgo),
+            CreatedThisMonth = notes.Count(n => n.CreatedAt >= oneMonthAgo),
+            UpdatedThisWeek = notes.Count(n => n.UpdatedAt >= oneWeekAgo),
+            UpdatedThisMonth = notes.Count(n => n.UpdatedAt >= oneMonthAgo),
+            LastCreatedAt = notes.OrderByDescending(n => n.CreatedAt).FirstOrDefault()?.CreatedAt,
+            LastUpdatedAt = notes.OrderByDescending(n => n.UpdatedAt).FirstOrDefault()?.UpdatedAt,
+
+            // Content statistics
+            NotesWithImages = notes.Count(n => n.Images != null && n.Images.Count > 0),
+            NotesWithSummaries = notes.Count(n => !string.IsNullOrEmpty(n.Summary)),
+
+            // Chart data
+            DailyNoteCounts = dailyNoteCounts
+        };
+
+        return Ok(response);
+    }
+
+    /// <summary>
     /// Get all notes with full content for export/import purposes (e.g., iOS Shortcuts).
     /// Returns full NoteResponse with content field included.
     /// This endpoint is optimized for external integrations that need complete note data.

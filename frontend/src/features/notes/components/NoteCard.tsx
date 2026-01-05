@@ -5,7 +5,7 @@ import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, memo, useMemo, useRef, useCallback } from 'react';
+import { useState, memo, useMemo, useRef, useCallback, useOptimistic, startTransition } from 'react';
 
 interface NoteCardProps {
   /** Note data - can be NoteListItem (summary only) or full Note (with content) */
@@ -100,6 +100,13 @@ export const NoteCard = memo(({
   const isMicro = variant === 'micro';
   const isSmall = isCompact || isMicro;
 
+  // Optimistic UI for archive state
+  // This allows instant feedback before the mutation even fires/resolves
+  const [optimisticArchived, setOptimisticArchived] = useOptimistic(
+    note.isArchived,
+    (_state, newIsArchived: boolean) => newIsArchived
+  );
+
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const theme = useBoundStore((state) => state.theme);
@@ -137,7 +144,17 @@ export const NoteCard = memo(({
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking archive button
-    if (note.isArchived) {
+    
+    // Calculate new state based on optimistic state
+    const newArchivedState = !optimisticArchived;
+
+    // Apply optimistic update immediately
+    startTransition(() => {
+      setOptimisticArchived(newArchivedState);
+    });
+
+    // Trigger mutation
+    if (optimisticArchived) {
       unarchiveNoteMutation.mutate(note.id);
     } else {
       archiveNoteMutation.mutate(note.id);
@@ -322,7 +339,7 @@ export const NoteCard = memo(({
                 <button
                   onClick={handleArchiveToggle}
                   className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
-                    note.isArchived
+                    optimisticArchived
                       ? 'hover:bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] hover:text-[var(--color-success)]'
                       : 'hover:bg-[color-mix(in_srgb,var(--color-warning)_15%,transparent)] hover:text-[var(--color-warning)]'
                   }`}
@@ -330,11 +347,11 @@ export const NoteCard = memo(({
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
-                  aria-label={note.isArchived ? 'Restore note' : 'Archive note'}
-                  title={note.isArchived ? 'Restore from archive' : 'Archive note'}
+                  aria-label={optimisticArchived ? 'Restore note' : 'Archive note'}
+                  title={optimisticArchived ? 'Restore from archive' : 'Archive note'}
                   disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
                 >
-                  {note.isArchived ? (
+                  {optimisticArchived ? (
                     // Unarchive icon (arrow coming out of box)
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4l3-3m0 0l3 3m-3-3v6" />
@@ -436,7 +453,7 @@ export const NoteCard = memo(({
           {/* Left side: Archived badge + Tags */}
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Archived Badge */}
-            {note.isArchived && (
+            {optimisticArchived && (
               <span
                 className={`inline-flex items-center gap-1 rounded-md font-medium ${isMicro ? 'px-1.5 py-0.5 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')}`}
                 style={{

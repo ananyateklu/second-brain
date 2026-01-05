@@ -22,7 +22,7 @@ export const OverviewTab = memo(function OverviewTab() {
   const {
     isLoading,
     error,
-    notes,
+    noteStats,
     stats,
     aiStats,
     totalTokens,
@@ -39,7 +39,7 @@ export const OverviewTab = memo(function OverviewTab() {
   } = useDashboardData();
 
   // Use optimized animations - 13 stat cards is typical
-  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!notes, 13);
+  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!noteStats, 13);
 
   // Memoize chart data based on time range selections
   const chartData = useMemo(
@@ -87,7 +87,7 @@ export const OverviewTab = memo(function OverviewTab() {
     return <DashboardSkeleton />;
   }
 
-  if (!notes || notes.length === 0) {
+  if (!noteStats || noteStats.totalCount === 0) {
     return (
       <EmptyState
         icon={

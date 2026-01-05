@@ -425,3 +425,75 @@ export interface EmptyTrashResponse {
   deletedCount: number;
   message: string;
 }
+
+/**
+ * Response from notes stats endpoint
+ * Returns comprehensive statistics for notes without pagination limits
+ */
+export interface NoteStatsResponse {
+  // ============================================
+  // Count Statistics
+  // ============================================
+
+  /** Total number of non-deleted notes */
+  totalCount: number;
+  /** Number of active (non-archived) notes */
+  activeCount: number;
+  /** Number of archived notes */
+  archivedCount: number;
+  /** Number of notes without a folder (unfiled) */
+  unfiledCount: number;
+  /** Number of notes in trash (soft-deleted) */
+  trashCount: number;
+
+  // ============================================
+  // Organization Statistics
+  // ============================================
+
+  /** Count of active (non-archived) notes per folder */
+  folderCounts: Record<string, number>;
+  /** All unique tags across all notes (sorted alphabetically) */
+  allTags: string[];
+  /** Total number of unique folders */
+  folderCount: number;
+  /** Total number of unique tags */
+  tagCount: number;
+
+  // ============================================
+  // Activity Statistics
+  // ============================================
+
+  /** Number of notes created in the last 7 days */
+  createdThisWeek: number;
+  /** Number of notes created in the last 30 days */
+  createdThisMonth: number;
+  /** Number of notes updated in the last 7 days */
+  updatedThisWeek: number;
+  /** Number of notes updated in the last 30 days */
+  updatedThisMonth: number;
+  /** Date of the most recently created note */
+  lastCreatedAt: string | null;
+  /** Date of the most recently updated note */
+  lastUpdatedAt: string | null;
+
+  // ============================================
+  // Content Statistics
+  // ============================================
+
+  /** Number of notes that have images attached */
+  notesWithImages: number;
+  /** Number of notes that have AI-generated summaries */
+  notesWithSummaries: number;
+
+  // ============================================
+  // Chart Data (for dashboard/insights)
+  // ============================================
+
+  /** Daily note creation counts for the last 365 days. Key: date in yyyy-MM-dd format */
+  dailyNoteCounts: Record<string, number>;
+}
+
+/**
+ * @deprecated Use NoteStatsResponse instead
+ */
+export type NoteFolderStatsResponse = NoteStatsResponse;

@@ -128,11 +128,19 @@ export function Sidebar() {
       // Dashboard is now a placeholder, no prefetch needed
       case 'notes':
       case 'directory':
-        void queryClient.prefetchQuery({
-          queryKey: noteKeys.all,
-          queryFn: () => notesService.getAll(),
-          staleTime: CACHE.STALE_TIME,
-        });
+        // Prefetch stats and first page instead of all notes (avoids fetching 600+ notes)
+        void Promise.all([
+          queryClient.prefetchQuery({
+            queryKey: noteKeys.stats(),
+            queryFn: () => notesService.getStats(),
+            staleTime: CACHE.STALE_TIME,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: noteKeys.paged({ page: 1, pageSize: 20, includeArchived: false }),
+            queryFn: () => notesService.getPaged({ page: 1, pageSize: 20, includeArchived: false }),
+            staleTime: CACHE.STALE_TIME,
+          }),
+        ]);
         break;
       case 'chat':
         void queryClient.prefetchQuery({
@@ -142,6 +150,7 @@ export function Sidebar() {
         });
         break;
       case 'insights':
+        // Use stats endpoint instead of all notes (avoids fetching 600+ notes)
         void Promise.all([
           queryClient.prefetchQuery({
             queryKey: statsKeys.ai(),
@@ -149,8 +158,8 @@ export function Sidebar() {
             staleTime: CACHE.STALE_TIME,
           }),
           queryClient.prefetchQuery({
-            queryKey: noteKeys.all,
-            queryFn: () => notesService.getAll(),
+            queryKey: noteKeys.stats(),
+            queryFn: () => notesService.getStats(),
             staleTime: CACHE.STALE_TIME,
           }),
         ]);

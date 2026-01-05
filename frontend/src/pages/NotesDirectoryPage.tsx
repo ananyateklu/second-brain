@@ -7,6 +7,7 @@ import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } f
 import { createPortal } from 'react-dom';
 import {
   useNotesPaged,
+  useNotesFolderStats,
   useBulkDeleteNotes,
   useNotesTrash,
   useRestoreNote,
@@ -153,7 +154,7 @@ export function NotesDirectoryPage() {
   // For server-side pagination, we need a larger page size when using client-side filters
   const serverPageSize = hasClientSideOnlyFilters ? 100 : itemsPerPage;
 
-  // Use server-side paginated query
+  // Use server-side paginated query for displaying notes (with folder filter)
   const { data: paginatedResult, isLoading, error, isFetching } = useNotesPaged({
     page: hasClientSideOnlyFilters ? 1 : currentPage,
     pageSize: serverPageSize,
@@ -161,6 +162,9 @@ export function NotesDirectoryPage() {
     includeArchived: archiveFilter !== 'not-archived',
     search: deferredSearchQuery.trim() || undefined,
   });
+
+  // Dedicated stats endpoint for accurate folder counts (no pagination limit)
+  const { data: folderStatsData } = useNotesFolderStats();
 
   // Extract notes from paginated result
   const notes = useMemo(() => {
@@ -174,31 +178,20 @@ export function NotesDirectoryPage() {
     return getDateBoundaries();
   }, [filterState.dateFilter]);
 
-  // Calculate folder stats from all notes (need a separate query for this in the future)
-  // For now, we'll compute stats from the current result set
+  // Use dedicated stats endpoint for accurate folder counts (no pagination limit)
   const folderStats = useMemo(() => {
-    if (!notes) return { all: 0, archived: 0, active: 0, unfiled: 0, folders: {} as Record<string, number> };
+    if (!folderStatsData) {
+      return { all: 0, archived: 0, active: 0, unfiled: 0, folders: {} as Record<string, number> };
+    }
 
-    // Note: This is a simplified version - for accurate stats we'd need all notes
-    // For now, we use serverTotalCount for 'all' and estimate others
-    const stats = {
-      all: serverTotalCount,
-      archived: notes.filter((n) => n.isArchived).length,
-      active: notes.filter((n) => !n.isArchived).length,
-      unfiled: notes.filter((n) => !n.folder && !n.isArchived).length,
-      folders: {} as Record<string, number>,
+    return {
+      all: folderStatsData.totalCount,
+      archived: folderStatsData.archivedCount,
+      active: folderStatsData.activeCount,
+      unfiled: folderStatsData.unfiledCount,
+      folders: folderStatsData.folderCounts,
     };
-
-    notes
-      .filter((n) => !n.isArchived && n.folder)
-      .forEach((note) => {
-        if (note.folder) {
-          stats.folders[note.folder] = (stats.folders[note.folder] || 0) + 1;
-        }
-      });
-
-    return stats;
-  }, [notes, serverTotalCount]);
+  }, [folderStatsData]);
 
   // Get sorted list of folders
   const folderList = useMemo(() => {

@@ -148,6 +148,7 @@ export const API_ENDPOINTS = {
   NOTES: {
     BASE: '/notes',
     PAGED: '/notes/paged',
+    STATS: '/notes/stats',
     BY_ID: (id: string) => `/notes/${id}`,
     BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',

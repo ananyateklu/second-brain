@@ -3,8 +3,8 @@
  * Consolidates all chat page state management into a single hook
  * 
  * Features:
- * - Draft persistence per conversation (IndexedDB with localStorage fallback)
- * - Automatic draft saving on input changes (500ms debounce)
+ * - Draft persistence per conversation (via useChatDrafts)
+ * - Automatic draft saving on input changes
  * - Draft restoration when switching conversations
  */
 
@@ -23,6 +23,8 @@ import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import { useUnifiedStream, createLegacyAdapter } from '../../../hooks/use-unified-stream';
+import { useChatDrafts } from './use-chat-drafts';
+import { useChatStreamingCleanup } from './use-chat-streaming-cleanup';
 import { NEW_CHAT_DRAFT_KEY } from '../../../store/slices/draft-slice';
 import type { MessageImage, ImageGenerationResponse, ChatConversation, GroundingSource, GrokSearchSource, ClaudeSearchSource, CodeExecutionResult, GeneratedImage } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
@@ -164,24 +166,14 @@ export interface ChatPageActions {
 export function useChatPageState(): ChatPageState & ChatPageActions {
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
-  const previousConversationIdForDraftsRef = useRef<string | null>(null);
 
   // Local UI state
-  const [inputValue, setInputValueInternal] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
 
   // Auth
   const user = useBoundStore((state) => state.user);
   const markdownRenderer = useBoundStore((state) => state.markdownRenderer);
   const queryClient = useQueryClient();
-
-  // Draft management from store - select each individually to avoid infinite loops
-  const saveDraft = useBoundStore((state) => state.saveDraft);
-  const loadDraft = useBoundStore((state) => state.loadDraft);
-  const clearDraft = useBoundStore((state) => state.clearDraft);
-  const transferNewChatDraft = useBoundStore((state) => state.transferNewChatDraft);
-  const preloadDrafts = useBoundStore((state) => state.preloadDrafts);
-  const flushPendingSaves = useBoundStore((state) => state.flushPendingSaves);
 
   // Send message mutation
   const sendMessage = useSendMessage();
@@ -229,6 +221,16 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     createConversation,
   } = conversationManager;
 
+  // Drafts management
+  const {
+    inputValue,
+    setInputValue,
+    setInputValueInternal,
+    clearDraft,
+    transferNewChatDraft,
+    saveDraft
+  } = useChatDrafts({ conversationId });
+
   // Settings
   const settings = useChatSettings({
     conversationId,
@@ -248,77 +250,9 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleVectorStoreChange,
   } = settings;
 
-  // Track the previous conversation ID to detect when a new conversation is selected
-  const prevConversationIdRef = useRef<string | null>(null);
-
-  // ==============================================
-  // Draft Management
-  // ==============================================
-
-  // Preload all drafts on mount
-  useEffect(() => {
-    void preloadDrafts();
-  }, [preloadDrafts]);
-
-  // Flush pending saves before unmount (e.g., tab close)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      flushPendingSaves();
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Also flush when component unmounts normally
-      flushPendingSaves();
-    };
-  }, [flushPendingSaves]);
-
-  // Draft-aware setInputValue that also persists the draft
-  const setInputValue = useCallback((value: string) => {
-    setInputValueInternal(value);
-    // Save draft with current conversation ID (or new chat key)
-    const draftKey = conversationId || NEW_CHAT_DRAFT_KEY;
-    saveDraft(draftKey, value);
-  }, [conversationId, saveDraft]);
-
-  // Track current input value in a ref for use in effects without causing re-runs
-  const inputValueRef = useRef(inputValue);
-  inputValueRef.current = inputValue;
-
-  // Load draft when conversation changes
-  useEffect(() => {
-    const currentKey = conversationId || NEW_CHAT_DRAFT_KEY;
-    const previousKey = previousConversationIdForDraftsRef.current;
-
-    // Only act if the conversation actually changed
-    if (currentKey !== previousKey) {
-      // Save current draft before switching (if there was a previous conversation)
-      // Capture the value synchronously before any async operations
-      const draftToSave = inputValueRef.current;
-      if (previousKey && draftToSave.trim()) {
-        saveDraft(previousKey, draftToSave);
-      }
-
-      // Update the ref BEFORE the async load to prevent race conditions
-      // This ensures rapid switches don't cause incorrect saves
-      previousConversationIdForDraftsRef.current = currentKey;
-
-      // Load draft for the new conversation
-      // Store the key we're loading for to check against stale closures
-      const loadingForKey = currentKey;
-      void loadDraft(currentKey).then((draftContent) => {
-        // Only update if we're still on the same conversation
-        // This prevents stale promise resolution from overwriting current state
-        if (previousConversationIdForDraftsRef.current === loadingForKey) {
-          setInputValueInternal(draftContent);
-        }
-      });
-    }
-  }, [conversationId, loadDraft, saveDraft]);
-
   // Sync provider/model ONLY when a different conversation is selected (not on every render)
   // This allows users to change provider/model after viewing a conversation
+  const prevConversationIdRef = useRef<string | null>(null);
   useEffect(() => {
     // Only sync when the conversation ID actually changes (new conversation selected)
     if (conversationId !== prevConversationIdRef.current) {
@@ -387,6 +321,15 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   const cancelStream = unifiedStream.cancel;
   const resetStream = unifiedStream.reset;
 
+  // Streaming Cleanup
+  useChatStreamingCleanup({
+    isStreaming,
+    streamingMessage,
+    conversation,
+    setPendingMessage,
+    resetStream
+  });
+
   // Scroll management
   const { messagesEndRef, messagesContainerRef } = useChatScroll({
     isStreaming,
@@ -438,118 +381,6 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     }
   }, [pendingMessage, conversation?.messages, setPendingMessage]);
 
-  // Track the previous message count to detect when new messages are added
-  const prevMessageCountRef = useRef<number>(0);
-
-  // Cleanup streaming state once message is persisted
-  useEffect(() => {
-    if (!isStreaming && streamingMessage && conversation?.messages) {
-      // Get current message count
-      const currentMessageCount = conversation.messages.length;
-
-      // Check if a new message was added since we started streaming
-      // This is more reliable than content matching which can fail due to formatting differences
-      const hasNewMessage = currentMessageCount > prevMessageCountRef.current;
-
-      // Also do content matching as a fallback
-      const hasMatchingMessage = conversation.messages.some(
-        (msg) =>
-          msg.role === 'assistant' &&
-          (msg.content === streamingMessage ||
-            msg.content.trim() === streamingMessage.trim() ||
-            (streamingMessage.trim().length > 20 &&
-              (msg.content
-                .trim()
-                .startsWith(
-                  streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))
-                ) ||
-                msg.content
-                  .trim()
-                  .includes(
-                    streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))
-                  ))))
-      );
-
-      // Reset stream if either condition is met
-      if (hasNewMessage || hasMatchingMessage) {
-        setPendingMessage(null);
-        resetStream();
-      }
-    }
-
-    // Update the message count ref when conversation changes
-    if (conversation?.messages) {
-      prevMessageCountRef.current = conversation.messages.length;
-    }
-  }, [conversation?.messages, isStreaming, streamingMessage, resetStream, setPendingMessage]);
-
-  // Fallback cleanup: if streaming ended but stream state wasn't cleared after a timeout,
-  // force clear it to prevent stuck UI state.
-  // We use a longer timeout and check if conversation data has been updated.
-  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Clean up all fallback timeouts
-  const clearFallbackTimeouts = useCallback(() => {
-    if (fallbackTimeoutRef.current) {
-      clearTimeout(fallbackTimeoutRef.current);
-      fallbackTimeoutRef.current = null;
-    }
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isStreaming && streamingMessage) {
-      // Clear any existing timeouts first
-      clearFallbackTimeouts();
-
-      // Only use fallback after a longer timeout (5 seconds) to give cache time to refresh
-      fallbackTimeoutRef.current = setTimeout(() => {
-        fallbackTimeoutRef.current = null;
-
-        // Before clearing, check one more time if the message is now in the conversation
-        // This prevents clearing when the cache refresh is slow
-        const messageNowPersisted = conversation?.messages?.some(
-          (msg) =>
-            msg.role === 'assistant' &&
-            (msg.content === streamingMessage ||
-              msg.content.trim() === streamingMessage.trim() ||
-              (streamingMessage.trim().length > 20 &&
-                msg.content.trim().includes(streamingMessage.trim().substring(0, 50))))
-        );
-
-        if (messageNowPersisted) {
-          // Safe to clear - message is persisted
-          resetStream();
-          setPendingMessage(null);
-        } else {
-          // Message still not in cache - log warning but don't clear yet
-          // This prevents the disappearing message issue
-          console.warn('[ChatPageState] Fallback timeout reached but message not found in conversation. Keeping streaming state visible.');
-          // Try again in another 3 seconds - but track this timeout for cleanup
-          retryTimeoutRef.current = setTimeout(() => {
-            retryTimeoutRef.current = null;
-            resetStream();
-            setPendingMessage(null);
-          }, 3000);
-        }
-      }, 5000); // 5 second fallback timeout
-
-      return clearFallbackTimeouts;
-    }
-    return undefined;
-  }, [isStreaming, streamingMessage, resetStream, setPendingMessage, conversation?.messages, clearFallbackTimeouts]);
-
-  // Also clean up timeouts when component unmounts or when streaming starts again
-  useEffect(() => {
-    if (isStreaming) {
-      clearFallbackTimeouts();
-    }
-  }, [isStreaming, clearFallbackTimeouts]);
-
   // Handle sending a message
   const handleSendMessage = useCallback(
     async (images?: MessageImage[]) => {
@@ -560,8 +391,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       setInputValueInternal(''); // Use internal setter to avoid saving empty draft
 
       // Clear the draft for current conversation since message is being sent
-      const draftKey = conversationId || NEW_CHAT_DRAFT_KEY;
-      clearDraft(draftKey);
+      clearDraft(conversationId || NEW_CHAT_DRAFT_KEY);
 
       try {
         let currentConversationId = conversationId;
@@ -631,7 +461,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
 
         // Restore the message on error
         setInputValueInternal(messageToSend);
-        // Also save it as a draft again
+        // Save the draft again using the exposed saveDraft function
         saveDraft(conversationId || NEW_CHAT_DRAFT_KEY, messageToSend);
         setPendingMessage(null);
         resetStream();
@@ -654,6 +484,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       setPendingMessage,
       clearDraft,
       saveDraft,
+      setInputValueInternal,
       transferNewChatDraft,
       markdownRenderer,
     ]
@@ -692,7 +523,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   const handleGenerateImage = useCallback(
     async (params: ImageGenerationParams) => {
       setPendingMessage({ content: `[Image Generation Request]\n${params.prompt}` });
-      setInputValue('');
+      setInputValueInternal(''); // Clear input
 
       try {
         let currentConversationId = conversationId;
@@ -746,7 +577,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       createConversation,
       unifiedStream,
       setPendingMessage,
-      setInputValue,
+      setInputValueInternal,
     ]
   );
 
@@ -886,4 +717,3 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     cancelStream,
   };
 }
-

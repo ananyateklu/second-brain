@@ -6,9 +6,9 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { z } from 'zod';
 import { STORAGE_KEYS } from '../lib/constants';
-import type { BoundStore, NoteView, FontSize, Theme, InsightsTabType } from './types';
-import type { MarkdownRendererType } from '../types/auth';
+import type { BoundStore } from './types';
 import { registerStore } from './store-registry';
 
 // Import slice creators directly to avoid circular deps through services/index
@@ -28,6 +28,103 @@ import { createVoiceSlice } from './slices/voice-slice';
 import { createFocusSlice } from './slices/focus-slice';
 
 // ============================================
+// Zod Schemas for Validation
+// ============================================
+
+const NoteViewSchema = z.enum(['list', 'grid']);
+const FontSizeSchema = z.enum(['small', 'medium', 'large']);
+const MarkdownRendererSchema = z.enum(['custom', 'llm-ui']);
+const VectorStoreProviderSchema = z.enum(['PostgreSQL', 'Pinecone']);
+const ThemeSchema = z.enum(['light', 'dark', 'blue']);
+const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
+
+// Schema for the persisted part of BoundStore
+// We use .catch() or .optional() to handle missing or invalid data gracefully if we wanted,
+// but to match original logic we will rely on strict type checking where appropriate.
+// However, the original logic threw errors. Zod throws ZodError. 
+// We will wrap it to throw generic Error to match signature if needed, or just let ZodError bubble.
+// The original code threw Error("Invalid persisted ...").
+const PersistedStateSchema = z.object({
+  // Auth
+  user: z.any().optional(), // Complex object, skipping strict schema for now
+  token: z.string().nullable().optional(),
+  isAuthenticated: z.boolean().optional(),
+  
+  // Settings
+  chatProvider: z.string().nullable().optional(),
+  chatModel: z.string().nullable().optional(),
+  vectorStoreProvider: VectorStoreProviderSchema.optional(),
+  rerankingProvider: z.string().nullable().optional(),
+  ragRerankingModel: z.string().nullable().optional(),
+  defaultNoteView: NoteViewSchema.optional(),
+  itemsPerPage: z.number().optional(),
+  fontSize: FontSizeSchema.optional(),
+  markdownRenderer: MarkdownRendererSchema.optional(),
+  enableNotifications: z.boolean().optional(),
+  ollamaRemoteUrl: z.string().nullable().optional(),
+  useRemoteOllama: z.boolean().optional(),
+  autoSaveInterval: z.number().optional(),
+  noteSummaryEnabled: z.boolean().optional(),
+  noteSummaryProvider: z.string().nullable().optional(),
+  noteSummaryModel: z.string().nullable().optional(),
+
+  // RAG Feature Toggles
+  ragEnableHyde: z.boolean().optional(),
+  ragEnableQueryExpansion: z.boolean().optional(),
+  ragEnableHybridSearch: z.boolean().optional(),
+  ragEnableReranking: z.boolean().optional(),
+  ragEnableAnalytics: z.boolean().optional(),
+  
+  // HyDE & Query Expansion
+  ragHydeProvider: z.string().nullable().optional(),
+  ragHydeModel: z.string().nullable().optional(),
+  ragQueryExpansionProvider: z.string().nullable().optional(),
+  ragQueryExpansionModel: z.string().nullable().optional(),
+
+  // RAG Advanced Settings
+  ragTopK: z.number().optional(),
+  ragSimilarityThreshold: z.number().optional(),
+  ragInitialRetrievalCount: z.number().optional(),
+  ragMinRerankScore: z.number().optional(),
+  ragVectorWeight: z.number().optional(),
+  ragBm25Weight: z.number().optional(),
+  ragMultiQueryCount: z.number().optional(),
+  ragMaxContextLength: z.number().optional(),
+  
+  // RAG Embedding
+  ragEmbeddingProvider: z.string().nullable().optional(),
+  ragEmbeddingModel: z.string().nullable().optional(),
+  ragEmbeddingDimensions: z.number().nullable().optional(),
+
+  // Focus AI
+  focusAIProvider: z.string().nullable().optional(),
+  focusAIModel: z.string().nullable().optional(),
+  focusAITemperature: z.number().optional(),
+  focusAIMaxTokens: z.number().optional(),
+  focusAIRagTopK: z.number().optional(),
+  focusAISimilarityThreshold: z.number().optional(),
+  focusAIMaxSuggestions: z.number().optional(),
+  focusAIDedupThreshold: z.number().optional(),
+
+  // Theme
+  theme: ThemeSchema.optional(),
+
+  // Notes
+  filterState: z.any().optional(), // Complex object
+
+  // Git
+  repositoryPath: z.string().nullable().optional(),
+
+  // Voice
+  selectedProvider: z.string().nullable().optional(),
+  selectedModel: z.string().nullable().optional(),
+  selectedVoiceId: z.string().nullable().optional(),
+
+  // Insights
+  activeInsightsTab: InsightsTabTypeSchema.optional(),
+});
+
+// ============================================
 // Persist Config - Exported for Testing
 // ============================================
 
@@ -36,86 +133,17 @@ import { createFocusSlice } from './slices/focus-slice';
  * Throws an error if any persisted value is invalid.
  * @internal Exported for testing purposes only.
  */
-export function validatePersistedState(parsed: Partial<BoundStore> | undefined): void {
+export function validatePersistedState(parsed: unknown): void {
   if (parsed === undefined) return;
-
-  // Validate NoteView
-  const validNoteViews: NoteView[] = ['list', 'grid'];
-  if (parsed.defaultNoteView !== undefined && !validNoteViews.includes(parsed.defaultNoteView)) {
-    throw new Error(`Invalid persisted defaultNoteView: ${parsed.defaultNoteView}`);
-  }
-
-  // Validate FontSize
-  const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
-  if (parsed.fontSize !== undefined && !validFontSizes.includes(parsed.fontSize)) {
-    throw new Error(`Invalid persisted fontSize: ${parsed.fontSize}`);
-  }
-
-  // Validate MarkdownRenderer
-  const validMarkdownRenderers: MarkdownRendererType[] = ['custom', 'llm-ui'];
-  if (parsed.markdownRenderer !== undefined && !validMarkdownRenderers.includes(parsed.markdownRenderer)) {
-    throw new Error(`Invalid persisted markdownRenderer: ${parsed.markdownRenderer}`);
-  }
-
-  // Validate VectorStoreProvider
-  if (parsed.vectorStoreProvider !== undefined &&
-      parsed.vectorStoreProvider !== 'PostgreSQL' &&
-      parsed.vectorStoreProvider !== 'Pinecone') {
-    throw new Error(`Invalid persisted vectorStoreProvider: ${parsed.vectorStoreProvider}`);
-  }
-
-  // Validate Theme
-  const validThemes: Theme[] = ['light', 'dark', 'blue'];
-  if (parsed.theme !== undefined && !validThemes.includes(parsed.theme)) {
-    throw new Error(`Invalid persisted theme: ${parsed.theme}`);
-  }
-
-  // Validate InsightsTab
-  const validInsightsTabs: InsightsTabType[] = ['overview', 'rag', 'chat', 'agent'];
-  if (parsed.activeInsightsTab !== undefined && !validInsightsTabs.includes(parsed.activeInsightsTab)) {
-    throw new Error(`Invalid persisted activeInsightsTab: ${parsed.activeInsightsTab}`);
-  }
-
-  // Validate numeric types
-  if (parsed.itemsPerPage !== undefined && typeof parsed.itemsPerPage !== 'number') {
-    throw new Error(`Invalid persisted itemsPerPage type: ${typeof parsed.itemsPerPage}`);
-  }
-  if (parsed.autoSaveInterval !== undefined && typeof parsed.autoSaveInterval !== 'number') {
-    throw new Error(`Invalid persisted autoSaveInterval type: ${typeof parsed.autoSaveInterval}`);
-  }
-
-  // Validate RAG advanced settings numeric types
-  const ragNumericFields = [
-    'ragTopK', 'ragSimilarityThreshold', 'ragInitialRetrievalCount', 'ragMinRerankScore',
-    'ragVectorWeight', 'ragBm25Weight', 'ragMultiQueryCount', 'ragMaxContextLength'
-  ] as const;
-  for (const field of ragNumericFields) {
-    if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
-      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
-    }
-  }
-
-  // Validate Focus AI numeric types
-  const focusNumericFields = [
-    'focusAITemperature', 'focusAIMaxTokens', 'focusAIRagTopK',
-    'focusAISimilarityThreshold', 'focusAIMaxSuggestions', 'focusAIDedupThreshold'
-  ] as const;
-  for (const field of focusNumericFields) {
-    if (parsed[field] !== undefined && typeof parsed[field] !== 'number') {
-      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
-    }
-  }
-
-  // Validate boolean types
-  const booleanFields = [
-    'enableNotifications', 'useRemoteOllama', 'noteSummaryEnabled',
-    'ragEnableHyde', 'ragEnableQueryExpansion', 'ragEnableHybridSearch',
-    'ragEnableReranking', 'ragEnableAnalytics'
-  ] as const;
-  for (const field of booleanFields) {
-    if (parsed[field] !== undefined && typeof parsed[field] !== 'boolean') {
-      throw new Error(`Invalid persisted ${field} type: ${typeof parsed[field]}`);
-    }
+  
+  const result = PersistedStateSchema.safeParse(parsed);
+  
+  if (!result.success) {
+    // Format the first error to match the original error message style roughly
+    const firstError = result.error.issues[0];
+    const path = firstError.path.join('.');
+    const value = (parsed as Record<string, unknown>)[path];
+    throw new Error(`Invalid persisted ${path}: ${firstError.message} (received ${JSON.stringify(value)})`);
   }
 }
 
@@ -127,11 +155,14 @@ export function mergePersistedState(
   persistedState: unknown,
   currentState: BoundStore
 ): BoundStore {
-  const parsed = persistedState as Partial<BoundStore> | undefined;
-  if (parsed === undefined) return currentState;
+  // If undefined, return current state
+  if (persistedState === undefined) return currentState;
 
-  // Validate before merging
-  validatePersistedState(parsed);
+  // Validate (throws on error)
+  validatePersistedState(persistedState);
+
+  // Safe to cast now
+  const parsed = persistedState as Partial<BoundStore>;
 
   return {
     ...currentState,
