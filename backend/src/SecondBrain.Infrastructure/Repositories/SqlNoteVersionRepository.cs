@@ -56,7 +56,7 @@ public class SqlNoteVersionRepository : INoteVersionRepository
             var sql = @"
                 SELECT id, note_id, valid_period, title, content, content_json, content_format,
                        tags, is_archived, folder, modified_by, version_number, change_summary,
-                       source, image_ids, ai_provider, ai_model, created_at
+                       source, image_ids, ai_provider, ai_model, mcp_server_name, created_at
                 FROM note_versions
                 WHERE note_id = @noteId
                   AND valid_period @> @timestamp::timestamptz";

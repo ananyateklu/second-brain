@@ -161,11 +161,12 @@ describe('DashboardSkeleton', () => {
       expect(borderedElements.length).toBeGreaterThan(0);
     });
 
-    it('should set background color using CSS variables', () => {
+    it('should set background color using CSS color-mix', () => {
       const { container } = render(<DashboardSkeleton />);
       const statsGrid = container.querySelector('.dashboard-stats-grid');
       const firstCard = statsGrid?.firstChild?.firstChild as HTMLElement;
-      expect(firstCard).toHaveStyle({ backgroundColor: 'var(--surface-card)' });
+      // Component uses color-mix for frosted glass styling
+      expect(firstCard).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' });
     });
   });
 
