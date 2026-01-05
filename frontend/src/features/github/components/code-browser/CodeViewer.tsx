@@ -159,9 +159,22 @@ export function CodeViewer({
 
   return (
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
-      {/* File header */}
-      <div className="flex items-center justify-between px-4 py-[15px] flex-shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* File header - aligned with FileSearchInput (matches input height: py-2 + text = ~36px) */}
+      <div
+        className="flex items-center justify-between px-3 py-3 flex-shrink-0 backdrop-blur-md border-b"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        }}
+      >
+        {/* Left content - wrapped to match input box height */}
+        <div
+          className="flex items-center gap-2.5 min-w-0 px-3 py-2 rounded-lg"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          }}
+        >
           <span
             className="text-sm font-medium truncate"
             style={{ color: 'var(--text-primary)' }}
@@ -170,17 +183,17 @@ export function CodeViewer({
           </span>
           {content.language && (
             <span
-              className="text-xs px-2 py-0.5 rounded"
+              className="text-xs px-2 py-0.5 rounded-md transition-colors duration-200"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                color: 'var(--text-secondary)',
+                backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
+                color: 'var(--color-brand-400)',
               }}
             >
               {content.language}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
             {formatFileSize(content.size)}
           </span>
@@ -189,7 +202,7 @@ export function CodeViewer({
               href={content.htmlUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs flex items-center gap-1 transition-all duration-200 hover:text-[var(--color-brand-400)]"
+              className="text-xs flex items-center gap-1.5 px-2 py-1 rounded-md transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--text-primary)_5%,transparent)] transform-gpu"
               style={{ color: 'var(--text-tertiary)' }}
             >
               <ExternalLink className="h-3.5 w-3.5" />

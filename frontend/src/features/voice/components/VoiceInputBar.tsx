@@ -97,12 +97,15 @@ export function VoiceInputBar({
           initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
           animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="inline-flex items-center gap-3 px-4 py-3 rounded-full"
+          className="inline-flex items-center gap-3"
           style={{
+            padding: 'var(--chat-space-md) var(--chat-space-lg)',
+            borderRadius: 'var(--chat-radius-full)',
             backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            boxShadow: 'var(--chat-shadow-md)',
           }}
         >
           {/* Start/Stop Button */}
@@ -112,9 +115,12 @@ export function VoiceInputBar({
             onClick={isActive ? onStop : onStart}
             disabled={isConnecting || showDisconnected || (!canStart && !isActive)}
             title={disabledReason}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={
-              showDisconnected
+            className="flex items-center justify-center gap-2 font-medium text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              padding: 'var(--chat-space-sm) var(--chat-space-lg)',
+              borderRadius: 'var(--chat-radius-full)',
+              transition: `all var(--chat-duration-normal) var(--chat-ease-out)`,
+              ...(showDisconnected
                 ? {
                     backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
                     color: 'var(--color-error)',
@@ -130,8 +136,8 @@ export function VoiceInputBar({
                       backgroundColor: 'var(--btn-primary-bg)',
                       color: 'var(--btn-primary-text)',
                       border: '1px solid var(--btn-primary-border)',
-                    }
-            }
+                    }),
+            }}
             aria-label={showDisconnected ? 'Connection closed' : isActive ? 'End session' : 'Start session'}
           >
             <AnimatePresence mode="wait">
@@ -146,7 +152,13 @@ export function VoiceInputBar({
                   <motion.div
                     animate={prefersReducedMotion ? {} : { rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                    style={{
+                      width: 'var(--chat-icon-md)',
+                      height: 'var(--chat-icon-md)',
+                      border: '2px solid currentColor',
+                      borderTopColor: 'transparent',
+                      borderRadius: 'var(--chat-radius-full)',
+                    }}
                   />
                   <span>Connecting</span>
                 </motion.div>
@@ -158,7 +170,7 @@ export function VoiceInputBar({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center gap-2"
                 >
-                  <XCircleIcon className="w-4 h-4" />
+                  <XCircleIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                   <span>Disconnected</span>
                 </motion.div>
               ) : isActive ? (
@@ -169,7 +181,7 @@ export function VoiceInputBar({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center gap-2"
                 >
-                  <StopIcon className="w-4 h-4" />
+                  <StopIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                   <span>End</span>
                 </motion.div>
               ) : (
@@ -180,7 +192,7 @@ export function VoiceInputBar({
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="flex items-center gap-2"
                 >
-                  <MicrophoneIcon className="w-4 h-4" />
+                  <MicrophoneIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                   <span>Start</span>
                 </motion.div>
               )}
@@ -233,9 +245,12 @@ export function VoiceInputBar({
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   onClick={onToggleMicrophone}
-                  className="p-2 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  style={
-                    isMicrophoneEnabled
+                  className="focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{
+                    padding: 'var(--chat-space-sm)',
+                    borderRadius: 'var(--chat-radius-full)',
+                    transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
+                    ...(isMicrophoneEnabled
                       ? {
                           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                           color: 'var(--text-primary)',
@@ -245,14 +260,14 @@ export function VoiceInputBar({
                           backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
                           color: 'var(--color-error)',
                           border: '1px solid color-mix(in srgb, var(--color-error) 30%, transparent)',
-                        }
-                  }
+                        }),
+                  }}
                   aria-label={isMicrophoneEnabled ? 'Mute microphone' : 'Unmute microphone'}
                 >
                   {isMicrophoneEnabled ? (
-                    <SpeakerWaveIcon className="w-4 h-4" />
+                    <SpeakerWaveIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                   ) : (
-                    <SpeakerXMarkIcon className="w-4 h-4" />
+                    <SpeakerXMarkIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                   )}
                 </motion.button>
 
@@ -266,15 +281,18 @@ export function VoiceInputBar({
                       whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                       onClick={onInterrupt}
-                      className="p-2 rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
+                      className="focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                       style={{
+                        padding: 'var(--chat-space-sm)',
+                        borderRadius: 'var(--chat-radius-full)',
+                        transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
                         backgroundColor: 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
                         color: 'var(--color-warning)',
                         border: '1px solid color-mix(in srgb, var(--color-warning) 30%, transparent)',
                       }}
                       aria-label="Interrupt AI"
                     >
-                      <HandRaisedIcon className="w-4 h-4" />
+                      <HandRaisedIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
                     </motion.button>
                   )}
                 </AnimatePresence>

@@ -89,6 +89,8 @@ export const ProgressSummary = memo(function ProgressSummary({
     <div
       className={cn(
         'rounded-2xl border overflow-hidden transition-all duration-200',
+        'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
+        'hover:shadow-md',
         className
       )}
       style={{
@@ -398,7 +400,7 @@ const StatCard = memo(function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className="p-3 rounded-lg text-center"
+      className="p-3 rounded-lg text-center transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
       style={{
         backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
       }}

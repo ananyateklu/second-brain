@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { useNotes } from '../../notes/hooks/use-notes-query';
+import { useNotesStats } from '../../notes/hooks/use-notes-query';
 import { useAIStats } from '../../stats/hooks/use-stats';
 import { useSessionStats } from '../../chat/hooks/use-chat-sessions';
-import { calculateStats, getChartData, getChatUsageChartData } from '../../../utils/stats-utils';
+import { getChatUsageChartData } from '../../../utils/stats-utils';
 import { formatModelName } from '../../../utils/model-name-formatter';
-import { parse, subDays, startOfDay, isBefore } from 'date-fns';
+import { parse, subDays, startOfDay, isBefore, format, addDays, isAfter } from 'date-fns';
 import {
   getThemeColors,
   getRagChartColor,
@@ -12,6 +12,7 @@ import {
   getImageGenChartColor,
 } from '../utils/dashboard-utils';
 import type { SessionStats } from '../../../types/chat';
+import type { NoteStatsResponse } from '../../../types/notes';
 
 interface ModelUsageEntry {
   name: string;
@@ -50,8 +51,8 @@ interface DashboardData {
   isLoading: boolean;
   error: Error | null;
 
-  // Notes data
-  notes: ReturnType<typeof useNotes>['data'];
+  // Notes data (from stats endpoint - no longer fetches all notes)
+  noteStats: NoteStatsResponse | undefined;
   stats: NotesStats | null;
 
   // AI Stats
@@ -84,7 +85,8 @@ interface DashboardData {
 }
 
 export function useDashboardData(): DashboardData {
-  const { data: notes, isLoading: isNotesLoading, error: notesError } = useNotes();
+  // Use stats endpoint instead of fetching all notes (much more efficient)
+  const { data: noteStats, isLoading: isNotesLoading, error: notesError } = useNotesStats();
   const { data: aiStats, isLoading: isAIStatsLoading } = useAIStats();
   const { data: sessionStats, isLoading: isSessionStatsLoading } = useSessionStats();
 
@@ -95,19 +97,42 @@ export function useDashboardData(): DashboardData {
   const agentChartColor = colors[2]; // Use third color from theme for agent chats
   const imageGenChartColor = getImageGenChartColor();
 
-  // Calculate notes stats
+  // Map stats response to NotesStats interface
   const stats = useMemo<NotesStats | null>(() => {
-    if (!notes) return null;
-    return calculateStats(notes);
-  }, [notes]);
+    if (!noteStats) return null;
+    return {
+      totalNotes: noteStats.totalCount,
+      notesCreatedThisWeek: noteStats.createdThisWeek,
+      notesCreatedThisMonth: noteStats.createdThisMonth,
+      notesUpdatedThisWeek: noteStats.updatedThisWeek,
+    };
+  }, [noteStats]);
 
-  // Generate chart data function (memoized generator)
+  // Generate chart data from dailyNoteCounts (memoized generator)
   const getNotesChartData = useMemo(() => {
     return (timeRange: number): ChartDataPoint[] => {
-      if (!notes) return [];
-      return getChartData(notes, timeRange);
+      if (!noteStats?.dailyNoteCounts) return [];
+
+      const now = new Date();
+      // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today
+      const rangeStart = startOfDay(subDays(now, timeRange - 1));
+
+      // Generate all dates in range with 0 counts
+      const result: ChartDataPoint[] = [];
+      let currentDate = rangeStart;
+
+      while (!isAfter(currentDate, now)) {
+        const dateKey = format(currentDate, 'yyyy-MM-dd');
+        result.push({
+          date: format(currentDate, 'MMM d'),
+          count: noteStats.dailyNoteCounts[dateKey] || 0,
+        });
+        currentDate = addDays(currentDate, 1);
+      }
+
+      return result;
     };
-  }, [notes]);
+  }, [noteStats]);
 
   // Model usage data
   const modelUsageData = useMemo<ModelUsageEntry[]>(() => {
@@ -268,7 +293,7 @@ export function useDashboardData(): DashboardData {
   return {
     isLoading: isNotesLoading || isAIStatsLoading || isSessionStatsLoading,
     error: notesError,
-    notes,
+    noteStats,
     stats,
     aiStats,
     totalTokens,

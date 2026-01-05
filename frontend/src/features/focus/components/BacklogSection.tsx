@@ -57,6 +57,7 @@ const BacklogItem = memo(function BacklogItem({
         'group flex items-center gap-3 py-1.5 px-3 rounded-lg',
         'transition-all duration-150',
         'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]',
+        'hover:-translate-y-px',
         disabled && 'pointer-events-none opacity-50'
       )}
     >
@@ -231,7 +232,13 @@ export const BacklogSection = memo(function BacklogSection({
 
   return (
     <div
-      className={cn('rounded-2xl border flex flex-col', className)}
+      className={cn(
+        'rounded-2xl border flex flex-col',
+        'transition-all duration-200',
+        'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
+        'hover:shadow-md',
+        className
+      )}
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',

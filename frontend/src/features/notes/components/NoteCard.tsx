@@ -5,11 +5,13 @@ import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, memo, useMemo, useRef, useCallback } from 'react';
+import { useState, memo, useMemo, useRef, useCallback, useOptimistic, startTransition } from 'react';
 
 interface NoteCardProps {
   /** Note data - can be NoteListItem (summary only) or full Note (with content) */
   note: Note | NoteListItem;
+  /** Index for staggered animation */
+  index?: number;
   variant?: 'full' | 'compact' | 'micro';
   relevanceScore?: number;
   chunkIndex?: number;
@@ -77,6 +79,7 @@ const getRelevanceBg = (score: number) => {
 
 export const NoteCard = memo(({
   note,
+  index = 0,
   variant = 'full',
   relevanceScore,
   chunkIndex,
@@ -96,6 +99,13 @@ export const NoteCard = memo(({
   const isCompact = variant === 'compact';
   const isMicro = variant === 'micro';
   const isSmall = isCompact || isMicro;
+
+  // Optimistic UI for archive state
+  // This allows instant feedback before the mutation even fires/resolves
+  const [optimisticArchived, setOptimisticArchived] = useOptimistic(
+    note.isArchived,
+    (_state, newIsArchived: boolean) => newIsArchived
+  );
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -134,7 +144,17 @@ export const NoteCard = memo(({
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click when clicking archive button
-    if (note.isArchived) {
+    
+    // Calculate new state based on optimistic state
+    const newArchivedState = !optimisticArchived;
+
+    // Apply optimistic update immediately
+    startTransition(() => {
+      setOptimisticArchived(newArchivedState);
+    });
+
+    // Trigger mutation
+    if (optimisticArchived) {
       unarchiveNoteMutation.mutate(note.id);
     } else {
       archiveNoteMutation.mutate(note.id);
@@ -218,16 +238,26 @@ export const NoteCard = memo(({
     return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
+  // Calculate animation delay based on index (max 500ms)
+  const animationDelay = `${Math.min(index * 40, 400)}ms`;
+
   return (
     <div
       ref={cardRef}
-      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
+      className={`group relative border cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
-        willChange: 'transform',
+        transform: isHovered && !isSmall ? 'translateY(-6px) scale(1.01)' : (isHovered && isSmall ? 'scale(1.005)' : 'none'),
+        willChange: 'transform, opacity',
+        animation: 'cardFadeIn 0.35s ease-out forwards',
+        animationDelay,
+        opacity: 0,
+        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease',
+        boxShadow: isHovered && !isSmall
+          ? '0 8px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -6px rgba(0, 0, 0, 0.1)'
+          : 'none',
       }}
       onClick={handleCardClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -297,13 +327,19 @@ export const NoteCard = memo(({
 
             {showDeleteButton && !isSmall && (
               <div
-                className={`flex items-center gap-1.5 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
+                className="flex items-center gap-1.5"
+                style={{
+                  opacity: isHovered ? 1 : 0,
+                  transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+                  transition: 'opacity 0.2s ease, transform 0.2s ease',
+                  transitionDelay: isHovered ? '0.1s' : '0s',
+                }}
               >
                 {/* Archive/Unarchive Button */}
                 <button
                   onClick={handleArchiveToggle}
                   className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${
-                    note.isArchived
+                    optimisticArchived
                       ? 'hover:bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] hover:text-[var(--color-success)]'
                       : 'hover:bg-[color-mix(in_srgb,var(--color-warning)_15%,transparent)] hover:text-[var(--color-warning)]'
                   }`}
@@ -311,11 +347,11 @@ export const NoteCard = memo(({
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                     color: 'var(--text-tertiary)',
                   }}
-                  aria-label={note.isArchived ? 'Restore note' : 'Archive note'}
-                  title={note.isArchived ? 'Restore from archive' : 'Archive note'}
+                  aria-label={optimisticArchived ? 'Restore note' : 'Archive note'}
+                  title={optimisticArchived ? 'Restore from archive' : 'Archive note'}
                   disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
                 >
-                  {note.isArchived ? (
+                  {optimisticArchived ? (
                     // Unarchive icon (arrow coming out of box)
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4l3-3m0 0l3 3m-3-3v6" />
@@ -417,7 +453,7 @@ export const NoteCard = memo(({
           {/* Left side: Archived badge + Tags */}
           <div className="flex flex-wrap items-center gap-1.5">
             {/* Archived Badge */}
-            {note.isArchived && (
+            {optimisticArchived && (
               <span
                 className={`inline-flex items-center gap-1 rounded-md font-medium ${isMicro ? 'px-1.5 py-0.5 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')}`}
                 style={{

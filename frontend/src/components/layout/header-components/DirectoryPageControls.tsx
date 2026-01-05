@@ -3,11 +3,11 @@
  * Renders directory controls (search, filters, view toggle, bulk mode) in the main header
  */
 
-import { memo, useRef, useEffect, useState, useMemo } from 'react';
+import { memo, useRef, useEffect, useState } from 'react';
 import { ViewModeToggle } from '../../ui/ViewModeToggle';
 import { useDirectoryHeaderState } from '../../../features/notes/context/DirectoryPageContext';
 import { useBoundStore } from '../../../store/bound-store';
-import { useNotes } from '../../../features/notes/hooks/use-notes-query';
+import { useNotesFolderStats } from '../../../features/notes/hooks/use-notes-query';
 import type { NotesViewMode } from '../../../store/types';
 
 type DateFilter = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'last90days' | 'custom';
@@ -32,8 +32,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const setFilterState = useBoundStore((state) => state.setFilterState);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const setBulkMode = useBoundStore((state) => state.setBulkMode);
-  // Get notes for tag list
-  const { data: notes } = useNotes();
+  // Get folder stats (includes all tags) - more efficient than fetching all notes
+  const { data: folderStats } = useNotesFolderStats();
 
   // Dropdown states
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
@@ -44,11 +44,8 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get all unique tags from notes
-  const allTags = useMemo(() =>
-    Array.from(new Set((notes || []).flatMap(note => note.tags || []))).sort(),
-    [notes]
-  );
+  // Get all unique tags from stats endpoint (already sorted)
+  const allTags = folderStats?.allTags ?? [];
 
   // Focus search input on mount
   useEffect(() => {
@@ -173,10 +170,12 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       <div
         className="absolute top-full left-0 mt-2 min-w-[160px] rounded-xl border shadow-xl z-50"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          animation: 'dropdownFadeIn 0.15s ease-out',
+          boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.1)',
         }}
       >
         {children}
@@ -285,10 +284,22 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
               <button
                 key={filter}
                 onClick={() => handleDateFilterChange(filter)}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-150 hover:translate-x-0.5"
                 style={{
-                  backgroundColor: filterState.dateFilter === filter ? 'var(--btn-primary-bg)' : 'transparent',
+                  backgroundColor: filterState.dateFilter === filter
+                    ? 'var(--btn-primary-bg)'
+                    : 'transparent',
                   color: filterState.dateFilter === filter ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (filterState.dateFilter !== filter) {
+                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filterState.dateFilter !== filter) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
                 }}
               >
                 {filter === 'all' ? 'All time' :
@@ -328,24 +339,50 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           </button>
           {renderDropdownMenu(isTagDropdownOpen, (
             <div className="p-1.5 max-h-64 overflow-y-auto thin-scrollbar">
-              {allTags.map((tag) => (
-                <label
-                  key={tag}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all"
-                  style={{
-                    backgroundColor: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-bg)' : 'transparent',
-                    color: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-text)' : 'var(--text-primary)',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={filterState.selectedTags.includes(tag)}
-                    onChange={() => handleTagToggle(tag)}
-                    className="w-3.5 h-3.5 rounded"
-                  />
-                  <span>{tag}</span>
-                </label>
-              ))}
+              {allTags.map((tag) => {
+                const isSelected = filterState.selectedTags.includes(tag);
+                return (
+                  <label
+                    key={tag}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-all duration-150 hover:translate-x-0.5"
+                    style={{
+                      backgroundColor: isSelected ? 'var(--btn-primary-bg)' : 'transparent',
+                      color: isSelected ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
+                    <div
+                      className="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-150"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--btn-primary-text)' : 'transparent',
+                        borderColor: isSelected ? 'var(--btn-primary-text)' : 'color-mix(in srgb, var(--text-primary) 20%, transparent)',
+                      }}
+                    >
+                      {isSelected && (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="var(--btn-primary-bg)" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleTagToggle(tag)}
+                      className="sr-only"
+                    />
+                    <span className="truncate">#{tag}</span>
+                  </label>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -372,10 +409,20 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
               <button
                 key={sort}
                 onClick={() => handleSortChange(sort)}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+                className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-150 hover:translate-x-0.5"
                 style={{
                   backgroundColor: filterState.sortBy === sort ? 'var(--btn-primary-bg)' : 'transparent',
                   color: filterState.sortBy === sort ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (filterState.sortBy !== sort) {
+                    e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filterState.sortBy !== sort) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
                 }}
               >
                 {sort === 'newest' ? 'Newest first' :

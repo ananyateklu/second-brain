@@ -24,11 +24,11 @@ export const GitEmptyState = memo(function GitEmptyState({
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-8">
       {/* Main content */}
-      <div className="max-w-md w-full">
+      <div className="max-w-md w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
         {/* Icon */}
         <div className="flex justify-center mb-6">
           <div
-            className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500"
+            className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-500 transform-gpu"
             style={{
               background: 'linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600))',
               transform: isHovered ? 'scale(1.05) rotate(3deg)' : 'scale(1) rotate(0deg)',
@@ -69,13 +69,15 @@ export const GitEmptyState = memo(function GitEmptyState({
           className="flex justify-center gap-4 mb-8"
           style={{ color: 'var(--text-tertiary)' }}
         >
-          {features.map(({ icon: Icon, label }) => (
+          {features.map(({ icon: Icon, label }, index) => (
             <div
               key={label}
-              className="flex flex-col items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105"
+              className="flex flex-col items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-sm transform-gpu animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                animationDelay: `${index * 100}ms`,
+                animationDuration: '500ms',
               }}
             >
               <Icon className="w-4 h-4" style={{ color: 'var(--color-brand-500)' }} />
@@ -89,7 +91,7 @@ export const GitEmptyState = memo(function GitEmptyState({
         {/* CTA Button */}
         <button
           onClick={onOpenSettings}
-          className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)]"
+          className="group relative w-full flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] overflow-hidden hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-[var(--btn-primary-hover-shadow)] transform-gpu"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',

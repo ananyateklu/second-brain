@@ -43,15 +43,21 @@ export function VoiceConfigurationBanner({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center justify-center gap-6 p-8 h-full"
+      className="flex flex-col items-center justify-center gap-6 h-full"
+      style={{ padding: 'var(--chat-space-2xl)' }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-24 h-24 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: 'var(--surface)' }}
+        className="flex items-center justify-center"
+        style={{
+          width: '96px',
+          height: '96px',
+          borderRadius: 'var(--chat-radius-full)',
+          backgroundColor: 'var(--surface)',
+        }}
       >
-        <MicrophoneIcon className="w-12 h-12" style={{ color: 'var(--text-tertiary)' }} />
+        <MicrophoneIcon style={{ width: '48px', height: '48px', color: 'var(--text-tertiary)' }} />
       </motion.div>
 
       <div className="text-center max-w-md">
@@ -67,14 +73,22 @@ export function VoiceConfigurationBanner({
         {/* Status indicators for Standard mode */}
         {!isGrokMode && (
           <div
-            className="space-y-2 text-left rounded-lg p-4 mb-4"
-            style={{ backgroundColor: 'var(--surface)' }}
+            className="space-y-2 text-left mb-4"
+            style={{
+              borderRadius: 'var(--chat-radius-md)',
+              padding: 'var(--chat-space-lg)',
+              backgroundColor: 'var(--surface)',
+              boxShadow: 'var(--chat-shadow-sm)',
+            }}
           >
             <div className="flex items-center gap-2">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  deepgramAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: 'var(--chat-radius-full)',
+                  backgroundColor: deepgramAvailable ? 'var(--color-success)' : 'var(--color-error)',
+                }}
               />
               <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                 Deepgram STT: {deepgramAvailable ? 'Connected' : 'Not configured'}
@@ -82,9 +96,12 @@ export function VoiceConfigurationBanner({
             </div>
             <div className="flex items-center gap-2">
               <div
-                className={`w-2 h-2 rounded-full ${
-                  elevenLabsAvailable ? 'bg-green-500' : 'bg-red-500'
-                }`}
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: 'var(--chat-radius-full)',
+                  backgroundColor: elevenLabsAvailable ? 'var(--color-success)' : 'var(--color-error)',
+                }}
               />
               <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                 ElevenLabs TTS: {elevenLabsAvailable ? 'Connected' : 'Not configured'}
@@ -96,11 +113,16 @@ export function VoiceConfigurationBanner({
         {/* Status indicator for Grok mode */}
         {isGrokMode && (
           <div
-            className="space-y-2 text-left rounded-lg p-4 mb-4"
-            style={{ backgroundColor: 'var(--surface)' }}
+            className="space-y-2 text-left mb-4"
+            style={{
+              borderRadius: 'var(--chat-radius-md)',
+              padding: 'var(--chat-space-lg)',
+              backgroundColor: 'var(--surface)',
+              boxShadow: 'var(--chat-shadow-sm)',
+            }}
           >
             <div className="flex items-center gap-2">
-              <ExclamationTriangleIcon className="w-4 h-4 text-amber-500" />
+              <ExclamationTriangleIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)', color: 'var(--color-warning)' }} />
               <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
                 xAI API key not configured
               </span>
@@ -112,18 +134,24 @@ export function VoiceConfigurationBanner({
         {otherModeAvailable && (
           <button
             onClick={() => onSwitchMode(otherModeType)}
-            className="
-              inline-flex items-center gap-2 px-4 py-2 rounded-lg
-              font-medium text-sm transition-all duration-200 hover:-translate-y-0.5
-            "
+            className="inline-flex items-center gap-2 font-medium text-sm"
             style={{
+              padding: 'var(--chat-space-sm) var(--chat-space-lg)',
+              borderRadius: 'var(--chat-radius-sm)',
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
               border: '1px solid var(--btn-primary-border)',
+              transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
             Switch to {otherModeName}
-            <ArrowRightIcon className="w-4 h-4" />
+            <ArrowRightIcon style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} />
           </button>
         )}
 

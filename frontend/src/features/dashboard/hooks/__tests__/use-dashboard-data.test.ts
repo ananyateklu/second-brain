@@ -11,7 +11,7 @@ import { useDashboardData } from '../use-dashboard-data';
 
 // Mock the hooks
 vi.mock('../../../notes/hooks/use-notes-query', () => ({
-  useNotes: vi.fn(),
+  useNotesStats: vi.fn(),
 }));
 
 vi.mock('../../../stats/hooks/use-stats', () => ({
@@ -24,16 +24,6 @@ vi.mock('../../../chat/hooks/use-chat-sessions', () => ({
 
 // Mock utility functions
 vi.mock('../../../../utils/stats-utils', () => ({
-  calculateStats: vi.fn(() => ({
-    totalNotes: 100,
-    notesCreatedThisWeek: 10,
-    notesCreatedThisMonth: 25,
-    notesUpdatedThisWeek: 15,
-  })),
-  getChartData: vi.fn(() => [
-    { date: '2024-01-01', count: 5 },
-    { date: '2024-01-02', count: 8 },
-  ]),
   getChatUsageChartData: vi.fn(() => [
     { date: '2024-01-01', ragChats: 3, regularChats: 5, agentChats: 2, imageGenChats: 1 },
   ]),
@@ -73,15 +63,15 @@ describe('useDashboardData', () => {
   // ============================================
   describe('return value structure', () => {
     it('should return loading state', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: true,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -101,16 +91,16 @@ describe('useDashboardData', () => {
     });
 
     it('should return error state', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
       const testError = new Error('Test error');
-      vi.mocked(useNotes).mockReturnValue({
+      vi.mocked(useNotesStats).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: testError,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -129,21 +119,24 @@ describe('useDashboardData', () => {
       expect(result.current.error).toBe(testError);
     });
 
-    it('should return notes data', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+    it('should return noteStats data', async () => {
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      const mockNotes = [
-        { id: '1', title: 'Note 1' },
-        { id: '2', title: 'Note 2' },
-      ];
+      const mockNoteStats = {
+        totalCount: 100,
+        createdThisWeek: 10,
+        createdThisMonth: 25,
+        updatedThisWeek: 15,
+        dailyNoteCounts: {},
+      };
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: mockNotes,
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: mockNoteStats,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -159,19 +152,19 @@ describe('useDashboardData', () => {
         wrapper: createWrapper(),
       });
 
-      expect(result.current.notes).toEqual(mockNotes);
+      expect(result.current.noteStats).toEqual(mockNoteStats);
     });
 
     it('should return colors', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -198,16 +191,22 @@ describe('useDashboardData', () => {
   // Stats Calculation Tests
   // ============================================
   describe('stats calculation', () => {
-    it('should calculate notes stats from notes data', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+    it('should calculate notes stats from noteStats data', async () => {
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [{ id: '1' }],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: {
+          totalCount: 100,
+          createdThisWeek: 10,
+          createdThisMonth: 25,
+          updatedThisWeek: 15,
+          dailyNoteCounts: {},
+        },
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -231,16 +230,16 @@ describe('useDashboardData', () => {
       });
     });
 
-    it('should return null stats when notes is undefined', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+    it('should return null stats when noteStats is undefined', async () => {
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
+      vi.mocked(useNotesStats).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -265,15 +264,15 @@ describe('useDashboardData', () => {
   // ============================================
   describe('chart data generators', () => {
     it('should return getNotesChartData function', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -293,15 +292,15 @@ describe('useDashboardData', () => {
     });
 
     it('should return getChatUsageData function', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -321,15 +320,15 @@ describe('useDashboardData', () => {
     });
 
     it('should return getFilteredModelUsageData function', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -354,15 +353,15 @@ describe('useDashboardData', () => {
   // ============================================
   describe('model usage data', () => {
     it('should return empty model usage when aiStats is undefined', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -382,15 +381,15 @@ describe('useDashboardData', () => {
     });
 
     it('should format model names in model usage data', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: {
@@ -421,15 +420,15 @@ describe('useDashboardData', () => {
   // ============================================
   describe('total tokens calculation', () => {
     it('should return 0 when no token usage data', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,
@@ -449,15 +448,15 @@ describe('useDashboardData', () => {
     });
 
     it('should calculate total tokens from model usage', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: {
@@ -485,7 +484,7 @@ describe('useDashboardData', () => {
   // ============================================
   describe('session stats', () => {
     it('should return session stats when available', async () => {
-      const { useNotes } = await import('../../../notes/hooks/use-notes-query');
+      const { useNotesStats } = await import('../../../notes/hooks/use-notes-query');
       const { useAIStats } = await import('../../../stats/hooks/use-stats');
       const { useSessionStats } = await import('../../../chat/hooks/use-chat-sessions');
 
@@ -497,11 +496,11 @@ describe('useDashboardData', () => {
         totalMessagesReceived: 150,
       };
 
-      vi.mocked(useNotes).mockReturnValue({
-        data: [],
+      vi.mocked(useNotesStats).mockReturnValue({
+        data: undefined,
         isLoading: false,
         error: null,
-      } as unknown as ReturnType<typeof useNotes>);
+      } as unknown as ReturnType<typeof useNotesStats>);
 
       vi.mocked(useAIStats).mockReturnValue({
         data: undefined,

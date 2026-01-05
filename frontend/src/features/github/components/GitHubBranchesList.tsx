@@ -77,7 +77,7 @@ export const GitHubBranchesList = ({
       {/* Branches List - Scrollable */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 thin-scrollbar">
       {sortedBranches.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="text-center py-12 animate-in fade-in duration-300">
           <svg
             className="w-12 h-12 mx-auto mb-4"
             fill="none"
@@ -96,7 +96,7 @@ export const GitHubBranchesList = ({
         </div>
       ) : (
         <div className="space-y-2">
-          {sortedBranches.map((branch) => (
+          {sortedBranches.map((branch, index) => (
             <BranchRow
               key={branch.name}
               branch={branch}
@@ -104,6 +104,7 @@ export const GitHubBranchesList = ({
               onClick={() => onSelectBranch?.(branch)}
               owner={owner}
               repo={repo}
+              index={index}
             />
           ))}
         </div>
@@ -119,16 +120,19 @@ interface BranchRowProps {
   onClick: () => void;
   owner?: string;
   repo?: string;
+  index: number;
 }
 
-const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps) => {
+const BranchRow = ({ branch, isSelected, onClick, owner, repo, index }: BranchRowProps) => {
   return (
     <div
       onClick={onClick}
-      className={`px-3 py-2 rounded-lg cursor-pointer transition-all border ${
+      className={`px-3 py-2 rounded-lg cursor-pointer transform-gpu transition-all duration-200 border hover:-translate-y-[1px] hover:shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300 ${
         isSelected ? 'ring-1 ring-inset ring-primary/50' : ''
       }`}
       style={{
+        animationDelay: `${index * 50}ms`,
+        animationFillMode: 'both',
         backgroundColor: isSelected
           ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
           : 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
@@ -222,7 +226,7 @@ const BranchRow = ({ branch, isSelected, onClick, owner, repo }: BranchRowProps)
               window.open(`https://github.com/${owner}/${repo}/tree/${encodeURIComponent(branch.name)}`, '_blank');
             }
           }}
-          className="p-1 rounded-md transition-all shrink-0"
+          className="p-1 rounded-md transform-gpu transition-all duration-200 shrink-0"
           style={{ color: 'var(--text-tertiary)' }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 3%, transparent)';

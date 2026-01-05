@@ -308,7 +308,7 @@ export const DashboardPage = memo(function DashboardPage() {
       ) : (
         <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
           {/* Left Column - Today's Plan + Backlog (mobile: 2nd) */}
-          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0">
+          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 pt-1">
             <TodaysPlanList
               items={scheduledItems}
               onComplete={handlePlanItemComplete}
@@ -328,7 +328,7 @@ export const DashboardPage = memo(function DashboardPage() {
           </div>
 
           {/* Center Column - Current Focus + Progress (mobile: 1st) */}
-          <div className="order-1 lg:order-2 flex-1 min-w-0 flex flex-col gap-4 min-h-0 lg:overflow-y-auto thin-scrollbar">
+          <div className="order-1 lg:order-2 flex-1 min-w-0 flex flex-col gap-4 min-h-0 pt-1 lg:overflow-y-auto thin-scrollbar">
             <CurrentFocusCard
               item={currentFocus}
               onComplete={handleComplete}
@@ -350,7 +350,7 @@ export const DashboardPage = memo(function DashboardPage() {
           </div>
 
           {/* Right Column - Claude Session + AI Suggestions (mobile: 3rd) */}
-          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 lg:overflow-y-auto thin-scrollbar">
+          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 pt-1 lg:overflow-y-auto thin-scrollbar">
             {/* Claude Code Session Card */}
             <ClaudeSessionCard
               session={claudeSession}

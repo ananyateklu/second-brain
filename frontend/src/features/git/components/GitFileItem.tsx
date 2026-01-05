@@ -19,6 +19,8 @@ interface GitFileItemProps {
   isPendingStage?: boolean;
   /** Whether this file is currently being unstaged (optimistic UI) */
   isPendingUnstage?: boolean;
+  /** Index for staggered animation (optional) */
+  index?: number;
 }
 
 // Get status-specific styling using theme colors
@@ -109,10 +111,16 @@ export const GitFileItem = memo(function GitFileItem({
   onDiscard,
   isPendingStage = false,
   isPendingUnstage = false,
+  index,
 }: GitFileItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const statusStyles = getStatusStyles(file.status);
   const isPending = isPendingStage || isPendingUnstage;
+
+  // Staggered animation style
+  const animationStyle = index !== undefined
+    ? { animationDelay: `${index * 30}ms` }
+    : undefined;
 
   const handleClick = useCallback(() => {
     onViewDiff(file.filePath);
@@ -154,7 +162,9 @@ export const GitFileItem = memo(function GitFileItem({
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="flex items-center gap-3 py-1.5 px-3 cursor-pointer transition-all duration-200"
+      className={`flex items-center gap-3 py-1.5 px-3 cursor-pointer transition-all duration-200 transform-gpu ${
+        index !== undefined ? 'animate-in fade-in slide-in-from-left-2 duration-200' : ''
+      }`}
       style={{
         backgroundColor: isActive
           ? 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)'
@@ -162,6 +172,7 @@ export const GitFileItem = memo(function GitFileItem({
             ? 'color-mix(in srgb, var(--text-primary) 3%, transparent)'
             : 'transparent',
         transform: isHovered ? 'translateX(2px)' : 'translateX(0)',
+        ...animationStyle,
       }}
     >
       {/* File type icon */}
@@ -216,7 +227,7 @@ export const GitFileItem = memo(function GitFileItem({
             {onDiscard && (isHovered || isActive) && (
               <button
                 onClick={handleDiscardClick}
-                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                 title="Discard changes"
               >
                 <Undo2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -227,7 +238,7 @@ export const GitFileItem = memo(function GitFileItem({
             {onStage && (isHovered || isActive) && (
               <button
                 onClick={handleStageClick}
-                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                 title="Stage file"
               >
                 <Plus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
@@ -238,7 +249,7 @@ export const GitFileItem = memo(function GitFileItem({
             {onUnstage && (isHovered || isActive) && (
               <button
                 onClick={handleUnstageClick}
-                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all duration-200 transform-gpu hover:scale-110 active:scale-95"
                 title="Unstage file"
               >
                 <Minus className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />

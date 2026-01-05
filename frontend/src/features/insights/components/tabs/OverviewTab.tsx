@@ -22,7 +22,7 @@ export const OverviewTab = memo(function OverviewTab() {
   const {
     isLoading,
     error,
-    notes,
+    noteStats,
     stats,
     aiStats,
     totalTokens,
@@ -39,7 +39,7 @@ export const OverviewTab = memo(function OverviewTab() {
   } = useDashboardData();
 
   // Use optimized animations - 13 stat cards is typical
-  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!notes, 13);
+  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!noteStats, 13);
 
   // Memoize chart data based on time range selections
   const chartData = useMemo(
@@ -59,24 +59,26 @@ export const OverviewTab = memo(function OverviewTab() {
 
   if (error) {
     return (
-      <div
-        className="rounded-2xl p-6 text-center backdrop-blur-md"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-          border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-        }}
-      >
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <svg className="h-5 w-5" style={{ color: 'var(--color-error)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-base font-semibold" style={{ color: 'var(--color-error)' }}>
-            Error: {error instanceof Error ? error.message : 'Failed to load dashboard data'}
+      <div className="flex items-center justify-center h-64 p-4">
+        <div
+          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
+          }}
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--color-error)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-base font-semibold" style={{ color: 'var(--color-error)' }}>
+              Failed to load dashboard data
+            </p>
+          </div>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+            {error instanceof Error ? error.message : 'Please check that the backend server is running and accessible'}
           </p>
         </div>
-        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          Please check that the backend server is running and accessible
-        </p>
       </div>
     );
   }
@@ -85,7 +87,7 @@ export const OverviewTab = memo(function OverviewTab() {
     return <DashboardSkeleton />;
   }
 
-  if (!notes || notes.length === 0) {
+  if (!noteStats || noteStats.totalCount === 0) {
     return (
       <EmptyState
         icon={

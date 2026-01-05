@@ -113,6 +113,8 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
     <div
       className={cn(
         'rounded-2xl border transition-all duration-200 flex flex-col',
+        'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
+        'hover:shadow-md',
         className
       )}
       style={{
@@ -381,7 +383,7 @@ const SuggestionItem = memo(function SuggestionItem({
 
   return (
     <div
-      className="group p-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors"
+      className="group p-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-all duration-150 hover:-translate-y-px border-l-2 border-l-transparent hover:border-l-[var(--color-primary)]"
     >
       <div className="flex items-start gap-3">
         {/* Priority indicator */}

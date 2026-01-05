@@ -1,0 +1,162 @@
+/* =============================================================================
+   Chat Design Tokens
+   Standardized spacing, radii, timing, and sizing for consistent chat UI
+   ============================================================================= */
+
+:root {
+  /* =============================================================================
+     Spacing Scale (8px base unit)
+     Use these for all gaps, padding, and margins in chat components
+     ============================================================================= */
+  --chat-space-xs: 4px;      /* Tight spacing: icon gaps, inline elements */
+  --chat-space-sm: 8px;      /* Default spacing: button padding, small gaps */
+  --chat-space-md: 12px;     /* Medium spacing: card padding, component gaps */
+  --chat-space-lg: 16px;     /* Large spacing: section gaps, container padding */
+  --chat-space-xl: 24px;     /* Extra large: major section separations */
+  --chat-space-2xl: 32px;    /* Maximum: page-level spacing */
+
+  /* =============================================================================
+     Border Radius Scale
+     Consistent roundedness hierarchy for visual cohesion
+     ============================================================================= */
+  --chat-radius-xs: 4px;     /* Tiny elements: badges, tags */
+  --chat-radius-sm: 8px;     /* Small elements: buttons, inputs, chips */
+  --chat-radius-md: 12px;    /* Medium elements: cards, dropdowns, tooltips */
+  --chat-radius-lg: 16px;    /* Large elements: message bubbles, panels */
+  --chat-radius-xl: 20px;    /* Extra large: main containers, modals */
+  --chat-radius-full: 9999px; /* Pill shapes: pills, circular buttons */
+
+  /* =============================================================================
+     Icon Sizes
+     Standardized icon dimensions for visual consistency
+     ============================================================================= */
+  --chat-icon-xs: 12px;      /* Micro icons: decorative, inline */
+  --chat-icon-sm: 14px;      /* Small icons: status indicators, chips */
+  --chat-icon-md: 16px;      /* Default icons: buttons, navigation */
+  --chat-icon-lg: 20px;      /* Large icons: prominent actions, headers */
+  --chat-icon-xl: 24px;      /* Extra large: empty states, hero elements */
+
+  /* =============================================================================
+     Transition Timing
+     Consistent animation durations and easing curves
+     ============================================================================= */
+  --chat-duration-instant: 100ms;   /* Micro-interactions: hover states */
+  --chat-duration-fast: 150ms;      /* Quick feedback: button clicks */
+  --chat-duration-normal: 200ms;    /* Standard transitions: most UI */
+  --chat-duration-slow: 300ms;      /* Deliberate transitions: modals, panels */
+  --chat-duration-slower: 400ms;    /* Extended animations: complex reveals */
+
+  /* Easing curves */
+  --chat-ease-out: cubic-bezier(0.4, 0, 0.2, 1);       /* Default: smooth deceleration */
+  --chat-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);   /* Symmetric transitions */
+  --chat-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy: playful interactions */
+  --chat-ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);  /* Extra smooth: premium feel */
+
+  /* =============================================================================
+     Shadow Scale
+     Layered depth system for elevation hierarchy
+     ============================================================================= */
+  --chat-shadow-xs: 0 1px 2px color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --chat-shadow-sm: 0 2px 4px color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --chat-shadow-md: 0 4px 8px color-mix(in srgb, var(--text-primary) 8%, transparent);
+  --chat-shadow-lg: 0 8px 16px color-mix(in srgb, var(--text-primary) 10%, transparent);
+  --chat-shadow-xl: 0 12px 24px color-mix(in srgb, var(--text-primary) 12%, transparent);
+
+  /* Inset shadows for depth */
+  --chat-shadow-inset-sm: inset 0 1px 2px color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --chat-shadow-inset-md: inset 0 2px 4px color-mix(in srgb, var(--text-primary) 6%, transparent);
+
+  /* Glow effects for focus/active states */
+  --chat-glow-brand: 0 0 12px color-mix(in srgb, var(--color-brand-400) 30%, transparent);
+  --chat-glow-brand-strong: 0 0 20px color-mix(in srgb, var(--color-brand-400) 40%, transparent);
+
+  /* =============================================================================
+     Message Bubble Specific
+     Tokens for user/assistant message differentiation
+     ============================================================================= */
+  --chat-bubble-user-bg: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --chat-bubble-user-border: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  --chat-bubble-user-glow: inset 0 1px 0 color-mix(in srgb, var(--color-primary) 15%, transparent);
+  --chat-bubble-user-hover: color-mix(in srgb, var(--color-primary) 14%, transparent);
+
+  --chat-bubble-assistant-bg: transparent;
+  --chat-bubble-assistant-hover: color-mix(in srgb, var(--text-primary) 3%, transparent);
+
+  /* =============================================================================
+     Interactive States
+     Consistent hover, active, and focus feedback
+     ============================================================================= */
+  --chat-hover-bg: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --chat-active-bg: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --chat-focus-ring: 0 0 0 2px var(--color-brand-400);
+  --chat-focus-ring-offset: 0 0 0 4px color-mix(in srgb, var(--color-brand-400) 20%, transparent);
+
+  /* =============================================================================
+     Timeline Specific
+     Tokens for process timeline visualization
+     ============================================================================= */
+  --chat-timeline-line: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  --chat-timeline-line-gradient: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--text-primary) 10%, transparent) 8%,
+    color-mix(in srgb, var(--text-primary) 10%, transparent) 92%,
+    transparent 100%
+  );
+  --chat-timeline-dot: var(--color-brand-400);
+  --chat-timeline-dot-pending: color-mix(in srgb, var(--text-primary) 20%, transparent);
+}
+
+/* =============================================================================
+   Light Theme Adjustments
+   ============================================================================= */
+[data-theme="light"] {
+  --chat-shadow-xs: 0 1px 2px color-mix(in srgb, var(--color-brand-950) 6%, transparent);
+  --chat-shadow-sm: 0 2px 4px color-mix(in srgb, var(--color-brand-950) 8%, transparent);
+  --chat-shadow-md: 0 4px 8px color-mix(in srgb, var(--color-brand-950) 10%, transparent);
+  --chat-shadow-lg: 0 8px 16px color-mix(in srgb, var(--color-brand-950) 12%, transparent);
+  --chat-shadow-xl: 0 12px 24px color-mix(in srgb, var(--color-brand-950) 15%, transparent);
+
+  --chat-shadow-inset-sm: inset 0 1px 2px color-mix(in srgb, var(--color-brand-950) 6%, transparent);
+  --chat-shadow-inset-md: inset 0 2px 4px color-mix(in srgb, var(--color-brand-950) 8%, transparent);
+
+  --chat-glow-brand: 0 0 12px color-mix(in srgb, var(--color-brand-600) 25%, transparent);
+  --chat-glow-brand-strong: 0 0 20px color-mix(in srgb, var(--color-brand-600) 35%, transparent);
+
+  --chat-bubble-user-bg: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  --chat-bubble-user-border: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  --chat-bubble-user-glow: inset 0 1px 0 color-mix(in srgb, var(--color-primary) 12%, transparent);
+  --chat-bubble-user-hover: color-mix(in srgb, var(--color-primary) 12%, transparent);
+
+  --chat-bubble-assistant-hover: color-mix(in srgb, var(--color-brand-950) 2%, transparent);
+
+  --chat-hover-bg: color-mix(in srgb, var(--color-brand-950) 3%, transparent);
+  --chat-active-bg: color-mix(in srgb, var(--color-brand-950) 5%, transparent);
+
+  --chat-timeline-line: color-mix(in srgb, var(--color-brand-950) 8%, transparent);
+  --chat-timeline-line-gradient: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-brand-950) 8%, transparent) 8%,
+    color-mix(in srgb, var(--color-brand-950) 8%, transparent) 92%,
+    transparent 100%
+  );
+  --chat-timeline-dot-pending: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
+}
+
+/* =============================================================================
+   Blue Theme Adjustments
+   ============================================================================= */
+[data-theme="blue"] {
+  --chat-glow-brand: 0 0 12px color-mix(in srgb, var(--color-brand-400) 25%, transparent);
+  --chat-glow-brand-strong: 0 0 20px color-mix(in srgb, var(--color-brand-400) 35%, transparent);
+
+  --chat-timeline-line: color-mix(in srgb, var(--color-blue-50) 10%, transparent);
+  --chat-timeline-line-gradient: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-blue-50) 10%, transparent) 8%,
+    color-mix(in srgb, var(--color-blue-50) 10%, transparent) 92%,
+    transparent 100%
+  );
+}

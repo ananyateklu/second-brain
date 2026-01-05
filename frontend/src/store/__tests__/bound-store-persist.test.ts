@@ -194,7 +194,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for invalid NoteView', () => {
         expect(() => validatePersistedState({ defaultNoteView: 'invalid' as NoteView }))
-          .toThrow('Invalid persisted defaultNoteView: invalid');
+          .toThrow('Invalid persisted defaultNoteView: Invalid option: expected one of "list"|"grid" (received "invalid")');
       });
 
       it('should accept undefined NoteView', () => {
@@ -218,7 +218,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for invalid FontSize', () => {
         expect(() => validatePersistedState({ fontSize: 'extra-large' as FontSize }))
-          .toThrow('Invalid persisted fontSize: extra-large');
+          .toThrow('Invalid persisted fontSize: Invalid option: expected one of "small"|"medium"|"large" (received "extra-large")');
       });
     });
 
@@ -234,7 +234,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for invalid VectorStoreProvider', () => {
         expect(() => validatePersistedState({ vectorStoreProvider: 'Redis' as 'PostgreSQL' | 'Pinecone' }))
-          .toThrow('Invalid persisted vectorStoreProvider: Redis');
+          .toThrow('Invalid persisted vectorStoreProvider: Invalid option: expected one of "PostgreSQL"|"Pinecone" (received "Redis")');
       });
     });
 
@@ -254,7 +254,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for invalid Theme', () => {
         expect(() => validatePersistedState({ theme: 'green' as Theme }))
-          .toThrow('Invalid persisted theme: green');
+          .toThrow('Invalid persisted theme: Invalid option: expected one of "light"|"dark"|"blue" (received "green")');
       });
     });
 
@@ -266,7 +266,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for non-number itemsPerPage', () => {
         expect(() => validatePersistedState({ itemsPerPage: '20' as unknown as number }))
-          .toThrow('Invalid persisted itemsPerPage type: string');
+          .toThrow('Invalid persisted itemsPerPage: Invalid input: expected number, received string (received "20")');
       });
 
       it('should accept valid autoSaveInterval number', () => {
@@ -275,7 +275,7 @@ describe('bound-store persist functions', () => {
 
       it('should throw for non-number autoSaveInterval', () => {
         expect(() => validatePersistedState({ autoSaveInterval: '30' as unknown as number }))
-          .toThrow('Invalid persisted autoSaveInterval type: string');
+          .toThrow('Invalid persisted autoSaveInterval: Invalid input: expected number, received string (received "30")');
       });
     });
 
@@ -288,17 +288,17 @@ describe('bound-store persist functions', () => {
 
       it('should throw for non-boolean enableNotifications', () => {
         expect(() => validatePersistedState({ enableNotifications: 'true' as unknown as boolean }))
-          .toThrow('Invalid persisted enableNotifications type: string');
+          .toThrow('Invalid persisted enableNotifications: Invalid input: expected boolean, received string (received "true")');
       });
 
       it('should throw for non-boolean useRemoteOllama', () => {
         expect(() => validatePersistedState({ useRemoteOllama: 1 as unknown as boolean }))
-          .toThrow('Invalid persisted useRemoteOllama type: number');
+          .toThrow('Invalid persisted useRemoteOllama: Invalid input: expected boolean, received number (received 1)');
       });
 
       it('should throw for non-boolean noteSummaryEnabled', () => {
         expect(() => validatePersistedState({ noteSummaryEnabled: 'false' as unknown as boolean }))
-          .toThrow('Invalid persisted noteSummaryEnabled type: string');
+          .toThrow('Invalid persisted noteSummaryEnabled: Invalid input: expected boolean, received string (received "false")');
       });
 
       it('should validate all RAG boolean fields', () => {
@@ -313,27 +313,27 @@ describe('bound-store persist functions', () => {
 
       it('should throw for invalid ragEnableHyde type', () => {
         expect(() => validatePersistedState({ ragEnableHyde: 'yes' as unknown as boolean }))
-          .toThrow('Invalid persisted ragEnableHyde type: string');
+          .toThrow('Invalid persisted ragEnableHyde: Invalid input: expected boolean, received string (received "yes")');
       });
 
       it('should throw for invalid ragEnableQueryExpansion type', () => {
         expect(() => validatePersistedState({ ragEnableQueryExpansion: null as unknown as boolean }))
-          .toThrow('Invalid persisted ragEnableQueryExpansion type: object');
+          .toThrow('Invalid persisted ragEnableQueryExpansion: Invalid input: expected boolean, received null (received null)');
       });
 
       it('should throw for invalid ragEnableHybridSearch type', () => {
         expect(() => validatePersistedState({ ragEnableHybridSearch: [] as unknown as boolean }))
-          .toThrow('Invalid persisted ragEnableHybridSearch type: object');
+          .toThrow('Invalid persisted ragEnableHybridSearch: Invalid input: expected boolean, received array (received [])');
       });
 
       it('should throw for invalid ragEnableReranking type', () => {
         expect(() => validatePersistedState({ ragEnableReranking: {} as unknown as boolean }))
-          .toThrow('Invalid persisted ragEnableReranking type: object');
+          .toThrow('Invalid persisted ragEnableReranking: Invalid input: expected boolean, received object (received {})');
       });
 
       it('should throw for invalid ragEnableAnalytics type', () => {
         expect(() => validatePersistedState({ ragEnableAnalytics: 0 as unknown as boolean }))
-          .toThrow('Invalid persisted ragEnableAnalytics type: number');
+          .toThrow('Invalid persisted ragEnableAnalytics: Invalid input: expected boolean, received number (received 0)');
       });
     });
 
@@ -516,7 +516,7 @@ describe('bound-store persist functions', () => {
 
       expect(() => mergePersistedState({
         defaultNoteView: 'invalid' as NoteView,
-      }, currentState)).toThrow('Invalid persisted defaultNoteView: invalid');
+      }, currentState)).toThrow('Invalid persisted defaultNoteView: Invalid option: expected one of "list"|"grid" (received "invalid")');
     });
   });
 });

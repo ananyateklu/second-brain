@@ -9,7 +9,7 @@ import {
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
 import { useBoundStore } from '../../../store/bound-store';
-import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotes, useNote } from '../hooks/use-notes-query';
+import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotesFolderStats, useNote } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-form';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
@@ -48,148 +48,148 @@ interface EditNoteFormContentProps {
  */
 const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentProps>(
   function EditNoteFormContent({ note, isHistoryOpen, onHistoryClose, onFormStateChange }, ref) {
-  const formRef = useRef<HTMLFormElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
 
-  // Image attachment state
-  const [newImages, setNewImages] = useState<FileAttachment[]>([]);
-  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
+    // Image attachment state
+    const [newImages, setNewImages] = useState<FileAttachment[]>([]);
+    const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
 
-  // Mutations
-  const updateNoteMutation = useUpdateNote();
+    // Mutations
+    const updateNoteMutation = useUpdateNote();
 
-  // Compute the saved form baseline from note
-  const savedFormData = useMemo(() => noteToFormData(note), [note]);
+    // Compute the saved form baseline from note
+    const savedFormData = useMemo(() => noteToFormData(note), [note]);
 
-  // Form initialized with note data - no reset() needed, remount handles it
-  const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, watchedValues } = useNoteForm({
-    defaultValues: savedFormData,
-    onSubmit: async (data) => {
-      const noteData = formDataToNote(data);
-      const images = fileAttachmentsToNoteImages(newImages);
-      await updateNoteMutation.mutateAsync({
-        id: note.id,
-        data: {
-          ...noteData,
-          images: images.length > 0 ? images : undefined,
-          deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
-        },
-      });
-      // After save, the query invalidation triggers refetch.
-      // Parent's formKey changes due to new updatedAt.
-      // This component remounts with fresh data from server.
-      // No manual reset or state updates needed here.
-    },
-  });
+    // Form initialized with note data - no reset() needed, remount handles it
+    const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty: rhfIsDirty, watchedValues } = useNoteForm({
+      defaultValues: savedFormData,
+      onSubmit: async (data) => {
+        const noteData = formDataToNote(data);
+        const images = fileAttachmentsToNoteImages(newImages);
+        await updateNoteMutation.mutateAsync({
+          id: note.id,
+          data: {
+            ...noteData,
+            images: images.length > 0 ? images : undefined,
+            deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
+          },
+        });
+        // After save, the query invalidation triggers refetch.
+        // Parent's formKey changes due to new updatedAt.
+        // This component remounts with fresh data from server.
+        // No manual reset or state updates needed here.
+      },
+    });
 
-  // Compute dirty state from watched values vs saved baseline
-  const isDirty = useMemo(() => {
-    if (!watchedValues) return rhfIsDirty;
-    const titleDirty = (watchedValues.title ?? '') !== savedFormData.title;
-    const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
-    const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
-    const hasImageChanges = newImages.length > 0 || deletedImageIds.length > 0;
-    return titleDirty || contentDirty || tagsDirty || hasImageChanges;
-  }, [watchedValues, savedFormData, newImages, deletedImageIds, rhfIsDirty]);
+    // Compute dirty state from watched values vs saved baseline
+    const isDirty = useMemo(() => {
+      if (!watchedValues) return rhfIsDirty;
+      const titleDirty = (watchedValues.title ?? '') !== savedFormData.title;
+      const contentDirty = (watchedValues.content ?? '') !== savedFormData.content;
+      const tagsDirty = (watchedValues.tags ?? '') !== savedFormData.tags;
+      const hasImageChanges = newImages.length > 0 || deletedImageIds.length > 0;
+      return titleDirty || contentDirty || tagsDirty || hasImageChanges;
+    }, [watchedValues, savedFormData, newImages, deletedImageIds, rhfIsDirty]);
 
-  // Expose form state and submit function to parent via ref
-  useImperativeHandle(ref, () => ({
-    isDirty,
-    isSubmitting,
-    submit: () => {
-      if (formRef.current) {
-        formRef.current.requestSubmit();
-      }
-    },
-  }), [isDirty, isSubmitting]);
-
-  // Notify parent of form state changes for header Update button
-  useEffect(() => {
-    onFormStateChange({ isDirty, isSubmitting });
-  }, [isDirty, isSubmitting, onFormStateChange]);
-
-  // Handlers
-  const handleAddImages = useCallback((images: FileAttachment[]) => {
-    setNewImages(prev => [...prev, ...images]);
-  }, []);
-
-  const handleRemoveNewImage = useCallback((imageId: string) => {
-    setNewImages(prev => prev.filter(img => img.id !== imageId));
-  }, []);
-
-  const handleDeleteExistingImage = useCallback((imageId: string) => {
-    setDeletedImageIds(prev => [...prev, imageId]);
-  }, []);
-
-  const handleUndoDeleteExistingImage = useCallback((imageId: string) => {
-    setDeletedImageIds(prev => prev.filter(id => id !== imageId));
-  }, []);
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    void handleSubmit();
-  };
-
-  // Keyboard shortcut: Cmd/Ctrl + S to save
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        if (isDirty && !isSubmitting && formRef.current) {
+    // Expose form state and submit function to parent via ref
+    useImperativeHandle(ref, () => ({
+      isDirty,
+      isSubmitting,
+      submit: () => {
+        if (formRef.current) {
           formRef.current.requestSubmit();
         }
-      }
+      },
+    }), [isDirty, isSubmitting]);
+
+    // Notify parent of form state changes for header Update button
+    useEffect(() => {
+      onFormStateChange({ isDirty, isSubmitting });
+    }, [isDirty, isSubmitting, onFormStateChange]);
+
+    // Handlers
+    const handleAddImages = useCallback((images: FileAttachment[]) => {
+      setNewImages(prev => [...prev, ...images]);
+    }, []);
+
+    const handleRemoveNewImage = useCallback((imageId: string) => {
+      setNewImages(prev => prev.filter(img => img.id !== imageId));
+    }, []);
+
+    const handleDeleteExistingImage = useCallback((imageId: string) => {
+      setDeletedImageIds(prev => [...prev, imageId]);
+    }, []);
+
+    const handleUndoDeleteExistingImage = useCallback((imageId: string) => {
+      setDeletedImageIds(prev => prev.filter(id => id !== imageId));
+    }, []);
+
+    const handleFormSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      void handleSubmit();
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isDirty, isSubmitting]);
+    // Keyboard shortcut: Cmd/Ctrl + S to save
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+          e.preventDefault();
+          if (isDirty && !isSubmitting && formRef.current) {
+            formRef.current.requestSubmit();
+          }
+        }
+      };
 
-  return (
-    <div
-      className="flex overflow-hidden -mx-6 -mt-6 rounded-b-3xl"
-      style={{
-        height: 'calc(100% + 24px)',
-        backgroundColor: 'transparent',
-      }}
-    >
-      {/* Form area */}
-      <form
-        ref={formRef}
-        onSubmit={handleFormSubmit}
-        className="flex-1 flex flex-col min-w-0 overflow-hidden px-6 pt-6 pb-6"
-      >
-        <RichNoteForm
-          register={register}
-          control={control}
-          setValue={setValue}
-          errors={errors}
-          isSubmitting={isSubmitting}
-          initialTags={note.tags ?? []}
-          newImages={newImages}
-          existingImages={note.images}
-          deletedImageIds={deletedImageIds}
-          onAddImages={handleAddImages}
-          onRemoveNewImage={handleRemoveNewImage}
-          onDeleteExistingImage={handleDeleteExistingImage}
-          onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
-        />
-      </form>
+      document.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [isDirty, isSubmitting]);
 
-      {/* Version History Panel */}
-      <NoteVersionHistoryPanel
-        noteId={note.id}
-        isOpen={isHistoryOpen}
-        onClose={onHistoryClose}
-        onRestore={() => {
-          // Note data will be refreshed via query invalidation
-          // Component will remount with new data due to key change
+    return (
+      <div
+        className="flex overflow-hidden -mx-6 -mt-6 rounded-b-3xl"
+        style={{
+          height: 'calc(100% + 24px)',
+          backgroundColor: 'transparent',
         }}
-      />
-    </div>
-  );
-});
+      >
+        {/* Form area */}
+        <form
+          ref={formRef}
+          onSubmit={handleFormSubmit}
+          className="flex-1 flex flex-col min-w-0 overflow-hidden px-6 pt-6 pb-6"
+        >
+          <RichNoteForm
+            register={register}
+            control={control}
+            setValue={setValue}
+            errors={errors}
+            isSubmitting={isSubmitting}
+            initialTags={note.tags ?? []}
+            newImages={newImages}
+            existingImages={note.images}
+            deletedImageIds={deletedImageIds}
+            onAddImages={handleAddImages}
+            onRemoveNewImage={handleRemoveNewImage}
+            onDeleteExistingImage={handleDeleteExistingImage}
+            onUndoDeleteExistingImage={handleUndoDeleteExistingImage}
+          />
+        </form>
+
+        {/* Version History Panel */}
+        <NoteVersionHistoryPanel
+          noteId={note.id}
+          isOpen={isHistoryOpen}
+          onClose={onHistoryClose}
+          onRestore={() => {
+            // Note data will be refreshed via query invalidation
+            // Component will remount with new data due to key change
+          }}
+        />
+      </div>
+    );
+  });
 
 /**
  * EditNoteModal - Parent component that handles loading/error states,
@@ -215,7 +215,8 @@ export function EditNoteModal() {
 
   // Fetch the full note with content
   const { data: editingNote, isLoading: isLoadingNote, error: noteError } = useNote(editingNoteId ?? '');
-  const { data: allNotes } = useNotes();
+  // Use stats endpoint for folder list (much more efficient than fetching all notes)
+  const { data: folderStats } = useNotesFolderStats();
 
   // Mutations for header actions
   const archiveNoteMutation = useArchiveNote();
@@ -226,14 +227,11 @@ export function EditNoteModal() {
   const currentFolder = editingNote?.folder;
   const isArchived = editingNote?.isArchived ?? false;
 
-  // Get unique folders from all notes
+  // Get unique folders from stats endpoint
   const availableFolders = useMemo(() => {
-    if (!allNotes) return [];
-    const folders = allNotes
-      .map(n => n.folder)
-      .filter((folder): folder is string => !!folder);
-    return Array.from(new Set(folders)).sort();
-  }, [allNotes]);
+    if (!folderStats?.folderCounts) return [];
+    return Object.keys(folderStats.folderCounts).sort();
+  }, [folderStats]);
 
   // Form key forces remount when note identity changes
   const formKey = editingNote

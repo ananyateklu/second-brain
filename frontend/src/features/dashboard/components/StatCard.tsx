@@ -42,12 +42,13 @@ export const StatCard = memo(({
     minHeight: '80px',
     // Smooth opacity-only transition for seamless skeleton blending
     opacity: isAnimationReady ? 1 : 0,
-    transitionProperty: 'opacity, border-color',
+    transitionProperty: 'opacity, border-color, box-shadow, transform',
     transitionDuration: '200ms',
     transitionTimingFunction: 'ease-out',
     transitionDelay: '0ms',
     willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
     ...animationStyle,
   };
 
@@ -61,8 +62,14 @@ export const StatCard = memo(({
         ${isWebKit ? '' : 'backdrop-blur-md'}
       `}
       style={cardStyles}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--color-brand-500)';
+        e.currentTarget.style.boxShadow = '0 4px 12px color-mix(in srgb, var(--color-brand-500) 15%, transparent)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
+      }}
     >
       <div className="flex flex-col h-full">
         <div className="flex items-start justify-between mb-1">

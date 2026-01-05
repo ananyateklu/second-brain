@@ -383,14 +383,13 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${isUser ? 'rounded-br-md' : 'rounded-bl-md'
-          }`}
+        className={`${isUser ? 'max-w-[85%]' : 'w-full'} px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} transition-colors duration-150`}
         style={{
-          backgroundColor: isUser ? 'color-mix(in srgb, var(--color-primary) 10%, transparent)' : 'transparent',
+          borderRadius: isUser ? 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm) var(--chat-radius-lg)' : 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm)',
+          backgroundColor: isUser ? 'var(--chat-bubble-user-bg)' : 'var(--chat-bubble-assistant-bg)',
           color: 'var(--text-primary)',
-          ...(isUser && {
-            border: '1px solid color-mix(in srgb, var(--color-primary) 30%, transparent)',
-          }),
+          boxShadow: isUser ? 'var(--chat-bubble-user-glow)' : undefined,
+          border: isUser ? '1px solid var(--chat-bubble-user-border)' : undefined,
         }}
       >
         {isUser ? (
@@ -399,13 +398,14 @@ export function MessageBubble({
             {isImageRequest && (
               <div className="flex items-center gap-2 mb-2">
                 <div
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium"
                   style={{
+                    borderRadius: 'var(--chat-radius-full)',
                     backgroundColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
                     color: 'var(--color-primary)',
                   }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg style={{ width: 'var(--chat-icon-sm)', height: 'var(--chat-icon-sm)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -422,8 +422,9 @@ export function MessageBubble({
                 {message.images.map((image, index) => (
                   <div
                     key={index}
-                    className="relative rounded-lg overflow-hidden border"
+                    className="relative overflow-hidden border"
                     style={{
+                      borderRadius: 'var(--chat-radius-sm)',
                       borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)',
                       width: '80px',
                       height: '80px'
@@ -482,7 +483,7 @@ export function MessageBubble({
                 className="flex items-center gap-2 mt-2 text-xs"
                 style={{ color: 'var(--text-tertiary)' }}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

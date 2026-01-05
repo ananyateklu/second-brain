@@ -7,6 +7,8 @@ import { useState, memo, useMemo, useRef, useCallback } from 'react';
 
 interface NoteListItemProps {
   note: NoteListItemType;
+  /** Index for staggered animation */
+  index?: number;
   showDeleteButton?: boolean;
   isBulkMode?: boolean;
   isSelected?: boolean;
@@ -16,6 +18,7 @@ interface NoteListItemProps {
 
 export const NoteListItem = memo(({
   note,
+  index = 0,
   showDeleteButton = true,
   isBulkMode = false,
   isSelected = false,
@@ -104,16 +107,26 @@ export const NoteListItem = memo(({
     return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
   };
 
+  // Calculate animation delay based on index (max 400ms)
+  const animationDelay = `${Math.min(index * 30, 300)}ms`;
+
   return (
     <div
       ref={itemRef}
-      className="group relative border rounded-xl transition-all duration-200 cursor-pointer overflow-hidden"
+      className="group relative border rounded-xl cursor-pointer overflow-hidden"
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
-        transform: isHovered ? 'scale-[1.005]' : 'none',
-        willChange: 'transform',
+        transform: isHovered ? 'scale(1.005)' : 'none',
+        willChange: 'transform, opacity',
+        animation: 'listItemFadeIn 0.3s ease-out forwards',
+        animationDelay,
+        opacity: 0,
+        transition: 'transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease',
+        boxShadow: isHovered
+          ? '0 4px 12px -2px rgba(0, 0, 0, 0.1)'
+          : 'none',
       }}
       onClick={handleItemClick}
       onMouseEnter={() => { setIsHovered(true); }}
@@ -218,11 +231,14 @@ export const NoteListItem = memo(({
         {showDeleteButton && !isBulkMode && (
           <button
             onClick={(e) => { void handleDelete(e); }}
-            className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)] ${isHovered ? 'opacity-100' : 'opacity-0'
-              }`}
+            className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full hover:bg-[var(--color-error-light)] hover:text-[var(--color-error-text)]"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-tertiary)',
+              opacity: isHovered ? 1 : 0,
+              transform: isHovered ? 'translateX(0)' : 'translateX(8px)',
+              transition: 'opacity 0.2s ease, transform 0.2s ease, background-color 0.15s ease, color 0.15s ease',
+              transitionDelay: isHovered ? '0.05s' : '0s',
             }}
             aria-label="Delete note"
             disabled={deleteNoteMutation.isPending}

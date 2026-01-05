@@ -140,8 +140,14 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     >
       {/* Main content area - two pane layout */}
       <div className="flex flex-1 min-h-0">
-        {/* File tree sidebar */}
-        <div className="w-90 flex-shrink-0 overflow-hidden">
+        {/* File tree sidebar with glass morphism */}
+        <div
+          className="w-90 flex-shrink-0 overflow-hidden backdrop-blur-sm rounded-l-xl"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          }}
+        >
           <FileTreeView
             entries={treeData?.entries ?? []}
             truncated={treeData?.truncated ?? false}

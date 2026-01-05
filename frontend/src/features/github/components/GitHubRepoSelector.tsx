@@ -135,7 +135,7 @@ export const GitHubRepoSelector = ({
             setTimeout(() => inputRef.current?.focus(), 100);
           }
         }}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80 min-w-0 max-w-[20rem]"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 transform-gpu hover:bg-opacity-80 hover:scale-[1.02] active:scale-[0.98] min-w-0 max-w-[20rem]"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           color: 'var(--text-primary)',
@@ -148,7 +148,7 @@ export const GitHubRepoSelector = ({
           {fullName || 'Select repository'}
         </span>
         <svg
-          className={`w-4 h-4 transition-transform shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 transition-transform duration-200 transform-gpu shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -160,12 +160,13 @@ export const GitHubRepoSelector = ({
       {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-hidden backdrop-blur-xl"
+          className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-hidden backdrop-blur-xl transform-gpu animate-in fade-in slide-in-from-top-2 duration-200"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
             borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
           }}
         >
           {/* Search Input */}
@@ -239,17 +240,19 @@ export const GitHubRepoSelector = ({
                     >
                       Your Repositories
                     </p>
-                    {filteredRepos.map((repo) => (
+                    {filteredRepos.map((repo, index) => (
                       <button
                         key={repo.id}
                         onClick={() => handleSelectRepo(repo)}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 transform-gpu hover:bg-opacity-80 hover:translate-x-0.5 animate-in fade-in slide-in-from-left-2"
                         style={{
                           backgroundColor:
                             repo.fullName === fullName
                               ? 'var(--color-primary-alpha)'
                               : 'transparent',
                           color: 'var(--text-primary)',
+                          animationDelay: `${index * 30}ms`,
+                          animationFillMode: 'both',
                         }}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -311,17 +314,19 @@ export const GitHubRepoSelector = ({
                     >
                       Recent External
                     </p>
-                    {externalRecentRepos.map((repo) => (
+                    {externalRecentRepos.map((repo, index) => (
                       <button
                         key={repo.fullName}
                         onClick={() => handleSelectRepo(repo)}
-                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors hover:bg-opacity-80"
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all duration-200 transform-gpu hover:bg-opacity-80 hover:translate-x-0.5 animate-in fade-in slide-in-from-left-2"
                         style={{
                           backgroundColor:
                             repo.fullName === fullName
                               ? 'var(--color-primary-alpha)'
                               : 'transparent',
                           color: 'var(--text-primary)',
+                          animationDelay: `${index * 30}ms`,
+                          animationFillMode: 'both',
                         }}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -375,7 +380,7 @@ export const GitHubRepoSelector = ({
             <button
               onClick={() => void refetch()}
               disabled={isFetching}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-surface-elevated disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 transform-gpu hover:bg-surface-elevated hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
               style={{ color: 'var(--text-secondary)' }}
               title="Refresh repositories"
             >
@@ -399,7 +404,7 @@ export const GitHubRepoSelector = ({
                 href={htmlUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors hover:bg-surface-elevated ml-auto"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 transform-gpu hover:bg-surface-elevated hover:scale-[1.02] ml-auto"
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

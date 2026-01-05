@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   useIndexStats,
   useActiveIndexingVectorStores,
@@ -33,7 +33,6 @@ export function IndexHealthDashboard({ userId = 'default-user' }: IndexHealthDas
 
   // SSE streaming hook for real-time progress (persists across navigation)
   const {
-    isStreaming,
     startIndexing: startStreamingIndexing,
     cancelIndexing,
     isStreamingVectorStore,
@@ -56,13 +55,9 @@ export function IndexHealthDashboard({ userId = 'default-user' }: IndexHealthDas
   // Track which stores were being indexed when the job completed
   const wasPostgresIndexingRef = useRef(false);
   const wasPineconeIndexingRef = useRef(false);
-  const [finalizingPostgres, setFinalizingPostgres] = useState(false);
-  const [finalizingPinecone, setFinalizingPinecone] = useState(false);
 
-  // NEVER poll during SSE streaming - SSE provides real-time updates
-  // Only poll when finalizing (after stream ends, before stats refresh)
-  const shouldPollStats = !isStreaming && (finalizingPostgres || finalizingPinecone);
-  const { data: stats, isLoading, refetch } = useIndexStats(userId, shouldPollStats);
+  // SSE provides real-time updates and finalStats on complete - no polling needed
+  const { data: stats, isLoading } = useIndexStats(userId, false);
 
   // Start indexing handler for a specific vector store
   const handleStartIndexing = useCallback((vectorStoreProvider: VectorStoreProvider) => {
@@ -93,26 +88,13 @@ export function IndexHealthDashboard({ userId = 'default-user' }: IndexHealthDas
     const isPostgresActive = activeVectorStores.has('PostgreSQL') || isPostgresStreaming;
     const isPineconeActive = activeVectorStores.has('Pinecone') || isPineconeStreaming;
 
-    // Check if PostgreSQL just finished
-    if (wasPostgresIndexingRef.current && !isPostgresActive) {
-      startTransition(() => setFinalizingPostgres(true));
-      void refetch().finally(() => {
-        startTransition(() => setFinalizingPostgres(false));
-      });
-    }
+    // When indexing completes, the useIndexingStream hook already updates
+    // the cache with finalStats from SSE. No refetch needed.
 
-    // Check if Pinecone just finished
-    if (wasPineconeIndexingRef.current && !isPineconeActive) {
-      startTransition(() => setFinalizingPinecone(true));
-      void refetch().finally(() => {
-        startTransition(() => setFinalizingPinecone(false));
-      });
-    }
-
-    // Update refs
+    // Update refs to track state transitions
     wasPostgresIndexingRef.current = isPostgresActive;
     wasPineconeIndexingRef.current = isPineconeActive;
-  }, [activeVectorStores, isPostgresStreaming, isPineconeStreaming, refetch]);
+  }, [activeVectorStores, isPostgresStreaming, isPineconeStreaming]);
 
   const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } =
     usePineconeConfigured();
@@ -139,7 +121,7 @@ export function IndexHealthDashboard({ userId = 'default-user' }: IndexHealthDas
           stats={stats.postgreSQL}
           userId={userId}
           vectorStoreProvider="PostgreSQL"
-          isIndexing={activeVectorStores.has('PostgreSQL') || isPostgresStreaming || finalizingPostgres}
+          isIndexing={activeVectorStores.has('PostgreSQL') || isPostgresStreaming}
           onStartIndexing={() => handleStartIndexing('PostgreSQL')}
           onStopIndexing={() => void handleStopIndexing('PostgreSQL')}
           isStartingIndexing={isPostgresStreaming && !postgresProgress}
@@ -157,7 +139,7 @@ export function IndexHealthDashboard({ userId = 'default-user' }: IndexHealthDas
             stats={stats.pinecone}
             userId={userId}
             vectorStoreProvider="Pinecone"
-            isIndexing={activeVectorStores.has('Pinecone') || isPineconeStreaming || finalizingPinecone}
+            isIndexing={activeVectorStores.has('Pinecone') || isPineconeStreaming}
             onStartIndexing={() => handleStartIndexing('Pinecone')}
             onStopIndexing={() => void handleStopIndexing('Pinecone')}
             isStartingIndexing={isPineconeStreaming && !pineconeProgress}

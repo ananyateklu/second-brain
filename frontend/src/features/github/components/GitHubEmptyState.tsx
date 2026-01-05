@@ -3,20 +3,59 @@ interface GitHubEmptyStateProps {
   onConfigure?: () => void;
 }
 
+const instructionSteps = [
+  {
+    number: 1,
+    text: (
+      <>
+        Go to GitHub → Settings → Developer Settings → Personal access
+        tokens → Tokens (classic)
+      </>
+    ),
+  },
+  {
+    number: 2,
+    text: (
+      <>
+        Generate a new token with <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>repo</code> and{' '}
+        <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>workflow</code> scopes
+      </>
+    ),
+  },
+  {
+    number: 3,
+    text: (
+      <>
+        Add the token to your <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>appsettings.json</code> under{' '}
+        <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:PersonalAccessToken</code>
+      </>
+    ),
+  },
+  {
+    number: 4,
+    text: (
+      <>
+        Set <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultOwner</code> and{' '}
+        <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultRepo</code> to your repository
+      </>
+    ),
+  },
+];
+
 export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) => {
   const isNotConfigured = error?.message?.includes('not configured');
   const isUnauthorized = error?.message?.includes('Unauthorized') || error?.message?.includes('authentication');
 
   return (
     <div
-      className="flex flex-col items-center justify-center py-16 px-8"
+      className="flex flex-col items-center justify-center py-16 px-8 animate-in fade-in slide-in-from-bottom-4 duration-500"
       style={{
         backgroundColor: 'transparent',
       }}
     >
       {/* GitHub Logo */}
       <div
-        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transform-gpu transition-transform duration-300 hover:scale-110"
         style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' }}
       >
         <svg
@@ -71,10 +110,11 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
       {/* Configuration Steps */}
       {(isNotConfigured || isUnauthorized) && (
         <div
-          className="w-full max-w-md p-4 rounded-xl mb-6"
+          className="w-full max-w-md p-4 backdrop-blur-md rounded-2xl mb-6"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            boxShadow: 'var(--glass-shadow)',
           }}
         >
           <h3
@@ -87,66 +127,27 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
             className="space-y-2 text-sm"
             style={{ color: 'var(--text-secondary)' }}
           >
-            <li className="flex items-start gap-2">
-              <span
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
+            {instructionSteps.map((step, index) => (
+              <li
+                key={step.number}
+                className="flex items-start gap-2 p-2 -mx-2 rounded-lg transform-gpu transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] animate-in fade-in slide-in-from-bottom-2"
                 style={{
-                  backgroundColor: 'var(--color-primary-alpha)',
-                  color: 'var(--color-primary)',
+                  animationDelay: `${index * 100}ms`,
+                  animationFillMode: 'both',
                 }}
               >
-                1
-              </span>
-              <span>
-                Go to GitHub → Settings → Developer Settings → Personal access
-                tokens → Tokens (classic)
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--color-primary-alpha)',
-                  color: 'var(--color-primary)',
-                }}
-              >
-                2
-              </span>
-              <span>
-                Generate a new token with <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>repo</code> and{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>workflow</code> scopes
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--color-primary-alpha)',
-                  color: 'var(--color-primary)',
-                }}
-              >
-                3
-              </span>
-              <span>
-                Add the token to your <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>appsettings.json</code> under{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:PersonalAccessToken</code>
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span
-                className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
-                style={{
-                  backgroundColor: 'var(--color-primary-alpha)',
-                  color: 'var(--color-primary)',
-                }}
-              >
-                4
-              </span>
-              <span>
-                Set <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultOwner</code> and{' '}
-                <code className="text-xs px-1 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>GitHub:DefaultRepo</code> to your repository
-              </span>
-            </li>
+                <span
+                  className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium"
+                  style={{
+                    backgroundColor: 'var(--color-primary-alpha)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  {step.number}
+                </span>
+                <span>{step.text}</span>
+              </li>
+            ))}
           </ol>
         </div>
       )}
@@ -155,13 +156,15 @@ export const GitHubEmptyState = ({ error, onConfigure }: GitHubEmptyStateProps) 
       {onConfigure && (
         <button
           onClick={onConfigure}
-          className="px-6 py-3 rounded-xl font-medium transform-gpu transition-transform transition-shadow hover:-translate-y-[1px] hover:shadow-md active:translate-y-0 active:shadow-sm"
+          className="group relative px-6 py-3 rounded-xl font-medium transform-gpu transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0 active:shadow-sm overflow-hidden"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
           }}
         >
-          Open Settings
+          {/* Shimmer effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 transform-gpu" />
+          <span className="relative z-10">Open Settings</span>
         </button>
       )}
 

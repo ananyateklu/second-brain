@@ -336,8 +336,9 @@ function StatsDisplay({ stats }: { stats: NoteStatistics }) {
 function StatItem({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   return (
     <div
-      className="p-2 rounded-lg"
+      className="p-2"
       style={{
+        borderRadius: 'var(--chat-radius-sm)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
@@ -368,8 +369,9 @@ function GenericResponseDisplay({ response }: { response: GenericResponse }) {
 
   return (
     <div
-      className="p-3 rounded-lg"
+      className="p-3"
       style={{
+        borderRadius: 'var(--chat-radius-md)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
@@ -669,8 +671,9 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                     {imagesResult.images.map((img, index) => (
                       <div
                         key={img.id || index}
-                        className="relative rounded-lg overflow-hidden"
+                        className="relative overflow-hidden"
                         style={{
+                          borderRadius: 'var(--chat-radius-sm)',
                           backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                           border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }}
@@ -703,8 +706,9 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                   </div>
                 ) : (
                   <div
-                    className="p-3 rounded-lg text-xs"
+                    className="p-3 text-xs"
                     style={{
+                      borderRadius: 'var(--chat-radius-md)',
                       backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                       color: 'var(--text-tertiary)',
                       border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -728,8 +732,9 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
 
               return (
                 <div
-                  className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
+                  className="p-3 text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
                   style={{
+                    borderRadius: 'var(--chat-radius-md)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
                     color: 'var(--text-secondary)',
                     border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)'

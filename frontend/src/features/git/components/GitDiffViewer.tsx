@@ -228,9 +228,9 @@ export const GitDiffViewer = memo(function GitDiffViewer({
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <div
-          className="animate-spin rounded-full h-8 w-8 border-2"
+          className="animate-spin rounded-full h-8 w-8 border-2 animate-pulse"
           style={{
-            borderColor: 'var(--border)',
+            borderColor: 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
             borderTopColor: 'var(--color-brand-500)',
           }}
         />
@@ -243,7 +243,7 @@ export const GitDiffViewer = memo(function GitDiffViewer({
 
   if (!diff) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
+      <div className="flex flex-col items-center justify-center h-full animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center mb-4"
           style={{
@@ -268,7 +268,13 @@ export const GitDiffViewer = memo(function GitDiffViewer({
   return (
     <div className="flex flex-col h-full" style={{ animation: 'fadeInSlideUp 0.2s ease-out' }}>
       {/* File header */}
-      <div className="flex items-center justify-between px-4 py-[16px] flex-shrink-0">
+      <div
+        className="flex items-center justify-between px-4 py-[16px] flex-shrink-0 backdrop-blur-sm"
+        style={{
+          borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)',
+        }}
+      >
         <div className="flex items-center gap-3 min-w-0">
           <MaterialFileIcon fileName={fileName} />
           <div className="flex items-center gap-2 min-w-0">
@@ -309,10 +315,10 @@ export const GitDiffViewer = memo(function GitDiffViewer({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
+            className="p-1.5 rounded-md transition-all duration-200 transform-gpu hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)] hover:scale-105 active:scale-95"
             title="Close diff"
           >
-            <X className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            <X className="w-4 h-4 transition-colors duration-200" style={{ color: 'var(--text-secondary)' }} />
           </button>
         </div>
       </div>

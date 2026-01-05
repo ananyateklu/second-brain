@@ -34,6 +34,8 @@ interface FileSectionProps {
   actions?: React.ReactNode;
   icon: React.ReactNode;
   accentColor: string;
+  /** Enable staggered animations for file items */
+  enableStaggeredAnimation?: boolean;
 }
 
 const FileSection = memo(function FileSection({
@@ -49,19 +51,20 @@ const FileSection = memo(function FileSection({
   actions,
   icon,
   accentColor,
+  enableStaggeredAnimation = true,
 }: FileSectionProps) {
   if (files.length === 0) return null;
 
   return (
     <div>
-      {/* Section Header */}
+      {/* Section Header with glass effect on hover */}
       <div
-        className="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"
+        className="flex items-center justify-between px-3 py-2 cursor-pointer transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)] hover:backdrop-blur-sm hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
         onClick={onToggle}
       >
         <div className="flex items-center gap-2">
           <div
-            className="transition-transform duration-200"
+            className="transition-transform duration-200 transform-gpu"
             style={{
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
               color: accentColor,
@@ -76,7 +79,7 @@ const FileSection = memo(function FileSection({
             {title}
           </span>
           <span
-            className="text-xs font-medium px-1.5 py-0.5 rounded"
+            className="text-xs font-medium px-1.5 py-0.5 rounded transition-transform duration-200 transform-gpu"
             style={{
               backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
               color: accentColor,
@@ -97,10 +100,10 @@ const FileSection = memo(function FileSection({
         </div>
       </div>
 
-      {/* File List */}
+      {/* File List with staggered animations */}
       {isExpanded && (
         <div className="py-1">
-          {files.map((file) => (
+          {files.map((file, index) => (
             <GitFileItem
               key={file.filePath}
               file={file}
@@ -109,6 +112,7 @@ const FileSection = memo(function FileSection({
               onStage={onStage}
               onUnstage={onUnstage}
               onDiscard={onDiscard}
+              index={enableStaggeredAnimation ? index : undefined}
             />
           ))}
         </div>
@@ -129,7 +133,7 @@ const ActionButton = ({
   children: React.ReactNode;
   variant?: 'default' | 'stage' | 'unstage' | 'discard';
 }) => {
-  const baseStyles = 'text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-50';
+  const baseStyles = 'text-xs font-medium px-3 py-1.5 rounded-lg transition-all duration-200 disabled:opacity-50 transform-gpu hover:scale-[1.02] active:scale-[0.98]';
   const variantStyles = {
     default: '',
     stage: 'hover:bg-[color-mix(in_srgb,var(--color-success)_10%,transparent)] hover:text-[var(--color-success)]',
@@ -294,11 +298,12 @@ export const GitStatusPanel = memo(function GitStatusPanel({
           <button
             onClick={handleCommit}
             disabled={!commitMessage.trim() || status.stagedChanges.length === 0 || commit.isPending}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform-gpu hover:scale-[1.02] active:scale-[0.98]"
             style={{
               backgroundColor: status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: status.stagedChanges.length > 0 && commitMessage.trim() ? 'white' : 'var(--text-secondary)',
               border: `1px solid ${status.stagedChanges.length > 0 && commitMessage.trim() ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)'}`,
+              transition: 'all 200ms ease, border-color 300ms ease',
             }}
             title="Commit staged changes (Cmd+Enter)"
           >
@@ -387,11 +392,11 @@ export const GitStatusPanel = memo(function GitStatusPanel({
           }
         />
 
-        {/* Empty state */}
+        {/* Empty state with entrance animation */}
         {!status.hasChanges && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
+          <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+              className="w-12 h-12 rounded-xl flex items-center justify-center mb-3 transform-gpu animate-in zoom-in-75 duration-300 delay-100"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)',
               }}
@@ -402,13 +407,13 @@ export const GitStatusPanel = memo(function GitStatusPanel({
               />
             </div>
             <p
-              className="text-sm font-medium"
+              className="text-sm font-medium animate-in fade-in duration-300 delay-150"
               style={{ color: 'var(--text-primary)' }}
             >
               No changes
             </p>
             <p
-              className="text-xs mt-1"
+              className="text-xs mt-1 animate-in fade-in duration-300 delay-200"
               style={{ color: 'var(--text-tertiary)' }}
             >
               Working directory is clean

@@ -48,9 +48,9 @@ export function GitPage() {
     return (
       <>
         <div
-          className="flex flex-col rounded-3xl border overflow-hidden"
+          className="flex flex-col rounded-3xl border overflow-hidden transform-gpu transition-all duration-200 backdrop-blur-sm"
           style={{
-            backgroundColor: 'var(--surface-card)',
+            backgroundColor: 'color-mix(in srgb, var(--surface-card) 85%, transparent)',
             borderColor: 'var(--border)',
             height: containerHeight,
             maxHeight: containerHeight,
@@ -75,31 +75,24 @@ export function GitPage() {
     return (
       <>
         <div
-          className="flex flex-col rounded-3xl border overflow-hidden"
+          className="flex flex-col rounded-3xl border overflow-hidden transform-gpu transition-all duration-200 backdrop-blur-sm"
           style={{
-            backgroundColor: 'var(--surface-card)',
+            backgroundColor: 'color-mix(in srgb, var(--surface-card) 85%, transparent)',
             borderColor: 'var(--border)',
             height: containerHeight,
             maxHeight: containerHeight,
           }}
         >
-          <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-            {/* Ambient glow effect */}
-            <div
-              className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-3xl pointer-events-none"
-              style={{
-                background: 'radial-gradient(circle, var(--color-primary), transparent)',
-              }}
-            />
-            <div className="max-w-md w-full p-8 text-center relative z-10">
+          <div className="flex-1 flex items-center justify-center overflow-hidden">
+            <div className="max-w-md w-full p-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
               {/* Error icon */}
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transform-gpu transition-transform duration-200 hover:scale-105"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, #ef4444 15%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--color-error) 15%, transparent)',
                 }}
               >
-                <AlertCircle className="w-8 h-8 text-red-500" />
+                <AlertCircle className="w-8 h-8" style={{ color: 'var(--color-error)' }} />
               </div>
 
               <h3
@@ -118,9 +111,9 @@ export function GitPage() {
 
               {isPathError && (
                 <div
-                  className="p-3 rounded-xl mb-6"
+                  className="p-3 rounded-xl mb-6 transform-gpu transition-all duration-200 backdrop-blur-sm"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
+                    backgroundColor: 'color-mix(in srgb, var(--surface-elevated) 80%, transparent)',
                     border: '1px solid var(--border)',
                   }}
                 >
@@ -141,9 +134,9 @@ export function GitPage() {
 
               <button
                 onClick={openGitSettings}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-medium rounded-xl transform-gpu transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] backdrop-blur-sm"
                 style={{
-                  backgroundColor: 'var(--surface-elevated)',
+                  backgroundColor: 'color-mix(in srgb, var(--surface-elevated) 80%, transparent)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-primary)',
                 }}
@@ -168,21 +161,21 @@ export function GitPage() {
     <>
       {/* Main content - two panels side by side */}
       <div
-        className="flex gap-4 overflow-hidden"
+        className="flex gap-4 overflow-hidden transform-gpu transition-all duration-200"
         style={{
           height: containerHeight,
           maxHeight: containerHeight,
         }}
       >
         {/* Left panel: File status */}
-        <div className="w-96 min-w-[384px] max-w-[480px] flex-shrink-0 h-full">
+        <div className="w-96 min-w-[384px] max-w-[480px] flex-shrink-0 h-full transform-gpu transition-all duration-200">
           {status && (
             <GitStatusPanel status={status} onViewDiff={handleViewDiff} />
           )}
         </div>
 
         {/* Right panel: Diff viewer */}
-        <div className="flex-1 min-w-0 h-full">
+        <div className="flex-1 min-w-0 h-full transform-gpu transition-all duration-200">
           <GitDiffViewer
             diff={selectedDiff ?? null}
             isLoading={isDiffLoading}

@@ -244,23 +244,26 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
 
           {/* Delete button - collapses when not hovered (matches chat) */}
           {!isCurrentSession && !isSelectionMode && (
-            <div className="w-0 group-hover:w-7 overflow-hidden transition-all duration-150 flex-shrink-0">
+            <div className="w-0 group-hover:w-7 overflow-hidden flex-shrink-0" style={{ transition: `all var(--chat-duration-fast) var(--chat-ease-out)` }}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
                 }}
-                className="p-1.5 rounded-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
+                className="flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
                 style={{
+                  padding: 'var(--chat-space-xs)',
+                  borderRadius: 'var(--chat-radius-sm)',
                   color: 'var(--color-error)',
                   backgroundColor: 'transparent',
                   width: '28px',
                   height: '28px',
+                  transition: `all var(--chat-duration-fast) var(--chat-ease-out)`,
                 }}
                 title="Delete session"
               >
                 <svg
-                  className="w-4 h-4"
+                  style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"

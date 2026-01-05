@@ -38,35 +38,46 @@ export function VoiceSidebar({
 }: VoiceSidebarProps) {
   return (
     <div
-      className="flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-72 md:w-[23rem]"
+      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
       style={{
-        borderRightWidth: '0.5px',
-        borderRightStyle: 'solid',
-        borderRightColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        transition: `all var(--chat-duration-slow) var(--chat-ease-out)`,
+        borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Session List - Scrollable (matches ChatSidebar) */}
       <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
         {isLoading ? (
           // Loading skeleton
-          <div className="space-y-2 p-4">
+          <div className="space-y-2" style={{ padding: 'var(--chat-space-lg)' }}>
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
                 className="flex items-start gap-3 animate-pulse"
               >
                 <div
-                  className="w-10 h-10 rounded-xl"
-                  style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: 'var(--chat-radius-md)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  }}
                 />
                 <div className="flex-1 space-y-2">
                   <div
-                    className="h-4 rounded"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', width: '60%' }}
+                    style={{
+                      height: '16px',
+                      width: '60%',
+                      borderRadius: 'var(--chat-radius-xs)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    }}
                   />
                   <div
-                    className="h-3 rounded"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', width: '40%' }}
+                    style={{
+                      height: '12px',
+                      width: '40%',
+                      borderRadius: 'var(--chat-radius-xs)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    }}
                   />
                 </div>
               </div>

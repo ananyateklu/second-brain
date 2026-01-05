@@ -121,12 +121,13 @@ export function ChatHeader({
 
   return (
     <div
-      className="flex-shrink-0 flex items-center gap-3 pt-4.5 pb-4.5 border-b z-10"
+      className="flex-shrink-0 flex items-center gap-3 py-3.5 border-b z-10"
       style={{
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        paddingLeft: '2rem',
-        paddingRight: '2rem',
+        boxShadow: 'var(--chat-shadow-xs)',
+        paddingLeft: 'var(--chat-space-xl)',
+        paddingRight: 'var(--chat-space-xl)',
       }}
     >
       {/* Left side: Sidebar Toggle, Model Selector, Feature Pills */}
@@ -135,15 +136,32 @@ export function ChatHeader({
         {!showSidebar && (
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+            className="flex-shrink-0 flex items-center justify-center"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--chat-radius-sm)',
+              backgroundColor: 'var(--chat-hover-bg)',
               color: 'var(--text-primary)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              transition: 'all var(--chat-duration-fast) var(--chat-ease-out)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--chat-active-bg)';
+              e.currentTarget.style.transform = 'scale(1.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--chat-hover-bg)';
+              e.currentTarget.style.transform = 'scale(1)';
             }}
             title="Show sidebar"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }}
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -174,8 +192,12 @@ export function ChatHeader({
 
         {/* Separator */}
         <div
-          className="h-6 w-px flex-shrink-0"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          className="flex-shrink-0"
+          style={{
+            width: '1px',
+            height: '24px',
+            background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--text-primary) 10%, transparent), transparent)',
+          }}
         />
 
         {/* Feature Mode Pills */}

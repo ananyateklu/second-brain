@@ -57,10 +57,11 @@ export const InsightsTabBar = memo(function InsightsTabBar({
 }: InsightsTabBarProps) {
   return (
     <div
-      className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md"
+      className="flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md transition-shadow duration-300"
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
       }}
     >
       {TABS.map((tab) => {
@@ -69,17 +70,37 @@ export const InsightsTabBar = memo(function InsightsTabBar({
           <button
             key={tab.id}
             onClick={() => { onTabChange(tab.id); }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg transition-all duration-200 relative hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg transition-all duration-200 relative"
             style={{
               backgroundColor: isActive ? 'var(--color-brand-600)' : undefined,
               color: isActive ? '#ffffff' : 'var(--text-secondary)',
               fontWeight: isActive ? 600 : 400,
+              boxShadow: isActive ? '0 2px 8px color-mix(in srgb, var(--color-brand-600) 30%, transparent)' : undefined,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }
             }}
           >
             <span className="transition-colors duration-200">
               {tab.icon}
             </span>
             {tab.label}
+            {/* Active indicator line */}
+            {isActive && (
+              <span
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
+                style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}
+              />
+            )}
           </button>
         );
       })}
