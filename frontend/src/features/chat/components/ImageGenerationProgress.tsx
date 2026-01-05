@@ -157,8 +157,8 @@ export function ImageGenerationProgress({
         className={`absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${isGenerating ? 'animate-pulse' : ''
           }`}
         style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: isGenerating ? 'var(--color-brand-500)' : 'var(--border)',
+          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+          borderColor: isGenerating ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
         {getStageIcon(stage, isGenerating)}
@@ -191,8 +191,8 @@ export function ImageGenerationProgress({
         <div
           className="rounded-lg p-3 space-y-3"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
         >
           {/* Status indicator */}
@@ -223,7 +223,7 @@ export function ImageGenerationProgress({
             <div className="space-y-1">
               <div
                 className="h-1.5 rounded-full overflow-hidden"
-                style={{ backgroundColor: 'var(--border)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
               >
                 <div
                   className="h-full rounded-full transition-all duration-500 ease-out"
@@ -260,7 +260,7 @@ export function ImageGenerationProgress({
             <div
               className="relative w-full aspect-square max-w-[200px] rounded-lg overflow-hidden mt-2"
               style={{
-                backgroundColor: 'var(--border)',
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 opacity: 0.3,
               }}
             >

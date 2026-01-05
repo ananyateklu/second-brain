@@ -39,7 +39,7 @@ export function ChatInputMetrics({
     <div
       className="flex items-center justify-end gap-3 mt-2 pt-2 animate-in fade-in duration-200"
       style={{
-        borderTop: '1px solid var(--border)',
+        borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         color: 'var(--text-tertiary)',
         fontSize: '10.5px',
         fontFeatureSettings: '"tnum"',

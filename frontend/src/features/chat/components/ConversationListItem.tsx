@@ -178,7 +178,7 @@ export const ConversationListItem = memo(function ConversationListItem({
 
   return (
     <div
-        className={`group px-4 py-2.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+        className={`group px-4 py-2.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]' : ''}`}
         style={{
           backgroundColor: getBackgroundColor(),
           borderLeftWidth: leftBorder.width,

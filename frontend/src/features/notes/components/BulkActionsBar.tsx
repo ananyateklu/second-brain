@@ -53,8 +53,8 @@ export const BulkActionsBar = memo(({
         left: '50%',
         bottom: '1.5rem',
         transform: 'translate(-50%, 0)',
-        backgroundColor: 'var(--glass-bg)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         backdropFilter: 'blur(20px) saturate(180%)',
         WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         animation: 'bulkBarSlideUp 0.3s ease-out',
@@ -77,7 +77,7 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Select All / Deselect All */}
       <div className="flex items-center gap-1">
@@ -110,7 +110,7 @@ export const BulkActionsBar = memo(({
       </div>
 
       {/* Divider */}
-      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 15%, transparent)' }} />
+      <div className="w-px h-6" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }} />
 
       {/* Delete Button */}
       <button

@@ -21,7 +21,7 @@ export function InlineNoteReference({ noteId, noteTitle, variant = 'default' }: 
         return (
             <span
                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-mono"
-                style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-tertiary)' }}
+                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)', color: 'var(--text-tertiary)' }}
             >
                 (ID: {noteId})
             </span>

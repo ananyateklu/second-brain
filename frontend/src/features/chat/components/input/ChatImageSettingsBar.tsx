@@ -63,8 +63,8 @@ export function ChatImageSettingsBar({
     <div
       className="mb-3 flex items-center gap-3 p-3 rounded-2xl animate-in slide-in-from-bottom-2 duration-200"
       style={{
-        backgroundColor: 'var(--surface-elevated)',
-        border: '1px solid var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Icon */}
@@ -99,8 +99,8 @@ export function ChatImageSettingsBar({
           disabled={disabled}
           className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
           style={{
-            backgroundColor: 'var(--surface-card)',
-            border: '1px solid var(--border)',
+            backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--text-primary)',
           }}
         >
@@ -124,8 +124,8 @@ export function ChatImageSettingsBar({
             disabled={disabled}
             className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >
@@ -150,8 +150,8 @@ export function ChatImageSettingsBar({
             disabled={disabled}
             className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
             style={{
-              backgroundColor: 'var(--surface-card)',
-              border: '1px solid var(--border)',
+              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--text-primary)',
             }}
           >

@@ -62,7 +62,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
           src={imageUrl}
           alt={image.revisedPrompt || 'Generated image'}
           className="w-full h-full object-cover"
-          style={{ backgroundColor: 'var(--surface-card)' }}
+          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         />
 
         {/* Hover overlay with actions */}
