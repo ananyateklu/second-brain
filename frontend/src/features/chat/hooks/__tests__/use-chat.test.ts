@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { ToastProviderWithRef } from '../../../../components/ui/Toast';
 import {
     useChatConversations,
     useChatConversationsPaged,
@@ -67,7 +68,11 @@ function createWrapper() {
     });
 
     return function Wrapper({ children }: { children: React.ReactNode }) {
-        return React.createElement(QueryClientProvider, { client: queryClient }, children);
+        return React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            React.createElement(ToastProviderWithRef, null, children)
+        );
     };
 }
 
@@ -697,4 +702,3 @@ describe('use-chat', () => {
         });
     });
 });
-

@@ -115,16 +115,21 @@ describe('ToastContext', () => {
         </ToastProvider>
       );
 
-      const id1 = getContextValue(contextValue).addToast({
-        type: 'info',
-        title: 'Toast 1',
-        duration: 5000,
-      });
+      let id1 = '';
+      let id2 = '';
 
-      const id2 = getContextValue(contextValue).addToast({
-        type: 'info',
-        title: 'Toast 2',
-        duration: 5000,
+      act(() => {
+        id1 = getContextValue(contextValue).addToast({
+          type: 'info',
+          title: 'Toast 1',
+          duration: 5000,
+        });
+
+        id2 = getContextValue(contextValue).addToast({
+          type: 'info',
+          title: 'Toast 2',
+          duration: 5000,
+        });
       });
 
       expect(id1).not.toBe(id2);

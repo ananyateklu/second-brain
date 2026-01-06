@@ -10,6 +10,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../../../../test/mocks/server';
 import { mockNotes } from '../../../../test/mocks/handlers';
 import { ReactNode } from 'react';
+import { ToastProviderWithRef } from '../../../../components/ui/Toast';
 
 // Create a fresh QueryClient for each test
 function createTestQueryClient() {
@@ -30,7 +31,9 @@ function createTestQueryClient() {
 // Wrapper component with providers
 function createWrapper(queryClient: QueryClient) {
   return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProviderWithRef>{children}</ToastProviderWithRef>
+    </QueryClientProvider>
   );
 }
 

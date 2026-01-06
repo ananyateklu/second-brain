@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { ChatConversation } from '../types/chat';
-import { VirtualizedConversationList } from './VirtualizedConversationList';
+import { ConversationListItem } from './ConversationListItem';
 
 export interface ChatSidebarProps {
   conversations: ChatConversation[];
@@ -27,6 +28,14 @@ export function ChatSidebar({
   selectedIds,
   onToggleSelection,
 }: ChatSidebarProps) {
+  // Sort conversations by updated date (matches VoiceSidebar pattern)
+  const sortedConversations = useMemo(() =>
+    [...conversations].sort(
+      (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    ),
+    [conversations]
+  );
+
   return (
     <div
       className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
@@ -38,20 +47,10 @@ export function ChatSidebar({
         transition: 'all var(--chat-duration-slow) var(--chat-ease-out)',
       }}
     >
-      {/* Conversations List - Scrollable with Virtual Scrolling and fade masks */}
-      <div
-        className="flex-1 overflow-y-auto min-h-0 thin-scrollbar"
-        style={{
-          maskImage: conversations.length > 5
-            ? 'linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
-            : undefined,
-          WebkitMaskImage: conversations.length > 5
-            ? 'linear-gradient(to bottom, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)'
-            : undefined,
-        }}
-      >
+      {/* Conversations List - Scrollable with Virtual Scrolling */}
+      <div className="flex-1 overflow-y-auto min-h-0 thin-scrollbar">
         {conversations.length === 0 ? (
-          <div className="text-center py-12 px-6" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="text-center py-8 px-4" style={{ color: 'var(--text-secondary)' }}>
             <div
               className="mx-auto mb-4 flex items-center justify-center"
               style={{
@@ -80,17 +79,22 @@ export function ChatSidebar({
             <p className="text-xs mt-2" style={{ color: 'var(--text-tertiary)' }}>Start a new chat to begin</p>
           </div>
         ) : (
-          <VirtualizedConversationList
-            conversations={conversations}
-            selectedConversationId={selectedConversationId}
-            isNewChat={isNewChat}
-            isSelectionMode={isSelectionMode}
-            selectedIds={selectedIds}
-            onSelectConversation={onSelectConversation}
-            onDeleteConversation={onDeleteConversation}
-            onToggleSelection={onToggleSelection}
-            enableVirtualization={conversations.length >= 30}
-          />
+          // Conversation list - direct render like VoiceSidebar
+          sortedConversations.map((conv, index) => (
+            <ConversationListItem
+              key={conv.id}
+              conversation={conv}
+              isSelected={
+                selectedConversationId === conv.id ||
+                (conv.id === 'placeholder-new-chat' && isNewChat && !selectedConversationId)
+              }
+              isSelectionMode={isSelectionMode}
+              isChecked={selectedIds.has(conv.id)}
+              onSelect={isSelectionMode ? onToggleSelection : onSelectConversation}
+              onDelete={onDeleteConversation}
+              staggerIndex={index}
+            />
+          ))
         )}
       </div>
     </div>

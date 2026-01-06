@@ -3,8 +3,8 @@
  * Handles AI agent operations and streaming
  */
 
-import { API_ENDPOINTS, getApiBaseUrl } from '../lib/constants';
-import { useBoundStore } from '../store/bound-store';
+import { apiClient } from '../lib/api-client';
+import { API_ENDPOINTS } from '../lib/constants';
 import { loggers } from '../utils/logger';
 import type {
   AgentMessageRequest,
@@ -28,28 +28,13 @@ export const agentService = {
     callbacks: AgentStreamingCallbacks,
     signal?: AbortSignal
   ): Promise<void> {
-    const apiUrl = getApiBaseUrl();
-    const url = `${apiUrl}${API_ENDPOINTS.AGENT.STREAM(conversationId)}`;
-
-    const authStore = useBoundStore.getState();
-
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-    };
-
-    if (authStore.token) {
-      headers['Authorization'] = `Bearer ${authStore.token}`;
-    }
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(request),
-        signal,
-        credentials: 'include',
-      });
+      const response = await apiClient.stream(
+        API_ENDPOINTS.AGENT.STREAM(conversationId),
+        request,
+        {},
+        signal
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -364,4 +349,3 @@ export const agentService = {
     return { total, completed, failed };
   },
 };
-

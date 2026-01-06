@@ -113,3 +113,5 @@ backend/coverage-report
 # MCP server build artifacts (source code is safe to commit)
 tools/*/node_modules/
 tools/*/dist/
+GEMINI.md
+AGENTS.md

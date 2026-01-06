@@ -223,13 +223,13 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
                   <NoteCard
                     key={note.id}
                     note={note}
+                    mode="search"
                     variant="micro"
                     relevanceScore={relevanceScore}
                     chunkCount={chunkCount}
                     chunkContent={chunkContent}
                     content={content}
                     createdOn={createdOn}
-                    showDeleteButton={false}
                   />
                 ))}
               </div>
