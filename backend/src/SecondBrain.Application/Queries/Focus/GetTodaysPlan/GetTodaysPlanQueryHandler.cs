@@ -42,35 +42,44 @@ public class GetTodaysPlanQueryHandler : IRequestHandler<GetTodaysPlanQuery, Res
         var scheduledItems = await _focusItemRepository.GetByScheduledDateAsync(
             request.UserId, date, cancellationToken);
 
-        // Get status counts for the day
+        // Get status counts for scheduled items on this day
         var statusCounts = await _focusItemRepository.GetStatusCountsAsync(
+            request.UserId, date, cancellationToken);
+
+        // Get count of items completed ON this date (for "X done" badge)
+        // This counts by completed_at, not scheduled_date
+        var completedOnDateCount = await _focusItemRepository.GetCompletedOnDateCountAsync(
             request.UserId, date, cancellationToken);
 
         // Calculate totals - exclude current focus from scheduled items to avoid duplicates
         var scheduledList = scheduledItems
             .Where(i => currentFocus == null || i.Id != currentFocus.Id)
             .ToList();
-        var completedCount = statusCounts.GetValueOrDefault("completed", 0);
         var totalEstimatedMinutes = scheduledList
             .Where(i => i.Status != "completed")
             .Sum(i => i.EstimatedMinutes ?? 0);
+
+        // Count overdue items (scheduled before today's date)
+        var overdueCount = scheduledList.Count(i => i.ScheduledDate < date);
 
         var response = new TodaysPlanResponse
         {
             Date = date,
             CurrentFocus = currentFocus?.ToResponse(),
             ScheduledItems = scheduledList
-                .OrderBy(i => i.SortOrder)
+                .OrderBy(i => i.ScheduledDate) // Overdue items first
+                .ThenBy(i => i.SortOrder)
                 .Select(i => i.ToResponse())
                 .ToList(),
-            CompletedTodayCount = completedCount,
+            CompletedTodayCount = completedOnDateCount,
             TotalEstimatedMinutes = totalEstimatedMinutes,
-            StatusCounts = statusCounts
+            StatusCounts = statusCounts,
+            OverdueCount = overdueCount
         };
 
         _logger.LogDebug(
-            "Retrieved today's plan. UserId: {UserId}, Date: {Date}, ScheduledCount: {ScheduledCount}, CompletedCount: {CompletedCount}",
-            request.UserId, date, response.ScheduledItems.Count, completedCount);
+            "Retrieved today's plan. UserId: {UserId}, Date: {Date}, ScheduledCount: {ScheduledCount}, CompletedOnDate: {CompletedOnDate}",
+            request.UserId, date, response.ScheduledItems.Count, completedOnDateCount);
 
         return Result<TodaysPlanResponse>.Success(response);
     }

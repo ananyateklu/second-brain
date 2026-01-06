@@ -412,7 +412,12 @@ export function useCompleteFocusItem() {
           return {
             ...data,
             currentFocus: wasCurrentFocus ? null : data.currentFocus,
-            scheduledItems: data.scheduledItems.filter((item) => item.id !== id),
+            // Mark as completed instead of removing - shows in collapsible completed section
+            scheduledItems: data.scheduledItems.map((item) =>
+              item.id === id
+                ? { ...item, status: 'completed' as const, completedAt: new Date().toISOString() }
+                : item
+            ),
             completedTodayCount: data.completedTodayCount + 1,
           };
         },

@@ -140,6 +140,11 @@ public sealed class TodaysPlanResponse
     /// Status counts for the day.
     /// </summary>
     public Dictionary<string, int> StatusCounts { get; set; } = new();
+
+    /// <summary>
+    /// Number of overdue items included from past dates.
+    /// </summary>
+    public int OverdueCount { get; set; }
 }
 
 /// <summary>

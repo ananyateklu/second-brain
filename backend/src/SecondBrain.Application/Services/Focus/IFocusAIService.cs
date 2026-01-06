@@ -20,15 +20,32 @@ public interface IFocusAIService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Generate a progress summary for completed items
+    /// Generate a progress summary for completed items.
+    /// Uses database caching to reduce AI API costs - only regenerates when forceRefresh is true.
     /// </summary>
     /// <param name="userId">User ID</param>
     /// <param name="period">Time period: "today", "week", or "month"</param>
+    /// <param name="date">Optional date to get summary for (defaults to today). Format: DateOnly.</param>
+    /// <param name="forceRefresh">Force regeneration of summary even if cached</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Progress summary with stats and AI-generated insights</returns>
     Task<ProgressSummaryResponse> GetProgressSummaryAsync(
         string userId,
         string period = "today",
+        DateOnly? date = null,
+        bool forceRefresh = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Invalidates cached progress summaries for a specific date.
+    /// Called when a task is completed to ensure the next summary fetch regenerates.
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="date">The date to invalidate summaries for</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task InvalidateSummaryCacheAsync(
+        string userId,
+        DateOnly date,
         CancellationToken cancellationToken = default);
 
     /// <summary>

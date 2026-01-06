@@ -3,10 +3,13 @@
  * Focus-driven productivity dashboard for managing daily tasks and priorities
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { isToday as isTodayFn } from 'date-fns';
 import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
 import { Button } from '../components/ui/Button';
+import { useBoundStore } from '../store/bound-store';
+import { parseLocalDate } from '../utils/date-utils';
 import {
   useTodayPlan,
   useBacklog,
@@ -36,14 +39,23 @@ import type { PersistedFocusSuggestion, SummaryPeriod } from '../features/focus/
 export const DashboardPage = memo(function DashboardPage() {
   const titleBarHeight = useTitleBarHeight();
 
-  // Fetch today's plan
+  // Get selected date from store
+  const selectedFocusDate = useBoundStore((state) => state.selectedFocusDate);
+
+  // Determine if viewing today or a past date
+  const isViewingToday = useMemo(() => {
+    if (!selectedFocusDate) return true;
+    return isTodayFn(parseLocalDate(selectedFocusDate));
+  }, [selectedFocusDate]);
+
+  // Fetch today's plan (or selected date's plan)
   const {
     currentFocus,
     scheduledItems,
     isLoading: isTodayPlanLoading,
     error: todayPlanError,
     refetch: refetchTodayPlan,
-  } = useTodayPlan();
+  } = useTodayPlan({ date: selectedFocusDate ?? undefined });
 
   // Fetch backlog
   const {
@@ -84,9 +96,10 @@ export const DashboardPage = memo(function DashboardPage() {
     isLoading: isSummaryLoading,
     isFetching: isSummaryFetching,
     error: summaryError,
-    refetch: refetchSummary,
+    refreshSummary,
   } = useProgressSummary({
     period: summaryPeriod,
+    date: selectedFocusDate ?? undefined,
   });
 
   // Claude Code Session Integration
@@ -207,8 +220,8 @@ export const DashboardPage = memo(function DashboardPage() {
   }, []);
 
   const handleRefreshSummary = useCallback(() => {
-    void refetchSummary();
-  }, [refetchSummary]);
+    void refreshSummary();
+  }, [refreshSummary]);
 
   // Claude Session Handlers
   const handleImportClaudeSession = useCallback(
@@ -313,8 +326,9 @@ export const DashboardPage = memo(function DashboardPage() {
               items={scheduledItems}
               onComplete={handlePlanItemComplete}
               onSetFocus={handleSetFocus}
-              onRemove={handleRemoveFromToday}
-              disabled={isMutating}
+              onRemove={isViewingToday ? handleRemoveFromToday : undefined}
+              disabled={isMutating || !isViewingToday}
+              selectedDate={selectedFocusDate}
               className="flex-1 min-h-0"
             />
             <BacklogSection

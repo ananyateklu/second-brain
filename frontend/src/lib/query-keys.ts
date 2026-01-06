@@ -398,8 +398,9 @@ export const focusKeys = {
   persistedSuggestions: (includeAccepted = false) =>
     [...focusKeys.all, 'ai', 'persisted-suggestions', { includeAccepted }] as const,
 
-  /** Key for AI progress summary */
-  summary: (period: 'today' | 'week') => [...focusKeys.all, 'ai', 'summary', period] as const,
+  /** Key for AI progress summary (date is YYYY-MM-DD or undefined for today) */
+  summary: (period: 'today' | 'week', date?: string) =>
+    [...focusKeys.all, 'ai', 'summary', period, date ?? 'current'] as const,
 } as const;
 
 /**

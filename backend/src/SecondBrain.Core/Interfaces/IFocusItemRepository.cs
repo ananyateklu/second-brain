@@ -19,6 +19,7 @@ public interface IFocusItemRepository
 
     /// <summary>
     /// Gets focus items scheduled for a specific date (today's plan).
+    /// Includes overdue items (past scheduled dates with non-completed status).
     /// </summary>
     Task<IEnumerable<FocusItem>> GetByScheduledDateAsync(
         string userId,
@@ -107,5 +108,14 @@ public interface IFocusItemRepository
     /// </summary>
     Task<IEnumerable<FocusItem>> GetActiveItemsAsync(
         string userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets count of items completed on a specific date (by completed_at, not scheduled_date).
+    /// Used for the "X done" badge in the header.
+    /// </summary>
+    Task<int> GetCompletedOnDateCountAsync(
+        string userId,
+        DateOnly date,
         CancellationToken cancellationToken = default);
 }

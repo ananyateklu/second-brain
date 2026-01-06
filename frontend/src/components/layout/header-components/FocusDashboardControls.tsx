@@ -1,21 +1,38 @@
-import { memo, useCallback } from 'react';
-import { Calendar, RefreshCw, Plus } from 'lucide-react';
+import { memo, useCallback, useMemo } from 'react';
+import { Calendar as CalendarIcon, RefreshCw, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, subDays, addDays, isToday as isTodayFn, isFuture } from 'date-fns';
 import { useBoundStore } from '../../../store/bound-store';
 import { useTodayPlan, useBacklog } from '../../../features/focus/hooks';
+import { Popover, PopoverTrigger, PopoverContent } from '../../ui/Popover';
+import { Calendar } from '../../ui/Calendar';
+import { formatLocalDate, parseLocalDate } from '../../../utils/date-utils';
+import { cn } from '@/lib/utils';
 
 /**
  * Dashboard-specific header controls for the Focus page.
- * Displays date, completed count, refresh, and quick add buttons.
+ * Displays date picker, completed count, refresh, and quick add buttons.
  */
 export const FocusDashboardControls = memo(function FocusDashboardControls() {
   const openQuickCapture = useBoundStore((state) => state.openQuickCapture);
+  const selectedFocusDate = useBoundStore((state) => state.selectedFocusDate);
+  const setSelectedFocusDate = useBoundStore((state) => state.setSelectedFocusDate);
 
-  // Fetch focus data for controls
+  // The effective date being viewed (null means today)
+  const effectiveDate = useMemo(() => {
+    if (selectedFocusDate) {
+      return parseLocalDate(selectedFocusDate);
+    }
+    return new Date();
+  }, [selectedFocusDate]);
+
+  const isToday = isTodayFn(effectiveDate);
+
+  // Fetch focus data for controls (using selected date)
   const {
     completedTodayCount,
     isLoading: isTodayPlanLoading,
     refetch: refetchTodayPlan,
-  } = useTodayPlan();
+  } = useTodayPlan({ date: selectedFocusDate ?? undefined });
 
   const {
     isLoading: isBacklogLoading,
@@ -24,12 +41,13 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
 
   const isLoading = isTodayPlanLoading || isBacklogLoading;
 
-  // Format today's date
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
+  // Format the displayed date
+  const dateFormatted = useMemo(() => {
+    if (isToday) {
+      return format(effectiveDate, 'EEEE, MMMM d');
+    }
+    return format(effectiveDate, 'EEEE, MMMM d, yyyy');
+  }, [effectiveDate, isToday]);
 
   const handleRefresh = useCallback(() => {
     void refetchTodayPlan();
@@ -40,29 +58,126 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
     openQuickCapture();
   }, [openQuickCapture]);
 
+  // Navigate to previous day
+  const handlePrevDay = useCallback(() => {
+    const prevDay = subDays(effectiveDate, 1);
+    setSelectedFocusDate(formatLocalDate(prevDay));
+  }, [effectiveDate, setSelectedFocusDate]);
+
+  // Navigate to next day (only if not in the future)
+  const handleNextDay = useCallback(() => {
+    const nextDay = addDays(effectiveDate, 1);
+    if (!isFuture(nextDay)) {
+      // If next day is today, set to null (which means "today")
+      if (isTodayFn(nextDay)) {
+        setSelectedFocusDate(null);
+      } else {
+        setSelectedFocusDate(formatLocalDate(nextDay));
+      }
+    }
+  }, [effectiveDate, setSelectedFocusDate]);
+
+  // Handle calendar date selection
+  const handleDateSelect = useCallback((date: Date) => {
+    if (isTodayFn(date)) {
+      setSelectedFocusDate(null);
+    } else {
+      setSelectedFocusDate(formatLocalDate(date));
+    }
+  }, [setSelectedFocusDate]);
+
+  // Check if next day button should be disabled
+  const isNextDayDisabled = isToday;
+
   return (
     <div className="flex items-center gap-2">
-      {/* Date with icon */}
+      {/* Date navigation with calendar popover */}
       <div
-        className="flex items-center gap-2 px-3 py-2.5 my-1 rounded-xl backdrop-blur-md"
+        className="flex items-center gap-1 px-2 py-1.5 my-1 rounded-xl backdrop-blur-md"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
           border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
-        <Calendar
-          className="h-4 w-4"
-          style={{ color: 'var(--color-primary)' }}
-        />
-        <span
-          className="text-sm font-medium"
-          style={{ color: 'var(--text-primary)' }}
+        {/* Previous day button */}
+        <button
+          onClick={handlePrevDay}
+          className="p-1.5 rounded-lg transition-colors hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)]"
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label="Previous day"
+          title="Previous day"
         >
-          {todayFormatted}
-        </span>
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {/* Date with calendar popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className={cn(
+                'flex items-center gap-2 px-2 py-1 rounded-lg transition-colors',
+                'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]',
+                'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1'
+              )}
+              aria-label="Select date"
+            >
+              <CalendarIcon
+                className="h-4 w-4"
+                style={{ color: 'var(--color-primary)' }}
+              />
+              <span
+                className="text-sm font-medium whitespace-nowrap"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {dateFormatted}
+              </span>
+              {isToday && (
+                <span
+                  className="px-1.5 py-0.5 rounded text-xs font-medium"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  Today
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={8}
+            className="w-auto p-0"
+          >
+            <Calendar
+              selected={effectiveDate}
+              onSelect={handleDateSelect}
+              disableFuture
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Next day button */}
+        <button
+          onClick={handleNextDay}
+          disabled={isNextDayDisabled}
+          className={cn(
+            'p-1.5 rounded-lg transition-colors',
+            isNextDayDisabled
+              ? 'opacity-30 cursor-not-allowed'
+              : 'hover:bg-[color-mix(in_srgb,var(--text-primary)_8%,transparent)]'
+          )}
+          style={{ color: 'var(--text-secondary)' }}
+          aria-label="Next day"
+          title={isNextDayDisabled ? "Can't go to future dates" : 'Next day'}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+
+        {/* Completed count badge */}
         {completedTodayCount > 0 && (
           <span
-            className="px-2 py-0.5 rounded-full text-xs font-medium"
+            className="px-2 py-0.5 rounded-full text-xs font-medium ml-1"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
               color: 'var(--color-success)',

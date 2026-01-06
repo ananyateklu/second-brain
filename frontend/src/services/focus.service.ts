@@ -155,10 +155,21 @@ export const focusService = {
 
   /**
    * Get AI-generated progress summary for a time period
+   * Results are cached in the database to reduce AI API costs.
+   * @param period - Time period: 'today', 'week', or 'month'
+   * @param date - Optional date (YYYY-MM-DD format, defaults to today)
+   * @param forceRefresh - Force regeneration even if cached
    */
-  getProgressSummary: async (period: SummaryPeriod = 'today'): Promise<ProgressSummaryResponse> => {
+  getProgressSummary: async (
+    period: SummaryPeriod = 'today',
+    date?: string,
+    forceRefresh = false
+  ): Promise<ProgressSummaryResponse> => {
+    const params = new URLSearchParams({ period });
+    if (date) params.set('date', date);
+    if (forceRefresh) params.set('forceRefresh', 'true');
     return apiClient.get<ProgressSummaryResponse>(
-      `${API_ENDPOINTS.FOCUS.AI_SUMMARY}?period=${period}`
+      `${API_ENDPOINTS.FOCUS.AI_SUMMARY}?${params.toString()}`
     );
   },
 

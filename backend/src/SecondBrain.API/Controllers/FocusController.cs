@@ -278,6 +278,14 @@ public class FocusController : ControllerBase
         var command = new CompleteFocusItemCommand(id, actualMinutes, userId);
         var result = await _mediator.Send(command, cancellationToken);
 
+        // Invalidate progress summary cache on successful completion
+        if (result.IsSuccess)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            await _focusAIService.InvalidateSummaryCacheAsync(userId, today, cancellationToken);
+            _logger.LogDebug("Invalidated progress summary cache for user {UserId} on task completion", userId);
+        }
+
         return result.ToActionResult();
     }
 
@@ -437,8 +445,11 @@ public class FocusController : ControllerBase
 
     /// <summary>
     /// Get AI-generated progress summary for completed items.
+    /// Uses database caching to reduce AI API costs - cached summaries are returned unless forceRefresh is true.
     /// </summary>
     /// <param name="period">Time period: "today", "week", or "month"</param>
+    /// <param name="date">Optional date to get summary for (defaults to today). Format: YYYY-MM-DD</param>
+    /// <param name="forceRefresh">Force regeneration of summary even if cached</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Progress summary with stats and AI insights</returns>
     [HttpGet("ai/summary")]
@@ -446,6 +457,8 @@ public class FocusController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ProgressSummaryResponse>> GetProgressSummary(
         [FromQuery] string period = "today",
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
@@ -454,11 +467,15 @@ public class FocusController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        _logger.LogInformation("Getting progress summary for user {UserId}, period {Period}", userId, period);
+        _logger.LogInformation(
+            "Getting progress summary for user {UserId}, period {Period}, date {Date}, forceRefresh {ForceRefresh}",
+            userId, period, date?.ToString() ?? "today", forceRefresh);
 
         var response = await _focusAIService.GetProgressSummaryAsync(
             userId,
             period,
+            date,
+            forceRefresh,
             cancellationToken);
 
         return Ok(response);

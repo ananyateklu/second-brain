@@ -392,8 +392,14 @@
 \echo 'MCP server name column added successfully.'
 \echo ''
 
--- Step 63: Final statistics update
-\echo 'Step 63/63: Updating statistics...'
+-- Step 64: Progress summaries cache table
+\echo 'Step 64/65: Creating progress_summaries cache table...'
+\i 64_progress_summaries.sql
+\echo 'Progress summaries cache table created successfully.'
+\echo ''
+
+-- Step 65: Final statistics update
+\echo 'Step 65/65: Updating statistics...'
 ANALYZE;
 \echo 'Statistics updated successfully.'
 \echo ''
@@ -433,6 +439,13 @@ ANALYZE;
 \echo '  - claude_citations'
 \echo '  - ollama_model_pulls'
 \echo '  - ollama_model_info'
+\echo '  - focus_items'
+\echo '  - focus_suggestions'
+\echo '  - progress_summaries'
+\echo '  - voice_sessions'
+\echo '  - note_images'
+\echo '  - note_summaries'
+\echo '  - summary_jobs'
 \echo ''
 \echo 'PostgreSQL 18 Features:'
 \echo '  - UUIDv7 columns added'
