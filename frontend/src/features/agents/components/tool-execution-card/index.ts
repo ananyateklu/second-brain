@@ -24,9 +24,11 @@ export {
   parseImagesResult,
 } from './tool-execution-card.utils';
 
+// Icons (separate from components for fast refresh)
+export { StatIcons } from './stat-icons';
+
 // Helper Components
 export {
-  StatIcons,
   StatItem,
   StatsDisplay,
   GenericResponseDisplay,

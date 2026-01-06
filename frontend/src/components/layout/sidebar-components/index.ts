@@ -7,9 +7,11 @@ export type {
   SidebarToggleButtonProps,
 } from './sidebar.types';
 
-// Constants and icons
+// Nav items configuration (separate from components for fast refresh)
+export { NAV_ITEMS } from './nav-items-config';
+
+// Icon components
 export {
-  NAV_ITEMS,
   SettingsIcon,
   PlusIcon,
   CloseIcon,

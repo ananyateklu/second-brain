@@ -235,9 +235,9 @@ describe('voiceSlice', () => {
     it('should add user transcript entry', () => {
       slice.addTranscriptEntry('user', 'Hello');
       expect(state.transcriptHistory).toHaveLength(1);
-      expect(state.transcriptHistory![0].role).toBe('user');
-      expect(state.transcriptHistory![0].content).toBe('Hello');
-      expect(state.transcriptHistory![0].timestamp).toBeDefined();
+      expect(state.transcriptHistory?.[0]?.role).toBe('user');
+      expect(state.transcriptHistory?.[0]?.content).toBe('Hello');
+      expect(state.transcriptHistory?.[0]?.timestamp).toBeDefined();
     });
 
     it('should add assistant transcript entry with agent data', () => {
@@ -249,10 +249,10 @@ describe('voiceSlice', () => {
 
       slice.addTranscriptEntry('assistant', 'Here are your notes', agentData);
       expect(state.transcriptHistory).toHaveLength(1);
-      expect(state.transcriptHistory![0].role).toBe('assistant');
-      expect(state.transcriptHistory![0].toolExecutions).toEqual(agentData.toolExecutions);
-      expect(state.transcriptHistory![0].thinkingSteps).toEqual(agentData.thinkingSteps);
-      expect(state.transcriptHistory![0].durationMs).toBe(1500);
+      expect(state.transcriptHistory?.[0]?.role).toBe('assistant');
+      expect(state.transcriptHistory?.[0]?.toolExecutions).toEqual(agentData.toolExecutions);
+      expect(state.transcriptHistory?.[0]?.thinkingSteps).toEqual(agentData.thinkingSteps);
+      expect(state.transcriptHistory?.[0]?.durationMs).toBe(1500);
     });
 
     it('should limit transcript history to 100 entries', () => {
@@ -260,9 +260,9 @@ describe('voiceSlice', () => {
       for (let i = 0; i < 105; i++) {
         slice.addTranscriptEntry('user', `Message ${i}`);
       }
-      expect(state.transcriptHistory!.length).toBe(100);
+      expect(state.transcriptHistory?.length).toBe(100);
       // First entry should be Message 5 (not Message 0-4)
-      expect(state.transcriptHistory![0].content).toBe('Message 5');
+      expect(state.transcriptHistory?.[0]?.content).toBe('Message 5');
     });
 
     it('should clear transcript history', () => {
@@ -462,8 +462,8 @@ describe('voiceSlice', () => {
 
       slice.updateToolExecution('tool-1', { status: 'completed', result: 'Found 3 notes' });
 
-      expect(state.toolExecutions![0].status).toBe('completed');
-      expect(state.toolExecutions![0].result).toBe('Found 3 notes');
+      expect(state.toolExecutions?.[0]?.status).toBe('completed');
+      expect(state.toolExecutions?.[0]?.result).toBe('Found 3 notes');
       expect(state.isToolExecuting).toBe(false);
       expect(state.currentToolName).toBeNull();
     });
@@ -476,7 +476,7 @@ describe('voiceSlice', () => {
 
       slice.addThinkingStep(step);
       expect(state.thinkingSteps).toHaveLength(1);
-      expect(state.thinkingSteps![0].content).toBe('Analyzing request...');
+      expect(state.thinkingSteps?.[0]?.content).toBe('Analyzing request...');
     });
 
     it('should set retrieved notes with ragLogId', () => {
