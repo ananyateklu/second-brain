@@ -207,8 +207,12 @@ class IndexingStreamManager {
         updateJobStatus(syntheticJob, params.vectorStoreProvider);
       }
     } finally {
-      this.activeStreams.delete(params.vectorStoreProvider);
-      this.notifyListeners(params.vectorStoreProvider, null, null);
+      // Only cleanup if stream still exists in activeStreams
+      // If stopStream() was called, it already deleted and notified with finalStats
+      if (this.activeStreams.has(params.vectorStoreProvider)) {
+        this.activeStreams.delete(params.vectorStoreProvider);
+        this.notifyListeners(params.vectorStoreProvider, null, null);
+      }
     }
   }
 
@@ -220,6 +224,10 @@ class IndexingStreamManager {
   async stopStream(vectorStore: VectorStoreProvider, cancelBackendJob = true): Promise<void> {
     const stream = this.activeStreams.get(vectorStore);
     if (stream) {
+      // CAPTURE current state BEFORE any abort - these contain the last known good values
+      const lastProgress = stream.progress;
+      const lastStats = stream.stats;
+
       // Abort the fetch request
       stream.abortController.abort();
 
@@ -246,25 +254,40 @@ class IndexingStreamManager {
         const syntheticJob: IndexingJobResponse = {
           id: stream.jobId,
           status: 'cancelled',
-          totalNotes: stream.progress?.totalCount ?? 0,
-          processedNotes: stream.progress?.processedCount ?? 0,
+          totalNotes: lastProgress?.totalCount ?? 0,
+          processedNotes: lastProgress?.processedCount ?? 0,
           skippedNotes: 0,
           deletedNotes: 0,
-          totalChunks: stream.progress?.embeddingsCreated ?? 0,
-          processedChunks: stream.progress?.embeddingsCreated ?? 0,
+          totalChunks: lastProgress?.embeddingsCreated ?? 0,
+          processedChunks: lastProgress?.embeddingsCreated ?? 0,
           errors: [],
           embeddingProvider: stream.params.embeddingProvider,
           embeddingModel: stream.params.embeddingModel,
           startedAt: null,
           completedAt: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-          progressPercentage: stream.progress?.progressPercent ?? 0,
+          progressPercentage: lastProgress?.progressPercent ?? 0,
         };
         updateJobStatus(syntheticJob, vectorStore);
       }
 
+      // Create synthetic finalStats from last known state so UI can update immediately
+      let syntheticFinalStats: IndexingStatsEvent | undefined;
+      if (lastProgress || lastStats) {
+        syntheticFinalStats = {
+          indexedCount: lastStats?.indexedCount ?? lastProgress?.processedCount ?? 0,
+          pendingCount: lastStats?.pendingCount ??
+            (lastProgress ? lastProgress.totalCount - lastProgress.processedCount : 0),
+          totalNotes: lastStats?.totalNotes ?? lastProgress?.totalCount ?? 0,
+          dimensions: lastStats?.dimensions ?? 0,
+          lastIndexedAt: lastStats?.lastIndexedAt ?? new Date().toISOString(),
+          vectorStore: vectorStore,
+        };
+      }
+
+      // Delete FIRST, then notify - so finally block knows we handled it
       this.activeStreams.delete(vectorStore);
-      this.notifyListeners(vectorStore, null, null);
+      this.notifyListeners(vectorStore, null, null, syntheticFinalStats);
     }
   }
 
