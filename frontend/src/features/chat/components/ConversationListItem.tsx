@@ -178,117 +178,126 @@ export const ConversationListItem = memo(function ConversationListItem({
 
   return (
     <div
-        className={`group px-4 py-2.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]' : ''}`}
-        style={{
-          backgroundColor: getBackgroundColor(),
-          borderLeftWidth: leftBorder.width,
-          borderLeftColor: leftBorder.color,
-          borderLeftStyle: 'solid',
-          cursor: 'pointer',
-        }}
-        onClick={handleClick}
-      >
-        {/* Hover indicator - faded green bar on the left */}
-        {!isPlaceholder && (
-          <div
-            className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-            style={{
-              backgroundColor: 'var(--color-brand-500)',
-            }}
-          />
-        )}
-        <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <div className="flex items-center gap-2 relative">
-            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              {showCheckbox && (
-                <CircularCheckbox
-                  checked={isChecked}
-                  onChange={() => { onSelect(conversation.id); }}
-                  staggerIndex={staggerIndex}
-                />
-              )}
-              <h3
-                className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap"
-                style={{
-                  color: 'var(--text-primary)',
-                  fontWeight: 400,
-                  textOverflow: 'ellipsis',
-                }}
-                title={conversation.title}
-              >
-                {conversation.title}
-              </h3>
-            </div>
-            {/* Delete button - collapses when not hovered */}
-            {!isPlaceholder && !isSelectionMode && (
-              <div className="w-0 group-hover:w-7 overflow-hidden transition-all duration-150 flex-shrink-0">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(conversation.id);
-                  }}
-                  className="p-1.5 rounded-lg transition-all duration-200 flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
-                  style={{
-                    color: 'rgb(239, 68, 68)',
-                    backgroundColor: 'transparent',
-                    width: '28px',
-                    height: '28px',
-                  }}
-                  title="Delete conversation"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
+      className={`group px-4 py-1.5 transition-all duration-200 relative ${isSelectionMode && isChecked ? styles.itemHighlight : ''} ${!isSelected && !(isSelectionMode && isChecked) ? 'hover:bg-[var(--surface-hover)]' : ''}`}
+      style={{
+        backgroundColor: getBackgroundColor(),
+        borderLeftWidth: leftBorder.width,
+        borderLeftColor: leftBorder.color,
+        borderLeftStyle: 'solid',
+        cursor: 'pointer',
+      }}
+      onClick={handleClick}
+    >
+      {/* Hover indicator - faded green bar on the left */}
+      {!isPlaceholder && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+          style={{
+            backgroundColor: 'var(--color-brand-500)',
+          }}
+        />
+      )}
+
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {showCheckbox && (
+              <CircularCheckbox
+                checked={isChecked}
+                onChange={() => { onSelect(conversation.id); }}
+                staggerIndex={staggerIndex}
+              />
             )}
+            <h3
+              className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap"
+              style={{
+                color: 'var(--text-primary)',
+                fontWeight: 400,
+                textOverflow: 'ellipsis',
+              }}
+              title={conversation.title}
+            >
+              {conversation.title}
+            </h3>
           </div>
-          <div className="flex items-center justify-between gap-1.5">
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <span
-                className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                  color: 'var(--text-secondary)',
+
+          {/* Delete button - collapses when not hovered */}
+          {!isPlaceholder && !isSelectionMode && (
+            <div className="w-0 group-hover:w-7 overflow-hidden flex-shrink-0" style={{ transition: 'all var(--chat-duration-fast) var(--chat-ease-out)' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(conversation.id);
                 }}
-              >
-                {(() => {
-                  const logo = getProviderLogo(conversation.provider, isDarkMode);
-                  return logo ? (
-                    <img
-                      src={logo}
-                      alt={conversation.provider}
-                      className="w-2.5 h-2.5 flex-shrink-0 object-contain"
-                    />
-                  ) : null;
-                })()}
-                {formatModelName(conversation.model)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Date */}
-              <span
-                className="text-[10px] whitespace-nowrap"
+                className="flex items-center justify-center hover:scale-110 active:scale-95 hover:bg-[color-mix(in_srgb,var(--color-error)_10%,transparent)]"
                 style={{
-                  color: 'var(--text-tertiary)',
+                  padding: 'var(--chat-space-xs)',
+                  borderRadius: 'var(--chat-radius-sm)',
+                  color: 'var(--color-error)',
+                  backgroundColor: 'transparent',
+                  width: '28px',
+                  height: '28px',
+                  transition: 'all var(--chat-duration-fast) var(--chat-ease-out)',
                 }}
+                title="Delete conversation"
               >
-                {formatConversationDate(conversation.updatedAt)}
-              </span>
+                <svg
+                  style={{ width: 'var(--chat-icon-md)', height: 'var(--chat-icon-md)' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+              </button>
             </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1 flex-1 min-w-0">
+            <span
+              className="inline-flex items-center gap-2 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
+              style={{
+                backgroundColor: isDarkMode
+                  ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                  : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                color: isDarkMode ? 'var(--text-secondary)' : 'var(--text-tertiary)',
+                opacity: isDarkMode ? 1 : 0.7,
+              }}
+            >
+              {(() => {
+                const logo = getProviderLogo(conversation.provider, isDarkMode);
+                return logo ? (
+                  <img
+                    src={logo}
+                    alt={conversation.provider}
+                    className="w-2.5 h-2.5 flex-shrink-0 object-contain"
+                  />
+                ) : null;
+              })()}
+              {formatModelName(conversation.model)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Date */}
+            <span
+              className="text-[10px] whitespace-nowrap"
+              style={{
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              {formatConversationDate(conversation.updatedAt)}
+            </span>
           </div>
         </div>
       </div>
+    </div>
   );
 });
 
