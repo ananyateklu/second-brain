@@ -405,7 +405,7 @@ export function usePauseFocusItem() {
         queryKey: focusKeys.todayPlan(todayDate),
         getOptimisticData: (id, currentData) => {
           const data = currentData as TodaysPlanResponse | undefined;
-          if (!data?.currentFocus || data.currentFocus.id !== id) return data;
+          if (data?.currentFocus?.id !== id) return data;
 
           // Calculate elapsed time for optimistic update
           const startTime = data.currentFocus.focusStartedAt

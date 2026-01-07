@@ -4,7 +4,7 @@
  * Summaries are cached in the database to reduce AI API costs
  */
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { useApiQuery } from '../../../hooks/use-api-query';
 import { focusKeys } from '../../../lib/query-keys';
 import { focusService } from '../../../services/focus.service';
@@ -66,13 +66,13 @@ export function useProgressSummary(options?: UseProgressSummaryOptions) {
    * Force regenerate the summary (ignores database cache)
    * Use this when the user explicitly wants fresh AI insights
    */
-  const refreshSummary = useCallback(async () => {
+  const refreshSummary = async () => {
     setIsRefreshing(true);
     setForceRefreshKey((k) => k + 1);
     // Wait for the query to refetch
     await query.refetch();
     setIsRefreshing(false);
-  }, [query]);
+  };
 
   return {
     /** Full summary response */
