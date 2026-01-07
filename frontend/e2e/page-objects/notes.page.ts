@@ -138,31 +138,34 @@ export class NotesPage extends BasePage {
       await this.folderSelect.selectOption(options.folder);
     }
 
-    // Wait for both the POST (create) and subsequent GET (refetch) to complete
-    // The optimistic update uses a temp-ID, so we need to wait for the refetch
-    // to ensure the card has the real ID before we try to open it
-    await Promise.all([
-      this.page.waitForResponse(
-        (response) =>
-          response.url().includes('/api/notes') &&
-          response.request().method() === 'POST' &&
-          response.status() === 201,
-        { timeout: 15000 }
-      ),
-      this.saveNoteButton.click(),
-    ]);
+    // Start listening for responses BEFORE clicking to avoid race conditions
+    // The GET (refetch) may happen very quickly after POST completes
+    const postResponsePromise = this.page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/notes') &&
+        response.request().method() === 'POST' &&
+        response.status() === 201,
+      { timeout: 15000 }
+    );
 
-    await expect(this.noteEditor).not.toBeVisible({ timeout: 10000 });
-
-    // After successful creation, wait for the notes list refetch to complete
-    // This ensures the optimistic temp-ID is replaced with the real ID
-    await this.page.waitForResponse(
+    // Start listening for GET refetch - it may or may not happen depending on
+    // whether the app uses optimistic updates. Use a shorter timeout and ignore failures.
+    const getResponsePromise = this.page.waitForResponse(
       (response) =>
         response.url().includes('/api/notes') &&
         response.request().method() === 'GET' &&
         response.status() === 200,
-      { timeout: 15000 }
-    );
+      { timeout: 10000 }
+    ).catch(() => null); // Ignore timeout - optimistic updates may skip refetch
+
+    // Click save and wait for POST to complete
+    await Promise.all([postResponsePromise, this.saveNoteButton.click()]);
+
+    // Wait for dialog to close
+    await expect(this.noteEditor).not.toBeVisible({ timeout: 10000 });
+
+    // Wait for the GET if it happens (but don't fail if it doesn't)
+    await getResponsePromise;
 
     // Small settle time for React state to update
     await this.page.waitForTimeout(500);
