@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useMemo, useState } from 'react';
-import { Clock, CheckCircle2, Circle, Target, GripVertical, X, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { Clock, CheckCircle2, Circle, Target, GripVertical, X, ChevronDown, ChevronUp, History, Play } from 'lucide-react';
 import { format, isToday as isTodayFn, isSameDay, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -131,6 +131,17 @@ const PlanItem = memo(function PlanItem({
             >
               <Target className="h-2.5 w-2.5" />
               Focus
+            </span>
+          )}
+          {/* Show Resume badge for paused items with accumulated time */}
+          {!item.isCurrentFocus && item.accumulatedMinutes > 0 && item.status === 'in_progress' && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase"
+              style={{ color: 'var(--color-accent-orange-text)' }}
+              title={`${item.accumulatedMinutes} min tracked`}
+            >
+              <Play className="h-2.5 w-2.5" />
+              Resume
             </span>
           )}
         </div>
@@ -293,7 +304,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
     >
       {/* Header with progress */}
       <div
-        className="px-4 py-3 border-b flex-shrink-0"
+        className="px-3 sm:px-4 py-2 sm:py-3 border-b flex-shrink-0"
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center justify-between mb-2">
@@ -351,7 +362,7 @@ export const TodaysPlanList = memo(function TodaysPlanList({
       </div>
 
       {/* Items list - scrollable */}
-      <div className="px-4 flex-1 overflow-y-auto thin-scrollbar">
+      <div className="px-3 sm:px-4 flex-1 overflow-y-auto thin-scrollbar">
         {/* Pending items */}
         {pendingItems.map((item) => (
           <PlanItem

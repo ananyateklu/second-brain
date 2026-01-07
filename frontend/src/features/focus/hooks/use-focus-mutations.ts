@@ -377,6 +377,66 @@ export function useSetCurrentFocus() {
 }
 
 // ============================================
+// Pause Focus Item
+// ============================================
+
+/**
+ * Hook to pause the current focus timer.
+ * Saves elapsed time to accumulatedMinutes without completing the task.
+ * The item remains in 'in_progress' status but is no longer the current focus.
+ *
+ * @example
+ * ```tsx
+ * const { mutate: pauseFocus } = usePauseFocusItem();
+ * pauseFocus('focus-123');
+ * ```
+ */
+export function usePauseFocusItem() {
+  const queryClient = useQueryClient();
+  const todayDate = focusService.getTodayDateString();
+
+  return useApiMutation<FocusItem, string>(
+    (id) => focusService.pauseFocusItem(id),
+    {
+      successMessage: 'Focus paused',
+      showSuccessToast: true,
+      errorMessage: 'Failed to pause focus',
+      optimisticUpdate: {
+        queryKey: focusKeys.todayPlan(todayDate),
+        getOptimisticData: (id, currentData) => {
+          const data = currentData as TodaysPlanResponse | undefined;
+          if (!data?.currentFocus || data.currentFocus.id !== id) return data;
+
+          // Calculate elapsed time for optimistic update
+          const startTime = data.currentFocus.focusStartedAt
+            ? new Date(data.currentFocus.focusStartedAt).getTime()
+            : Date.now();
+          const elapsedMinutes = Math.ceil((Date.now() - startTime) / 60000);
+
+          const pausedItem: FocusItem = {
+            ...data.currentFocus,
+            isCurrentFocus: false,
+            focusStartedAt: null,
+            accumulatedMinutes: data.currentFocus.accumulatedMinutes + elapsedMinutes,
+            status: 'in_progress',
+            updatedAt: new Date().toISOString(),
+          };
+
+          return {
+            ...data,
+            currentFocus: null,
+            scheduledItems: [pausedItem, ...data.scheduledItems],
+          };
+        },
+      },
+      onSettled: () => {
+        void queryClient.invalidateQueries({ queryKey: focusKeys.all });
+      },
+    }
+  );
+}
+
+// ============================================
 // Complete Focus Item
 // ============================================
 

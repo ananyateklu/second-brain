@@ -383,7 +383,7 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`${isUser ? 'max-w-[85%]' : 'w-full'} px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} transition-colors duration-150`}
+        className={`${isUser ? 'max-w-[85%] mr-[0.2em] px-4' : 'w-full pl-[0.5em] pr-4'} ${isImageRequest ? 'py-3' : 'py-2.5'} transition-colors duration-150`}
         style={{
           borderRadius: isUser ? 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm) var(--chat-radius-lg)' : 'var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-lg) var(--chat-radius-sm)',
           backgroundColor: isUser ? 'var(--chat-bubble-user-bg)' : 'var(--chat-bubble-assistant-bg)',

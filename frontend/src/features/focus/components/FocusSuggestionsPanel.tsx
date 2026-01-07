@@ -60,7 +60,10 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
   isDeleting = false,
   className,
 }: FocusSuggestionsPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(() => {
+    // Start collapsed on mobile (< 640px)
+    return typeof window !== 'undefined' ? window.innerWidth >= 640 : true;
+  });
   const [showStats, setShowStats] = useState(false);
   const showStatsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

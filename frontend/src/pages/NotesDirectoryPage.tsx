@@ -3,7 +3,7 @@
  * Unified notes view with folder navigation, filtering, search, and bulk operations
  */
 
-import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   useNotesPaged,
@@ -112,6 +112,55 @@ export function NotesDirectoryPage() {
 
   // Sidebar visibility from Zustand (shared with header)
   const directorySidebarVisible = useBoundStore((state) => state.directorySidebarVisible);
+  const setDirectorySidebarVisible = useBoundStore((state) => state.setDirectorySidebarVisible);
+
+  // Main navigation sidebar state (hamburger menu)
+  const isMobileMenuOpen = useBoundStore((state) => state.isMobileMenuOpen);
+
+  // Track if we're on mobile for drawer behavior
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  // Update mobile state on resize
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // Auto-close sidebar when switching to mobile
+      if (mobile && directorySidebarVisible) {
+        setDirectorySidebarVisible(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [directorySidebarVisible, setDirectorySidebarVisible]);
+
+  // Handle escape key to close mobile sidebar
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobile && directorySidebarVisible) {
+        setDirectorySidebarVisible(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isMobile, directorySidebarVisible, setDirectorySidebarVisible]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && directorySidebarVisible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, directorySidebarVisible]);
 
   // Context for sharing state with header
   const { setHeaderState } = useDirectoryPageContext();
@@ -120,10 +169,16 @@ export function NotesDirectoryPage() {
   const filterState = useBoundStore((state) => state.filterState);
   const setFilterState = useBoundStore((state) => state.setFilterState);
   const searchQuery = useBoundStore((state) => state.searchQuery);
+  const setSearchQuery = useBoundStore((state) => state.setSearchQuery);
   const searchMode = useBoundStore((state) => state.searchMode);
+  const toggleSearchMode = useBoundStore((state) => state.toggleSearchMode);
   const isBulkMode = useBoundStore((state) => state.isBulkMode);
   const setBulkMode = useBoundStore((state) => state.setBulkMode);
   const itemsPerPage = useBoundStore((state) => state.itemsPerPage);
+  const setDirectoryViewMode = useBoundStore((state) => state.setDirectoryViewMode);
+
+  // Mobile filter dropdown states
+  const [mobileFilterOpen, setMobileFilterOpen] = useState<'date' | 'tags' | 'sort' | null>(null);
 
   // Local UI state
   const [currentPage, setCurrentPage] = useState(1);
@@ -366,6 +421,22 @@ export function NotesDirectoryPage() {
     setSelectedNoteIds(new Set());
   }, [filterState, setFilterState]);
 
+  // Mobile-aware folder selection (closes drawer after selection)
+  const handleMobileFolderSelect = useCallback((folder: FolderFilter, archive: ArchiveFilter = 'not-archived') => {
+    handleFolderNavigation(folder, archive);
+    if (isMobile) {
+      setDirectorySidebarVisible(false);
+    }
+  }, [handleFolderNavigation, isMobile, setDirectorySidebarVisible]);
+
+  // Mobile-aware trash selection (closes drawer after selection)
+  const handleMobileTrashSelect = useCallback(() => {
+    handleTrashSelect();
+    if (isMobile) {
+      setDirectorySidebarVisible(false);
+    }
+  }, [handleTrashSelect, isMobile, setDirectorySidebarVisible]);
+
   // Bulk operation handlers
   const handleNoteSelect = useCallback((noteId: string) => {
     setSelectedNoteIds((prev) => {
@@ -461,8 +532,71 @@ export function NotesDirectoryPage() {
       className="flex overflow-hidden flex-1 transition-all duration-300"
       style={containerStyles}
     >
-      {/* Folder Sidebar */}
-      {directorySidebarVisible && (
+      {/* Mobile Sidebar Overlay - z-50 to be above pagination (z-40) */}
+      {isMobile && directorySidebarVisible && (
+        <div
+          className="fixed inset-0 z-50 transition-opacity duration-300"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={() => setDirectorySidebarVisible(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer - z-[60] to be above overlay */}
+      {isMobile && (
+        <aside
+          className={`fixed top-0 left-0 bottom-0 z-[60] w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col backdrop-blur-xl ${
+            directorySidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          }}
+        >
+          {/* Mobile Drawer Header */}
+          <div
+            className="flex items-center justify-between px-4 py-4 border-b shrink-0"
+            style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          >
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              Folders
+            </h2>
+            <button
+              onClick={() => setDirectorySidebarVisible(false)}
+              className="flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+              }}
+              aria-label="Close sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--text-primary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile Drawer Content */}
+          <div className="flex-1 overflow-y-auto">
+            <DirectorySidebar
+              folderStats={folderStats}
+              folderList={folderList}
+              selectedFolder={selectedFolder}
+              archiveFilter={archiveFilter}
+              isTrashMode={isTrashMode}
+              trashCount={trashData?.totalCount ?? 0}
+              onSelectFolder={handleMobileFolderSelect}
+              onSelectTrash={handleMobileTrashSelect}
+            />
+          </div>
+        </aside>
+      )}
+
+      {/* Desktop Folder Sidebar */}
+      {!isMobile && directorySidebarVisible && (
         <DirectorySidebar
           folderStats={folderStats}
           folderList={folderList}
@@ -477,6 +611,227 @@ export function NotesDirectoryPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
+        {/* Mobile Filter Bar - Only on mobile */}
+        <div className="md:hidden shrink-0">
+          {/* Search Row */}
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notes..."
+                className="w-full h-9 pl-9 pr-3 rounded-xl border text-sm transition-all focus:outline-none"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <button
+              onClick={toggleSearchMode}
+              className="shrink-0 h-9 px-3 rounded-xl text-xs font-medium"
+              style={{
+                backgroundColor: 'var(--btn-primary-bg)',
+                color: 'var(--btn-primary-text)',
+              }}
+            >
+              {searchMode === 'both' ? 'All' : searchMode === 'title' ? 'Title' : 'Content'}
+            </button>
+          </div>
+
+          {/* Filter Pills Row */}
+          <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto thin-scrollbar border-b" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+            {/* Date Filter */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setMobileFilterOpen(mobileFilterOpen === 'date' ? null : 'date')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: filterState.dateFilter !== 'all' ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  color: filterState.dateFilter !== 'all' ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {filterState.dateFilter === 'all' ? 'All time' : filterState.dateFilter === 'today' ? 'Today' : filterState.dateFilter === 'yesterday' ? 'Yesterday' : filterState.dateFilter === 'last7days' ? '7 days' : filterState.dateFilter === 'last30days' ? '30 days' : '90 days'}
+              </button>
+              {mobileFilterOpen === 'date' && (
+                <div
+                  className="absolute top-full left-0 mt-1 min-w-[140px] rounded-xl border shadow-xl z-50 p-1"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  {(['all', 'today', 'yesterday', 'last7days', 'last30days', 'last90days'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => {
+                        setFilterState({ ...filterState, dateFilter: filter });
+                        setMobileFilterOpen(null);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm"
+                      style={{
+                        backgroundColor: filterState.dateFilter === filter ? 'var(--btn-primary-bg)' : 'transparent',
+                        color: filterState.dateFilter === filter ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                      }}
+                    >
+                      {filter === 'all' ? 'All time' : filter === 'today' ? 'Today' : filter === 'yesterday' ? 'Yesterday' : filter === 'last7days' ? 'Last 7 days' : filter === 'last30days' ? 'Last 30 days' : 'Last 90 days'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tags Filter */}
+            {folderStats.all > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setMobileFilterOpen(mobileFilterOpen === 'tags' ? null : 'tags')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: filterState.selectedTags.length > 0 ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: filterState.selectedTags.length > 0 ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  Tags{filterState.selectedTags.length > 0 && ` (${filterState.selectedTags.length})`}
+                </button>
+                {mobileFilterOpen === 'tags' && (
+                  <div
+                    className="absolute top-full left-0 mt-1 min-w-[160px] max-h-48 overflow-y-auto rounded-xl border shadow-xl z-50 p-1"
+                    style={{
+                      backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                      backdropFilter: 'blur(20px)',
+                    }}
+                  >
+                    {filterState.selectedTags.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setFilterState({ ...filterState, selectedTags: [] });
+                          setMobileFilterOpen(null);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm mb-1"
+                        style={{ color: 'var(--color-error)' }}
+                      >
+                        Clear all
+                      </button>
+                    )}
+                    {Array.from(new Set(notes.flatMap(n => n.tags || []))).sort().map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          const newTags = filterState.selectedTags.includes(tag)
+                            ? filterState.selectedTags.filter(t => t !== tag)
+                            : [...filterState.selectedTags, tag];
+                          setFilterState({ ...filterState, selectedTags: newTags });
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2"
+                        style={{
+                          backgroundColor: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-bg)' : 'transparent',
+                          color: filterState.selectedTags.includes(tag) ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                        }}
+                      >
+                        <span className="truncate">#{tag}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Sort Filter */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setMobileFilterOpen(mobileFilterOpen === 'sort' ? null : 'sort')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                style={{
+                  backgroundColor: filterState.sortBy !== 'newest' ? 'var(--btn-primary-bg)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                  color: filterState.sortBy !== 'newest' ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                {filterState.sortBy === 'newest' ? 'Newest' : filterState.sortBy === 'oldest' ? 'Oldest' : filterState.sortBy === 'title-asc' ? 'A-Z' : 'Z-A'}
+              </button>
+              {mobileFilterOpen === 'sort' && (
+                <div
+                  className="absolute top-full left-0 mt-1 min-w-[130px] rounded-xl border shadow-xl z-50 p-1"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  {(['newest', 'oldest', 'title-asc', 'title-desc'] as const).map((sort) => (
+                    <button
+                      key={sort}
+                      onClick={() => {
+                        setFilterState({ ...filterState, sortBy: sort });
+                        setMobileFilterOpen(null);
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-lg text-sm"
+                      style={{
+                        backgroundColor: filterState.sortBy === sort ? 'var(--btn-primary-bg)' : 'transparent',
+                        color: filterState.sortBy === sort ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                      }}
+                    >
+                      {sort === 'newest' ? 'Newest first' : sort === 'oldest' ? 'Oldest first' : sort === 'title-asc' ? 'Title A-Z' : 'Title Z-A'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="shrink-0 flex items-center gap-1 ml-auto">
+              <button
+                onClick={() => setDirectoryViewMode('card')}
+                className="p-1.5 rounded-lg transition-all"
+                style={{
+                  backgroundColor: directoryViewMode === 'card' ? 'var(--btn-primary-bg)' : 'transparent',
+                  color: directoryViewMode === 'card' ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setDirectoryViewMode('list')}
+                className="p-1.5 rounded-lg transition-all"
+                style={{
+                  backgroundColor: directoryViewMode === 'list' ? 'var(--btn-primary-bg)' : 'transparent',
+                  color: directoryViewMode === 'list' ? 'var(--btn-primary-text)' : 'var(--text-tertiary)',
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Click outside to close mobile filter dropdowns */}
+        {mobileFilterOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-40"
+            onClick={() => setMobileFilterOpen(null)}
+          />
+        )}
+
         {/* Trash Header with Empty Trash Button */}
         {isTrashMode && trashData && trashData.totalCount > 0 && (
           <TrashHeader
@@ -491,7 +846,7 @@ export function NotesDirectoryPage() {
         {/* Notes Content */}
         <div
           ref={scrollableRef}
-          className="flex-1 overflow-y-auto p-6 thin-scrollbar transition-opacity duration-200"
+          className="flex-1 overflow-y-auto p-4 md:p-6 thin-scrollbar transition-opacity duration-200"
           style={{ opacity: isSearchStale || isFetching ? 0.7 : 1 }}
         >
           {(isTrashMode ? isTrashLoading : isLoading) ? (
@@ -543,14 +898,35 @@ export function NotesDirectoryPage() {
               onNoteSelect={handleNoteSelect}
             />
           )}
+
+          {/* Mobile Inline Pagination - at bottom of content */}
+          {totalPages > 1 && !isTrashMode && displayedNotes.length > 0 && (
+            <div className="md:hidden mt-6 pb-4 flex justify-center">
+              <div
+                className="px-4 py-2.5 rounded-2xl border"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                  borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                }}
+              >
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
       </div>
 
-      {/* Floating Pagination */}
-      {totalPages > 1 && createPortal(
+      {/* Floating Pagination - desktop only, hidden when any mobile sidebar is open */}
+      {totalPages > 1 && !isMobileMenuOpen && !(isMobile && directorySidebarVisible) && createPortal(
         <div
-          className="fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl transition-all duration-300"
+          className="hidden md:block fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl transition-all duration-300"
           style={{
             left: '50%',
             bottom: isBulkMode ? '5.75rem' : '1.5rem',
@@ -574,8 +950,8 @@ export function NotesDirectoryPage() {
         document.body
       )}
 
-      {/* Bulk Actions Bar */}
-      {isBulkMode && (
+      {/* Bulk Actions Bar - hidden when any mobile sidebar is open */}
+      {isBulkMode && !isMobileMenuOpen && !(isMobile && directorySidebarVisible) && (
         <BulkActionsBar
           selectedCount={selectedNoteIds.size}
           totalCount={displayedNotes.length}

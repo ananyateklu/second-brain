@@ -86,7 +86,7 @@ export const FocusTimer = memo(function FocusTimer({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-semibold',
+        'inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg font-mono text-sm sm:text-lg font-semibold',
         'transition-all duration-200',
         className
       )}
@@ -98,12 +98,12 @@ export const FocusTimer = memo(function FocusTimer({
       }}
     >
       <Timer
-        className={cn('h-5 w-5', isRunning && 'animate-pulse')}
+        className={cn('h-4 w-4 sm:h-5 sm:w-5', isRunning && 'animate-pulse')}
       />
       <span>{formattedTime}</span>
       {!isRunning && accumulatedMinutes > 0 && (
         <span
-          className="text-xs font-normal ml-1"
+          className="text-[10px] sm:text-xs font-normal ml-0.5 sm:ml-1"
           style={{ color: 'var(--text-tertiary)' }}
         >
           (paused)

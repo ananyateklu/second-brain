@@ -3,7 +3,7 @@
  * Priority-grouped backlog with filtering and scheduling
  */
 
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Calendar, ChevronDown, ChevronUp, Inbox, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -187,6 +187,22 @@ export const BacklogSection = memo(function BacklogSection({
   disabled = false,
   className,
 }: BacklogSectionProps) {
+  // Local collapse state for mobile (starts collapsed on mobile if no external control)
+  const [localCollapsed, setLocalCollapsed] = useState(() => {
+    // Auto-collapse on mobile (< 640px)
+    return typeof window !== 'undefined' && window.innerWidth < 640;
+  });
+
+  // Use external or local collapse state
+  const effectiveCollapsed = onToggleCollapse ? isCollapsed : localCollapsed;
+  const handleToggleCollapse = useCallback(() => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setLocalCollapsed(prev => !prev);
+    }
+  }, [onToggleCollapse]);
+
   // Get filter state from store
   const selectedBacklogPriority = useBoundStore(
     (state) => state.selectedBacklogPriority
@@ -224,10 +240,6 @@ export const BacklogSection = memo(function BacklogSection({
     );
   }, [filteredItems, selectedBacklogPriority]);
 
-  const handleToggle = useCallback(() => {
-    onToggleCollapse?.();
-  }, [onToggleCollapse]);
-
   const totalCount = Object.values(countByPriority).reduce((a, b) => a + b, 0);
 
   return (
@@ -237,18 +249,29 @@ export const BacklogSection = memo(function BacklogSection({
         'transition-all duration-200',
         'hover:border-[color-mix(in_srgb,var(--color-primary)_30%,transparent)]',
         'hover:shadow-md',
-        className
+        // Only apply flex-1/min-h-0 when expanded, otherwise just fit content
+        effectiveCollapsed ? '' : className
       )}
       style={{
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
-      {/* Header */}
+      {/* Header - clickable to toggle */}
       <div
+        role="button"
+        tabIndex={0}
+        onClick={handleToggleCollapse}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleToggleCollapse();
+          }
+        }}
         className={cn(
-          'px-4 py-3 flex items-center justify-between flex-shrink-0',
-          !isCollapsed && 'border-b'
+          'px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between flex-shrink-0 cursor-pointer',
+          'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors',
+          !effectiveCollapsed && 'border-b'
         )}
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
@@ -276,28 +299,19 @@ export const BacklogSection = memo(function BacklogSection({
           </div>
         </div>
 
-        {onToggleCollapse && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleToggle}
-            className="h-7 w-7"
-          >
-            {isCollapsed ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronUp className="h-4 w-4" />
-            )}
-          </Button>
+        {effectiveCollapsed ? (
+          <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+        ) : (
+          <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
         )}
       </div>
 
       {/* Content */}
-      {!isCollapsed && (
+      {!effectiveCollapsed && (
         <>
           {/* Filters */}
           <div
-            className="px-4 py-2 border-b flex-shrink-0"
+            className="px-3 sm:px-4 py-2 border-b flex-shrink-0"
             style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
           >
             <PriorityFilters
@@ -308,7 +322,7 @@ export const BacklogSection = memo(function BacklogSection({
           </div>
 
           {/* Items - scrollable within flex container */}
-          <div className="px-2 py-2 flex-1 overflow-y-auto thin-scrollbar min-h-0">
+          <div className="px-2 py-1 sm:py-2 flex-1 overflow-y-auto thin-scrollbar min-h-0">
             {filteredItems.length === 0 ? (
               <div className="py-8 text-center">
                 <Inbox

@@ -323,33 +323,51 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Settings Link */}
+      {/* Settings Link - Desktop only */}
       <div
-        className="pb-3 px-4 border-b transition-all duration-500"
+        className="hidden md:block pb-3 px-4 border-b transition-all duration-500"
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         {renderSettingsLink(!isCollapsed || isMobileMenuOpen)}
       </div>
 
-      {/* Toggle Button and Theme Toggle */}
-      <div className={`transition-all duration-500 relative z-10 ${isCollapsed ? 'pt-4' : 'mt-3 pt-3'}`}>
+      {/* Mobile: Settings icon + Theme toggle side by side */}
+      <div className="md:hidden px-4 py-4 flex items-center justify-center gap-3 shrink-0">
+        <NavLink
+          to="/settings"
+          onClick={handleNavClick}
+          className={({ isActive }) =>
+            `group flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${
+              isActive ? 'shadow-lg' : ''
+            }`
+          }
+          style={({ isActive }) => ({
+            backgroundColor: isActive
+              ? 'var(--color-brand-600)'
+              : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            border: isActive
+              ? '1px solid var(--color-brand-600)'
+              : '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
+            color: isActive ? '#ffffff' : 'var(--text-secondary)',
+          })}
+          title="Settings"
+        >
+          <SettingsIcon />
+        </NavLink>
+        <ThemeToggle />
+      </div>
+
+      {/* Desktop: Toggle Button and Theme Toggle */}
+      <div className={`hidden md:block transition-all duration-500 relative z-10 ${isCollapsed ? 'pt-4' : 'mt-3 pt-3'}`}>
         <div
           className={`flex items-center transition-all duration-500 ${
-            isCollapsed && !isMobileMenuOpen ? 'md:flex-col md:gap-3 md:justify-center' : ''
-          } gap-3 justify-between md:justify-end`}
+            isCollapsed ? 'flex-col gap-3 justify-center' : ''
+          } gap-3 justify-end`}
         >
-          {/* Theme Toggle - with label on mobile */}
-          <div className="flex md:hidden items-center gap-3">
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Theme
-            </span>
-            <ThemeToggle />
-          </div>
-
           {/* Desktop toggle button */}
           <button
             onClick={handleToggleClick}
-            className="hidden md:flex group relative items-center justify-center w-11 h-11 rounded-lg transition-all duration-300 overflow-hidden hover:scale-110 active:scale-95"
+            className="group relative flex items-center justify-center w-11 h-11 rounded-lg transition-all duration-300 overflow-hidden hover:scale-110 active:scale-95"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
@@ -359,10 +377,7 @@ export function Sidebar() {
             <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             {isCollapsed ? <CloseIcon /> : <ChevronRightIcon />}
           </button>
-          {/* Desktop theme toggle */}
-          <div className="hidden md:block">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle />
         </div>
       </div>
     </>
@@ -497,12 +512,13 @@ export function Sidebar() {
 
         {/* Mobile Menu Drawer */}
         <aside
-          className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 backdrop-blur-xl ${
+          className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col pt-6 px-4 pb-8 backdrop-blur-xl ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
           }}
         >
           {sidebarContent}
@@ -525,12 +541,13 @@ export function Sidebar() {
 
       {/* Mobile Menu Drawer */}
       <aside
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-80 max-w-[85vw] transform transition-transform duration-300 ease-out flex flex-col p-6 backdrop-blur-xl ${
+        className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col pt-6 px-4 pb-8 backdrop-blur-xl ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
           borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
         }}
       >
         {sidebarContent}

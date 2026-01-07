@@ -94,6 +94,16 @@ export const focusService = {
   },
 
   /**
+   * Pause the current focus timer, saving elapsed time to accumulated minutes.
+   * The item remains in 'in_progress' status but is no longer the current focus.
+   */
+  pauseFocusItem: async (id: string): Promise<FocusItem> => {
+    return apiClient.post<FocusItem>(
+      API_ENDPOINTS.FOCUS.PAUSE(id)
+    );
+  },
+
+  /**
    * Mark a focus item as completed
    */
   complete: async (id: string, actualMinutes?: number): Promise<FocusItem> => {

@@ -6,6 +6,7 @@ using SecondBrain.Application.Commands.Focus.CompleteFocusItem;
 using SecondBrain.Application.Commands.Focus.CreateFocusItem;
 using SecondBrain.Application.Commands.Focus.DeferFocusItem;
 using SecondBrain.Application.Commands.Focus.DeleteFocusItem;
+using SecondBrain.Application.Commands.Focus.PauseFocusItem;
 using SecondBrain.Application.Commands.Focus.ReorderFocusItems;
 using SecondBrain.Application.Commands.Focus.SetCurrentFocus;
 using FocusItemOrder = SecondBrain.Application.Commands.Focus.ReorderFocusItems.FocusItemOrder;
@@ -248,6 +249,34 @@ public class FocusController : ControllerBase
         }
 
         var command = new SetCurrentFocusCommand(id, userId);
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Pause the current focus timer, saving elapsed time to accumulated minutes.
+    /// The item remains in 'in_progress' status but is no longer the current focus.
+    /// </summary>
+    /// <param name="id">Focus item ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated focus item with accumulated time</returns>
+    [HttpPost("{id}/pause")]
+    [ProducesResponseType(typeof(FocusItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FocusItemResponse>> Pause(
+        string id,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        var command = new PauseFocusItemCommand(id, userId);
         var result = await _mediator.Send(command, cancellationToken);
 
         return result.ToActionResult();

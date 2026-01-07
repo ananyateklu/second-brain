@@ -315,6 +315,7 @@ export const API_ENDPOINTS = {
     COMPLETED: '/focus/completed',
     BY_ID: (id: string) => `/focus/${id}`,
     SET_CURRENT: (id: string) => `/focus/${id}/set-current`,
+    PAUSE: (id: string) => `/focus/${id}/pause`,
     COMPLETE: (id: string) => `/focus/${id}/complete`,
     DEFER: (id: string) => `/focus/${id}/defer`,
     REORDER: '/focus/reorder',
