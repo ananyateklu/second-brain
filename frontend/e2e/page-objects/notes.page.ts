@@ -25,7 +25,8 @@ export class NotesPage extends BasePage {
   }
 
   get searchInput() {
-    return this.page.locator('input[placeholder*="Search" i], input[type="search"], [data-testid="notes-search"]');
+    // Prefer data-testid to avoid matching multiple search inputs (header vs mobile)
+    return this.page.locator('[data-testid="notes-search"]');
   }
 
   get emptyState() {
