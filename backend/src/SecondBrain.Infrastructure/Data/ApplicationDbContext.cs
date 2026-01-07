@@ -40,6 +40,7 @@ public class ApplicationDbContext : DbContext
     // Focus/Productivity
     public DbSet<FocusItem> FocusItems { get; set; } = null!;
     public DbSet<FocusSuggestion> FocusSuggestions { get; set; } = null!;
+    public DbSet<ProgressSummary> ProgressSummaries { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

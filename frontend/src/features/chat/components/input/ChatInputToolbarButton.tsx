@@ -1,10 +1,13 @@
 /**
  * ChatInput Toolbar Button Component
  * Individual action buttons for the chat input toolbar
+ *
+ * Uses mobilePillButton style on mobile for ChatGPT-style pill input
  */
 
 import React from 'react';
 import { useChatInputContext } from './ChatInputContext';
+import styles from '../../../../styles/components/chat-input.module.css';
 
 interface ToolbarButtonProps {
   onClick: () => void;
@@ -30,10 +33,20 @@ function ToolbarButton({
     <button
       onClick={onClick}
       disabled={isDisabled}
-      className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative"
+      className={`
+        ${styles.mobilePillButton}
+        md:w-auto md:h-auto md:min-w-0 md:min-h-0
+        md:p-2 md:rounded-xl
+        flex-shrink-0 relative
+        transition-all duration-200
+        hover:scale-105 active:scale-95
+        disabled:opacity-50 disabled:cursor-not-allowed
+      `}
       style={{
         color: active ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
-        backgroundColor: active ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' : 'transparent',
+        backgroundColor: active
+          ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
+          : 'transparent',
       }}
       title={title}
     >

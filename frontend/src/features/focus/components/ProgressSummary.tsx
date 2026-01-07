@@ -258,8 +258,8 @@ export const ProgressSummary = memo(function ProgressSummary({
           {/* Summary content */}
           {!isLoading && !error && (
             <div className="p-4 space-y-4">
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Stats row - always 3 cols, compact on mobile */}
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                 <StatCard
                   icon={<CheckCircle2 className="h-4 w-4" />}
                   label="Completed"
@@ -400,34 +400,34 @@ const StatCard = memo(function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className="p-3 rounded-lg text-center transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
+      className="p-2 sm:p-3 rounded-lg text-center transition-all duration-200 hover:scale-[1.02] hover:shadow-sm"
       style={{
         backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`,
       }}
     >
       <div
-        className="inline-flex items-center justify-center w-8 h-8 rounded-full mb-2"
+        className="inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2"
         style={{
           backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`,
           color,
         }}
       >
-        {icon}
+        <span className="scale-75 sm:scale-100">{icon}</span>
       </div>
       <div
-        className="text-lg font-bold"
+        className="text-base sm:text-lg font-bold"
         style={{ color: 'var(--text-primary)' }}
       >
         {value}
       </div>
       <div
-        className="text-xs"
+        className="text-[10px] sm:text-xs"
         style={{ color: 'var(--text-tertiary)' }}
       >
         {subValue}
       </div>
       <div
-        className="text-[10px] uppercase tracking-wider mt-1"
+        className="text-[8px] sm:text-[10px] uppercase tracking-wider mt-0.5 sm:mt-1"
         style={{ color: 'var(--text-tertiary)' }}
       >
         {label}

@@ -3,12 +3,14 @@
  * Checklist of today's scheduled focus items with progress indicator
  */
 
-import { memo, useCallback, useMemo } from 'react';
-import { Clock, CheckCircle2, Circle, Target, GripVertical, X } from 'lucide-react';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Clock, CheckCircle2, Circle, Target, GripVertical, X, ChevronDown, ChevronUp, History, Play } from 'lucide-react';
+import { format, isToday as isTodayFn, isSameDay, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
 import { PriorityBadge } from './PriorityBadge';
+import { parseLocalDate } from '@/utils/date-utils';
 import type { FocusItem } from '../types';
 
 export interface TodaysPlanListProps {
@@ -26,6 +28,8 @@ export interface TodaysPlanListProps {
   disabled?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Selected date in YYYY-MM-DD format (null = today) */
+  selectedDate?: string | null;
 }
 
 interface PlanItemProps {
@@ -129,6 +133,17 @@ const PlanItem = memo(function PlanItem({
               Focus
             </span>
           )}
+          {/* Show Resume badge for paused items with accumulated time */}
+          {!item.isCurrentFocus && item.accumulatedMinutes > 0 && item.status === 'in_progress' && (
+            <span
+              className="inline-flex items-center gap-0.5 text-[10px] font-semibold uppercase"
+              style={{ color: 'var(--color-accent-orange-text)' }}
+              title={`${item.accumulatedMinutes} min tracked`}
+            >
+              <Play className="h-2.5 w-2.5" />
+              Resume
+            </span>
+          )}
         </div>
       </div>
 
@@ -174,22 +189,61 @@ export const TodaysPlanList = memo(function TodaysPlanList({
   onReorder,
   disabled = false,
   className,
+  selectedDate,
 }: TodaysPlanListProps) {
+  // Collapse state for completed items (open by default)
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  // Determine if viewing today or a past date
+  const { isViewingToday, headerTitle } = useMemo(() => {
+    if (!selectedDate) {
+      return { isViewingToday: true, headerTitle: "Today's Plan" };
+    }
+    const date = parseLocalDate(selectedDate);
+    if (isTodayFn(date)) {
+      return { isViewingToday: true, headerTitle: "Today's Plan" };
+    }
+    // Format the date for display
+    const formattedDate = format(date, 'MMM d, yyyy');
+    return { isViewingToday: false, headerTitle: formattedDate };
+  }, [selectedDate]);
+
+  // Split items into pending and completed
+  // For historical dates, only count as "completed" if completedAt is on that same day
+  const { pendingItems, completedItems } = useMemo(() => {
+    const targetDate = selectedDate ? parseLocalDate(selectedDate) : startOfDay(new Date());
+
+    const wasCompletedOnDate = (item: FocusItem): boolean => {
+      if (item.status !== 'completed') return false;
+      if (!item.completedAt) return false;
+      const completedDate = new Date(item.completedAt);
+      return isSameDay(completedDate, targetDate);
+    };
+
+    return {
+      pendingItems: items.filter((item) => !wasCompletedOnDate(item)),
+      completedItems: items.filter((item) => wasCompletedOnDate(item)),
+    };
+  }, [items, selectedDate]);
+
   // Calculate progress
   const { completedCount, totalCount, totalEstimatedMinutes } = useMemo(() => {
-    const completed = items.filter((item) => item.status === 'completed').length;
     const totalMinutes = items.reduce(
       (sum, item) => sum + (item.estimatedMinutes || 0),
       0
     );
     return {
-      completedCount: completed,
+      completedCount: completedItems.length,
       totalCount: items.length,
       totalEstimatedMinutes: totalMinutes,
     };
-  }, [items]);
+  }, [items, completedItems.length]);
 
   const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  const toggleShowCompleted = useCallback(() => {
+    setShowCompleted((prev) => !prev);
+  }, []);
 
   // Empty state
   if (items.length === 0) {
@@ -250,16 +304,24 @@ export const TodaysPlanList = memo(function TodaysPlanList({
     >
       {/* Header with progress */}
       <div
-        className="px-4 py-3 border-b flex-shrink-0"
+        className="px-3 sm:px-4 py-2 sm:py-3 border-b flex-shrink-0"
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center justify-between mb-2">
-          <h3
-            className="text-sm font-semibold"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Today's Plan
-          </h3>
+          <div className="flex items-center gap-2">
+            {!isViewingToday && (
+              <History
+                className="h-4 w-4"
+                style={{ color: 'var(--text-tertiary)' }}
+              />
+            )}
+            <h3
+              className="text-sm font-semibold"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {headerTitle}
+            </h3>
+          </div>
           <span
             className="text-xs font-medium"
             style={{ color: 'var(--text-secondary)' }}
@@ -300,8 +362,9 @@ export const TodaysPlanList = memo(function TodaysPlanList({
       </div>
 
       {/* Items list - scrollable */}
-      <div className="px-4 flex-1 overflow-y-auto thin-scrollbar">
-        {items.map((item) => (
+      <div className="px-3 sm:px-4 flex-1 overflow-y-auto thin-scrollbar">
+        {/* Pending items */}
+        {pendingItems.map((item) => (
           <PlanItem
             key={item.id}
             item={item}
@@ -312,6 +375,52 @@ export const TodaysPlanList = memo(function TodaysPlanList({
             showDragHandle={!!onReorder}
           />
         ))}
+
+        {/* Collapsible completed section */}
+        {completedItems.length > 0 && (
+          <div
+            className="mt-2 pt-2 border-t"
+            style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
+          >
+            <button
+              type="button"
+              onClick={toggleShowCompleted}
+              className={cn(
+                'flex items-center gap-2 w-full py-1.5 px-2 -mx-2 rounded-lg',
+                'transition-all duration-150',
+                'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)]'
+              )}
+            >
+              {showCompleted ? (
+                <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+              ) : (
+                <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+              )}
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                Completed ({completedItems.length})
+              </span>
+            </button>
+
+            {/* Expanded completed items */}
+            {showCompleted && (
+              <div className="mt-1">
+                {completedItems.map((item) => (
+                  <PlanItem
+                    key={item.id}
+                    item={item}
+                    onComplete={onComplete}
+                    onSetFocus={onSetFocus}
+                    disabled={disabled}
+                    showDragHandle={false}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* All complete message */}

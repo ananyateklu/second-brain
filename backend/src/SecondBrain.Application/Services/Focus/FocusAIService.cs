@@ -25,6 +25,7 @@ public class FocusAIService : IFocusAIService
     private readonly IRagService _ragService;
     private readonly IFocusItemRepository _focusRepository;
     private readonly IFocusSuggestionRepository _suggestionRepository;
+    private readonly IProgressSummaryRepository _progressSummaryRepository;
     private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly IUserRepository _userRepository;
     private readonly FocusAISettings _settings;
@@ -35,6 +36,7 @@ public class FocusAIService : IFocusAIService
         IRagService ragService,
         IFocusItemRepository focusRepository,
         IFocusSuggestionRepository suggestionRepository,
+        IProgressSummaryRepository progressSummaryRepository,
         IEmbeddingProviderFactory embeddingProviderFactory,
         IUserRepository userRepository,
         IOptions<FocusAISettings> settings,
@@ -44,6 +46,7 @@ public class FocusAIService : IFocusAIService
         _ragService = ragService;
         _focusRepository = focusRepository;
         _suggestionRepository = suggestionRepository;
+        _progressSummaryRepository = progressSummaryRepository;
         _embeddingProviderFactory = embeddingProviderFactory;
         _userRepository = userRepository;
         _settings = settings.Value;
@@ -160,10 +163,47 @@ public class FocusAIService : IFocusAIService
     public async Task<ProgressSummaryResponse> GetProgressSummaryAsync(
         string userId,
         string period = "today",
+        DateOnly? date = null,
+        bool forceRefresh = false,
         CancellationToken cancellationToken = default)
     {
-        // Calculate date range based on period
-        var (startDate, endDate) = GetDateRange(period);
+        // Use provided date or default to today
+        var summaryDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+        _logger.LogDebug(
+            "Getting progress summary. UserId: {UserId}, Date: {Date}, Period: {Period}, ForceRefresh: {ForceRefresh}",
+            userId, summaryDate, period, forceRefresh);
+
+        // Calculate date range based on period and the target date
+        var (startDate, endDate) = GetDateRangeForDate(summaryDate, period);
+
+        // Check for cached summary first (unless forceRefresh)
+        if (!forceRefresh)
+        {
+            var cached = await _progressSummaryRepository.GetByDateAndPeriodAsync(
+                userId, summaryDate, period, cancellationToken);
+
+            if (cached != null)
+            {
+                _logger.LogDebug("Returning cached summary from {GeneratedAt}", cached.GeneratedAt);
+
+                return new ProgressSummaryResponse(
+                    Period: cached.Period,
+                    StartDate: cached.PeriodStart.ToDateTime(TimeOnly.MinValue),
+                    EndDate: cached.PeriodEnd.ToDateTime(TimeOnly.MaxValue),
+                    Stats: new CompletionStats(
+                        TotalCompleted: cached.TotalCompleted,
+                        TotalMinutesTracked: cached.TotalMinutesTracked,
+                        CompletedByPriority: cached.CompletedByPriority,
+                        StreakDays: cached.StreakDays
+                    ),
+                    Summary: cached.Summary,
+                    Highlights: cached.Highlights,
+                    Encouragement: cached.Encouragement,
+                    GeneratedAt: cached.GeneratedAt
+                );
+            }
+        }
 
         // Get completed items in the period
         var completedItems = await _focusRepository.GetCompletedInRangeAsync(
@@ -186,7 +226,7 @@ public class FocusAIService : IFocusAIService
 
         if (!_settings.Enabled || completedList.Count == 0)
         {
-            return new ProgressSummaryResponse(
+            var noItemsResponse = new ProgressSummaryResponse(
                 Period: period,
                 StartDate: startDate,
                 EndDate: endDate,
@@ -198,6 +238,11 @@ public class FocusAIService : IFocusAIService
                 Encouragement: null,
                 GeneratedAt: DateTime.UtcNow
             );
+
+            // Cache even empty summaries to prevent repeated AI calls
+            await CacheSummaryAsync(userId, summaryDate, period, stats, noItemsResponse, null, null, startDate, endDate, cancellationToken);
+
+            return noItemsResponse;
         }
 
         try
@@ -209,7 +254,7 @@ public class FocusAIService : IFocusAIService
             var provider = GetEnabledProvider(effectiveSettings.Provider);
             if (provider == null)
             {
-                return new ProgressSummaryResponse(
+                var noProviderResponse = new ProgressSummaryResponse(
                     Period: period,
                     StartDate: startDate,
                     EndDate: endDate,
@@ -219,6 +264,9 @@ public class FocusAIService : IFocusAIService
                     Encouragement: null,
                     GeneratedAt: DateTime.UtcNow
                 );
+
+                await CacheSummaryAsync(userId, summaryDate, period, stats, noProviderResponse, null, null, startDate, endDate, cancellationToken);
+                return noProviderResponse;
             }
 
             // Build summary prompt
@@ -235,12 +283,13 @@ public class FocusAIService : IFocusAIService
                 Temperature = Math.Min(effectiveSettings.Temperature, 0.5f) // Lower temp for factual summaries
             };
 
+            _logger.LogDebug("Generating AI summary with provider {Provider}, model {Model}", effectiveSettings.Provider, effectiveSettings.Model);
             var response = await provider.GenerateCompletionAsync(request, cancellationToken);
 
             if (!response.Success)
             {
                 _logger.LogWarning("AI summary generation failed: {Error}", response.Error);
-                return new ProgressSummaryResponse(
+                var failedResponse = new ProgressSummaryResponse(
                     Period: period,
                     StartDate: startDate,
                     EndDate: endDate,
@@ -250,12 +299,15 @@ public class FocusAIService : IFocusAIService
                     Encouragement: null,
                     GeneratedAt: DateTime.UtcNow
                 );
+
+                // Don't cache failed AI responses - let user retry
+                return failedResponse;
             }
 
             // Parse summary response
             var (summary, highlights, encouragement) = ParseSummaryResponse(response.Content);
 
-            return new ProgressSummaryResponse(
+            var successResponse = new ProgressSummaryResponse(
                 Period: period,
                 StartDate: startDate,
                 EndDate: endDate,
@@ -265,6 +317,13 @@ public class FocusAIService : IFocusAIService
                 Encouragement: encouragement,
                 GeneratedAt: DateTime.UtcNow
             );
+
+            // Cache the successful summary
+            await CacheSummaryAsync(userId, summaryDate, period, stats, successResponse, effectiveSettings.Provider, effectiveSettings.Model, startDate, endDate, cancellationToken);
+
+            _logger.LogInformation("Generated and cached progress summary for user {UserId}, date {Date}", userId, summaryDate);
+
+            return successResponse;
         }
         catch (Exception ex)
         {
@@ -280,6 +339,91 @@ public class FocusAIService : IFocusAIService
                 GeneratedAt: DateTime.UtcNow
             );
         }
+    }
+
+    /// <inheritdoc />
+    public async Task InvalidateSummaryCacheAsync(
+        string userId,
+        DateOnly date,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogDebug("Invalidating progress summary cache. UserId: {UserId}, Date: {Date}", userId, date);
+
+        try
+        {
+            // Invalidate all periods for the date (today and week summaries)
+            await _progressSummaryRepository.InvalidateAsync(userId, date, null, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to invalidate summary cache for user {UserId}, date {Date}", userId, date);
+            // Don't throw - cache invalidation failure shouldn't block the operation
+        }
+    }
+
+    /// <summary>
+    /// Caches a progress summary to the database.
+    /// </summary>
+    private async Task CacheSummaryAsync(
+        string userId,
+        DateOnly summaryDate,
+        string period,
+        CompletionStats stats,
+        ProgressSummaryResponse response,
+        string? aiProvider,
+        string? aiModel,
+        DateTime periodStart,
+        DateTime periodEnd,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var entity = new ProgressSummary
+            {
+                UserId = userId,
+                SummaryDate = summaryDate,
+                Period = period,
+                TotalCompleted = stats.TotalCompleted,
+                TotalMinutesTracked = stats.TotalMinutesTracked,
+                P1Completed = stats.CompletedByPriority.GetValueOrDefault(1, 0),
+                P2Completed = stats.CompletedByPriority.GetValueOrDefault(2, 0),
+                P3Completed = stats.CompletedByPriority.GetValueOrDefault(3, 0),
+                StreakDays = stats.StreakDays,
+                Summary = response.Summary,
+                Highlights = response.Highlights,
+                Encouragement = response.Encouragement,
+                AiProvider = aiProvider,
+                AiModel = aiModel,
+                GeneratedAt = response.GeneratedAt,
+                PeriodStart = DateOnly.FromDateTime(periodStart),
+                PeriodEnd = DateOnly.FromDateTime(periodEnd)
+            };
+
+            await _progressSummaryRepository.UpsertAsync(entity, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to cache progress summary for user {UserId}, date {Date}", userId, summaryDate);
+            // Don't throw - caching failure shouldn't block returning the response
+        }
+    }
+
+    /// <summary>
+    /// Gets date range for a specific date and period (not just today).
+    /// Returns UTC DateTime values for PostgreSQL compatibility.
+    /// </summary>
+    private static (DateTime startDate, DateTime endDate) GetDateRangeForDate(DateOnly targetDate, string period)
+    {
+        // Convert to DateTime with UTC kind for PostgreSQL timestamptz compatibility
+        var date = DateTime.SpecifyKind(targetDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+        return period.ToLowerInvariant() switch
+        {
+            "today" => (date, date.AddDays(1).AddTicks(-1)),
+            "week" => (date.AddDays(-6), date.AddDays(1).AddTicks(-1)), // Last 7 days ending on target date
+            "month" => (date.AddDays(-29), date.AddDays(1).AddTicks(-1)), // Last 30 days ending on target date
+            _ => (date, date.AddDays(1).AddTicks(-1))
+        };
     }
 
     // ============================================

@@ -344,16 +344,23 @@ export function useIndexingStream() {
               const storeKey = vectorStore === 'PostgreSQL' ? 'postgreSQL' : 'pinecone';
 
               // Map IndexingStatsEvent to IndexStatsData
+              // IMPORTANT: Preserve certain values from old cache when synthetic finalStats
+              // may have incorrect fallbacks (e.g., totalNotes = job count, not system total)
               const newStatsData = {
                 totalEmbeddings: finalStats.indexedCount,
                 uniqueNotes: finalStats.indexedCount,
                 lastIndexedAt: finalStats.lastIndexedAt,
                 embeddingProvider: oldData[storeKey]?.embeddingProvider ?? '',
                 vectorStoreProvider: finalStats.vectorStore,
-                totalNotesInSystem: finalStats.totalNotes,
-                notIndexedCount: finalStats.pendingCount,
+                // Preserve totalNotesInSystem from cache - finalStats.totalNotes may be
+                // the job count (notes being indexed) not the actual system total
+                totalNotesInSystem: oldData[storeKey]?.totalNotesInSystem ?? finalStats.totalNotes,
+                // Preserve notIndexedCount from cache - finalStats.pendingCount is job-based
+                // (remaining in current job), not the actual "not indexed" system count
+                notIndexedCount: oldData[storeKey]?.notIndexedCount ?? finalStats.pendingCount,
                 staleNotesCount: 0, // After fresh indexing, no stale notes
-                dimensions: finalStats.dimensions,
+                // Preserve dimensions from cache if finalStats has 0 (no stats event received)
+                dimensions: finalStats.dimensions || oldData[storeKey]?.dimensions || 0,
               };
 
               return {

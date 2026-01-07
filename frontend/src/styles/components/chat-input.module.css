@@ -557,6 +557,281 @@
 }
 
 /* =============================================================================
+   Mobile Input Layout (Two-row design)
+   ============================================================================= */
+
+.mobileInputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+/* Noise texture overlay */
+.mobileInputContainer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: var(--glass-noise);
+  opacity: var(--glass-noise-opacity);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* Focus glow effect */
+.mobileInputContainer:focus-within {
+  border-color: color-mix(in srgb, var(--color-brand-500) 40%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 10%, transparent),
+    0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Top row - textarea */
+.mobileTextareaRow {
+  width: 100%;
+  z-index: 1;
+}
+
+/* Bottom row - buttons */
+.mobileButtonRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  z-index: 1;
+}
+
+/* Left button group */
+.mobileButtonLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Right button group */
+.mobileButtonRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grouped button pill (for attachments, model selector, etc) */
+.mobileButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.mobileButtonGroup > button {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  border-radius: 9999px;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileButtonGroup > button:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+/* Divider inside button group */
+.mobileButtonGroupDivider {
+  width: 1px;
+  height: 20px;
+  background: color-mix(in srgb, var(--text-primary) 15%, transparent);
+  margin: 0 2px;
+}
+
+/* Mobile button - circular style */
+.mobilePillButton {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mobilePillButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  color: var(--text-primary);
+}
+
+.mobilePillButton:active:not(:disabled) {
+  transform: scale(0.95);
+  background: color-mix(in srgb, var(--text-primary) 15%, transparent);
+}
+
+.mobilePillButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Mobile button - primary (send with content) */
+.mobilePillButtonPrimary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+}
+
+.mobilePillButtonPrimary:hover:not(:disabled) {
+  background: var(--btn-primary-hover-bg);
+}
+
+/* Mobile textarea styling */
+.mobileTextarea {
+  width: 100%;
+  padding: 0;
+  min-height: 24px;
+  max-height: 150px;
+  line-height: 1.5;
+  font-size: 16px; /* Prevent iOS zoom */
+  background: transparent !important;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--text-primary);
+}
+
+.mobileTextarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* =============================================================================
+   Overflow Menu Redesign
+   ============================================================================= */
+
+@keyframes overflowDropdownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes overflowDropdownExit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+}
+
+.overflowDropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  border-radius: 16px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+  box-shadow:
+    0 12px 40px -8px rgba(0, 0, 0, 0.25),
+    0 4px 12px -2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px color-mix(in srgb, var(--text-primary) 5%, transparent);
+  animation: overflowDropdownEnter 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  z-index: 50;
+}
+
+.overflowMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overflowMenuItem:hover {
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.overflowMenuItem:active {
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  transform: scale(0.98);
+}
+
+.overflowMenuItemActive {
+  color: var(--color-brand-400);
+  background: color-mix(in srgb, var(--color-brand-600) 15%, transparent);
+}
+
+.overflowMenuItemActive:hover {
+  background: color-mix(in srgb, var(--color-brand-600) 20%, transparent);
+}
+
+.overflowMenuIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: inherit;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.overflowMenuItem:hover .overflowMenuIcon {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+.overflowMenuItemActive .overflowMenuIcon {
+  background: color-mix(in srgb, var(--color-brand-600) 25%, transparent);
+}
+
+.overflowMenuLabel {
+  flex: 1;
+}
+
+.overflowMenuCheck {
+  color: var(--color-brand-400);
+  display: flex;
+  align-items: center;
+}
+
+/* =============================================================================
    Reduced Motion
    ============================================================================= */
 
@@ -604,6 +879,26 @@
 
   .timelineRevealAnimation {
     animation: none;
+  }
+
+  .mobileInputContainer {
+    transition: none;
+  }
+
+  .mobilePillButton {
+    transition: none;
+  }
+
+  .mobileButtonGroup > button {
+    transition: none;
+  }
+
+  .overflowDropdown {
+    animation: none;
+  }
+
+  .overflowMenuItem {
+    transition: none;
   }
 }
 

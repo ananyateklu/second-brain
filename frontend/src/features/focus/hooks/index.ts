@@ -12,6 +12,7 @@ export {
   useCreateFocusItem,
   useUpdateFocusItem,
   useSetCurrentFocus,
+  usePauseFocusItem,
   useCompleteFocusItem,
   useDeferFocusItem,
   useDeleteFocusItem,

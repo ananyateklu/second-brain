@@ -89,12 +89,25 @@ const saveChatSidebarVisible = (visible: boolean) => {
 };
 
 /**
+ * Check if the current viewport is mobile-sized
+ */
+const isMobileViewport = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth < 768; // md breakpoint
+};
+
+/**
  * Load directory sidebar visibility from localStorage
+ * Defaults to false on mobile, true on desktop
  */
 const loadDirectorySidebarVisible = (): boolean => {
   if (typeof window === 'undefined') return true;
+
+  // Always default to closed on mobile
+  if (isMobileViewport()) return false;
+
   const stored = localStorage.getItem(DIRECTORY_SIDEBAR_STORAGE_KEY);
-  return stored !== 'false'; // Default to true
+  return stored !== 'false'; // Default to true on desktop
 };
 
 /**

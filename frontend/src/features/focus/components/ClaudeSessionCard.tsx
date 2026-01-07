@@ -3,8 +3,8 @@
  * Displays Claude Code session data with option to import as focus item
  */
 
-import { memo, useCallback } from 'react';
-import { Code2, RefreshCw, Plus, Clipboard, X, Clock, GitBranch } from 'lucide-react';
+import { memo, useCallback, useState } from 'react';
+import { Code2, RefreshCw, Plus, Clipboard, X, Clock, GitBranch, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import type { ClaudeSessionData } from '../types/claude-session';
@@ -46,6 +46,15 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
   disabled = false,
   className,
 }: ClaudeSessionCardProps) {
+  // Collapse state - starts collapsed on mobile
+  const [isExpanded, setIsExpanded] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth >= 640 : true;
+  });
+
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(prev => !prev);
+  }, []);
+
   const handleImport = useCallback(() => {
     if (session) {
       onImportAsFocus(session);
@@ -89,14 +98,14 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
     );
   }
 
-  // No session loaded - show empty state with action
+  // No session loaded - show collapsible empty state with action
   if (!session) {
     return (
       <div
         className={cn(
-          'rounded-2xl border p-4 transition-all duration-200',
+          'rounded-2xl border transition-all duration-200',
           'hover:border-[var(--color-success)]',
-          'hover:shadow-md hover:-translate-y-0.5',
+          'hover:shadow-md',
           className
         )}
         style={{
@@ -104,52 +113,76 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
-        <div className="flex items-center gap-3 mb-3">
-          <span
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
-            }}
-          >
-            <Code2
-              className="h-4 w-4"
-              style={{ color: 'var(--color-success)' }}
-            />
-          </span>
-          <div>
-            <h3
-              className="text-sm font-semibold"
-              style={{ color: 'var(--text-primary)' }}
+        {/* Collapsible Header */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={toggleExpanded}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleExpanded();
+            }
+          }}
+          className="flex items-center justify-between p-3 sm:p-4 cursor-pointer hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="inline-flex items-center justify-center w-8 h-8 rounded-lg"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-success) 15%, transparent)',
+              }}
             >
-              Claude Code Session
-            </h3>
-            <p
-              className="text-xs"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              {isTauriMode ? 'No active session found' : 'Paste your session.md content'}
-            </p>
+              <Code2
+                className="h-4 w-4"
+                style={{ color: 'var(--color-success)' }}
+              />
+            </span>
+            <div>
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Claude Code Session
+              </h3>
+              <p
+                className="text-xs"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                {isTauriMode ? 'No active session found' : 'Paste your session.md content'}
+              </p>
+            </div>
           </div>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+          ) : (
+            <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+          )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={isTauriMode ? onRefresh : onOpenPasteModal}
-          className="w-full gap-2"
-        >
-          {isTauriMode ? (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Check for Session
-            </>
-          ) : (
-            <>
-              <Clipboard className="h-4 w-4" />
-              Paste Session Content
-            </>
-          )}
-        </Button>
+        {/* Collapsible Content */}
+        {isExpanded && (
+          <div className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={isTauriMode ? onRefresh : onOpenPasteModal}
+              className="w-full gap-2"
+            >
+              {isTauriMode ? (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Check for Session
+                </>
+              ) : (
+                <>
+                  <Clipboard className="h-4 w-4" />
+                  Paste Session Content
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -160,7 +193,7 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
       className={cn(
         'rounded-2xl border transition-all duration-200',
         'hover:border-[var(--color-success)]',
-        'hover:shadow-md hover:-translate-y-0.5',
+        'hover:shadow-md',
         className
       )}
       style={{
@@ -168,9 +201,22 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
-      {/* Header */}
+      {/* Collapsible Header */}
       <div
-        className="flex items-center justify-between p-4 border-b"
+        role="button"
+        tabIndex={0}
+        onClick={toggleExpanded}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleExpanded();
+          }
+        }}
+        className={cn(
+          'flex items-center justify-between p-3 sm:p-4 cursor-pointer',
+          'hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-colors',
+          isExpanded && 'border-b'
+        )}
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
       >
         <div className="flex items-center gap-3">
@@ -215,7 +261,10 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onRefresh}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRefresh();
+            }}
             className="h-8 w-8"
             title="Refresh"
           >
@@ -224,17 +273,26 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClear}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
             className="h-8 w-8"
             title="Clear"
           >
             <X className="h-4 w-4" />
           </Button>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+          ) : (
+            <ChevronDown className="h-4 w-4" style={{ color: 'var(--text-tertiary)' }} />
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4">
+      {/* Content - only show when expanded */}
+      {isExpanded && (
+      <div className="p-3 sm:p-4">
         {/* Focus/Title */}
         {session.title && (
           <h4
@@ -285,6 +343,7 @@ export const ClaudeSessionCard = memo(function ClaudeSessionCard({
           </Button>
         </div>
       </div>
+      )}
     </div>
   );
 });

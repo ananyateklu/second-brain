@@ -18,6 +18,8 @@ export function ChatInputActions({ children }: ChatInputActionsProps) {
 /**
  * Send Button Component
  * Main action button that sends the message or cancels streaming
+ *
+ * Uses mobilePillButton styling on mobile, with primary variant when content exists
  */
 export function ChatInputSendButton() {
   const {
@@ -31,18 +33,31 @@ export function ChatInputSendButton() {
     onCancel,
   } = useChatInputContext();
 
+  const isButtonDisabled = !isStreaming && (isLoading || isGeneratingImage || !hasContent || disabled);
+  const showPrimary = hasContent || isLoading || isGeneratingImage || isStreaming;
+
   return (
     <button
       onClick={isStreaming ? onCancel : onSend}
-      disabled={!isStreaming && (isLoading || isGeneratingImage || !hasContent || disabled)}
-      className={`${styles.sendButton} flex-shrink-0 w-10 h-10 p-0 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? styles.hasContent : ''
-        }`}
+      disabled={isButtonDisabled}
+      className={`
+        ${styles.sendButton}
+        ${styles.mobilePillButton}
+        ${showPrimary ? styles.mobilePillButtonPrimary : ''}
+        md:w-10 md:h-10
+        flex-shrink-0 p-0 rounded-full
+        flex items-center justify-center
+        transition-all duration-200
+        ${hasContent && !isStreaming && !isGeneratingImage ? styles.hasContent : ''}
+      `}
       style={{
-        backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',
-        color: isStreaming ? 'var(--error-text)' : 'var(--btn-primary-text)',
-        border: isStreaming
-          ? '1px solid var(--error-border)'
-          : '1px solid var(--btn-primary-border)',
+        backgroundColor: isStreaming
+          ? 'var(--color-error)'
+          : undefined,
+        color: isStreaming
+          ? 'white'
+          : undefined,
+        opacity: isButtonDisabled && !isLoading && !isGeneratingImage ? 0.5 : 1,
       }}
       title={
         isStreaming

@@ -225,6 +225,7 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
           value={searchQuery}
           onChange={handleSearchChange}
           placeholder="Search notes..."
+          data-testid="notes-search"
           className="px-4 py-2 my-1 rounded-xl border text-sm backdrop-blur-md transition-all focus:outline-none"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',

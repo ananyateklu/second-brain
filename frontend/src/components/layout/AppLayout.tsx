@@ -15,6 +15,7 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const titleBarHeight = useTitleBarHeight();
+  const isDashboardPage = location.pathname === '/';
   const isChatPage = location.pathname === '/chat';
   const isDirectoryPage = location.pathname === '/notes';
   const isVoicePage = location.pathname === '/voice';
@@ -40,19 +41,20 @@ export function AppLayout({ children }: AppLayoutProps) {
     // Width and margin
     classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
 
-    // Overflow handling - chat, voice, and github need overflow hidden for their internal scrolling
-    if (isChatPage || isVoicePage || isGitHubPage) {
-      classes.push('overflow-hidden');
+    // Overflow handling - pages with internal scrolling need overflow hidden
+    // min-h-0 is critical for flex children to shrink below their content size
+    if (isChatPage || isVoicePage || isGitHubPage || isDashboardPage) {
+      classes.push('overflow-hidden', 'min-h-0');
     } else {
       classes.push('overflow-y-auto', 'thin-scrollbar');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage]);
+  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage, isDashboardPage]);
 
   return (
     <div
-      className="h-screen overflow-hidden flex flex-col md:flex-row app-layout"
+      className="h-dvh overflow-hidden flex flex-col md:flex-row app-layout"
       style={{
         background: 'transparent',
         // Add padding for the title bar when in Tauri
@@ -66,7 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Sidebar />
 
       <div
-        className="flex-1 flex flex-col min-w-0 main-content-wrapper"
+        className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden main-content-wrapper"
         style={{
           // GPU acceleration for the main content area
           transform: 'translateZ(0)',

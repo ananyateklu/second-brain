@@ -77,6 +77,7 @@ export { ChatMentionsDropdown as Mentions } from './ChatMentionsDropdown';
 export { ChatImageSettingsBar as ImageSettings } from './ChatImageSettingsBar';
 export { ChatInputMetrics as Metrics } from './ChatInputMetrics';
 export { ChatLightbox as Lightbox } from './ChatLightbox';
+export { ChatInputOverflowMenu as OverflowMenu } from './ChatInputOverflowMenu';
 
 // Default export as namespace object for convenient import
 import { ChatInputRoot } from './ChatInputRoot';
@@ -99,6 +100,7 @@ import { ChatMentionsDropdown } from './ChatMentionsDropdown';
 import { ChatImageSettingsBar } from './ChatImageSettingsBar';
 import { ChatInputMetrics } from './ChatInputMetrics';
 import { ChatLightbox } from './ChatLightbox';
+import { ChatInputOverflowMenu } from './ChatInputOverflowMenu';
 
 const ChatInput = {
   Root: ChatInputRoot,
@@ -125,6 +127,7 @@ const ChatInput = {
   ImageSettings: ChatImageSettingsBar,
   Metrics: ChatInputMetrics,
   Lightbox: ChatLightbox,
+  OverflowMenu: ChatInputOverflowMenu,
 };
 
 export default ChatInput;

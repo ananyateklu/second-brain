@@ -58,6 +58,7 @@ export const NotesPageControls = ({ autoFocus = true }: NotesPageControlsProps) 
         value={searchQuery}
         onChange={handleSearchChange}
         placeholder="Search notes..."
+        data-testid="notes-search"
         className="px-4 py-2 rounded-xl border text-sm transition-all focus:outline-none"
         style={{
           backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',

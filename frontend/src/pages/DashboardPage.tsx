@@ -3,14 +3,17 @@
  * Focus-driven productivity dashboard for managing daily tasks and priorities
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useState, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
+import { isToday as isTodayFn } from 'date-fns';
 import { Button } from '../components/ui/Button';
+import { useBoundStore } from '../store/bound-store';
+import { parseLocalDate } from '../utils/date-utils';
 import {
   useTodayPlan,
   useBacklog,
   useCompleteFocusItem,
+  usePauseFocusItem,
   useSetCurrentFocus,
   useDeleteFocusItem,
   useUpdateFocusItem,
@@ -34,16 +37,23 @@ import { focusService } from '../services/focus.service';
 import type { PersistedFocusSuggestion, SummaryPeriod } from '../features/focus/types';
 
 export const DashboardPage = memo(function DashboardPage() {
-  const titleBarHeight = useTitleBarHeight();
+  // Get selected date from store
+  const selectedFocusDate = useBoundStore((state) => state.selectedFocusDate);
 
-  // Fetch today's plan
+  // Determine if viewing today or a past date
+  const isViewingToday = useMemo(() => {
+    if (!selectedFocusDate) return true;
+    return isTodayFn(parseLocalDate(selectedFocusDate));
+  }, [selectedFocusDate]);
+
+  // Fetch today's plan (or selected date's plan)
   const {
     currentFocus,
     scheduledItems,
     isLoading: isTodayPlanLoading,
     error: todayPlanError,
     refetch: refetchTodayPlan,
-  } = useTodayPlan();
+  } = useTodayPlan({ date: selectedFocusDate ?? undefined });
 
   // Fetch backlog
   const {
@@ -56,6 +66,7 @@ export const DashboardPage = memo(function DashboardPage() {
 
   // Mutations
   const { mutate: completeFocusItem, isPending: isCompleting } = useCompleteFocusItem();
+  const { mutate: pauseFocusItem, isPending: isPausing } = usePauseFocusItem();
   const { mutate: setCurrentFocus, isPending: isSettingFocus } = useSetCurrentFocus();
   const { mutate: deleteFocusItem, isPending: isDeleting } = useDeleteFocusItem();
   const { mutate: updateFocusItem, isPending: isUpdating } = useUpdateFocusItem();
@@ -84,9 +95,10 @@ export const DashboardPage = memo(function DashboardPage() {
     isLoading: isSummaryLoading,
     isFetching: isSummaryFetching,
     error: summaryError,
-    refetch: refetchSummary,
+    refreshSummary,
   } = useProgressSummary({
     period: summaryPeriod,
+    date: selectedFocusDate ?? undefined,
   });
 
   // Claude Code Session Integration
@@ -101,7 +113,7 @@ export const DashboardPage = memo(function DashboardPage() {
   } = useClaudeSession();
 
   // Combined mutation state
-  const isMutating = isCompleting || isSettingFocus || isDeleting || isUpdating || isCreating;
+  const isMutating = isCompleting || isPausing || isSettingFocus || isDeleting || isUpdating || isCreating;
 
   // Handlers
   const handleComplete = useCallback(
@@ -113,10 +125,18 @@ export const DashboardPage = memo(function DashboardPage() {
 
   const handleClearFocus = useCallback(
     (id: string) => {
-      // Update item to no longer be current focus
+      // Update item to no longer be current focus (discards time)
       updateFocusItem({ id, data: { isCurrentFocus: false } });
     },
     [updateFocusItem]
+  );
+
+  const handlePause = useCallback(
+    (id: string) => {
+      // Pause focus, saving accumulated time
+      pauseFocusItem(id);
+    },
+    [pauseFocusItem]
   );
 
   const handleSetFocus = useCallback(
@@ -207,8 +227,8 @@ export const DashboardPage = memo(function DashboardPage() {
   }, []);
 
   const handleRefreshSummary = useCallback(() => {
-    void refetchSummary();
-  }, [refetchSummary]);
+    void refreshSummary();
+  }, [refreshSummary]);
 
   // Claude Session Handlers
   const handleImportClaudeSession = useCallback(
@@ -238,9 +258,6 @@ export const DashboardPage = memo(function DashboardPage() {
     [setClaudeSessionFromPaste]
   );
 
-  // Calculate container height - accounts for title bar and header
-  const containerHeight = `calc(100vh - ${titleBarHeight}px - 113px)`;
-
   // Loading state
   const isLoading = isTodayPlanLoading || isBacklogLoading;
 
@@ -249,10 +266,7 @@ export const DashboardPage = memo(function DashboardPage() {
 
   if (hasError) {
     return (
-      <div
-        className="flex flex-col items-center justify-center p-8"
-        style={{ height: containerHeight }}
-      >
+      <div className="flex flex-col items-center justify-center p-8 h-full">
         <div
           className="flex flex-col items-center text-center max-w-md p-8 rounded-2xl"
           style={{
@@ -293,28 +307,23 @@ export const DashboardPage = memo(function DashboardPage() {
   }
 
   return (
-    <div
-      className="flex flex-col overflow-hidden"
-      style={{
-        height: containerHeight,
-        maxHeight: containerHeight,
-      }}
-    >
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* 3-Column Kanban Layout */}
       {isLoading ? (
-        <div className="flex-1 p-4">
+        <div className="flex-1 py-4">
           <FocusSkeleton />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-3 sm:gap-4 py-3 sm:py-4 overflow-y-auto lg:overflow-hidden overscroll-y-contain scrollbar-none lg:thin-scrollbar">
           {/* Left Column - Today's Plan + Backlog (mobile: 2nd) */}
-          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 pt-1">
+          <div className="order-2 lg:order-1 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-3 sm:gap-4 lg:h-full lg:overflow-y-auto lg:overscroll-y-contain lg:thin-scrollbar">
             <TodaysPlanList
               items={scheduledItems}
               onComplete={handlePlanItemComplete}
               onSetFocus={handleSetFocus}
-              onRemove={handleRemoveFromToday}
-              disabled={isMutating}
+              onRemove={isViewingToday ? handleRemoveFromToday : undefined}
+              disabled={isMutating || !isViewingToday}
+              selectedDate={selectedFocusDate}
               className="flex-1 min-h-0"
             />
             <BacklogSection
@@ -328,10 +337,11 @@ export const DashboardPage = memo(function DashboardPage() {
           </div>
 
           {/* Center Column - Current Focus + Progress (mobile: 1st) */}
-          <div className="order-1 lg:order-2 flex-1 min-w-0 flex flex-col gap-4 min-h-0 pt-1 lg:overflow-y-auto thin-scrollbar">
+          <div className="order-1 lg:order-2 flex-1 min-w-0 flex flex-col gap-3 sm:gap-4 lg:h-full lg:overflow-y-auto lg:overscroll-y-contain lg:thin-scrollbar">
             <CurrentFocusCard
               item={currentFocus}
               onComplete={handleComplete}
+              onPause={handlePause}
               onClearFocus={handleClearFocus}
               disabled={isMutating}
             />
@@ -350,7 +360,7 @@ export const DashboardPage = memo(function DashboardPage() {
           </div>
 
           {/* Right Column - Claude Session + AI Suggestions (mobile: 3rd) */}
-          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-4 min-h-0 pt-1 lg:overflow-y-auto thin-scrollbar">
+          <div className="order-3 w-full lg:w-80 xl:w-96 lg:flex-shrink-0 flex flex-col gap-3 sm:gap-4 lg:h-full lg:overflow-y-auto lg:overscroll-y-contain lg:thin-scrollbar">
             {/* Claude Code Session Card */}
             <ClaudeSessionCard
               session={claudeSession}

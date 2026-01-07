@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback } from 'react';
-import { Target, Check, X, Clock, Sparkles } from 'lucide-react';
+import { Target, Check, X, Clock, Sparkles, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { PriorityBadge } from './PriorityBadge';
@@ -16,7 +16,9 @@ export interface CurrentFocusCardProps {
   item: FocusItem | null;
   /** Called when item is completed */
   onComplete: (id: string) => void;
-  /** Called when focus is cleared */
+  /** Called when focus timer is paused (saves accumulated time) */
+  onPause: (id: string) => void;
+  /** Called when focus is cleared (discards time) */
   onClearFocus: (id: string) => void;
   /** Whether actions are disabled */
   disabled?: boolean;
@@ -31,6 +33,7 @@ export interface CurrentFocusCardProps {
 export const CurrentFocusCard = memo(function CurrentFocusCard({
   item,
   onComplete,
+  onPause,
   onClearFocus,
   disabled = false,
   className,
@@ -40,6 +43,12 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
       onComplete(item.id);
     }
   }, [item, onComplete]);
+
+  const handlePause = useCallback(() => {
+    if (item) {
+      onPause(item.id);
+    }
+  }, [item, onPause]);
 
   const handleClearFocus = useCallback(() => {
     if (item) {
@@ -52,7 +61,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
     return (
       <div
         className={cn(
-          'relative rounded-2xl border-2 border-dashed p-10 text-center min-h-[200px] flex flex-col items-center justify-center',
+          'relative rounded-xl sm:rounded-2xl border-2 border-dashed p-4 sm:p-10 text-center min-h-[100px] sm:min-h-[200px] flex flex-col items-center justify-center',
           'transition-all duration-200',
           className
         )}
@@ -62,28 +71,27 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
         }}
       >
         <div
-          className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-5"
+          className="inline-flex items-center justify-center w-10 h-10 sm:w-20 sm:h-20 rounded-full mb-2 sm:mb-5"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
           }}
         >
           <Target
-            className="h-10 w-10"
+            className="h-5 w-5 sm:h-10 sm:w-10"
             style={{ color: 'var(--color-primary)' }}
           />
         </div>
         <h3
-          className="text-xl font-semibold mb-2"
+          className="text-base sm:text-xl font-semibold mb-1 sm:mb-2"
           style={{ color: 'var(--text-primary)' }}
         >
           No Current Focus
         </h3>
         <p
-          className="text-sm max-w-md mx-auto"
+          className="text-xs sm:text-sm max-w-md mx-auto"
           style={{ color: 'var(--text-secondary)' }}
         >
           Select an item from Today's Plan to set it as your current focus.
-          This helps you concentrate on one thing at a time.
         </p>
       </div>
     );
@@ -92,9 +100,10 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
   return (
     <div
       className={cn(
-        'relative rounded-2xl border overflow-hidden min-h-[180px]',
+        'relative rounded-xl sm:rounded-2xl border overflow-hidden',
         'transition-all duration-200',
-        'hover:shadow-lg hover:-translate-y-0.5',
+        'focus-card-glow',
+        'sm:mt-1 sm:hover:-translate-y-1',
         disabled && 'pointer-events-none opacity-50',
         className
       )}
@@ -110,21 +119,83 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
         }}
       />
 
-      {/* Decorative elements */}
+      {/* Decorative elements - hidden on mobile */}
       <div
-        className="absolute top-0 right-0 w-48 h-48 opacity-[0.08] rounded-full -translate-y-1/2 translate-x-1/2"
+        className="hidden sm:block absolute top-0 right-0 w-48 h-48 opacity-[0.08] rounded-full -translate-y-1/2 translate-x-1/2"
         style={{
           background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
         }}
       />
       <div
-        className="absolute bottom-0 left-0 w-32 h-32 opacity-[0.05] rounded-full translate-y-1/2 -translate-x-1/2"
+        className="hidden sm:block absolute bottom-0 left-0 w-32 h-32 opacity-[0.05] rounded-full translate-y-1/2 -translate-x-1/2"
         style={{
           background: 'radial-gradient(circle, var(--color-primary) 0%, transparent 70%)',
         }}
       />
 
-      <div className="relative p-8">
+      {/* Mobile: Centered timer-focused layout */}
+      <div className="relative p-4 sm:hidden">
+        <div className="flex flex-col items-center text-center">
+          {/* Timer as hero element */}
+          <FocusTimer
+            focusStartedAt={item.focusStartedAt}
+            accumulatedMinutes={item.accumulatedMinutes}
+            className="mb-3"
+          />
+
+          {/* Title with priority */}
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <PriorityBadge priority={item.priority} size="sm" />
+            <h2
+              className="text-sm font-semibold line-clamp-1"
+              style={{ color: 'var(--text-primary)' }}
+            >
+              {item.title}
+            </h2>
+          </div>
+
+          {/* Actions - full width buttons */}
+          <div className="flex items-center justify-center gap-2 w-full">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleComplete}
+              disabled={disabled}
+              className="gap-1.5 text-xs flex-1 max-w-[140px]"
+            >
+              <Check className="h-3.5 w-3.5" />
+              Complete
+            </Button>
+            <button
+              onClick={handlePause}
+              disabled={disabled}
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--color-accent-orange) 15%, transparent)',
+                color: 'var(--color-accent-orange-text)',
+              }}
+              title="Pause Timer"
+            >
+              <Pause className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleClearFocus}
+              disabled={disabled}
+              className="p-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                color: 'var(--text-secondary)',
+              }}
+              title="Clear Focus"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: Full layout */}
+      <div className="relative p-8 hidden sm:block">
         {/* Label */}
         <div className="flex items-center gap-3 mb-5">
           <span
@@ -142,7 +213,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
 
         {/* Title */}
         <h2
-          className="text-3xl font-bold mb-3"
+          className="text-2xl lg:text-3xl font-bold mb-3"
           style={{ color: 'var(--text-primary)' }}
         >
           {item.title}
@@ -158,7 +229,7 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
           </p>
         )}
 
-        {/* Timer - prominent display */}
+        {/* Timer */}
         <div className="mb-5">
           <FocusTimer
             focusStartedAt={item.focusStartedAt}
@@ -211,6 +282,16 @@ export const CurrentFocusCard = memo(function CurrentFocusCard({
           >
             <Check className="h-4 w-4" />
             Mark Complete
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={handlePause}
+            disabled={disabled}
+            className="gap-2 text-[var(--color-accent-orange-text)] hover:bg-[color-mix(in_srgb,var(--color-accent-orange)_15%,transparent)] transition-all duration-200"
+          >
+            <Pause className="h-4 w-4" />
+            Pause
           </Button>
           <Button
             variant="ghost"

@@ -69,16 +69,33 @@ public class SqlFocusItemRepository : IFocusItemRepository
     {
         try
         {
-            _logger.LogDebug("Retrieving focus items for date. UserId: {UserId}, Date: {Date}", userId, date);
+            _logger.LogDebug("Retrieving focus items for date (including overdue). UserId: {UserId}, Date: {Date}", userId, date);
+
+            // Calculate today's date boundaries for checking completedAt (must be UTC for PostgreSQL)
+            var todayStart = DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            var todayEnd = DateTime.SpecifyKind(date.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
+            // Include:
+            // 1. Items scheduled for today (all statuses)
+            // 2. Overdue items (past dates) that are NOT completed
+            // 3. Items completed TODAY (regardless of original scheduled date)
             var items = await _context.FocusItems
                 .AsNoTracking()
-                .Where(f => f.UserId == userId && f.ScheduledDate == date)
+                .Where(f => f.UserId == userId
+                    && f.ScheduledDate != null
+                    && f.ScheduledDate <= date
+                    && (
+                        f.ScheduledDate == date  // Today's scheduled items
+                        || f.Status != "completed"  // Overdue incomplete items
+                        || (f.CompletedAt != null && f.CompletedAt >= todayStart && f.CompletedAt < todayEnd)  // Completed today
+                    ))
                 .Include(f => f.Note)
                 .OrderByDescending(f => f.IsCurrentFocus)
+                .ThenBy(f => f.ScheduledDate) // Show overdue items first (oldest first)
                 .ThenBy(f => f.Priority)
                 .ThenBy(f => f.SortOrder)
                 .ToListAsync(cancellationToken);
-            _logger.LogDebug("Retrieved {Count} focus items for date", items.Count);
+            _logger.LogDebug("Retrieved {Count} focus items for date (including overdue)", items.Count);
             return items;
         }
         catch (Exception ex)
@@ -416,10 +433,29 @@ public class SqlFocusItemRepository : IFocusItemRepository
                 query = query.Where(f => f.ScheduledDate == date.Value);
             }
 
-            var counts = await query
-                .GroupBy(f => f.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(g => g.Status, g => g.Count, cancellationToken);
+            // Get items and calculate effective status for the date
+            var items = await query.ToListAsync(cancellationToken);
+
+            // For completed items, only count as "completed" if completedAt is on the same date
+            // Otherwise, treat them as "pending" for that historical date
+            var counts = new Dictionary<string, int>();
+            foreach (var item in items)
+            {
+                string effectiveStatus = item.Status;
+
+                // If viewing a specific date and item is completed, check if it was completed ON that date
+                if (date.HasValue && item.Status == "completed" && item.CompletedAt.HasValue)
+                {
+                    var completedDate = DateOnly.FromDateTime(item.CompletedAt.Value);
+                    if (completedDate != date.Value)
+                    {
+                        // Item wasn't completed on this date - treat as pending
+                        effectiveStatus = "pending";
+                    }
+                }
+
+                counts[effectiveStatus] = counts.GetValueOrDefault(effectiveStatus, 0) + 1;
+            }
 
             return counts;
         }
@@ -454,6 +490,37 @@ public class SqlFocusItemRepository : IFocusItemRepository
         {
             _logger.LogError(ex, "Error retrieving active focus items. UserId: {UserId}", userId);
             throw new RepositoryException("Failed to retrieve active focus items", ex);
+        }
+    }
+
+    public async Task<int> GetCompletedOnDateCountAsync(
+        string userId,
+        DateOnly date,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogDebug("Getting completed on date count. UserId: {UserId}, Date: {Date}", userId, date);
+
+            // Count items where completed_at falls on the specified date
+            var startOfDay = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endOfDay = date.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+            var count = await _context.FocusItems
+                .AsNoTracking()
+                .Where(f => f.UserId == userId
+                    && f.Status == "completed"
+                    && f.CompletedAt >= startOfDay
+                    && f.CompletedAt <= endOfDay)
+                .CountAsync(cancellationToken);
+
+            _logger.LogDebug("Found {Count} items completed on {Date}", count, date);
+            return count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting completed on date count. UserId: {UserId}, Date: {Date}", userId, date);
+            throw new RepositoryException("Failed to get completed on date count", ex);
         }
     }
 }

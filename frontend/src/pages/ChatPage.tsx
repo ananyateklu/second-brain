@@ -6,7 +6,7 @@
  * Enhanced with granular Suspense boundaries for better loading UX
  */
 
-import { useEffect, useRef, Suspense, useCallback, useMemo, useState } from 'react';
+import { useEffect, useRef, Suspense, useCallback, useMemo, useState, useLayoutEffect } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatMessageList } from '../features/chat/components/ChatMessageList';
@@ -170,6 +170,47 @@ export function ChatPage() {
     setIsSelectionMode(false);
     setSelectedConversationIds(new Set());
   }, []);
+
+  // Track if we're on mobile for drawer behavior
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  // Update mobile state on resize
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle escape key to close mobile sidebar
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobile && chatSidebarVisible) {
+        toggleChatSidebar();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isMobile, chatSidebarVisible, toggleChatSidebar]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && chatSidebarVisible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, chatSidebarVisible]);
 
   // Start session when conversation is selected (PostgreSQL 18 Temporal Features)
   useEffect(() => {
@@ -347,8 +388,49 @@ export function ChatPage() {
         height: '100%',
       }}
     >
-      {/* Sidebar with Suspense boundary for independent loading */}
-      {chatSidebarVisible && (
+      {/* Mobile Sidebar Overlay - Backdrop */}
+      {isMobile && chatSidebarVisible && (
+        <div
+          className="fixed inset-0 z-50 transition-opacity duration-300"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={toggleChatSidebar}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer - z-[60] to be above overlay */}
+      {isMobile && (
+        <aside
+          className={`fixed top-0 left-0 bottom-0 z-[60] w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col backdrop-blur-xl ${
+            chatSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            paddingTop: 'env(safe-area-inset-top)',
+          }}
+        >
+          <Suspense fallback={<ChatSidebarSkeleton />}>
+            <ChatSidebar
+              conversations={displayConversations}
+              selectedConversationId={conversationId}
+              isNewChat={isNewChat}
+              onSelectConversation={handleSelectConversation}
+              onDeleteConversation={handleDeleteConversation}
+              isSelectionMode={isSelectionMode}
+              selectedIds={selectedConversationIds}
+              onToggleSelection={handleToggleConversationSelection}
+              onClose={toggleChatSidebar}
+            />
+          </Suspense>
+        </aside>
+      )}
+
+      {/* Desktop Sidebar - Inline */}
+      {!isMobile && chatSidebarVisible && (
         <Suspense fallback={<ChatSidebarSkeleton />}>
           <ChatSidebar
             conversations={displayConversations}

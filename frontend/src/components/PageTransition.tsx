@@ -151,7 +151,7 @@ export function PageTransition({
 
   return (
     <div
-      className="page-transition-container w-full h-full"
+      className="page-transition-container w-full h-full min-h-0"
       style={getTransitionStyles()}
     >
       {displayChildren}

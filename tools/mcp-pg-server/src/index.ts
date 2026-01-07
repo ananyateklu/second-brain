@@ -12,24 +12,36 @@ import { distance } from "fastest-levenshtein";
 
 const { Pool } = pg;
 
-// Configuration from environment or command line
-const getDsn = (): string => {
-  const dsnArg = process.argv.find((arg) => arg.startsWith("--dsn="));
-  if (dsnArg) {
-    return dsnArg.split("=").slice(1).join("=");
-  }
-  return (
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5432/secondbrain"
-  );
+// Database target type
+type DatabaseTarget = "docker" | "desktop";
+
+// Configuration from environment variables
+const getDsns = (): Record<DatabaseTarget, string> => ({
+  docker:
+    process.env.DOCKER_DSN ||
+    "postgresql://postgres:postgres@localhost:5432/secondbrain?sslmode=disable",
+  desktop:
+    process.env.DESKTOP_DSN ||
+    "postgresql://secondbrain@localhost:5433/secondbrain?sslmode=disable",
+});
+
+// Create connection pools for both databases
+const dsns = getDsns();
+const pools: Record<DatabaseTarget, pg.Pool> = {
+  docker: new Pool({
+    connectionString: dsns.docker,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  }),
+  desktop: new Pool({
+    connectionString: dsns.desktop,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  }),
 };
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: getDsn(),
-  max: 10,
-  idleTimeoutMillis: 30000,
-});
+// Helper to get the appropriate pool
+const getPool = (db: DatabaseTarget = "docker"): pg.Pool => pools[db];
 
 // Tables with soft delete (is_deleted column) - verified from database
 const SOFT_DELETE_TABLES = new Set([
@@ -39,9 +51,11 @@ const SOFT_DELETE_TABLES = new Set([
   "focus_suggestions",
 ]);
 
-// Cache for table names (for fuzzy matching)
-let tableNameCache: string[] = [];
-let cacheTimestamp = 0;
+// Cache for table names (for fuzzy matching) - per database
+const tableNameCaches: Record<DatabaseTarget, { tables: string[]; timestamp: number }> = {
+  docker: { tables: [], timestamp: 0 },
+  desktop: { tables: [], timestamp: 0 },
+};
 const CACHE_TTL = 60000; // 1 minute
 
 // Common abbreviations for better fuzzy matching
@@ -70,15 +84,16 @@ const ABBREVIATIONS: Record<string, string[]> = {
 }
 
 /**
- * Refresh table name cache for fuzzy matching
+ * Refresh table name cache for fuzzy matching (per-database)
  */
-async function refreshTableCache(): Promise<string[]> {
+async function refreshTableCache(db: DatabaseTarget = "docker"): Promise<string[]> {
+  const cache = tableNameCaches[db];
   const now = Date.now();
-  if (tableNameCache.length > 0 && now - cacheTimestamp < CACHE_TTL) {
-    return tableNameCache;
+  if (cache.tables.length > 0 && now - cache.timestamp < CACHE_TTL) {
+    return cache.tables;
   }
 
-  const result = await pool.query(`
+  const result = await pools[db].query(`
     SELECT table_name
     FROM information_schema.tables
     WHERE table_schema = 'public'
@@ -86,9 +101,9 @@ async function refreshTableCache(): Promise<string[]> {
     ORDER BY table_name
   `);
 
-  tableNameCache = result.rows.map((r) => r.table_name);
-  cacheTimestamp = now;
-  return tableNameCache;
+  cache.tables = result.rows.map((r) => r.table_name);
+  cache.timestamp = now;
+  return cache.tables;
 }
 
 /**
@@ -224,7 +239,8 @@ function addLimit(sql: string, limit: number): string {
  * Handles parameterized queries by replacing $N with NULL
  */
 async function validateSql(
-  sql: string
+  sql: string,
+  db: DatabaseTarget = "docker"
 ): Promise<{ valid: boolean; error?: string; note?: string }> {
   try {
     // Replace $1, $2, etc. with NULL for syntax validation
@@ -233,7 +249,7 @@ async function validateSql(
 
     // Use EXPLAIN to validate without executing
     const explainSql = `EXPLAIN ${sanitizedSql.replace(/;$/, "")}`;
-    await pool.query(explainSql);
+    await pools[db].query(explainSql);
 
     return {
       valid: true,
@@ -253,13 +269,14 @@ async function validateSql(
  * Extract table name from error message and suggest alternatives
  */
 async function enhanceErrorWithSuggestions(
-  error: string
+  error: string,
+  db: DatabaseTarget = "docker"
 ): Promise<{ error: string; suggestions?: string[] }> {
   // Match "relation "xxx" does not exist" pattern
   const match = error.match(/relation "([^"]+)" does not exist/);
   if (match) {
     const badTable = match[1];
-    const tables = await refreshTableCache();
+    const tables = await refreshTableCache(db);
     const suggestions = findSimilarTables(badTable, tables);
 
     if (suggestions.length > 0) {
@@ -272,6 +289,14 @@ async function enhanceErrorWithSuggestions(
   return { error };
 }
 
+// Shared database parameter for all tools
+const databaseParamSchema = {
+  type: "string",
+  enum: ["docker", "desktop"],
+  description: "Target database: 'docker' (port 5432) or 'desktop' (port 5433). Default: docker",
+  default: "docker",
+};
+
 // Define MCP tools
 const tools: Tool[] = [
   {
@@ -279,6 +304,7 @@ const tools: Tool[] = [
     description: `Execute SQL queries on the PostgreSQL database with enhanced safety features.
 
 Features:
+- database: Select target database ('docker' or 'desktop')
 - auto_limit: Automatically adds LIMIT to SELECT queries (default: 100, set to 0 to disable)
 - validate_only: Validate SQL syntax without executing (uses EXPLAIN)
 - dry_run: For INSERT/UPDATE/DELETE, shows affected rows without committing
@@ -294,6 +320,7 @@ ${Array.from(SOFT_DELETE_TABLES).join(", ")}`,
           type: "string",
           description: "SQL query to execute (multiple statements separated by ;)",
         },
+        database: databaseParamSchema,
         auto_limit: {
           type: "number",
           description:
@@ -327,6 +354,7 @@ ${Array.from(SOFT_DELETE_TABLES).join(", ")}`,
     description: `Search and list database objects with enhanced filtering and fuzzy matching.
 
 Features:
+- database: Select target database ('docker' or 'desktop')
 - include_deleted: For soft-delete tables, include deleted records in counts (default: false)
 - Fuzzy table name matching with "Did you mean?" suggestions
 - Pattern supports SQL LIKE wildcards (% = any chars, _ = one char)
@@ -340,6 +368,7 @@ Object types: schema, table, column, procedure, index`,
           enum: ["schema", "table", "column", "procedure", "index"],
           description: "Type of database object to search",
         },
+        database: databaseParamSchema,
         pattern: {
           type: "string",
           description: "LIKE pattern to filter results (% = any chars, _ = one char). Default: %",
@@ -400,6 +429,7 @@ Object types: schema, table, column, procedure, index`,
           type: "string",
           description: "Table name to find suggestions for",
         },
+        database: databaseParamSchema,
         max_suggestions: {
           type: "number",
           description: "Maximum number of suggestions (default: 5)",
@@ -426,6 +456,7 @@ Useful for understanding table relationships and joins.`,
           type: "string",
           description: "Filter to show foreign keys FROM or TO this table. If omitted, shows all.",
         },
+        database: databaseParamSchema,
         direction: {
           type: "string",
           enum: ["from", "to", "both"],
@@ -454,6 +485,7 @@ Useful for capacity planning and identifying large tables.`,
           type: "string",
           description: "Specific table name (optional). If omitted, shows all tables.",
         },
+        database: databaseParamSchema,
         order_by: {
           type: "string",
           enum: ["size", "name", "rows"],
@@ -486,6 +518,7 @@ Groups results by table for easier reading.`,
           type: "string",
           description: "LIKE pattern for column names (e.g., '%_at', '%_id', '%embedding%')",
         },
+        database: databaseParamSchema,
         type_filter: {
           type: "string",
           description: "Filter by data type (e.g., 'jsonb', 'vector', 'timestamp', 'uuid')",
@@ -517,19 +550,22 @@ function isWriteQuery(sql: string): boolean {
 // Tool handlers
 async function handleExecuteSql(args: {
   sql: string;
+  database?: DatabaseTarget;
   auto_limit?: number;
   validate_only?: boolean;
   dry_run?: boolean;
   explain?: boolean;
 }): Promise<object> {
-  const { sql, auto_limit = 100, validate_only = false, dry_run = false, explain = false } = args;
+  const { sql, database = "docker", auto_limit = 100, validate_only = false, dry_run = false, explain = false } = args;
+  const pool = getPool(database);
 
   // Validation only mode
   if (validate_only) {
-    const validation = await validateSql(sql);
+    const validation = await validateSql(sql, database);
     return {
       success: true,
       data: {
+        database,
         validation_result: validation.valid ? "valid" : "invalid",
         ...(validation.error && { error: validation.error }),
         ...(validation.note && { note: validation.note }),
@@ -552,6 +588,7 @@ async function handleExecuteSql(args: {
       return {
         success: true,
         data: {
+          database,
           mode: "explain",
           plan_text: planText,
           plan_json: planData,
@@ -560,9 +597,10 @@ async function handleExecuteSql(args: {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const enhanced = await enhanceErrorWithSuggestions(errorMessage);
+      const enhanced = await enhanceErrorWithSuggestions(errorMessage, database);
       return {
         success: false,
+        database,
         error: enhanced.error,
         code: "EXPLAIN_ERROR",
         ...(enhanced.suggestions && {
@@ -590,6 +628,7 @@ async function handleExecuteSql(args: {
       return {
         success: true,
         data: {
+          database,
           mode: "dry_run",
           would_affect_rows: affectedRows,
           ...(returnedRows && { sample_rows: returnedRows.slice(0, 10) }),
@@ -600,10 +639,11 @@ async function handleExecuteSql(args: {
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const enhanced = await enhanceErrorWithSuggestions(errorMessage);
+      const enhanced = await enhanceErrorWithSuggestions(errorMessage, database);
 
       return {
         success: false,
+        database,
         error: enhanced.error,
         code: "DRY_RUN_ERROR",
         mode: "dry_run",
@@ -637,6 +677,7 @@ async function handleExecuteSql(args: {
     return {
       success: true,
       data: {
+        database,
         rows: lastResult.rows,
         count: lastResult.rowCount ?? lastResult.rows?.length ?? 0,
         ...(limitApplied && {
@@ -648,10 +689,11 @@ async function handleExecuteSql(args: {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : String(error);
-    const enhanced = await enhanceErrorWithSuggestions(errorMessage);
+    const enhanced = await enhanceErrorWithSuggestions(errorMessage, database);
 
     return {
       success: false,
+      database,
       error: enhanced.error,
       code: "EXECUTION_ERROR",
       ...(enhanced.suggestions && {
@@ -664,6 +706,7 @@ async function handleExecuteSql(args: {
 
 async function handleSearchObjects(args: {
   object_type: string;
+  database?: DatabaseTarget;
   pattern?: string;
   schema?: string;
   table?: string;
@@ -674,6 +717,7 @@ async function handleSearchObjects(args: {
 }): Promise<object> {
   const {
     object_type,
+    database = "docker",
     pattern = "%",
     schema,
     table,
@@ -683,6 +727,7 @@ async function handleSearchObjects(args: {
     fuzzy_match = true,
   } = args;
 
+  const pool = getPool(database);
   const safeLimit = Math.min(Math.max(1, limit), 1000);
 
   try {
@@ -741,12 +786,13 @@ async function handleSearchObjects(args: {
       case "column":
         if (!table && fuzzy_match && pattern !== "%") {
           // Try to find matching tables for fuzzy search
-          const tables = await refreshTableCache();
+          const tables = await refreshTableCache(database);
           const matches = findSimilarTables(pattern.replace(/%/g, ""), tables);
           if (matches.length > 0 && pattern.replace(/%/g, "") !== matches[0]) {
             return {
               success: true,
               data: {
+                database,
                 warning: `No exact table match for "${pattern}"`,
                 suggestions: matches,
                 hint: `Did you mean: ${matches.join(", ")}? Use table parameter to specify.`,
@@ -843,6 +889,7 @@ async function handleSearchObjects(args: {
     return {
       success: true,
       data: {
+        database,
         object_type,
         pattern,
         ...(schema && { schema }),
@@ -857,10 +904,11 @@ async function handleSearchObjects(args: {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : String(error);
-    const enhanced = await enhanceErrorWithSuggestions(errorMessage);
+    const enhanced = await enhanceErrorWithSuggestions(errorMessage, database);
 
     return {
       success: false,
+      database,
       error: enhanced.error,
       code: "SEARCH_ERROR",
       ...(enhanced.suggestions && { suggestions: enhanced.suggestions }),
@@ -883,10 +931,11 @@ async function handleGetSoftDeleteTables(): Promise<object> {
 
 async function handleSuggestTable(args: {
   name: string;
+  database?: DatabaseTarget;
   max_suggestions?: number;
 }): Promise<object> {
-  const { name, max_suggestions = 5 } = args;
-  const tables = await refreshTableCache();
+  const { name, database = "docker", max_suggestions = 5 } = args;
+  const tables = await refreshTableCache(database);
   const suggestions = findSimilarTables(name, tables, max_suggestions);
 
   // Check for exact match
@@ -897,6 +946,7 @@ async function handleSuggestTable(args: {
   return {
     success: true,
     data: {
+      database,
       query: name,
       exact_match: exactMatch || null,
       suggestions: exactMatch
@@ -914,9 +964,11 @@ async function handleSuggestTable(args: {
 
 async function handleGetForeignKeys(args: {
   table?: string;
+  database?: DatabaseTarget;
   direction?: string;
 }): Promise<object> {
-  const { table, direction = "both" } = args;
+  const { table, database = "docker", direction = "both" } = args;
+  const pool = getPool(database);
 
   try {
     // Query to get all foreign key relationships
@@ -1002,6 +1054,7 @@ async function handleGetForeignKeys(args: {
     return {
       success: true,
       data: {
+        database,
         total_foreign_keys: rows.length,
         ...(table && { filtered_by: table, direction }),
         foreign_keys: grouped,
@@ -1012,6 +1065,7 @@ async function handleGetForeignKeys(args: {
   } catch (error) {
     return {
       success: false,
+      database,
       error: error instanceof Error ? error.message : String(error),
       code: "FK_QUERY_ERROR",
     };
@@ -1020,10 +1074,12 @@ async function handleGetForeignKeys(args: {
 
 async function handleGetTableSizes(args: {
   table?: string;
+  database?: DatabaseTarget;
   order_by?: string;
   limit?: number;
 }): Promise<object> {
-  const { table, order_by = "size", limit = 50 } = args;
+  const { table, database = "docker", order_by = "size", limit = 50 } = args;
+  const pool = getPool(database);
 
   try {
     const orderClause = order_by === "name"
@@ -1095,6 +1151,7 @@ async function handleGetTableSizes(args: {
     return {
       success: true,
       data: {
+        database,
         tables: tables.map(({ _total_bytes, ...t }) => t), // Remove internal field
         totals,
         order_by,
@@ -1103,10 +1160,11 @@ async function handleGetTableSizes(args: {
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const enhanced = await enhanceErrorWithSuggestions(errorMessage);
+    const enhanced = await enhanceErrorWithSuggestions(errorMessage, database);
 
     return {
       success: false,
+      database,
       error: enhanced.error,
       code: "SIZE_QUERY_ERROR",
       ...(enhanced.suggestions && { suggestions: enhanced.suggestions }),
@@ -1116,10 +1174,12 @@ async function handleGetTableSizes(args: {
 
 async function handleSearchColumns(args: {
   pattern: string;
+  database?: DatabaseTarget;
   type_filter?: string;
   exclude_system?: boolean;
 }): Promise<object> {
-  const { pattern, type_filter, exclude_system = false } = args;
+  const { pattern, database = "docker", type_filter, exclude_system = false } = args;
+  const pool = getPool(database);
 
   try {
     const systemColumns = ["id", "created_at", "updated_at", "is_deleted", "deleted_at", "deleted_by", "user_id"];
@@ -1187,6 +1247,7 @@ async function handleSearchColumns(args: {
     return {
       success: true,
       data: {
+        database,
         pattern,
         ...(type_filter && { type_filter }),
         ...(exclude_system && { exclude_system: true }),
@@ -1199,6 +1260,7 @@ async function handleSearchColumns(args: {
   } catch (error) {
     return {
       success: false,
+      database,
       error: error instanceof Error ? error.message : String(error),
       code: "COLUMN_SEARCH_ERROR",
     };
@@ -1287,14 +1349,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Graceful shutdown
+// Graceful shutdown - close both pools
 process.on("SIGINT", async () => {
-  await pool.end();
+  await Promise.all([pools.docker.end(), pools.desktop.end()]);
   process.exit(0);
 });
 
 process.on("SIGTERM", async () => {
-  await pool.end();
+  await Promise.all([pools.docker.end(), pools.desktop.end()]);
   process.exit(0);
 });
 
@@ -1302,7 +1364,7 @@ process.on("SIGTERM", async () => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Second Brain PostgreSQL MCP Server running on stdio");
+  console.error("Second Brain PostgreSQL MCP Server running on stdio (docker + desktop databases)");
 }
 
 main().catch((error) => {

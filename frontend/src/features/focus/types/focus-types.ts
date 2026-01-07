@@ -73,6 +73,8 @@ export interface TodaysPlanResponse {
   completedTodayCount: number;
   totalEstimatedMinutes: number;
   statusCounts: Record<string, number>;
+  /** Number of overdue items included from past dates */
+  overdueCount: number;
 }
 
 /**

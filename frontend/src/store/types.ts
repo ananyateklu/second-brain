@@ -320,6 +320,8 @@ export interface FocusSliceState {
   quickCaptureSourceRect: ModalSourceRect | null;
   selectedBacklogPriority: FocusPriority | null;
   focusViewMode: FocusViewMode;
+  /** Selected date for viewing focus data (null = today). Format: YYYY-MM-DD */
+  selectedFocusDate: string | null;
 }
 
 export interface FocusSliceActions {
@@ -327,6 +329,8 @@ export interface FocusSliceActions {
   closeQuickCapture: () => void;
   setSelectedBacklogPriority: (priority: FocusPriority | null) => void;
   setFocusViewMode: (mode: FocusViewMode) => void;
+  /** Set selected date for viewing focus data (null = today) */
+  setSelectedFocusDate: (date: string | null) => void;
 }
 
 export type FocusSlice = FocusSliceState & FocusSliceActions;

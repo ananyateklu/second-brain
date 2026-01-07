@@ -1,9 +1,9 @@
 /**
  * ChatInputArea Component
- * 
+ *
  * Refactored to use the compound component pattern for better composition,
  * maintainability, and testability.
- * 
+ *
  * This component now uses ChatInput compound components internally,
  * providing the same public API for backwards compatibility.
  */
@@ -11,6 +11,7 @@
 import ChatInput from './input/ChatInput';
 import { ImageGenerationPanel } from './ImageGenerationPanel';
 import { useChatInputContext } from './input/ChatInputContext';
+import styles from '../../../styles/components/chat-input.module.css';
 import type { MessageImage, ImageGenerationResponse } from '../types/chat';
 
 export interface ImageGenerationParams {
@@ -97,32 +98,53 @@ function ChatInputAreaInner() {
       {/* Image Settings Bar (inline mode when image model selected) */}
       <ChatInput.ImageSettings />
 
-      {/* Main Input Container */}
-      <ChatInput.Container>
-        {/* Mentions Dropdown */}
+      {/* Mobile Layout: Two-row design */}
+      <div className="md:hidden">
+        {/* Mentions Dropdown - positioned above container */}
         <ChatInput.Mentions />
 
-        {/* Input Row */}
-        <ChatInput.Row>
-          {/* Attachment Button */}
-          <ChatInput.AttachButton />
+        <div className={styles.mobileInputContainer}>
+          {/* Top row: Textarea */}
+          <div className={styles.mobileTextareaRow}>
+            <ChatInput.TextArea placeholder="Ask anything" />
+          </div>
 
-          {/* Formatting Toggle */}
-          <ChatInput.FormatButton />
+          {/* Bottom row: Buttons */}
+          <div className={styles.mobileButtonRow}>
+            {/* Left side buttons */}
+            <div className={styles.mobileButtonLeft}>
+              <ChatInput.OverflowMenu />
+              <ChatInput.AttachButton />
+            </div>
 
-          {/* Smart Prompts Toggle */}
-          <ChatInput.SmartPromptsButton />
+            {/* Right side buttons */}
+            <div className={styles.mobileButtonRight}>
+              <ChatInput.SendButton />
+            </div>
+          </div>
+        </div>
+      </div>
 
-          {/* Image Generation Toggle */}
-          <ChatInput.ImageGenButton />
+      {/* Desktop Layout: Original container with glassmorphism */}
+      <div className="hidden md:block">
+        <ChatInput.Container>
+          {/* Mentions Dropdown */}
+          <ChatInput.Mentions />
 
-          {/* TextArea with Send Button inside */}
-          <ChatInput.TextArea actions={<ChatInput.SendButton />} />
-        </ChatInput.Row>
+          {/* Desktop Layout: Single row */}
+          {/* Attach | Format | SmartPrompts | ImageGen | TextArea+Send */}
+          <ChatInput.Row>
+            <ChatInput.AttachButton />
+            <ChatInput.FormatButton />
+            <ChatInput.SmartPromptsButton />
+            <ChatInput.ImageGenButton />
+            <ChatInput.TextArea actions={<ChatInput.SendButton />} />
+          </ChatInput.Row>
 
-        {/* Input Metrics */}
-        <ChatInput.Metrics />
-      </ChatInput.Container>
+          {/* Input Metrics */}
+          <ChatInput.Metrics />
+        </ChatInput.Container>
+      </div>
 
       {/* Vision Support Indicator */}
       <ChatInput.VisionIndicator />

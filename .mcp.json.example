@@ -1,17 +1,11 @@
 {
   "mcpServers": {
-    "pg-docker": {
+    "pg": {
       "command": "node",
       "args": ["./tools/mcp-pg-server/dist/index.js"],
       "env": {
-        "DATABASE_URL": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/secondbrain?sslmode=disable"
-      }
-    },
-    "pg-tauri": {
-      "command": "node",
-      "args": ["./tools/mcp-pg-server/dist/index.js"],
-      "env": {
-        "DATABASE_URL": "postgresql://postgres:YOUR_PASSWORD@localhost:5433/secondbrain?sslmode=disable"
+        "DOCKER_DSN": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/secondbrain?sslmode=disable",
+        "DESKTOP_DSN": "postgresql://secondbrain@localhost:5433/secondbrain?sslmode=disable"
       }
     },
     "second-brain-notes": {

@@ -43,7 +43,7 @@ export const QuickCaptureButton = memo(function QuickCaptureButton({
         'bottom-6 right-6',
         'w-14 h-14',
         'rounded-full',
-        'flex items-center justify-center',
+        'hidden md:flex items-center justify-center',
         'shadow-lg hover:shadow-xl',
         'transition-all duration-200 ease-out',
         'hover:scale-110 active:scale-95',

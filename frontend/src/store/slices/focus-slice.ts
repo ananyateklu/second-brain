@@ -41,6 +41,9 @@ export const createFocusSlice: SliceCreator<FocusSlice> = (set) => ({
   // View mode
   focusViewMode: initialFocusViewMode,
 
+  // Selected date for viewing focus data (null = today)
+  selectedFocusDate: null,
+
   // Quick capture modal actions
   openQuickCapture: (sourceRect = null) => set({
     isQuickCaptureOpen: true,
@@ -62,4 +65,9 @@ export const createFocusSlice: SliceCreator<FocusSlice> = (set) => ({
     saveFocusViewMode(mode);
     set({ focusViewMode: mode });
   },
+
+  // Selected date action
+  setSelectedFocusDate: (date) => set({
+    selectedFocusDate: date,
+  }),
 });

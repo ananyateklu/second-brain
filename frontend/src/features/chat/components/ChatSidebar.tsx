@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { ChatConversation } from '../types/chat';
 import { ConversationListItem } from './ConversationListItem';
 
@@ -12,6 +12,8 @@ export interface ChatSidebarProps {
   isSelectionMode: boolean;
   selectedIds: Set<string>;
   onToggleSelection: (id: string) => void;
+  // Mobile drawer close callback
+  onClose?: () => void;
 }
 
 /**
@@ -27,6 +29,7 @@ export function ChatSidebar({
   isSelectionMode,
   selectedIds,
   onToggleSelection,
+  onClose,
 }: ChatSidebarProps) {
   // Sort conversations by updated date (matches VoiceSidebar pattern)
   const sortedConversations = useMemo(() =>
@@ -35,6 +38,15 @@ export function ChatSidebar({
     ),
     [conversations]
   );
+
+  // Wrap selection handler to auto-close on mobile
+  const handleSelectConversation = useCallback((id: string) => {
+    onSelectConversation(id);
+    // Auto-close drawer on mobile
+    if (onClose && window.innerWidth < 768) {
+      onClose();
+    }
+  }, [onSelectConversation, onClose]);
 
   return (
     <div
@@ -90,7 +102,7 @@ export function ChatSidebar({
               }
               isSelectionMode={isSelectionMode}
               isChecked={selectedIds.has(conv.id)}
-              onSelect={isSelectionMode ? onToggleSelection : onSelectConversation}
+              onSelect={isSelectionMode ? onToggleSelection : handleSelectConversation}
               onDelete={onDeleteConversation}
               staggerIndex={index}
             />

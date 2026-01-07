@@ -152,6 +152,15 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("conversation_id");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<double?>("DurationMs")
                         .HasColumnType("double precision")
                         .HasColumnName("duration_ms");
@@ -159,6 +168,10 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<int?>("InputTokens")
                         .HasColumnType("integer")
                         .HasColumnName("input_tokens");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("MarkdownRenderer")
                         .HasMaxLength(20)
@@ -1138,6 +1151,11 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_archived");
 
+                    b.Property<string>("McpServerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("mcp_server_name");
+
                     b.Property<string>("ModifiedBy")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -1188,6 +1206,101 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasDatabaseName("ix_note_versions_note_id");
 
                     b.ToTable("note_versions");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.ProgressSummary", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AiModel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("ai_model");
+
+                    b.Property<string>("AiProvider")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("ai_provider");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Encouragement")
+                        .HasColumnType("text")
+                        .HasColumnName("encouragement");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<string>("HighlightsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("highlights");
+
+                    b.Property<int>("P1Completed")
+                        .HasColumnType("integer")
+                        .HasColumnName("p1_completed");
+
+                    b.Property<int>("P2Completed")
+                        .HasColumnType("integer")
+                        .HasColumnName("p2_completed");
+
+                    b.Property<int>("P3Completed")
+                        .HasColumnType("integer")
+                        .HasColumnName("p3_completed");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("period");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date")
+                        .HasColumnName("period_end");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date")
+                        .HasColumnName("period_start");
+
+                    b.Property<int>("StreakDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("streak_days");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("summary");
+
+                    b.Property<DateOnly>("SummaryDate")
+                        .HasColumnType("date")
+                        .HasColumnName("summary_date");
+
+                    b.Property<int>("TotalCompleted")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_completed");
+
+                    b.Property<int>("TotalMinutesTracked")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_minutes_tracked");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("progress_summaries");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.RagQueryLog", b =>
@@ -1508,9 +1621,22 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("arguments");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<DateTime>("ExecutedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("executed_at");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("MessageId")
                         .IsRequired()

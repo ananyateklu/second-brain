@@ -14,6 +14,8 @@ export interface PriorityBadgeProps {
   className?: string;
   /** Show full label instead of short label */
   showFullLabel?: boolean;
+  /** Size variant */
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -24,15 +26,17 @@ export const PriorityBadge = memo(function PriorityBadge({
   priority,
   className,
   showFullLabel = false,
+  size = 'md',
 }: PriorityBadgeProps) {
   const info = PRIORITY_INFO[priority];
 
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-full px-2 py-0.5',
-        'text-xs font-semibold whitespace-nowrap',
+        'inline-flex items-center justify-center rounded-full',
+        'font-semibold whitespace-nowrap',
         'transition-colors duration-200',
+        size === 'sm' ? 'px-1.5 py-0.5 text-[10px]' : 'px-2 py-0.5 text-xs',
         className
       )}
       style={{
