@@ -11,14 +11,6 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
-    "e2e:headed": "playwright test --headed",
-    "e2e:debug": "playwright test --debug",
-    "e2e:report": "playwright show-report",
-    "e2e:smoke": "playwright test smoke --project=chromium",
-    "e2e:visual": "playwright test --config=e2e/visual/playwright.visual.config.ts",
-    "e2e:visual:update": "playwright test --config=e2e/visual/playwright.visual.config.ts --update-snapshots",
     "generate:api-types": "openapi-typescript ../contracts/openapi.json -o ./src/types/api-generated.ts",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
@@ -96,7 +88,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@tauri-apps/cli": "^2.9.5",
     "@testing-library/jest-dom": "^6.9.1",
@@ -132,6 +123,11 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "msw"
-    ]
+    ],
+    "overrides": {
+      "@llm-ui/code>react": "^19.2.1",
+      "@llm-ui/markdown>react": "^19.2.1",
+      "@llm-ui/react>react": "^19.2.1"
+    }
   }
 }
