@@ -28,9 +28,9 @@ const IMAGE_COLOR = '#ff7300';
 // Skeleton component for loading state
 const ChatTabSkeleton = memo(function ChatTabSkeleton() {
   return (
-    <div className="space-y-6 p-4 animate-pulse">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-pulse">
       {/* Stats Cards Skeleton */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
@@ -149,9 +149,9 @@ export const ChatTab = memo(function ChatTab() {
   }
 
   return (
-    <div className="space-y-6 p-4 animate-in fade-in duration-300">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
         <StatCard
           title="Total Conversations"
           value={stats.totalConversations.toLocaleString()}
@@ -209,7 +209,7 @@ export const ChatTab = memo(function ChatTab() {
       </div>
 
       {/* Chat Usage Over Time, Provider Usage, and Feature Usage - Inline */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Chat Usage Over Time */}
         {chatTypeData.length > 0 && (
           <div
@@ -464,7 +464,7 @@ export const ChatTab = memo(function ChatTab() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {statsService.getTopModels(stats, 6).map((model, index) => (
                 <div
                   key={model.model}

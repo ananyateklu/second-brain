@@ -20,6 +20,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isDirectoryPage = location.pathname === '/notes';
   const isVoicePage = location.pathname === '/voice';
   const isGitHubPage = location.pathname === '/github';
+  const isInsightsPage = location.pathname === '/insights';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
   // Memoize main content classes to prevent unnecessary recalculations
@@ -27,7 +28,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const classes = ['flex-1'];
 
     // Padding classes - remove padding for full-width pages
-    if (isGitHubPage || isChatPage || isDirectoryPage || isVoicePage) {
+    if (isGitHubPage || isChatPage || isDirectoryPage || isVoicePage || isInsightsPage) {
       classes.push('px-0', 'pt-0');
     } else {
       classes.push('px-4', 'md:px-6');
@@ -43,14 +44,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Overflow handling - pages with internal scrolling need overflow hidden
     // min-h-0 is critical for flex children to shrink below their content size
-    if (isChatPage || isVoicePage || isGitHubPage || isDashboardPage) {
+    if (isChatPage || isVoicePage || isGitHubPage || isDashboardPage || isInsightsPage) {
       classes.push('overflow-hidden', 'min-h-0');
     } else {
       classes.push('overflow-y-auto', 'thin-scrollbar');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage, isDashboardPage]);
+  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage, isDashboardPage, isInsightsPage]);
 
   return (
     <div

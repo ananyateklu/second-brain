@@ -7,9 +7,9 @@
 
 ## Current Work: Mobile Chat Input Redesign (Two-Row Layout)
 
-### Status: IN PROGRESS
+### Status: COMPLETE
 
-Redesigning mobile chat input to match reference design with two-row layout.
+Redesigned mobile chat input to match reference design with two-row layout.
 
 ### Reference Design
 
@@ -17,12 +17,12 @@ Redesigning mobile chat input to match reference design with two-row layout.
 ┌────────────────────────────────────────────┐
 │  Ask anything                              │  ← Textarea (top row)
 ├────────────────────────────────────────────┤
-│  [+] [📎 ▼ ✕]              [🎤] [|||]     │  ← Buttons (bottom row)
-│  overflow  grouped pill     mic  send      │
+│  [+] [📎 | ▼ | ✕]                  [|||]  │  ← Buttons (bottom row)
+│  overflow  grouped pill             send   │
 └────────────────────────────────────────────┘
 ```
 
-### Completed
+### All Tasks Complete
 
 | Task | Status |
 |------|--------|
@@ -33,23 +33,20 @@ Redesigning mobile chat input to match reference design with two-row layout.
 | `mobilePillButtonPrimary` for send with content | ✅ Done |
 | Plus→X rotation on overflow menu | ✅ Done |
 | Glassmorphism dropdown with icon boxes | ✅ Done |
-
-### Remaining
-
-| Task | Status |
-|------|--------|
-| Grouped button pill for attachments (icon + chevron + X) | ⏳ Pending |
-| Voice/mic buttons on right side | ⏳ Pending |
+| Grouped button pill for attachments (icon + chevron + X) | ✅ Done |
+| Voice/mic buttons on right side | ⏭️ Skipped |
 
 ### Files Modified
 
 | File | Changes |
 |------|---------|
-| `chat-input.module.css` | Added `mobileInputContainer`, `mobileTextareaRow`, `mobileButtonRow`, `mobileButtonLeft/Right`, `mobileButtonGroup`, `mobilePillButton`, `mobilePillButtonPrimary`, `mobileTextarea` |
-| `ChatInputArea.tsx` | Two-row mobile layout with textarea on top, buttons below |
+| `chat-input.module.css` | Added `mobileInputContainer`, `mobileTextareaRow`, `mobileButtonRow`, `mobileButtonLeft/Right`, `mobileButtonGroup`, `mobilePillButton`, `mobilePillButtonPrimary`, `mobileTextarea`, `attachPillButton`, `attachPillBadge`, `attachDropdown`, `attachDropdownItem`, `attachDropdownIcon`, `attachDropdownLabel` |
+| `ChatInputArea.tsx` | Two-row mobile layout with textarea on top, buttons below, uses `AttachPill` |
 | `ChatInputOverflowMenu.tsx` | Plus icon rotates 45° to X, glassmorphism dropdown |
 | `ChatInputToolbarButton.tsx` | Uses `mobilePillButton` style |
 | `ChatInputActions.tsx` | Send button with `mobilePillButtonPrimary` variant |
+| `ChatInputAttachPill.tsx` | **NEW** - Grouped pill with attach icon, chevron dropdown, X clear button |
+| `ChatInput.tsx` | Exports new `AttachPill` component |
 
 ### Current Layout Structure
 
@@ -64,7 +61,7 @@ Redesigning mobile chat input to match reference design with two-row layout.
   <div className={styles.mobileButtonRow}>
     <div className={styles.mobileButtonLeft}>
       <ChatInput.OverflowMenu />
-      <ChatInput.AttachButton />
+      <ChatInput.AttachPill />  {/* Grouped: 📎 | ▼ | ✕ */}
     </div>
     <div className={styles.mobileButtonRight}>
       <ChatInput.SendButton />
@@ -72,6 +69,116 @@ Redesigning mobile chat input to match reference design with two-row layout.
   </div>
 </div>
 ```
+
+### AttachPill Features
+
+- **Attach icon (📎)** - Opens file picker, shows badge with file count when files attached
+- **Chevron (▼)** - Opens dropdown with file type options (All, Images, Documents, Code)
+- **Clear (✕)** - Only visible when files attached, clears all files
+- **Glassmorphism dropdown** - Matches overflow menu styling
+- **Keyboard support** - ESC key closes dropdown
+- **Click-outside** - Closes dropdown when clicking outside
+
+---
+
+## Current Work: Mobile Responsiveness - Settings Page
+
+### Status: COMPLETE ✅
+
+Comprehensive mobile optimization for the Settings page including header navigation tab bar, Note Summaries section, and Manual Indexing section.
+
+### Changes Made
+
+| File | Changes |
+|------|---------|
+| `SettingsTabBar.tsx` | **NEW** - Compact mobile tab bar with 6 tabs (General, AI, RAG, Index, Focus, Git) |
+| `Header.tsx` | Added SettingsTabBar to mobile header, UserMenu replaces create button on Settings |
+| `header-components/index.ts` | Export SettingsTabBar |
+| `NoteSummarySettings.tsx` | Responsive model dropdown, larger checkboxes, shorter mobile labels, stacking buttons |
+| `IndexingSettings.tsx` | Simplified headers, shorter descriptions on mobile, compact refresh button |
+| `StartIndexingButton.tsx` | Allow text wrapping on mobile (`sm:whitespace-nowrap`) |
+| `DimensionSlider.tsx` | Responsive margins for slider labels |
+| `VectorStoreSelector.tsx` | Responsive min-width (`min-w-0 sm:min-w-[200px]`) |
+| `EmbeddingProviderSelector.tsx` | Same responsive min-width fix |
+
+### Key Mobile Improvements
+
+#### Header Navigation
+1. **SettingsTabBar in mobile header** - Shows 6 settings tabs below main header controls
+2. **Compact tab styling** - `gap-0.5 px-1.5 py-1.5 text-xs` for all tabs to fit
+3. **UserMenu replaces create button** - Consistent with Insights page pattern
+
+#### Note Summaries Section (AI Settings)
+4. **Responsive label** - "Auto-generate on save" on mobile vs full text on desktop
+5. **Model dropdown** - `w-full sm:w-56` instead of fixed width
+6. **Larger checkboxes** - `w-5 h-5` for Select All, `w-4 h-4` for note cards (was w-3/w-4)
+7. **Responsive gaps** - `gap-4 sm:gap-8` throughout
+8. **Stacking buttons** - Action buttons stack on mobile (`flex-col sm:flex-row`)
+
+#### Manual Indexing Section
+9. **Simplified header** - Just "MANUAL INDEXING" label with compact "Weekly" badge (hidden on mobile)
+10. **Shorter descriptions** - "Regenerate embeddings for your notes." on mobile
+11. **Responsive selectors** - min-width constraints removed on mobile
+12. **Button text wrapping** - Long model names can wrap on narrow screens
+13. **Slider margins** - Smaller margins on mobile for dimension labels
+
+#### Index Health Section
+14. **Compact header** - Label + inline Refresh button
+15. **Shorter description** - "Vector store statistics and status." on mobile
+
+---
+
+## Current Work: Mobile Responsiveness - Insights Page
+
+### Status: COMPLETE ✅
+
+Comprehensive mobile optimization for the Insights page including header navigation, tab bars, all sub-tabs, and RAG analytics components.
+
+### Changes Made
+
+| File | Changes |
+|------|---------|
+| `Header.tsx` | Added InsightsTabBar + TimeRangeSelector to mobile header, UserMenu replaces create button on Insights page |
+| `InsightsTabBar.tsx` | Compact tab bar with brand-colored active state, white indicator line |
+| `TimeRangeSelector.tsx` | Restyled to match InsightsTabBar, centered on mobile, left-aligned on desktop |
+| `AnalyticsTabBar.tsx` | Restyled to match InsightsTabBar (Performance/Topics/Query Logs), `inline-flex` for fit-width |
+| `RagTab.tsx` | Centered AnalyticsTabBar on mobile (`flex justify-center md:justify-start`) |
+| `OverviewTab.tsx` | Responsive spacing (space-y-3 sm:space-y-4 pt-3 sm:pt-4) |
+| `ChatTab.tsx` | Same spacing as OverviewTab, stat cards grid (2 sm:3 md:4 lg:5), chart grid (sm:2 lg:3) |
+| `AgentTab.tsx` | Same spacing as OverviewTab, chart grid (sm:2 lg:3), table with horizontal scroll |
+| `RagStatsCards.tsx` | 2-column grid on mobile (`grid-cols-2 sm:grid-cols-4`) |
+| `TopicDistributionCard.tsx` | Header stacks on mobile, topic grid (1 col mobile, 2 cols sm+), shorter button text |
+| `QueryLogsTable.tsx` | Header stacks, full-width pagination on mobile, `whitespace-nowrap` on data columns |
+| `StatCardsGrid.tsx` | Smaller minWidth on mobile (130px sm:150px), tighter gaps |
+| `NotesChart.tsx` | Header stacks on mobile, responsive title, time range buttons scroll |
+| `ChatUsageChart.tsx` | Same improvements as NotesChart |
+| `ModelUsageSection.tsx` | Header stacks, responsive grid, pie chart heights, legend wraps |
+
+### Key Mobile Improvements
+
+#### Header & Navigation
+1. **InsightsTabBar in mobile header** - Shows Overview/RAG/Chat/Agent tabs below main header
+2. **TimeRangeSelector below tabs** - Shows when RAG tab active, centered on mobile
+3. **UserMenu replaces create button** - Profile/settings dropdown instead of + button on Insights page
+4. **Consistent tab bar styling** - All three tab bars (Insights, TimeRange, Analytics) match visually
+
+#### Tab Bar Styling (Unified)
+5. **Container** - `gap-1 p-1 my-1 rounded-xl backdrop-blur-md`, 4% background, 6% border, subtle shadow
+6. **Buttons** - `px-2.5 py-1.5 text-sm rounded-lg`, hover effects, brand-600 active with glow
+7. **Active indicator** - White 50% opacity line at bottom (`w-6 h-0.5`)
+8. **Fit-width** - `inline-flex` instead of `flex` for AnalyticsTabBar
+
+#### Content Areas
+9. **Responsive Breakpoints** - Gradual scaling with `sm:` and `md:` breakpoints
+10. **Stat Card Grids** - 2→3→4→5 columns (Chat), 2→4 columns (Agent/RAG)
+11. **Chart Grids** - 1→2→3 columns progression
+12. **Reduced Spacing** - `space-y-3 sm:space-y-4 pt-3 sm:pt-4` consistent across tabs
+
+#### RAG Tab Specifics
+13. **Topics grid** - Single column mobile, 2 columns sm+, stacked topic info
+14. **Query logs table** - Min-width for horizontal scroll, `whitespace-nowrap` on all columns except Query
+15. **Full-width pagination** - Large buttons spanning full width, "← Prev | 1/5 | Next →" layout
+16. **Shorter labels on mobile** - "Cluster" vs "Run Clustering", "With feedback only" vs full text
 
 ---
 
@@ -151,8 +258,10 @@ Fixed mobile layout issues on the Focus Dashboard page. All cards now stack prop
 
 - [x] Chat page (mobile sidebar drawer, input overflow menu, header toggles)
 - [x] Notes page (mobile sidebar drawer)
-- [ ] Settings page
-- [ ] Insights page
+- [x] Settings page (header nav, compact tab bar, responsive sections)
+- [x] Insights page (header nav, tab bars, responsive grids, RAG components)
+
+**All main pages are now mobile-optimized!**
 
 ---
 

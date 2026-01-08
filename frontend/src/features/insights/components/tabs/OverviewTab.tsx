@@ -102,7 +102,7 @@ export const OverviewTab = memo(function OverviewTab() {
   }
 
   return (
-    <div className="space-y-3 pt-4 animate-in fade-in duration-300">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* Aggregated Stats Cards */}
       <StatCardsGrid
         stats={stats}
@@ -112,7 +112,7 @@ export const OverviewTab = memo(function OverviewTab() {
       />
 
       {/* Charts Section - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <NotesChart
           chartData={chartData}
           selectedTimeRange={selectedTimeRange}

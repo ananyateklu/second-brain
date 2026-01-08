@@ -140,9 +140,9 @@ export const RagTab = memo(function RagTab() {
   }
 
   return (
-    <div className="flex flex-col pt-4 animate-in fade-in duration-300">
+    <div className="flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* RAG Sub-Tab Navigation */}
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4 flex justify-center md:justify-start">
         <AnalyticsTabBar activeTab={ragSubTab} onTabChange={setRagSubTab} />
       </div>
 

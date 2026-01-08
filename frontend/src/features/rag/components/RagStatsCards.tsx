@@ -99,7 +99,7 @@ export const RagStatsCards = memo(({ stats }: RagStatsCardsProps) => {
     : `${Math.round(stats.avgTotalTimeMs)}ms`;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
       {/* Total Queries */}
       <StatCard
         title="Total Queries"

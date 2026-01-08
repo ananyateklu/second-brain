@@ -12,7 +12,7 @@ export function EmbeddingProviderSelector({
   isDisabled,
 }: EmbeddingProviderSelectorProps) {
   return (
-    <div className="flex-1 min-w-[200px]">
+    <div className="flex-1 min-w-0 sm:min-w-[200px]">
       <label
         className={cn(
           "text-[11px] font-semibold uppercase tracking-[0.2em] mb-1.5 block",

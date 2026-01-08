@@ -77,8 +77,8 @@ export function DimensionSlider({
         </span>
       </div>
 
-      {/* Value labels below slider - offset to align with slider track (32px label + 12px gap = 44px each side) */}
-      <div className="relative h-5 mt-1 ml-[44px] mr-[44px]">
+      {/* Value labels below slider - offset to align with slider track */}
+      <div className="relative h-5 mt-1 ml-[35px] mr-[35px] sm:ml-[44px] sm:mr-[44px]">
         {/* Current value indicator */}
         <span
           className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity"

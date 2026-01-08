@@ -73,7 +73,7 @@ export function StartIndexingButton({
       variant="primary"
       size="md"
       className={cn(
-        "whitespace-nowrap",
+        "sm:whitespace-nowrap text-center",
         isDisabled && "bg-[var(--border)] text-[var(--text-secondary)] border-[var(--border)]"
       )}
     >

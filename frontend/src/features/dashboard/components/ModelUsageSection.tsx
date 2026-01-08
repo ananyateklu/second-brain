@@ -262,14 +262,14 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-2xl border p-[19px] relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        className={`rounded-2xl border p-4 sm:p-5 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
         style={containerStyles}
       >
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
             <div className="flex items-center gap-2">
               <svg
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
                 style={{ color: 'var(--color-brand-600)' }}
                 fill="none"
                 viewBox="0 0 24 24"
@@ -283,7 +283,7 @@ export function ModelUsageSection({
                 />
               </svg>
               <h3
-                className="text-lg font-semibold"
+                className="text-base sm:text-lg font-semibold"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Model Usage Distribution
@@ -291,7 +291,7 @@ export function ModelUsageSection({
             </div>
 
             {/* Time Range Filters */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
               {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
                 <TimeRangeButton
                   key={option.days}
@@ -307,9 +307,9 @@ export function ModelUsageSection({
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Models by Provider - Left Col */}
-              <div className="lg:col-span-1 h-64">
+              <div className="md:col-span-1 h-48 sm:h-64">
                 <div
                   className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4"
                   style={{
@@ -382,19 +382,19 @@ export function ModelUsageSection({
                 </div>
               </div>
 
-              {/* Charts - Right 2 Cols */}
-              <div className="lg:col-span-2 flex flex-col gap-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Charts - Right section */}
+              <div className="md:col-span-1 lg:col-span-2 flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Pie Chart - Conversations */}
                   <div className="flex flex-col min-w-0">
                     <h4
-                      className="text-sm font-medium text-center mb-2"
+                      className="text-xs sm:text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Conversation
                     </h4>
-                    <div className="min-w-0">
-                      <ResponsiveContainer width="100%" height={200}>
+                    <div className="min-w-0 h-[160px] sm:h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                           <Pie
                             data={dataWithColors.map(({ name, value }) => ({ name, value }))}
@@ -443,13 +443,13 @@ export function ModelUsageSection({
                   {/* Pie Chart - Token Usage */}
                   <div className="flex flex-col min-w-0">
                     <h4
-                      className="text-sm font-medium text-center mb-2"
+                      className="text-xs sm:text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Token Usage
                     </h4>
-                    <div className="min-w-0">
-                      <ResponsiveContainer width="100%" height={200}>
+                    <div className="min-w-0 h-[160px] sm:h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                           <Pie
                             data={dataWithColors
@@ -503,7 +503,7 @@ export function ModelUsageSection({
 
                 {/* Interactive Legend */}
                 <div
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
+                  className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto scrollbar-none"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
                   }}

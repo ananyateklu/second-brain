@@ -222,7 +222,7 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
 
   return (
     <div
-      className="flex gap-3 dashboard-stats-grid"
+      className="flex gap-2 sm:gap-3 dashboard-stats-grid"
       style={{
         flexWrap: 'wrap',
       }}
@@ -230,9 +230,9 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
       {visibleStats.map((stat, index) => (
         <div
           key={stat.title}
+          className="min-w-[130px] sm:min-w-[150px]"
           style={{
             flex: '1 1 0',
-            minWidth: '150px',
             maxWidth: '100%',
           }}
         >

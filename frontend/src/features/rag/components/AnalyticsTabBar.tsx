@@ -1,6 +1,7 @@
 /**
  * Tab bar component for RAG Analytics page navigation
  * Modern glassmorphism design with animated indicators
+ * Styled to match InsightsTabBar
  */
 
 import { memo } from 'react';
@@ -44,45 +45,59 @@ interface AnalyticsTabBarProps {
   onTabChange: (tab: TabType) => void;
 }
 
-export const AnalyticsTabBar = memo(({
+export const AnalyticsTabBar = memo(function AnalyticsTabBar({
   activeTab,
   onTabChange,
-}: AnalyticsTabBarProps) => {
+}: AnalyticsTabBarProps) {
   return (
     <div
-      className="flex items-center p-1 rounded-xl backdrop-blur-md"
+      className="inline-flex items-center gap-1 p-1 my-1 rounded-xl backdrop-blur-md transition-shadow duration-300"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
       }}
     >
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => { onTabChange(tab.id); }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm rounded-lg transition-all duration-200 relative"
-          style={{
-            backgroundColor: activeTab === tab.id ? 'var(--color-brand-600)' : 'transparent',
-            color: activeTab === tab.id ? '#ffffff' : 'var(--text-tertiary)',
-            fontWeight: activeTab === tab.id ? 600 : 400,
-          }}
-        >
-          <span
-            className="transition-colors duration-200"
-            style={{ color: activeTab === tab.id ? '#ffffff' : 'inherit' }}
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => { onTabChange(tab.id); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg transition-all duration-200 relative"
+            style={{
+              backgroundColor: isActive ? 'var(--color-brand-600)' : undefined,
+              color: isActive ? '#ffffff' : 'var(--text-secondary)',
+              fontWeight: isActive ? 600 : 400,
+              boxShadow: isActive ? '0 2px 8px color-mix(in srgb, var(--color-brand-600) 30%, transparent)' : undefined,
+            }}
+            onMouseEnter={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isActive) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }
+            }}
           >
-            {tab.icon}
-          </span>
-          {tab.label}
-          {activeTab === tab.id && (
-            <div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
-              style={{ backgroundColor: 'var(--color-brand-400)' }}
-            />
-          )}
-        </button>
-      ))}
+            <span className="transition-colors duration-200">
+              {tab.icon}
+            </span>
+            {tab.label}
+            {/* Active indicator line */}
+            {isActive && (
+              <span
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
+                style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}
+              />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 });
-

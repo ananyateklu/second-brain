@@ -77,14 +77,14 @@ export function NotesChart({
 
   return (
     <div
-      className={`rounded-2xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+      className={`rounded-2xl border p-4 sm:p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
       style={containerStyles}
     >
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
           <div className="flex items-center gap-2">
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
               style={{ color: 'var(--color-brand-600)' }}
               fill="none"
               viewBox="0 0 24 24"
@@ -98,7 +98,7 @@ export function NotesChart({
               />
             </svg>
             <h2
-              className="text-xl font-semibold"
+              className="text-base sm:text-lg lg:text-xl font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Notes Created Over Time
@@ -106,7 +106,7 @@ export function NotesChart({
           </div>
 
           {/* Time Range Filters */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
               <TimeRangeButton
                 key={option.days}

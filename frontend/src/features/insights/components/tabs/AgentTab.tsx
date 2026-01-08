@@ -26,9 +26,9 @@ const FAILURE_COLOR = '#FF6B6B';
 // Skeleton component for loading state
 const AgentTabSkeleton = memo(function AgentTabSkeleton() {
   return (
-    <div className="space-y-6 p-4 animate-pulse">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-pulse">
       {/* Stats Cards Skeleton */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
@@ -163,9 +163,9 @@ export const AgentTab = memo(function AgentTab() {
   }
 
   return (
-    <div className="space-y-6 p-4 animate-in fade-in duration-300">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <StatCard
           title="Total Tool Calls"
           value={toolStats.totalToolCalls.toLocaleString()}
@@ -222,7 +222,7 @@ export const AgentTab = memo(function AgentTab() {
       </div>
 
       {/* Tool Calls Over Time, Tool Usage Breakdown, and Hourly Distribution - Inline */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Tool Calls Over Time */}
         {dailyToolCallsData.length > 0 && (
           <div
@@ -443,8 +443,8 @@ export const AgentTab = memo(function AgentTab() {
               </h3>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-2 px-2 scrollbar-thin">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
                     <th className="text-left py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Tool</th>

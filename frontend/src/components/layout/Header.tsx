@@ -5,7 +5,7 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
+import { SettingsNavTabs, SettingsTabBar, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
 import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
 import { useVoiceHeaderState } from '../../features/voice/context/VoicePageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
@@ -275,35 +275,56 @@ export function Header() {
                 </>
               )}
 
-              {/* Create Button (compact) - page-aware action */}
-              <button
-                ref={createButtonRef}
-                onClick={handleCreateAction}
-                className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] hover:shadow-[var(--btn-primary-hover-shadow)]"
-                style={{
-                  color: 'var(--btn-primary-text)',
-                }}
-                aria-label={getCreateButtonLabel()}
-              >
-                {/* Dashboard: Target/Focus icon */}
-                {isDashboardPage ? (
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : isChatPage ? (
-                  /* Chat: Message/Plus icon */
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                ) : (
-                  /* Notes/Default: Plus icon with rotation */
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                )}
-              </button>
+              {/* Insights/Settings pages: Show User Menu instead of Create button */}
+              {(isInsightsPage || isSettingsPage) ? (
+                <UserMenu />
+              ) : (
+                /* Create Button (compact) - page-aware action */
+                <button
+                  ref={createButtonRef}
+                  onClick={handleCreateAction}
+                  className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] hover:shadow-[var(--btn-primary-hover-shadow)]"
+                  style={{
+                    color: 'var(--btn-primary-text)',
+                  }}
+                  aria-label={getCreateButtonLabel()}
+                >
+                  {/* Dashboard: Target/Focus icon */}
+                  {isDashboardPage ? (
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : isChatPage ? (
+                    /* Chat: Message/Plus icon */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  ) : (
+                    /* Notes/Default: Plus icon with rotation */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  )}
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Insights Tab Bar - Only on Insights page (Mobile) */}
+          {isInsightsPage && (
+            <div className="px-2 pb-3 space-y-2 flex flex-col items-center">
+              <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+              {/* Time Range Selector - Only on RAG tab */}
+              {activeInsightsTab === 'rag' && <TimeRangeSelector />}
+            </div>
+          )}
+
+          {/* Settings Tab Bar - Only on Settings pages (Mobile) */}
+          {isSettingsPage && (
+            <div className="px-2 pb-3 flex justify-center overflow-x-auto scrollbar-none">
+              <SettingsTabBar />
+            </div>
+          )}
         </header>
       </div>
 

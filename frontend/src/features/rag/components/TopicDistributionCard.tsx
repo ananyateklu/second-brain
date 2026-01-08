@@ -55,12 +55,12 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
     >
       {/* Header */}
       <div
-        className="px-3 py-2 border-b flex items-center justify-between"
+        className="px-3 py-2 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2"
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
         <div className="flex items-center gap-2">
           <div
-            className="p-2 rounded-lg"
+            className="p-1.5 sm:p-2 rounded-lg"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
             }}
@@ -81,7 +81,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             </svg>
           </div>
           <h3
-            className="text-base font-semibold"
+            className="text-sm sm:text-base font-semibold"
             style={{ color: 'var(--text-primary)' }}
           >
             Topic Distribution
@@ -107,7 +107,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
           <button
             onClick={() => { clusterMutation.mutate(clusterCount); }}
             disabled={clusterMutation.isPending}
-            className="px-3 py-1 text-xs font-medium rounded-lg transition-transform duration-200 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-[1px]"
+            className="px-2 sm:px-3 py-1 text-xs font-medium rounded-lg transition-transform duration-200 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-[1px]"
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
@@ -119,9 +119,15 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                   className="w-3 h-3 border-2 rounded-full animate-spin"
                   style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }}
                 />
-                Clustering...
+                <span className="hidden sm:inline">Clustering...</span>
+                <span className="sm:hidden">...</span>
               </span>
-            ) : 'Run Clustering'}
+            ) : (
+              <>
+                <span className="hidden sm:inline">Run Clustering</span>
+                <span className="sm:hidden">Cluster</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -169,7 +175,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
         ) : (
           <div className="space-y-2">
             {/* Topic bars */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {topicData.topics.map((topic, index) => {
                 const percentage = (topic.queryCount / totalQueries) * 100;
                 const colors = TOPIC_COLORS[index % TOPIC_COLORS.length];
@@ -183,31 +189,31 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                     className="space-y-1 p-2 rounded-lg transition-colors duration-200 hover:bg-opacity-50"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
                   >
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                           style={{
                             backgroundColor: colors.main,
                           }}
                         />
                         <span
-                          className="font-medium"
+                          className="font-medium truncate"
                           style={{ color: 'var(--text-primary)' }}
                         >
                           {topic.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-0">
                         <span
-                          className="tabular-nums"
+                          className="tabular-nums text-[11px] sm:text-xs"
                           style={{ color: 'var(--text-secondary)' }}
                         >
                           {topic.queryCount} queries
                         </span>
                         {feedbackRate !== null && (
                           <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium tabular-nums"
+                            className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium tabular-nums"
                             style={{
                               backgroundColor: feedbackRate >= 70
                                 ? 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)'
@@ -221,7 +227,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                                   : 'var(--color-error)',
                             }}
                           >
-                            {feedbackRate}% positive
+                            {feedbackRate}%
                           </span>
                         )}
                       </div>
@@ -241,7 +247,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                     {/* Sample queries */}
                     {topic.sampleQueries.length > 0 && (
                       <p
-                        className="text-xs italic truncate pl-5"
+                        className="text-[11px] sm:text-xs italic truncate pl-4 sm:pl-5"
                         style={{ color: 'var(--text-tertiary)' }}
                         title={topic.sampleQueries[0]}
                       >

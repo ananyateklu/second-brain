@@ -108,18 +108,18 @@ export const QueryLogsTable = memo(({
     >
       {/* Header */}
       <div
-        className="px-5 py-2 border-b flex items-center justify-between flex-shrink-0"
+        className="px-3 sm:px-5 py-2 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0"
         style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div
-            className="p-2 rounded-xl"
+            className="p-1.5 sm:p-2 rounded-xl"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
             }}
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -135,13 +135,13 @@ export const QueryLogsTable = memo(({
           </div>
           <div>
             <h3
-              className="text-lg font-semibold"
+              className="text-sm sm:text-lg font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Query Logs
             </h3>
             <span
-              className="text-xs tabular-nums"
+              className="text-[10px] sm:text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
               {totalCount.toLocaleString()} total queries
@@ -150,9 +150,9 @@ export const QueryLogsTable = memo(({
         </div>
 
         {/* Feedback Filter Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer group">
+        <label className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group">
           <div
-            className="relative w-5 h-5 rounded-md transition-all duration-200"
+            className="relative w-4 h-4 sm:w-5 sm:h-5 rounded-md transition-all duration-200 flex-shrink-0"
             style={{
               backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               border: feedbackOnly ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -169,7 +169,7 @@ export const QueryLogsTable = memo(({
             />
             {feedbackOnly && (
               <svg
-                className="absolute inset-0 w-5 h-5 p-1"
+                className="absolute inset-0 w-4 h-4 sm:w-5 sm:h-5 p-0.5 sm:p-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="white"
@@ -180,10 +180,11 @@ export const QueryLogsTable = memo(({
             )}
           </div>
           <span
-            className="text-sm transition-colors duration-200 font-medium"
+            className="text-xs sm:text-sm transition-colors duration-200 font-medium"
             style={{ color: feedbackOnly ? 'var(--text-primary)' : 'var(--text-secondary)' }}
           >
-            Show only queries with feedback
+            <span className="hidden sm:inline">Show only queries with feedback</span>
+            <span className="sm:hidden">With feedback only</span>
           </span>
         </label>
       </div>
@@ -191,7 +192,7 @@ export const QueryLogsTable = memo(({
       {/* Table */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         <div className="overflow-x-auto overflow-y-auto thin-scrollbar flex-1">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="sticky top-0 z-20">
               <tr>
                 <th
@@ -204,7 +205,7 @@ export const QueryLogsTable = memo(({
                   Query
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
                   style={{
                     color: 'var(--text-secondary)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
@@ -213,7 +214,7 @@ export const QueryLogsTable = memo(({
                   Time
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
                   style={{
                     color: 'var(--text-secondary)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
@@ -222,7 +223,7 @@ export const QueryLogsTable = memo(({
                   Results
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
                   style={{
                     color: 'var(--text-secondary)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
@@ -231,7 +232,7 @@ export const QueryLogsTable = memo(({
                   Top Score
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
                   style={{
                     color: 'var(--text-secondary)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
@@ -240,7 +241,7 @@ export const QueryLogsTable = memo(({
                   Feedback
                 </th>
                 <th
-                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
+                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
                   style={{
                     color: 'var(--text-secondary)',
                     backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
@@ -346,28 +347,28 @@ export const QueryLogsTable = memo(({
                         </div>
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {formatTime(log.totalTimeMs)}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm tabular-nums"
+                        className="px-3 py-1.5 text-sm tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {log.finalCount ?? '-'}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {log.topCosineScore?.toFixed(3) ?? '-'}
                       </td>
-                      <td className="px-3 py-1.5">
+                      <td className="px-3 py-1.5 whitespace-nowrap">
                         <FeedbackBadge feedback={log.userFeedback} />
                       </td>
                       <td
-                        className="px-4 py-1.5 text-sm"
+                        className="px-4 py-1.5 text-sm whitespace-nowrap"
                         style={{ color: 'var(--text-tertiary)' }}
                       >
                         {formatDate(log.createdAt)}
@@ -505,16 +506,61 @@ export const QueryLogsTable = memo(({
       {/* Pagination */}
       {totalPages > 1 && (
         <div
-          className="px-5 py-2 border-t flex items-center justify-between flex-shrink-0"
+          className="px-3 sm:px-5 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0"
           style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
         >
           <p
-            className="text-sm tabular-nums"
+            className="text-xs sm:text-sm tabular-nums"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            Showing <span style={{ color: 'var(--text-secondary)' }}>{((page - 1) * pageSize) + 1}</span> to <span style={{ color: 'var(--text-secondary)' }}>{Math.min(page * pageSize, totalCount)}</span> of <span style={{ color: 'var(--text-secondary)' }}>{totalCount}</span>
+            <span className="hidden sm:inline">Showing </span>
+            <span style={{ color: 'var(--text-secondary)' }}>{((page - 1) * pageSize) + 1}</span>
+            <span className="hidden sm:inline"> to </span>
+            <span className="sm:hidden">-</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{Math.min(page * pageSize, totalCount)}</span> of <span style={{ color: 'var(--text-secondary)' }}>{totalCount}</span>
           </p>
-          <div className="flex gap-2">
+
+          {/* Mobile: Full width pagination */}
+          <div className="flex sm:hidden w-full gap-2">
+            <button
+              onClick={() => { onPageChange(page - 1); }}
+              disabled={page <= 1}
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                color: page <= 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
+              ← Prev
+            </button>
+
+            <div
+              className="flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold min-w-[80px]"
+              style={{
+                backgroundColor: 'var(--color-brand-500)',
+                color: 'white',
+              }}
+            >
+              {page} / {totalPages}
+            </div>
+
+            <button
+              onClick={() => { onPageChange(page + 1); }}
+              disabled={page >= totalPages}
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+              style={{
+                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                color: page >= totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              }}
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Desktop: Original pagination */}
+          <div className="hidden sm:flex gap-2">
             <button
               onClick={() => { onPageChange(page - 1); }}
               disabled={page <= 1}

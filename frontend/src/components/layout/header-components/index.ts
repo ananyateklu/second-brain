@@ -1,4 +1,5 @@
 export { SettingsNavTabs } from './SettingsNavTabs';
+export { SettingsTabBar } from './SettingsTabBar';
 export { NotesPageControls, NotesPageControlsMobile } from './NotesPageControls';
 export { TimeRangeSelector } from './TimeRangeSelector';
 export { GitHubNavTabs } from './GitHubNavTabs';

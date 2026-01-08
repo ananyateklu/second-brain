@@ -97,7 +97,7 @@ function ModelSelector({ availableModels, selectedModel, onModelChange, disabled
                         type="button"
                         onClick={() => !disabled && setIsOpen(!isOpen)}
                         disabled={disabled}
-                        className="w-56 flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)]"
+                        className="w-full sm:w-56 flex items-center justify-between gap-3 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] disabled:opacity-50 disabled:cursor-not-allowed hover:border-[color:var(--color-brand-600)]"
                         style={{
                             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                             borderColor: isOpen ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -428,7 +428,7 @@ export function NoteSummarySettings() {
             {/* Inline Controls - All visible together */}
             <div className="space-y-3">
                 {/* Generate on Create/Update Toggle, Provider, and Model - Inline */}
-                <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start sm:items-center">
                     {/* Generate on Create/Update Toggle */}
                     <div className="flex items-center justify-between rounded-xl min-w-0" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}>
                         <div className="flex items-center gap-2 min-w-0">
@@ -438,8 +438,9 @@ export function NoteSummarySettings() {
                                 </svg>
                             </div>
                             <div className="min-w-0">
-                                <label className="text-xs font-medium block truncate" style={{ color: 'var(--text-primary)' }}>
-                                    Generate summaries when notes are created or updated
+                                <label className="text-xs font-medium block" style={{ color: 'var(--text-primary)' }}>
+                                    <span className="sm:hidden">Auto-generate on save</span>
+                                    <span className="hidden sm:inline">Generate summaries when notes are created or updated</span>
                                 </label>
                             </div>
                         </div>
@@ -462,7 +463,7 @@ export function NoteSummarySettings() {
                     </div>
 
                     {/* Provider and Model grouped together */}
-                    <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center flex-shrink-0">
+                    <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 items-start sm:items-center flex-shrink-0">
                         {/* Provider Selection */}
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
@@ -549,7 +550,7 @@ export function NoteSummarySettings() {
                                     style={{ color: 'var(--text-primary)' }}
                                 >
                                     <div
-                                        className="w-4 h-4 rounded-xl border-2 flex items-center justify-center transition-all"
+                                        className="w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all"
                                         style={{
                                             borderColor: selectedNotes.size === notesWithoutSummaries.length
                                                 ? 'var(--color-brand-600)'
@@ -560,7 +561,7 @@ export function NoteSummarySettings() {
                                         }}
                                     >
                                         {selectedNotes.size === notesWithoutSummaries.length && (
-                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                             </svg>
                                         )}
@@ -573,7 +574,7 @@ export function NoteSummarySettings() {
 
                     {/* Action Buttons */}
                     {notesWithoutSummaries.length > 0 && (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             {isGenerating ? (
                                 <button
                                     type="button"
@@ -679,9 +680,9 @@ export function NoteSummarySettings() {
                                         onClick={() => handleSelectNote(note.id)}
                                     >
                                         {/* Checkbox */}
-                                        <div className="absolute top-1 right-1">
+                                        <div className="absolute top-1.5 right-1.5">
                                             <div
-                                                className="w-3 h-3 rounded-xl border flex items-center justify-center transition-all"
+                                                className="w-4 h-4 rounded-md border-2 flex items-center justify-center transition-all"
                                                 style={{
                                                     borderColor: selectedNotes.has(note.id)
                                                         ? 'var(--color-brand-600)'
@@ -692,7 +693,7 @@ export function NoteSummarySettings() {
                                                 }}
                                             >
                                                 {selectedNotes.has(note.id) && (
-                                                    <svg className="w-1.5 h-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                     </svg>
                                                 )}
