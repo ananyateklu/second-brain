@@ -1,5 +1,5 @@
-import { useNotes } from '../../notes/hooks/use-notes-query';
-import { useBoundStore } from '../../../store/bound-store';
+import { useNotes } from '../../features/notes/hooks/use-notes-query';
+import { useBoundStore } from '../../store/bound-store';
 
 interface InlineNoteReferenceProps {
     noteId: string;
@@ -10,6 +10,9 @@ interface InlineNoteReferenceProps {
 
 /**
  * Inline note reference that opens the edit modal when clicked.
+ *
+ * This is a shared component used by both chat and agents features
+ * to display clickable note references.
  */
 export function InlineNoteReference({ noteId, noteTitle, variant = 'default' }: InlineNoteReferenceProps) {
     const { data: allNotes, isLoading } = useNotes();
@@ -56,4 +59,3 @@ export function InlineNoteReference({ noteId, noteTitle, variant = 'default' }: 
         </button>
     );
 }
-

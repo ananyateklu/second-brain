@@ -5,6 +5,7 @@ using SecondBrain.API.Controllers;
 using UserPreferencesResponse = SecondBrain.Application.DTOs.Responses.UserPreferencesResponse;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
+using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -39,6 +40,7 @@ public class AgentControllerTests
             _mockAgentService.Object,
             _mockChatRepository.Object,
             _mockUserPreferencesService.Object,
+            Mock.Of<IConfirmationTracker>(),
             _mockLogger.Object
         );
 

@@ -385,5 +385,12 @@ Use markdown thoughtfully for readability:
         [Description("Max results (for 'list')")] int maxResults = 20)
         => _trashPlugin.ManageTrashAsync(action, noteId, maxResults);
 
+    /// <summary>
+    /// Checks if a ManageTrash operation requires user confirmation.
+    /// Delegates to the internal NoteTrashPlugin.
+    /// </summary>
+    public Task<Models.ToolConfirmationDetails?> GetTrashConfirmationDetailsAsync(string action, string? noteId)
+        => _trashPlugin.GetConfirmationDetailsAsync(action, noteId);
+
     #endregion
 }

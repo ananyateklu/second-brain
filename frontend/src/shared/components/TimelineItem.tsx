@@ -15,7 +15,7 @@ const TIMELINE = {
 } as const;
 
 // Animation class from chat-input.module.css
-import styles from '../../../styles/components/chat-input.module.css';
+import styles from '../../styles/components/chat-input.module.css';
 
 interface TimelineItemProps {
   children: ReactNode;
@@ -31,6 +31,8 @@ interface TimelineItemProps {
  * Unified timeline item component that handles positioning of icons/dots
  * on the process timeline. Use this to wrap content that should appear
  * in the timeline with proper alignment.
+ *
+ * This is a shared component used by both chat and agents features.
  *
  * @example
  * // For tool executions, thinking steps (shows spinner → checkmark)

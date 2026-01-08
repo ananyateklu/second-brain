@@ -291,7 +291,8 @@ public class GeminiStreamingStrategyTests
             Logger = Mock.Of<ILogger>(),
             RagService = Mock.Of<IRagService>(),
             UserPreferencesService = Mock.Of<IUserPreferencesService>(),
-            GetSystemPrompt = _ => "You are a helpful assistant."
+            GetSystemPrompt = _ => "You are a helpful assistant.",
+            ConversationId = "test-conversation-id"
         };
     }
 

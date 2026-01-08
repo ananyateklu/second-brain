@@ -2,9 +2,8 @@ import { useState, useEffect, useMemo, memo, ComponentPropsWithoutRef, Fragment 
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ThinkingStep } from '../types/agent-types';
-import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
+import { InlineNoteReference, TimelineItem } from '../../../shared/components';
 import { splitTextWithNoteReferences } from '../../../utils/note-reference-utils';
-import { TimelineItem } from './TimelineItem';
 
 interface ThinkingStepCardProps {
   step: ThinkingStep;

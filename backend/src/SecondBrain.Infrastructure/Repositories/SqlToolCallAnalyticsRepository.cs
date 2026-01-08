@@ -39,21 +39,46 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls
+                    SELECT tc.tool_name, tc.success, tc.executed_at
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls from JSON
+                    SELECT
+                        jt.tool_name COLLATE ""default"" AS tool_name,
+                        (jt.status COLLATE ""default"" = 'completed') AS success,
+                        jt.started_at::timestamptz AS executed_at
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            tool_name TEXT PATH '$.toolName',
+                            status TEXT PATH '$.status',
+                            started_at TEXT PATH '$.startedAt'
+                        )
+                    ) AS jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
                 SELECT
                     COUNT(*)::int AS total_calls,
-                    COALESCE(SUM(CASE WHEN tc.success THEN 1 ELSE 0 END), 0)::int AS successful_calls,
-                    COALESCE(SUM(CASE WHEN NOT tc.success THEN 1 ELSE 0 END), 0)::int AS failed_calls,
+                    COALESCE(SUM(CASE WHEN success THEN 1 ELSE 0 END), 0)::int AS successful_calls,
+                    COALESCE(SUM(CASE WHEN NOT success THEN 1 ELSE 0 END), 0)::int AS failed_calls,
                     COALESCE(
-                        ROUND(100.0 * SUM(CASE WHEN tc.success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
+                        ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
                         0
                     ) AS success_rate,
-                    0 AS avg_execution_time_ms  -- Placeholder as we don't track execution time yet
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}";
+                    0 AS avg_execution_time_ms
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}";
 
             var connection = _context.Database.GetDbConnection();
             await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -98,24 +123,49 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
-                SELECT 
-                    tc.tool_name,
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls
+                    SELECT tc.tool_name, tc.success, tc.executed_at
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls from JSON
+                    SELECT
+                        jt.tool_name COLLATE ""default"" AS tool_name,
+                        (jt.status COLLATE ""default"" = 'completed') AS success,
+                        jt.started_at::timestamptz AS executed_at
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            tool_name TEXT PATH '$.toolName',
+                            status TEXT PATH '$.status',
+                            started_at TEXT PATH '$.startedAt'
+                        )
+                    ) AS jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
+                SELECT
+                    tool_name,
                     COUNT(*)::int AS call_count,
-                    SUM(CASE WHEN tc.success THEN 1 ELSE 0 END)::int AS success_count,
-                    SUM(CASE WHEN NOT tc.success THEN 1 ELSE 0 END)::int AS failure_count,
+                    SUM(CASE WHEN success THEN 1 ELSE 0 END)::int AS success_count,
+                    SUM(CASE WHEN NOT success THEN 1 ELSE 0 END)::int AS failure_count,
                     COALESCE(
-                        ROUND(100.0 * SUM(CASE WHEN tc.success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
+                        ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
                         0
                     ) AS success_rate,
-                    MIN(tc.executed_at) AS first_used,
-                    MAX(tc.executed_at) AS last_used
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}
-                GROUP BY tc.tool_name
+                    MIN(executed_at) AS first_used,
+                    MAX(executed_at) AS last_used
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}
+                GROUP BY tool_name
                 ORDER BY call_count DESC";
 
             var connection = _context.Database.GetDbConnection();
@@ -165,30 +215,70 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
 
             // PostgreSQL 18 JSON_TABLE query to extract action from arguments_jsonb
             var sql = $@"
-                SELECT 
-                    tc.tool_name,
-                    COALESCE(jt.action, 'unknown') AS action,
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls with action extraction
+                    SELECT
+                        tc.tool_name,
+                        tc.success,
+                        tc.executed_at,
+                        COALESCE(jt.action, 'unknown') AS action
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id,
+                    JSON_TABLE(
+                        COALESCE(tc.arguments_jsonb, '{{}}'::jsonb),
+                        '$'
+                        COLUMNS (
+                            action TEXT PATH '$.action'
+                        )
+                    ) AS jt
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls with action extraction from nested JSON
+                    SELECT
+                        vt_jt.tool_name COLLATE ""default"" AS tool_name,
+                        (vt_jt.status COLLATE ""default"" = 'completed') AS success,
+                        vt_jt.started_at::timestamptz AS executed_at,
+                        COALESCE(
+                            CASE
+                                WHEN vt_jt.arguments IS NOT NULL
+                                     AND length(vt_jt.arguments) > 2
+                                     AND left(vt_jt.arguments, 1) = '{{'
+                                THEN (vt_jt.arguments::jsonb)->>'action'
+                                ELSE NULL
+                            END,
+                            'unknown'
+                        ) COLLATE ""default"" AS action
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            tool_name TEXT PATH '$.toolName',
+                            status TEXT PATH '$.status',
+                            started_at TEXT PATH '$.startedAt',
+                            arguments TEXT PATH '$.arguments'
+                        )
+                    ) AS vt_jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
+                SELECT
+                    tool_name,
+                    COALESCE(action, 'unknown') AS action,
                     COUNT(*)::int AS call_count,
-                    SUM(CASE WHEN tc.success THEN 1 ELSE 0 END)::int AS success_count,
+                    SUM(CASE WHEN success THEN 1 ELSE 0 END)::int AS success_count,
                     COALESCE(
-                        ROUND(100.0 * SUM(CASE WHEN tc.success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
+                        ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
                         0
                     ) AS success_rate
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id,
-                JSON_TABLE(
-                    COALESCE(tc.arguments_jsonb, '{{}}'::jsonb),
-                    '$'
-                    COLUMNS (
-                        action TEXT PATH '$.action'
-                    )
-                ) AS jt
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}
-                GROUP BY tc.tool_name, jt.action
-                ORDER BY tc.tool_name, call_count DESC";
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}
+                GROUP BY tool_name, action
+                ORDER BY tool_name, call_count DESC";
 
             var connection = _context.Database.GetDbConnection();
             await EnsureConnectionOpenAsync(connection, cancellationToken);
@@ -234,16 +324,36 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
-                SELECT 
-                    DATE(tc.executed_at) AS call_date,
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls
+                    SELECT tc.executed_at
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls from JSON
+                    SELECT jt.started_at::timestamptz AS executed_at
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            started_at TEXT PATH '$.startedAt'
+                        )
+                    ) AS jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
+                SELECT
+                    DATE(executed_at) AS call_date,
                     COUNT(*)::int AS call_count
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}
-                GROUP BY DATE(tc.executed_at)
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}
+                GROUP BY DATE(executed_at)
                 ORDER BY call_date ASC";
 
             var connection = _context.Database.GetDbConnection();
@@ -287,19 +397,42 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
-                SELECT 
-                    DATE(tc.executed_at) AS call_date,
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls
+                    SELECT tc.success, tc.executed_at
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls from JSON
+                    SELECT
+                        (jt.status COLLATE ""default"" = 'completed') AS success,
+                        jt.started_at::timestamptz AS executed_at
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            status TEXT PATH '$.status',
+                            started_at TEXT PATH '$.startedAt'
+                        )
+                    ) AS jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
+                SELECT
+                    DATE(executed_at) AS call_date,
                     COALESCE(
-                        ROUND(100.0 * SUM(CASE WHEN tc.success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
+                        ROUND(100.0 * SUM(CASE WHEN success THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 2),
                         0
                     ) AS success_rate
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}
-                GROUP BY DATE(tc.executed_at)
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}
+                GROUP BY DATE(executed_at)
                 ORDER BY call_date ASC";
 
             var connection = _context.Database.GetDbConnection();
@@ -346,30 +479,65 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
 
             // PostgreSQL 18 JSON_TABLE to extract error details from result_jsonb
             var sql = $@"
-                SELECT 
-                    tc.tool_name,
-                    COALESCE(jt.error_type, 'Unknown') AS error_type,
-                    COALESCE(jt.error_message, LEFT(tc.result, 200)) AS error_message,
+                WITH unified_errors AS (
+                    -- Chat tool call errors
+                    SELECT
+                        tc.tool_name,
+                        COALESCE(jt.error_type, 'Unknown') AS error_type,
+                        COALESCE(jt.error_message, jt.error_alt, LEFT(tc.result, 200)) AS error_message,
+                        tc.executed_at,
+                        tc.result AS result_text
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id,
+                    JSON_TABLE(
+                        COALESCE(tc.result_jsonb, '{{}}'::jsonb),
+                        '$'
+                        COLUMNS (
+                            error_type TEXT PATH '$.errorType',
+                            error_message TEXT PATH '$.error',
+                            error_alt TEXT PATH '$.message'
+                        )
+                    ) AS jt
+                    WHERE cc.user_id = @userId
+                      AND NOT cc.is_deleted
+                      AND NOT tc.success
+
+                    UNION ALL
+
+                    -- Voice tool call errors
+                    SELECT
+                        vt_jt.tool_name COLLATE ""default"" AS tool_name,
+                        'Unknown' AS error_type,
+                        LEFT(vt_jt.result COLLATE ""default"", 200) AS error_message,
+                        vt_jt.started_at::timestamptz AS executed_at,
+                        vt_jt.result COLLATE ""default"" AS result_text
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            tool_name TEXT PATH '$.toolName',
+                            status TEXT PATH '$.status',
+                            started_at TEXT PATH '$.startedAt',
+                            result TEXT PATH '$.result'
+                        )
+                    ) AS vt_jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                      AND vt_jt.status COLLATE ""default"" != 'completed'
+                )
+                SELECT
+                    tool_name,
+                    error_type,
+                    error_message,
                     COUNT(*)::int AS occurrence_count,
-                    MIN(tc.executed_at) AS first_occurrence,
-                    MAX(tc.executed_at) AS last_occurrence
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id,
-                JSON_TABLE(
-                    COALESCE(tc.result_jsonb, '{{}}'::jsonb),
-                    '$'
-                    COLUMNS (
-                        error_type TEXT PATH '$.errorType',
-                        error_message TEXT PATH '$.error',
-                        error_alt TEXT PATH '$.message'
-                    )
-                ) AS jt
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  AND NOT tc.success
-                  {dateFilter}
-                GROUP BY tc.tool_name, jt.error_type, jt.error_message, tc.result
+                    MIN(executed_at) AS first_occurrence,
+                    MAX(executed_at) AS last_occurrence
+                FROM unified_errors
+                WHERE 1=1 {dateFilter}
+                GROUP BY tool_name, error_type, error_message, result_text
                 ORDER BY occurrence_count DESC
                 LIMIT @topN";
 
@@ -418,16 +586,36 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
             var (dateFilter, parameters) = BuildDateFilter(userId, startDate, endDate);
 
             var sql = $@"
-                SELECT 
-                    EXTRACT(HOUR FROM tc.executed_at)::int AS hour_of_day,
+                WITH unified_tool_calls AS (
+                    -- Chat tool calls
+                    SELECT tc.executed_at
+                    FROM tool_calls tc
+                    INNER JOIN chat_messages cm ON tc.message_id = cm.id
+                    INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
+                    WHERE cc.user_id = @userId AND NOT cc.is_deleted
+
+                    UNION ALL
+
+                    -- Voice tool calls from JSON
+                    SELECT jt.started_at::timestamptz AS executed_at
+                    FROM voice_turns vt
+                    INNER JOIN voice_sessions vs ON vt.session_id = vs.id,
+                    JSON_TABLE(
+                        COALESCE(vt.tool_calls_json, '[]'::jsonb), '$[*]'
+                        COLUMNS (
+                            started_at TEXT PATH '$.startedAt'
+                        )
+                    ) AS jt
+                    WHERE vs.user_id = @userId
+                      AND vt.tool_calls_json IS NOT NULL
+                      AND jsonb_array_length(COALESCE(vt.tool_calls_json, '[]'::jsonb)) > 0
+                )
+                SELECT
+                    EXTRACT(HOUR FROM executed_at)::int AS hour_of_day,
                     COUNT(*)::int AS call_count
-                FROM tool_calls tc
-                INNER JOIN chat_messages cm ON tc.message_id = cm.id
-                INNER JOIN chat_conversations cc ON cm.conversation_id = cc.id
-                WHERE cc.user_id = @userId
-                  AND NOT cc.is_deleted
-                  {dateFilter}
-                GROUP BY EXTRACT(HOUR FROM tc.executed_at)
+                FROM unified_tool_calls
+                WHERE 1=1 {dateFilter}
+                GROUP BY EXTRACT(HOUR FROM executed_at)
                 ORDER BY hour_of_day ASC";
 
             var connection = _context.Database.GetDbConnection();
@@ -472,13 +660,13 @@ public class SqlToolCallAnalyticsRepository : IToolCallAnalyticsRepository
 
         if (startDate.HasValue)
         {
-            filters.Add("AND tc.executed_at >= @startDate");
+            filters.Add("AND executed_at >= @startDate");
             parameters.Add(new NpgsqlParameter("@startDate", startDate.Value));
         }
 
         if (endDate.HasValue)
         {
-            filters.Add("AND tc.executed_at <= @endDate");
+            filters.Add("AND executed_at <= @endDate");
             parameters.Add(new NpgsqlParameter("@endDate", endDate.Value));
         }
 

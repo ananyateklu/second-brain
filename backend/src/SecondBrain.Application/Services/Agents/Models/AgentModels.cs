@@ -9,6 +9,10 @@ public class AgentRequest
     public string Model { get; set; } = string.Empty;
     public List<AgentMessage> Messages { get; set; } = new();
     public string UserId { get; set; } = string.Empty;
+    /// <summary>
+    /// The conversation ID for this agent session.
+    /// </summary>
+    public string ConversationId { get; set; } = string.Empty;
     public float? Temperature { get; set; }
     public int? MaxTokens { get; set; }
 
@@ -200,6 +204,51 @@ public class AgentStreamEvent
     public string? SearchQuery { get; set; }
 
     #endregion
+
+    #region Confirmation-related fields (for ConfirmationRequired events)
+
+    /// <summary>
+    /// Unique identifier for this confirmation request
+    /// </summary>
+    public string? ConfirmationId { get; set; }
+
+    /// <summary>
+    /// Human-readable message describing what action requires confirmation
+    /// </summary>
+    public string? ConfirmationMessage { get; set; }
+
+    /// <summary>
+    /// Detailed information about the destructive operation
+    /// </summary>
+    public ToolConfirmationDetails? ConfirmationDetails { get; set; }
+
+    #endregion
+}
+
+/// <summary>
+/// Details about a destructive operation requiring user confirmation
+/// </summary>
+public class ToolConfirmationDetails
+{
+    /// <summary>
+    /// Type of operation (e.g., "permanent_delete")
+    /// </summary>
+    public string Operation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ID of the item being affected
+    /// </summary>
+    public string ItemId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Title/name of the item being affected
+    /// </summary>
+    public string ItemTitle { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Warning message explaining the consequences of the action
+    /// </summary>
+    public string WarningMessage { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -248,7 +297,11 @@ public enum AgentEventType
     /// <summary>
     /// Reasoning/thinking step from Grok Think Mode or Claude extended thinking
     /// </summary>
-    ReasoningStep
+    ReasoningStep,
+    /// <summary>
+    /// Confirmation required before executing a destructive operation (e.g., permanent delete)
+    /// </summary>
+    ConfirmationRequired
 }
 
 public class ToolExecutionResult

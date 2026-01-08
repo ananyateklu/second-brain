@@ -41,6 +41,16 @@ export interface ImageGenerationParams {
   style?: string;
 }
 
+/**
+ * Extract note title from agent tool result string.
+ * Handles patterns like: Successfully created note "Meeting Notes" (ID: ...)
+ */
+function extractNoteTitleFromResult(result: string): string | null {
+  // Match quoted title: note "Title" (with straight or curly quotes)
+  const match = result.match(/note\s+[""]([^""]+)[""]|note\s+"([^"]+)"/i);
+  return match ? (match[1] || match[2]) : null;
+}
+
 export interface ChatPageState {
   // UI State
   inputValue: string;
@@ -277,10 +287,44 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     }
   }, [isImageGenerationMode, ragEnabled, agentModeEnabled, handleRagToggle, setAgentModeEnabled]);
 
+  // Handle note tool completions with toast notifications
+  const handleNoteToolComplete = useCallback((tool: string, result: string, success: boolean) => {
+    if (!success) return;
+
+    const title = extractNoteTitleFromResult(result);
+
+    const messages: Record<string, string> = {
+      'CreateNote': `Note created${title ? `: ${title}` : ''}`,
+      'UpdateNote': `Note updated${title ? `: ${title}` : ''}`,
+      'EditNote': `Note edited${title ? `: ${title}` : ''}`,
+      'DeleteNote': `Note deleted${title ? `: ${title}` : ''}`,
+      'DuplicateNote': `Note duplicated${title ? `: ${title}` : ''}`,
+      'SetNoteArchived': result.toLowerCase().includes('archived') && !result.toLowerCase().includes('unarchived')
+        ? `Note archived${title ? `: ${title}` : ''}`
+        : `Note unarchived${title ? `: ${title}` : ''}`,
+      'MoveNoteToFolder': `Note moved${title ? `: ${title}` : ''}`,
+      'ManageTrash': result.toLowerCase().includes('restored')
+        ? `Note restored${title ? `: ${title}` : ''}`
+        : result.toLowerCase().includes('permanently deleted')
+          ? `Note permanently deleted${title ? `: ${title}` : ''}`
+          : `Note trashed${title ? `: ${title}` : ''}`,
+    };
+
+    const message = messages[tool];
+    if (message) {
+      toast.success(message);
+    }
+  }, []);
+
+  // Handle confirmation required events - we use a ref to store the responder function
+  // since we need to call it from the toast callback after unifiedStream is created
+  const respondToConfirmationRef = useRef<((confirmed: boolean) => Promise<void>) | null>(null);
+
   // Unified streaming with new architecture
   const unifiedStream = useUnifiedStream({
     mode: agentModeEnabled ? 'agent' : 'chat',
     conversationId: conversationId || '',
+    onToolComplete: handleNoteToolComplete,
   });
 
   // Create legacy adapter for backward compatibility with existing components
@@ -320,6 +364,33 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   // Use unified stream actions
   const cancelStream = unifiedStream.cancel;
   const resetStream = unifiedStream.reset;
+  const respondToConfirmation = unifiedStream.respondToConfirmation;
+  const pendingConfirmation = unifiedStream.pendingConfirmation;
+
+  // Keep respondToConfirmation ref updated
+  useEffect(() => {
+    respondToConfirmationRef.current = respondToConfirmation;
+  }, [respondToConfirmation]);
+
+  // Show confirmation toast when a destructive operation requires user approval
+  useEffect(() => {
+    if (!pendingConfirmation) return;
+
+    const { details } = pendingConfirmation;
+
+    // Show confirmation toast with action buttons
+    void toast.confirm({
+      title: `⚠️ Permanently Delete "${details.itemTitle}"?`,
+      description: details.warningMessage,
+      confirmText: 'Delete Permanently',
+      cancelText: 'Cancel',
+    }).then((confirmed) => {
+      // Call the API to respond to the confirmation
+      if (respondToConfirmationRef.current) {
+        void respondToConfirmationRef.current(confirmed);
+      }
+    });
+  }, [pendingConfirmation]);
 
   // Streaming Cleanup
   useChatStreamingCleanup({

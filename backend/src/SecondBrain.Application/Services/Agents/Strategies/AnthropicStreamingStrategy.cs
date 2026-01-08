@@ -20,6 +20,7 @@ namespace SecondBrain.Application.Services.Agents.Strategies;
 /// </summary>
 public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
 {
+    private readonly IConfirmationTracker _confirmationTracker;
     private readonly ILogger<AnthropicStreamingStrategy> _logger;
 
     public AnthropicStreamingStrategy(
@@ -27,9 +28,11 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
         IThinkingExtractor thinkingExtractor,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
+        IConfirmationTracker confirmationTracker,
         ILogger<AnthropicStreamingStrategy> logger)
         : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
+        _confirmationTracker = confirmationTracker;
         _logger = logger;
     }
 
@@ -426,6 +429,60 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                                 effectiveInput = newInput;
                             }
                         }
+                    }
+
+                    // Check if this tool requires user confirmation (e.g., permanent delete)
+                    var confirmationDetails = await CheckForConfirmationRequiredAsync(
+                        toolName, effectiveInput, pluginMethods);
+
+                    if (confirmationDetails != null)
+                    {
+                        _logger.LogInformation(
+                            "Tool {ToolName} requires confirmation. Operation: {Operation}, Item: {ItemTitle}",
+                            toolName, confirmationDetails.Operation, confirmationDetails.ItemTitle);
+
+                        // Create confirmation request and emit event
+                        var confirmationId = _confirmationTracker.CreateConfirmation(
+                            context.ConversationId,
+                            toolName,
+                            toolId,
+                            confirmationDetails);
+
+                        yield return ConfirmationRequiredEvent(
+                            toolName, toolId, confirmationId, confirmationDetails);
+
+                        // Wait for user response (2 minute timeout)
+                        var confirmationResult = await _confirmationTracker.WaitForConfirmationAsync(
+                            confirmationId,
+                            TimeSpan.FromMinutes(2),
+                            cancellationToken);
+
+                        if (confirmationResult?.Confirmed != true)
+                        {
+                            // User cancelled or timeout - skip this tool
+                            _logger.LogInformation(
+                                "Tool {ToolName} skipped - user cancelled or timed out. ConfirmationId: {ConfirmationId}",
+                                toolName, confirmationId);
+
+                            yield return StatusEvent($"Skipped {toolName} - cancelled by user");
+                            yield return ToolCallEndEvent(toolName, toolId,
+                                $"Operation cancelled by user. The {confirmationDetails.Operation} was not performed.");
+
+                            toolResults.Add(new ToolResultContent
+                            {
+                                ToolUseId = toolId,
+                                Content = new List<ContentBase>
+                                {
+                                    new TextContent { Text = "Operation cancelled by user." }
+                                }
+                            });
+
+                            continue; // Skip to next tool
+                        }
+
+                        _logger.LogInformation(
+                            "Tool {ToolName} confirmed by user. Proceeding with execution. ConfirmationId: {ConfirmationId}",
+                            toolName, confirmationId);
                     }
 
                     yield return StatusEvent($"Executing {toolName}...");
@@ -935,5 +992,67 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
             _logger.LogWarning(ex, "Failed to extract image data from AnalyzeImage result");
             return (result, null, null);
         }
+    }
+
+    /// <summary>
+    /// Check if a tool call requires user confirmation before execution.
+    /// Currently only ManageTrash with action='delete' (permanent delete) requires confirmation.
+    /// </summary>
+    private async Task<ToolConfirmationDetails?> CheckForConfirmationRequiredAsync(
+        string toolName,
+        JsonNode? toolInput,
+        Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)> pluginMethods)
+    {
+        // Only check ManageTrash for permanent delete operations
+        if (!toolName.Equals("ManageTrash", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogDebug("CheckForConfirmationRequiredAsync: Tool {ToolName} is not ManageTrash, skipping", toolName);
+            return null;
+        }
+
+        if (!pluginMethods.TryGetValue(toolName, out var pluginMethod))
+        {
+            _logger.LogDebug("CheckForConfirmationRequiredAsync: Could not find plugin for {ToolName}", toolName);
+            return null;
+        }
+
+        _logger.LogDebug("CheckForConfirmationRequiredAsync: Found plugin {PluginType} for {ToolName}",
+            pluginMethod.Plugin.GetType().Name, toolName);
+
+        // Check if the plugin is NotesPlugin (which wraps NoteTrashPlugin)
+        if (pluginMethod.Plugin is NotesPlugin notesPlugin)
+        {
+            var action = toolInput?["action"]?.GetValue<string>() ?? "";
+            var noteId = toolInput?["noteId"]?.GetValue<string>();
+
+            _logger.LogDebug("CheckForConfirmationRequiredAsync: Checking confirmation for action={Action}, noteId={NoteId}",
+                action, noteId ?? "null");
+
+            return await notesPlugin.GetTrashConfirmationDetailsAsync(action, noteId);
+        }
+
+        _logger.LogDebug("CheckForConfirmationRequiredAsync: Plugin is not NotesPlugin, type={PluginType}",
+            pluginMethod.Plugin.GetType().Name);
+        return null;
+    }
+
+    /// <summary>
+    /// Create an event indicating that user confirmation is required before tool execution.
+    /// </summary>
+    private static AgentStreamEvent ConfirmationRequiredEvent(
+        string toolName,
+        string toolId,
+        string confirmationId,
+        ToolConfirmationDetails details)
+    {
+        return new AgentStreamEvent
+        {
+            Type = AgentEventType.ConfirmationRequired,
+            ToolName = toolName,
+            ToolId = toolId,
+            ConfirmationId = confirmationId,
+            ConfirmationMessage = details.WarningMessage,
+            ConfirmationDetails = details
+        };
     }
 }

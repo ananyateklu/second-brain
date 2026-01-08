@@ -75,7 +75,12 @@ export function VoiceTranscript({
   // Auto-scroll to bottom when new content arrives
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({
+          top: scrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      });
     }
   }, [
     transcriptHistory,

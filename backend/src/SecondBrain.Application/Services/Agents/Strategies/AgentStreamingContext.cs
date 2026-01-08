@@ -14,6 +14,11 @@ namespace SecondBrain.Application.Services.Agents.Strategies;
 public class AgentStreamingContext
 {
     /// <summary>
+    /// The conversation ID for this agent session.
+    /// </summary>
+    public required string ConversationId { get; init; }
+
+    /// <summary>
     /// The original agent request.
     /// </summary>
     public required AgentRequest Request { get; init; }

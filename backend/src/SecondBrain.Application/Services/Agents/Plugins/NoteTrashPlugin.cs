@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI.StructuredOutput;
 using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.RAG;
@@ -200,5 +201,47 @@ public class NoteTrashPlugin : NotePluginBase
         }
 
         return $"Unknown action '{action}'. Valid actions are: 'list', 'restore', 'delete'.";
+    }
+
+    /// <summary>
+    /// Check if the ManageTrash operation requires confirmation.
+    /// Returns details for the confirmation dialog if action='delete' (permanent delete).
+    /// </summary>
+    public async Task<ToolConfirmationDetails?> GetConfirmationDetailsAsync(string action, string? noteId)
+    {
+        // Only require confirmation for permanent delete
+        if (action.ToLowerInvariant() != "delete" || string.IsNullOrWhiteSpace(noteId))
+        {
+            return null;
+        }
+
+        var userError = ValidateUserContext("check confirmation");
+        if (userError != null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var deletedNotes = await NoteRepository.GetDeletedByUserIdAsync(CurrentUserId);
+            var note = deletedNotes.FirstOrDefault(n => n.Id == noteId);
+
+            if (note == null)
+            {
+                return null;
+            }
+
+            return new ToolConfirmationDetails
+            {
+                Operation = "permanent_delete",
+                ItemId = noteId,
+                ItemTitle = note.Title,
+                WarningMessage = $"This will permanently delete \"{note.Title}\". This action cannot be undone."
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

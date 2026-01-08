@@ -7,7 +7,7 @@ import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingI
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
-import { TimelineItem } from '../../agents/components/TimelineItem';
+import { TimelineItem } from '../../../shared/components';
 import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';

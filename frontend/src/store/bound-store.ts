@@ -38,6 +38,33 @@ const VectorStoreProviderSchema = z.enum(['PostgreSQL', 'Pinecone']);
 const ThemeSchema = z.enum(['light', 'dark', 'blue']);
 const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
 
+// User schema (aligned with User interface from types/auth.ts)
+const UserSchema = z.object({
+  userId: z.string(),
+  email: z.string(),
+  username: z.string().optional(),
+  displayName: z.string(),
+  apiKey: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// Notes filter state schemas (aligned with NotesFilterState from store/types.ts)
+const DateFilterSchema = z.enum(['all', 'today', 'yesterday', 'last7days', 'last30days', 'last90days', 'custom']);
+const SortOptionSchema = z.enum(['newest', 'oldest', 'title-asc', 'title-desc']);
+const ArchiveFilterSchema = z.enum(['all', 'archived', 'not-archived']);
+
+const NotesFilterStateSchema = z.object({
+  dateFilter: DateFilterSchema,
+  customDateStart: z.string().optional(),
+  customDateEnd: z.string().optional(),
+  selectedTags: z.array(z.string()),
+  sortBy: SortOptionSchema,
+  archiveFilter: ArchiveFilterSchema,
+  selectedFolder: z.string().nullable().optional(),
+});
+
 // Schema for the persisted part of BoundStore
 // We use .catch() or .optional() to handle missing or invalid data gracefully if we wanted,
 // but to match original logic we will rely on strict type checking where appropriate.
@@ -46,7 +73,7 @@ const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
 // The original code threw Error("Invalid persisted ...").
 const PersistedStateSchema = z.object({
   // Auth
-  user: z.any().optional(), // Complex object, skipping strict schema for now
+  user: UserSchema.nullable().optional(),
   token: z.string().nullable().optional(),
   isAuthenticated: z.boolean().optional(),
   
@@ -110,7 +137,7 @@ const PersistedStateSchema = z.object({
   theme: ThemeSchema.optional(),
 
   // Notes
-  filterState: z.any().optional(), // Complex object
+  filterState: NotesFilterStateSchema.optional(),
 
   // Git
   repositoryPath: z.string().nullable().optional(),

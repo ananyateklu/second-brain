@@ -336,6 +336,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IThinkingExtractor, ThinkingExtractor>();
         services.AddScoped<IPluginToolBuilder, PluginToolBuilder>();
         services.AddSingleton<IAgentRetryPolicy, AgentRetryPolicy>(); // Unified retry policy with exponential backoff
+        services.AddSingleton<IConfirmationTracker, ConfirmationTracker>(); // Tool confirmation for destructive operations
         services.AddSingleton<IToolDiscoveryService, ToolDiscoveryService>(); // Tool Search Tool pattern for on-demand discovery
 
         // Register Agent plugins (concrete types for scope-isolated parallel execution)

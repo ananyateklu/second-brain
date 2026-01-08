@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
+using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Models;
@@ -29,17 +30,20 @@ public class AgentController : ControllerBase
     private readonly IAgentService _agentService;
     private readonly IChatRepository _chatRepository;
     private readonly IUserPreferencesService _userPreferencesService;
+    private readonly IConfirmationTracker _confirmationTracker;
     private readonly ILogger<AgentController> _logger;
 
     public AgentController(
         IAgentService agentService,
         IChatRepository chatRepository,
         IUserPreferencesService userPreferencesService,
+        IConfirmationTracker confirmationTracker,
         ILogger<AgentController> logger)
     {
         _agentService = agentService;
         _chatRepository = chatRepository;
         _userPreferencesService = userPreferencesService;
+        _confirmationTracker = confirmationTracker;
         _logger = logger;
     }
 
@@ -175,6 +179,7 @@ public class AgentController : ControllerBase
                     }).ToList()
                 }).ToList(),
                 UserId = userId,
+                ConversationId = id,
                 Temperature = request.Temperature,
                 MaxTokens = request.MaxTokens,
                 Capabilities = request.Capabilities,
@@ -516,6 +521,27 @@ public class AgentController : ControllerBase
                             await Response.Body.FlushAsync(cancellationToken);
                         }
                         break;
+
+                    case AgentEventType.ConfirmationRequired:
+                        var confirmationJson = JsonSerializer.Serialize(new
+                        {
+                            confirmationId = evt.ConfirmationId,
+                            toolId = evt.ToolId,
+                            tool = evt.ToolName,
+                            message = evt.ConfirmationMessage,
+                            details = evt.ConfirmationDetails != null ? new
+                            {
+                                operation = evt.ConfirmationDetails.Operation,
+                                itemId = evt.ConfirmationDetails.ItemId,
+                                itemTitle = evt.ConfirmationDetails.ItemTitle,
+                                warningMessage = evt.ConfirmationDetails.WarningMessage
+                            } : null
+                        });
+                        await Response.WriteAsync($"event: confirmation_required\ndata: {confirmationJson}\n\n");
+                        await Response.Body.FlushAsync(cancellationToken);
+                        _logger.LogInformation("Confirmation required event sent. ToolName: {ToolName}, ConfirmationId: {ConfirmationId}",
+                            evt.ToolName, evt.ConfirmationId);
+                        break;
                 }
             }
 
@@ -637,6 +663,37 @@ public class AgentController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Respond to a tool confirmation request (approve or deny destructive operations)
+    /// </summary>
+    [HttpPost("confirmations/{confirmationId}/respond")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult RespondToConfirmation(
+        string confirmationId,
+        [FromBody] ConfirmationResponseRequest request)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        _logger.LogInformation(
+            "Confirmation response received. ConfirmationId: {ConfirmationId}, Confirmed: {Confirmed}, UserId: {UserId}",
+            confirmationId, request.Confirmed, userId);
+
+        _confirmationTracker.RespondToConfirmation(confirmationId, request.Confirmed);
+
+        return Ok(new
+        {
+            message = request.Confirmed ? "Tool execution confirmed" : "Tool execution cancelled",
+            confirmationId
+        });
+    }
+
 }
 
 // Request/Response DTOs
@@ -684,4 +741,15 @@ public class CapabilityInfo
     public string Id { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request to respond to a tool confirmation
+/// </summary>
+public class ConfirmationResponseRequest
+{
+    /// <summary>
+    /// Whether the user confirmed the destructive operation
+    /// </summary>
+    public bool Confirmed { get; set; }
 }

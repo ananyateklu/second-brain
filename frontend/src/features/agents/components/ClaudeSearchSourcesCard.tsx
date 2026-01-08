@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ClaudeSearchSource } from '../../../types/chat';
-import { TimelineItem } from './TimelineItem';
+import { TimelineItem } from '../../../shared/components';
 
 interface ClaudeSearchSourcesCardProps {
   sources: ClaudeSearchSource[];

@@ -6,9 +6,8 @@
 import { useState, useMemo, memo, Fragment } from 'react';
 import { ToolExecution } from '../types/agent-types';
 import { NoteCard } from '../../notes/components/NoteCard';
-import { InlineNoteReference } from '../../chat/components/InlineNoteReference';
+import { InlineNoteReference, TimelineItem } from '../../../shared/components';
 import { splitTextWithNoteReferences } from '../../../utils/note-reference-utils';
-import { TimelineItem } from './TimelineItem';
 import { AuthenticatedImage } from './AuthenticatedImage';
 
 // Import from split modules
