@@ -417,6 +417,7 @@ export function Sidebar() {
         {/* Temporary sidebar that appears on hover */}
         <aside
           ref={temporarySidebarRef}
+          data-testid="main-sidebar"
           className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-[23rem] flex-col p-6 transform transition-all duration-300 ease-out backdrop-blur-xl ${
             isTemporarilyOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
           }`}

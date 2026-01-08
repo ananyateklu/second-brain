@@ -28,32 +28,33 @@ export class DashboardPage extends BasePage {
 
   get navigationSidebar() {
     // Match the desktop sidebar using data-testid (preferred) or sticky positioning fallback
-    return this.page.locator('[data-testid="main-sidebar"], aside.sticky').first();
+    return this.page.locator('[data-testid="main-sidebar"]:visible, aside.sticky:visible').first();
   }
 
   get notesNavLink() {
     // Use data-testid for robustness, with href fallback
-    return this.page.locator('[data-testid="nav-notes"], [data-testid="main-sidebar"] a[href="/notes"]').first();
+    return this.page.locator('[data-testid="nav-notes"], a[href="/notes"]').first();
   }
 
   get chatNavLink() {
-    return this.page.locator('[data-testid="nav-chat"], [data-testid="main-sidebar"] a[href="/chat"]').first();
+    return this.page.locator('[data-testid="nav-chat"], a[href="/chat"]').first();
   }
 
   get focusNavLink() {
-    return this.page.locator('[data-testid="nav-focus"], [data-testid="main-sidebar"] a[href="/focus"]').first();
+    return this.page.locator('[data-testid="nav-focus"], a[href="/focus"]').first();
   }
 
   get settingsNavLink() {
-    return this.page.locator('[data-testid="main-sidebar"] a[href="/settings"]').first();
+    return this.page.locator('a[href="/settings"]').first();
   }
 
   get userMenu() {
-    return this.page.locator('button[aria-label="User menu"]');
+    // Use data-testid for robustness, with aria-label fallback
+    return this.page.locator('[data-testid="user-menu-button"], button[aria-label="User menu"]').first();
   }
 
   get logoutButton() {
-    return this.page.locator('div[role="menuitem"]:has-text("Sign Out"), button:has-text("Sign Out")');
+    return this.page.locator('[role="menuitem"]:has-text("Sign Out"), button:has-text("Sign Out")').first();
   }
 
   // Actions
@@ -62,28 +63,32 @@ export class DashboardPage extends BasePage {
   }
 
   async navigateToNotes() {
+    await this.ensureSidebarOpen();
     await this.notesNavLink.click();
     await this.page.waitForURL(/\/notes/);
   }
 
   async navigateToChat() {
+    await this.ensureSidebarOpen();
     await this.chatNavLink.click();
     await this.page.waitForURL(/\/chat/);
   }
 
   async navigateToFocus() {
+    await this.ensureSidebarOpen();
     await this.focusNavLink.click();
     await this.page.waitForURL(/\/focus/);
   }
 
   async navigateToSettings() {
+    await this.ensureSidebarOpen();
     await this.settingsNavLink.click();
     await this.page.waitForURL(/\/settings/);
   }
 
   async logout() {
-    // Click user menu to open dropdown
-    await expect(this.userMenu).toBeVisible({ timeout: 5000 });
+    // User menu is in the header, not the sidebar - wait for it to be visible
+    await expect(this.userMenu).toBeVisible({ timeout: 10000 });
     await this.userMenu.click();
 
     // Wait for dropdown to appear
@@ -105,6 +110,8 @@ export class DashboardPage extends BasePage {
   }
 
   async expectNavigationToBeVisible() {
-    await expect(this.navigationSidebar).toBeVisible();
+    // First ensure sidebar is open
+    await this.ensureSidebarOpen();
+    await expect(this.navigationSidebar).toBeVisible({ timeout: 5000 });
   }
 }

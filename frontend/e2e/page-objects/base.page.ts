@@ -141,4 +141,24 @@ export class BasePage {
   get currentPath(): string {
     return new URL(this.page.url()).pathname;
   }
+
+  /**
+   * Ensure the sidebar is open/visible for interaction.
+   * If the sidebar is closed, clicks the open button to expand it.
+   */
+  async ensureSidebarOpen() {
+    // Check if sidebar is visible using data-testid or sticky class
+    const sidebar = this.page.locator('[data-testid="main-sidebar"]:visible, aside.sticky:visible').first();
+    const sidebarVisible = await sidebar.isVisible().catch(() => false);
+
+    if (!sidebarVisible) {
+      // Sidebar is closed, click the open button if available
+      const openButton = this.page.locator('button[aria-label="Open sidebar"]');
+      if (await openButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await openButton.click();
+        // Wait for sidebar to become visible
+        await this.page.waitForTimeout(500);
+      }
+    }
+  }
 }

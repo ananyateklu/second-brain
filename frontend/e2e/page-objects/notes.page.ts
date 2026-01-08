@@ -107,6 +107,8 @@ export class NotesPage extends BasePage {
   }
 
   async createNote(title: string, content: string, options?: { tags?: string[]; folder?: string }) {
+    // Ensure sidebar is open so create button is visible
+    await this.ensureSidebarOpen();
     await this.scrollAndClick(this.createNoteButton);
     await expect(this.noteEditor).toBeVisible({ timeout: 10000 });
 

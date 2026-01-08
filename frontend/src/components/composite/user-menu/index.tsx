@@ -52,6 +52,7 @@ export function UserMenu() {
               'data-[state=open]:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]'
             )}
             aria-label="User menu"
+            data-testid="user-menu-button"
           >
             <UserAvatar user={user} size="sm" />
             <svg
