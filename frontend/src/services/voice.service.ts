@@ -12,7 +12,6 @@ import type {
   VoiceSessionState,
   VoiceSessionHistoryResponse,
   VoiceSessionDetail,
-  ErrorMessage,
 } from '../features/voice/types/voice-types';
 
 // ============================================================================
@@ -252,12 +251,14 @@ export class VoiceWebSocketConnection {
                 this.startPingInterval();
                 this.callbacks.onConnected?.();
                 // Re-assign handlers for normal operation
-                this.ws!.onmessage = (e) => this.handleMessage(e);
-                this.ws!.onclose = (e) => this.handleClose(e);
+                if (this.ws) {
+                  this.ws.onmessage = (e) => this.handleMessage(e);
+                  this.ws.onclose = (e) => this.handleClose(e);
+                }
                 resolve();
               } else if (message.type === 'error') {
                 clearTimeout(timeout);
-                reject(new Error((message as ErrorMessage).message || 'Authentication failed'));
+                reject(new Error(message.message || 'Authentication failed'));
               }
               return;
             }
