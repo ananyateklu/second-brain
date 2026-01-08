@@ -1,11 +1,158 @@
 # Current Session Context
 
-> **Last Updated**: 2026-01-07
+> **Last Updated**: 2026-01-08
 > **Focus**: Mobile Responsiveness Optimization
 
 ---
 
-## Current Work: Mobile Chat Input Redesign (Two-Row Layout)
+## Current Work: Mobile Responsiveness - Edit Notes Modal
+
+### Status: COMPLETE ✅
+
+Comprehensive mobile optimization for the Edit Notes modal including full-screen layout, compact header buttons, responsive form, and mobile-friendly version history panel.
+
+### Changes Made
+
+| File | Changes |
+|------|---------|
+| `EditNoteModal.tsx` | Full-screen on mobile, icon-only header buttons, responsive folder dropdown, compact form padding |
+| `RichNoteForm.tsx` | Responsive title sizing (`text-2xl md:text-4xl`), responsive padding throughout |
+| `RichTextEditorToolbar.tsx` | Horizontal scroll on mobile, hidden dividers, `flex-shrink-0` on buttons |
+| `NoteImageAttachment.tsx` | Responsive image sizes (`w-16 h-16 md:w-[100px] md:h-[100px]`) |
+| `NoteVersionHistoryPanel.tsx` | Panel below header on mobile (not side drawer), backdrop with blur |
+| `Dialog.tsx` | Icon container `w-8 h-7 rounded-xl` to match button styling |
+
+### Key Mobile Improvements
+
+#### Modal Layout
+1. **Full-screen modal** - `w-full h-full md:max-w-[80vw] md:h-[85vh]` on mobile
+2. **No rounded corners on mobile** - `md:rounded-3xl` only on desktop
+3. **Compact header padding** - `!py-2 md:!py-3 !px-3 md:!px-6`
+
+#### Header Buttons (Folder, History, Archive, Update)
+4. **Icon-only on mobile** - Text labels hidden with `hidden md:inline`
+5. **Compact sizing** - `!px-2.5 !py-0.5 !h-8 !min-h-0 !rounded-xl`
+6. **Consistent styling** - All action buttons match with rounded-xl corners
+
+#### Folder Dropdown
+7. **Fixed position on mobile** - `fixed md:absolute left-3 right-3 top-14`
+8. **Full-width on mobile** - Spans screen with margins
+9. **Positioned below header** - `top-14` clears the modal header
+
+#### Form & Editor
+10. **Responsive title** - `text-2xl md:text-4xl` for note title
+11. **Horizontal scroll toolbar** - `overflow-x-auto md:overflow-visible md:flex-wrap`
+12. **Hidden dividers on mobile** - `hidden md:block` on toolbar separators
+13. **Smaller images** - `w-16 h-16` on mobile vs `100px` on desktop
+
+#### Version History Panel
+14. **Below header on mobile** - `fixed left-0 right-0 top-12 bottom-0` (not side drawer)
+15. **Backdrop starts at header** - `top-12` so header remains visible
+16. **ESC key support** - Press ESC to close panel
+17. **Body scroll lock** - Prevents background scrolling when open
+
+### Mobile Layout Structure
+
+```tsx
+{/* Modal - full screen on mobile */}
+<DialogContent className="w-full h-full md:max-w-[80vw] md:h-[85vh] md:rounded-3xl">
+  {/* Header with icon-only buttons on mobile */}
+  <DialogHeader className="md:rounded-t-3xl !py-2 md:!py-3 !px-3 md:!px-6">
+    <DialogTitle icon={...}>Edit Note</DialogTitle>
+    {/* Buttons: Folder, History, Archive, Update, Close */}
+    {/* All use: !px-2.5 !py-0.5 !h-8 !rounded-xl, text hidden on mobile */}
+  </DialogHeader>
+
+  {/* Form with responsive padding */}
+  <div className="px-3 md:px-6 pt-3 md:pt-6">
+    {/* Title: text-2xl md:text-4xl */}
+    {/* Editor toolbar: overflow-x-auto, dividers hidden on mobile */}
+    {/* Images: w-16 h-16 md:w-[100px] md:h-[100px] */}
+  </div>
+</DialogContent>
+
+{/* Version History - below header on mobile */}
+<div className="md:hidden">
+  <div className="fixed inset-0 top-12 bg-black/50" /> {/* Backdrop */}
+  <div className="fixed left-0 right-0 top-12 bottom-0"> {/* Panel */}
+    {panelContent}
+  </div>
+</div>
+```
+
+---
+
+## Previous Work: Mobile Responsiveness - GitHub Pages
+
+### Status: COMPLETE ✅
+
+Comprehensive mobile optimization for all Git/GitHub pages including header navigation tab bar, sidebar drawers, and responsive layouts.
+
+### Changes Made
+
+| File | Changes |
+|------|---------|
+| `GitHubTabBar.tsx` | **NEW** - Compact mobile tab bar with 7 tabs (Changes, Code, PRs, Issues, Actions, Commits, Branches) |
+| `header-components/index.ts` | Export GitHubTabBar |
+| `Header.tsx` | Added GitHubTabBar in mobile header, file tree toggle (Code tab), git panel toggle (Local Changes tab), UserMenu on GitHub page |
+| `GitHubPage.tsx` | Mobile drawer for GitStatusPanel, responsive padding, ESC key handling, body scroll lock |
+| `GitHubCodeBrowser.tsx` | Mobile drawer for FileTreeView, auto-close on file selection, ESC key handling |
+| `ui-slice.ts` | Added `showMobileGitPanel`, `showMobileFileTree` state and toggle functions |
+| `store/types.ts` | Added mobile sidebar state types and actions |
+
+### Key Mobile Improvements
+
+#### Header Navigation
+1. **GitHubTabBar in mobile header** - Shows 7 tabs below main header controls
+2. **Compact tab styling** - `gap-0.5 px-1.5 py-1.5 text-xs` with horizontal scroll
+3. **Short labels** - "Changes", "Code", "PRs", "Issues", "Actions", "Commits", "Branches"
+4. **UserMenu replaces create button** - Consistent with Settings/Insights pattern
+
+#### Local Changes Tab
+5. **Slide-in drawer** - GitStatusPanel in drawer from left (w-80 max-w-[85vw])
+6. **Toggle button in header** - Terminal icon, brand color when active
+7. **ESC key support** - Press ESC to close mobile sidebar
+8. **Body scroll lock** - Prevents background scrolling when drawer open
+9. **Semi-transparent backdrop** - `bg-black/50 backdrop-blur-sm`
+
+#### Code Tab
+10. **Slide-in drawer** - FileTreeView in drawer from left (w-72 max-w-[80vw])
+11. **Toggle button in header** - Folder icon, brand color when active
+12. **Auto-close on selection** - Drawer closes after selecting a file
+13. **Glassmorphism styling** - Matches app design patterns
+
+#### Other Tabs (PRs, Issues, Actions, Commits, Branches)
+14. **Responsive padding** - `px-4 sm:px-6 py-4 sm:py-6`
+15. **List components already responsive** - Cards stack properly on mobile
+
+### Mobile Layout Structure
+
+```tsx
+{/* Local Changes Tab */}
+<div className="flex flex-1 min-h-0">
+  {/* Mobile: Overlay drawer */}
+  <div className="md:hidden">
+    {showMobileGitPanel && <div className="fixed inset-0 bg-black/50 z-50" />}
+    <div className={`fixed inset-y-0 left-0 w-80 z-60 ${showMobileGitPanel ? 'translate-x-0' : '-translate-x-full'}`}>
+      <GitStatusPanel ... />
+    </div>
+  </div>
+
+  {/* Desktop: Fixed sidebar */}
+  <div className="hidden md:block w-120">
+    <GitStatusPanel ... />
+  </div>
+
+  {/* Diff viewer - full width on mobile */}
+  <div className="flex-1 min-w-0">
+    <GitDiffViewer ... />
+  </div>
+</div>
+```
+
+---
+
+## Previous Work: Mobile Chat Input Redesign (Two-Row Layout)
 
 ### Status: COMPLETE
 

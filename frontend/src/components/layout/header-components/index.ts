@@ -3,6 +3,7 @@ export { SettingsTabBar } from './SettingsTabBar';
 export { NotesPageControls, NotesPageControlsMobile } from './NotesPageControls';
 export { TimeRangeSelector } from './TimeRangeSelector';
 export { GitHubNavTabs } from './GitHubNavTabs';
+export { GitHubTabBar } from './GitHubTabBar';
 export { GitHubRepoSelector } from './GitHubRepoSelector';
 export { GitHubBranchSelector } from './GitHubBranchSelector';
 export { GitNavControls } from './GitNavControls';

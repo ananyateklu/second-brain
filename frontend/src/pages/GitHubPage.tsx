@@ -18,6 +18,7 @@ import {
   GitSettingsPanel,
   GitEmptyState,
 } from '../features/git/components';
+import { useShallow } from 'zustand/react/shallow';
 
 export const GitHubPage = () => {
   // Get tab state from store
@@ -32,6 +33,14 @@ export const GitHubPage = () => {
   const isGitSettingsOpen = useBoundStore((state) => state.isGitSettingsOpen);
   const openGitSettings = useBoundStore((state) => state.openGitSettings);
   const closeGitSettings = useBoundStore((state) => state.closeGitSettings);
+
+  // Mobile sidebar state
+  const { showMobileGitPanel, setShowMobileGitPanel } = useBoundStore(
+    useShallow((state) => ({
+      showMobileGitPanel: state.showMobileGitPanel,
+      setShowMobileGitPanel: state.setShowMobileGitPanel,
+    }))
+  );
 
   const [selectedPR, setSelectedPR] = useState<PullRequestSummary | null>(null);
   const [selectedRun, setSelectedRun] = useState<WorkflowRunSummary | null>(null);
@@ -104,6 +113,29 @@ export const GitHubPage = () => {
   // For local-changes tab, we don't need GitHub to be configured
   const isLocalChangesTab = activeTab === 'local-changes';
 
+  // Close mobile sidebar on ESC key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showMobileGitPanel) {
+        setShowMobileGitPanel(false);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showMobileGitPanel, setShowMobileGitPanel]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (showMobileGitPanel) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileGitPanel]);
+
   // Show skeleton while loading initial data (only for GitHub tabs)
   if (isLoading && !isLocalChangesTab) {
     return <GitHubPageSkeleton />;
@@ -141,13 +173,40 @@ export const GitHubPage = () => {
           </div>
         ) : (
           <div className="flex flex-1 min-h-0 transform-gpu transition-all duration-200">
-            {/* Left panel: File status - matches FileTreeView sidebar */}
-            <div className="w-120 flex-shrink-0 overflow-hidden transition-all duration-200">
+            {/* Mobile: Overlay drawer for GitStatusPanel */}
+            <div className="md:hidden">
+              {/* Overlay backdrop */}
+              {showMobileGitPanel && (
+                <div
+                  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity duration-200"
+                  onClick={() => setShowMobileGitPanel(false)}
+                  aria-hidden="true"
+                />
+              )}
+              {/* Slide-in drawer */}
+              <div
+                className={`fixed inset-y-0 left-0 w-80 max-w-[85vw] z-60 transform transition-transform duration-300 ease-out ${
+                  showMobileGitPanel ? 'translate-x-0' : '-translate-x-full'
+                }`}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderRight: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+                }}
+              >
+                {gitStatus && (
+                  <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
+                )}
+              </div>
+            </div>
+
+            {/* Desktop: Fixed sidebar */}
+            <div className="hidden md:block w-120 flex-shrink-0 overflow-hidden transition-all duration-200">
               {gitStatus && (
                 <GitStatusPanel status={gitStatus} onViewDiff={handleViewDiff} />
               )}
             </div>
-            {/* Right panel: Diff viewer - matches CodeViewer */}
+
+            {/* Diff viewer - full width on mobile */}
             <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200">
               <GitDiffViewer
                 diff={selectedDiff ?? null}
@@ -169,7 +228,7 @@ export const GitHubPage = () => {
         </div>
       )}
       {/* Other tabs have padding */}
-      <div className={`flex-1 min-h-0 px-6 py-6 overflow-y-auto thin-scrollbar transform-gpu transition-all duration-200 ${activeTab === 'code' || activeTab === 'local-changes' ? 'hidden' : ''}`}>
+      <div className={`flex-1 min-h-0 px-4 sm:px-6 py-4 sm:py-6 overflow-y-auto thin-scrollbar transform-gpu transition-all duration-200 ${activeTab === 'code' || activeTab === 'local-changes' ? 'hidden' : ''}`}>
         {activeTab === 'pull-requests' && (
           <GitHubPullRequestList
             owner={repoInfo?.owner}

@@ -147,6 +147,8 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   isGitSettingsOpen: false,
   chatSidebarVisible: initialChatSidebarVisible,
   directorySidebarVisible: initialDirectorySidebarVisible,
+  showMobileGitPanel: false,
+  showMobileFileTree: false,
 
   // ============================================
   // Modal Actions
@@ -267,4 +269,13 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
       saveDirectorySidebarVisible(newVisible);
       return { directorySidebarVisible: newVisible };
     }),
+
+  // ============================================
+  // GitHub Mobile Sidebar Actions
+  // ============================================
+
+  setShowMobileGitPanel: (show: boolean) => set({ showMobileGitPanel: show }),
+  toggleMobileGitPanel: () => set((state) => ({ showMobileGitPanel: !state.showMobileGitPanel })),
+  setShowMobileFileTree: (show: boolean) => set({ showMobileFileTree: show }),
+  toggleMobileFileTree: () => set((state) => ({ showMobileFileTree: !state.showMobileFileTree })),
 });

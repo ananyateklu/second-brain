@@ -68,14 +68,14 @@ export const GitHubCommitsList = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Branch Selector - Fixed at top */}
-      <div className="flex-shrink-0 flex items-center justify-between mb-4">
+      {/* Header with Branch Selector - Fixed at top, responsive */}
+      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Commits
           </h2>
           <span
-            className="px-2 py-0.5 rounded-full text-xs font-medium"
+            className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
@@ -93,7 +93,7 @@ export const GitHubCommitsList = ({
               setSelectedBranch(e.target.value || undefined);
               setPage(1);
             }}
-            className="px-3 py-1.5 rounded-lg text-sm border outline-none transform-gpu transition-all duration-200 focus:ring-2 focus:ring-primary/50"
+            className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm border outline-none transform-gpu transition-all duration-200 focus:ring-2 focus:ring-primary/50 max-w-[140px] sm:max-w-none truncate"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -229,16 +229,16 @@ const CommitRow = ({ commit, isSelected, onClick, index }: CommitRowProps) => {
           </code>
         </div>
 
-        {/* Meta Info - inline */}
+        {/* Meta Info - inline, responsive */}
         <div
-          className="flex items-center gap-2 text-xs shrink-0"
+          className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs shrink-0"
           style={{ color: 'var(--text-tertiary)' }}
         >
           <span>{formatRelativeTime(commit.authoredAt)}</span>
           <span className="hidden sm:inline">{commit.author}</span>
           {commit.filesChanged > 0 && (
             <span
-              className="text-xs px-1.5 py-0.5 rounded shrink-0"
+              className="hidden sm:inline text-xs px-1.5 py-0.5 rounded shrink-0"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
                 color: 'var(--text-tertiary)',
@@ -249,7 +249,7 @@ const CommitRow = ({ commit, isSelected, onClick, index }: CommitRowProps) => {
             </span>
           )}
           {(commit.additions > 0 || commit.deletions > 0) && (
-            <span className="flex items-center gap-1">
+            <span className="hidden sm:flex items-center gap-1">
               <span style={{ color: 'var(--color-success)' }}>+{commit.additions}</span>
               <span style={{ color: 'var(--color-error)' }}>-{commit.deletions}</span>
             </span>

@@ -148,9 +148,9 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
 
     return (
       <div
-        className="flex overflow-hidden -mx-6 -mt-6 rounded-b-3xl"
+        className="flex overflow-hidden -mx-3 md:-mx-6 -mt-3 md:-mt-6 md:rounded-b-3xl"
         style={{
-          height: 'calc(100% + 24px)',
+          height: 'calc(100% + 12px)',
           backgroundColor: 'transparent',
         }}
       >
@@ -158,7 +158,7 @@ const EditNoteFormContent = forwardRef<EditNoteFormHandle, EditNoteFormContentPr
         <form
           ref={formRef}
           onSubmit={handleFormSubmit}
-          className="flex-1 flex flex-col min-w-0 overflow-hidden px-6 pt-6 pb-6"
+          className="flex-1 flex flex-col min-w-0 overflow-hidden px-3 md:px-6 pt-3 md:pt-6 pb-3 md:pb-6"
         >
           <RichNoteForm
             register={register}
@@ -269,7 +269,7 @@ export function EditNoteModal() {
 
   // Header actions - folder, history, archive buttons
   const headerActions = editingNote ? (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 md:gap-2">
       {/* Folder Selector */}
       <div className="relative">
         <Button
@@ -277,14 +277,15 @@ export function EditNoteModal() {
           variant={currentFolder ? "primary" : "secondary"}
           onClick={() => { setIsFolderDropdownOpen(!isFolderDropdownOpen); }}
           disabled={moveToFolderMutation.isPending}
-          className="!px-2.5 !py-1.5 !text-xs"
+          className="!px-2.5 md:!px-2.5 !py-0.5 !text-xs !rounded-xl !min-h-0 !h-7"
+          title={currentFolder || 'Select folder'}
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
-          <span className="max-w-[80px] truncate">{currentFolder || 'Folder'}</span>
+          <span className="hidden md:inline max-w-[80px] truncate">{currentFolder || 'Folder'}</span>
           <svg
-            className={`h-3 w-3 transition-transform duration-200 ${isFolderDropdownOpen ? 'rotate-180' : ''}`}
+            className={`hidden md:block h-3 w-3 transition-transform duration-200 ${isFolderDropdownOpen ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -296,7 +297,7 @@ export function EditNoteModal() {
         {/* Folder Dropdown */}
         {isFolderDropdownOpen && (
           <div
-            className="absolute top-full right-0 mt-2 min-w-[220px] max-h-72 overflow-hidden rounded-2xl border shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
+            className="fixed md:absolute left-3 right-3 md:left-auto md:right-0 top-14 md:top-full md:mt-2 md:min-w-[220px] max-h-72 overflow-hidden rounded-2xl border shadow-2xl z-50 animate-in fade-in-0 zoom-in-95 duration-200"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
               borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -409,12 +410,12 @@ export function EditNoteModal() {
         variant={isHistoryOpen ? "primary" : "secondary"}
         onClick={() => { setIsHistoryOpen(!isHistoryOpen); }}
         title={isHistoryOpen ? "Close version history" : "View version history"}
-        className="!px-2.5 !py-1.5 !text-xs"
+        className="!px-2.5 md:!px-2.5 !py-0.5 !text-xs !rounded-xl !min-h-0 !h-7"
       >
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        History
+        <span className="hidden md:inline">History</span>
       </Button>
 
       {/* Archive/Unarchive Button */}
@@ -425,21 +426,21 @@ export function EditNoteModal() {
         disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
         onClick={() => { void handleArchiveToggle(); }}
         title={isArchived ? 'Restore from archive' : 'Archive note'}
-        className="!px-2.5 !py-1.5 !text-xs"
+        className="!px-2.5 md:!px-2.5 !py-0.5 !text-xs !rounded-xl !min-h-0 !h-7"
       >
         {isArchived ? (
           <>
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4l3-3m0 0l3 3m-3-3v6" />
             </svg>
-            Restore
+            <span className="hidden md:inline">Restore</span>
           </>
         ) : (
           <>
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
             </svg>
-            Archive
+            <span className="hidden md:inline">Archive</span>
           </>
         )}
       </Button>
@@ -452,16 +453,17 @@ export function EditNoteModal() {
           isLoading={formState.isSubmitting}
           disabled={formState.isSubmitting}
           onClick={() => { formRef.current?.submit(); }}
-          className="!px-2.5 !py-1.5 !text-xs"
+          className="!px-2.5 md:!px-2.5 !py-0.5 !text-xs !rounded-xl !min-h-0 !h-7"
+          title="Save changes"
         >
           {formState.isSubmitting ? (
-            <>Saving...</>
+            <span className="hidden md:inline">Saving...</span>
           ) : (
             <>
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              Update
+              <span className="hidden md:inline">Update</span>
             </>
           )}
         </Button>
@@ -472,7 +474,7 @@ export function EditNoteModal() {
         type="button"
         variant="ghost"
         onClick={handleClose}
-        className="!p-1.5 !rounded-lg"
+        className="!p-1.5 !rounded-xl"
         title="Close"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -486,14 +488,14 @@ export function EditNoteModal() {
   if (isLoadingNote) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - loading">
-          <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
+        <DialogContent className="w-[calc(100%-16px)] h-[calc(100%-16px)] md:w-full md:h-full md:max-w-[80vw] md:h-[85vh] rounded-2xl md:rounded-3xl flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - loading">
+          <DialogHeader className="flex-row items-center justify-between md:rounded-t-3xl !py-2 md:!py-3 !px-3 md:!px-6">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
             <Button
               type="button"
               variant="ghost"
               onClick={handleClose}
-              className="!p-1.5 !rounded-lg"
+              className="!p-1.5 !rounded-xl"
               title="Close"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -522,14 +524,14 @@ export function EditNoteModal() {
   if (noteError || !editingNote) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - error loading note">
-          <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
+        <DialogContent className="w-[calc(100%-16px)] h-[calc(100%-16px)] md:w-full md:h-full md:max-w-[80vw] md:h-[85vh] rounded-2xl md:rounded-3xl flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note - error loading note">
+          <DialogHeader className="flex-row items-center justify-between md:rounded-t-3xl !py-2 md:!py-3 !px-3 md:!px-6">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
             <Button
               type="button"
               variant="ghost"
               onClick={handleClose}
-              className="!p-1.5 !rounded-lg"
+              className="!p-1.5 !rounded-xl"
               title="Close"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -556,12 +558,12 @@ export function EditNoteModal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
-      <DialogContent className="max-w-[80vw] h-[85vh] flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note title, content, and tags">
-        <DialogHeader className="flex-row items-center justify-between rounded-t-3xl !py-3">
-          <div className="flex items-center gap-3">
+      <DialogContent className="w-[calc(100%-16px)] h-[calc(100%-16px)] md:w-full md:h-full md:max-w-[80vw] md:h-[85vh] rounded-2xl md:rounded-3xl flex flex-col p-0" sourceRect={editModalSourceRect} hideCloseButton description="Edit note title, content, and tags">
+        <DialogHeader className="flex-row items-center justify-between md:rounded-t-3xl !py-2 md:!py-3 !px-3 md:!px-6">
+          <div className="flex items-center gap-2 md:gap-3 min-w-0">
             <DialogTitle icon={modalIcon}>Edit Note</DialogTitle>
             {editingNote.updatedAt && (
-              <span className="text-xs text-[var(--text-tertiary)]">
+              <span className="hidden sm:inline text-xs text-[var(--text-tertiary)]">
                 · {formatRelativeDate(editingNote.updatedAt)}
               </span>
             )}

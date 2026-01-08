@@ -192,6 +192,10 @@ export interface UISliceState {
   chatSidebarVisible: boolean;
   /** Directory page sidebar visibility */
   directorySidebarVisible: boolean;
+  /** GitHub mobile Git status panel visibility (Local Changes tab) */
+  showMobileGitPanel: boolean;
+  /** GitHub mobile file tree visibility (Code tab) */
+  showMobileFileTree: boolean;
 }
 
 export interface UISliceActions {
@@ -231,6 +235,14 @@ export interface UISliceActions {
   setDirectorySidebarVisible: (visible: boolean) => void;
   /** Toggle directory sidebar visibility */
   toggleDirectorySidebar: () => void;
+  /** Set GitHub mobile Git panel visibility */
+  setShowMobileGitPanel: (show: boolean) => void;
+  /** Toggle GitHub mobile Git panel visibility */
+  toggleMobileGitPanel: () => void;
+  /** Set GitHub mobile file tree visibility */
+  setShowMobileFileTree: (show: boolean) => void;
+  /** Toggle GitHub mobile file tree visibility */
+  toggleMobileFileTree: () => void;
 }
 
 export type UISlice = UISliceState & UISliceActions;

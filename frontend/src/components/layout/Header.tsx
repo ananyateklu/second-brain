@@ -5,7 +5,7 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, SettingsTabBar, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
+import { SettingsNavTabs, SettingsTabBar, TimeRangeSelector, GitHubNavTabs, GitHubTabBar, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
 import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
 import { useVoiceHeaderState } from '../../features/voice/context/VoicePageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
@@ -111,6 +111,12 @@ export function Header() {
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
   const showGitControls = isGitHubPage && githubActiveTab === 'local-changes';
+
+  // GitHub mobile sidebar state
+  const showMobileGitPanel = useBoundStore((state) => state.showMobileGitPanel);
+  const toggleMobileGitPanel = useBoundStore((state) => state.toggleMobileGitPanel);
+  const showMobileFileTree = useBoundStore((state) => state.showMobileFileTree);
+  const toggleMobileFileTree = useBoundStore((state) => state.toggleMobileFileTree);
 
   // RAG Analytics state (legacy)
   const activeTab = useBoundStore((state) => state.activeTab);
@@ -245,6 +251,51 @@ export function Header() {
                   </svg>
                 </button>
               )}
+
+              {/* GitHub File Tree Toggle - Only on GitHub Code tab */}
+              {isGitHubPage && githubActiveTab === 'code' && (
+                <button
+                  onClick={toggleMobileFileTree}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: showMobileFileTree
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: showMobileFileTree
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: showMobileFileTree ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={showMobileFileTree ? 'Hide files' : 'Show files'}
+                >
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </button>
+              )}
+
+              {/* GitHub Git Panel Toggle - Only on GitHub Local Changes tab */}
+              {isGitHubPage && githubActiveTab === 'local-changes' && (
+                <button
+                  onClick={toggleMobileGitPanel}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: showMobileGitPanel
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: showMobileGitPanel
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: showMobileGitPanel ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={showMobileGitPanel ? 'Hide changes' : 'Show changes'}
+                >
+                  {/* Terminal/CLI icon for git status */}
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Center - Logo/Brand */}
@@ -343,8 +394,8 @@ export function Header() {
                 </div>
               )}
 
-              {/* Insights/Settings pages: Show User Menu instead of Create button */}
-              {(isInsightsPage || isSettingsPage) ? (
+              {/* Insights/Settings/GitHub pages: Show User Menu instead of Create button */}
+              {(isInsightsPage || isSettingsPage || isGitHubPage) ? (
                 <UserMenu />
               ) : (
                 /* Create Button (compact) - page-aware action */
@@ -396,6 +447,13 @@ export function Header() {
           {isSettingsPage && (
             <div className="px-2 pb-3 flex justify-center overflow-x-auto scrollbar-none">
               <SettingsTabBar />
+            </div>
+          )}
+
+          {/* GitHub Tab Bar - Only on GitHub page (Mobile) */}
+          {isGitHubPage && (
+            <div className="px-2 pb-3 flex justify-center overflow-x-auto scrollbar-none">
+              <GitHubTabBar />
             </div>
           )}
         </header>

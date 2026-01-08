@@ -214,13 +214,9 @@ export function NoteImageAttachment({
             return (
               <div
                 key={image.id}
-                className={`relative group rounded-xl overflow-hidden transition-all duration-200 ${
+                className={`relative group rounded-lg md:rounded-xl overflow-hidden transition-all duration-200 w-16 h-16 md:w-[100px] md:h-[100px] ${
                   isDeleted ? 'opacity-50 grayscale' : 'hover:scale-105'
                 }`}
-                style={{
-                  width: '100px',
-                  height: '100px',
-                }}
               >
                 <img
                   src={getExistingImageUrl(image)}
@@ -301,11 +297,7 @@ export function NoteImageAttachment({
           {newImages.map((image) => (
             <div
               key={image.id}
-              className="relative group rounded-xl overflow-hidden transition-transform duration-200 hover:scale-105"
-              style={{
-                width: '100px',
-                height: '100px',
-              }}
+              className="relative group rounded-lg md:rounded-xl overflow-hidden transition-transform duration-200 hover:scale-105 w-16 h-16 md:w-[100px] md:h-[100px]"
             >
               <img
                 src={getImageDataUrl(image)}
@@ -361,20 +353,18 @@ export function NoteImageAttachment({
             <button
               type="button"
               onClick={handleButtonClick}
-              className="flex flex-col items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+              className="flex flex-col items-center justify-center rounded-lg md:rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 w-16 h-16 md:w-[100px] md:h-[100px]"
               style={{
-                width: '100px',
-                height: '100px',
                 border: '2px dashed color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 color: 'var(--text-tertiary)',
               }}
               title="Add more images"
               disabled={isSubmitting}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-[10px] mt-1">Add image</span>
+              <span className="text-[9px] md:text-[10px] mt-0.5 md:mt-1">Add</span>
             </button>
           )}
         </div>

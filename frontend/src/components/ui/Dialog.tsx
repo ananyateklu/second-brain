@@ -177,7 +177,7 @@ const DialogTitle = React.forwardRef<
   <div className="flex items-center gap-3">
     {icon && (
       <div
-        className="flex items-center justify-center w-6 h-6 rounded-lg"
+        className="flex items-center justify-center w-8 h-7 rounded-xl"
         style={{
           background: `linear-gradient(to bottom right, var(--color-brand-600), var(--color-brand-700))`,
         }}
