@@ -11,8 +11,8 @@ export class NotesPage extends BasePage {
 
   // Locators
   get createNoteButton() {
-    // Create button in sticky sidebar - has title="Create New Note" when collapsed
-    return this.page.locator('aside.sticky button[title="Create New Note"], aside.sticky button:has-text("Create New Note")').first();
+    // Create button in sidebar - use data-testid for robustness, with fallbacks
+    return this.page.locator('[data-testid="create-note-button"], aside.sticky button[title="Create New Note"], aside.sticky button:has-text("Create New Note")').first();
   }
 
   get notesList() {

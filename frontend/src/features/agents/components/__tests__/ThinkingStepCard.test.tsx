@@ -15,13 +15,14 @@ vi.mock('../../../../utils/note-reference-utils', () => ({
   ]),
 }));
 
-// Mock InlineNoteReference
-vi.mock('../../../chat/components/InlineNoteReference', () => ({
+// Mock shared components including InlineNoteReference
+vi.mock('../../../../shared/components', () => ({
   InlineNoteReference: ({ noteId, noteTitle }: { noteId: string; noteTitle?: string }) => (
     <span data-testid="note-reference" data-note-id={noteId}>
       {noteTitle || noteId}
     </span>
   ),
+  TimelineItem: ({ children }: { children: React.ReactNode }) => <div data-testid="timeline-item">{children}</div>,
 }));
 
 // Helper to create a mock thinking step
@@ -65,8 +66,9 @@ describe('ThinkingStepCard', () => {
 
     it('should have proper styling classes', () => {
       const { container } = render(<ThinkingStepCard step={createMockThinkingStep()} />);
+      // Component is wrapped in TimelineItem (mocked) which provides the layout
       const wrapper = container.firstChild;
-      expect(wrapper).toHaveClass('relative', 'pl-12', 'py-2');
+      expect(wrapper).toHaveAttribute('data-testid', 'timeline-item');
     });
   });
 
@@ -318,13 +320,12 @@ describe('ThinkingStepCard', () => {
       expect(contentArea).toHaveClass('text-xs', 'font-mono', 'overflow-x-auto');
     });
 
-    it('should have timeline icon container', () => {
+    it('should render within TimelineItem', () => {
       const { container } = render(<ThinkingStepCard step={createMockThinkingStep()} />);
 
-      const iconContainer = container.querySelector('.absolute.left-\\[7px\\]');
-      expect(iconContainer).toBeInTheDocument();
-      // TimelineStatusIcon has rounded-full inside
-      expect(iconContainer?.querySelector('.rounded-full')).toBeInTheDocument();
+      // Component is wrapped in mocked TimelineItem
+      const timelineItem = container.querySelector('[data-testid="timeline-item"]');
+      expect(timelineItem).toBeInTheDocument();
     });
   });
 });

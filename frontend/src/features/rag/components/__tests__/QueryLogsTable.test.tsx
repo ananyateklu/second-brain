@@ -268,8 +268,10 @@ describe('QueryLogsTable', () => {
 
     it('should show pagination when multiple pages', () => {
       render(<QueryLogsTable {...defaultProps} totalPages={5} totalCount={50} logs={[createMockLog()]} />);
-      expect(screen.getByText('← Previous')).toBeInTheDocument();
-      expect(screen.getByText('Next →')).toBeInTheDocument();
+      // Desktop pagination is hidden on mobile (hidden sm:flex), but text exists in DOM
+      // Mobile shows "← Prev" and "Next →" but desktop shows "← Previous" and "Next →"
+      expect(screen.getByText('← Prev')).toBeInTheDocument();
+      expect(screen.getAllByText('Next →').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should disable previous button on first page', () => {
@@ -280,8 +282,10 @@ describe('QueryLogsTable', () => {
 
     it('should disable next button on last page', () => {
       render(<QueryLogsTable {...defaultProps} page={5} totalPages={5} totalCount={50} logs={[createMockLog()]} />);
-      const nextButton = screen.getByText('Next →');
-      expect(nextButton).toBeDisabled();
+      // There are two "Next →" buttons (mobile and desktop), get all and check they're disabled
+      const nextButtons = screen.getAllByText('Next →');
+      expect(nextButtons.length).toBeGreaterThanOrEqual(1);
+      nextButtons.forEach(btn => expect(btn).toBeDisabled());
     });
 
     it('should call onPageChange when previous clicked', () => {
@@ -292,7 +296,9 @@ describe('QueryLogsTable', () => {
 
     it('should call onPageChange when next clicked', () => {
       render(<QueryLogsTable {...defaultProps} page={3} totalPages={5} totalCount={50} logs={[createMockLog()]} />);
-      fireEvent.click(screen.getByText('Next →'));
+      // Click the first Next button (mobile or desktop)
+      const nextButtons = screen.getAllByText('Next →');
+      fireEvent.click(nextButtons[0]);
       expect(mockOnPageChange).toHaveBeenCalledWith(4);
     });
 

@@ -13,6 +13,7 @@ namespace SecondBrain.Application.Services.Voice.Models;
 [JsonDerivedType(typeof(AudioChunkMessage), "audio")]
 [JsonDerivedType(typeof(ControlMessage), "control")]
 [JsonDerivedType(typeof(ConfigMessage), "config")]
+[JsonDerivedType(typeof(AuthenticateMessage), "authenticate")]
 public abstract class ClientVoiceMessage
 {
     [JsonPropertyName("type")]
@@ -89,6 +90,34 @@ public class ConfigMessage : ClientVoiceMessage
     public VoiceSessionOptions? Options { get; set; }
 }
 
+/// <summary>
+/// Authentication message - must be first message after WebSocket connects.
+/// Security: Removes token from URL query string to prevent exposure in logs/history.
+/// </summary>
+public class AuthenticateMessage : ClientVoiceMessage
+{
+    [JsonPropertyName("type")]
+    public override string Type => "authenticate";
+
+    /// <summary>
+    /// Authentication payload containing the JWT token
+    /// </summary>
+    [JsonPropertyName("payload")]
+    public AuthenticatePayload Payload { get; set; } = new();
+}
+
+/// <summary>
+/// Payload for authentication message
+/// </summary>
+public class AuthenticatePayload
+{
+    /// <summary>
+    /// JWT token for authentication
+    /// </summary>
+    [JsonPropertyName("token")]
+    public string Token { get; set; } = string.Empty;
+}
+
 // ============================================================================
 // Server -> Client Messages
 // ============================================================================
@@ -103,6 +132,7 @@ public class ConfigMessage : ClientVoiceMessage
 [JsonDerivedType(typeof(ErrorMessage), "error")]
 [JsonDerivedType(typeof(MetadataMessage), "metadata")]
 [JsonDerivedType(typeof(PongMessage), "pong")]
+[JsonDerivedType(typeof(AuthenticatedMessage), "authenticated")]
 public abstract class ServerVoiceMessage
 {
     [JsonPropertyName("type")]
@@ -323,6 +353,16 @@ public class PongMessage : ServerVoiceMessage
 {
     [JsonPropertyName("type")]
     public override string Type => "pong";
+}
+
+/// <summary>
+/// Sent when WebSocket authentication succeeds.
+/// Client should wait for this message before sending other messages.
+/// </summary>
+public class AuthenticatedMessage : ServerVoiceMessage
+{
+    [JsonPropertyName("type")]
+    public override string Type => "authenticated";
 }
 
 // ============================================================================

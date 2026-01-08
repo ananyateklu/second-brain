@@ -103,9 +103,9 @@ describe('ToastItem', () => {
       renderWithContext(toast);
 
       expect(screen.getByText('Success!')).toBeInTheDocument();
-      // Check for success icon (checkmark)
+      // Check for success icon (checkmark) - all types now use border-[var(--border)]
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('border-[var(--color-brand-600)]');
+      expect(alert).toHaveClass('border-[var(--border)]');
     });
 
     it('should render error toast with correct styling', () => {
@@ -114,7 +114,7 @@ describe('ToastItem', () => {
 
       expect(screen.getByText('Error!')).toBeInTheDocument();
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('border-[var(--color-error-border)]');
+      expect(alert).toHaveClass('border-[var(--border)]');
     });
 
     it('should render warning toast with correct styling', () => {
@@ -123,7 +123,7 @@ describe('ToastItem', () => {
 
       expect(screen.getByText('Warning!')).toBeInTheDocument();
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('border-amber-500');
+      expect(alert).toHaveClass('border-[var(--border)]');
     });
 
     it('should render info toast with correct styling', () => {
@@ -132,7 +132,7 @@ describe('ToastItem', () => {
 
       expect(screen.getByText('Info!')).toBeInTheDocument();
       const alert = screen.getByRole('alert');
-      expect(alert).toHaveClass('border-[var(--color-accent-blue)]');
+      expect(alert).toHaveClass('border-[var(--border)]');
     });
 
     it('should render loading toast with correct styling', () => {

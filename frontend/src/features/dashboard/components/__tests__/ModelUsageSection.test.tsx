@@ -117,7 +117,8 @@ describe('ModelUsageSection', () => {
     it('should render section icon', () => {
       const { container } = render(<ModelUsageSection {...defaultProps} />);
 
-      const icon = container.querySelector('svg.h-5.w-5');
+      // Component uses responsive h-4 w-4 sm:h-5 sm:w-5 classes
+      const icon = container.querySelector('svg.h-4.w-4');
       expect(icon).toBeInTheDocument();
     });
 

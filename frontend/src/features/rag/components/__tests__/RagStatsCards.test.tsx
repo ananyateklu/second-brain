@@ -150,7 +150,8 @@ describe('RagStatsCards', () => {
     it('should render in a 4-column grid layout', () => {
       const { container } = render(<RagStatsCards stats={createMockStats()} />);
       const grid = container.firstChild;
-      expect(grid).toHaveClass('grid', 'lg:grid-cols-4');
+      // Component uses responsive grid-cols-2 sm:grid-cols-4 classes
+      expect(grid).toHaveClass('grid', 'sm:grid-cols-4');
     });
 
     it('should have card styling with rounded corners', () => {

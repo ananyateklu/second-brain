@@ -233,6 +233,7 @@ export function Sidebar() {
     <button
       ref={ref}
       onClick={handleCreateClick}
+      data-testid="create-note-button"
       className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] ${
         !showLabel ? 'md:px-3.5 md:py-3.5' : ''
       } px-6 py-4`}
@@ -555,6 +556,7 @@ export function Sidebar() {
 
       {/* Desktop Sidebar */}
       <aside
+        data-testid="main-sidebar"
         className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden backdrop-blur-xl ${
           isCollapsed ? 'w-20' : 'w-[23rem] px-6'
         }`}

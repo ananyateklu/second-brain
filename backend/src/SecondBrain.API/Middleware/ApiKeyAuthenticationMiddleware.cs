@@ -74,30 +74,16 @@ public class ApiKeyAuthenticationMiddleware
             return;
         }
 
-        // Handle WebSocket requests that pass token via query string (browsers can't send headers with WebSocket)
+        // Voice WebSocket uses post-connect authentication via first message
+        // Security: Token is sent as first message after connection, not in URL query string
+        // This prevents token exposure in browser history, server logs, and proxy logs
         if (context.WebSockets.IsWebSocketRequest &&
             context.Request.Path.StartsWithSegments("/api/voice/session"))
         {
-            var queryToken = context.Request.Query["token"].ToString();
-            if (!string.IsNullOrEmpty(queryToken))
-            {
-                // Validate the JWT token from query string
-                var wsAuthResult = await ValidateJwtTokenAsync(context, queryToken, userRepository, jwtService, cache);
-                if (wsAuthResult)
-                {
-                    await _next(context);
-                    return;
-                }
-                // If validation failed, the response is already set by ValidateJwtTokenAsync
-                return;
-            }
-            else
-            {
-                _logger.LogWarning("WebSocket request missing token query parameter");
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new { error = "Missing token parameter for WebSocket connection" });
-                return;
-            }
+            // Skip middleware auth - VoiceController will handle JWT validation
+            // via the authenticate message sent by the client after connection
+            await _next(context);
+            return;
         }
 
         // Require authentication for all other endpoints

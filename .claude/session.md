@@ -8,9 +8,9 @@
 
 ## Executive Summary
 
-**Overall Health Score: 7.5/10**
+### Overall Health Score: 7.5/10
 
-**Strengths:**
+### Strengths
 
 - Excellent code splitting with React.lazy (27 dynamic imports)
 - Well-organized Vite chunking strategy
@@ -18,7 +18,7 @@
 - Good TanStack Query usage patterns
 - Strong TypeScript adoption
 
-**Key Areas for Improvement:**
+### Key Areas for Improvement
 
 - Large components needing splitting (5+ files over 500 lines)
 - Circular dependencies between features (agents ↔ chat ↔ notes)
@@ -34,9 +34,9 @@
 
 | Issue | File | Impact | Status |
 |-------|------|--------|--------|
-| Token in WebSocket URL | `voice.service.ts:190-197` | Security | TODO |
-| `z.any()` in persisted state | `bound-store.ts:49,113` | Data integrity | TODO |
-| Circular dependencies | Multiple files | Bundle, maintainability | TODO |
+| Token in WebSocket URL | `voice.service.ts:190-197` | Security | DONE |
+| `z.any()` in persisted state | `bound-store.ts:49,113` | Data integrity | DONE |
+| Circular dependencies | Multiple files | Bundle, maintainability | DONE |
 
 ### P1 - High (Fix This Sprint)
 
@@ -74,38 +74,49 @@
 
 ## Critical Issues Detail
 
-### 1. Security: Token in WebSocket URL
+### 1. Security: Token in WebSocket URL - FIXED
 
 **File:** `frontend/src/services/voice.service.ts:190-197`
 
-```typescript
-// PROBLEM: Token exposed in WebSocket URL
-const wsUrl = `${endpoint}?token=${this.token}`;
-```
+**Problem:** Token was exposed in WebSocket URL query parameter, visible in browser history, server logs, and proxy logs.
 
-**Fix:** Use secure WebSocket authentication via headers or initial message.
+**Solution Implemented:** First-message authentication
 
-### 2. Type Safety: z.any() in Persisted State
+- Token removed from WebSocket URL
+- Frontend sends `{"type": "authenticate", "payload": {"token": "..."}}` as first message
+- Backend validates JWT from message and sends `{"type": "authenticated"}` response
+- Connection only proceeds after successful authentication
 
-**File:** `frontend/src/store/bound-store.ts:49,113`
+**Files Changed:**
 
-```typescript
-user: z.any().optional(),      // No validation
-filterState: z.any().optional(), // No validation
-```
+- `backend/src/SecondBrain.Application/Services/Voice/Models/VoiceMessages.cs` - Added AuthenticateMessage, AuthenticatedMessage
+- `backend/src/SecondBrain.API/Middleware/ApiKeyAuthenticationMiddleware.cs` - Skip voice WebSocket auth
+- `backend/src/SecondBrain.API/Controllers/VoiceController.cs` - WaitForAuthenticationAsync method
+- `frontend/src/features/voice/types/voice-types.ts` - Added frontend message types
+- `frontend/src/services/voice.service.ts` - First-message auth flow
 
-**Fix:** Define proper Zod schemas for complex persisted objects.
+### 2. Type Safety: z.any() in Persisted State - FIXED
 
-### 3. Circular Dependencies
+**File:** `frontend/src/store/bound-store.ts`
 
-| From | To | Files |
-|------|-----|-------|
-| Chat | Agents | `ChatMessageList.tsx:1-18`, `StreamingIndicator.tsx:5-11` |
-| Agents | Notes | `ToolExecutionCard.tsx:8-9` |
-| Agents | Chat | `ToolExecutionCard.tsx:8-9` |
-| Dashboard | Notes, Stats, Chat | `use-dashboard-data.ts:2-4` |
+**Problem:** Used `z.any()` for user and filter state validation, bypassing type safety.
 
-**Fix:** Extract shared components to a `shared/` directory, create dependency boundaries.
+**Solution Implemented:** Proper Zod schemas defined:
+
+- `UserSchema` (lines 42-51) - Typed user object with userId, email, username, displayName, etc.
+- `NotesFilterStateSchema` (lines 58-66) - Typed filter state with dateFilter, selectedTags, sortBy, etc.
+
+### 3. Circular Dependencies - FIXED
+
+**Problem:** Cross-feature imports between agents ↔ chat ↔ notes caused dependency cycles.
+
+**Solution Implemented:** Extracted shared components to `frontend/src/shared/`:
+
+- `InlineNoteReference` - moved from `chat/components/` to `shared/components/`
+- `TimelineItem` - moved from `agents/components/` to `shared/components/`
+- `TimelineStatusIcon` - moved from `agents/components/` to `shared/components/`
+
+Components now import from `@/shared` instead of cross-feature imports.
 
 ---
 

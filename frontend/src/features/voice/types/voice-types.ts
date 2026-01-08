@@ -136,7 +136,19 @@ export interface ConfigMessage {
   };
 }
 
-export type ClientVoiceMessage = AudioChunkMessage | ControlMessage | ConfigMessage;
+/**
+ * Authentication message sent as first message after WebSocket connects.
+ * Security: Token is sent via message instead of URL query parameter
+ * to prevent exposure in browser history, server logs, and proxy logs.
+ */
+export interface AuthenticateMessage {
+  type: 'authenticate';
+  payload: {
+    token: string;
+  };
+}
+
+export type ClientVoiceMessage = AudioChunkMessage | ControlMessage | ConfigMessage | AuthenticateMessage;
 
 // Server -> Client messages
 export interface TranscriptMessage {
@@ -189,13 +201,23 @@ export interface PongMessage {
   timestamp: number;
 }
 
+/**
+ * Sent when WebSocket authentication succeeds.
+ * Client should wait for this before sending other messages.
+ */
+export interface AuthenticatedMessage {
+  type: 'authenticated';
+  timestamp: number;
+}
+
 export type ServerVoiceMessage =
   | TranscriptMessage
   | AudioMessage
   | StateMessage
   | ErrorMessage
   | MetadataMessage
-  | PongMessage;
+  | PongMessage
+  | AuthenticatedMessage;
 
 // Error codes
 export const VoiceErrorCodes = {

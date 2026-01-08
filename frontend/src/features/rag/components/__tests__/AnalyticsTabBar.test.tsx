@@ -91,11 +91,11 @@ describe('AnalyticsTabBar', () => {
       expect(performanceTab).toHaveStyle({ color: '#ffffff' });
     });
 
-    it('should use tertiary color for inactive tab text', () => {
+    it('should use secondary color for inactive tab text', () => {
       render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const topicsTab = screen.getByText('Topics').closest('button');
-      expect(topicsTab).toHaveStyle({ color: 'var(--text-tertiary)' });
+      expect(topicsTab).toHaveStyle({ color: 'var(--text-secondary)' });
     });
   });
 
@@ -160,7 +160,8 @@ describe('AnalyticsTabBar', () => {
       );
 
       const wrapper = container.firstChild;
-      expect(wrapper).toHaveClass('flex', 'items-center', 'p-1');
+      // Component uses inline-flex instead of flex, and gap-1 for spacing
+      expect(wrapper).toHaveClass('inline-flex', 'items-center', 'p-1');
     });
   });
 });

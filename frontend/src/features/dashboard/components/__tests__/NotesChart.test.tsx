@@ -90,7 +90,8 @@ describe('NotesChart', () => {
 
     it('should render chart icon', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
-      const icon = container.querySelector('svg.h-5.w-5');
+      // Component uses responsive h-4 w-4 sm:h-5 sm:w-5 classes
+      const icon = container.querySelector('svg.h-4.w-4');
       expect(icon).toBeInTheDocument();
     });
 
@@ -234,7 +235,8 @@ describe('NotesChart', () => {
     it('should have padding on container', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
 
-      const chartContainer = container.querySelector('.p-6');
+      // Component uses responsive p-4 sm:p-6 classes
+      const chartContainer = container.querySelector('.p-4');
       expect(chartContainer).toBeInTheDocument();
     });
 

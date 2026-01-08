@@ -27,27 +27,25 @@ export class DashboardPage extends BasePage {
   }
 
   get navigationSidebar() {
-    // Match the desktop sidebar (sticky positioning, not fixed/temporary)
-    return this.page.locator('aside.sticky');
+    // Match the desktop sidebar using data-testid (preferred) or sticky positioning fallback
+    return this.page.locator('[data-testid="main-sidebar"], aside.sticky').first();
   }
 
   get notesNavLink() {
-    // In collapsed mode, text labels are hidden - use href only
-    // Target the sticky sidebar (not the hidden temporary one)
-    return this.page.locator('aside.sticky a[href="/notes"]');
+    // Use data-testid for robustness, with href fallback
+    return this.page.locator('[data-testid="nav-notes"], [data-testid="main-sidebar"] a[href="/notes"]').first();
   }
 
   get chatNavLink() {
-    return this.page.locator('aside.sticky a[href="/chat"]');
+    return this.page.locator('[data-testid="nav-chat"], [data-testid="main-sidebar"] a[href="/chat"]').first();
   }
 
   get focusNavLink() {
-    // Focus page may not exist in sidebar
-    return this.page.locator('aside.sticky a[href="/focus"]');
+    return this.page.locator('[data-testid="nav-focus"], [data-testid="main-sidebar"] a[href="/focus"]').first();
   }
 
   get settingsNavLink() {
-    return this.page.locator('aside.sticky a[href="/settings"]');
+    return this.page.locator('[data-testid="main-sidebar"] a[href="/settings"]').first();
   }
 
   get userMenu() {

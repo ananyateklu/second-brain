@@ -185,7 +185,8 @@ describe('TopicDistributionCard', () => {
         })} isLoading={false} />,
         { wrapper: createWrapper() }
       );
-      expect(screen.getByText('80% positive')).toBeInTheDocument();
+      // Component displays just the percentage without "positive" text
+      expect(screen.getByText('80%')).toBeInTheDocument();
     });
 
     it('should display sample query', () => {
