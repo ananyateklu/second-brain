@@ -72,6 +72,12 @@ export function Header() {
       return;
     }
 
+    // Voice page: Start new voice session
+    if (pathname === '/voice' && voiceHeaderState?.onNewSession) {
+      voiceHeaderState.onNewSession();
+      return;
+    }
+
     // Notes page (default): Open create note modal
     const rect = createButtonRef.current?.getBoundingClientRect();
     const sourceRect = rect ? {
@@ -81,13 +87,14 @@ export function Header() {
       height: rect.height,
     } : null;
     openCreateModal(sourceRect);
-  }, [location.pathname, openQuickCapture, openCreateModal, chatHeaderState]);
+  }, [location.pathname, openQuickCapture, openCreateModal, chatHeaderState, voiceHeaderState]);
 
   // Get context-aware label for the create button
   const getCreateButtonLabel = useCallback(() => {
     const pathname = location.pathname;
     if (pathname === '/') return 'Create new task';
     if (pathname === '/chat') return 'Start new chat';
+    if (pathname === '/voice') return 'New voice session';
     return 'Create new note';
   }, [location.pathname]);
 
@@ -215,6 +222,29 @@ export function Header() {
                   </svg>
                 </button>
               )}
+
+              {/* Voice Sidebar Toggle - Only on Voice page */}
+              {isVoicePage && voiceHeaderState && (
+                <button
+                  onClick={voiceHeaderState.onToggleSidebar}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: voiceHeaderState.showSidebar
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: voiceHeaderState.showSidebar
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: voiceHeaderState.showSidebar ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={voiceHeaderState.showSidebar ? 'Hide voice sessions' : 'Show voice sessions'}
+                >
+                  {/* Clock/History icon for voice sessions */}
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Center - Logo/Brand */}
@@ -275,6 +305,44 @@ export function Header() {
                 </>
               )}
 
+              {/* Voice Session Status - Voice page only */}
+              {isVoicePage && voiceHeaderState?.isConnected && (
+                <div
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium"
+                  style={{
+                    backgroundColor: voiceHeaderState.sessionState === 'Listening'
+                      ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
+                      : voiceHeaderState.sessionState === 'Speaking'
+                        ? 'color-mix(in srgb, var(--color-accent-purple) 15%, transparent)'
+                        : 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
+                    color: voiceHeaderState.sessionState === 'Listening'
+                      ? 'var(--color-success)'
+                      : voiceHeaderState.sessionState === 'Speaking'
+                        ? 'var(--color-accent-purple)'
+                        : 'var(--color-accent-blue)',
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{
+                      backgroundColor: voiceHeaderState.sessionState === 'Listening'
+                        ? 'var(--color-success)'
+                        : voiceHeaderState.sessionState === 'Speaking'
+                          ? 'var(--color-accent-purple)'
+                          : 'var(--color-accent-blue)',
+                    }}
+                  />
+                  <span className="hidden sm:inline">
+                    {voiceHeaderState.sessionState === 'Listening' && 'Listening'}
+                    {voiceHeaderState.sessionState === 'Speaking' && 'Speaking'}
+                    {voiceHeaderState.sessionState === 'Processing' && 'Processing'}
+                    {voiceHeaderState.sessionState !== 'Listening' &&
+                      voiceHeaderState.sessionState !== 'Speaking' &&
+                      voiceHeaderState.sessionState !== 'Processing' && 'Active'}
+                  </span>
+                </div>
+              )}
+
               {/* Insights/Settings pages: Show User Menu instead of Create button */}
               {(isInsightsPage || isSettingsPage) ? (
                 <UserMenu />
@@ -298,6 +366,11 @@ export function Header() {
                     /* Chat: Message/Plus icon */
                     <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  ) : isVoicePage ? (
+                    /* Voice: Microphone icon */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
                   ) : (
                     /* Notes/Default: Plus icon with rotation */

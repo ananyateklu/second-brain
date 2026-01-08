@@ -109,7 +109,7 @@ export const setApiBaseUrl = (url: string): void => {
 /**
  * Get the direct backend URL for use with sendBeacon or other direct requests.
  * This bypasses the Vite proxy and returns the actual backend URL.
- * In development, this returns http://localhost:5001/api
+ * In development, this returns http://localhost:5001/api or the actual host for remote access
  * In production or Tauri, this uses the configured API URL
  */
 export const getDirectBackendUrl = (): string => {
@@ -124,8 +124,14 @@ export const getDirectBackendUrl = (): string => {
   }
 
   // In development, use the direct backend URL (bypassing Vite proxy)
-  // In production, the VITE_API_URL or /api should work directly
-  if (import.meta.env.DEV) {
+  // For remote access (e.g., mobile on local network), use the actual host
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // If accessing via non-localhost (e.g., 192.168.x.x from mobile), use that host
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const protocol = window.location.protocol;
+      return `${protocol}//${hostname}:5001/api`;
+    }
     return 'http://localhost:5001/api';
   }
 

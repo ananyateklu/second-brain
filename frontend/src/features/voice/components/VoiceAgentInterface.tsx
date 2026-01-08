@@ -20,7 +20,7 @@
  * └──────────────┴──────────────────────────────────────┘
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBoundStore } from '../../../store/bound-store';
 import { useVoiceSession } from '../hooks/use-voice-session';
@@ -157,6 +157,44 @@ export function VoiceAgentInterface() {
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+
+  // Mobile detection for drawer behavior
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  // Update mobile state on resize
+  useLayoutEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle escape key to close mobile sidebar
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobile && voiceSidebarVisible) {
+        toggleVoiceSidebar();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isMobile, voiceSidebarVisible, toggleVoiceSidebar]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isMobile && voiceSidebarVisible) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobile, voiceSidebarVisible]);
 
   // Disconnect feedback state - shows "Connection closed" briefly after disconnect
   const [showDisconnected, setShowDisconnected] = useState(false);
@@ -548,29 +586,71 @@ export function VoiceAgentInterface() {
 
   return (
     <div className="h-full flex">
-      {/* Sidebar */}
-      <AnimatePresence mode="wait">
-        {voiceSidebarVisible && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            <VoiceSidebar
-              sessions={sessions}
-              selectedSessionId={selectedHistoricalSessionId}
-              currentSessionId={sessionId}
-              isLoading={isLoadingHistory}
-              isSelectionMode={isSelectionMode}
-              selectedSessionIds={selectedSessionIds}
-              onSelectSession={setSelectedHistoricalSessionId}
-              onToggleSessionSelection={handleToggleSessionSelection}
-              onDeleteSession={(id) => void handleDeleteSession(id)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Sidebar Overlay - Backdrop */}
+      {isMobile && voiceSidebarVisible && (
+        <div
+          className="fixed inset-0 z-50 transition-opacity duration-300"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={toggleVoiceSidebar}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer - z-[60] to be above overlay */}
+      {isMobile && (
+        <aside
+          className={`fixed top-0 left-0 bottom-0 z-[60] w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col backdrop-blur-xl ${
+            voiceSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            paddingTop: 'env(safe-area-inset-top)',
+          }}
+        >
+          <VoiceSidebar
+            sessions={sessions}
+            selectedSessionId={selectedHistoricalSessionId}
+            currentSessionId={sessionId}
+            isLoading={isLoadingHistory}
+            isSelectionMode={isSelectionMode}
+            selectedSessionIds={selectedSessionIds}
+            onSelectSession={setSelectedHistoricalSessionId}
+            onToggleSessionSelection={handleToggleSessionSelection}
+            onDeleteSession={(id) => void handleDeleteSession(id)}
+            onClose={toggleVoiceSidebar}
+          />
+        </aside>
+      )}
+
+      {/* Desktop Sidebar - Animated inline */}
+      {!isMobile && (
+        <AnimatePresence mode="wait">
+          {voiceSidebarVisible && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <VoiceSidebar
+                sessions={sessions}
+                selectedSessionId={selectedHistoricalSessionId}
+                currentSessionId={sessionId}
+                isLoading={isLoadingHistory}
+                isSelectionMode={isSelectionMode}
+                selectedSessionIds={selectedSessionIds}
+                onSelectSession={setSelectedHistoricalSessionId}
+                onToggleSessionSelection={handleToggleSessionSelection}
+                onDeleteSession={(id) => void handleDeleteSession(id)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 relative min-h-0 min-w-0">
@@ -615,6 +695,19 @@ export function VoiceAgentInterface() {
             canStart={canStart}
             disabledReason={disabledReason}
             showDisconnected={showDisconnected}
+            // Mobile controls
+            voiceProviderType={voiceProviderType}
+            onVoiceProviderTypeChange={setVoiceProviderType}
+            grokVoiceAvailable={grokVoiceAvailable}
+            standardVoiceAvailable={standardVoiceAvailable}
+            selectedVoiceId={selectedVoiceId}
+            availableVoices={availableVoices}
+            onVoiceChange={setSelectedVoiceId}
+            selectedGrokVoice={selectedGrokVoice}
+            availableGrokVoices={availableGrokVoices}
+            onGrokVoiceChange={setSelectedGrokVoice}
+            agentEnabled={agentEnabled}
+            onAgentModeChange={setAgentEnabled}
           />
         )}
 

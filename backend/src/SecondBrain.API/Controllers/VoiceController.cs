@@ -61,10 +61,15 @@ public class VoiceController : ControllerBase
         [FromBody] VoiceSessionOptions options,
         CancellationToken cancellationToken)
     {
+        _logger.LogInformation(
+            "[VoiceSession] CreateSession called. Provider: {Provider}, Model: {Model}, VoiceProviderType: {VoiceProviderType}, AgentEnabled: {AgentEnabled}",
+            options.Provider, options.Model, options.VoiceProviderType, options.AgentEnabled);
+
         var userId = GetUserId();
 
         if (!_voiceSettings.Features.EnableVoiceAgent)
         {
+            _logger.LogWarning("[VoiceSession] Voice agent feature is disabled");
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Voice agent feature is disabled" });
         }
 
@@ -76,6 +81,8 @@ public class VoiceController : ControllerBase
             var scheme = Request.Scheme == "https" ? "wss" : "ws";
             var webSocketUrl = $"{scheme}://{host}/api/voice/session?sessionId={session.Id}";
 
+            _logger.LogInformation("[VoiceSession] Session created successfully. SessionId: {SessionId}", session.Id);
+
             return Ok(new CreateVoiceSessionResult
             {
                 SessionId = session.Id,
@@ -86,7 +93,13 @@ public class VoiceController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "[VoiceSession] CreateSession failed with InvalidOperationException: {Message}", ex.Message);
             return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[VoiceSession] CreateSession failed with unexpected exception: {Message}", ex.Message);
+            throw; // Re-throw to let global exception handler deal with it
         }
     }
 
