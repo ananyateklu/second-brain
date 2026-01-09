@@ -42,7 +42,7 @@
 
 | Issue | File | Impact | Status |
 |-------|------|--------|--------|
-| Split NotesDirectoryPage | `NotesDirectoryPage.tsx` (970 lines) | Maintainability | TODO |
+| Split NotesDirectoryPage | `NotesDirectoryPage.tsx` (970→523 lines) | Maintainability | DONE |
 | Split ChatMessageList | `ChatMessageList.tsx` (582 lines) | Maintainability | TODO |
 | Extract VoiceAgent state | `VoiceAgentInterface.tsx` (735 lines) | Performance | TODO |
 | Add memoization | ChatSidebar, VoiceSessionItem, NoteCard | Performance | TODO |
