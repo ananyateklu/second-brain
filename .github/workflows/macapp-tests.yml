@@ -80,13 +80,10 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '24'
-
-      - name: Install pnpm
-        run: npm install -g pnpm
+          bun-version: '1.2'
 
       - name: Cache Cargo
         uses: actions/cache@v4
@@ -99,21 +96,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-build-
 
-      - name: Cache pnpm
+      - name: Cache Bun
         uses: actions/cache@v4
         with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-
+            ${{ runner.os }}-bun-
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: pnpm install
+        run: bun install
 
       - name: Build Tauri app (debug, no code signing)
         working-directory: frontend
-        run: pnpm tauri build --debug --bundles app
+        run: bun run tauri build --debug --bundles app
         env:
           # Skip code signing for CI builds
           CI: true

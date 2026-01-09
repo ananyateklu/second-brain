@@ -20,8 +20,8 @@ An MCP (Model Context Protocol) server that enables Claude Code to create, read,
 
 ```bash
 cd tools/mcp-notes-server
-pnpm install
-pnpm build
+bun install
+bun build
 ```
 
 ## Configuration
@@ -107,13 +107,13 @@ Restore note xyz to version 2
 
 ```bash
 # Run in development mode
-pnpm dev
+bun dev
 
 # Build
-pnpm build
+bun build
 
 # Run production
-pnpm start
+bun start
 ```
 
 ## Environment Variables

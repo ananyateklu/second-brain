@@ -73,6 +73,7 @@
     "material-file-icons": "^2.4.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-is": "^19.2.1",
     "react-hook-form": "^7.68.0",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.10.1",
@@ -119,15 +120,8 @@
     "vite": "^7.2.6",
     "vitest": "^4.0.15"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "msw"
-    ],
-    "overrides": {
-      "@llm-ui/code>react": "^19.2.1",
-      "@llm-ui/markdown>react": "^19.2.1",
-      "@llm-ui/react>react": "^19.2.1"
-    }
+  "overrides": {
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1"
   }
 }

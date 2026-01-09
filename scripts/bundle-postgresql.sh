@@ -163,5 +163,5 @@ echo "📁 Output: $RESOURCE_DIR"
 echo ""
 echo "Next steps:"
 echo "  1. Build the backend: ./backend/publish-mac.sh"
-echo "  2. Build the app: cd frontend && pnpm tauri build"
+echo "  2. Build the app: cd frontend && bun run tauri:build"
 

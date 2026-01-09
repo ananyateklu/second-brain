@@ -172,7 +172,7 @@ API keys stored in `~/Library/Application Support/com.secondbrain.desktop/secret
 
 # 2. Build Tauri app
 cd frontend
-pnpm tauri build --target universal-apple-darwin
+bun run tauri:build:universal
 ```
 
 Output: `frontend/src-tauri/target/release/bundle/dmg/Second Brain_*.dmg`
@@ -219,9 +219,8 @@ rustup target add aarch64-apple-darwin x86_64-apple-darwin
 # Install PostgreSQL and pgvector
 brew install postgresql@18 pgvector
 
-# Install Node.js and pnpm
-brew install node
-npm install -g pnpm
+# Install Bun
+curl -fsSL https://bun.sh/install | bash
 ```
 
 ### Development Commands
@@ -230,13 +229,13 @@ npm install -g pnpm
 cd frontend
 
 # Development mode
-pnpm tauri dev
+bun run tauri:dev
 
 # Production build
-pnpm tauri build
+bun run tauri:build
 
 # Universal binary (Intel + Apple Silicon)
-pnpm tauri build --target universal-apple-darwin
+bun run tauri:build:universal
 ```
 
 ### Quick Reference
@@ -281,7 +280,7 @@ For production distribution:
 1. Obtain Developer ID Application certificate from Apple
 2. Configure signing identity in `tauri.conf.json`
 3. Set up notarization with App Store Connect credentials
-4. Build with: `pnpm tauri build --target universal-apple-darwin`
+4. Build with: `bun run tauri:build:universal`
 5. Notarize: `xcrun notarytool submit ... --wait`
 6. Staple: `xcrun stapler staple ...`
 

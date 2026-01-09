@@ -59,8 +59,8 @@ Tauri Shell (Rust) → Frontend (WebView) → Backend (.NET sidecar) → Postgre
 Key files: `frontend/src-tauri/src/lib.rs`, `lib/tauri-bridge.ts`
 
 ```bash
-pnpm tauri dev                                        # Development
-pnpm tauri build --target universal-apple-darwin     # Build
+bun run tauri:dev                                        # Development
+bun run tauri:build:universal                            # Build
 ```
 
 ## API Endpoints Pattern
@@ -81,7 +81,7 @@ export const API_ENDPOINTS = {
 cd backend && dotnet test
 
 # Frontend
-cd frontend && pnpm test
+cd frontend && bun test
 
 # API (curl)
 API_KEY="your-key"

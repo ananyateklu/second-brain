@@ -270,8 +270,8 @@ if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
   # Check if test script exists
   if grep -q '"test"' package.json; then
     cat >> "$OUTPUT_FILE" << 'EOF'
-- Status: Run `pnpm test` to execute tests
-- Coverage: Check `pnpm test:coverage` for details
+- Status: Run `bun test` to execute tests
+- Coverage: Check `bun run test:coverage` for details
 
 EOF
   else
@@ -428,13 +428,13 @@ cat >> "$OUTPUT_FILE" << 'EOF'
 
 ```bash
 # Development
-pnpm dev                          # Start frontend (port 3000)
+bun dev                           # Start frontend (port 3000)
 dotnet watch run                  # Start backend (port 5001)
 docker-compose up -d              # Start Docker services
 
 # Testing
 dotnet test                       # Run backend tests
-pnpm test                         # Run frontend tests
+bun test                          # Run frontend tests
 
 # Database
 ./database/migrate.sh status      # Check migrations

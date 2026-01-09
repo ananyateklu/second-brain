@@ -5,17 +5,15 @@
 
 set -e
 
-# Load nvm if available (ensures correct Node.js version)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+echo "🧠 Building Second Brain for macOS..."
 
-# Use Node.js 22 if available
-if command -v nvm &> /dev/null; then
-    nvm use 22 2>/dev/null || echo "Note: Node.js 22 not found, using current version"
+# Check for Bun installation
+if ! command -v bun &> /dev/null; then
+    echo "❌ Bun is not installed. Install it with: curl -fsSL https://bun.sh/install | bash"
+    exit 1
 fi
 
-echo "🧠 Building Second Brain for macOS..."
-echo "📍 Using Node.js $(node --version)"
+echo "📍 Using Bun $(bun --version)"
 echo ""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,8 +27,8 @@ echo ""
 # Step 2: Build frontend
 echo "📦 Step 2: Building frontend..."
 cd "$PROJECT_DIR/frontend"
-pnpm install
-pnpm build
+bun install
+bun run build
 echo ""
 
 # Step 3: Build Tauri app
@@ -39,10 +37,10 @@ TARGET="${1:-}"
 
 if [ "$TARGET" = "universal" ]; then
     echo "Building universal binary (Intel + Apple Silicon)..."
-    pnpm tauri build --target universal-apple-darwin
+    bun run tauri build --target universal-apple-darwin
 else
     echo "Building for current architecture..."
-    pnpm tauri build
+    bun run tauri build
 fi
 
 echo ""

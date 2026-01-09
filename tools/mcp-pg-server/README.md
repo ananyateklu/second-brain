@@ -73,8 +73,8 @@ Search for columns by pattern across ALL tables.
 
 ```bash
 cd tools/mcp-pg-server
-pnpm install
-pnpm build
+bun install
+bun build
 ```
 
 ## Configuration
@@ -142,10 +142,10 @@ When a table doesn't exist, the server provides suggestions:
 
 ```bash
 # Run in development mode
-pnpm dev
+bun dev
 
 # Build for production
-pnpm build
+bun build
 ```
 
 ## Security Notes

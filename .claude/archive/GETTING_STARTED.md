@@ -540,7 +540,7 @@ await DoWorkAsync(linkedCts.Token);
 
 ### Testing
 - Backend tests in `Tests.Unit/`
-- Run before PR: `dotnet test && pnpm test`
+- Run before PR: `dotnet test && bun test`
 ```
 
 ### Multi-Developer Sessions

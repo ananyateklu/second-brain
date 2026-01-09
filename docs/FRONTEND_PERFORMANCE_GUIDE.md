@@ -465,7 +465,7 @@ The React Compiler automatically memoizes components and hooks, eliminating the 
 #### Installation
 
 ```bash
-pnpm add -D babel-plugin-react-compiler
+bun add -D babel-plugin-react-compiler
 ```
 
 #### Vite Configuration

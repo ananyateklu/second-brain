@@ -101,8 +101,8 @@ Tauri Shell (Rust) → Frontend (WebView) → Backend (.NET sidecar) → Postgre
 ### Commands
 
 ```bash
-pnpm tauri dev                              # Development
-pnpm tauri build --target universal-apple-darwin  # Universal binary
+bun run tauri:dev                           # Development
+bun run tauri:build:universal               # Universal binary
 ```
 
 See `docs/adr/007-tauri-macos-desktop-app.md` for detailed rationale.

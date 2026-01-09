@@ -218,8 +218,8 @@ export function ChatPageProvider({ children }: { children: React.ReactNode }) {
 ## Common Commands
 
 ```bash
-cd frontend && pnpm dev       # Dev server (port 3000)
-cd frontend && pnpm build     # Production build
-cd frontend && pnpm test      # Run tests
-cd frontend && pnpm lint      # ESLint
+cd frontend && bun dev            # Dev server (port 3000)
+cd frontend && bun run build      # Production build
+cd frontend && bun test           # Run tests
+cd frontend && bun run lint       # ESLint
 ```

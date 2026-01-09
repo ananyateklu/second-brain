@@ -104,7 +104,7 @@ second-brain/
 
 - **Docker & Docker Compose** (recommended)
 - **.NET 10 SDK** (local development)
-- **Node.js 20+** and **pnpm** (local development)
+- **Bun 1.2+** (local development) - install via `curl -fsSL https://bun.sh/install | bash`
 - **At least one AI provider API key** (OpenAI, Anthropic, Gemini, X.AI, or Ollama)
 
 ### Option 1: Docker (Recommended)
@@ -140,7 +140,7 @@ dotnet watch run      # http://localhost:5001
 # Terminal 3: Frontend
 cd frontend
 cp .env.example .env  # Set VITE_API_URL=http://localhost:5001/api
-pnpm install && pnpm dev  # http://localhost:3000
+bun install && bun dev  # http://localhost:3000
 ```
 
 ### Option 3: Desktop App (macOS)
@@ -152,7 +152,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Build and run
 ./backend/publish-mac.sh
-cd frontend && pnpm tauri dev
+cd frontend && bun run tauri:dev
 ```
 
 Data stored in `~/Library/Application Support/com.secondbrain.desktop/`
@@ -315,7 +315,7 @@ Full API documentation available at `/swagger` when running the backend.
 cd backend && dotnet test
 
 # Frontend
-cd frontend && pnpm test
+cd frontend && bun test
 ```
 
 ### Creating Migrations

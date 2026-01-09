@@ -49,10 +49,10 @@ cd backend && dotnet test --filter "TestName"
 cd backend && dotnet test --filter "Category=Unit"
 
 # Frontend (Vitest)
-cd frontend && pnpm test
-cd frontend && pnpm test:run
-cd frontend && pnpm test:coverage
-cd frontend && pnpm test -- --filter "ComponentName"
+cd frontend && bun run test
+cd frontend && bun run test:run
+cd frontend && bun run test:coverage
+cd frontend && bun run test -- --filter "ComponentName"
 
 # Tauri (Cargo)
 cd frontend/src-tauri && cargo test
@@ -66,13 +66,13 @@ cd frontend/src-tauri && cargo test -- --nocapture
 cd backend/src/SecondBrain.API && dotnet build
 
 # Frontend
-cd frontend && pnpm build
-cd frontend && pnpm exec tsc --noEmit
+cd frontend && bun run build
+cd frontend && bun run exec tsc --noEmit
 
 # Tauri
 cd frontend/src-tauri && cargo check
 cd frontend/src-tauri && cargo clippy
-pnpm tauri build --debug
+bun run tauri build --debug
 ```
 
 ## Quick Diagnostics by Layer
@@ -92,10 +92,10 @@ curl -s http://localhost:5001/api/health
 ### Frontend (React)
 ```bash
 # Type check
-cd frontend && pnpm exec tsc --noEmit
+cd frontend && bun run exec tsc --noEmit
 
 # Lint
-cd frontend && pnpm lint
+cd frontend && bun run lint
 
 # Check browser DevTools Console/Network tabs
 ```

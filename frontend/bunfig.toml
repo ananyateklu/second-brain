@@ -1,0 +1,6 @@
+# Bun configuration for Second Brain Frontend
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Silence peer dependency warnings for packages that haven't updated to React 19
+peer = false

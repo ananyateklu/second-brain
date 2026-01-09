@@ -45,11 +45,11 @@ dotnet ef migrations add MigrationName     # Create migration
 
 ```bash
 cd frontend
-pnpm dev                    # Dev server (port 3000)
-pnpm build                  # Production build
-pnpm test                   # Run tests
-pnpm tauri dev              # Desktop app development
-pnpm tauri build            # Build desktop app
+bun dev                     # Dev server (port 3000)
+bun run build               # Production build
+bun test                    # Run tests
+bun run tauri:dev           # Desktop app development
+bun run tauri:build         # Build desktop app
 ```
 
 ### Docker

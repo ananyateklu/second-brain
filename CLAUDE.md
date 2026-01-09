@@ -27,10 +27,10 @@ cd backend/src/SecondBrain.API && dotnet watch run    # Dev server (port 5001)
 cd backend && dotnet test                              # Run tests
 
 # Frontend
-cd frontend && pnpm dev       # Dev server (port 3000)
-cd frontend && pnpm build     # Production build
-cd frontend && pnpm test      # Run tests
-cd frontend && pnpm tauri dev # Desktop app
+cd frontend && bun dev            # Dev server (port 3000)
+cd frontend && bun run build      # Production build
+cd frontend && bun test           # Run tests
+cd frontend && bun run tauri:dev  # Desktop app
 
 # Docker
 docker-compose up -d          # Start all services

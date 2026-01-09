@@ -37,12 +37,12 @@ This document tracks the comprehensive UI upgrade initiative to migrate from cus
 ### 1.1 Dependencies Installed
 
 ```bash
-pnpm add clsx tailwind-merge class-variance-authority
-pnpm add @radix-ui/react-slot @radix-ui/react-dialog @radix-ui/react-dropdown-menu
-pnpm add @radix-ui/react-tooltip @radix-ui/react-switch @radix-ui/react-tabs
-pnpm add @radix-ui/react-popover @radix-ui/react-select @radix-ui/react-slider
-pnpm add @radix-ui/react-checkbox @radix-ui/react-radio-group @radix-ui/react-label
-pnpm add @radix-ui/react-scroll-area @radix-ui/react-separator
+bun add clsx tailwind-merge class-variance-authority
+bun add @radix-ui/react-slot @radix-ui/react-dialog @radix-ui/react-dropdown-menu
+bun add @radix-ui/react-tooltip @radix-ui/react-switch @radix-ui/react-tabs
+bun add @radix-ui/react-popover @radix-ui/react-select @radix-ui/react-slider
+bun add @radix-ui/react-checkbox @radix-ui/react-radio-group @radix-ui/react-label
+bun add @radix-ui/react-scroll-area @radix-ui/react-separator
 ```
 
 ### 1.2 Utility Function Created
@@ -743,7 +743,7 @@ components/
 
 ### Before Each PR
 
-- [ ] `pnpm build` succeeds with no TypeScript errors
+- [ ] `bun run build` succeeds with no TypeScript errors
 - [ ] All three themes work (dark, light, blue)
 - [ ] Hover states work via CSS (no inline handlers)
 - [ ] Focus states visible for accessibility
