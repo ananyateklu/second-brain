@@ -176,9 +176,9 @@ export function ChatUsageChart({
                   WebkitBackdropFilter: 'blur(20px)',
                 }}
                 labelStyle={{ color: 'var(--text-primary)' }}
-                formatter={(value: number, name: string) => [
-                  `${value}`,
-                  LINE_LABELS[name] || name
+                formatter={(value, name) => [
+                  `${value ?? 0}`,
+                  LINE_LABELS[name as string] || name
                 ]}
                 // Disable animation on WebKit for smoother tooltips
                 isAnimationActive={!isWebKit}

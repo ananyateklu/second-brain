@@ -268,7 +268,7 @@ export const AgentTab = memo(function AgentTab() {
                       backdropFilter: 'blur(20px)',
                     }}
                     labelStyle={{ color: 'var(--text-primary)' }}
-                    formatter={(value: number) => [`${value} calls`, 'Tool Calls']}
+                    formatter={(value) => [`${value ?? 0} calls`, 'Tool Calls']}
                     isAnimationActive={!isWebKit}
                   />
                   <Line
