@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, memo } from 'react';
 import { ChatConversation } from '../types/chat';
 import { ConversationListItem } from './ConversationListItem';
 
@@ -20,7 +20,7 @@ export interface ChatSidebarProps {
  * Sidebar showing conversation list.
  * Header controls (new chat, selection mode, etc.) are now in the main Header component.
  */
-export function ChatSidebar({
+export const ChatSidebar = memo(function ChatSidebar({
   conversations,
   selectedConversationId,
   isNewChat,
@@ -111,5 +111,5 @@ export function ChatSidebar({
       </div>
     </div>
   );
-}
+});
 

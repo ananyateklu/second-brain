@@ -1,6 +1,6 @@
 # Current Session Context
 
-> **Last Updated**: 2026-01-08
+> **Last Updated**: 2026-01-09
 > **Focus**: Frontend Architecture & Code Quality Improvements
 > **Reference**: `frontend/FRONTEND_ISSUES.md`
 
@@ -43,11 +43,11 @@
 | Issue | File | Impact | Status |
 |-------|------|--------|--------|
 | Split NotesDirectoryPage | `NotesDirectoryPage.tsx` (970→523 lines) | Maintainability | DONE |
-| Split ChatMessageList | `ChatMessageList.tsx` (582 lines) | Maintainability | TODO |
-| Extract VoiceAgent state | `VoiceAgentInterface.tsx` (735 lines) | Performance | TODO |
-| Add memoization | ChatSidebar, VoiceSessionItem, NoteCard | Performance | TODO |
-| Remove duplicate CircularCheckbox | voice/, chat/ | DRY | TODO |
-| Move inline styles to CSS | AgentTab, ChatTab (2,884+ styles) | Performance | TODO |
+| Split ChatMessageList | `ChatMessageList.tsx` (582 lines) | Maintainability | DONE |
+| Extract VoiceAgent state | `VoiceAgentInterface.tsx` (735→643 lines) | Maintainability | DONE |
+| Add memoization | ChatSidebar, VoiceSessionItem, NoteCard | Performance | DONE |
+| Remove duplicate CircularCheckbox | voice/, chat/ → shared/ | DRY | DONE |
+| Move inline styles to CSS | AgentTab, ChatTab (2,884+ styles) | Performance | DONE |
 
 ### P2 - Medium (Fix Next Sprint)
 
@@ -59,7 +59,7 @@
 | Add missing index files | features/*/hooks/ | DX | TODO |
 | Remove @heroicons | package.json, voice/* | Bundle size | TODO |
 | Fix animation durations | CSS files | Consistency | TODO |
-| Unify mobile detection | 3 different patterns | DX | TODO |
+| Unify mobile detection | 3 different patterns | DX | PARTIAL (useMobileDetection hook) |
 
 ### P3 - Low (Backlog)
 

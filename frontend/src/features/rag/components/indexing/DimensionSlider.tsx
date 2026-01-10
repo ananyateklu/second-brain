@@ -81,11 +81,10 @@ export function DimensionSlider({
       <div className="relative h-5 mt-1 ml-[35px] mr-[35px] sm:ml-[44px] sm:mr-[44px]">
         {/* Current value indicator */}
         <span
-          className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity"
+          className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity insights-slider-label"
           style={{
             left: `calc(${getPositionPercent(currentValue)}% + ${(50 - getPositionPercent(currentValue)) * 0.12}px)`,
             transform: 'translateX(-50%)',
-            backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
             color: 'var(--color-brand-600)',
           }}
           onClick={() => !isDisabled && handleDimensionChange(currentValue)}
@@ -99,11 +98,10 @@ export function DimensionSlider({
             type="button"
             onClick={() => !isDisabled && handleDimensionChange(PINECONE_REQUIRED_DIMENSIONS)}
             disabled={isDisabled}
-            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap transition-opacity hover:opacity-100 disabled:opacity-30"
+            className="absolute text-[10px] font-mono px-1 py-0.5 rounded whitespace-nowrap transition-opacity hover:opacity-100 disabled:opacity-30 insights-slider-label"
             style={{
               left: `calc(${getPositionPercent(PINECONE_REQUIRED_DIMENSIONS)}% + ${(50 - getPositionPercent(PINECONE_REQUIRED_DIMENSIONS)) * 0.12}px)`,
               transform: 'translateX(-50%)',
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
               color: 'var(--color-success)',
             }}
           >

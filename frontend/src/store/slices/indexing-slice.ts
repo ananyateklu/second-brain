@@ -161,7 +161,7 @@ export const createIndexingSlice: SliceCreator<IndexingSlice> = (set, get) => ({
     const job = state.activeJobs[vectorStore];
 
     // Only update if this is for the correct job
-    if (job && status.id === job.jobId) {
+    if (status.id === job?.jobId) {
       set((state) => ({
         activeJobs: {
           ...state.activeJobs,

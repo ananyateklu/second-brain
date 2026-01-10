@@ -151,7 +151,7 @@ export function Header() {
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           }}
         >
-          <div className="flex h-16 sm:h-20 items-center justify-between px-5 sm:px-8">
+          <div className="flex h-16 sm:h-20 items-center justify-between px-3 sm:px-8">
             {/* Left side - Hamburger Menu + Notes Folder Toggle */}
             <div className="flex items-center gap-2">
               <button

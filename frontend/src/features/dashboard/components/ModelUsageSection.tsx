@@ -53,11 +53,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${isSelected ? '' : 'insights-time-button'}`}
     style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-      color: isSelected ? 'white' : 'var(--text-secondary)',
-      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : undefined,
+      color: isSelected ? 'white' : undefined,
+      border: isSelected ? '1px solid var(--color-brand-600)' : undefined,
       transform: isSelected ? 'scale(1.05)' : 'scale(1)',
     }}
   >
@@ -79,12 +79,7 @@ const LegendButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-all duration-200"
-    style={{
-      backgroundColor: isHidden ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)' : 'transparent',
-      opacity: isHidden ? 0.5 : 1,
-      border: isHidden ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : '1px solid transparent',
-    }}
+    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-all duration-200 ${isHidden ? 'insights-legend-item-hidden' : 'insights-legend-item'}`}
   >
     <div
       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -116,8 +111,6 @@ export function ModelUsageSection({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -262,7 +255,7 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-2xl border p-4 sm:p-5 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        className={`rounded-2xl border p-4 sm:p-5 relative overflow-hidden insights-card ${isWebKit ? '' : 'backdrop-blur-md'}`}
         style={containerStyles}
       >
         <div className="relative z-10">
@@ -310,24 +303,15 @@ export function ModelUsageSection({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Models by Provider - Left Col */}
               <div className="md:col-span-1 h-48 sm:h-64">
-                <div
-                  className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
-                >
+                <div className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4 insights-nested-card insights-panel-subtle">
                   <div className="space-y-4">
                     {Object.entries(filteredModelsByProvider).map(([provider, models]) => {
                       const totalUsage = models.reduce((sum, m) => sum + m.value, 0);
                       return (
                         <div key={provider} className="space-y-2">
                           <h4
-                            className="text-sm font-semibold mb-2 pb-1 border-b"
-                            style={{
-                              color: 'var(--text-primary)',
-                              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                            }}
+                            className="text-sm font-semibold mb-2 pb-1 border-b insights-section-border"
+                            style={{ color: 'var(--text-primary)' }}
                           >
                             {provider}
                             <span
@@ -361,11 +345,8 @@ export function ModelUsageSection({
                                   </span>
                                   {entry.tokens > 0 && (
                                     <span
-                                      className="text-[10px] px-1.5 py-0.5 rounded-full"
-                                      style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                                        color: 'var(--text-tertiary)'
-                                      }}
+                                      className="text-[10px] px-1.5 py-0.5 rounded-full insights-panel"
+                                      style={{ color: 'var(--text-tertiary)' }}
                                       title={`${entry.tokens.toLocaleString()} tokens`}
                                     >
                                       {formatTokenCount(entry.tokens)} tokens
@@ -502,12 +483,7 @@ export function ModelUsageSection({
                 </div>
 
                 {/* Interactive Legend */}
-                <div
-                  className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto scrollbar-none"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
-                >
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto scrollbar-none insights-panel-subtle">
                   {dataWithColors.map((entry) => (
                     <LegendButton
                       key={`legend-${entry.originalName}`}

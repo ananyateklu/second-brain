@@ -37,8 +37,6 @@ export const StatCard = memo(({
 
   // Optimized styles based on platform
   const cardStyles: CSSProperties = {
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     minHeight: '80px',
     // Smooth opacity-only transition for seamless skeleton blending
     opacity: isAnimationReady ? 1 : 0,
@@ -48,7 +46,6 @@ export const StatCard = memo(({
     transitionDelay: '0ms',
     willChange: isAnimationReady ? 'auto' : 'opacity',
     backfaceVisibility: 'hidden',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
     ...animationStyle,
   };
 
@@ -59,17 +56,10 @@ export const StatCard = memo(({
         hover:-translate-y-0.5
         flex flex-col h-full
         transition-all duration-200
+        insights-card insights-card-hoverable
         ${isWebKit ? '' : 'backdrop-blur-md'}
       `}
       style={cardStyles}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--color-brand-500)';
-        e.currentTarget.style.boxShadow = '0 4px 12px color-mix(in srgb, var(--color-brand-500) 15%, transparent)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-      }}
     >
       <div className="flex flex-col h-full">
         <div className="flex items-start justify-between mb-1">

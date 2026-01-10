@@ -8,3 +8,8 @@ export { useAudioRecorder, type UseAudioRecorderOptions, type UseAudioRecorderRe
 export { useAudioPlayer, type UseAudioPlayerOptions, type UseAudioPlayerReturn } from './use-audio-player';
 export { useVoiceActivity, type UseVoiceActivityOptions, type UseVoiceActivityReturn } from './use-voice-activity';
 export { useVoiceStatus } from './use-voice-status';
+
+// State management hooks extracted from VoiceAgentInterface
+export { useMobileDetection, type UseMobileDetectionOptions, type UseMobileDetectionReturn } from './use-mobile-detection';
+export { useVoiceSessionSelection, type UseVoiceSessionSelectionOptions, type UseVoiceSessionSelectionReturn } from './use-voice-session-selection';
+export { useVoiceConnectionFeedback, type UseVoiceConnectionFeedbackOptions, type UseVoiceConnectionFeedbackReturn } from './use-voice-connection-feedback';

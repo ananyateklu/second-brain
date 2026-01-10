@@ -12,6 +12,7 @@
 
 /* Component Design Tokens */
 @import '../components/chat-tokens.css';
+@import '../components/insights-tokens.css';
 
 /* Animations */
 @import './animations/core.css';

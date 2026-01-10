@@ -12,3 +12,6 @@ export { InlineNoteReference } from './InlineNoteReference';
 // Timeline components (previously in agents, used by chat)
 export { TimelineItem, TIMELINE } from './TimelineItem';
 export { TimelineStatusIcon } from './TimelineStatusIcon';
+
+// Selection components (used by chat and voice)
+export { CircularCheckbox } from './CircularCheckbox';

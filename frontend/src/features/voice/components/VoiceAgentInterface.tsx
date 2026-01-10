@@ -20,11 +20,14 @@
  * └──────────────┴──────────────────────────────────────┘
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBoundStore } from '../../../store/bound-store';
 import { useVoiceSession } from '../hooks/use-voice-session';
 import { useVoiceHistory, useVoiceSessionTranscript } from '../hooks/use-voice-session-history';
+import { useMobileDetection } from '../hooks/use-mobile-detection';
+import { useVoiceSessionSelection } from '../hooks/use-voice-session-selection';
+import { useVoiceConnectionFeedback } from '../hooks/use-voice-connection-feedback';
 import { useVoicePageContext } from '../context/VoicePageContext';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { VoiceTranscript } from './VoiceTranscript';
@@ -154,88 +157,38 @@ export function VoiceAgentInterface() {
   // Get historical transcript when viewing past session
   const { data: historicalTranscript } = useVoiceSessionTranscript(selectedHistoricalSessionId);
 
-  // Selection mode state
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
-
-  // Mobile detection for drawer behavior
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.innerWidth < 768;
+  // Mobile detection with sidebar handling
+  const { isMobile } = useMobileDetection({
+    sidebarVisible: voiceSidebarVisible,
+    onCloseSidebar: toggleVoiceSidebar,
   });
 
-  // Update mobile state on resize
-  useLayoutEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Selection mode for bulk operations
+  const {
+    isSelectionMode,
+    selectedSessionIds,
+    handleToggleSelectionMode,
+    handleToggleSessionSelection,
+    handleSelectAllSessions,
+    handleBulkDeleteSessions,
+    handleExitSelectionMode,
+  } = useVoiceSessionSelection({
+    sessions,
+    deleteSession,
+    selectedHistoricalSessionId,
+    setSelectedHistoricalSessionId,
+  });
 
-  // Handle escape key to close mobile sidebar
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isMobile && voiceSidebarVisible) {
-        toggleVoiceSidebar();
-      }
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isMobile, voiceSidebarVisible, toggleVoiceSidebar]);
-
-  // Lock body scroll when mobile sidebar is open
-  useEffect(() => {
-    if (isMobile && voiceSidebarVisible) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isMobile, voiceSidebarVisible]);
-
-  // Disconnect feedback state - shows "Connection closed" briefly after disconnect
-  const [showDisconnected, setShowDisconnected] = useState(false);
-
-  // Watch for disconnect errors and show feedback briefly
-  useEffect(() => {
-    if (!error?.toLowerCase().includes('disconnected')) {
-      return;
-    }
-    // Schedule state update asynchronously to avoid cascading renders
-    const showTimer = setTimeout(() => setShowDisconnected(true), 0);
-    // Auto-reset after 3 seconds
-    const hideTimer = setTimeout(() => {
-      setShowDisconnected(false);
-      _clearError();
-    }, 3000);
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [error, _clearError]);
-
-  // Tool chips for floating bar - track dismissed tool IDs
-  const [dismissedToolIds, setDismissedToolIds] = useState<Set<string>>(new Set());
-
-  // Derive active tool chips from toolExecutions
-  // Show all executing tools and recently updated completed tools
-  // The VoiceToolChip handles its own animation timing and calls onComplete when done
-  const activeToolChips = useMemo(() => {
-    return toolExecutions.filter(tool => {
-      // Don't show dismissed tools
-      if (dismissedToolIds.has(tool.toolId)) return false;
-      // Show executing or completed/failed tools (chip handles exit animation)
-      return true;
-    });
-  }, [toolExecutions, dismissedToolIds]);
-
-  // Remove completed tool chip (called when chip exit animation finishes)
-  const handleToolChipComplete = useCallback((toolId: string) => {
-    setDismissedToolIds(prev => new Set([...prev, toolId]));
-  }, []);
+  // Connection feedback and tool chips
+  const {
+    showDisconnected,
+    activeToolChips,
+    handleToolChipComplete,
+  } = useVoiceConnectionFeedback({
+    error,
+    clearError: _clearError,
+    toolExecutions,
+  });
 
   // Get available providers
   const providers = healthData?.providers;
@@ -364,51 +317,6 @@ export function VoiceAgentInterface() {
       setSelectedHistoricalSessionId(null);
     }
   }, [deleteSession, selectedHistoricalSessionId, setSelectedHistoricalSessionId]);
-
-  // Selection mode handlers
-  const handleToggleSelectionMode = useCallback(() => {
-    setIsSelectionMode((prev) => !prev);
-    if (isSelectionMode) {
-      setSelectedSessionIds(new Set());
-    }
-  }, [isSelectionMode]);
-
-  const handleToggleSessionSelection = useCallback((sessionId: string) => {
-    setSelectedSessionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(sessionId)) {
-        next.delete(sessionId);
-      } else {
-        next.add(sessionId);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleSelectAllSessions = useCallback(() => {
-    if (selectedSessionIds.size === sessions.length) {
-      setSelectedSessionIds(new Set());
-    } else {
-      setSelectedSessionIds(new Set(sessions.map((s) => s.id)));
-    }
-  }, [selectedSessionIds.size, sessions]);
-
-  const handleBulkDeleteSessions = useCallback(async () => {
-    const idsToDelete = Array.from(selectedSessionIds);
-    for (const id of idsToDelete) {
-      await deleteSession(id);
-    }
-    setSelectedSessionIds(new Set());
-    setIsSelectionMode(false);
-    if (selectedHistoricalSessionId && selectedSessionIds.has(selectedHistoricalSessionId)) {
-      setSelectedHistoricalSessionId(null);
-    }
-  }, [selectedSessionIds, deleteSession, selectedHistoricalSessionId, setSelectedHistoricalSessionId]);
-
-  const handleExitSelectionMode = useCallback(() => {
-    setIsSelectionMode(false);
-    setSelectedSessionIds(new Set());
-  }, []);
 
   // Populate header state
   useEffect(() => {

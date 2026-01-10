@@ -52,11 +52,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${isSelected ? '' : 'insights-time-button'}`}
     style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-      color: isSelected ? 'white' : 'var(--text-secondary)',
-      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : undefined,
+      color: isSelected ? 'white' : undefined,
+      border: isSelected ? '1px solid var(--color-brand-600)' : undefined,
       transform: isSelected ? 'scale(1.05)' : 'scale(1)',
     }}
   >
@@ -82,8 +82,6 @@ export function ChatUsageChart({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -98,7 +96,7 @@ export function ChatUsageChart({
 
   return (
     <div
-      className={`rounded-2xl border p-4 sm:p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+      className={`rounded-2xl border p-4 sm:p-6 insights-card ${isWebKit ? '' : 'backdrop-blur-md'}`}
       style={containerStyles}
     >
       <div>

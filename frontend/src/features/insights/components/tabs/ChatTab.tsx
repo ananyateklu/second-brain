@@ -3,7 +3,7 @@
  * Analytics and statistics for chat conversations
  */
 
-import { memo, useMemo, CSSProperties } from 'react';
+import { memo, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -34,27 +34,17 @@ const ChatTabSkeleton = memo(function ChatTabSkeleton() {
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border p-4 h-20"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            }}
+            className="rounded-2xl border p-4 h-20 insights-skeleton-card"
           >
-            <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-            <div className="h-6 w-16 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+            <div className="h-3 w-20 rounded mb-2 insights-skeleton" />
+            <div className="h-6 w-16 rounded insights-skeleton" />
           </div>
         ))}
       </div>
       {/* Chart Skeleton */}
-      <div
-        className="rounded-3xl border p-6 h-80"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        }}
-      >
-        <div className="h-5 w-48 rounded mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-        <div className="h-48 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+      <div className="rounded-3xl border p-6 h-80 insights-skeleton-card">
+        <div className="h-5 w-48 rounded mb-4 insights-skeleton" />
+        <div className="h-48 rounded insights-skeleton" />
       </div>
     </div>
   );
@@ -104,12 +94,14 @@ export const ChatTab = memo(function ChatTab() {
     return statsService.getConversationTrend(stats);
   }, [stats]);
 
-  // Card container styles - frosted glass with subtle shadow
-  const cardStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  // Tooltip styles for Recharts (requires style object)
+  const tooltipStyles = useMemo(() => ({
+    backgroundColor: 'var(--insights-tooltip-bg)',
+    border: '1px solid var(--insights-tooltip-border)',
+    borderRadius: '12px',
+    color: 'var(--text-primary)',
+    fontSize: '12px',
+    backdropFilter: 'blur(20px)',
   }), []);
 
   if (isLoading) {
@@ -119,13 +111,7 @@ export const ChatTab = memo(function ChatTab() {
   if (error || !stats) {
     return (
       <div className="flex items-center justify-center h-64 p-4">
-        <div
-          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-          }}
-        >
+        <div className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300 insights-error">
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
               className="h-5 w-5 flex-shrink-0"
@@ -213,16 +199,7 @@ export const ChatTab = memo(function ChatTab() {
         {/* Chat Usage Over Time */}
         {chatTypeData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -246,14 +223,7 @@ export const ChatTab = memo(function ChatTab() {
                   />
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={30} tick={{ fontSize: 9 }} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      backdropFilter: 'blur(20px)',
-                    }}
+                    contentStyle={tooltipStyles}
                     labelStyle={{ color: 'var(--text-primary)' }}
                     isAnimationActive={!isWebKit}
                   />
@@ -277,16 +247,7 @@ export const ChatTab = memo(function ChatTab() {
         {/* Provider Usage */}
         {providerPieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -315,14 +276,7 @@ export const ChatTab = memo(function ChatTab() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                        borderRadius: '12px',
-                        color: 'var(--text-primary)',
-                        fontSize: '12px',
-                        backdropFilter: 'blur(20px)',
-                      }}
+                      contentStyle={tooltipStyles}
                       isAnimationActive={!isWebKit}
                     />
                   </PieChart>
@@ -350,16 +304,7 @@ export const ChatTab = memo(function ChatTab() {
 
         {/* Feature Usage Breakdown */}
         <div
-          className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -383,7 +328,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.ragConversationsCount} ({statsService.formatPercentage(statsService.getRagUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -404,7 +349,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.agentConversationsCount} ({statsService.formatPercentage(statsService.getAgentUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -425,7 +370,7 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.imageGenerationConversationsCount} ({stats.totalImagesGenerated} imgs)
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
@@ -443,16 +388,7 @@ export const ChatTab = memo(function ChatTab() {
       {/* Model Usage Summary */}
       {Object.keys(stats.modelUsageCounts).length > 0 && (
         <div
-          className={`rounded-3xl border p-6 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-3xl border p-6 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -468,11 +404,7 @@ export const ChatTab = memo(function ChatTab() {
               {statsService.getTopModels(stats, 6).map((model, index) => (
                 <div
                   key={model.model}
-                  className="p-3 rounded-xl"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
+                  className="p-3 rounded-xl insights-nested-card"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div

@@ -3,7 +3,7 @@
  * Analytics and statistics for AI agent usage and tool execution
  */
 
-import { memo, useMemo, CSSProperties } from 'react';
+import { memo, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell,
@@ -32,27 +32,17 @@ const AgentTabSkeleton = memo(function AgentTabSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border p-4 h-20"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            }}
+            className="rounded-2xl border p-4 h-20 insights-skeleton-card"
           >
-            <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-            <div className="h-6 w-16 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+            <div className="h-3 w-20 rounded mb-2 insights-skeleton" />
+            <div className="h-6 w-16 rounded insights-skeleton" />
           </div>
         ))}
       </div>
       {/* Chart Skeleton */}
-      <div
-        className="rounded-3xl border p-6 h-80"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        }}
-      >
-        <div className="h-5 w-48 rounded mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-        <div className="h-48 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+      <div className="rounded-3xl border p-6 h-80 insights-skeleton-card">
+        <div className="h-5 w-48 rounded mb-4 insights-skeleton" />
+        <div className="h-48 rounded insights-skeleton" />
       </div>
     </div>
   );
@@ -113,12 +103,14 @@ export const AgentTab = memo(function AgentTab() {
       .sort((a, b) => parseInt(a.hour) - parseInt(b.hour));
   }, [toolStats]);
 
-  // Card container styles - frosted glass with subtle shadow
-  const cardStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  // Tooltip styles for Recharts (requires style object)
+  const tooltipStyles = useMemo(() => ({
+    backgroundColor: 'var(--insights-tooltip-bg)',
+    border: '1px solid var(--insights-tooltip-border)',
+    borderRadius: '12px',
+    color: 'var(--text-primary)',
+    fontSize: '12px',
+    backdropFilter: 'blur(20px)',
   }), []);
 
   if (isLoading) {
@@ -128,13 +120,7 @@ export const AgentTab = memo(function AgentTab() {
   if (toolsError) {
     return (
       <div className="flex items-center justify-center h-64 p-4">
-        <div
-          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-          }}
-        >
+        <div className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300 insights-error">
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
               className="h-5 w-5 flex-shrink-0"
@@ -226,16 +212,7 @@ export const AgentTab = memo(function AgentTab() {
         {/* Tool Calls Over Time */}
         {dailyToolCallsData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -259,14 +236,7 @@ export const AgentTab = memo(function AgentTab() {
                   />
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={30} tick={{ fontSize: 9 }} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      backdropFilter: 'blur(20px)',
-                    }}
+                    contentStyle={tooltipStyles}
                     labelStyle={{ color: 'var(--text-primary)' }}
                     formatter={(value) => [`${value ?? 0} calls`, 'Tool Calls']}
                     isAnimationActive={!isWebKit}
@@ -289,16 +259,7 @@ export const AgentTab = memo(function AgentTab() {
         {/* Tool Usage Breakdown */}
         {toolUsagePieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -327,14 +288,7 @@ export const AgentTab = memo(function AgentTab() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                        borderRadius: '12px',
-                        color: 'var(--text-primary)',
-                        fontSize: '12px',
-                        backdropFilter: 'blur(20px)',
-                      }}
+                      contentStyle={tooltipStyles}
                       isAnimationActive={!isWebKit}
                     />
                   </PieChart>
@@ -363,16 +317,7 @@ export const AgentTab = memo(function AgentTab() {
         {/* Hourly Distribution */}
         {hourlyData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -396,14 +341,7 @@ export const AgentTab = memo(function AgentTab() {
                   />
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={25} tick={{ fontSize: 9 }} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      backdropFilter: 'blur(20px)',
-                    }}
+                    contentStyle={tooltipStyles}
                     isAnimationActive={!isWebKit}
                   />
                   <Bar
@@ -422,16 +360,7 @@ export const AgentTab = memo(function AgentTab() {
       {/* Tool Details Table */}
       {toolStats.toolUsageByName.length > 0 && (
         <div
-          className={`rounded-3xl border p-6 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-3xl border p-6 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -446,7 +375,7 @@ export const AgentTab = memo(function AgentTab() {
             <div className="overflow-x-auto -mx-2 px-2 scrollbar-thin">
               <table className="w-full min-w-[500px]">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                  <tr className="insights-table-row-border">
                     <th className="text-left py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Tool</th>
                     <th className="text-right py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Calls</th>
                     <th className="text-right py-2 px-3 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Success</th>
@@ -459,10 +388,7 @@ export const AgentTab = memo(function AgentTab() {
                   {toolStats.toolUsageByName.slice(0, 10).map((tool, index) => (
                     <tr
                       key={tool.toolName}
-                      style={{ borderBottom: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-                      className="transition-colors"
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--text-primary) 4%, transparent)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      className="transition-colors insights-table-row-border insights-table-row-hover"
                     >
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
@@ -509,16 +435,7 @@ export const AgentTab = memo(function AgentTab() {
       {/* Top Errors */}
       {toolStats.topErrors && toolStats.topErrors.length > 0 && (
         <div
-          className={`rounded-3xl border p-6 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-3xl border p-6 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -534,11 +451,7 @@ export const AgentTab = memo(function AgentTab() {
               {toolStats.topErrors.slice(0, 5).map((error, index) => (
                 <div
                   key={`${error.toolName}-${error.errorType}-${index}`}
-                  className="p-3 rounded-xl"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
+                  className="p-3 rounded-xl insights-nested-card"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
