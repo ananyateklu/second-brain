@@ -130,8 +130,8 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
-      // Unselected buttons use inline styles for styling - color-mix pattern
-      expect(button7D).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' });
+      // Unselected buttons use insights-time-button CSS class for styling
+      expect(button7D).toHaveClass('insights-time-button');
     });
 
     it('should call onTimeRangeChange when button clicked', () => {

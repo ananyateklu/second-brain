@@ -95,7 +95,8 @@ describe('AnalyticsTabBar', () => {
       render(<AnalyticsTabBar activeTab="performance" onTabChange={mockOnTabChange} />);
 
       const topicsTab = screen.getByText('Topics').closest('button');
-      expect(topicsTab).toHaveStyle({ color: 'var(--text-secondary)' });
+      // Inactive tabs use insights-tab-button CSS class for styling
+      expect(topicsTab).toHaveClass('insights-tab-button');
     });
   });
 
