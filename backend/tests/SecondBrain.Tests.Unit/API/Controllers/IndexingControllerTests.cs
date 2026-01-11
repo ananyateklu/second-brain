@@ -37,16 +37,29 @@ public class IndexingControllerTests
     #region StartIndexing Tests
 
     [Fact]
+    public async Task StartIndexing_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - default setup is unauthenticated
+
+        // Act
+        var result = await _sut.StartIndexing();
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
     public async Task StartIndexing_WhenSuccessful_ReturnsOkWithJobResponse()
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         var response = CreateTestJobResponse("job-1");
         _mockMediator.Setup(m => m.Send(It.IsAny<StartIndexingCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<IndexingJobResponse>.Success(response));
 
         // Act
-        var result = await _sut.StartIndexing(userId);
+        var result = await _sut.StartIndexing();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -60,13 +73,14 @@ public class IndexingControllerTests
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         var embeddingProvider = "openai";
         var response = CreateTestJobResponse("job-1");
         _mockMediator.Setup(m => m.Send(It.IsAny<StartIndexingCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<IndexingJobResponse>.Success(response));
 
         // Act
-        await _sut.StartIndexing(userId, embeddingProvider);
+        await _sut.StartIndexing(embeddingProvider);
 
         // Assert
         _mockMediator.Verify(m => m.Send(
@@ -79,13 +93,14 @@ public class IndexingControllerTests
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         var vectorStoreProvider = "postgresql";
         var response = CreateTestJobResponse("job-1");
         _mockMediator.Setup(m => m.Send(It.IsAny<StartIndexingCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<IndexingJobResponse>.Success(response));
 
         // Act
-        await _sut.StartIndexing(userId, null, vectorStoreProvider);
+        await _sut.StartIndexing(null, vectorStoreProvider);
 
         // Assert
         _mockMediator.Verify(m => m.Send(
@@ -98,11 +113,12 @@ public class IndexingControllerTests
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         _mockMediator.Setup(m => m.Send(It.IsAny<StartIndexingCommand>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<IndexingJobResponse>.Failure(Error.Custom("Validation", "Invalid model")));
 
         // Act
-        var result = await _sut.StartIndexing(userId);
+        var result = await _sut.StartIndexing();
 
         // Assert
         result.Result.Should().BeOfType<BadRequestObjectResult>();
@@ -168,10 +184,23 @@ public class IndexingControllerTests
     #region GetIndexStats Tests
 
     [Fact]
+    public async Task GetIndexStats_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - default setup is unauthenticated
+
+        // Act
+        var result = await _sut.GetIndexStats();
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
     public async Task GetIndexStats_ReturnsOkWithStatsResponse()
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         var response = new IndexStatsResponse
         {
             PostgreSQL = new IndexStatsData { TotalEmbeddings = 100 },
@@ -181,7 +210,7 @@ public class IndexingControllerTests
             .ReturnsAsync(Result<IndexStatsResponse>.Success(response));
 
         // Act
-        var result = await _sut.GetIndexStats(userId);
+        var result = await _sut.GetIndexStats();
 
         // Assert
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
@@ -195,12 +224,13 @@ public class IndexingControllerTests
     {
         // Arrange
         var userId = "user-123";
+        SetupAuthenticatedUser(userId);
         var response = new IndexStatsResponse();
         _mockMediator.Setup(m => m.Send(It.IsAny<GetIndexStatsQuery>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<IndexStatsResponse>.Success(response));
 
         // Act
-        await _sut.GetIndexStats(userId);
+        await _sut.GetIndexStats();
 
         // Assert
         _mockMediator.Verify(m => m.Send(
