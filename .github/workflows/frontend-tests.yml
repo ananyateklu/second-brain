@@ -69,11 +69,11 @@ jobs:
 
       - name: Upload test coverage
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: frontend-coverage
           path: frontend/coverage/
-          retention-days: 7
+          retention-days: 1
 
   test-summary:
     name: Test Summary
