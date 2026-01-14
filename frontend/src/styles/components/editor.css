@@ -32,7 +32,8 @@
 }
 
 [data-theme="dark"] .mention,
-[data-theme="blue"] .mention {
+[data-theme="blue"] .mention,
+[data-theme="midnight"] .mention {
   color: var(--color-brand-300);
   background-color: color-mix(in srgb, var(--color-brand-900) 80%, transparent);
 }

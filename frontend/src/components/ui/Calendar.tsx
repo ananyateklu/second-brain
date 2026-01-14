@@ -94,7 +94,7 @@ export const Calendar = memo(function Calendar({
   const isNextMonthDisabled = disableFuture && isFuture(addMonths(viewMonth, 1));
 
   return (
-    <div className={cn('p-2', className)}>
+    <div className={cn('p-2 rounded-xl bg-[var(--surface-solid)]', className)}>
       {/* Month navigation header */}
       <div className="flex items-center justify-between mb-3">
         <button

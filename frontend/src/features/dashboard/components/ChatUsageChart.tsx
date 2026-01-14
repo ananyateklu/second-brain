@@ -125,7 +125,7 @@ export function ChatUsageChart({
           </div>
 
           {/* Time Range Filters */}
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
+          <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden thin-scrollbar -mx-1 px-1 py-0.5">
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
               <TimeRangeButton
                 key={option.days}

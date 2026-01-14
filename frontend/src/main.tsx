@@ -8,6 +8,7 @@ import { BackendReadyProvider } from './components/BackendReadyProvider';
 // Import bound-store first to register it before other stores are accessed
 import './store/bound-store';
 import { useBoundStore } from './store/bound-store';
+import { isDarkTheme, type ThemeId } from './config/themes';
 import { isTauri } from './lib/native-notifications';
 import { getBackendUrl, onBackendEvent } from './lib/tauri-bridge';
 import { setApiBaseUrl } from './lib/constants';
@@ -16,12 +17,11 @@ import './index.css';
 
 // Initialize theme before rendering to prevent FOUC
 const initializeTheme = () => {
-  const theme = useBoundStore.getState().theme;
+  const theme = useBoundStore.getState().theme as ThemeId;
   document.documentElement.setAttribute('data-theme', theme);
 
-  // Also set the 'dark' class for Tailwind
-  // Both 'dark' and 'blue' themes use dark mode styling
-  if (theme === 'dark' || theme === 'blue') {
+  // Also set the 'dark' class for Tailwind (derived from theme config)
+  if (isDarkTheme(theme)) {
     document.documentElement.classList.add('dark');
   } else {
     document.documentElement.classList.remove('dark');

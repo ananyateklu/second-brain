@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import { getProviderLogo } from '../../../utils/provider-logos';
 import { CircularCheckbox } from '../../../shared/components';
 import styles from '@styles/components/selection.module.css';
@@ -30,8 +30,7 @@ export const ConversationListItem = memo(function ConversationListItem({
   onDelete,
   staggerIndex = 0,
 }: ConversationListItemProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const isPlaceholder = conversation.id === 'placeholder-new-chat';
   const showCheckbox = isSelectionMode && !isPlaceholder;
 

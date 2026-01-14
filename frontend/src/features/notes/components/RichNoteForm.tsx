@@ -3,7 +3,7 @@ import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors, use
 import { RichTextEditor } from '../../../components/editor/RichTextEditor';
 import { NoteFormData } from '../hooks/use-note-form';
 import { NoteImageAttachment } from './NoteImageAttachment';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import type { FileAttachment } from '../../../utils/multimodal-models';
 import type { NoteImage } from '../../../types/notes';
 
@@ -53,8 +53,7 @@ export function RichNoteForm({
   const imageHandlingEnabled = !!(onAddImages && onRemoveNewImage);
 
   // Theme for tag styling
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
 
   // Track tags for external display
   const [displayTags, setDisplayTags] = useState<string[]>(initialTags);

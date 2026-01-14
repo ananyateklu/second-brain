@@ -11,6 +11,7 @@ import remarkGfm from 'remark-gfm';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useBoundStore } from '../store/bound-store';
+import { useTheme } from '../hooks/useTheme';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
 import type { Note, NoteListItem } from '../types/notes';
 
@@ -47,8 +48,7 @@ export function LlmUiMessage({
   showCursor = false,
   isStreaming = false,
 }: LlmUiMessageProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDark = theme === 'dark' || theme === 'blue';
+  const { isDarkMode: isDark } = useTheme();
   const { data: notes } = useNotes();
   const openEditModal = useBoundStore((state) => state.openEditModal);
 

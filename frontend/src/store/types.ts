@@ -13,7 +13,11 @@ import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
 // Theme Types
 // ============================================
 
-export type Theme = 'light' | 'dark' | 'blue';
+// Import Theme type from centralized config
+import type { ThemeId } from '../config/themes';
+
+// Theme type alias for external use
+export type Theme = ThemeId;
 
 // ============================================
 // UI Types

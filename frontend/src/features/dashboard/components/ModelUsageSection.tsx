@@ -2,6 +2,7 @@ import { useState, useMemo, CSSProperties, memo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChartTooltip } from './PieChartTooltip';
 import { formatTokenCount, TIME_RANGE_OPTIONS, TimeRangeOption, getProviderFromModelName } from '../utils/dashboard-utils';
+import { getProviderColorByName } from '../../../utils/provider-logos';
 
 // Detect if running in Tauri (WebKit)
 const isTauri = (): boolean => {
@@ -98,7 +99,7 @@ LegendButton.displayName = 'LegendButton';
 
 export function ModelUsageSection({
   modelUsageData,
-  colors,
+  colors: _colors, // Provider colors are now used instead
   getFilteredModelUsageData,
   animationDelay = 0,
   isAnimationReady = true,
@@ -140,7 +141,7 @@ export function ModelUsageSection({
       }
       grouped[provider].push({
         ...entry,
-        color: colors[index % colors.length],
+        color: getProviderColorByName(provider, index),
       });
     });
 
@@ -157,7 +158,7 @@ export function ModelUsageSection({
     });
 
     return Object.fromEntries(sortedProviders);
-  }, [allFilteredModels, colors]);
+  }, [allFilteredModels]);
 
   // Filter out hidden models
   const visibleData = useMemo(
@@ -175,22 +176,26 @@ export function ModelUsageSection({
     [visibleData]
   );
 
-  // Create color map based on original order to ensure consistency
+  // Create color map based on provider for consistency
   const colorMap = useMemo(() => {
     const map = new Map<string, string>();
     filteredData.forEach((entry, index) => {
-      map.set(entry.name, colors[index % colors.length]);
+      const provider = getProviderFromModelName(entry.originalName);
+      map.set(entry.name, getProviderColorByName(provider, index));
     });
     return map;
-  }, [filteredData, colors]);
+  }, [filteredData]);
 
   // Assign colors to visible entries
   const dataWithColors = useMemo(() => {
-    return visibleData.map((entry) => ({
-      ...entry,
-      color: colorMap.get(entry.name) || colors[0],
-    }));
-  }, [visibleData, colorMap, colors]);
+    return visibleData.map((entry, index) => {
+      const provider = getProviderFromModelName(entry.originalName);
+      return {
+        ...entry,
+        color: colorMap.get(entry.name) || getProviderColorByName(provider, index),
+      };
+    });
+  }, [visibleData, colorMap]);
 
   // Toggle model visibility
   const toggleModelVisibility = (modelName: string) => {
@@ -284,7 +289,7 @@ export function ModelUsageSection({
             </div>
 
             {/* Time Range Filters */}
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none -mx-1 px-1">
+            <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden thin-scrollbar -mx-1 px-1 py-0.5">
               {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
                 <TimeRangeButton
                   key={option.days}
@@ -374,16 +379,16 @@ export function ModelUsageSection({
                     >
                       By Conversation
                     </h4>
-                    <div className="min-w-0 h-[160px] sm:h-[200px]">
+                    <div className="min-w-0 h-[140px] sm:h-[160px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                           <Pie
                             data={dataWithColors.map(({ name, value }) => ({ name, value }))}
                             cx="50%"
                             cy="50%"
                             labelLine={true}
                             label={renderLabel}
-                            outerRadius={80}
+                            outerRadius={65}
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
@@ -429,9 +434,9 @@ export function ModelUsageSection({
                     >
                       By Token Usage
                     </h4>
-                    <div className="min-w-0 h-[160px] sm:h-[200px]">
+                    <div className="min-w-0 h-[140px] sm:h-[160px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                        <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                           <Pie
                             data={dataWithColors
                               .filter(d => d.tokens > 0)
@@ -441,7 +446,7 @@ export function ModelUsageSection({
                             cy="50%"
                             labelLine={true}
                             label={renderLabel}
-                            outerRadius={80}
+                            outerRadius={65}
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
@@ -483,7 +488,7 @@ export function ModelUsageSection({
                 </div>
 
                 {/* Interactive Legend */}
-                <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto scrollbar-none insights-panel-subtle">
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar insights-panel-subtle">
                   {dataWithColors.map((entry) => (
                     <LegendButton
                       key={`legend-${entry.originalName}`}

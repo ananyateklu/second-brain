@@ -6,6 +6,7 @@
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS } from '../lib/constants';
 import { format, parse, subDays } from 'date-fns';
+import { getProviderColorByName } from '../utils/provider-logos';
 import type {
   AIUsageStats,
   ChartDataPoint,
@@ -185,17 +186,16 @@ export const statsService = {
 
   /**
    * Convert provider usage to pie chart data
+   * Uses official brand colors for each AI provider
    */
   convertProviderUsageToPieData(
     providerCounts: Record<string, number>
   ): PieChartData[] {
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F'];
-
     return Object.entries(providerCounts)
       .map(([name, value], index) => ({
         name,
         value,
-        color: colors[index % colors.length],
+        color: getProviderColorByName(name, index),
       }))
       .sort((a, b) => b.value - a.value);
   },

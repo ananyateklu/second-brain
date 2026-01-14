@@ -118,3 +118,25 @@
     var(--color-blue-950) 100%
   );
 }
+
+/* =============================================================================
+   Midnight Theme Effects
+   ============================================================================= */
+[data-theme="midnight"] {
+  /* Glassmorphism for midnight theme - deep blue-tinted transparency */
+  --glass-bg: color-mix(in srgb, var(--color-midnight-950) 50%, transparent);
+  --glass-border: color-mix(in srgb, var(--color-midnight-50) 8%, transparent);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+
+  /* Input focus colors for midnight theme */
+  --input-focus-border: var(--color-brand-400);
+  --input-focus-ring: color-mix(in srgb, var(--color-brand-500) 25%, transparent);
+
+  /* Page background gradient for midnight theme */
+  --page-background: radial-gradient(
+    circle at top left,
+    var(--color-midnight-800),
+    var(--color-midnight-900) 40%,
+    var(--color-midnight-950) 100%
+  );
+}

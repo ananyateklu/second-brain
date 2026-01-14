@@ -1,6 +1,7 @@
 import { formatModelName } from '../utils/model-name-formatter';
 import { useProviderLogo } from '../utils/provider-logos';
 import { useBoundStore } from '../store/bound-store';
+import { useTheme } from '../hooks/useTheme';
 
 // Renderer icon for LLM-UI
 const LlmUiIcon = () => (
@@ -18,8 +19,7 @@ const CustomRendererIcon = () => (
 
 // Theme-aware user icon
 const UserIcon = () => {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const strokeColor = isDarkMode ? 'white' : 'black';
 
   return (
@@ -37,8 +37,7 @@ const ModelIcon = () => (
 
 // Theme-aware token icon
 const TokenIcon = () => {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const strokeColor = isDarkMode ? 'white' : 'black';
 
   return (
@@ -100,9 +99,8 @@ export function TokenUsageDisplay({
   toolResultTokens,
   messageMarkdownRenderer,
 }: TokenUsageDisplayProps) {
-  const theme = useBoundStore((state) => state.theme);
+  const { isDarkMode } = useTheme();
   const globalMarkdownRenderer = useBoundStore((state) => state.markdownRenderer);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
   const providerLogo = useProviderLogo(provider || '');
 
   // Use message-specific renderer if available, otherwise fall back to global setting

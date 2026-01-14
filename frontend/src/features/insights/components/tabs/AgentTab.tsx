@@ -18,10 +18,62 @@ const isTauri = (): boolean => {
   return !!(window as unknown as { __TAURI__?: unknown }).__TAURI__;
 };
 
-// Chart colors
-const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F', '#FF6B6B', '#4ECDC4', '#45B7D1'];
-const SUCCESS_COLOR = '#82ca9d';
-const FAILURE_COLOR = '#FF6B6B';
+// Get CSS variable value helper
+const getCssVar = (varName: string): string => {
+  if (typeof document === 'undefined') return '';
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+};
+
+// Tool color CSS variable names
+const TOOL_COLOR_VARS = [
+  '--color-tool-1',
+  '--color-tool-2',
+  '--color-tool-3',
+  '--color-tool-4',
+  '--color-tool-5',
+  '--color-tool-6',
+  '--color-tool-7',
+  '--color-tool-8',
+];
+
+// Get tool color by index
+const getToolColor = (index: number): string => {
+  return getCssVar(TOOL_COLOR_VARS[index % TOOL_COLOR_VARS.length]);
+};
+
+// Custom tooltip for Tool Usage pie chart
+interface ToolTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    payload: { name: string; value: number; color: string };
+  }>;
+}
+
+const ToolPieTooltip = memo(function ToolPieTooltip({ active, payload }: ToolTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0];
+  const toolName = data.payload.name;
+  const value = data.payload.value;
+  const color = data.payload.color;
+
+  return (
+    <div
+      className="rounded-xl px-3 py-2 shadow-lg"
+      style={{
+        backgroundColor: 'var(--insights-tooltip-bg)',
+        border: '1px solid var(--insights-tooltip-border)',
+        backdropFilter: 'blur(20px)',
+      }}
+    >
+      <span style={{ color, fontWeight: 500 }}>
+        {toolName} : {value}
+      </span>
+    </div>
+  );
+});
 
 // Skeleton component for loading state
 const AgentTabSkeleton = memo(function AgentTabSkeleton() {
@@ -70,6 +122,13 @@ export const AgentTab = memo(function AgentTab() {
 
   const isLoading = toolsLoading || aiStatsLoading;
 
+  // Get colors from CSS variables
+  const toolColors = useMemo(() => ({
+    success: getCssVar('--color-tool-success'),
+    failure: getCssVar('--color-tool-failure'),
+    primary: getCssVar('--color-tool-primary'),
+  }), []);
+
   // Convert daily tool calls to chart data
   const dailyToolCallsData = useMemo(() => {
     if (!toolStats?.dailyToolCalls) return [];
@@ -82,7 +141,7 @@ export const AgentTab = memo(function AgentTab() {
     return toolStats.toolUsageByName.slice(0, 8).map((tool, index) => ({
       name: tool.toolName,
       value: tool.callCount,
-      color: CHART_COLORS[index % CHART_COLORS.length],
+      color: getToolColor(index),
     }));
   }, [toolStats]);
 
@@ -245,7 +304,7 @@ export const AgentTab = memo(function AgentTab() {
                     type="monotone"
                     dataKey="value"
                     name="Tool Calls"
-                    stroke={CHART_COLORS[0]}
+                    stroke={toolColors.primary}
                     strokeWidth={2}
                     dot={false}
                     animationDuration={isWebKit ? 300 : 500}
@@ -288,7 +347,7 @@ export const AgentTab = memo(function AgentTab() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={tooltipStyles}
+                      content={<ToolPieTooltip />}
                       isAnimationActive={!isWebKit}
                     />
                   </PieChart>
@@ -346,7 +405,7 @@ export const AgentTab = memo(function AgentTab() {
                   />
                   <Bar
                     dataKey="calls"
-                    fill={CHART_COLORS[0]}
+                    fill={toolColors.primary}
                     radius={[2, 2, 0, 0]}
                     animationDuration={isWebKit ? 300 : 500}
                   />
@@ -394,7 +453,7 @@ export const AgentTab = memo(function AgentTab() {
                         <div className="flex items-center gap-2">
                           <div
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                            style={{ backgroundColor: getToolColor(index) }}
                           />
                           <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                             {tool.toolName}
@@ -404,10 +463,10 @@ export const AgentTab = memo(function AgentTab() {
                       <td className="text-right py-2 px-3 text-sm" style={{ color: 'var(--text-primary)' }}>
                         {tool.callCount.toLocaleString()}
                       </td>
-                      <td className="text-right py-2 px-3 text-sm" style={{ color: SUCCESS_COLOR }}>
+                      <td className="text-right py-2 px-3 text-sm" style={{ color: toolColors.success }}>
                         {tool.successCount.toLocaleString()}
                       </td>
-                      <td className="text-right py-2 px-3 text-sm" style={{ color: tool.failureCount > 0 ? FAILURE_COLOR : 'var(--text-tertiary)' }}>
+                      <td className="text-right py-2 px-3 text-sm" style={{ color: tool.failureCount > 0 ? toolColors.failure : 'var(--text-tertiary)' }}>
                         {tool.failureCount.toLocaleString()}
                       </td>
                       <td className="text-right py-2 px-3">
@@ -439,7 +498,7 @@ export const AgentTab = memo(function AgentTab() {
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <svg className="h-5 w-5" style={{ color: FAILURE_COLOR }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5" style={{ color: toolColors.failure }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -460,7 +519,7 @@ export const AgentTab = memo(function AgentTab() {
                       </span>
                       <span
                         className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ backgroundColor: 'rgba(255, 107, 107, 0.2)', color: FAILURE_COLOR }}
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-tool-failure) 20%, transparent)', color: toolColors.failure }}
                       >
                         {error.errorType}
                       </span>

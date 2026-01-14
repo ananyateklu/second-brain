@@ -1,7 +1,7 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Loader2, AlertTriangle, FileWarning, ExternalLink, FileCode } from 'lucide-react';
-import { useBoundStore } from '../../../../store/bound-store';
+import { useTheme } from '../../../../hooks/useTheme';
 import type { GitHubFileContentResponse } from '../../../../types/github';
 import { getLanguageForHighlighter } from '../../../../types/github';
 
@@ -18,8 +18,7 @@ export function CodeViewer({
   error,
   selectedPath,
 }: CodeViewerProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
 
   // No file selected state
   if (!selectedPath) {

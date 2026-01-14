@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useBoundStore } from '../../store/bound-store';
+import { useTheme } from '../../hooks/useTheme';
 import { useTauriSecrets } from '../../components/ui/use-tauri-secrets';
 import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
 import { useVoiceStatus } from '../../features/voice/hooks';
@@ -28,13 +28,11 @@ import deepgramLogo from '../../assets/deepgram-light.jpeg';
 import elevenlabsLogo from '../../assets/elevenlabs-light.svg';
 
 export function AISettings() {
-  const theme = useBoundStore((state) => state.theme);
+  const { isDarkMode } = useTheme();
   const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth } = useAIHealth();
   const { isProviderConfigured: isTauriProviderConfigured, refetch: refetchSecrets } = useTauriSecrets();
   const { data: voiceStatus, refetch: refetchVoiceStatus } = useVoiceStatus();
   const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
-
-  const isDarkMode = theme === 'dark' || theme === 'blue';
 
   // Check if a provider is configured - uses voice status for voice providers, Tauri secrets for AI providers
   const isProviderConfigured = useCallback((providerId: string): boolean => {

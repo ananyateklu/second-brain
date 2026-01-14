@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { z } from 'zod';
 import { STORAGE_KEYS } from '../lib/constants';
+import { THEME_IDS } from '../config/themes';
 import type { BoundStore } from './types';
 import { registerStore } from './store-registry';
 
@@ -35,7 +36,8 @@ const NoteViewSchema = z.enum(['list', 'grid']);
 const FontSizeSchema = z.enum(['small', 'medium', 'large']);
 const MarkdownRendererSchema = z.enum(['custom', 'llm-ui']);
 const VectorStoreProviderSchema = z.enum(['PostgreSQL', 'Pinecone']);
-const ThemeSchema = z.enum(['light', 'dark', 'blue']);
+// Theme schema derived from centralized config
+const ThemeSchema = z.enum(THEME_IDS);
 const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
 
 // User schema (aligned with User interface from types/auth.ts)

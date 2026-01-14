@@ -1,4 +1,5 @@
 import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import { useDeleteNote, useArchiveNote, useUnarchiveNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
@@ -100,8 +101,7 @@ export const NoteCard = memo((props: NoteCardProps) => {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
 
   const handleCardClick = useCallback(() => {
     if (isBulkMode && onSelect) {

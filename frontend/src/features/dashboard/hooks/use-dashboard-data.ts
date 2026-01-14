@@ -9,6 +9,7 @@ import {
   getThemeColors,
   getRagChartColor,
   getRegularChartColor,
+  getAgentChartColor,
   getImageGenChartColor,
 } from '../utils/dashboard-utils';
 import type { SessionStats } from '../../../types/chat';
@@ -94,7 +95,7 @@ export function useDashboardData(): DashboardData {
   const colors = getThemeColors();
   const ragChartColor = getRagChartColor();
   const regularChartColor = getRegularChartColor();
-  const agentChartColor = colors[2]; // Use third color from theme for agent chats
+  const agentChartColor = getAgentChartColor();
   const imageGenChartColor = getImageGenChartColor();
 
   // Map stats response to NotesStats interface

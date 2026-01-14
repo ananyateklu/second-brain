@@ -15,7 +15,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import Image from '@tiptap/extension-image';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { useBoundStore } from '../../store/bound-store';
+import { useTheme } from '../../hooks/useTheme';
 import { htmlToMarkdown } from '../../utils/markdown-utils';
 import { RichTextEditorToolbar } from './RichTextEditorToolbar';
 import { CustomMention } from './RichTextEditorMention';
@@ -87,8 +87,7 @@ export function RichTextEditor({
   editable = true,
   hideTagsDisplay = false,
 }: RichTextEditorProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   // Tags extracted from mention nodes in the content
   const [contentTags, setContentTags] = useState<string[]>([]);
 

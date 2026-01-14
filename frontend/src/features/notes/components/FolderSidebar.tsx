@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Note } from '../types/note';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import { FolderFilter, ArchiveFilter } from './NotesFilter';
 
 interface FolderSidebarProps {
@@ -22,8 +22,7 @@ export function FolderSidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: FolderSidebarProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   // Calculate folder stats

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import type { ArchiveFilter, FolderFilter, FolderStats } from '../notes-directory.types';
 
 interface DirectorySidebarProps {
@@ -23,8 +23,7 @@ export function DirectorySidebar({
   onSelectFolder,
   onSelectTrash,
 }: DirectorySidebarProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const isSelected = (folder: FolderFilter) => selectedFolder === folder;

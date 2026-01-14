@@ -7,7 +7,7 @@
 import { memo, useMemo } from 'react';
 import type { VoiceSessionSummary } from '../types/voice-types';
 import { formatModelName } from '../../../utils/model-name-formatter';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import { getProviderLogo } from '../../../utils/provider-logos';
 import { CircularCheckbox } from '../../../shared/components';
 import styles from '@styles/components/selection.module.css';
@@ -33,8 +33,7 @@ export const VoiceSessionItem = memo(function VoiceSessionItem({
   onSelect,
   onDelete,
 }: VoiceSessionItemProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
   const showCheckbox = isSelectionMode;
 
   // Format timestamp (matches chat's formatConversationDate style)

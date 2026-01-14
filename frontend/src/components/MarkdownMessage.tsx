@@ -22,6 +22,7 @@ import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
 import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
 import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
 import { useBoundStore } from '../store/bound-store';
+import { useTheme } from '../hooks/useTheme';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
 import type { Note, NoteListItem } from '../types/notes';
 
@@ -151,8 +152,7 @@ function childrenToString(children: React.ReactNode): string {
 }
 
 export function MarkdownMessage({ content, showCursor = false }: MarkdownMessageProps) {
-  const theme = useBoundStore((state) => state.theme);
-  const isDark = theme === 'dark' || theme === 'blue';
+  const { isDarkMode: isDark } = useTheme();
   const { data: notes } = useNotes();
   const openEditModal = useBoundStore((state) => state.openEditModal);
 
