@@ -497,7 +497,7 @@ export const handlers = [
   http.get(`${API_BASE}/chat/image-generation/providers`, () => {
     return HttpResponse.json([
       { provider: 'OpenAI', models: ['dall-e-3', 'dall-e-2'], isEnabled: true },
-      { provider: 'Gemini', models: ['gemini-image'], isEnabled: true },
+      { provider: 'Google', models: ['gemini-image'], isEnabled: true },
     ]);
   }),
 

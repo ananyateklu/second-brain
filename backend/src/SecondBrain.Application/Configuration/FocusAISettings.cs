@@ -13,7 +13,7 @@ public class FocusAISettings
     public bool Enabled { get; set; } = true;
 
     /// <summary>
-    /// AI provider to use (e.g., "OpenAI", "Anthropic", "Gemini")
+    /// AI provider to use (e.g., "OpenAI", "Anthropic", "Google")
     /// </summary>
     public string Provider { get; set; } = "OpenAI";
 

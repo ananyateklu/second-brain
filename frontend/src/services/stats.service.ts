@@ -319,11 +319,45 @@ export const statsService = {
    * Parse model name into provider and model
    */
   parseModelName(fullName: string): [string, string] {
-    // Common patterns: "openai:gpt-4", "anthropic:claude-3", etc.
+    // Handle explicit provider:model format (e.g., Ollama models like "qwen3:4b")
     const parts = fullName.split(':');
     if (parts.length === 2) {
+      // Check if it's an Ollama model (lowercase first part, typically model family)
+      const firstPart = parts[0].toLowerCase();
+      if (['qwen3', 'llama3', 'mistral', 'codellama', 'phi', 'gemma', 'deepseek'].some(m => firstPart.includes(m))) {
+        return ['Ollama', fullName];
+      }
       return [parts[0], parts[1]];
     }
+
+    // Infer provider from model name patterns
+    const modelLower = fullName.toLowerCase();
+
+    // OpenAI models
+    if (modelLower.startsWith('gpt-') || modelLower.startsWith('o1') || modelLower.includes('davinci') || modelLower.includes('curie')) {
+      return ['OpenAI', fullName];
+    }
+
+    // Anthropic models
+    if (modelLower.startsWith('claude')) {
+      return ['Anthropic', fullName];
+    }
+
+    // Google models
+    if (modelLower.startsWith('gemini') || modelLower.startsWith('palm') || modelLower.startsWith('bard')) {
+      return ['Google', fullName];
+    }
+
+    // xAI models
+    if (modelLower.startsWith('grok')) {
+      return ['xAI', fullName];
+    }
+
+    // Cohere models
+    if (modelLower.startsWith('command') || modelLower.startsWith('coral')) {
+      return ['Cohere', fullName];
+    }
+
     return ['Unknown', fullName];
   },
 

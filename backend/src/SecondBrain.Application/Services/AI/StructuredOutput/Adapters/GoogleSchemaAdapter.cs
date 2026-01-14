@@ -7,7 +7,7 @@ namespace SecondBrain.Application.Services.AI.StructuredOutput.Adapters;
 /// <summary>
 /// Converts JsonSchemaDefinition to Google Gemini's Schema type.
 /// </summary>
-public static class GeminiSchemaAdapter
+public static class GoogleSchemaAdapter
 {
     /// <summary>
     /// Convert a JsonSchemaDefinition to Google.GenAI.Types.Schema.

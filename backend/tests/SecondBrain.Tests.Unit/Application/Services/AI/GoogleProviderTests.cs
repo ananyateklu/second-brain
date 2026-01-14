@@ -6,23 +6,23 @@ using SecondBrain.Application.Services.AI.Providers;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI;
 
-public class GeminiProviderTests
+public class GoogleProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<IGeminiFileService> _mockFileService;
-    private readonly Mock<ILogger<GeminiProvider>> _mockLogger;
+    private readonly Mock<ILogger<GoogleProvider>> _mockLogger;
 
     // Fake API key for testing - NOT a real key, format satisfies Gemini SDK validation (39 chars, starts with AIza)
     // ggignore
     private const string FakeGeminiApiKey = "AIzaSyFAKE_TEST_KEY_DO_NOT_USE_12345678";
 
-    public GeminiProviderTests()
+    public GoogleProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockFileService = new Mock<IGeminiFileService>();
-        _mockLogger = new Mock<ILogger<GeminiProvider>>();
+        _mockLogger = new Mock<ILogger<GoogleProvider>>();
     }
 
     #region Constructor and Properties Tests
@@ -38,7 +38,7 @@ public class GeminiProviderTests
 
         // Assert
         provider.IsEnabled.Should().BeFalse();
-        provider.ProviderName.Should().Be("Gemini");
+        provider.ProviderName.Should().Be("Google");
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class GeminiProviderTests
     }
 
     [Fact]
-    public void ProviderName_ReturnsGemini()
+    public void ProviderName_ReturnsGoogle()
     {
         // Arrange
         SetupSettings(enabled: false);
@@ -77,7 +77,7 @@ public class GeminiProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Gemini");
+        provider.ProviderName.Should().Be("Google");
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class GeminiProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public class GeminiProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -358,7 +358,7 @@ public class GeminiProviderTests
         // Assert
         health.IsHealthy.Should().BeFalse();
         health.Status.Should().Be("Disabled");
-        health.Provider.Should().Be("Gemini");
+        health.Provider.Should().Be("Google");
         health.ErrorMessage.Should().Contain("disabled");
     }
 
@@ -422,9 +422,9 @@ public class GeminiProviderTests
         _mockSettings.Setup(s => s.Value).Returns(settings);
     }
 
-    private GeminiProvider CreateProvider()
+    private GoogleProvider CreateProvider()
     {
-        return new GeminiProvider(
+        return new GoogleProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
             _mockFileService.Object,
@@ -433,4 +433,3 @@ public class GeminiProviderTests
 
     #endregion
 }
-

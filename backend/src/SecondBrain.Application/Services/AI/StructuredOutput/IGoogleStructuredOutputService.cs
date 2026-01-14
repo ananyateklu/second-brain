@@ -1,11 +1,11 @@
 namespace SecondBrain.Application.Services.AI.StructuredOutput;
 
 /// <summary>
-/// Service for generating structured JSON output from Gemini using type-safe schemas.
+/// Service for generating structured JSON output from Google (Gemini) using type-safe schemas.
 /// Ensures model responses conform to specified C# types.
-/// This is the legacy Gemini-specific interface. Consider using IStructuredOutputService for cross-provider support.
+/// This is the legacy Google-specific interface. Consider using IStructuredOutputService for cross-provider support.
 /// </summary>
-public interface IGeminiStructuredOutputService
+public interface IGoogleStructuredOutputService
 {
     /// <summary>
     /// Generate structured output matching the specified type.
@@ -38,7 +38,7 @@ public interface IGeminiStructuredOutputService
     Task<T?> GenerateAsync<T>(string prompt, StructuredOutputOptions options, CancellationToken cancellationToken = default) where T : class;
 
     /// <summary>
-    /// Check if the Gemini structured output service is available.
+    /// Check if the Google structured output service is available.
     /// </summary>
     bool IsAvailable { get; }
 }

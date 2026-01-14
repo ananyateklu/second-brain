@@ -63,8 +63,8 @@ export const IMAGE_GENERATION_CONFIGS: Record<string, ImageGenerationModelConfig
     ],
   },
 
-  Gemini: {
-    provider: 'Gemini',
+  Google: {
+    provider: 'Google',
     defaultModel: 'gemini-3-pro-image-preview',
     models: [
       {
@@ -120,8 +120,8 @@ export const IMAGE_GENERATION_CONFIGS: Record<string, ImageGenerationModelConfig
     ],
   },
 
-  Grok: {
-    provider: 'Grok',
+  Xai: {
+    provider: 'Xai',
     defaultModel: 'grok-2-image',
     models: [
       {

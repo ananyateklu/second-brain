@@ -257,10 +257,10 @@ public static class ServiceCollectionExtensions
 
         // Register AI providers as singletons (they maintain their own state)
         services.AddSingleton<OpenAIProvider>();
-        services.AddSingleton<ClaudeProvider>();
-        services.AddSingleton<GeminiProvider>();
+        services.AddSingleton<AnthropicProvider>();
+        services.AddSingleton<GoogleProvider>();
         services.AddSingleton<OllamaProvider>();
-        services.AddSingleton<GrokProvider>();
+        services.AddSingleton<XaiProvider>();
         services.AddSingleton<CohereProvider>();
 
         // Register the base AI provider factory
@@ -308,12 +308,12 @@ public static class ServiceCollectionExtensions
 
         // Register image generation providers
         services.AddSingleton<OpenAIImageProvider>();
-        services.AddSingleton<GeminiImageProvider>();
+        services.AddSingleton<GoogleImageProvider>();
         services.AddSingleton<GrokImageProvider>();
 
         // Register image generation providers in the collection for factory
         services.AddSingleton<IImageGenerationProvider, OpenAIImageProvider>(sp => sp.GetRequiredService<OpenAIImageProvider>());
-        services.AddSingleton<IImageGenerationProvider, GeminiImageProvider>(sp => sp.GetRequiredService<GeminiImageProvider>());
+        services.AddSingleton<IImageGenerationProvider, GoogleImageProvider>(sp => sp.GetRequiredService<GoogleImageProvider>());
         services.AddSingleton<IImageGenerationProvider, GrokImageProvider>(sp => sp.GetRequiredService<GrokImageProvider>());
 
         // Register image generation factory
@@ -323,8 +323,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GrokSearchTool>();
         services.AddScoped<GrokDeepSearchTool>();
 
-        // Register Gemini Structured Output service for type-safe JSON generation (legacy interface)
-        services.AddSingleton<IGeminiStructuredOutputService, GeminiStructuredOutputService>();
+        // Register Google Structured Output service for type-safe JSON generation (legacy interface)
+        services.AddSingleton<IGoogleStructuredOutputService, GoogleStructuredOutputService>();
 
         // Register Gemini Context Cache service for reducing latency/costs with large contexts
         services.AddScoped<IGeminiCacheService, GeminiCacheService>();
@@ -348,10 +348,10 @@ public static class ServiceCollectionExtensions
 
         // Register Agent streaming strategies
         services.AddScoped<IAgentStreamingStrategy, AnthropicStreamingStrategy>();
-        services.AddScoped<IAgentStreamingStrategy, GeminiStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, GoogleStreamingStrategy>();
         services.AddScoped<IAgentStreamingStrategy, OpenAIStreamingStrategy>();
         services.AddScoped<IAgentStreamingStrategy, OllamaStreamingStrategy>();
-        services.AddScoped<IAgentStreamingStrategy, GrokStreamingStrategy>();
+        services.AddScoped<IAgentStreamingStrategy, XaiStreamingStrategy>();
         services.AddScoped<SemanticKernelStreamingStrategy>(); // Explicit fallback registration
 
         // Register Agent strategy factory
@@ -368,7 +368,7 @@ public static class ServiceCollectionExtensions
 
     /// <summary>
     /// Registers unified structured output services for all AI providers.
-    /// These services enable type-safe JSON generation across OpenAI, Claude, Gemini, Grok, and Ollama.
+    /// These services enable type-safe JSON generation across OpenAI, Anthropic, Google, Xai, and Ollama.
     /// </summary>
     public static IServiceCollection AddStructuredOutputServices(this IServiceCollection services, IConfiguration configuration)
     {
@@ -378,9 +378,9 @@ public static class ServiceCollectionExtensions
         // Register provider-specific structured output services
         // Each implements IProviderStructuredOutputService for the unified factory
         services.AddSingleton<IProviderStructuredOutputService, OpenAIStructuredOutputService>();
-        services.AddSingleton<IProviderStructuredOutputService, GrokStructuredOutputService>();
-        services.AddSingleton<IProviderStructuredOutputService, GeminiStructuredOutputProviderService>();
-        services.AddSingleton<IProviderStructuredOutputService, ClaudeStructuredOutputService>();
+        services.AddSingleton<IProviderStructuredOutputService, XaiStructuredOutputService>();
+        services.AddSingleton<IProviderStructuredOutputService, GoogleStructuredOutputProviderService>();
+        services.AddSingleton<IProviderStructuredOutputService, AnthropicStructuredOutputService>();
         services.AddSingleton<IProviderStructuredOutputService, OllamaStructuredOutputService>();
 
         // Register the unified structured output service
@@ -854,9 +854,9 @@ public static class ServiceCollectionExtensions
                         else if (request.RequestUri?.Host.Contains("anthropic") == true)
                             activity.SetTag("ai.provider", "Anthropic");
                         else if (request.RequestUri?.Host.Contains("googleapis") == true)
-                            activity.SetTag("ai.provider", "Gemini");
+                            activity.SetTag("ai.provider", "Google");
                         else if (request.RequestUri?.Host.Contains("x.ai") == true)
-                            activity.SetTag("ai.provider", "Grok");
+                            activity.SetTag("ai.provider", "Xai");
                     };
                 })
                 .AddEntityFrameworkCoreInstrumentation()
@@ -1033,14 +1033,14 @@ public static class ServiceCollectionExtensions
 
         // Register embedding providers as singletons
         services.AddSingleton<OpenAIEmbeddingProvider>();
-        services.AddSingleton<GeminiEmbeddingProvider>();
+        services.AddSingleton<GoogleEmbeddingProvider>();
         services.AddSingleton<OllamaEmbeddingProvider>();
         services.AddSingleton<PineconeEmbeddingProvider>();
         services.AddSingleton<CohereEmbeddingProvider>();
 
         // Register embedding providers in the collection for factory
         services.AddSingleton<IEmbeddingProvider, OpenAIEmbeddingProvider>(sp => sp.GetRequiredService<OpenAIEmbeddingProvider>());
-        services.AddSingleton<IEmbeddingProvider, GeminiEmbeddingProvider>(sp => sp.GetRequiredService<GeminiEmbeddingProvider>());
+        services.AddSingleton<IEmbeddingProvider, GoogleEmbeddingProvider>(sp => sp.GetRequiredService<GoogleEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, OllamaEmbeddingProvider>(sp => sp.GetRequiredService<OllamaEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, PineconeEmbeddingProvider>(sp => sp.GetRequiredService<PineconeEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, CohereEmbeddingProvider>(sp => sp.GetRequiredService<CohereEmbeddingProvider>());

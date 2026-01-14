@@ -7,6 +7,7 @@ using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
+using SecondBrain.Application.Services.AI.FileManagement;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.RAG;
 using Xunit;
@@ -14,29 +15,29 @@ using Xunit;
 namespace SecondBrain.Tests.Unit.Application.Services.Agents.Strategies;
 
 /// <summary>
-/// Unit tests for GrokStreamingStrategy.
+/// Unit tests for GoogleStreamingStrategy.
 /// Tests provider detection, capability handling, and configuration validation.
 /// </summary>
-public class GrokStreamingStrategyTests
+public class GoogleStreamingStrategyTests
 {
     private readonly Mock<IToolExecutor> _mockToolExecutor;
     private readonly Mock<IThinkingExtractor> _mockThinkingExtractor;
     private readonly Mock<IPluginToolBuilder> _mockToolBuilder;
     private readonly Mock<IAgentRetryPolicy> _mockRetryPolicy;
-    private readonly Mock<ILogger<GrokStreamingStrategy>> _mockLogger;
+    private readonly Mock<ILogger<GoogleStreamingStrategy>> _mockLogger;
 
-    public GrokStreamingStrategyTests()
+    public GoogleStreamingStrategyTests()
     {
         _mockToolExecutor = new Mock<IToolExecutor>();
         _mockThinkingExtractor = new Mock<IThinkingExtractor>();
         _mockToolBuilder = new Mock<IPluginToolBuilder>();
         _mockRetryPolicy = new Mock<IAgentRetryPolicy>();
-        _mockLogger = new Mock<ILogger<GrokStreamingStrategy>>();
+        _mockLogger = new Mock<ILogger<GoogleStreamingStrategy>>();
     }
 
-    private GrokStreamingStrategy CreateStrategy(GrokProvider? provider = null)
+    private GoogleStreamingStrategy CreateStrategy(GoogleProvider? provider = null)
     {
-        return new GrokStreamingStrategy(
+        return new GoogleStreamingStrategy(
             provider,
             _mockToolExecutor.Object,
             _mockThinkingExtractor.Object,
@@ -48,33 +49,23 @@ public class GrokStreamingStrategyTests
     #region SupportedProviders Tests
 
     [Fact]
-    public void SupportedProviders_ContainsGrok()
+    public void SupportedProviders_ContainsGoogle()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().Contain("grok");
+        sut.SupportedProviders.Should().Contain("google");
     }
 
     [Fact]
-    public void SupportedProviders_ContainsXai()
+    public void SupportedProviders_HasSingleProvider()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().Contain("xai");
-    }
-
-    [Fact]
-    public void SupportedProviders_HasTwoProviders()
-    {
-        // Arrange
-        var sut = CreateStrategy();
-
-        // Act & Assert
-        sut.SupportedProviders.Should().HaveCount(2);
+        sut.SupportedProviders.Should().ContainSingle();
     }
 
     #endregion
@@ -88,10 +79,10 @@ public class GrokStreamingStrategyTests
         var sut = CreateStrategy(provider: null);
         var request = new AgentRequest
         {
-            Provider = "grok",
+            Provider = "google",
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(enabled: true);
+        var settings = CreateSettings(functionCallingEnabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -102,20 +93,19 @@ public class GrokStreamingStrategyTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("claude")]
     [InlineData("anthropic")]
-    [InlineData("gemini")]
+    [InlineData("xai")]
     [InlineData("ollama")]
     public void CanHandle_WhenProviderDoesNotMatch_ReturnsFalse(string provider)
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGrokProvider());
+        var sut = CreateStrategy(CreateMockGoogleProvider());
         var request = new AgentRequest
         {
             Provider = provider,
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(enabled: true);
+        var settings = CreateSettings(functionCallingEnabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -125,16 +115,16 @@ public class GrokStreamingStrategyTests
     }
 
     [Fact]
-    public void CanHandle_WhenXaiDisabled_ReturnsFalse()
+    public void CanHandle_WhenFunctionCallingDisabled_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGrokProvider());
+        var sut = CreateStrategy(CreateMockGoogleProvider());
         var request = new AgentRequest
         {
-            Provider = "grok",
+            Provider = "google",
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(enabled: false);
+        var settings = CreateSettings(functionCallingEnabled: false);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -147,13 +137,13 @@ public class GrokStreamingStrategyTests
     public void CanHandle_WhenNoCapabilities_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGrokProvider());
+        var sut = CreateStrategy(CreateMockGoogleProvider());
         var request = new AgentRequest
         {
-            Provider = "grok",
+            Provider = "google",
             Capabilities = new List<string>()
         };
-        var settings = CreateSettings(enabled: true);
+        var settings = CreateSettings(functionCallingEnabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -166,13 +156,13 @@ public class GrokStreamingStrategyTests
     public void CanHandle_WhenCapabilitiesIsNull_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGrokProvider());
+        var sut = CreateStrategy(CreateMockGoogleProvider());
         var request = new AgentRequest
         {
-            Provider = "grok",
+            Provider = "google",
             Capabilities = null
         };
-        var settings = CreateSettings(enabled: true);
+        var settings = CreateSettings(functionCallingEnabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -182,22 +172,19 @@ public class GrokStreamingStrategyTests
     }
 
     [Theory]
-    [InlineData("grok")]
-    [InlineData("Grok")]
-    [InlineData("GROK")]
-    [InlineData("xai")]
-    [InlineData("XAI")]
-    [InlineData("Xai")]
+    [InlineData("google")]
+    [InlineData("Google")]
+    [InlineData("GOOGLE")]
     public void CanHandle_WhenAllConditionsMet_ReturnsTrue(string provider)
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGrokProvider());
+        var sut = CreateStrategy(CreateMockGoogleProvider());
         var request = new AgentRequest
         {
             Provider = provider,
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(enabled: true);
+        var settings = CreateSettings(functionCallingEnabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -234,21 +221,23 @@ public class GrokStreamingStrategyTests
 
     #region Helper Methods
 
-    private static GrokProvider? CreateMockGrokProvider()
+    private static GoogleProvider? CreateMockGoogleProvider()
     {
         try
         {
-            return new GrokProvider(
+            return new GoogleProvider(
                 Microsoft.Extensions.Options.Options.Create(new AIProvidersSettings
                 {
-                    XAI = new XAISettings
+                    Gemini = new GeminiSettings
                     {
                         Enabled = true,
-                        ApiKey = "test-key"
+                        ApiKey = "test-key",
+                        Features = new GeminiFeaturesConfig { EnableFunctionCalling = true }
                     }
                 }),
                 Mock.Of<IHttpClientFactory>(),
-                Mock.Of<ILogger<GrokProvider>>());
+                Mock.Of<IGeminiFileService>(),
+                Mock.Of<ILogger<GoogleProvider>>());
         }
         catch
         {
@@ -256,18 +245,17 @@ public class GrokStreamingStrategyTests
         }
     }
 
-    private static AIProvidersSettings CreateSettings(bool enabled)
+    private static AIProvidersSettings CreateSettings(bool functionCallingEnabled)
     {
         return new AIProvidersSettings
         {
-            XAI = new XAISettings
+            Gemini = new GeminiSettings
             {
-                Enabled = enabled,
+                Enabled = true,
                 ApiKey = "test-api-key",
-                FunctionCalling = new GrokFunctionCallingConfig
+                Features = new GeminiFeaturesConfig
                 {
-                    MaxIterations = 10,
-                    ParallelExecution = true
+                    EnableFunctionCalling = functionCallingEnabled
                 }
             }
         };
@@ -279,8 +267,8 @@ public class GrokStreamingStrategyTests
         {
             Request = new AgentRequest
             {
-                Provider = "grok",
-                Model = "grok-3-mini",
+                Provider = "google",
+                Model = "gemini-pro",
                 Messages = new List<AgentMessage>
                 {
                     new() { Role = "user", Content = "Hello" }
@@ -290,15 +278,11 @@ public class GrokStreamingStrategyTests
             },
             Settings = new AIProvidersSettings
             {
-                XAI = new XAISettings
+                Gemini = new GeminiSettings
                 {
                     Enabled = true,
                     ApiKey = "test-key",
-                    FunctionCalling = new GrokFunctionCallingConfig
-                    {
-                        MaxIterations = 10,
-                        ParallelExecution = true
-                    }
+                    Features = new GeminiFeaturesConfig { EnableFunctionCalling = true }
                 }
             },
             RagSettings = new RagSettings(),

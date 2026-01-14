@@ -19,7 +19,7 @@ public class AgentStreamingStrategyFactoryTests
         // Use interface mock for fallback strategy - simpler and more flexible
         _mockFallbackStrategy = new Mock<IAgentStreamingStrategy>();
         _mockFallbackStrategy.Setup(s => s.SupportedProviders)
-            .Returns(new[] { "openai", "gemini", "ollama", "grok", "xai" });
+            .Returns(new[] { "openai", "google", "ollama", "xai" });
     }
 
     [Fact]
@@ -140,9 +140,9 @@ public class AgentStreamingStrategyFactoryTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("claude")]
-    [InlineData("gemini")]
-    [InlineData("grok")]
+    [InlineData("anthropic")]
+    [InlineData("google")]
+    [InlineData("xai")]
     [InlineData("ollama")]
     public void GetStrategy_IteratesAllStrategiesUntilMatch(string provider)
     {

@@ -7,19 +7,19 @@ using SecondBrain.Application.Services.AI.Providers;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI;
 
-public class ClaudeProviderTests
+public class AnthropicProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<IAnthropicClientFactory> _mockClientFactory;
-    private readonly Mock<ILogger<ClaudeProvider>> _mockLogger;
+    private readonly Mock<ILogger<AnthropicProvider>> _mockLogger;
 
-    public ClaudeProviderTests()
+    public AnthropicProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockClientFactory = new Mock<IAnthropicClientFactory>();
-        _mockLogger = new Mock<ILogger<ClaudeProvider>>();
+        _mockLogger = new Mock<ILogger<AnthropicProvider>>();
     }
 
     #region Constructor and Properties Tests
@@ -78,7 +78,7 @@ public class ClaudeProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Claude");
+        provider.ProviderName.Should().Be("Anthropic");
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class ClaudeProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Anthropic");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class ClaudeProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Anthropic");
     }
 
     [Fact]
@@ -330,7 +330,7 @@ public class ClaudeProviderTests
         var result = await provider.GetHealthStatusAsync();
 
         // Assert
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Anthropic");
         result.IsHealthy.Should().BeFalse();
         result.Status.Should().Be("Disabled");
         result.ErrorMessage.Should().Contain("disabled");
@@ -350,7 +350,7 @@ public class ClaudeProviderTests
         var result = await provider.GetHealthStatusAsync();
 
         // Assert
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Anthropic");
         result.IsHealthy.Should().BeFalse();
         result.Status.Should().Be("Not Configured");
         result.ErrorMessage.Should().Contain("API key");
@@ -377,9 +377,9 @@ public class ClaudeProviderTests
 
     #region Helper Methods
 
-    private ClaudeProvider CreateProvider()
+    private AnthropicProvider CreateProvider()
     {
-        return new ClaudeProvider(
+        return new AnthropicProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
             _mockClientFactory.Object,

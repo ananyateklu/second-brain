@@ -8,10 +8,10 @@ using System.Text.Json.Serialization;
 
 namespace SecondBrain.Application.Services.Embeddings.Providers;
 
-public class GeminiEmbeddingProvider : IEmbeddingProvider
+public class GoogleEmbeddingProvider : IEmbeddingProvider
 {
     private readonly GeminiEmbeddingSettings _settings;
-    private readonly ILogger<GeminiEmbeddingProvider> _logger;
+    private readonly ILogger<GoogleEmbeddingProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
 
     // Cache for available models
@@ -48,15 +48,15 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
         }
     };
 
-    public string ProviderName => "Gemini";
+    public string ProviderName => "Google";
     public string ModelName => _settings.Model;
     public bool IsEnabled => _settings.Enabled && !string.IsNullOrEmpty(_settings.ApiKey);
     public int Dimensions => _settings.Dimensions;
 
-    public GeminiEmbeddingProvider(
+    public GoogleEmbeddingProvider(
         IOptions<EmbeddingProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
-        ILogger<GeminiEmbeddingProvider> logger)
+        ILogger<GoogleEmbeddingProvider> logger)
     {
         _settings = settings.Value.Gemini;
         _httpClientFactory = httpClientFactory;
@@ -65,7 +65,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
         if (IsEnabled)
         {
             _logger.LogInformation(
-                "Gemini embedding provider initialized. Model: {Model}, Dimensions: {Dimensions}",
+                "Google embedding provider initialized. Model: {Model}, Dimensions: {Dimensions}",
                 _settings.Model, _settings.Dimensions);
         }
     }
@@ -80,7 +80,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
 
         if (!IsEnabled)
         {
-            _logger.LogDebug("Gemini provider not enabled, returning fallback models");
+            _logger.LogDebug("Google provider not enabled, returning fallback models");
             return FallbackModels;
         }
 
@@ -98,7 +98,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
 
             if (modelsResponse?.Models == null || !modelsResponse.Models.Any())
             {
-                _logger.LogWarning("No models returned from Gemini API, using fallback");
+                _logger.LogWarning("No models returned from Google API, using fallback");
                 return FallbackModels;
             }
 
@@ -153,12 +153,12 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             _cachedModels = embeddingModels.Any() ? embeddingModels : FallbackModels.ToList();
             _modelsCacheExpiry = DateTime.UtcNow.Add(ModelsCacheDuration);
 
-            _logger.LogInformation("Fetched {Count} embedding models from Gemini API", embeddingModels.Count);
+            _logger.LogInformation("Fetched {Count} embedding models from Google API", embeddingModels.Count);
             return _cachedModels;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch models from Gemini API, using fallback models");
+            _logger.LogWarning(ex, "Failed to fetch models from Google API, using fallback models");
             return FallbackModels;
         }
     }
@@ -183,7 +183,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             return new EmbeddingResponse
             {
                 Success = false,
-                Error = "Gemini embedding provider is not enabled or configured",
+                Error = "Google embedding provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
@@ -230,13 +230,13 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError(
-                    "Gemini embedding API error. Status: {Status}, Response: {Response}",
+                    "Google embedding API error. Status: {Status}, Response: {Response}",
                     response.StatusCode, responseContent);
 
                 return new EmbeddingResponse
                 {
                     Success = false,
-                    Error = $"Gemini API error: {response.StatusCode} - {responseContent}",
+                    Error = $"Google API error: {response.StatusCode} - {responseContent}",
                     Provider = ProviderName
                 };
             }
@@ -248,13 +248,13 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
                 return new EmbeddingResponse
                 {
                     Success = false,
-                    Error = "Gemini returned empty embedding",
+                    Error = "Google returned empty embedding",
                     Provider = ProviderName
                 };
             }
 
             _logger.LogDebug(
-                "Generated Gemini embedding. Model: {Model}, Dimensions: {Dimensions}",
+                "Generated Google embedding. Model: {Model}, Dimensions: {Dimensions}",
                 effectiveModel, embedResponse.Embedding.Values.Length);
 
             return new EmbeddingResponse
@@ -276,7 +276,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating embedding from Gemini");
+            _logger.LogError(ex, "Error generating embedding from Google");
             return new EmbeddingResponse
             {
                 Success = false,
@@ -297,7 +297,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             return new BatchEmbeddingResponse
             {
                 Success = false,
-                Error = "Gemini embedding provider is not enabled or configured",
+                Error = "Google embedding provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
@@ -347,13 +347,13 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError(
-                    "Gemini batch embedding API error. Status: {Status}, Response: {Response}",
+                    "Google batch embedding API error. Status: {Status}, Response: {Response}",
                     response.StatusCode, responseContent);
 
                 return new BatchEmbeddingResponse
                 {
                     Success = false,
-                    Error = $"Gemini API error: {response.StatusCode} - {responseContent}",
+                    Error = $"Google API error: {response.StatusCode} - {responseContent}",
                     Provider = ProviderName
                 };
             }
@@ -365,7 +365,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
                 return new BatchEmbeddingResponse
                 {
                     Success = false,
-                    Error = "Gemini returned empty batch embeddings",
+                    Error = "Google returned empty batch embeddings",
                     Provider = ProviderName
                 };
             }
@@ -375,7 +375,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
                 .ToList();
 
             _logger.LogDebug(
-                "Generated {Count} Gemini embeddings. Model: {Model}, Dimensions: {Dimensions}",
+                "Generated {Count} Google embeddings. Model: {Model}, Dimensions: {Dimensions}",
                 embeddings.Count, effectiveModel, embeddings.FirstOrDefault()?.Count ?? 0);
 
             return new BatchEmbeddingResponse
@@ -397,7 +397,7 @@ public class GeminiEmbeddingProvider : IEmbeddingProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating batch embeddings from Gemini");
+            _logger.LogError(ex, "Error generating batch embeddings from Google");
             return new BatchEmbeddingResponse
             {
                 Success = false,

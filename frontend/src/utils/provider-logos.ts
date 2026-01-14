@@ -20,11 +20,11 @@ export function getProviderLogo(providerName: string, isDarkMode: boolean): stri
     return isDarkMode ? openaiDark : openaiLight;
   } else if (normalizedName === 'anthropic' || normalizedName === 'claude') {
     return isDarkMode ? anthropicDark : anthropicLight;
-  } else if (normalizedName === 'google' || normalizedName === 'gemini') {
+  } else if (normalizedName === 'google') {
     return googleLogo;
   } else if (normalizedName === 'ollama') {
     return ollamaLogo;
-  } else if (normalizedName === 'xai' || normalizedName === 'grok') {
+  } else if (normalizedName === 'xai') {
     return isDarkMode ? xaiDark : xaiLight;
   }
 

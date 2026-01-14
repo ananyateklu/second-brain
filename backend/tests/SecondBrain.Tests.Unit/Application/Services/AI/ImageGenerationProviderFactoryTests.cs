@@ -14,7 +14,7 @@ public class ImageGenerationProviderFactoryTests
         var providers = new List<IImageGenerationProvider>
         {
             CreateMockProvider("OpenAI", true).Object,
-            CreateMockProvider("Gemini", true).Object
+            CreateMockProvider("Google", true).Object
         };
 
         // Act
@@ -61,8 +61,8 @@ public class ImageGenerationProviderFactoryTests
     [InlineData("openai", "OpenAI")]
     [InlineData("OPENAI", "OpenAI")]
     [InlineData("OpenAI", "OpenAI")]
-    [InlineData("gemini", "Gemini")]
-    [InlineData("GEMINI", "Gemini")]
+    [InlineData("google", "Google")]
+    [InlineData("GOOGLE", "Google")]
     public void GetProvider_IsCaseInsensitive(string requestedName, string actualName)
     {
         // Arrange
@@ -96,7 +96,7 @@ public class ImageGenerationProviderFactoryTests
     {
         // Arrange
         var provider1 = CreateMockProvider("OpenAI", true);
-        var provider2 = CreateMockProvider("Gemini", true);
+        var provider2 = CreateMockProvider("Google", true);
         var sut = new ImageGenerationProviderFactory(new[] { provider1.Object, provider2.Object });
 
         // Act
@@ -116,8 +116,8 @@ public class ImageGenerationProviderFactoryTests
     {
         // Arrange
         var provider1 = CreateMockProvider("OpenAI", true);
-        var provider2 = CreateMockProvider("Gemini", false);
-        var provider3 = CreateMockProvider("Grok", true);
+        var provider2 = CreateMockProvider("Google", false);
+        var provider3 = CreateMockProvider("Xai", true);
         var sut = new ImageGenerationProviderFactory(new[] { provider1.Object, provider2.Object, provider3.Object });
 
         // Act
@@ -152,8 +152,8 @@ public class ImageGenerationProviderFactoryTests
     {
         // Arrange
         var enabledProvider1 = CreateMockProvider("OpenAI", true);
-        var disabledProvider = CreateMockProvider("Gemini", false);
-        var enabledProvider2 = CreateMockProvider("Grok", true);
+        var disabledProvider = CreateMockProvider("Google", false);
+        var enabledProvider2 = CreateMockProvider("Xai", true);
         var sut = new ImageGenerationProviderFactory(new[]
         {
             enabledProvider1.Object,
@@ -176,7 +176,7 @@ public class ImageGenerationProviderFactoryTests
     {
         // Arrange
         var disabledProvider1 = CreateMockProvider("OpenAI", false);
-        var disabledProvider2 = CreateMockProvider("Gemini", false);
+        var disabledProvider2 = CreateMockProvider("Google", false);
         var sut = new ImageGenerationProviderFactory(new[] { disabledProvider1.Object, disabledProvider2.Object });
 
         // Act
@@ -191,7 +191,7 @@ public class ImageGenerationProviderFactoryTests
     {
         // Arrange
         var provider1 = CreateMockProvider("OpenAI", true);
-        var provider2 = CreateMockProvider("Gemini", true);
+        var provider2 = CreateMockProvider("Google", true);
         var sut = new ImageGenerationProviderFactory(new[] { provider1.Object, provider2.Object });
 
         // Act

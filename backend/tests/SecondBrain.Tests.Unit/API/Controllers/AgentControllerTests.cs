@@ -88,13 +88,13 @@ public class AgentControllerTests
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<SupportedProvidersResponse>().Subject;
 
-        var claude = response.Providers.FirstOrDefault(p => p.Name == "Claude");
-        claude.Should().NotBeNull();
-        claude!.Supported.Should().BeTrue();
+        var anthropic = response.Providers.FirstOrDefault(p => p.Name == "Anthropic");
+        anthropic.Should().NotBeNull();
+        anthropic!.Supported.Should().BeTrue();
     }
 
     [Fact]
-    public void GetSupportedProviders_ContainsGemini()
+    public void GetSupportedProviders_ContainsGoogle()
     {
         // Act
         var result = _sut.GetSupportedProviders();
@@ -103,13 +103,13 @@ public class AgentControllerTests
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<SupportedProvidersResponse>().Subject;
 
-        var gemini = response.Providers.FirstOrDefault(p => p.Name == "Gemini");
-        gemini.Should().NotBeNull();
-        gemini!.Supported.Should().BeTrue();
+        var google = response.Providers.FirstOrDefault(p => p.Name == "Google");
+        google.Should().NotBeNull();
+        google!.Supported.Should().BeTrue();
     }
 
     [Fact]
-    public void GetSupportedProviders_ContainsGrok()
+    public void GetSupportedProviders_ContainsXai()
     {
         // Act
         var result = _sut.GetSupportedProviders();
@@ -118,9 +118,9 @@ public class AgentControllerTests
         var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = okResult.Value.Should().BeOfType<SupportedProvidersResponse>().Subject;
 
-        var grok = response.Providers.FirstOrDefault(p => p.Name == "Grok");
-        grok.Should().NotBeNull();
-        grok!.Supported.Should().BeTrue();
+        var xai = response.Providers.FirstOrDefault(p => p.Name == "Xai");
+        xai.Should().NotBeNull();
+        xai!.Supported.Should().BeTrue();
     }
 
     [Fact]

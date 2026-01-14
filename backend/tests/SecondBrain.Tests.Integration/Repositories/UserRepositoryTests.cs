@@ -133,7 +133,7 @@ public class UserRepositoryTests : IAsyncLifetime
     {
         // Arrange
         var user = CreateTestUser("test@example.com");
-        user.Preferences = new UserPreferences { ChatProvider = "claude" };
+        user.Preferences = new UserPreferences { ChatProvider = "anthropic" };
         var created = await _sut.CreateAsync(user);
 
         // Act
@@ -141,7 +141,7 @@ public class UserRepositoryTests : IAsyncLifetime
 
         // Assert
         retrieved!.Preferences.Should().NotBeNull();
-        retrieved.Preferences!.ChatProvider.Should().Be("claude");
+        retrieved.Preferences!.ChatProvider.Should().Be("anthropic");
     }
 
     #endregion
@@ -281,7 +281,7 @@ public class UserRepositoryTests : IAsyncLifetime
         {
             Email = created.Email,
             DisplayName = created.DisplayName,
-            Preferences = new UserPreferences { ChatProvider = "gemini" }
+            Preferences = new UserPreferences { ChatProvider = "google" }
         };
 
         // Act
@@ -289,7 +289,7 @@ public class UserRepositoryTests : IAsyncLifetime
 
         // Assert
         updated!.Preferences.Should().NotBeNull();
-        updated.Preferences!.ChatProvider.Should().Be("gemini");
+        updated.Preferences!.ChatProvider.Should().Be("google");
     }
 
     #endregion

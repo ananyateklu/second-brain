@@ -445,8 +445,8 @@ export const STORAGE_KEYS = {
 export const AI_PROVIDERS = {
   OPENAI: 'OpenAI',
   ANTHROPIC: 'Anthropic',
-  GOOGLE: 'Gemini',
-  XAI: 'Grok',
+  GOOGLE: 'Google',
+  XAI: 'Xai',
   OLLAMA: 'Ollama',
 } as const;
 

@@ -16,35 +16,34 @@ using OpenAIChatTool = OpenAI.Chat.ChatTool;
 namespace SecondBrain.Application.Services.Agents.Strategies;
 
 /// <summary>
-/// Native Grok/X.AI function calling implementation using OpenAI-compatible SDK.
+/// Native xAI function calling implementation using OpenAI-compatible SDK.
 /// </summary>
-public class GrokStreamingStrategy : BaseAgentStreamingStrategy
+public class XaiStreamingStrategy : BaseAgentStreamingStrategy
 {
-    private readonly GrokProvider? _grokProvider;
-    private readonly ILogger<GrokStreamingStrategy> _logger;
+    private readonly XaiProvider? _xaiProvider;
+    private readonly ILogger<XaiStreamingStrategy> _logger;
 
-    public GrokStreamingStrategy(
-        GrokProvider? grokProvider,
+    public XaiStreamingStrategy(
+        XaiProvider? xaiProvider,
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
-        ILogger<GrokStreamingStrategy> logger)
+        ILogger<XaiStreamingStrategy> logger)
         : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
-        _grokProvider = grokProvider;
+        _xaiProvider = xaiProvider;
         _logger = logger;
     }
 
-    public override IReadOnlyList<string> SupportedProviders => new[] { "grok", "xai" };
+    public override IReadOnlyList<string> SupportedProviders => new[] { "xai" };
 
     public override bool CanHandle(AgentRequest request, AIProvidersSettings settings)
     {
-        var isGrok = request.Provider.Equals("grok", StringComparison.OrdinalIgnoreCase) ||
-                    request.Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
+        var isXai = request.Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
 
-        return isGrok &&
-               _grokProvider != null &&
+        return isXai &&
+               _xaiProvider != null &&
                settings.XAI.Enabled &&
                settings.XAI.Features.EnableFunctionCalling &&
                request.Capabilities?.Count > 0;
@@ -54,30 +53,30 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
         AgentStreamingContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_grokProvider == null)
+        if (_xaiProvider == null)
         {
-            yield return ErrorEvent("Grok provider is not properly configured");
+            yield return ErrorEvent("xAI provider is not properly configured");
             yield break;
         }
 
-        yield return StatusEvent("Preparing Grok tools...");
+        yield return StatusEvent("Preparing xAI tools...");
 
         var request = context.Request;
         var settings = context.Settings;
 
-        // Build tools from plugins (Grok uses OpenAI-compatible format)
+        // Build tools from plugins (xAI uses OpenAI-compatible format)
         var tools = new List<OpenAIChatTool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>(StringComparer.OrdinalIgnoreCase);
 
         // Build list of capabilities to include
         var capabilitiesToInclude = new HashSet<string>(request.Capabilities ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
 
-        // Auto-include web search capability for Grok when search features are enabled
+        // Auto-include web search capability for xAI when search features are enabled
         if ((settings.XAI.Features.EnableLiveSearch || settings.XAI.Features.EnableDeepSearch) &&
             context.Plugins.ContainsKey("web"))
         {
             capabilitiesToInclude.Add("web");
-            _logger.LogDebug("Auto-including web search capability for Grok agent");
+            _logger.LogDebug("Auto-including web search capability for xAI agent");
         }
 
         foreach (var capabilityId in capabilitiesToInclude)
@@ -112,7 +111,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             }
         }
 
-        _logger.LogInformation("Registered {Count} tools for Grok model {Model}: [{ToolNames}]",
+        _logger.LogInformation("Registered {Count} tools for xAI model {Model}: [{ToolNames}]",
             tools.Count, request.Model, string.Join(", ", tools.Select(t => t.FunctionName)));
 
         // Build messages
@@ -144,7 +143,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                     }).ToList();
 
                     // Create assistant message with tool calls
-                    var assistantMsg = GrokProvider.CreateAssistantToolCallMessage(
+                    var assistantMsg = XaiProvider.CreateAssistantToolCallMessage(
                         grokToolCalls,
                         textContent: !string.IsNullOrWhiteSpace(msg.Content) ? msg.Content : null);
                     messages.Add(assistantMsg);
@@ -152,7 +151,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                     // Add tool result messages for each tool call
                     foreach (var (tc, grokTc) in msg.ToolCalls.Zip(grokToolCalls))
                     {
-                        messages.Add(GrokProvider.CreateToolResultMessage(grokTc.Id, tc.Result));
+                        messages.Add(XaiProvider.CreateToolResultMessage(grokTc.Id, tc.Result));
                     }
                 }
                 else
@@ -190,7 +189,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
 
         if (enableThinkMode)
         {
-            _logger.LogInformation("Grok Think Mode enabled with effort: {Effort}", thinkEffort);
+            _logger.LogInformation("xAI Think Mode enabled with effort: {Effort}", thinkEffort);
         }
 
         var aiSettings = new Services.AI.Models.AIRequest
@@ -212,7 +211,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
             // previous iterations contain thinking blocks.
             var lastSpeakableLength = Helpers.ThinkingExtractor.StripThinkingBlocks(fullResponse.ToString()).Length;
 
-            await foreach (var evt in _grokProvider.StreamWithToolsAsync(
+            await foreach (var evt in _xaiProvider.StreamWithToolsAsync(
                 messages, tools, request.Model, aiSettings, cancellationToken))
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -273,7 +272,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                         break;
 
                     case GrokToolStreamEventType.SearchResult:
-                        // Handle search results from Grok Live Search
+                        // Handle search results from xAI Live Search
                         if (evt.SearchSources != null && evt.SearchSources.Count > 0)
                         {
                             yield return GrokSearchEvent(evt.SearchSources);
@@ -291,14 +290,14 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                         break;
 
                     case GrokToolStreamEventType.Error:
-                        yield return ErrorEvent($"Error from Grok: {evt.Error}");
+                        yield return ErrorEvent($"Error from xAI: {evt.Error}");
                         yield break;
                 }
             }
 
             fullResponse.Append(iterationText);
 
-            _logger.LogDebug("Grok iteration {Iteration} completed. Tool calls received: {ToolCallCount}, Text length: {TextLength}",
+            _logger.LogDebug("xAI iteration {Iteration} completed. Tool calls received: {ToolCallCount}, Text length: {TextLength}",
                 iteration, pendingToolCalls.Count, iterationText.Length);
 
             if (pendingToolCalls.Count > 0)
@@ -337,7 +336,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                 // Add assistant message with tool calls
                 // IMPORTANT: Include iterationText to preserve context of what was said before tool execution
                 var textBeforeTools = iterationText.ToString();
-                var assistantToolCallMessage = GrokProvider.CreateAssistantToolCallMessage(
+                var assistantToolCallMessage = XaiProvider.CreateAssistantToolCallMessage(
                     pendingToolCalls.Select(tc => new Services.AI.Models.GrokToolCallInfo
                     {
                         Id = tc.Id,
@@ -363,7 +362,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
 
                         // If we extracted image data and model supports vision, inject for THIS request only
                         if (base64Data != null &&
-                            AI.Models.MultimodalConfig.IsMultimodalModel("Grok", request.Model))
+                            AI.Models.MultimodalConfig.IsMultimodalModel("Xai", request.Model))
                         {
                             var dataUrl = $"data:{mediaType ?? "image/png"};base64,{base64Data}";
                             imageContentParts.Add(OpenAI.Chat.ChatMessageContentPart.CreateImagePart(new Uri(dataUrl)));
@@ -375,7 +374,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                     yield return ToolCallEndEvent(result.Name, result.Id, resultForStorage);
 
                     // Store cleaned result (no base64) in conversation history for this request
-                    messages.Add(GrokProvider.CreateToolResultMessage(result.Id, resultForStorage));
+                    messages.Add(XaiProvider.CreateToolResultMessage(result.Id, resultForStorage));
                 }
 
                 // If AnalyzeImage returned an image, add it as a follow-up user message for THIS request only
@@ -385,7 +384,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
                     imageContentParts.Insert(0, OpenAI.Chat.ChatMessageContentPart.CreateTextPart(
                         "Here is the image from the AnalyzeImage tool. Please analyze it and describe what you see:"));
                     messages.Add(new OpenAI.Chat.UserChatMessage(imageContentParts));
-                    _logger.LogInformation("Injected image for model vision (ephemeral) for Grok model {Model}", request.Model);
+                    _logger.LogInformation("Injected image for model vision (ephemeral) for xAI model {Model}", request.Model);
                 }
 
                 continue;
@@ -400,7 +399,7 @@ public class GrokStreamingStrategy : BaseAgentStreamingStrategy
         if (totalInputTokens > 0 || totalOutputTokens > 0 || totalReasoningTokens > 0)
         {
             _logger.LogInformation(
-                "Grok token usage - Input: {Input}, Output: {Output}, Reasoning: {Reasoning}, Total: {Total}",
+                "xAI token usage - Input: {Input}, Output: {Output}, Reasoning: {Reasoning}, Total: {Total}",
                 totalInputTokens, totalOutputTokens, totalReasoningTokens,
                 totalInputTokens + totalOutputTokens + totalReasoningTokens);
         }

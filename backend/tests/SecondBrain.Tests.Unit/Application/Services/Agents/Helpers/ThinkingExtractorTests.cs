@@ -220,10 +220,10 @@ Line 3
     #region SupportsNativeThinking Tests
 
     [Theory]
-    [InlineData("claude", "claude-opus-4-20250514", true)]
-    [InlineData("anthropic", "claude-sonnet-4-20250514", true)]
-    [InlineData("claude", "claude-3-7-sonnet-20250219", true)]
-    [InlineData("anthropic", "claude-3-5-sonnet-20241022", true)]
+    [InlineData("anthropic", "claude-opus-4-20250514", true)]
+    [InlineData("Anthropic", "claude-sonnet-4-20250514", true)]
+    [InlineData("anthropic", "claude-3-7-sonnet-20250219", true)]
+    [InlineData("ANTHROPIC", "claude-3-5-sonnet-20241022", true)]
     public void SupportsNativeThinking_WithSupportedAnthropicModel_ReturnsTrue(
         string provider, string model, bool expected)
     {
@@ -236,8 +236,8 @@ Line 3
 
     [Theory]
     [InlineData("openai", "gpt-4")]
-    [InlineData("gemini", "gemini-pro")]
-    [InlineData("grok", "grok-3")]
+    [InlineData("google", "gemini-pro")]
+    [InlineData("xai", "grok-3")]
     [InlineData("ollama", "llama3")]
     public void SupportsNativeThinking_WithNonAnthropicProvider_ReturnsFalse(string provider, string model)
     {
@@ -249,9 +249,9 @@ Line 3
     }
 
     [Theory]
-    [InlineData("claude", "claude-3-haiku")]
-    [InlineData("anthropic", "claude-2")]
-    [InlineData("claude", "claude-instant")]
+    [InlineData("anthropic", "claude-3-haiku")]
+    [InlineData("Anthropic", "claude-2")]
+    [InlineData("ANTHROPIC", "claude-instant")]
     public void SupportsNativeThinking_WithUnsupportedAnthropicModel_ReturnsFalse(string provider, string model)
     {
         // Act - Note: SupportsNativeThinking is now static
@@ -262,10 +262,9 @@ Line 3
     }
 
     [Theory]
-    [InlineData("CLAUDE")]
-    [InlineData("Claude")]
     [InlineData("ANTHROPIC")]
     [InlineData("Anthropic")]
+    [InlineData("anthropic")]
     public void SupportsNativeThinking_WithCaseInsensitiveProvider_Works(string provider)
     {
         // Act - Note: SupportsNativeThinking is now static
@@ -281,7 +280,7 @@ Line 3
     public void SupportsNativeThinking_WithCaseInsensitiveModel_Works(string model)
     {
         // Act - Note: SupportsNativeThinking is now static
-        var result = ThinkingExtractor.SupportsNativeThinking("claude", model);
+        var result = ThinkingExtractor.SupportsNativeThinking("anthropic", model);
 
         // Assert
         result.Should().BeTrue();

@@ -92,10 +92,9 @@ public class OllamaStreamingStrategyTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("claude")]
     [InlineData("anthropic")]
-    [InlineData("gemini")]
-    [InlineData("grok")]
+    [InlineData("google")]
+    [InlineData("xai")]
     public void CanHandle_WhenProviderDoesNotMatch_ReturnsFalse(string provider)
     {
         // Arrange

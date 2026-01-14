@@ -468,7 +468,7 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             // Vector column configuration (variable dimensions)
-            // Supports different embedding providers: OpenAI (1536), Cohere (1024), Gemini (768), etc.
+            // Supports different embedding providers: OpenAI (1536), Cohere (1024), Google (768), etc.
             entity.Property(e => e.Embedding)
                 .HasColumnType("vector");
 

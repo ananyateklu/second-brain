@@ -284,7 +284,6 @@ public class VoiceSessionOptions
     /// Helper to check if this is a Grok Voice session
     /// </summary>
     public bool IsGrokVoice => VoiceProviderType == VoiceProviderType.GrokVoice ||
-        Provider.Equals("grok", StringComparison.OrdinalIgnoreCase) ||
         Provider.Equals("grokvoice", StringComparison.OrdinalIgnoreCase) ||
         Provider.Equals("xai", StringComparison.OrdinalIgnoreCase);
 

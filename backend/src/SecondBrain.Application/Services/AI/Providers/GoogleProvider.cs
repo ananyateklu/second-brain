@@ -124,24 +124,24 @@ public class GeminiStreamEvent
     #endregion
 }
 
-public class GeminiProvider : IAIProvider
+public class GoogleProvider : IAIProvider
 {
-    public const string HttpClientName = "Gemini";
+    public const string HttpClientName = "Google";
 
     private readonly GeminiSettings _settings;
-    private readonly ILogger<GeminiProvider> _logger;
+    private readonly ILogger<GoogleProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IGeminiFileService _fileService;
     private readonly Client? _client;
 
-    public string ProviderName => "Gemini";
+    public string ProviderName => "Google";
     public bool IsEnabled => _settings.Enabled;
 
-    public GeminiProvider(
+    public GoogleProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
         IGeminiFileService fileService,
-        ILogger<GeminiProvider> logger)
+        ILogger<GoogleProvider> logger)
     {
         _settings = settings.Value.Gemini;
         _httpClientFactory = httpClientFactory;

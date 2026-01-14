@@ -5,7 +5,7 @@ export const PROVIDER_NAME_MAP: Record<string, string> = {
   Anthropic: 'Anthropic',
   Gemini: 'Gemini',
   Ollama: 'Ollama',
-  Grok: 'Grok',
+  Xai: 'Xai',
   Cohere: 'Cohere',
 };
 
@@ -164,7 +164,7 @@ export const RERANKING_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models to score relevance. Fast response times, good accuracy, competitive pricing. Best all-around choice if you already use OpenAI for chat.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models for reranking. Excellent at understanding nuanced queries and context. Slightly higher latency but often more accurate for complex questions.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Very cost-effective with good performance. Best choice for budget-conscious users or high-volume usage.' },
-  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries. Newer option with competitive performance.' },
+  { id: 'Xai', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries. Newer option with competitive performance.' },
   { id: 'Cohere', name: 'Cohere', description: 'Purpose-built Rerank API designed specifically for RAG. Fastest option with excellent accuracy. No prompt engineering needed - just send documents and query. Best choice for production workloads.', badge: 'Recommended' },
 ] as const;
 
@@ -172,7 +172,7 @@ export const HYDE_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for HyDE document generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced hypothetical documents. Best for complex or technical queries.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
-  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Xai', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
   { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
 ] as const;
 
@@ -180,7 +180,7 @@ export const QUERY_EXPANSION_PROVIDER_OPTIONS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'Uses GPT models for query variation generation. Fast and reliable with excellent instruction following. Recommended for most users.' },
   { id: 'Anthropic', name: 'Anthropic', description: 'Uses Claude models. Excellent at generating nuanced query variations. Best for complex or technical queries.' },
   { id: 'Gemini', name: 'Gemini', description: 'Uses Google Gemini models. Cost-effective with good performance. Great for high-volume usage.' },
-  { id: 'Grok', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
+  { id: 'Xai', name: 'xAI', description: 'Uses xAI Grok models. Good for real-time information and conversational queries.' },
   { id: 'Ollama', name: 'Ollama (Local)', description: 'Use local Ollama models. No API costs, fully private. Requires Ollama to be running.' },
 ] as const;
 

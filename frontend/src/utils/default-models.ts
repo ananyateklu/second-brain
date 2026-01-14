@@ -6,7 +6,7 @@
 const DEFAULT_MODELS: Record<string, string> = {
     // Case-insensitive keys for matching
     openai: 'gpt-5.1-2025-11-13',
-    gemini: 'gemini-2.5-flash',
+    google: 'gemini-2.5-flash',
     anthropic: 'claude-haiku-4-5-20251001',
     ollama: 'qwen3:4b',
     xai: 'grok-3-mini',
@@ -14,7 +14,7 @@ const DEFAULT_MODELS: Record<string, string> = {
 
 /**
  * Gets the default model for a provider
- * @param provider - The provider name (e.g., 'openai', 'anthropic', 'gemini')
+ * @param provider - The provider name (e.g., 'openai', 'anthropic', 'google')
  * @param availableModels - List of available models for the provider
  * @returns The default model if found, otherwise the first available model
  */

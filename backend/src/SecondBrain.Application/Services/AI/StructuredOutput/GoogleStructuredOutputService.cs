@@ -10,14 +10,14 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput;
 
 /// <summary>
-/// Implementation of structured output generation using Gemini's JSON schema support.
+/// Implementation of structured output generation using Google (Gemini) JSON schema support.
 /// This is the legacy interface - consider using IStructuredOutputService for cross-provider support.
-/// Now uses the shared JsonSchemaBuilder via GeminiSchemaAdapter.
+/// Now uses the shared JsonSchemaBuilder via GoogleSchemaAdapter.
 /// </summary>
-public class GeminiStructuredOutputService : IGeminiStructuredOutputService
+public class GoogleStructuredOutputService : IGoogleStructuredOutputService
 {
     private readonly GeminiSettings _settings;
-    private readonly ILogger<GeminiStructuredOutputService> _logger;
+    private readonly ILogger<GoogleStructuredOutputService> _logger;
     private readonly Client? _client;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -26,9 +26,9 @@ public class GeminiStructuredOutputService : IGeminiStructuredOutputService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public GeminiStructuredOutputService(
+    public GoogleStructuredOutputService(
         IOptions<AIProvidersSettings> settings,
-        ILogger<GeminiStructuredOutputService> logger)
+        ILogger<GoogleStructuredOutputService> logger)
     {
         _settings = settings.Value.Gemini;
         _logger = logger;
@@ -75,7 +75,7 @@ public class GeminiStructuredOutputService : IGeminiStructuredOutputService
         try
         {
             // Build the schema from the type using shared builder and adapter
-            var schema = GeminiSchemaAdapter.FromType<T>();
+            var schema = GoogleSchemaAdapter.FromType<T>();
 
             // Build generation config with JSON response
             var config = new GenerateContentConfig

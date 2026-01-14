@@ -6,17 +6,17 @@ using SecondBrain.Application.Services.AI.Providers;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI;
 
-public class GeminiImageProviderTests
+public class GoogleImageProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<ILogger<GeminiImageProvider>> _mockLogger;
+    private readonly Mock<ILogger<GoogleImageProvider>> _mockLogger;
 
-    public GeminiImageProviderTests()
+    public GoogleImageProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _mockLogger = new Mock<ILogger<GeminiImageProvider>>();
+        _mockLogger = new Mock<ILogger<GoogleImageProvider>>();
 
         // Setup default HttpClient mock
         _mockHttpClientFactory
@@ -40,7 +40,7 @@ public class GeminiImageProviderTests
     }
 
     [Fact]
-    public void ProviderName_ReturnsGemini()
+    public void ProviderName_ReturnsGoogle()
     {
         // Arrange
         SetupSettings(enabled: false);
@@ -49,7 +49,7 @@ public class GeminiImageProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Gemini");
+        provider.ProviderName.Should().Be("Google");
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public class GeminiImageProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -258,9 +258,9 @@ public class GeminiImageProviderTests
 
     #region Helper Methods
 
-    private GeminiImageProvider CreateProvider()
+    private GoogleImageProvider CreateProvider()
     {
-        return new GeminiImageProvider(
+        return new GoogleImageProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
             _mockLogger.Object

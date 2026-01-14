@@ -7,7 +7,7 @@ namespace SecondBrain.Application.Services.AI.StructuredOutput;
 public interface IProviderStructuredOutputService
 {
     /// <summary>
-    /// The name of the AI provider (e.g., "OpenAI", "Anthropic", "Gemini", "Grok", "Ollama").
+    /// The name of the AI provider (e.g., "OpenAI", "Anthropic", "Google", "Xai", "Ollama").
     /// </summary>
     string ProviderName { get; }
 

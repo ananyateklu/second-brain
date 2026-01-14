@@ -8,7 +8,7 @@ namespace SecondBrain.Application.Services.RAG;
 
 /// <summary>
 /// Service for extracting text descriptions from images using vision-capable AI models.
-/// Prioritizes Gemini for cost-effectiveness, falls back to OpenAI/Claude.
+/// Prioritizes Gemini for cost-effectiveness, falls back to OpenAI/Anthropic.
 /// </summary>
 public class ImageDescriptionService : IImageDescriptionService
 {
@@ -17,14 +17,14 @@ public class ImageDescriptionService : IImageDescriptionService
     private readonly ILogger<ImageDescriptionService> _logger;
 
     // Provider priority for image description (cost-optimized)
-    private static readonly string[] ProviderPriority = { "gemini", "openai", "claude" };
+    private static readonly string[] ProviderPriority = { "google", "openai", "anthropic" };
 
     // Vision-capable models by provider (fast, cost-effective variants)
     private static readonly Dictionary<string, string> PreferredVisionModels = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["gemini"] = "gemini-2.5-flash",      // Fast vision model
+        ["google"] = "gemini-2.5-flash",      // Fast vision model
         ["openai"] = "gpt-4o-mini",           // $0.15/1M input
-        ["claude"] = "claude-3-haiku-20240307" // $0.25/1M input
+        ["anthropic"] = "claude-3-haiku-20240307" // $0.25/1M input
     };
 
     private const string DescriptionPrompt = @"Analyze this image and provide a detailed description that would be useful for text-based search. Include:
@@ -106,7 +106,7 @@ Be concise but comprehensive.";
                     {
                         provider = p;
                         providerName = name;
-                        modelName = PreferredVisionModels.GetValueOrDefault(name) ?? PreferredVisionModels["gemini"];
+                        modelName = PreferredVisionModels.GetValueOrDefault(name) ?? PreferredVisionModels["google"];
                         break;
                     }
                 }

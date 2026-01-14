@@ -279,7 +279,7 @@ public class QueryIntentDetector
     /// <summary>
     /// Detects query intent using AI with a specific provider.
     /// </summary>
-    /// <param name="provider">The AI provider to use (e.g., "OpenAI", "Gemini")</param>
+    /// <param name="provider">The AI provider to use (e.g., "OpenAI", "Google")</param>
     /// <param name="query">The user's query text</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>QueryIntent with detailed classification, or null if detection failed</returns>

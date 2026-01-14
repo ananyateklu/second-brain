@@ -12,14 +12,14 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 
 /// <summary>
-/// Claude/Anthropic implementation of structured output using tool forcing.
-/// Claude doesn't have native JSON schema mode, so we use tool forcing to guarantee structured output.
+/// Anthropic implementation of structured output using tool forcing.
+/// Anthropic doesn't have native JSON schema mode, so we use tool forcing to guarantee structured output.
 /// </summary>
-public class ClaudeStructuredOutputService : IProviderStructuredOutputService
+public class AnthropicStructuredOutputService : IProviderStructuredOutputService
 {
     private readonly AnthropicSettings _providerSettings;
     private readonly StructuredOutputSettings _structuredSettings;
-    private readonly ILogger<ClaudeStructuredOutputService> _logger;
+    private readonly ILogger<AnthropicStructuredOutputService> _logger;
     private readonly AnthropicClient? _client;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -28,10 +28,10 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public ClaudeStructuredOutputService(
+    public AnthropicStructuredOutputService(
         IOptions<AIProvidersSettings> providerSettings,
         IOptions<StructuredOutputSettings> structuredSettings,
-        ILogger<ClaudeStructuredOutputService> logger)
+        ILogger<AnthropicStructuredOutputService> logger)
     {
         _providerSettings = providerSettings.Value.Anthropic;
         _structuredSettings = structuredSettings.Value;
@@ -76,7 +76,7 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
         if (!IsAvailable)
         {
             result.Success = false;
-            result.Error = "Anthropic/Claude structured output service is not available";
+            result.Error = "Anthropic structured output service is not available";
             return result;
         }
 
@@ -85,16 +85,16 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
             // Build the schema from the type
             var jsonSchema = JsonSchemaBuilder.FromType<T>();
 
-            // Convert to Claude tool parameters format
-            var toolParameters = ClaudeSchemaAdapter.ToToolParameters(jsonSchema);
+            // Convert to Anthropic tool parameters format
+            var toolParameters = AnthropicSchemaAdapter.ToToolParameters(jsonSchema);
 
             // Create a JsonNode from the tool parameters for the Function constructor
             var schemaJson = JsonSerializer.Serialize(toolParameters);
             var schemaNode = JsonNode.Parse(schemaJson)!;
 
             // Create the output tool
-            var toolName = ClaudeSchemaAdapter.GetToolName();
-            var toolDescription = ClaudeSchemaAdapter.GetToolDescription();
+            var toolName = AnthropicSchemaAdapter.GetToolName();
+            var toolDescription = AnthropicSchemaAdapter.GetToolDescription();
             var function = new Function(toolName, toolDescription, schemaNode);
             var tool = new Anthropic.SDK.Common.Tool(function);
 
@@ -135,7 +135,7 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
                 parameters.System = systemMessages;
             }
 
-            _logger.LogDebug("Generating Claude structured output for type {Type} with model {Model}",
+            _logger.LogDebug("Generating Anthropic structured output for type {Type} with model {Model}",
                 typeof(T).Name, modelName);
 
             // Generate completion (non-streaming for tool forcing)
@@ -162,7 +162,7 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
             if (toolUse == null)
             {
                 result.Success = false;
-                result.Error = "Claude did not use the structured output tool as expected";
+                result.Error = "Anthropic did not use the structured output tool as expected";
                 return result;
             }
 
@@ -171,7 +171,7 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
             if (string.IsNullOrEmpty(inputJson))
             {
                 result.Success = false;
-                result.Error = "Claude tool input was empty";
+                result.Error = "Anthropic tool input was empty";
                 return result;
             }
 
@@ -193,14 +193,14 @@ public class ClaudeStructuredOutputService : IProviderStructuredOutputService
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse Claude structured output as {Type}", typeof(T).Name);
+            _logger.LogError(ex, "Failed to parse Anthropic structured output as {Type}", typeof(T).Name);
             result.Success = false;
             result.Error = $"JSON parsing error: {ex.Message}";
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating structured output from Claude");
+            _logger.LogError(ex, "Error generating structured output from Anthropic");
             result.Success = false;
             result.Error = ex.Message;
             return result;

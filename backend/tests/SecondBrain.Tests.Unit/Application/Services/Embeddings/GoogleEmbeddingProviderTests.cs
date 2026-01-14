@@ -8,21 +8,20 @@ using Moq.Protected;
 
 namespace SecondBrain.Tests.Unit.Application.Services.Embeddings;
 
-public class GeminiEmbeddingProviderTests
+public class GoogleEmbeddingProviderTests
 {
     private readonly Mock<IOptions<EmbeddingProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<ILogger<GeminiEmbeddingProvider>> _mockLogger;
+    private readonly Mock<ILogger<GoogleEmbeddingProvider>> _mockLogger;
 
-    // Fake API key for testing - NOT a real key, format satisfies Gemini SDK validation (39 chars, starts with AIza)
-    // ggignore
-    private const string FakeGeminiApiKey = "AIzaSyFAKE_TEST_KEY_DO_NOT_USE_12345678";
+    // Fake API key for testing - NOT a real key
+    private const string FakeGoogleApiKey = "test-google-api-key-not-real-12345";
 
-    public GeminiEmbeddingProviderTests()
+    public GoogleEmbeddingProviderTests()
     {
         _mockSettings = new Mock<IOptions<EmbeddingProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _mockLogger = new Mock<ILogger<GeminiEmbeddingProvider>>();
+        _mockLogger = new Mock<ILogger<GoogleEmbeddingProvider>>();
 
         SetupHttpClient(HttpStatusCode.BadRequest, "{\"error\":\"configuration missing\"}");
     }
@@ -59,7 +58,7 @@ public class GeminiEmbeddingProviderTests
     public void Constructor_WhenEnabledWithApiKey_IsEnabled()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
 
         // Act
         var provider = CreateProvider();
@@ -69,7 +68,7 @@ public class GeminiEmbeddingProviderTests
     }
 
     [Fact]
-    public void ProviderName_ReturnsGemini()
+    public void ProviderName_ReturnsGoogle()
     {
         // Arrange
         SetupSettings(enabled: false);
@@ -78,7 +77,7 @@ public class GeminiEmbeddingProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Gemini");
+        provider.ProviderName.Should().Be("Google");
     }
 
     [Fact]
@@ -150,7 +149,7 @@ public class GeminiEmbeddingProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -172,17 +171,17 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingAsync_WhenEnabled_ReturnsNotImplementedError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
 
         // Act
         var result = await provider.GenerateEmbeddingAsync("Test text");
 
         // Assert
-        // Current implementation returns an error as Gemini embedding is not fully implemented
+        // Current implementation returns an error as Google embedding is not fully implemented
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("configuration");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -190,7 +189,7 @@ public class GeminiEmbeddingProviderTests
     {
         // Arrange - Provider is enabled but text is empty
         // When not enabled, it returns the "not enabled" error before checking text
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
 
         // Act
@@ -205,7 +204,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingAsync_WhenTextWhitespace_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
 
         // Act
@@ -234,7 +233,7 @@ public class GeminiEmbeddingProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Google");
     }
 
     [Fact]
@@ -257,7 +256,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingsAsync_WhenTextsEmpty_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
 
         // Act
@@ -272,7 +271,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingsAsync_WhenEnabled_ReturnsNotImplementedError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
         var texts = new List<string> { "Text 1", "Text 2" };
 
@@ -280,7 +279,7 @@ public class GeminiEmbeddingProviderTests
         var result = await provider.GenerateEmbeddingsAsync(texts);
 
         // Assert
-        // Current implementation returns an error as Gemini embedding is not fully implemented
+        // Current implementation returns an error as Google embedding is not fully implemented
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("configuration");
     }
@@ -321,7 +320,7 @@ public class GeminiEmbeddingProviderTests
     public async Task IsAvailableAsync_WhenEnabled_ReturnsFalseAsNotImplemented()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
+        SetupSettings(enabled: true, apiKey: FakeGoogleApiKey);
         var provider = CreateProvider();
 
         // Act
@@ -336,9 +335,9 @@ public class GeminiEmbeddingProviderTests
 
     #region Helper Methods
 
-    private GeminiEmbeddingProvider CreateProvider()
+    private GoogleEmbeddingProvider CreateProvider()
     {
-        return new GeminiEmbeddingProvider(
+        return new GoogleEmbeddingProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
             _mockLogger.Object
@@ -353,7 +352,7 @@ public class GeminiEmbeddingProviderTests
     {
         var settings = new EmbeddingProvidersSettings
         {
-            DefaultProvider = "Gemini",
+            DefaultProvider = "Google",
             Gemini = new GeminiEmbeddingSettings
             {
                 Enabled = enabled,

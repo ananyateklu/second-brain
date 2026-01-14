@@ -158,7 +158,7 @@ public class ChatConversationServiceTests
         // Act
         var result = await _sut.CreateConversationAsync(
             title: "Full Chat",
-            provider: "claude",
+            provider: "anthropic",
             model: "claude-3-opus",
             userId: userId,
             ragEnabled: true,

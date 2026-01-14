@@ -5,17 +5,17 @@ using SecondBrain.Application.Services.AI.Providers;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI;
 
-public class GrokProviderTests
+public class XaiProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<ILogger<GrokProvider>> _mockLogger;
+    private readonly Mock<ILogger<XaiProvider>> _mockLogger;
 
-    public GrokProviderTests()
+    public XaiProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _mockLogger = new Mock<ILogger<GrokProvider>>();
+        _mockLogger = new Mock<ILogger<XaiProvider>>();
     }
 
     #region Constructor and Properties Tests
@@ -31,7 +31,7 @@ public class GrokProviderTests
 
         // Assert
         provider.IsEnabled.Should().BeFalse();
-        provider.ProviderName.Should().Be("Grok");
+        provider.ProviderName.Should().Be("Xai");
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public class GrokProviderTests
     }
 
     [Fact]
-    public void ProviderName_ReturnsGrok()
+    public void ProviderName_ReturnsXai()
     {
         // Arrange
         SetupSettings(enabled: false);
@@ -70,7 +70,7 @@ public class GrokProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Grok");
+        provider.ProviderName.Should().Be("Xai");
     }
 
     [Fact]
@@ -104,7 +104,7 @@ public class GrokProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Grok");
+        result.Provider.Should().Be("Xai");
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public class GrokProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Grok");
+        result.Provider.Should().Be("Xai");
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public class GrokProviderTests
         // Assert
         health.IsHealthy.Should().BeFalse();
         health.Status.Should().Be("Disabled");
-        health.Provider.Should().Be("Grok");
+        health.Provider.Should().Be("Xai");
         health.ErrorMessage.Should().Contain("disabled");
     }
 
@@ -371,9 +371,9 @@ public class GrokProviderTests
         _mockSettings.Setup(s => s.Value).Returns(settings);
     }
 
-    private GrokProvider CreateProvider()
+    private XaiProvider CreateProvider()
     {
-        return new GrokProvider(
+        return new XaiProvider(
             _mockSettings.Object,
             _mockHttpClientFactory.Object,
             _mockLogger.Object);

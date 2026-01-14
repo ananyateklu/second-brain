@@ -91,10 +91,9 @@ public class OpenAIStreamingStrategyTests
     }
 
     [Theory]
-    [InlineData("claude")]
     [InlineData("anthropic")]
-    [InlineData("gemini")]
-    [InlineData("grok")]
+    [InlineData("google")]
+    [InlineData("xai")]
     [InlineData("ollama")]
     public void CanHandle_WhenProviderDoesNotMatch_ReturnsFalse(string provider)
     {

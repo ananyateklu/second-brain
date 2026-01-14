@@ -59,13 +59,13 @@ public class SemanticKernelStreamingStrategyTests
     }
 
     [Fact]
-    public void SupportedProviders_ContainsGemini()
+    public void SupportedProviders_ContainsGoogle()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().Contain("gemini");
+        sut.SupportedProviders.Should().Contain("google");
     }
 
     [Fact]
@@ -79,16 +79,6 @@ public class SemanticKernelStreamingStrategyTests
     }
 
     [Fact]
-    public void SupportedProviders_ContainsGrok()
-    {
-        // Arrange
-        var sut = CreateStrategy();
-
-        // Act & Assert
-        sut.SupportedProviders.Should().Contain("grok");
-    }
-
-    [Fact]
     public void SupportedProviders_ContainsXai()
     {
         // Arrange
@@ -99,13 +89,13 @@ public class SemanticKernelStreamingStrategyTests
     }
 
     [Fact]
-    public void SupportedProviders_HasFiveProviders()
+    public void SupportedProviders_HasFourProviders()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().HaveCount(5);
+        sut.SupportedProviders.Should().HaveCount(4);
     }
 
     #endregion
@@ -114,11 +104,9 @@ public class SemanticKernelStreamingStrategyTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("gemini")]
+    [InlineData("google")]
     [InlineData("ollama")]
-    [InlineData("grok")]
     [InlineData("xai")]
-    [InlineData("claude")]
     [InlineData("anthropic")]
     [InlineData("unknown")]
     public void CanHandle_AlwaysReturnsFalse_BecauseIsFallbackStrategy(string provider)
@@ -230,7 +218,7 @@ public class SemanticKernelStreamingStrategyTests
     }
 
     [Fact]
-    public async Task ProcessAsync_WhenGeminiNotEnabled_YieldsErrorEvent()
+    public async Task ProcessAsync_WhenGoogleNotEnabled_YieldsErrorEvent()
     {
         // Arrange
         var settings = new AIProvidersSettings
@@ -238,7 +226,7 @@ public class SemanticKernelStreamingStrategyTests
             Gemini = new GeminiSettings { Enabled = false, ApiKey = "test-key" }
         };
         var sut = CreateStrategy(settings);
-        var context = CreateContext("gemini");
+        var context = CreateContext("google");
 
         // Act
         var events = new List<AgentStreamEvent>();
@@ -250,7 +238,7 @@ public class SemanticKernelStreamingStrategyTests
         // Assert
         events.Should().Contain(e => e.Type == AgentEventType.Error);
         events.First(e => e.Type == AgentEventType.Error).Content
-            .Should().Contain("Gemini provider is not enabled");
+            .Should().Contain("Google provider is not enabled");
     }
 
     [Fact]
@@ -262,7 +250,7 @@ public class SemanticKernelStreamingStrategyTests
             XAI = new XAISettings { Enabled = false, ApiKey = "test-key" }
         };
         var sut = CreateStrategy(settings);
-        var context = CreateContext("grok");
+        var context = CreateContext("xai");
 
         // Act
         var events = new List<AgentStreamEvent>();
@@ -274,7 +262,7 @@ public class SemanticKernelStreamingStrategyTests
         // Assert
         events.Should().Contain(e => e.Type == AgentEventType.Error);
         events.First(e => e.Type == AgentEventType.Error).Content
-            .Should().Contain("xAI/Grok provider is not enabled");
+            .Should().Contain("xAI provider is not enabled");
     }
 
     [Fact]
@@ -302,8 +290,8 @@ public class SemanticKernelStreamingStrategyTests
     }
 
     [Theory]
-    [InlineData("claude")]
     [InlineData("anthropic")]
+    [InlineData("Anthropic")]
     public async Task ProcessAsync_WhenAnthropicProvider_YieldsErrorEvent(string provider)
     {
         // Arrange

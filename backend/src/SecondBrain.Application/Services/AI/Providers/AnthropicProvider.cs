@@ -12,24 +12,24 @@ using System.Text.Json;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
-public class ClaudeProvider : IAIProvider
+public class AnthropicProvider : IAIProvider
 {
-    public const string HttpClientName = "Claude";
+    public const string HttpClientName = "Anthropic";
 
     private readonly AnthropicSettings _settings;
-    private readonly ILogger<ClaudeProvider> _logger;
+    private readonly ILogger<AnthropicProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IAnthropicClientFactory _clientFactory;
     private readonly AnthropicClient? _client;
 
-    public string ProviderName => "Claude";
+    public string ProviderName => "Anthropic";
     public bool IsEnabled => _settings.Enabled;
 
-    public ClaudeProvider(
+    public AnthropicProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
         IAnthropicClientFactory clientFactory,
-        ILogger<ClaudeProvider> logger)
+        ILogger<AnthropicProvider> logger)
     {
         _settings = settings.Value.Anthropic;
         _httpClientFactory = httpClientFactory;
@@ -75,7 +75,7 @@ public class ClaudeProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = "Claude provider is not enabled or configured",
+                Error = "Anthropic provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
@@ -153,7 +153,7 @@ public class ClaudeProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = "Claude provider is not enabled or configured",
+                Error = "Anthropic provider is not enabled or configured",
                 Provider = ProviderName
             };
         }

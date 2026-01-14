@@ -1,9 +1,11 @@
+using Anthropic.SDK;
+using Anthropic.SDK.Messaging;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using SecondBrain.Application.Configuration;
-using SecondBrain.Application.Services.AI.FileManagement;
+using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
 using Xunit;
@@ -11,31 +13,31 @@ using Xunit;
 namespace SecondBrain.Tests.Unit.Application.Services.AI.Providers;
 
 /// <summary>
-/// Unit tests for GeminiProvider (Google Gemini).
-/// Tests provider behavior, disabled states, and health checks.
+/// Unit tests for AnthropicProvider (Anthropic).
+/// Tests provider behavior, disabled states, and message conversion.
 /// </summary>
-public class GeminiProviderTests
+public class AnthropicProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockOptions;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<IGeminiFileService> _mockFileService;
-    private readonly Mock<ILogger<GeminiProvider>> _mockLogger;
+    private readonly Mock<IAnthropicClientFactory> _mockClientFactory;
+    private readonly Mock<ILogger<AnthropicProvider>> _mockLogger;
 
-    public GeminiProviderTests()
+    public AnthropicProviderTests()
     {
         _mockOptions = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _mockFileService = new Mock<IGeminiFileService>();
-        _mockLogger = new Mock<ILogger<GeminiProvider>>();
+        _mockClientFactory = new Mock<IAnthropicClientFactory>();
+        _mockLogger = new Mock<ILogger<AnthropicProvider>>();
     }
 
     #region Provider Initialization Tests
 
     [Fact]
-    public void Constructor_WhenProviderDisabled_IsEnabledReturnsFalse()
+    public void Constructor_WhenProviderDisabled_DoesNotCreateClient()
     {
         // Arrange
-        var settings = CreateSettings(enabled: false, apiKey: "test-key");
+        var settings = CreateSettings(enabled: false, apiKey: "sk-ant-test-key");
         _mockOptions.Setup(o => o.Value).Returns(settings);
 
         // Act
@@ -43,34 +45,70 @@ public class GeminiProviderTests
 
         // Assert
         provider.IsEnabled.Should().BeFalse();
+        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void Constructor_WhenApiKeyMissing_DoesNotThrow()
+    public void Constructor_WhenApiKeyMissing_DoesNotCreateClient()
     {
         // Arrange
         var settings = CreateSettings(enabled: true, apiKey: "");
         _mockOptions.Setup(o => o.Value).Returns(settings);
 
         // Act
-        var act = () => CreateProvider();
+        var provider = CreateProvider();
 
         // Assert
-        act.Should().NotThrow();
+        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void Constructor_WhenApiKeyNull_DoesNotThrow()
+    public void Constructor_WhenApiKeyNull_DoesNotCreateClient()
     {
         // Arrange
         var settings = CreateSettings(enabled: true, apiKey: null);
         _mockOptions.Setup(o => o.Value).Returns(settings);
 
         // Act
-        var act = () => CreateProvider();
+        var provider = CreateProvider();
 
         // Assert
-        act.Should().NotThrow();
+        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void Constructor_WhenEnabledWithApiKey_AttemptsToCreateClient()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "sk-ant-test-key");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        // Return null to simulate client creation attempt without needing actual AnthropicClient
+        _mockClientFactory.Setup(f => f.CreateClient("sk-ant-test-key"))
+            .Returns((AnthropicClient?)null);
+
+        // Act
+        var provider = CreateProvider();
+
+        // Assert
+        provider.IsEnabled.Should().BeTrue();
+        _mockClientFactory.Verify(f => f.CreateClient("sk-ant-test-key"), Times.Once);
+    }
+
+    [Fact]
+    public void Constructor_WhenClientFactoryThrows_LogsErrorAndContinues()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "sk-ant-test-key");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Throws(new InvalidOperationException("Client creation failed"));
+
+        // Act
+        var provider = CreateProvider();
+
+        // Assert - Provider should be created but without a working client
+        provider.IsEnabled.Should().BeTrue();
+        provider.ProviderName.Should().Be("Anthropic");
     }
 
     #endregion
@@ -88,7 +126,7 @@ public class GeminiProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Gemini");
+        provider.ProviderName.Should().Be("Anthropic");
     }
 
     [Fact]
@@ -97,11 +135,14 @@ public class GeminiProviderTests
         // Arrange
         var settings = CreateSettings(enabled: true, apiKey: "test-key");
         _mockOptions.Setup(o => o.Value).Returns(settings);
+        // Return null as we can't mock AnthropicClient directly
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
 
         // Act
         var provider = CreateProvider();
 
-        // Assert
+        // Assert - IsEnabled should be true based on settings, not client creation
         provider.IsEnabled.Should().BeTrue();
     }
 
@@ -138,15 +179,17 @@ public class GeminiProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Anthropic");
     }
 
     [Fact]
-    public async Task GenerateCompletionAsync_WhenApiKeyEmpty_ReturnsFailure()
+    public async Task GenerateCompletionAsync_WhenClientNull_ReturnsFailure()
     {
         // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "");
+        var settings = CreateSettings(enabled: true, apiKey: "test");
         _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
         var request = new AIRequest { Prompt = "Test prompt" };
 
@@ -180,7 +223,29 @@ public class GeminiProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Gemini");
+        result.Provider.Should().Be("Anthropic");
+    }
+
+    [Fact]
+    public async Task GenerateChatCompletionAsync_WhenClientNull_ReturnsFailure()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "test");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
+        var provider = CreateProvider();
+        var messages = new List<ChatMessage>
+        {
+            new() { Role = "user", Content = "Hello" }
+        };
+
+        // Act
+        var result = await provider.GenerateChatCompletionAsync(messages);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Error.Should().Contain("not enabled or configured");
     }
 
     #endregion
@@ -193,6 +258,29 @@ public class GeminiProviderTests
         // Arrange
         var settings = CreateSettings(enabled: false);
         _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+        var request = new AIRequest { Prompt = "Test" };
+
+        // Act
+        var stream = await provider.StreamCompletionAsync(request);
+
+        // Assert
+        var items = new List<string>();
+        await foreach (var item in stream)
+        {
+            items.Add(item);
+        }
+        items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task StreamCompletionAsync_WhenClientNull_ReturnsEmptyEnumerable()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "test");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
         var request = new AIRequest { Prompt = "Test" };
 
@@ -280,6 +368,23 @@ public class GeminiProviderTests
         result.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task IsAvailableAsync_WhenClientNull_ReturnsFalse()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "test");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
+        var provider = CreateProvider();
+
+        // Act
+        var result = await provider.IsAvailableAsync();
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
     #endregion
 
     #region GetHealthStatusAsync Tests
@@ -298,16 +403,18 @@ public class GeminiProviderTests
         // Assert
         health.IsHealthy.Should().BeFalse();
         health.Status.Should().Be("Disabled");
-        health.Provider.Should().Be("Gemini");
+        health.Provider.Should().Be("Anthropic");
         health.ErrorMessage.Should().Contain("disabled");
     }
 
     [Fact]
-    public async Task GetHealthStatusAsync_WhenApiKeyEmpty_ReturnsNotConfiguredStatus()
+    public async Task GetHealthStatusAsync_WhenClientNull_ReturnsNotConfiguredStatus()
     {
         // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "");
+        var settings = CreateSettings(enabled: true, apiKey: "test");
         _mockOptions.Setup(o => o.Value).Returns(settings);
+        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
+            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
 
         // Act
@@ -344,18 +451,33 @@ public class GeminiProviderTests
     public void HttpClientName_HasCorrectValue()
     {
         // Assert
-        GeminiProvider.HttpClientName.Should().Be("Gemini");
+        AnthropicProvider.HttpClientName.Should().Be("Anthropic");
     }
 
     #endregion
 
     #region Settings Override Tests
 
+    [Fact]
+    public async Task GenerateCompletionAsync_UsesDefaultModelWhenNotSpecified()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: false, apiKey: "test", defaultModel: "claude-3-opus-20240229");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+        var request = new AIRequest { Prompt = "Test", Model = null };
+
+        // Act
+        var result = await provider.GenerateCompletionAsync(request);
+
+        // Assert - Even though disabled, we verify the settings are read
+        result.Provider.Should().Be("Anthropic");
+    }
+
     [Theory]
-    [InlineData("gemini-2.0-flash")]
-    [InlineData("gemini-2.0-flash-thinking")]
-    [InlineData("gemini-1.5-pro")]
-    [InlineData("gemini-1.5-flash")]
+    [InlineData("claude-3-opus-20240229")]
+    [InlineData("claude-3-sonnet-20240229")]
+    [InlineData("claude-3-haiku-20240307")]
     public async Task GenerateCompletionAsync_AcceptsVariousModelNames(string modelName)
     {
         // Arrange
@@ -368,91 +490,40 @@ public class GeminiProviderTests
         var result = await provider.GenerateCompletionAsync(request);
 
         // Assert
-        result.Provider.Should().Be("Gemini");
-    }
-
-    #endregion
-
-    #region Feature Configurations Tests
-
-    [Fact]
-    public void Constructor_WithGroundingConfig_DoesNotThrow()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "key");
-        settings.Gemini.Grounding = new GeminiGroundingConfig
-        {
-            DynamicThreshold = 0.7f
-        };
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-
-        // Act
-        var act = () => CreateProvider();
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    [Fact]
-    public void Constructor_WithCodeExecutionConfig_DoesNotThrow()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "key");
-        settings.Gemini.CodeExecution = new GeminiCodeExecutionConfig();
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-
-        // Act
-        var act = () => CreateProvider();
-
-        // Assert
-        act.Should().NotThrow();
-    }
-
-    [Fact]
-    public void Constructor_WithThinkingConfig_DoesNotThrow()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "key");
-        settings.Gemini.Thinking = new GeminiThinkingConfig();
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-
-        // Act
-        var act = () => CreateProvider();
-
-        // Assert
-        act.Should().NotThrow();
+        result.Provider.Should().Be("Anthropic");
     }
 
     #endregion
 
     #region Helper Methods
 
-    private GeminiProvider CreateProvider()
+    private AnthropicProvider CreateProvider()
     {
-        return new GeminiProvider(
+        return new AnthropicProvider(
             _mockOptions.Object,
             _mockHttpClientFactory.Object,
-            _mockFileService.Object,
+            _mockClientFactory.Object,
             _mockLogger.Object);
     }
 
     private static AIProvidersSettings CreateSettings(
         bool enabled = false,
         string? apiKey = null,
-        string defaultModel = "gemini-2.0-flash")
+        string defaultModel = "claude-3-opus-20240229")
     {
         return new AIProvidersSettings
         {
-            Gemini = new GeminiSettings
+            Anthropic = new AnthropicSettings
             {
                 Enabled = enabled,
                 ApiKey = apiKey,
                 DefaultModel = defaultModel,
-                MaxTokens = 8192,
+                MaxTokens = 4096,
                 Temperature = 0.7f,
-                Grounding = new GeminiGroundingConfig(),
-                CodeExecution = new GeminiCodeExecutionConfig(),
-                Thinking = new GeminiThinkingConfig()
+                Version = "2023-06-01",
+                Features = new AnthropicFeaturesConfig(),
+                Caching = new AnthropicCachingConfig(),
+                Thinking = new AnthropicThinkingConfig()
             }
         };
     }

@@ -6,21 +6,21 @@ namespace SecondBrain.Application.Commands.GeminiFiles.DeleteFile;
 
 public class DeleteGeminiFileCommandHandler : IRequestHandler<DeleteGeminiFileCommand, Result<bool>>
 {
-    private readonly GeminiProvider _geminiProvider;
+    private readonly GoogleProvider _googleProvider;
 
-    public DeleteGeminiFileCommandHandler(GeminiProvider geminiProvider)
+    public DeleteGeminiFileCommandHandler(GoogleProvider googleProvider)
     {
-        _geminiProvider = geminiProvider;
+        _googleProvider = googleProvider;
     }
 
     public async Task<Result<bool>> Handle(DeleteGeminiFileCommand request, CancellationToken cancellationToken)
     {
-        if (!_geminiProvider.IsEnabled)
+        if (!_googleProvider.IsEnabled)
         {
             return Result<bool>.Failure(Error.Custom("ServiceUnavailable", "Gemini provider is not enabled"));
         }
 
-        var success = await _geminiProvider.DeleteFileAsync(request.FileName, cancellationToken);
+        var success = await _googleProvider.DeleteFileAsync(request.FileName, cancellationToken);
         if (!success)
         {
             return Result<bool>.Failure(Error.NotFound("File", request.FileName));

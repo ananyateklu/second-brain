@@ -194,8 +194,7 @@ public partial class ThinkingExtractor : IThinkingExtractor
     public static bool SupportsNativeThinking(string provider, string model)
     {
         // Only Anthropic models support native extended thinking
-        var isAnthropic = provider.Equals("claude", StringComparison.OrdinalIgnoreCase) ||
-                         provider.Equals("anthropic", StringComparison.OrdinalIgnoreCase);
+        var isAnthropic = provider.Equals("anthropic", StringComparison.OrdinalIgnoreCase);
 
         if (!isAnthropic)
             return false;

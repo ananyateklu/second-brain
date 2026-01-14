@@ -8,7 +8,7 @@ public interface IImageGenerationProviderFactory
     /// <summary>
     /// Get an image generation provider by name
     /// </summary>
-    /// <param name="providerName">The name of the provider (e.g., "OpenAI", "Gemini", "Grok")</param>
+    /// <param name="providerName">The name of the provider (e.g., "OpenAI", "Google", "Xai")</param>
     /// <returns>The image generation provider</returns>
     /// <exception cref="ArgumentException">Thrown when the provider is not found</exception>
     IImageGenerationProvider GetProvider(string providerName);

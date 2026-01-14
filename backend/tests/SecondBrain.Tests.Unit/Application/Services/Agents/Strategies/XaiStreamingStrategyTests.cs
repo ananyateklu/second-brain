@@ -7,7 +7,6 @@ using SecondBrain.Application.Services.Agents.Helpers;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Application.Services.Agents.Plugins;
 using SecondBrain.Application.Services.Agents.Strategies;
-using SecondBrain.Application.Services.AI.FileManagement;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.RAG;
 using Xunit;
@@ -15,29 +14,29 @@ using Xunit;
 namespace SecondBrain.Tests.Unit.Application.Services.Agents.Strategies;
 
 /// <summary>
-/// Unit tests for GeminiStreamingStrategy.
+/// Unit tests for XaiStreamingStrategy.
 /// Tests provider detection, capability handling, and configuration validation.
 /// </summary>
-public class GeminiStreamingStrategyTests
+public class XaiStreamingStrategyTests
 {
     private readonly Mock<IToolExecutor> _mockToolExecutor;
     private readonly Mock<IThinkingExtractor> _mockThinkingExtractor;
     private readonly Mock<IPluginToolBuilder> _mockToolBuilder;
     private readonly Mock<IAgentRetryPolicy> _mockRetryPolicy;
-    private readonly Mock<ILogger<GeminiStreamingStrategy>> _mockLogger;
+    private readonly Mock<ILogger<XaiStreamingStrategy>> _mockLogger;
 
-    public GeminiStreamingStrategyTests()
+    public XaiStreamingStrategyTests()
     {
         _mockToolExecutor = new Mock<IToolExecutor>();
         _mockThinkingExtractor = new Mock<IThinkingExtractor>();
         _mockToolBuilder = new Mock<IPluginToolBuilder>();
         _mockRetryPolicy = new Mock<IAgentRetryPolicy>();
-        _mockLogger = new Mock<ILogger<GeminiStreamingStrategy>>();
+        _mockLogger = new Mock<ILogger<XaiStreamingStrategy>>();
     }
 
-    private GeminiStreamingStrategy CreateStrategy(GeminiProvider? provider = null)
+    private XaiStreamingStrategy CreateStrategy(XaiProvider? provider = null)
     {
-        return new GeminiStreamingStrategy(
+        return new XaiStreamingStrategy(
             provider,
             _mockToolExecutor.Object,
             _mockThinkingExtractor.Object,
@@ -49,23 +48,23 @@ public class GeminiStreamingStrategyTests
     #region SupportedProviders Tests
 
     [Fact]
-    public void SupportedProviders_ContainsGemini()
+    public void SupportedProviders_ContainsXai()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().Contain("gemini");
+        sut.SupportedProviders.Should().Contain("xai");
     }
 
     [Fact]
-    public void SupportedProviders_HasSingleProvider()
+    public void SupportedProviders_HasOneProvider()
     {
         // Arrange
         var sut = CreateStrategy();
 
         // Act & Assert
-        sut.SupportedProviders.Should().ContainSingle();
+        sut.SupportedProviders.Should().HaveCount(1);
     }
 
     #endregion
@@ -79,10 +78,10 @@ public class GeminiStreamingStrategyTests
         var sut = CreateStrategy(provider: null);
         var request = new AgentRequest
         {
-            Provider = "gemini",
+            Provider = "xai",
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(functionCallingEnabled: true);
+        var settings = CreateSettings(enabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -93,20 +92,19 @@ public class GeminiStreamingStrategyTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("claude")]
     [InlineData("anthropic")]
-    [InlineData("grok")]
+    [InlineData("google")]
     [InlineData("ollama")]
     public void CanHandle_WhenProviderDoesNotMatch_ReturnsFalse(string provider)
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGeminiProvider());
+        var sut = CreateStrategy(CreateMockXaiProvider());
         var request = new AgentRequest
         {
             Provider = provider,
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(functionCallingEnabled: true);
+        var settings = CreateSettings(enabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -116,16 +114,16 @@ public class GeminiStreamingStrategyTests
     }
 
     [Fact]
-    public void CanHandle_WhenFunctionCallingDisabled_ReturnsFalse()
+    public void CanHandle_WhenXaiDisabled_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGeminiProvider());
+        var sut = CreateStrategy(CreateMockXaiProvider());
         var request = new AgentRequest
         {
-            Provider = "gemini",
+            Provider = "xai",
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(functionCallingEnabled: false);
+        var settings = CreateSettings(enabled: false);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -138,13 +136,13 @@ public class GeminiStreamingStrategyTests
     public void CanHandle_WhenNoCapabilities_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGeminiProvider());
+        var sut = CreateStrategy(CreateMockXaiProvider());
         var request = new AgentRequest
         {
-            Provider = "gemini",
+            Provider = "xai",
             Capabilities = new List<string>()
         };
-        var settings = CreateSettings(functionCallingEnabled: true);
+        var settings = CreateSettings(enabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -157,13 +155,13 @@ public class GeminiStreamingStrategyTests
     public void CanHandle_WhenCapabilitiesIsNull_ReturnsFalse()
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGeminiProvider());
+        var sut = CreateStrategy(CreateMockXaiProvider());
         var request = new AgentRequest
         {
-            Provider = "gemini",
+            Provider = "xai",
             Capabilities = null
         };
-        var settings = CreateSettings(functionCallingEnabled: true);
+        var settings = CreateSettings(enabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -173,19 +171,19 @@ public class GeminiStreamingStrategyTests
     }
 
     [Theory]
-    [InlineData("gemini")]
-    [InlineData("Gemini")]
-    [InlineData("GEMINI")]
+    [InlineData("xai")]
+    [InlineData("XAI")]
+    [InlineData("Xai")]
     public void CanHandle_WhenAllConditionsMet_ReturnsTrue(string provider)
     {
         // Arrange
-        var sut = CreateStrategy(CreateMockGeminiProvider());
+        var sut = CreateStrategy(CreateMockXaiProvider());
         var request = new AgentRequest
         {
             Provider = provider,
             Capabilities = new List<string> { "notes" }
         };
-        var settings = CreateSettings(functionCallingEnabled: true);
+        var settings = CreateSettings(enabled: true);
 
         // Act
         var result = sut.CanHandle(request, settings);
@@ -222,23 +220,21 @@ public class GeminiStreamingStrategyTests
 
     #region Helper Methods
 
-    private static GeminiProvider? CreateMockGeminiProvider()
+    private static XaiProvider? CreateMockXaiProvider()
     {
         try
         {
-            return new GeminiProvider(
+            return new XaiProvider(
                 Microsoft.Extensions.Options.Options.Create(new AIProvidersSettings
                 {
-                    Gemini = new GeminiSettings
+                    XAI = new XAISettings
                     {
                         Enabled = true,
-                        ApiKey = "test-key",
-                        Features = new GeminiFeaturesConfig { EnableFunctionCalling = true }
+                        ApiKey = "test-key"
                     }
                 }),
                 Mock.Of<IHttpClientFactory>(),
-                Mock.Of<IGeminiFileService>(),
-                Mock.Of<ILogger<GeminiProvider>>());
+                Mock.Of<ILogger<XaiProvider>>());
         }
         catch
         {
@@ -246,17 +242,18 @@ public class GeminiStreamingStrategyTests
         }
     }
 
-    private static AIProvidersSettings CreateSettings(bool functionCallingEnabled)
+    private static AIProvidersSettings CreateSettings(bool enabled)
     {
         return new AIProvidersSettings
         {
-            Gemini = new GeminiSettings
+            XAI = new XAISettings
             {
-                Enabled = true,
+                Enabled = enabled,
                 ApiKey = "test-api-key",
-                Features = new GeminiFeaturesConfig
+                FunctionCalling = new GrokFunctionCallingConfig
                 {
-                    EnableFunctionCalling = functionCallingEnabled
+                    MaxIterations = 10,
+                    ParallelExecution = true
                 }
             }
         };
@@ -268,8 +265,8 @@ public class GeminiStreamingStrategyTests
         {
             Request = new AgentRequest
             {
-                Provider = "gemini",
-                Model = "gemini-pro",
+                Provider = "xai",
+                Model = "grok-3-mini",
                 Messages = new List<AgentMessage>
                 {
                     new() { Role = "user", Content = "Hello" }
@@ -279,11 +276,15 @@ public class GeminiStreamingStrategyTests
             },
             Settings = new AIProvidersSettings
             {
-                Gemini = new GeminiSettings
+                XAI = new XAISettings
                 {
                     Enabled = true,
                     ApiKey = "test-key",
-                    Features = new GeminiFeaturesConfig { EnableFunctionCalling = true }
+                    FunctionCalling = new GrokFunctionCallingConfig
+                    {
+                        MaxIterations = 10,
+                        ParallelExecution = true
+                    }
                 }
             },
             RagSettings = new RagSettings(),

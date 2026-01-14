@@ -1166,7 +1166,7 @@ public class NotesController : ControllerBase
 
         if (!_imageDescriptionService.IsAvailable)
         {
-            return BadRequest(new { error = "Image description service is not available. Please configure a vision-capable AI provider (Gemini, OpenAI, or Claude)." });
+            return BadRequest(new { error = "Image description service is not available. Please configure a vision-capable AI provider (Google, OpenAI, or Anthropic)." });
         }
 
         _logger.LogInformation("Extracting descriptions for {Count} images in note {NoteId}", imagesToProcess.Count, id);

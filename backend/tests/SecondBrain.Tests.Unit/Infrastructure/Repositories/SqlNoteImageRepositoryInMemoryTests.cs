@@ -240,7 +240,7 @@ public class SqlNoteImageRepositoryInMemoryTests : IDisposable
             ImageIndex = 0,
             AltText = "A test image",
             Description = "This is a test image description",
-            DescriptionProvider = "gemini",
+            DescriptionProvider = "google",
             DescriptionModel = "gemini-1.5-flash",
             DescriptionGeneratedAt = DateTime.UtcNow
         };
@@ -256,7 +256,7 @@ public class SqlNoteImageRepositoryInMemoryTests : IDisposable
         retrieved.FileName.Should().Be("test-image.png");
         retrieved.AltText.Should().Be("A test image");
         retrieved.Description.Should().Be("This is a test image description");
-        retrieved.DescriptionProvider.Should().Be("gemini");
+        retrieved.DescriptionProvider.Should().Be("google");
         retrieved.DescriptionModel.Should().Be("gemini-1.5-flash");
         retrieved.DescriptionGeneratedAt.Should().NotBeNull();
     }
@@ -720,7 +720,7 @@ public class SqlNoteImageRepositoryInMemoryTests : IDisposable
         var result = await _sut.UpdateDescriptionAsync(
             created.Id,
             "A detailed description of the image",
-            "gemini",
+            "google",
             "gemini-1.5-flash");
 
         var retrieved = await _sut.GetByIdAsync(created.Id);
@@ -729,7 +729,7 @@ public class SqlNoteImageRepositoryInMemoryTests : IDisposable
         result.Should().BeTrue();
         retrieved.Should().NotBeNull();
         retrieved!.Description.Should().Be("A detailed description of the image");
-        retrieved.DescriptionProvider.Should().Be("gemini");
+        retrieved.DescriptionProvider.Should().Be("google");
         retrieved.DescriptionModel.Should().Be("gemini-1.5-flash");
         retrieved.DescriptionGeneratedAt.Should().NotBeNull();
     }

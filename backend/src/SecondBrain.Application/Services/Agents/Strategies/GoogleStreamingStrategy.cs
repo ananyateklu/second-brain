@@ -13,33 +13,33 @@ using GeminiFunctionDeclaration = Google.GenAI.Types.FunctionDeclaration;
 namespace SecondBrain.Application.Services.Agents.Strategies;
 
 /// <summary>
-/// Native Gemini function calling implementation using Google GenAI SDK.
+/// Native Google/Gemini function calling implementation using Google GenAI SDK.
 /// Supports parallel function execution, grounding, and code execution.
 /// </summary>
-public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
+public class GoogleStreamingStrategy : BaseAgentStreamingStrategy
 {
-    private readonly GeminiProvider? _geminiProvider;
-    private readonly ILogger<GeminiStreamingStrategy> _logger;
+    private readonly GoogleProvider? _googleProvider;
+    private readonly ILogger<GoogleStreamingStrategy> _logger;
 
-    public GeminiStreamingStrategy(
-        GeminiProvider? geminiProvider,
+    public GoogleStreamingStrategy(
+        GoogleProvider? googleProvider,
         IToolExecutor toolExecutor,
         IThinkingExtractor thinkingExtractor,
         IPluginToolBuilder toolBuilder,
         IAgentRetryPolicy retryPolicy,
-        ILogger<GeminiStreamingStrategy> logger)
+        ILogger<GoogleStreamingStrategy> logger)
         : base(toolExecutor, thinkingExtractor, toolBuilder, retryPolicy)
     {
-        _geminiProvider = geminiProvider;
+        _googleProvider = googleProvider;
         _logger = logger;
     }
 
-    public override IReadOnlyList<string> SupportedProviders => new[] { "gemini" };
+    public override IReadOnlyList<string> SupportedProviders => new[] { "google" };
 
     public override bool CanHandle(AgentRequest request, AIProvidersSettings settings)
     {
-        return request.Provider.Equals("gemini", StringComparison.OrdinalIgnoreCase) &&
-               _geminiProvider != null &&
+        return request.Provider.Equals("google", StringComparison.OrdinalIgnoreCase) &&
+               _googleProvider != null &&
                settings.Gemini.Features.EnableFunctionCalling &&
                request.Capabilities?.Count > 0;
     }
@@ -48,7 +48,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
         AgentStreamingContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_geminiProvider == null)
+        if (_googleProvider == null)
         {
             yield return ErrorEvent("Gemini provider is not properly configured");
             yield break;
@@ -207,7 +207,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
             var pendingFunctionCalls = new List<Services.AI.Models.FunctionCallInfo>();
             var iterationText = new StringBuilder();
 
-            await foreach (var evt in _geminiProvider.StreamWithFeaturesAsync(
+            await foreach (var evt in _googleProvider.StreamWithFeaturesAsync(
                 messages, aiSettings, featureOptions, cancellationToken))
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -344,7 +344,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
 
                         // If we extracted image data and model supports vision, inject for THIS request only
                         if (base64Data != null &&
-                            AI.Models.MultimodalConfig.IsMultimodalModel("Gemini", request.Model))
+                            AI.Models.MultimodalConfig.IsMultimodalModel("Google", request.Model))
                         {
                             toolResultImages.Add((mediaType ?? "image/png", base64Data));
                             _logger.LogInformation("Extracted image for AnalyzeImage (ephemeral, not stored in history) for model {Model}", request.Model);
@@ -371,7 +371,7 @@ public class GeminiStreamingStrategy : BaseAgentStreamingStrategy
 
                 // Send function results back to Gemini (use cleaned results, no base64)
                 var functionResults = cleanedResults.Select(r => (FunctionName: r.Name, Result: (object)r.Result)).ToArray();
-                var response = await _geminiProvider.ContinueWithFunctionResultsAsync(
+                var response = await _googleProvider.ContinueWithFunctionResultsAsync(
                     messages, functionResults, aiSettings, featureOptions, cancellationToken);
 
                 // If AnalyzeImage returned an image, add it as a follow-up user message

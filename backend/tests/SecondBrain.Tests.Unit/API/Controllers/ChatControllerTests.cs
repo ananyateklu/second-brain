@@ -307,7 +307,7 @@ public class ChatControllerTests
         var request = new CreateConversationRequest
         {
             Title = "Custom Chat",
-            Provider = "claude",
+            Provider = "anthropic",
             Model = "claude-3-opus",
             RagEnabled = true,
             AgentEnabled = true,
@@ -326,7 +326,7 @@ public class ChatControllerTests
         _mockMediator.Verify(m => m.Send(
             It.Is<CreateConversationCommand>(cmd =>
                 cmd.Title == "Custom Chat" &&
-                cmd.Provider == "claude" &&
+                cmd.Provider == "anthropic" &&
                 cmd.Model == "claude-3-opus" &&
                 cmd.UserId == userId &&
                 cmd.RagEnabled == true &&

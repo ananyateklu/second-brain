@@ -10,14 +10,14 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 
 /// <summary>
-/// Grok/XAI implementation of structured output using JSON schema response format.
-/// Grok uses an OpenAI-compatible API, so this implementation is similar to OpenAI.
+/// xAI implementation of structured output using JSON schema response format.
+/// xAI uses an OpenAI-compatible API, so this implementation is similar to OpenAI.
 /// </summary>
-public class GrokStructuredOutputService : IProviderStructuredOutputService
+public class XaiStructuredOutputService : IProviderStructuredOutputService
 {
     private readonly XAISettings _providerSettings;
     private readonly StructuredOutputSettings _structuredSettings;
-    private readonly ILogger<GrokStructuredOutputService> _logger;
+    private readonly ILogger<XaiStructuredOutputService> _logger;
     private readonly ChatClient? _client;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -26,10 +26,10 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public GrokStructuredOutputService(
+    public XaiStructuredOutputService(
         IOptions<AIProvidersSettings> providerSettings,
         IOptions<StructuredOutputSettings> structuredSettings,
-        ILogger<GrokStructuredOutputService> logger)
+        ILogger<XaiStructuredOutputService> logger)
     {
         _providerSettings = providerSettings.Value.XAI;
         _structuredSettings = structuredSettings.Value;
@@ -39,9 +39,9 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
         {
             try
             {
-                var modelToUse = _structuredSettings.Providers.Grok.Model ?? _providerSettings.DefaultModel;
+                var modelToUse = _structuredSettings.Providers.Xai.Model ?? _providerSettings.DefaultModel;
 
-                // Create OpenAI client with Grok endpoint
+                // Create OpenAI client with xAI endpoint
                 var apiKeyCredential = new System.ClientModel.ApiKeyCredential(_providerSettings.ApiKey);
                 var openAIClientOptions = new OpenAIClientOptions
                 {
@@ -53,18 +53,18 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to initialize Grok client for structured output");
+                _logger.LogError(ex, "Failed to initialize xAI client for structured output");
             }
         }
     }
 
     /// <inheritdoc />
-    public string ProviderName => "Grok";
+    public string ProviderName => "Xai";
 
     /// <inheritdoc />
     public bool IsAvailable =>
         _providerSettings.Enabled &&
-        _structuredSettings.Providers.Grok.Enabled &&
+        _structuredSettings.Providers.Xai.Enabled &&
         _client != null;
 
     /// <inheritdoc />
@@ -76,13 +76,13 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
         var result = new StructuredOutputResult<T>
         {
             Provider = ProviderName,
-            Model = options.Model ?? _structuredSettings.Providers.Grok.Model ?? _providerSettings.DefaultModel
+            Model = options.Model ?? _structuredSettings.Providers.Xai.Model ?? _providerSettings.DefaultModel
         };
 
         if (!IsAvailable)
         {
             result.Success = false;
-            result.Error = "Grok structured output service is not available";
+            result.Error = "xAI structured output service is not available";
             return result;
         }
 
@@ -90,7 +90,7 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
         {
             // Build the schema from the type
             var schema = JsonSchemaBuilder.FromType<T>();
-            var schemaBinaryData = GrokSchemaAdapter.ToBinaryData(schema);
+            var schemaBinaryData = XaiSchemaAdapter.ToBinaryData(schema);
 
             // Build messages
             var messages = new List<ChatMessage>();
@@ -119,7 +119,7 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
                 chatOptions.Temperature = temperature;
             }
 
-            _logger.LogDebug("Generating Grok structured output for type {Type} with model {Model}",
+            _logger.LogDebug("Generating xAI structured output for type {Type} with model {Model}",
                 typeof(T).Name, result.Model);
 
             // Use the correct model if specified in options
@@ -151,7 +151,7 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
             if (string.IsNullOrEmpty(responseText))
             {
                 result.Success = false;
-                result.Error = "Grok returned empty response";
+                result.Error = "xAI returned empty response";
                 return result;
             }
 
@@ -180,14 +180,14 @@ public class GrokStructuredOutputService : IProviderStructuredOutputService
         }
         catch (JsonException ex)
         {
-            _logger.LogError(ex, "Failed to parse Grok structured output as {Type}", typeof(T).Name);
+            _logger.LogError(ex, "Failed to parse xAI structured output as {Type}", typeof(T).Name);
             result.Success = false;
             result.Error = $"JSON parsing error: {ex.Message}";
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating structured output from Grok");
+            _logger.LogError(ex, "Error generating structured output from xAI");
             result.Success = false;
             result.Error = ex.Message;
             return result;

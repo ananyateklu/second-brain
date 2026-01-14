@@ -14,12 +14,12 @@ namespace SecondBrain.Application.Services.AI.Providers;
 /// Google Gemini/Imagen image generation provider.
 /// Uses SDK's GenerateImagesAsync for Imagen models and raw HTTP for Gemini models.
 /// </summary>
-public class GeminiImageProvider : IImageGenerationProvider
+public class GoogleImageProvider : IImageGenerationProvider
 {
-    public const string HttpClientName = "GeminiImage";
+    public const string HttpClientName = "GoogleImage";
 
     private readonly GeminiSettings _settings;
-    private readonly ILogger<GeminiImageProvider> _logger;
+    private readonly ILogger<GoogleImageProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly Client? _client;
 
@@ -44,13 +44,13 @@ public class GeminiImageProvider : IImageGenerationProvider
         "1024x1792"   // 9:16 portrait
     };
 
-    public string ProviderName => "Gemini";
+    public string ProviderName => "Google";
     public bool IsEnabled => _settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey);
 
-    public GeminiImageProvider(
+    public GoogleImageProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
-        ILogger<GeminiImageProvider> logger)
+        ILogger<GoogleImageProvider> logger)
     {
         _settings = settings.Value.Gemini;
         _httpClientFactory = httpClientFactory;

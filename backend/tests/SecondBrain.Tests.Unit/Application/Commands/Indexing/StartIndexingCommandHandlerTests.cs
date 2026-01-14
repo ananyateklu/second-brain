@@ -233,7 +233,7 @@ public class StartIndexingCommandHandlerTests
         // Arrange
         var command = new StartIndexingCommand(
             UserId: "user-456",
-            EmbeddingProvider: "Gemini",
+            EmbeddingProvider: "Google",
             VectorStoreProvider: "PostgreSQL",
             EmbeddingModel: "embedding-001"
         );
@@ -256,7 +256,7 @@ public class StartIndexingCommandHandlerTests
         // Assert
         _mockIndexingService.Verify(s => s.StartIndexingAsync(
             "user-456",
-            "Gemini",
+            "Google",
             "PostgreSQL",
             "embedding-001",
             It.IsAny<int?>(),

@@ -52,8 +52,8 @@ export const MULTIMODAL_CONFIGS: Record<string, MultimodalModelConfig> = {
     supportedFormats: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   },
 
-  Claude: {
-    provider: 'Claude',
+  Anthropic: {
+    provider: 'Anthropic',
     visionModels: [
       // All Claude 3.x models support vision (3, 3.5, 3.7, etc.)
       'claude-3*',            // claude-3-opus, claude-3-sonnet, claude-3-haiku, claude-3.5-*, claude-3.7-*, etc.
@@ -71,8 +71,8 @@ export const MULTIMODAL_CONFIGS: Record<string, MultimodalModelConfig> = {
     supportedFormats: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   },
 
-  Gemini: {
-    provider: 'Gemini',
+  Google: {
+    provider: 'Google',
     visionModels: [
       // All Gemini models are multimodal by design
       'gemini-1*',            // gemini-1.0-*, gemini-1.5-*, etc.
@@ -112,8 +112,8 @@ export const MULTIMODAL_CONFIGS: Record<string, MultimodalModelConfig> = {
     supportedFormats: ['image/jpeg', 'image/png'],
   },
 
-  Grok: {
-    provider: 'Grok',
+  Xai: {
+    provider: 'Xai',
     visionModels: [
       // Only Grok models with "vision" in the name support images
       '*vision*',             // Any model with "vision" in the name

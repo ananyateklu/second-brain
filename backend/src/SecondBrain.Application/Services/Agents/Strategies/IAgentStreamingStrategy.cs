@@ -5,12 +5,12 @@ namespace SecondBrain.Application.Services.Agents.Strategies;
 
 /// <summary>
 /// Strategy interface for provider-specific agent streaming implementations.
-/// Each provider (Anthropic, Gemini, OpenAI, Ollama, Grok) implements this interface.
+/// Each provider (Anthropic, Google, OpenAI, Ollama, xAI) implements this interface.
 /// </summary>
 public interface IAgentStreamingStrategy
 {
     /// <summary>
-    /// Provider name(s) this strategy handles (e.g., "claude", "anthropic").
+    /// Provider name(s) this strategy handles (e.g., "anthropic", "openai", "google").
     /// </summary>
     IReadOnlyList<string> SupportedProviders { get; }
 

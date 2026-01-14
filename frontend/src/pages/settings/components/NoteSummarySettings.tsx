@@ -11,10 +11,10 @@ import { Tooltip, InfoIcon } from '../../../components/ui/Tooltip';
 // Mapping from health data provider names to display names
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
     'OpenAI': 'OpenAI',
-    'Claude': 'Anthropic',
-    'Gemini': 'Google Gemini',
+    'Anthropic': 'Anthropic',
+    'Google': 'Google Gemini',
     'Ollama': 'Ollama',
-    'Grok': 'xAI (Grok)',
+    'Xai': 'xAI',
 };
 
 // Custom Model Selector Component

@@ -36,7 +36,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
         _logger = logger;
     }
 
-    public override IReadOnlyList<string> SupportedProviders => new[] { "claude", "anthropic" };
+    public override IReadOnlyList<string> SupportedProviders => new[] { "anthropic" };
 
     public override bool CanHandle(AgentRequest request, AIProvidersSettings settings)
     {
@@ -56,7 +56,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
 
         if (!settings.Anthropic.Enabled || string.IsNullOrEmpty(settings.Anthropic.ApiKey))
         {
-            yield return ErrorEvent("Anthropic/Claude provider is not enabled or configured");
+            yield return ErrorEvent("Anthropic provider is not enabled or configured");
             yield break;
         }
 
@@ -522,7 +522,7 @@ public class AnthropicStreamingStrategy : BaseAgentStreamingStrategy
                     // If we extracted image data and model supports vision, inject image for THIS request only
                     // The image is NOT stored in conversation history (resultForStorage has no base64)
                     if (extractedBase64 != null &&
-                        AI.Models.MultimodalConfig.IsMultimodalModel("Claude", request.Model))
+                        AI.Models.MultimodalConfig.IsMultimodalModel("Anthropic", request.Model))
                     {
                         contentBlocks.Add(new ImageContent
                         {

@@ -768,9 +768,9 @@ Content:
         if (lowerModel.StartsWith("text-embedding"))
             return "OpenAI";
 
-        // Gemini models (text-embedding-004, textembedding-gecko)
+        // Google models (text-embedding-004, textembedding-gecko)
         if (lowerModel.Contains("embedding-004") || lowerModel.Contains("textembedding-gecko"))
-            return "Gemini";
+            return "Google";
 
         // Ollama models (common embedding model names)
         if (lowerModel.Contains("nomic-embed") || lowerModel.Contains("mxbai-embed") ||

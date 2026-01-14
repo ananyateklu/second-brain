@@ -636,9 +636,9 @@ public class AgentController : ControllerBase
             Providers = new List<ProviderSupport>
             {
                 new() { Name = "OpenAI", Supported = true, Reason = "Full support for function calling" },
-                new() { Name = "Claude", Supported = true, Reason = "Full support via Anthropic.SDK" },
-                new() { Name = "Gemini", Supported = true, Reason = "OpenAI-compatible API with function calling" },
-                new() { Name = "Grok", Supported = true, Reason = "OpenAI-compatible API with function calling" },
+                new() { Name = "Anthropic", Supported = true, Reason = "Full support via Anthropic.SDK" },
+                new() { Name = "Google", Supported = true, Reason = "OpenAI-compatible API with function calling" },
+                new() { Name = "Xai", Supported = true, Reason = "OpenAI-compatible API with function calling" },
                 new() { Name = "Ollama", Supported = true, Reason = "OpenAI-compatible API (model dependent)" }
             }
         });

@@ -29,14 +29,14 @@ describe('multimodal-models', () => {
       expect(MULTIMODAL_CONFIGS.OpenAI.maxImages).toBeGreaterThan(0);
     });
 
-    it('should have Claude config', () => {
-      expect(MULTIMODAL_CONFIGS.Claude).toBeDefined();
-      expect(MULTIMODAL_CONFIGS.Claude.provider).toBe('Claude');
+    it('should have Anthropic config', () => {
+      expect(MULTIMODAL_CONFIGS.Anthropic).toBeDefined();
+      expect(MULTIMODAL_CONFIGS.Anthropic.provider).toBe('Anthropic');
     });
 
-    it('should have Gemini config', () => {
-      expect(MULTIMODAL_CONFIGS.Gemini).toBeDefined();
-      expect(MULTIMODAL_CONFIGS.Gemini.provider).toBe('Gemini');
+    it('should have Google config', () => {
+      expect(MULTIMODAL_CONFIGS.Google).toBeDefined();
+      expect(MULTIMODAL_CONFIGS.Google.provider).toBe('Google');
     });
 
     it('should have Ollama config', () => {
@@ -44,9 +44,9 @@ describe('multimodal-models', () => {
       expect(MULTIMODAL_CONFIGS.Ollama.provider).toBe('Ollama');
     });
 
-    it('should have Grok config', () => {
-      expect(MULTIMODAL_CONFIGS.Grok).toBeDefined();
-      expect(MULTIMODAL_CONFIGS.Grok.provider).toBe('Grok');
+    it('should have Xai config', () => {
+      expect(MULTIMODAL_CONFIGS.Xai).toBeDefined();
+      expect(MULTIMODAL_CONFIGS.Xai.provider).toBe('Xai');
     });
 
     it('should have vision models arrays', () => {
@@ -73,17 +73,17 @@ describe('multimodal-models', () => {
       expect(isMultimodalModel('OpenAI', 'o3-mini')).toBe(true);
     });
 
-    it('should return true for Claude vision models', () => {
-      expect(isMultimodalModel('Claude', 'claude-3-opus')).toBe(true);
-      expect(isMultimodalModel('Claude', 'claude-3-5-sonnet')).toBe(true);
-      expect(isMultimodalModel('Claude', 'claude-4')).toBe(true);
-      expect(isMultimodalModel('Claude', 'claude-sonnet-4')).toBe(true);
+    it('should return true for Anthropic vision models', () => {
+      expect(isMultimodalModel('Anthropic', 'claude-3-opus')).toBe(true);
+      expect(isMultimodalModel('Anthropic', 'claude-3-5-sonnet')).toBe(true);
+      expect(isMultimodalModel('Anthropic', 'claude-4')).toBe(true);
+      expect(isMultimodalModel('Anthropic', 'claude-sonnet-4')).toBe(true);
     });
 
-    it('should return true for Gemini vision models', () => {
-      expect(isMultimodalModel('Gemini', 'gemini-1.5-pro')).toBe(true);
-      expect(isMultimodalModel('Gemini', 'gemini-2.0-flash')).toBe(true);
-      expect(isMultimodalModel('Gemini', 'gemini-pro-vision')).toBe(true);
+    it('should return true for Google vision models', () => {
+      expect(isMultimodalModel('Google', 'gemini-1.5-pro')).toBe(true);
+      expect(isMultimodalModel('Google', 'gemini-2.0-flash')).toBe(true);
+      expect(isMultimodalModel('Google', 'gemini-pro-vision')).toBe(true);
     });
 
     it('should return true for Ollama vision models', () => {
@@ -92,14 +92,14 @@ describe('multimodal-models', () => {
       expect(isMultimodalModel('Ollama', 'llama3.2-vision')).toBe(true);
     });
 
-    it('should return true for Grok vision models', () => {
-      expect(isMultimodalModel('Grok', 'grok-2-vision')).toBe(true);
-      expect(isMultimodalModel('Grok', 'grok-vision-beta')).toBe(true);
+    it('should return true for Xai vision models', () => {
+      expect(isMultimodalModel('Xai', 'grok-2-vision')).toBe(true);
+      expect(isMultimodalModel('Xai', 'grok-vision-beta')).toBe(true);
     });
 
     it('should return false for non-vision models', () => {
       expect(isMultimodalModel('Ollama', 'llama3.1:8b')).toBe(false);
-      expect(isMultimodalModel('Grok', 'grok-3')).toBe(false);
+      expect(isMultimodalModel('Xai', 'grok-3')).toBe(false);
     });
 
     it('should return false for unknown provider', () => {
@@ -108,7 +108,7 @@ describe('multimodal-models', () => {
 
     it('should handle case insensitivity in model names', () => {
       expect(isMultimodalModel('OpenAI', 'GPT-4O')).toBe(true);
-      expect(isMultimodalModel('Claude', 'CLAUDE-3-OPUS')).toBe(true);
+      expect(isMultimodalModel('Anthropic', 'CLAUDE-3-OPUS')).toBe(true);
     });
   });
 

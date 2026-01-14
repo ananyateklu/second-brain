@@ -4,17 +4,17 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput.Adapters;
 
 /// <summary>
-/// Converts JsonSchemaDefinition to Anthropic Claude's tool definition format.
-/// Claude uses "tool forcing" to guarantee structured JSON output.
+/// Converts JsonSchemaDefinition to Anthropic's tool definition format.
+/// Anthropic uses "tool forcing" to guarantee structured JSON output.
 /// </summary>
-public static class ClaudeSchemaAdapter
+public static class AnthropicSchemaAdapter
 {
     private const string OutputToolName = "structured_output";
     private const string OutputToolDescription = "Return the structured output in the specified format";
 
     /// <summary>
-    /// Convert a JsonSchemaDefinition to a tool parameters dictionary for Claude.
-    /// Claude expects tool parameters in a specific dictionary format.
+    /// Convert a JsonSchemaDefinition to a tool parameters dictionary for Anthropic.
+    /// Anthropic expects tool parameters in a specific dictionary format.
     /// </summary>
     public static Dictionary<string, object> ToToolParameters(JsonSchemaDefinition schema)
     {

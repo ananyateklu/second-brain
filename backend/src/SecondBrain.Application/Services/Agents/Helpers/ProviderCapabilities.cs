@@ -18,9 +18,9 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => IsClaudeThinkingModel(modelLower),
-            "gemini" => IsGeminiThinkingModel(modelLower),
-            "grok" or "xai" => true, // All Grok models support Think Mode
+            "anthropic" => IsClaudeThinkingModel(modelLower),
+            "google" => IsGeminiThinkingModel(modelLower),
+            "xai" => true, // All Grok models support Think Mode
             "openai" => IsOpenAIReasoningModel(modelLower),
             "ollama" => IsOllamaThinkingModel(modelLower),
             _ => false
@@ -81,7 +81,7 @@ public static class ProviderCapabilities
     public static bool SupportsGrounding(string provider)
     {
         var providerLower = provider.ToLowerInvariant();
-        return providerLower is "gemini" or "grok" or "xai";
+        return providerLower is "google" or "xai";
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public static class ProviderCapabilities
     public static bool SupportsXSearch(string provider)
     {
         var providerLower = provider.ToLowerInvariant();
-        return providerLower is "grok" or "xai";
+        return providerLower is "xai";
     }
 
     #endregion
@@ -103,7 +103,7 @@ public static class ProviderCapabilities
     public static bool SupportsCodeExecution(string provider)
     {
         var providerLower = provider.ToLowerInvariant();
-        return providerLower is "gemini" or "grok" or "xai";
+        return providerLower is "google" or "xai";
     }
 
     #endregion
@@ -121,9 +121,9 @@ public static class ProviderCapabilities
         return providerLower switch
         {
             "openai" => IsOpenAIFunctionCallingModel(modelLower),
-            "anthropic" or "claude" => true, // All Claude models support tool use
-            "gemini" => true, // All Gemini models support function calling
-            "grok" or "xai" => true, // Grok supports OpenAI-compatible function calling
+            "anthropic" => true, // All Claude models support tool use
+            "google" => true, // All Gemini models support function calling
+            "xai" => true, // Grok supports OpenAI-compatible function calling
             "ollama" => IsOllamaFunctionCallingModel(modelLower),
             _ => false
         };
@@ -182,8 +182,8 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => modelLower.Contains("opus-4-5") || modelLower.Contains("opus-4.5"),
-            "grok" or "xai" => true, // All Grok models support effort levels
+            "anthropic" => modelLower.Contains("opus-4-5") || modelLower.Contains("opus-4.5"),
+            "xai" => true, // All Grok models support effort levels
             _ => false
         };
     }
@@ -197,8 +197,8 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => new[] { "low", "medium", "high" },
-            "grok" or "xai" => new[] { "low", "medium", "high" },
+            "anthropic" => new[] { "low", "medium", "high" },
+            "xai" => new[] { "low", "medium", "high" },
             _ => Array.Empty<string>()
         };
     }
@@ -231,7 +231,7 @@ public static class ProviderCapabilities
     public static bool SupportsPromptCaching(string provider)
     {
         var providerLower = provider.ToLowerInvariant();
-        return providerLower is "anthropic" or "claude" or "gemini" or "openai";
+        return providerLower is "anthropic" or "google" or "openai";
     }
 
     /// <summary>
@@ -243,8 +243,8 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => 1024, // Anthropic minimum
-            "gemini" => 4096, // Gemini CachedContent minimum
+            "anthropic" => 1024, // Anthropic minimum
+            "google" => 4096, // Gemini CachedContent minimum
             "openai" => 1024, // OpenAI approximate minimum
             _ => int.MaxValue // Effectively disabled
         };
@@ -263,9 +263,9 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => 100000, // Claude allows up to 100k thinking tokens
-            "gemini" => 24576, // Gemini 2.0 default max
-            "grok" or "xai" => 32768, // Grok estimate
+            "anthropic" => 100000, // Claude allows up to 100k thinking tokens
+            "google" => 24576, // Gemini 2.0 default max
+            "xai" => 32768, // Grok estimate
             _ => 10000 // Default fallback
         };
     }
@@ -279,7 +279,7 @@ public static class ProviderCapabilities
 
         return providerLower switch
         {
-            "anthropic" or "claude" => 1024, // Claude minimum
+            "anthropic" => 1024, // Claude minimum
             _ => 1024 // Default minimum
         };
     }

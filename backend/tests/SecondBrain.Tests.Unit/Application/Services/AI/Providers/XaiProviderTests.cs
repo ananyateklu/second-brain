@@ -1,43 +1,40 @@
-using Anthropic.SDK;
-using Anthropic.SDK.Messaging;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using OpenAI.Chat;
 using SecondBrain.Application.Configuration;
-using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
 using Xunit;
+using ChatMessage = SecondBrain.Application.Services.AI.Models.ChatMessage;
 
 namespace SecondBrain.Tests.Unit.Application.Services.AI.Providers;
 
 /// <summary>
-/// Unit tests for ClaudeProvider (Anthropic).
-/// Tests provider behavior, disabled states, and message conversion.
+/// Unit tests for XaiProvider (X.AI).
+/// Tests provider behavior, disabled states, health checks, and static helper methods.
 /// </summary>
-public class ClaudeProviderTests
+public class XaiProviderTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockOptions;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<IAnthropicClientFactory> _mockClientFactory;
-    private readonly Mock<ILogger<ClaudeProvider>> _mockLogger;
+    private readonly Mock<ILogger<XaiProvider>> _mockLogger;
 
-    public ClaudeProviderTests()
+    public XaiProviderTests()
     {
         _mockOptions = new Mock<IOptions<AIProvidersSettings>>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
-        _mockClientFactory = new Mock<IAnthropicClientFactory>();
-        _mockLogger = new Mock<ILogger<ClaudeProvider>>();
+        _mockLogger = new Mock<ILogger<XaiProvider>>();
     }
 
     #region Provider Initialization Tests
 
     [Fact]
-    public void Constructor_WhenProviderDisabled_DoesNotCreateClient()
+    public void Constructor_WhenProviderDisabled_IsEnabledReturnsFalse()
     {
         // Arrange
-        var settings = CreateSettings(enabled: false, apiKey: "sk-ant-test-key");
+        var settings = CreateSettings(enabled: false, apiKey: "xai-test-key");
         _mockOptions.Setup(o => o.Value).Returns(settings);
 
         // Act
@@ -45,70 +42,20 @@ public class ClaudeProviderTests
 
         // Assert
         provider.IsEnabled.Should().BeFalse();
-        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
-    public void Constructor_WhenApiKeyMissing_DoesNotCreateClient()
+    public void Constructor_WhenApiKeyMissing_DoesNotThrow()
     {
         // Arrange
         var settings = CreateSettings(enabled: true, apiKey: "");
         _mockOptions.Setup(o => o.Value).Returns(settings);
 
         // Act
-        var provider = CreateProvider();
+        var act = () => CreateProvider();
 
         // Assert
-        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public void Constructor_WhenApiKeyNull_DoesNotCreateClient()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: null);
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-
-        // Act
-        var provider = CreateProvider();
-
-        // Assert
-        _mockClientFactory.Verify(f => f.CreateClient(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public void Constructor_WhenEnabledWithApiKey_AttemptsToCreateClient()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "sk-ant-test-key");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        // Return null to simulate client creation attempt without needing actual AnthropicClient
-        _mockClientFactory.Setup(f => f.CreateClient("sk-ant-test-key"))
-            .Returns((AnthropicClient?)null);
-
-        // Act
-        var provider = CreateProvider();
-
-        // Assert
-        provider.IsEnabled.Should().BeTrue();
-        _mockClientFactory.Verify(f => f.CreateClient("sk-ant-test-key"), Times.Once);
-    }
-
-    [Fact]
-    public void Constructor_WhenClientFactoryThrows_LogsErrorAndContinues()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "sk-ant-test-key");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Throws(new InvalidOperationException("Client creation failed"));
-
-        // Act
-        var provider = CreateProvider();
-
-        // Assert - Provider should be created but without a working client
-        provider.IsEnabled.Should().BeTrue();
-        provider.ProviderName.Should().Be("Claude");
+        act.Should().NotThrow();
     }
 
     #endregion
@@ -126,7 +73,7 @@ public class ClaudeProviderTests
         var provider = CreateProvider();
 
         // Assert
-        provider.ProviderName.Should().Be("Claude");
+        provider.ProviderName.Should().Be("Xai");
     }
 
     [Fact]
@@ -135,14 +82,11 @@ public class ClaudeProviderTests
         // Arrange
         var settings = CreateSettings(enabled: true, apiKey: "test-key");
         _mockOptions.Setup(o => o.Value).Returns(settings);
-        // Return null as we can't mock AnthropicClient directly
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
 
         // Act
         var provider = CreateProvider();
 
-        // Assert - IsEnabled should be true based on settings, not client creation
+        // Assert
         provider.IsEnabled.Should().BeTrue();
     }
 
@@ -179,17 +123,15 @@ public class ClaudeProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Xai");
     }
 
     [Fact]
-    public async Task GenerateCompletionAsync_WhenClientNull_ReturnsFailure()
+    public async Task GenerateCompletionAsync_WhenApiKeyEmpty_ReturnsFailure()
     {
         // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "test");
+        var settings = CreateSettings(enabled: true, apiKey: "");
         _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
         var request = new AIRequest { Prompt = "Test prompt" };
 
@@ -223,29 +165,7 @@ public class ClaudeProviderTests
         // Assert
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not enabled");
-        result.Provider.Should().Be("Claude");
-    }
-
-    [Fact]
-    public async Task GenerateChatCompletionAsync_WhenClientNull_ReturnsFailure()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "test");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
-        var provider = CreateProvider();
-        var messages = new List<ChatMessage>
-        {
-            new() { Role = "user", Content = "Hello" }
-        };
-
-        // Act
-        var result = await provider.GenerateChatCompletionAsync(messages);
-
-        // Assert
-        result.Success.Should().BeFalse();
-        result.Error.Should().Contain("not enabled or configured");
+        result.Provider.Should().Be("Xai");
     }
 
     #endregion
@@ -258,29 +178,6 @@ public class ClaudeProviderTests
         // Arrange
         var settings = CreateSettings(enabled: false);
         _mockOptions.Setup(o => o.Value).Returns(settings);
-        var provider = CreateProvider();
-        var request = new AIRequest { Prompt = "Test" };
-
-        // Act
-        var stream = await provider.StreamCompletionAsync(request);
-
-        // Assert
-        var items = new List<string>();
-        await foreach (var item in stream)
-        {
-            items.Add(item);
-        }
-        items.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task StreamCompletionAsync_WhenClientNull_ReturnsEmptyEnumerable()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "test");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
         var request = new AIRequest { Prompt = "Test" };
 
@@ -368,23 +265,6 @@ public class ClaudeProviderTests
         result.Should().BeFalse();
     }
 
-    [Fact]
-    public async Task IsAvailableAsync_WhenClientNull_ReturnsFalse()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "test");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
-        var provider = CreateProvider();
-
-        // Act
-        var result = await provider.IsAvailableAsync();
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
     #endregion
 
     #region GetHealthStatusAsync Tests
@@ -403,18 +283,16 @@ public class ClaudeProviderTests
         // Assert
         health.IsHealthy.Should().BeFalse();
         health.Status.Should().Be("Disabled");
-        health.Provider.Should().Be("Claude");
+        health.Provider.Should().Be("Xai");
         health.ErrorMessage.Should().Contain("disabled");
     }
 
     [Fact]
-    public async Task GetHealthStatusAsync_WhenClientNull_ReturnsNotConfiguredStatus()
+    public async Task GetHealthStatusAsync_WhenApiKeyEmpty_ReturnsNotConfiguredStatus()
     {
         // Arrange
-        var settings = CreateSettings(enabled: true, apiKey: "test");
+        var settings = CreateSettings(enabled: true, apiKey: "");
         _mockOptions.Setup(o => o.Value).Returns(settings);
-        _mockClientFactory.Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns((AnthropicClient?)null);
         var provider = CreateProvider();
 
         // Act
@@ -445,39 +323,225 @@ public class ClaudeProviderTests
 
     #endregion
 
+    #region CreateChatClient Tests
+
+    [Fact]
+    public void CreateChatClient_WhenDisabled_ReturnsNull()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: false);
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+
+        // Act
+        var client = provider.CreateChatClient("grok-2");
+
+        // Assert
+        client.Should().BeNull();
+    }
+
+    [Fact]
+    public void CreateChatClient_WhenApiKeyEmpty_ReturnsNull()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: true, apiKey: "");
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+
+        // Act
+        var client = provider.CreateChatClient("grok-2");
+
+        // Assert
+        client.Should().BeNull();
+    }
+
+    #endregion
+
+    #region StreamWithToolsAsync Tests - Disabled State
+
+    [Fact]
+    public async Task StreamWithToolsAsync_WhenDisabled_YieldsErrorEvent()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: false);
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+        var messages = new List<OpenAI.Chat.ChatMessage>();
+        var tools = new List<ChatTool>();
+
+        // Act
+        var events = new List<GrokToolStreamEvent>();
+        await foreach (var evt in provider.StreamWithToolsAsync(messages, tools, "grok-2"))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().ContainSingle();
+        events.First().Type.Should().Be(GrokToolStreamEventType.Error);
+        events.First().Error.Should().Contain("not enabled");
+    }
+
+    #endregion
+
+    #region GenerateWithThinkModeAsync Tests - Disabled State
+
+    [Fact]
+    public async Task GenerateWithThinkModeAsync_WhenDisabled_ReturnsFailure()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: false);
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+        var messages = new List<ChatMessage> { new() { Role = "user", Content = "Hi" } };
+        var thinkOptions = new GrokThinkModeOptions { Enabled = true, Effort = "high" };
+
+        // Act
+        var result = await provider.GenerateWithThinkModeAsync(messages, thinkOptions);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Error.Should().Contain("not enabled");
+        result.Provider.Should().Be("Xai");
+    }
+
+    #endregion
+
+    #region StreamWithThinkModeAsync Tests - Disabled State
+
+    [Fact]
+    public async Task StreamWithThinkModeAsync_WhenDisabled_YieldsErrorEvent()
+    {
+        // Arrange
+        var settings = CreateSettings(enabled: false);
+        _mockOptions.Setup(o => o.Value).Returns(settings);
+        var provider = CreateProvider();
+        var messages = new List<ChatMessage> { new() { Role = "user", Content = "Hi" } };
+        var thinkOptions = new GrokThinkModeOptions { Enabled = true, Effort = "medium" };
+
+        // Act
+        var events = new List<GrokToolStreamEvent>();
+        await foreach (var evt in provider.StreamWithThinkModeAsync(messages, thinkOptions))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().ContainSingle();
+        events.First().Type.Should().Be(GrokToolStreamEventType.Error);
+        events.First().Error.Should().Contain("not enabled");
+    }
+
+    #endregion
+
+    #region Static Helper Methods Tests
+
+    [Fact]
+    public void ConvertToXaiMessagePublic_WithUserMessage_ReturnsUserChatMessage()
+    {
+        // Arrange
+        var message = new ChatMessage { Role = "user", Content = "Hello" };
+
+        // Act
+        var result = XaiProvider.ConvertToXaiMessagePublic(message);
+
+        // Assert
+        result.Should().BeOfType<UserChatMessage>();
+    }
+
+    [Fact]
+    public void ConvertToXaiMessagePublic_WithSystemMessage_ReturnsSystemChatMessage()
+    {
+        // Arrange
+        var message = new ChatMessage { Role = "system", Content = "You are helpful" };
+
+        // Act
+        var result = XaiProvider.ConvertToXaiMessagePublic(message);
+
+        // Assert
+        result.Should().BeOfType<SystemChatMessage>();
+    }
+
+    [Fact]
+    public void ConvertToXaiMessagePublic_WithAssistantMessage_ReturnsAssistantChatMessage()
+    {
+        // Arrange
+        var message = new ChatMessage { Role = "assistant", Content = "Hello there!" };
+
+        // Act
+        var result = XaiProvider.ConvertToXaiMessagePublic(message);
+
+        // Assert
+        result.Should().BeOfType<AssistantChatMessage>();
+    }
+
+    [Fact]
+    public void CreateToolResultMessage_ReturnsToolChatMessage()
+    {
+        // Arrange
+        var toolCallId = "call_123";
+        var result = "Tool execution result";
+
+        // Act
+        var message = XaiProvider.CreateToolResultMessage(toolCallId, result);
+
+        // Assert
+        message.Should().BeOfType<ToolChatMessage>();
+    }
+
+    [Fact]
+    public void CreateAssistantToolCallMessage_WithoutText_ReturnsAssistantChatMessage()
+    {
+        // Arrange
+        var toolCalls = new List<GrokToolCallInfo>
+        {
+            new() { Id = "call_1", Name = "search", Arguments = "{\"query\":\"test\"}" }
+        };
+
+        // Act
+        var message = XaiProvider.CreateAssistantToolCallMessage(toolCalls);
+
+        // Assert
+        message.Should().BeOfType<AssistantChatMessage>();
+    }
+
+    [Fact]
+    public void CreateAssistantToolCallMessage_WithText_ReturnsAssistantChatMessageWithContent()
+    {
+        // Arrange
+        var toolCalls = new List<GrokToolCallInfo>
+        {
+            new() { Id = "call_1", Name = "search", Arguments = "{}" }
+        };
+        var textContent = "Let me search for that...";
+
+        // Act
+        var message = XaiProvider.CreateAssistantToolCallMessage(toolCalls, textContent);
+
+        // Assert
+        message.Should().BeOfType<AssistantChatMessage>();
+    }
+
+    #endregion
+
     #region HttpClientName Constant Test
 
     [Fact]
     public void HttpClientName_HasCorrectValue()
     {
         // Assert
-        ClaudeProvider.HttpClientName.Should().Be("Claude");
+        XaiProvider.HttpClientName.Should().Be("Xai");
     }
 
     #endregion
 
     #region Settings Override Tests
 
-    [Fact]
-    public async Task GenerateCompletionAsync_UsesDefaultModelWhenNotSpecified()
-    {
-        // Arrange
-        var settings = CreateSettings(enabled: false, apiKey: "test", defaultModel: "claude-3-opus-20240229");
-        _mockOptions.Setup(o => o.Value).Returns(settings);
-        var provider = CreateProvider();
-        var request = new AIRequest { Prompt = "Test", Model = null };
-
-        // Act
-        var result = await provider.GenerateCompletionAsync(request);
-
-        // Assert - Even though disabled, we verify the settings are read
-        result.Provider.Should().Be("Claude");
-    }
-
     [Theory]
-    [InlineData("claude-3-opus-20240229")]
-    [InlineData("claude-3-sonnet-20240229")]
-    [InlineData("claude-3-haiku-20240307")]
+    [InlineData("grok-2")]
+    [InlineData("grok-2-1212")]
+    [InlineData("grok-2-vision-1212")]
+    [InlineData("grok-beta")]
     public async Task GenerateCompletionAsync_AcceptsVariousModelNames(string modelName)
     {
         // Arrange
@@ -490,40 +554,36 @@ public class ClaudeProviderTests
         var result = await provider.GenerateCompletionAsync(request);
 
         // Assert
-        result.Provider.Should().Be("Claude");
+        result.Provider.Should().Be("Xai");
     }
 
     #endregion
 
     #region Helper Methods
 
-    private ClaudeProvider CreateProvider()
+    private XaiProvider CreateProvider()
     {
-        return new ClaudeProvider(
+        return new XaiProvider(
             _mockOptions.Object,
             _mockHttpClientFactory.Object,
-            _mockClientFactory.Object,
             _mockLogger.Object);
     }
 
     private static AIProvidersSettings CreateSettings(
         bool enabled = false,
         string? apiKey = null,
-        string defaultModel = "claude-3-opus-20240229")
+        string defaultModel = "grok-2")
     {
         return new AIProvidersSettings
         {
-            Anthropic = new AnthropicSettings
+            XAI = new XAISettings
             {
                 Enabled = enabled,
                 ApiKey = apiKey,
                 DefaultModel = defaultModel,
                 MaxTokens = 4096,
                 Temperature = 0.7f,
-                Version = "2023-06-01",
-                Features = new AnthropicFeaturesConfig(),
-                Caching = new AnthropicCachingConfig(),
-                Thinking = new AnthropicThinkingConfig()
+                BaseUrl = "https://api.x.ai/v1"
             }
         };
     }

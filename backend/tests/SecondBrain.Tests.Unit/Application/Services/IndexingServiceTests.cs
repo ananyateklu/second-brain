@@ -131,7 +131,7 @@ public class IndexingServiceTests
     {
         // Arrange
         var userId = "user-123";
-        var customProvider = "gemini";
+        var customProvider = "google";
         var notes = new List<Note> { CreateTestNote("note-1", userId, "Note 1") };
 
         _mockNoteRepository.Setup(r => r.GetByUserIdWithImagesAsync(userId))

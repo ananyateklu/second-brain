@@ -11,14 +11,14 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput.Providers;
 
 /// <summary>
-/// Gemini implementation of structured output using native JSON schema support.
-/// Uses the shared JsonSchemaBuilder with GeminiSchemaAdapter for conversion.
+/// Google (Gemini) implementation of structured output using native JSON schema support.
+/// Uses the shared JsonSchemaBuilder with GoogleSchemaAdapter for conversion.
 /// </summary>
-public class GeminiStructuredOutputProviderService : IProviderStructuredOutputService
+public class GoogleStructuredOutputProviderService : IProviderStructuredOutputService
 {
     private readonly GeminiSettings _providerSettings;
     private readonly StructuredOutputSettings _structuredSettings;
-    private readonly ILogger<GeminiStructuredOutputProviderService> _logger;
+    private readonly ILogger<GoogleStructuredOutputProviderService> _logger;
     private readonly Client? _client;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -30,10 +30,10 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
         NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
     };
 
-    public GeminiStructuredOutputProviderService(
+    public GoogleStructuredOutputProviderService(
         IOptions<AIProvidersSettings> providerSettings,
         IOptions<StructuredOutputSettings> structuredSettings,
-        ILogger<GeminiStructuredOutputProviderService> logger)
+        ILogger<GoogleStructuredOutputProviderService> logger)
     {
         _providerSettings = providerSettings.Value.Gemini;
         _structuredSettings = structuredSettings.Value;
@@ -53,7 +53,7 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
     }
 
     /// <inheritdoc />
-    public string ProviderName => "Gemini";
+    public string ProviderName => "Google";
 
     /// <inheritdoc />
     public bool IsAvailable =>
@@ -88,7 +88,7 @@ public class GeminiStructuredOutputProviderService : IProviderStructuredOutputSe
             var jsonSchema = JsonSchemaBuilder.FromType<T>();
 
             // Convert to Gemini-specific schema format using adapter
-            var geminiSchema = GeminiSchemaAdapter.ToGeminiSchema(jsonSchema);
+            var geminiSchema = GoogleSchemaAdapter.ToGeminiSchema(jsonSchema);
 
             // Build generation config with JSON response
             var config = new GenerateContentConfig

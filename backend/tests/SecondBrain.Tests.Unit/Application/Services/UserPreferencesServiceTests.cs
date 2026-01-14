@@ -200,7 +200,7 @@ public class UserPreferencesServiceTests
         // Arrange
         var userId = "user-123";
         var user = CreateUserWithPreferences(userId);
-        user.Preferences!.ChatProvider = "Claude";
+        user.Preferences!.ChatProvider = "Anthropic";
         user.Preferences.ChatModel = "claude-3-opus";
         user.Preferences.VectorStoreProvider = "PostgreSQL";
         user.Preferences.DefaultNoteView = "grid";
@@ -217,7 +217,7 @@ public class UserPreferencesServiceTests
         var result = await _sut.GetPreferencesAsync(userId);
 
         // Assert
-        result.ChatProvider.Should().Be("Claude");
+        result.ChatProvider.Should().Be("Anthropic");
         result.ChatModel.Should().Be("claude-3-opus");
         result.VectorStoreProvider.Should().Be("PostgreSQL");
         result.DefaultNoteView.Should().Be("grid");
@@ -460,7 +460,7 @@ public class UserPreferencesServiceTests
         var user = CreateUserWithPreferences(userId);
         var request = new UpdateUserPreferencesRequest
         {
-            ChatProvider = "Claude",
+            ChatProvider = "Anthropic",
             ChatModel = "claude-3-opus",
             VectorStoreProvider = "Pinecone",
             ItemsPerPage = 100
@@ -475,7 +475,7 @@ public class UserPreferencesServiceTests
         var result = await _sut.UpdatePreferencesAsync(userId, request);
 
         // Assert
-        result.ChatProvider.Should().Be("Claude");
+        result.ChatProvider.Should().Be("Anthropic");
         result.ChatModel.Should().Be("claude-3-opus");
         result.VectorStoreProvider.Should().Be("Pinecone");
         result.ItemsPerPage.Should().Be(100);
@@ -688,7 +688,7 @@ public class UserPreferencesServiceTests
         // Arrange
         var userId = "user-123";
         var user = CreateUserWithPreferences(userId);
-        user.Preferences!.ChatProvider = "Claude";
+        user.Preferences!.ChatProvider = "Anthropic";
 
         _mockUserRepository.Setup(r => r.GetByIdAsync(userId))
             .ReturnsAsync(user);
@@ -699,7 +699,7 @@ public class UserPreferencesServiceTests
 
         // First call - loads original value
         var firstResult = await _sut.GetPreferencesAsync(userId);
-        firstResult.ChatProvider.Should().Be("Claude");
+        firstResult.ChatProvider.Should().Be("Anthropic");
 
         // Update preferences
         await _sut.UpdatePreferencesAsync(userId, new UpdateUserPreferencesRequest { ChatProvider = "OpenAI" });

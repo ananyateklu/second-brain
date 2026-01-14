@@ -93,10 +93,10 @@ export const PROVIDER_DETAILS: Record<string, ProviderDetails> = {
 /** Map backend provider names to frontend IDs */
 export const PROVIDER_NAME_TO_ID: Record<string, string> = {
   'OpenAI': 'openai',
-  'Claude': 'anthropic',
-  'Gemini': 'google',
+  'Anthropic': 'anthropic',
+  'Google': 'google',
   'Ollama': 'ollama',
-  'Grok': 'xai',
+  'Xai': 'xai',
   'Cohere': 'cohere',
   // Voice providers
   'Deepgram': 'deepgram',
@@ -107,7 +107,7 @@ export const PROVIDER_NAME_TO_ID: Record<string, string> = {
 export const PROVIDER_ID_TO_CONFIG_KEY: Record<string, string> = {
   'openai': 'OpenAI',
   'anthropic': 'Anthropic',
-  'google': 'Gemini',
+  'google': 'Google',
   'ollama': 'Ollama',
   'xai': 'XAI',
   'cohere': 'Cohere',

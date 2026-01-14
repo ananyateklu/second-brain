@@ -3,14 +3,14 @@ using SecondBrain.Application.Services.AI.StructuredOutput.Common;
 namespace SecondBrain.Application.Services.AI.StructuredOutput.Adapters;
 
 /// <summary>
-/// Converts JsonSchemaDefinition for Grok/XAI provider.
-/// Grok uses an OpenAI-compatible API, so this adapter reuses OpenAISchemaAdapter.
+/// Converts JsonSchemaDefinition for xAI provider.
+/// xAI uses an OpenAI-compatible API, so this adapter reuses OpenAISchemaAdapter.
 /// </summary>
-public static class GrokSchemaAdapter
+public static class XaiSchemaAdapter
 {
     /// <summary>
-    /// Convert a JsonSchemaDefinition to BinaryData for Grok's CreateJsonSchemaFormat.
-    /// Reuses the OpenAI adapter since Grok is OpenAI-compatible.
+    /// Convert a JsonSchemaDefinition to BinaryData for xAI's CreateJsonSchemaFormat.
+    /// Reuses the OpenAI adapter since xAI is OpenAI-compatible.
     /// </summary>
     public static BinaryData ToBinaryData(JsonSchemaDefinition schema)
     {

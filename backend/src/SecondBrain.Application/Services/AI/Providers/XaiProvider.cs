@@ -14,29 +14,29 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using OpenAIChatMessage = OpenAI.Chat.ChatMessage;
-using GrokToolStreamEvent = SecondBrain.Application.Services.AI.Models.GrokToolStreamEvent;
-using GrokToolStreamEventType = SecondBrain.Application.Services.AI.Models.GrokToolStreamEventType;
-using GrokToolCallInfo = SecondBrain.Application.Services.AI.Models.GrokToolCallInfo;
-using GrokTokenUsage = SecondBrain.Application.Services.AI.Models.GrokTokenUsage;
+using XaiToolStreamEvent = SecondBrain.Application.Services.AI.Models.GrokToolStreamEvent;
+using XaiToolStreamEventType = SecondBrain.Application.Services.AI.Models.GrokToolStreamEventType;
+using XaiToolCallInfo = SecondBrain.Application.Services.AI.Models.GrokToolCallInfo;
+using XaiTokenUsage = SecondBrain.Application.Services.AI.Models.GrokTokenUsage;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
-public class GrokProvider : IAIProvider
+public class XaiProvider : IAIProvider
 {
-    public const string HttpClientName = "Grok";
+    public const string HttpClientName = "Xai";
 
     private readonly XAISettings _settings;
-    private readonly ILogger<GrokProvider> _logger;
+    private readonly ILogger<XaiProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ChatClient? _client;
 
-    public string ProviderName => "Grok";
+    public string ProviderName => "Xai";
     public bool IsEnabled => _settings.Enabled;
 
-    public GrokProvider(
+    public XaiProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
-        ILogger<GrokProvider> logger)
+        ILogger<XaiProvider> logger)
     {
         _settings = settings.Value.XAI;
         _httpClientFactory = httpClientFactory;
@@ -46,7 +46,7 @@ public class GrokProvider : IAIProvider
         {
             try
             {
-                // Grok uses OpenAI-compatible API, so we use the OpenAI SDK with custom endpoint
+                // xAI uses OpenAI-compatible API, so we use the OpenAI SDK with custom endpoint
                 var apiKeyCredential = new ApiKeyCredential(_settings.ApiKey);
                 var openAIClientOptions = new OpenAIClientOptions
                 {
@@ -58,7 +58,7 @@ public class GrokProvider : IAIProvider
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to initialize xAI Grok client");
+                _logger.LogError(ex, "Failed to initialize xAI client");
             }
         }
     }
@@ -83,13 +83,13 @@ public class GrokProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = "Grok provider is not enabled or configured",
+                Error = "xAI provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
 
         var model = request.Model ?? _settings.DefaultModel;
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.GenerateCompletion", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.GenerateCompletion", ProviderName, model);
         activity?.SetTag("ai.prompt.length", request.Prompt.Length);
 
         var stopwatch = Stopwatch.StartNew();
@@ -134,7 +134,7 @@ public class GrokProvider : IAIProvider
             activity?.RecordException(ex);
             ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
 
-            _logger.LogError(ex, "Error generating completion from Grok");
+            _logger.LogError(ex, "Error generating completion from xAI");
             return new AIResponse
             {
                 Success = false,
@@ -154,21 +154,21 @@ public class GrokProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = "Grok provider is not enabled or configured",
+                Error = "xAI provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
 
         var model = settings?.Model ?? _settings.DefaultModel;
         var messageList = messages.ToList();
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.GenerateChatCompletion", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.GenerateChatCompletion", ProviderName, model);
         activity?.SetTag("ai.messages.count", messageList.Count);
 
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
-            var chatMessages = messageList.Select(m => ConvertToGrokMessage(m)).ToList();
+            var chatMessages = messageList.Select(m => ConvertToXaiMessage(m)).ToList();
 
             var chatOptions = new ChatCompletionOptions
             {
@@ -203,11 +203,11 @@ public class GrokProvider : IAIProvider
             activity?.RecordException(ex);
             ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
 
-            _logger.LogError(ex, "Error generating chat completion from Grok. Status: {Status}", ex.Status);
+            _logger.LogError(ex, "Error generating chat completion from xAI. Status: {Status}", ex.Status);
             return new AIResponse
             {
                 Success = false,
-                Error = $"Grok API Error ({ex.Status}): {ex.Message}",
+                Error = $"xAI API Error ({ex.Status}): {ex.Message}",
                 Provider = ProviderName
             };
         }
@@ -217,7 +217,7 @@ public class GrokProvider : IAIProvider
             activity?.RecordException(ex);
             ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
 
-            _logger.LogError(ex, "Error generating chat completion from Grok");
+            _logger.LogError(ex, "Error generating chat completion from xAI");
             return new AIResponse
             {
                 Success = false,
@@ -247,7 +247,7 @@ public class GrokProvider : IAIProvider
             yield break;
 
         var model = request.Model ?? _settings.DefaultModel;
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamCompletion", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.StreamCompletion", ProviderName, model);
         activity?.SetTag("ai.prompt.length", request.Prompt.Length);
         activity?.SetTag("ai.streaming", true);
 
@@ -315,14 +315,14 @@ public class GrokProvider : IAIProvider
 
         var model = settings?.Model ?? _settings.DefaultModel;
         var messageList = messages.ToList();
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamChatCompletion", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.StreamChatCompletion", ProviderName, model);
         activity?.SetTag("ai.messages.count", messageList.Count);
         activity?.SetTag("ai.streaming", true);
 
         var stopwatch = Stopwatch.StartNew();
         var firstTokenReceived = false;
 
-        var chatMessages = messageList.Select(m => ConvertToGrokMessage(m)).ToList();
+        var chatMessages = messageList.Select(m => ConvertToXaiMessage(m)).ToList();
 
         var chatOptions = new ChatCompletionOptions
         {
@@ -359,7 +359,7 @@ public class GrokProvider : IAIProvider
 
     /// <summary>
     /// Stream chat completion with token usage callback.
-    /// Grok uses OpenAI-compatible API which supports usage tracking.
+    /// xAI uses OpenAI-compatible API which supports usage tracking.
     /// </summary>
     public Task<IAsyncEnumerable<string>> StreamChatCompletionWithUsageAsync(
         IEnumerable<Models.ChatMessage> messages,
@@ -386,7 +386,7 @@ public class GrokProvider : IAIProvider
 
         var model = settings?.Model ?? _settings.DefaultModel;
         var messageList = messages.ToList();
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamChatCompletionWithUsage", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.StreamChatCompletionWithUsage", ProviderName, model);
         activity?.SetTag("ai.messages.count", messageList.Count);
         activity?.SetTag("ai.streaming", true);
         activity?.SetTag("ai.usage_tracking", true);
@@ -394,7 +394,7 @@ public class GrokProvider : IAIProvider
         var stopwatch = Stopwatch.StartNew();
         var firstTokenReceived = false;
 
-        var chatMessages = messageList.Select(m => ConvertToGrokMessage(m)).ToList();
+        var chatMessages = messageList.Select(m => ConvertToXaiMessage(m)).ToList();
 
         var chatOptions = new ChatCompletionOptions
         {
@@ -404,7 +404,7 @@ public class GrokProvider : IAIProvider
 
         // Enable streaming usage via reflection (StreamOptions is internal in OpenAI SDK 2.7.0)
         // This sets stream_options: { include_usage: true } so we get actual token counts
-        // Grok/xAI uses OpenAI-compatible API, so same approach applies
+        // xAI uses OpenAI-compatible API, so same approach applies
         try
         {
             var streamOptionsProperty = typeof(ChatCompletionOptions).GetProperty("StreamOptions",
@@ -438,7 +438,7 @@ public class GrokProvider : IAIProvider
             chatOptions,
             cancellationToken))
         {
-            // Capture usage information if available (Grok/xAI may send it in final chunk like OpenAI)
+            // Capture usage information if available (xAI may send it in final chunk like OpenAI)
             if (update.Usage != null)
             {
                 promptTokens = update.Usage.InputTokenCount;
@@ -487,9 +487,9 @@ public class GrokProvider : IAIProvider
     }
 
     /// <summary>
-    /// Convert a ChatMessage to Grok/xAI format (OpenAI-compatible), handling multimodal content
+    /// Convert a ChatMessage to xAI format (OpenAI-compatible), handling multimodal content
     /// </summary>
-    private static OpenAIChatMessage ConvertToGrokMessage(Models.ChatMessage message)
+    private static OpenAIChatMessage ConvertToXaiMessage(Models.ChatMessage message)
     {
         var role = message.Role.ToLower();
 
@@ -516,7 +516,7 @@ public class GrokProvider : IAIProvider
         // Add image content
         foreach (var image in message.Images)
         {
-            // Grok uses OpenAI-compatible format: data URL
+            // xAI uses OpenAI-compatible format: data URL
             var dataUrl = $"data:{image.MediaType};base64,{image.Base64Data}";
             contentParts.Add(ChatMessageContentPart.CreateImagePart(new Uri(dataUrl)));
         }
@@ -550,7 +550,7 @@ public class GrokProvider : IAIProvider
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Grok availability check failed");
+            _logger.LogWarning(ex, "xAI availability check failed");
             return false;
         }
     }
@@ -581,7 +581,7 @@ public class GrokProvider : IAIProvider
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch available models from xAI Grok API");
+            _logger.LogWarning(ex, "Failed to fetch available models from xAI API");
         }
 
         // Fallback to known models if API call fails
@@ -636,7 +636,7 @@ public class GrokProvider : IAIProvider
 
             if (!isAvailable)
             {
-                health.ErrorMessage = "Failed to connect to xAI Grok API";
+                health.ErrorMessage = "Failed to connect to xAI API";
             }
         }
         catch (Exception ex)
@@ -646,7 +646,7 @@ public class GrokProvider : IAIProvider
             health.Status = "Error";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
             health.ErrorMessage = ex.Message;
-            _logger.LogError(ex, "Grok health check failed");
+            _logger.LogError(ex, "xAI health check failed");
         }
 
         return health;
@@ -669,13 +669,13 @@ public class GrokProvider : IAIProvider
             return new GrokThinkModeResponse
             {
                 Success = false,
-                Error = "Grok provider is not enabled or configured",
+                Error = "xAI provider is not enabled or configured",
                 Provider = ProviderName
             };
         }
 
         var model = settings?.Model ?? "grok-3"; // Think mode works best with grok-3
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.GenerateWithThinkMode", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.GenerateWithThinkMode", ProviderName, model);
         activity?.SetTag("ai.think_mode", true);
         activity?.SetTag("ai.think_effort", thinkOptions.Effort);
 
@@ -717,7 +717,7 @@ public class GrokProvider : IAIProvider
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("Grok Think Mode request failed. Status: {Status}, Response: {Response}",
+                _logger.LogError("xAI Think Mode request failed. Status: {Status}, Response: {Response}",
                     response.StatusCode, responseContent);
 
                 activity?.RecordException(new Exception($"HTTP {response.StatusCode}"));
@@ -726,7 +726,7 @@ public class GrokProvider : IAIProvider
                 return new GrokThinkModeResponse
                 {
                     Success = false,
-                    Error = $"Grok API Error: {response.StatusCode}",
+                    Error = $"xAI API Error: {response.StatusCode}",
                     Provider = ProviderName,
                     Model = model
                 };
@@ -748,7 +748,7 @@ public class GrokProvider : IAIProvider
             activity?.RecordException(ex);
             ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
 
-            _logger.LogError(ex, "Error generating completion with Think Mode from Grok");
+            _logger.LogError(ex, "Error generating completion with Think Mode from xAI");
             return new GrokThinkModeResponse
             {
                 Success = false,
@@ -763,7 +763,7 @@ public class GrokProvider : IAIProvider
     /// Stream completion with Think Mode (extended reasoning).
     /// Yields events including reasoning steps as they happen.
     /// </summary>
-    public async IAsyncEnumerable<GrokToolStreamEvent> StreamWithThinkModeAsync(
+    public async IAsyncEnumerable<XaiToolStreamEvent> StreamWithThinkModeAsync(
         IEnumerable<Models.ChatMessage> messages,
         GrokThinkModeOptions thinkOptions,
         AIRequest? settings = null,
@@ -771,16 +771,16 @@ public class GrokProvider : IAIProvider
     {
         if (!IsEnabled)
         {
-            yield return new GrokToolStreamEvent
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
-                Error = "Grok provider is not enabled or configured"
+                Type = XaiToolStreamEventType.Error,
+                Error = "xAI provider is not enabled or configured"
             };
             yield break;
         }
 
         var model = settings?.Model ?? "grok-3";
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamWithThinkMode", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.StreamWithThinkMode", ProviderName, model);
         activity?.SetTag("ai.streaming", true);
         activity?.SetTag("ai.think_mode", true);
         activity?.SetTag("ai.think_effort", thinkOptions.Effort);
@@ -833,10 +833,10 @@ public class GrokProvider : IAIProvider
 
         if (initError != null)
         {
-            _logger.LogError(initError, "Error starting Think Mode stream from Grok");
-            yield return new GrokToolStreamEvent
+            _logger.LogError(initError, "Error starting Think Mode stream from xAI");
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
+                Type = XaiToolStreamEventType.Error,
                 Error = initError.Message
             };
             yield break;
@@ -844,10 +844,10 @@ public class GrokProvider : IAIProvider
 
         if (response == null || !response.IsSuccessStatusCode)
         {
-            yield return new GrokToolStreamEvent
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
-                Error = $"Grok API Error: {response?.StatusCode}"
+                Type = XaiToolStreamEventType.Error,
+                Error = $"xAI API Error: {response?.StatusCode}"
             };
             yield break;
         }
@@ -894,9 +894,9 @@ public class GrokProvider : IAIProvider
                     if (!string.IsNullOrEmpty(reasoningText))
                     {
                         stepCount++;
-                        yield return new GrokToolStreamEvent
+                        yield return new XaiToolStreamEvent
                         {
-                            Type = GrokToolStreamEventType.Reasoning,
+                            Type = XaiToolStreamEventType.Reasoning,
                             Text = reasoningText,
                             ThinkingStep = new GrokThinkingStep
                             {
@@ -928,9 +928,9 @@ public class GrokProvider : IAIProvider
                             }
                             tokenCount++;
 
-                            yield return new GrokToolStreamEvent
+                            yield return new XaiToolStreamEvent
                             {
-                                Type = GrokToolStreamEventType.Text,
+                                Type = XaiToolStreamEventType.Text,
                                 Text = text
                             };
                         }
@@ -945,10 +945,10 @@ public class GrokProvider : IAIProvider
         activity?.SetStatus(ActivityStatusCode.Ok);
         ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
 
-        yield return new GrokToolStreamEvent
+        yield return new XaiToolStreamEvent
         {
-            Type = GrokToolStreamEventType.Done,
-            Usage = new GrokTokenUsage
+            Type = XaiToolStreamEventType.Done,
+            Usage = new XaiTokenUsage
             {
                 CompletionTokens = tokenCount,
                 ReasoningTokens = stepCount
@@ -997,7 +997,7 @@ public class GrokProvider : IAIProvider
             // Extract usage
             if (root.TryGetProperty("usage", out var usage))
             {
-                response.Usage = new GrokTokenUsage
+                response.Usage = new XaiTokenUsage
                 {
                     PromptTokens = usage.TryGetProperty("prompt_tokens", out var pt) ? pt.GetInt32() : 0,
                     CompletionTokens = usage.TryGetProperty("completion_tokens", out var ct) ? ct.GetInt32() : 0,
@@ -1019,7 +1019,7 @@ public class GrokProvider : IAIProvider
 
     /// <summary>
     /// Creates a ChatClient for a specific model (useful when model differs from default)
-    /// Since Grok uses OpenAI-compatible API, we create an OpenAI client with Grok's endpoint.
+    /// Since xAI uses OpenAI-compatible API, we create an OpenAI client with xAI's endpoint.
     /// </summary>
     public ChatClient? CreateChatClient(string model)
     {
@@ -1039,7 +1039,7 @@ public class GrokProvider : IAIProvider
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create Grok ChatClient for model {Model}", model);
+            _logger.LogError(ex, "Failed to create xAI ChatClient for model {Model}", model);
             return null;
         }
     }
@@ -1048,7 +1048,7 @@ public class GrokProvider : IAIProvider
     /// Stream chat completion with tool/function calling support.
     /// Yields events for text content, tool calls, and completion.
     /// </summary>
-    public async IAsyncEnumerable<GrokToolStreamEvent> StreamWithToolsAsync(
+    public async IAsyncEnumerable<XaiToolStreamEvent> StreamWithToolsAsync(
         IEnumerable<OpenAIChatMessage> messages,
         IEnumerable<ChatTool> tools,
         string model,
@@ -1058,10 +1058,10 @@ public class GrokProvider : IAIProvider
         var client = CreateChatClient(model);
         if (client == null)
         {
-            yield return new GrokToolStreamEvent
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
-                Error = "Grok provider is not enabled or configured"
+                Type = XaiToolStreamEventType.Error,
+                Error = "xAI provider is not enabled or configured"
             };
             yield break;
         }
@@ -1076,7 +1076,7 @@ public class GrokProvider : IAIProvider
     /// <summary>
     /// Internal streaming implementation that handles errors through events instead of exceptions
     /// </summary>
-    private async IAsyncEnumerable<GrokToolStreamEvent> StreamWithToolsInternalAsync(
+    private async IAsyncEnumerable<XaiToolStreamEvent> StreamWithToolsInternalAsync(
         ChatClient client,
         IEnumerable<OpenAIChatMessage> messages,
         IEnumerable<ChatTool> tools,
@@ -1084,7 +1084,7 @@ public class GrokProvider : IAIProvider
         AIRequest? settings,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var activity = ApplicationTelemetry.StartAIProviderActivity("Grok.StreamWithTools", ProviderName, model);
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Xai.StreamWithTools", ProviderName, model);
         activity?.SetTag("ai.streaming", true);
         activity?.SetTag("ai.tools.count", tools.Count());
 
@@ -1105,17 +1105,17 @@ public class GrokProvider : IAIProvider
         }
 
         // Set tool_choice to "auto" to ensure the model considers using tools
-        // For Grok 4 models, this is critical to prevent the model from generating fake tool results
+        // For xAI grok models, this is critical to prevent the model from generating fake tool results
         if (toolsList.Count > 0)
         {
             chatOptions.ToolChoice = ChatToolChoice.CreateAutoChoice();
             _logger.LogDebug("Set ToolChoice to 'auto' for {Count} tools", toolsList.Count);
         }
 
-        _logger.LogDebug("Added {Count} tools to Grok chat options for model {Model}: [{ToolNames}]",
+        _logger.LogDebug("Added {Count} tools to xAI chat options for model {Model}: [{ToolNames}]",
             toolsList.Count, model, string.Join(", ", toolsList.Select(t => t.FunctionName)));
 
-        // Only set temperature if supported (Grok models generally support temperature)
+        // Only set temperature if supported (xAI grok models generally support temperature)
         var temperature = settings?.Temperature ?? _settings.Temperature;
         if (temperature > 0)
         {
@@ -1123,7 +1123,7 @@ public class GrokProvider : IAIProvider
         }
 
         // Track accumulated tool calls during streaming
-        var accumulatedToolCalls = new Dictionary<int, GrokToolCallInfo>();
+        var accumulatedToolCalls = new Dictionary<int, XaiToolCallInfo>();
         var tokenCount = 0;
 
         // Use wrapper to avoid yield in catch
@@ -1132,9 +1132,9 @@ public class GrokProvider : IAIProvider
         if (streamResult.ErrorMessage != null)
         {
             activity?.RecordException(new Exception(streamResult.ErrorMessage));
-            yield return new GrokToolStreamEvent
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
+                Type = XaiToolStreamEventType.Error,
                 Error = streamResult.ErrorMessage
             };
             yield break;
@@ -1142,9 +1142,9 @@ public class GrokProvider : IAIProvider
 
         if (streamResult.Stream == null)
         {
-            yield return new GrokToolStreamEvent
+            yield return new XaiToolStreamEvent
             {
-                Type = GrokToolStreamEventType.Error,
+                Type = XaiToolStreamEventType.Error,
                 Error = "Failed to create stream"
             };
             yield break;
@@ -1180,19 +1180,19 @@ public class GrokProvider : IAIProvider
         ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
 
         // Yield done event
-        yield return new GrokToolStreamEvent
+        yield return new XaiToolStreamEvent
         {
-            Type = GrokToolStreamEventType.Done,
-            Usage = new GrokTokenUsage
+            Type = XaiToolStreamEventType.Done,
+            Usage = new XaiTokenUsage
             {
                 CompletionTokens = tokenCount
             }
         };
     }
 
-    private record GrokStreamCreationResult(IAsyncEnumerable<StreamingChatCompletionUpdate>? Stream, string? ErrorMessage);
+    private record XaiStreamCreationResult(IAsyncEnumerable<StreamingChatCompletionUpdate>? Stream, string? ErrorMessage);
 
-    private Task<GrokStreamCreationResult> CreateGrokStreamSafelyAsync(
+    private Task<XaiStreamCreationResult> CreateGrokStreamSafelyAsync(
         ChatClient client,
         List<OpenAIChatMessage> messages,
         ChatCompletionOptions options,
@@ -1201,23 +1201,23 @@ public class GrokProvider : IAIProvider
         try
         {
             var stream = client.CompleteChatStreamingAsync(messages, options, cancellationToken);
-            return Task.FromResult(new GrokStreamCreationResult(stream, null));
+            return Task.FromResult(new XaiStreamCreationResult(stream, null));
         }
         catch (ClientResultException ex) when (ex.Message.Contains("temperature"))
         {
             _logger.LogWarning("Model does not support temperature");
-            return Task.FromResult(new GrokStreamCreationResult(null, $"Model does not support temperature parameter: {ex.Message}"));
+            return Task.FromResult(new XaiStreamCreationResult(null, $"Model does not support temperature parameter: {ex.Message}"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting streaming with tools from Grok");
-            return Task.FromResult(new GrokStreamCreationResult(null, ex.Message));
+            _logger.LogError(ex, "Error starting streaming with tools from xAI");
+            return Task.FromResult(new XaiStreamCreationResult(null, ex.Message));
         }
     }
 
-    private async IAsyncEnumerable<GrokToolStreamEvent> ProcessGrokStreamSafelyAsync(
+    private async IAsyncEnumerable<XaiToolStreamEvent> ProcessGrokStreamSafelyAsync(
         IAsyncEnumerable<StreamingChatCompletionUpdate> stream,
-        Dictionary<int, GrokToolCallInfo> accumulatedToolCalls,
+        Dictionary<int, XaiToolCallInfo> accumulatedToolCalls,
         Stopwatch stopwatch,
         string model,
         Activity? activity,
@@ -1240,7 +1240,7 @@ public class GrokProvider : IAIProvider
 
         if (initError != null)
         {
-            _logger.LogError(initError, "Error getting Grok stream enumerator");
+            _logger.LogError(initError, "Error getting xAI stream enumerator");
             yield return new GrokToolStreamEvent
             {
                 Type = GrokToolStreamEventType.Error,
@@ -1282,7 +1282,7 @@ public class GrokProvider : IAIProvider
 
             if (iterError != null)
             {
-                _logger.LogError(iterError, "Error during Grok streaming");
+                _logger.LogError(iterError, "Error during xAI streaming");
                 stopwatch.Stop();
                 activity?.RecordException(iterError);
                 ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
@@ -1356,13 +1356,13 @@ public class GrokProvider : IAIProvider
             // Check finish reason
             if (update.FinishReason.HasValue)
             {
-                _logger.LogDebug("Grok stream finish reason: {FinishReason}, Accumulated tool calls: {ToolCallCount}",
+                _logger.LogDebug("xAI stream finish reason: {FinishReason}, Accumulated tool calls: {ToolCallCount}",
                     update.FinishReason, accumulatedToolCalls.Count);
             }
 
             if (update.FinishReason == ChatFinishReason.ToolCalls && accumulatedToolCalls.Count > 0)
             {
-                _logger.LogInformation("Grok returning {Count} tool calls: [{ToolNames}]",
+                _logger.LogInformation("xAI returning {Count} tool calls: [{ToolNames}]",
                     accumulatedToolCalls.Count,
                     string.Join(", ", accumulatedToolCalls.Values.Select(tc => tc.Name)));
 
@@ -1375,8 +1375,8 @@ public class GrokProvider : IAIProvider
             }
             else if (update.FinishReason == ChatFinishReason.Stop && accumulatedToolCalls.Count > 0)
             {
-                // Some Grok models might return Stop instead of ToolCalls but still have tool calls
-                _logger.LogWarning("Grok finished with Stop but has {Count} accumulated tool calls - emitting them anyway",
+                // Some xAI grok models might return Stop instead of ToolCalls but still have tool calls
+                _logger.LogWarning("xAI finished with Stop but has {Count} accumulated tool calls - emitting them anyway",
                     accumulatedToolCalls.Count);
                 yield return new GrokToolStreamEvent
                 {
@@ -1390,11 +1390,11 @@ public class GrokProvider : IAIProvider
     }
 
     /// <summary>
-    /// Convert internal ChatMessage to Grok format for tool calling (public accessor)
+    /// Convert internal ChatMessage to xAI format for tool calling (public accessor)
     /// </summary>
-    public static OpenAIChatMessage ConvertToGrokMessagePublic(Models.ChatMessage message)
+    public static OpenAIChatMessage ConvertToXaiMessagePublic(Models.ChatMessage message)
     {
-        return ConvertToGrokMessage(message);
+        return ConvertToXaiMessage(message);
     }
 
     /// <summary>

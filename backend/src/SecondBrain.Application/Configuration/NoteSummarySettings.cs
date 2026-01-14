@@ -16,7 +16,7 @@ public class NoteSummarySettings
 
     /// <summary>
     /// The AI provider to use for generating summaries.
-    /// Options: "OpenAI", "Anthropic", "Gemini", "Ollama", "XAI"
+    /// Options: "OpenAI", "Anthropic", "Google", "Ollama", "Xai"
     /// Default: "OpenAI" (gpt-4o-mini is fast and cost-effective)
     /// </summary>
     public string Provider { get; set; } = "OpenAI";
