@@ -880,18 +880,20 @@ public class AnthropicProvider : IAIProvider
         // Fallback to known models if API call fails
         return new[]
         {
+            // Claude 4.5 models
+            "claude-opus-4-5-20251101",
+            "claude-sonnet-4-5-20250929",
+            "claude-haiku-4-5-20251001",
+            // Claude 4.1 models
+            "claude-opus-4-1-20250805",
             // Claude 4 models
-            "claude-sonnet-4-20250514",
             "claude-opus-4-20250514",
+            "claude-sonnet-4-20250514",
             // Claude 3.7 models
             "claude-3-7-sonnet-20250219",
             // Claude 3.5 models
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-sonnet-20240620",
             "claude-3-5-haiku-20241022",
             // Claude 3 models
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"
         }.Select(id => ModelContextDatabase.CreateModelInfo(id)).ToList();
     }

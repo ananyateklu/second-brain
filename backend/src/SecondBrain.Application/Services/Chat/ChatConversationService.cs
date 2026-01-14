@@ -115,6 +115,9 @@ public class ChatConversationService : IChatConversationService
     public async Task<ChatConversation?> UpdateConversationSettingsAsync(
         string conversationId,
         string userId,
+        string? title = null,
+        string? provider = null,
+        string? model = null,
         bool? ragEnabled = null,
         string? vectorStoreProvider = null,
         bool? agentEnabled = null,
@@ -138,6 +141,22 @@ public class ChatConversationService : IChatConversationService
             _logger.LogWarning("User attempted to update conversation belonging to another user. UserId: {UserId}, ConversationId: {ConversationId}",
                 userId, conversationId);
             throw new UnauthorizedException("Access denied to this conversation");
+        }
+
+        // Update title, provider, and model if provided
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            conversation.Title = title;
+        }
+
+        if (!string.IsNullOrWhiteSpace(provider))
+        {
+            conversation.Provider = provider;
+        }
+
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            conversation.Model = model;
         }
 
         // Update settings if provided

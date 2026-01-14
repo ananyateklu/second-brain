@@ -35,6 +35,9 @@ public class UpdateConversationSettingsCommandHandler : IRequestHandler<UpdateCo
             var updated = await _chatService.UpdateConversationSettingsAsync(
                 request.ConversationId,
                 request.UserId,
+                request.Title,
+                request.Provider,
+                request.Model,
                 request.RagEnabled,
                 request.VectorStoreProvider,
                 request.AgentEnabled,
