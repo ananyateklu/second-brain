@@ -226,7 +226,7 @@ export const NoteCard = memo((props: NoteCardProps) => {
         ? 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)'
         : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)';
     }
-    return 'color-mix(in srgb, var(--text-primary) 2%, transparent)';
+    return 'color-mix(in srgb, var(--background) 22%, transparent)';
   };
 
   // Calculate animation delay based on index (max 500ms)
@@ -235,7 +235,7 @@ export const NoteCard = memo((props: NoteCardProps) => {
   return (
     <div
       ref={cardRef}
-      className={`group relative border cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
+      className={`group relative border cursor-pointer overflow-hidden flex flex-col backdrop-blur-xl ${containerPadding}`}
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),

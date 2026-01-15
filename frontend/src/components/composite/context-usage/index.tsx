@@ -171,14 +171,12 @@ export function ContextUsageIndicator({
           ref={dropdownRef}
           className={cn(
             'absolute right-0 top-full mt-2 z-50',
-            'rounded-xl border shadow-2xl overflow-hidden',
+            'rounded-xl border shadow-2xl overflow-hidden backdrop-blur-xl',
             'animate-in fade-in slide-in-from-top-2 duration-200'
           )}
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            backgroundColor: 'var(--glass-popup)',
+            borderColor: 'var(--border)',
             width: buttonWidth ? `${buttonWidth}px` : undefined,
             minWidth: buttonWidth ? `${buttonWidth}px` : undefined,
           }}

@@ -295,13 +295,11 @@ export function NotesFilter({
 
     return (
       <div
-        className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-40"
+        className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-40 backdrop-blur-xl"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+          backgroundColor: 'var(--glass-popup)',
+          borderColor: 'var(--border)',
           animation: 'scaleIn 0.2s ease-out',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
         }}
       >
         {children}

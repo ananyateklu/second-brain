@@ -69,10 +69,7 @@ export function UserMenu() {
 
         <DropdownMenuContent
           align="end"
-          className="w-80 rounded-2xl py-2 overflow-hidden backdrop-blur-xl"
-          style={{
-            backgroundColor: 'var(--glass-bg)',
-          }}
+          className="w-80 rounded-2xl py-2 overflow-hidden"
           sideOffset={8}
         >
           {/* Ambient glow effect */}

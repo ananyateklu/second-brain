@@ -34,14 +34,12 @@ export const FloatingPagination = memo(({
 
   const content = (
     <div
-      className="hidden md:block fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl transition-all duration-300"
+      className="hidden md:block fixed z-40 px-6 py-3 rounded-2xl border shadow-2xl transition-all duration-300 backdrop-blur-xl"
       style={{
         left: '50%',
         bottom: isBulkMode ? '5.75rem' : '1.5rem',
-        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        backgroundColor: 'var(--glass-popup)',
+        borderColor: 'var(--border)',
         opacity: isVisible ? 1 : 0,
         transform: `translate(-50%, ${isVisible ? '0' : '20px'})`,
         pointerEvents: isVisible ? 'auto' : 'none',

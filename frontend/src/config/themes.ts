@@ -13,14 +13,14 @@
 // Theme IDs - The canonical list of all themes
 // ============================================
 
-export const THEME_IDS = ['light', 'dark', 'blue', 'midnight'] as const;
+export const THEME_IDS = ['light', 'dark', 'blue', 'midnight', 'sunset'] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 // ============================================
 // Theme Configuration
 // ============================================
 
-export type ColorFamily = 'green' | 'blue' | 'midnight';
+export type ColorFamily = 'green' | 'blue' | 'midnight' | 'sunset';
 
 export interface ThemeConfig {
   /** Unique theme identifier */
@@ -68,13 +68,21 @@ export const THEME_CONFIG: Record<ThemeId, ThemeConfig> = {
     colorScheme: 'dark',
     indicatorColor: 'var(--color-midnight-400, #2e4369)',
   },
+  sunset: {
+    id: 'sunset',
+    displayName: 'Sunset',
+    isDark: false,
+    colorFamily: 'sunset',
+    colorScheme: 'light',
+    indicatorColor: 'var(--color-sunset-500, #e8956c)',
+  },
 } as const;
 
 // ============================================
 // Theme Order (for toggle cycling)
 // ============================================
 
-export const THEME_ORDER: readonly ThemeId[] = ['light', 'dark', 'blue', 'midnight'] as const;
+export const THEME_ORDER: readonly ThemeId[] = ['light', 'dark', 'blue', 'midnight', 'sunset'] as const;
 
 // ============================================
 // Utility Functions

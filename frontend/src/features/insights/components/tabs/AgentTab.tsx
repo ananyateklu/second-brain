@@ -9,7 +9,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import { useToolCallAnalytics, useAIStats } from '../../../stats/hooks/use-stats';
-import { statsService } from '../../../../services';
+import { statsService } from '../../../../services/stats.service';
 import { StatCard } from '../../../dashboard/components/StatCard';
 
 // Detect if running in Tauri (WebKit)
@@ -61,11 +61,10 @@ const ToolPieTooltip = memo(function ToolPieTooltip({ active, payload }: ToolToo
 
   return (
     <div
-      className="rounded-xl px-3 py-2 shadow-lg"
+      className="rounded-xl px-3 py-2 shadow-lg backdrop-blur-xl"
       style={{
-        backgroundColor: 'var(--insights-tooltip-bg)',
-        border: '1px solid var(--insights-tooltip-border)',
-        backdropFilter: 'blur(20px)',
+        backgroundColor: 'var(--glass-popup)',
+        border: '1px solid var(--border)',
       }}
     >
       <span style={{ color, fontWeight: 500 }}>

@@ -169,12 +169,10 @@ export function CombinedModelSelector({
 
           <div
             ref={dropdownRef}
-            className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden backdrop-blur-xl"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              backgroundColor: 'var(--glass-popup)',
+              borderColor: 'var(--border)',
             }}
           >
             <ProviderTabs

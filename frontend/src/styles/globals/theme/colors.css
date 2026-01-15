@@ -532,3 +532,134 @@
 
   color-scheme: dark;
 }
+
+/* =============================================================================
+   Sunset Theme Colors
+   ============================================================================= */
+[data-theme="sunset"] {
+  /* Sunset color palette - warm orange/peach tones inspired by sunset gradients */
+  --color-sunset-950: #3d1f0f;
+  --color-sunset-900: #5c2e16;
+  --color-sunset-800: #8a4422;
+  --color-sunset-700: #b85a2e;
+  --color-sunset-600: #d97642;
+  --color-sunset-500: #e8956c;
+  --color-sunset-400: #f0b08a;
+  --color-sunset-300: #f5c9a8;
+  --color-sunset-200: #fad9c4;
+  --color-sunset-100: #fceadd;
+  --color-sunset-50: #fef6f0;
+
+  --background: var(--color-sunset-100);
+  --foreground: var(--color-sunset-950);
+  --link: var(--color-sunset-700);
+  --link-hover: var(--color-sunset-800);
+  --color-primary-alpha: color-mix(in srgb, var(--color-brand-600) 15%, transparent);
+
+  /* Keep the green brand color for primary actions (consistent with other themes) */
+  --color-primary: var(--color-brand-600);
+
+  /* Error colors for sunset theme */
+  --color-error: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #b91c1c;
+  --color-error-text-light: #dc2626;
+
+  /* Success colors for sunset theme */
+  --color-success: #4a9070;
+  --color-success-light: rgba(74, 144, 112, 0.12);
+
+  /* Warning colors for sunset theme */
+  --color-warning: #b8956a;
+  --color-warning-light: rgba(184, 149, 106, 0.1);
+
+  /* Status button colors for sunset theme (keep green for success) */
+  --color-status-success: var(--btn-primary-bg);
+  --color-status-success-border: var(--btn-primary-border);
+  --color-status-success-text: var(--btn-primary-text);
+  --color-status-error: #dc2626;
+  --color-status-error-border: #b91c1c;
+  --color-status-error-text: #ffffff;
+  --color-status-warning: #d97706;
+  --color-status-warning-border: #b45309;
+  --color-status-warning-text: #ffffff;
+  --color-status-info: #4a6d99;
+  --color-status-info-border: #3b5998;
+  --color-status-info-text: #ffffff;
+
+  /* Git diff colors for sunset theme */
+  --color-git-add: #4a9070;
+  --color-git-add-bg: rgba(74, 144, 112, 0.05);
+  --color-git-add-line-bg: rgba(74, 144, 112, 0.07);
+  --color-git-remove: var(--color-error-text);
+  --color-git-remove-bg: color-mix(in srgb, var(--color-error) 5%, transparent);
+  --color-git-remove-line-bg: color-mix(in srgb, var(--color-error) 7%, transparent);
+  --color-git-modified: var(--color-warning);
+  --color-git-modified-bg: color-mix(in srgb, var(--color-warning) 8%, transparent);
+
+  /* Notes capability colors for sunset theme */
+  --color-notes: var(--color-sunset-600);
+  --color-notes-alpha: color-mix(in srgb, var(--color-sunset-600) 15%, transparent);
+  --color-notes-text: var(--color-sunset-600);
+  --color-notes-border: var(--color-sunset-600);
+  --color-notes-dot: var(--color-sunset-600);
+
+  /* Web search capability colors for sunset theme */
+  --color-accent-blue: #5a7dac;
+  --color-accent-blue-alpha: color-mix(in srgb, #5a7dac 15%, transparent);
+  --color-accent-blue-text: #5a7dac;
+  --color-accent-blue-border: #5a7dac;
+  --color-accent-blue-dot: #5a7dac;
+
+  /* Purple accent colors for sunset theme */
+  --color-accent-purple: #8b5cf6;
+  --color-accent-purple-alpha: color-mix(in srgb, #8b5cf6 15%, transparent);
+  --color-accent-purple-text: #8b5cf6;
+  --color-accent-purple-border: #8b5cf6;
+  --color-accent-purple-dot: #8b5cf6;
+
+  /* Image generation capability colors for sunset theme */
+  --color-image-gen: var(--color-sunset-600);
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-sunset-600) 15%, transparent);
+  --color-image-gen-text: var(--color-sunset-600);
+  --color-image-gen-border: var(--color-sunset-600);
+
+  /* Smart prompt chip colors for sunset theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-sunset-200) 50%, #ffffff);
+  --prompt-chip-text: var(--color-sunset-700);
+  --prompt-chip-border: var(--color-sunset-400);
+  --prompt-chip-hover-bg: var(--color-sunset-200);
+
+  /* Chat feature colors for sunset theme */
+  --color-feature-rag: #5A8AC0;
+  --color-feature-regular: #4A9070;
+  --color-feature-agent: #8A73B0;
+  --color-feature-image: var(--color-sunset-600);
+
+  /* Agent/Tool colors for sunset theme */
+  --color-tool-success: #4A9070;
+  --color-tool-failure: #B86060;
+  --color-tool-primary: var(--color-sunset-600);
+  --color-tool-1: #5A8AC0;
+  --color-tool-2: #4A9070;
+  --color-tool-3: var(--color-sunset-600);
+  --color-tool-4: var(--color-sunset-500);
+  --color-tool-5: #8A73B0;
+  --color-tool-6: #A87090;
+  --color-tool-7: #4A9088;
+  --color-tool-8: #B87070;
+
+  /* Provider colors for sunset theme */
+  --color-provider-openai: #4A8070;
+  --color-provider-anthropic: var(--color-sunset-600);
+  --color-provider-google: #5080B8;
+  --color-provider-xai: #606670;
+  --color-provider-ollama: var(--color-sunset-500);
+  --color-provider-cohere: #B07068;
+
+  /* Sunset theme indicator */
+  --blue-indicator: var(--color-sunset-500);
+
+  color-scheme: light;
+}

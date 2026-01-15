@@ -183,13 +183,11 @@ export function FeatureModePill({
           />
 
           <div
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 rounded-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-xl"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              backgroundColor: 'var(--glass-popup)',
+              borderColor: 'var(--border)',
               minWidth: popoverWidth,
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
             }}
             role="dialog"
             aria-label={popoverTitle || `${label} settings`}

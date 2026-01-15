@@ -6,7 +6,7 @@ interface RichTextEditorToolbarProps {
 
 export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
   return (
-    <div className="sticky top-0 z-10 mb-2 flex gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-xl md:rounded-2xl border border-[var(--border)] bg-[var(--glass-header)] shadow-sm backdrop-blur-xl overflow-x-auto md:overflow-visible md:flex-wrap thin-scrollbar">
+    <div className="sticky top-0 z-10 mb-2 flex gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-xl md:rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] overflow-x-auto md:overflow-visible md:flex-wrap thin-scrollbar">
       {/* Heading */}
       <button
         type="button"

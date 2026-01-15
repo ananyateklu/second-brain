@@ -154,13 +154,11 @@ export function VoiceDropdown({
       {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className="absolute top-full left-0 mt-2 w-72 z-50 overflow-hidden"
+          className="absolute top-full left-0 mt-2 w-72 z-50 overflow-hidden backdrop-blur-xl"
           style={{
             borderRadius: 'var(--chat-radius-lg)',
-            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            backgroundColor: 'var(--glass-popup)',
+            border: '1px solid var(--border)',
             boxShadow: 'var(--chat-shadow-lg)',
           }}
           role="listbox"

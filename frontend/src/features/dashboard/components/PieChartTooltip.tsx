@@ -56,14 +56,13 @@ export function PieChartTooltip({
 
   return (
     <div
+      className="backdrop-blur-xl"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backgroundColor: 'var(--glass-popup)',
+        border: '1px solid var(--border)',
         borderRadius: '12px',
         padding: '10px 14px',
         minWidth: '180px',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
       }}
     >
       <p style={{ color: modelColor, margin: '0 0 8px 0', fontWeight: 600, fontSize: '14px' }}>

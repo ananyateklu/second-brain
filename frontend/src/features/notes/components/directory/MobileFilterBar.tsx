@@ -187,11 +187,10 @@ export const MobileFilterBar = memo(({
           </button>
           {openDropdown === 'date' && (
             <div
-              className="absolute top-full left-0 mt-1 min-w-[140px] rounded-xl border shadow-xl z-50 p-1"
+              className="absolute top-full left-0 mt-1 min-w-[140px] rounded-xl border shadow-xl z-50 p-1 backdrop-blur-xl"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-                backdropFilter: 'blur(20px)',
+                backgroundColor: 'var(--glass-popup)',
+                borderColor: 'var(--border)',
               }}
             >
               {DATE_FILTER_OPTIONS.map((option) => (
@@ -242,11 +241,10 @@ export const MobileFilterBar = memo(({
             </button>
             {openDropdown === 'tags' && (
               <div
-                className="absolute top-full left-0 mt-1 min-w-[160px] max-h-48 overflow-y-auto rounded-xl border shadow-xl z-50 p-1"
+                className="absolute top-full left-0 mt-1 min-w-[160px] max-h-48 overflow-y-auto rounded-xl border shadow-xl z-50 p-1 backdrop-blur-xl"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
-                  borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-                  backdropFilter: 'blur(20px)',
+                  backgroundColor: 'var(--glass-popup)',
+                  borderColor: 'var(--border)',
                 }}
               >
                 {filterState.selectedTags.length > 0 && (
@@ -306,11 +304,10 @@ export const MobileFilterBar = memo(({
           </button>
           {openDropdown === 'sort' && (
             <div
-              className="absolute top-full left-0 mt-1 min-w-[130px] rounded-xl border shadow-xl z-50 p-1"
+              className="absolute top-full left-0 mt-1 min-w-[130px] rounded-xl border shadow-xl z-50 p-1 backdrop-blur-xl"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
-                borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-                backdropFilter: 'blur(20px)',
+                backgroundColor: 'var(--glass-popup)',
+                borderColor: 'var(--border)',
               }}
             >
               {SORT_OPTIONS.map((option) => (
