@@ -94,20 +94,20 @@ public class SchemaAdapterTests
 
     #endregion
 
-    #region Grok Adapter Tests
+    #region Xai Adapter Tests
 
     [Fact]
-    public void GrokSchemaAdapter_ToBinaryData_ReusesOpenAIAdapter()
+    public void XaiSchemaAdapter_ToBinaryData_ReusesOpenAIAdapter()
     {
         // Arrange
         var schema = JsonSchemaBuilder.FromType<SampleOutput>();
 
         // Act
         var openAIResult = OpenAISchemaAdapter.ToBinaryData(schema);
-        var grokResult = GrokSchemaAdapter.ToBinaryData(schema);
+        var xaiResult = XaiSchemaAdapter.ToBinaryData(schema);
 
         // Assert
-        Assert.Equal(openAIResult.ToString(), grokResult.ToString());
+        Assert.Equal(openAIResult.ToString(), xaiResult.ToString());
     }
 
     #endregion
@@ -115,13 +115,13 @@ public class SchemaAdapterTests
     #region Claude Adapter Tests
 
     [Fact]
-    public void ClaudeSchemaAdapter_ToToolParameters_ReturnsDictionary()
+    public void AnthropicSchemaAdapter_ToToolParameters_ReturnsDictionary()
     {
         // Arrange
         var schema = JsonSchemaBuilder.FromType<SampleOutput>();
 
         // Act
-        var parameters = ClaudeSchemaAdapter.ToToolParameters(schema);
+        var parameters = AnthropicSchemaAdapter.ToToolParameters(schema);
 
         // Assert
         Assert.NotNull(parameters);
@@ -130,13 +130,13 @@ public class SchemaAdapterTests
     }
 
     [Fact]
-    public void ClaudeSchemaAdapter_ToToolParameters_IncludesProperties()
+    public void AnthropicSchemaAdapter_ToToolParameters_IncludesProperties()
     {
         // Arrange
         var schema = JsonSchemaBuilder.FromType<SampleOutput>();
 
         // Act
-        var parameters = ClaudeSchemaAdapter.ToToolParameters(schema);
+        var parameters = AnthropicSchemaAdapter.ToToolParameters(schema);
 
         // Assert
         Assert.True(parameters.ContainsKey("properties"));
@@ -147,20 +147,20 @@ public class SchemaAdapterTests
     }
 
     [Fact]
-    public void ClaudeSchemaAdapter_GetToolName_ReturnsExpectedName()
+    public void AnthropicSchemaAdapter_GetToolName_ReturnsExpectedName()
     {
         // Act
-        var toolName = ClaudeSchemaAdapter.GetToolName();
+        var toolName = AnthropicSchemaAdapter.GetToolName();
 
         // Assert
         Assert.Equal("structured_output", toolName);
     }
 
     [Fact]
-    public void ClaudeSchemaAdapter_GetToolDescription_ReturnsNonEmpty()
+    public void AnthropicSchemaAdapter_GetToolDescription_ReturnsNonEmpty()
     {
         // Act
-        var description = ClaudeSchemaAdapter.GetToolDescription();
+        var description = AnthropicSchemaAdapter.GetToolDescription();
 
         // Assert
         Assert.NotNull(description);
@@ -168,13 +168,13 @@ public class SchemaAdapterTests
     }
 
     [Fact]
-    public void ClaudeSchemaAdapter_ToJsonString_ProducesValidJson()
+    public void AnthropicSchemaAdapter_ToJsonString_ProducesValidJson()
     {
         // Arrange
         var schema = JsonSchemaBuilder.FromType<SampleOutput>();
 
         // Act
-        var jsonString = ClaudeSchemaAdapter.ToJsonString(schema);
+        var jsonString = AnthropicSchemaAdapter.ToJsonString(schema);
 
         // Assert
         var parsed = JsonDocument.Parse(jsonString);
@@ -186,33 +186,33 @@ public class SchemaAdapterTests
     #region Gemini Adapter Tests
 
     [Fact]
-    public void GeminiSchemaAdapter_ToGeminiSchema_ReturnsNonNull()
+    public void GoogleSchemaAdapter_ToGeminiSchema_ReturnsNonNull()
     {
         // Arrange
         var schema = JsonSchemaBuilder.FromType<SampleOutput>();
 
         // Act
-        var geminiSchema = GeminiSchemaAdapter.ToGeminiSchema(schema);
+        var geminiSchema = GoogleSchemaAdapter.ToGeminiSchema(schema);
 
         // Assert
         Assert.NotNull(geminiSchema);
     }
 
     [Fact]
-    public void GeminiSchemaAdapter_FromType_Generic_ReturnsNonNull()
+    public void GoogleSchemaAdapter_FromType_Generic_ReturnsNonNull()
     {
         // Act
-        var geminiSchema = GeminiSchemaAdapter.FromType<SampleOutput>();
+        var geminiSchema = GoogleSchemaAdapter.FromType<SampleOutput>();
 
         // Assert
         Assert.NotNull(geminiSchema);
     }
 
     [Fact]
-    public void GeminiSchemaAdapter_FromType_Runtime_ReturnsNonNull()
+    public void GoogleSchemaAdapter_FromType_Runtime_ReturnsNonNull()
     {
         // Act
-        var geminiSchema = GeminiSchemaAdapter.FromType(typeof(SampleOutput));
+        var geminiSchema = GoogleSchemaAdapter.FromType(typeof(SampleOutput));
 
         // Assert
         Assert.NotNull(geminiSchema);
@@ -330,7 +330,7 @@ public class SchemaAdapterTests
 
         // Act
         var openAIJson = OpenAISchemaAdapter.ToJsonString(schema);
-        var claudeJson = ClaudeSchemaAdapter.ToJsonString(schema);
+        var claudeJson = AnthropicSchemaAdapter.ToJsonString(schema);
         var ollamaJson = OllamaSchemaAdapter.ToJsonString(schema);
 
         // Assert - All should have same property names in camelCase
@@ -351,8 +351,8 @@ public class SchemaAdapterTests
 
         // Act - Should not throw
         var openAIData = OpenAISchemaAdapter.ToBinaryData(schema);
-        var claudeParams = ClaudeSchemaAdapter.ToToolParameters(schema);
-        var geminiSchema = GeminiSchemaAdapter.ToGeminiSchema(schema);
+        var claudeParams = AnthropicSchemaAdapter.ToToolParameters(schema);
+        var geminiSchema = GoogleSchemaAdapter.ToGeminiSchema(schema);
         var ollamaPrompt = OllamaSchemaAdapter.ToSystemPromptSchema(schema);
 
         // Assert - All should contain nested properties

@@ -371,8 +371,8 @@ public class GrokVoiceHandler : IGrokVoiceHandler
         };
         _activeToolCalls[callId] = toolRecord;
 
-        // Handle built-in tools (web_search, x_search) - xAI handles execution
-        if (toolName is "web_search" or "x_search")
+        // Handle built-in tools (web_search, x_search and their variants) - xAI handles execution
+        if (toolName is "web_search" or "x_search" or "web_search_with_snippets" or "x_keyword_search")
         {
             // For built-in tools, xAI handles execution and returns results
             // We emit this as a grounding sources event

@@ -14,7 +14,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import type { NoteVersion } from '../../../types/notes';
 import { getProviderLogo } from '../../../utils/provider-logos';
 import { formatModelName } from '../../../utils/model-name-formatter';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 
 interface NoteVersionTimelineProps {
   versions: NoteVersion[];
@@ -332,8 +332,7 @@ export const NoteVersionTimeline = memo(function NoteVersionTimeline({
   onRestore,
   isRestoring,
 }: NoteVersionTimelineProps) {
-  const { theme } = useBoundStore();
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
 
   return (
     <div className="relative">

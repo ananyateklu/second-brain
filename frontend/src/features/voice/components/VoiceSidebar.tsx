@@ -19,6 +19,8 @@ interface VoiceSidebarProps {
   onSelectSession: (sessionId: string | null) => void;
   onToggleSessionSelection?: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  /** Called to close the sidebar (for mobile drawer auto-close) */
+  onClose?: () => void;
 }
 
 /**
@@ -35,7 +37,20 @@ export function VoiceSidebar({
   onSelectSession,
   onToggleSessionSelection,
   onDeleteSession,
+  onClose,
 }: VoiceSidebarProps) {
+  // Handle session selection with auto-close on mobile
+  const handleSelectSession = (sessionId: string) => {
+    if (isSelectionMode) {
+      onToggleSessionSelection?.(sessionId);
+    } else {
+      onSelectSession(sessionId);
+      // Auto-close drawer on mobile
+      if (onClose && window.innerWidth < 768) {
+        onClose();
+      }
+    }
+  };
   return (
     <div
       className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
@@ -100,13 +115,7 @@ export function VoiceSidebar({
               isSelectionMode={isSelectionMode}
               isChecked={selectedSessionIds.has(session.id)}
               staggerIndex={index}
-              onSelect={() => {
-                if (isSelectionMode) {
-                  onToggleSessionSelection?.(session.id);
-                } else {
-                  onSelectSession(session.id);
-                }
-              }}
+              onSelect={() => handleSelectSession(session.id)}
               onDelete={() => onDeleteSession(session.id)}
             />
           ))

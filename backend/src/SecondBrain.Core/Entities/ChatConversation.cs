@@ -418,7 +418,7 @@ public class ThinkingStep
     public double? DurationMs { get; set; }
 
     /// <summary>
-    /// AI provider that generated this thinking (claude, grok, gemini, ollama, etc.)
+    /// AI provider that generated this thinking (anthropic, xai, google, ollama, etc.)
     /// </summary>
     [Column("model_source")]
     [MaxLength(50)]

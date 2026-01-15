@@ -8,6 +8,7 @@
 let cachedThemeColors: string[] | null = null;
 let cachedRagChartColor: string | null = null;
 let cachedRegularChartColor: string | null = null;
+let cachedAgentChartColor: string | null = null;
 let cachedImageGenChartColor: string | null = null;
 
 /**
@@ -30,35 +31,49 @@ export const getThemeColors = (): string[] => {
 
 /**
  * Get RAG chart color from CSS variables (cached)
+ * Uses the feature color for RAG (muted blue)
  */
 export const getRagChartColor = (): string => {
   if (cachedRagChartColor) return cachedRagChartColor;
 
   const style = getComputedStyle(document.documentElement);
-  cachedRagChartColor = style.getPropertyValue('--color-brand-600').trim() || '#36693d';
+  cachedRagChartColor = style.getPropertyValue('--color-feature-rag').trim() || '#7CA8D4';
   return cachedRagChartColor;
 };
 
 /**
  * Get regular chart color from CSS variables (cached)
+ * Uses the feature color for regular chats (muted sage)
  */
 export const getRegularChartColor = (): string => {
   if (cachedRegularChartColor) return cachedRegularChartColor;
 
   const style = getComputedStyle(document.documentElement);
-  cachedRegularChartColor = style.getPropertyValue('--color-brand-400').trim() || '#5e9167';
+  cachedRegularChartColor = style.getPropertyValue('--color-feature-regular').trim() || '#6AAF8D';
   return cachedRegularChartColor;
 };
 
 /**
+ * Get agent chart color from CSS variables (cached)
+ * Uses the feature color for agent chats (muted lavender)
+ */
+export const getAgentChartColor = (): string => {
+  if (cachedAgentChartColor) return cachedAgentChartColor;
+
+  const style = getComputedStyle(document.documentElement);
+  cachedAgentChartColor = style.getPropertyValue('--color-feature-agent').trim() || '#A992C9';
+  return cachedAgentChartColor;
+};
+
+/**
  * Get image generation chart color from CSS variables (cached)
- * Uses a soft muted green that blends with the theme
+ * Uses the feature color for image generation (muted amber)
  */
 export const getImageGenChartColor = (): string => {
   if (cachedImageGenChartColor) return cachedImageGenChartColor;
 
   const style = getComputedStyle(document.documentElement);
-  cachedImageGenChartColor = style.getPropertyValue('--color-image-gen').trim() || '#a3c4ab';
+  cachedImageGenChartColor = style.getPropertyValue('--color-feature-image').trim() || '#D9A066';
   return cachedImageGenChartColor;
 };
 
@@ -70,6 +85,7 @@ export const resetThemeColorCache = (): void => {
   cachedThemeColors = null;
   cachedRagChartColor = null;
   cachedRegularChartColor = null;
+  cachedAgentChartColor = null;
   cachedImageGenChartColor = null;
 };
 

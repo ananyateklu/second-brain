@@ -160,3 +160,20 @@
     transparent 100%
   );
 }
+
+/* =============================================================================
+   Midnight Theme Adjustments
+   ============================================================================= */
+[data-theme="midnight"] {
+  --chat-glow-brand: 0 0 12px color-mix(in srgb, var(--color-brand-400) 25%, transparent);
+  --chat-glow-brand-strong: 0 0 20px color-mix(in srgb, var(--color-brand-400) 35%, transparent);
+
+  --chat-timeline-line: color-mix(in srgb, var(--color-midnight-50) 10%, transparent);
+  --chat-timeline-line-gradient: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-midnight-50) 10%, transparent) 8%,
+    color-mix(in srgb, var(--color-midnight-50) 10%, transparent) 92%,
+    transparent 100%
+  );
+}

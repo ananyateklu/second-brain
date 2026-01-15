@@ -172,7 +172,7 @@ export function VoiceHeader({
 
   return (
     <div
-      className="flex-shrink-0 flex items-center gap-3 py-3.5 border-b z-10"
+      className="hidden md:flex flex-shrink-0 items-center gap-3 py-3.5 border-b z-10"
       style={{
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',

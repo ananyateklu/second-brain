@@ -8,7 +8,7 @@ namespace SecondBrain.Application.Services.AI.Interfaces;
 public interface IImageGenerationProvider
 {
     /// <summary>
-    /// The name of the provider (e.g., "OpenAI", "Gemini", "Grok")
+    /// The name of the provider (e.g., "OpenAI", "Google", "Xai")
     /// </summary>
     string ProviderName { get; }
 

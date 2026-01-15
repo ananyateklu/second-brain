@@ -206,7 +206,7 @@ export function GeneralSettings() {
                         </div>
 
                         {/* Items Per Page Slider */}
-                        <div>
+                        <div className="w-1/2">
                             <label className="text-xs font-medium mb-2 block flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
                                 <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -231,7 +231,7 @@ export function GeneralSettings() {
                                     step={5}
                                     value={itemsPerPage}
                                     onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value, 10))}
-                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[color:var(--color-brand-600)]"
+                                    className="flex-1 h-2 rounded-full appearance-none cursor-pointer focus:outline-none"
                                     style={{
                                         background: `linear-gradient(to right, var(--color-brand-600) 0%, var(--color-brand-600) ${((itemsPerPage - 5) / 95) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) ${((itemsPerPage - 5) / 95) * 100}%, color-mix(in srgb, var(--text-primary) 8%, transparent) 100%)`,
                                         accentColor: 'var(--color-brand-600)',

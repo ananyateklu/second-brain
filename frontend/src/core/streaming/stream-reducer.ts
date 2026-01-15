@@ -13,6 +13,7 @@ import type {
   StreamPhase,
   ImageGenerationState,
   ProcessEvent,
+  PendingConfirmation,
 } from './types';
 import { initialStreamState } from './types';
 import { estimateTokenCount } from '../../utils/token-utils';
@@ -566,6 +567,38 @@ function processImageErrorEvent(
 }
 
 // ============================================
+// Confirmation Event Processor
+// ============================================
+
+/**
+ * Process tool:confirmation-required event
+ *
+ * Pauses the stream and sets pending confirmation state.
+ * The stream will resume after user responds via the confirmation endpoint.
+ */
+function processConfirmationRequiredEvent(
+  state: UnifiedStreamState,
+  event: Extract<StreamEvent, { type: 'tool:confirmation-required' }>
+): UnifiedStreamState {
+  const pendingConfirmation: PendingConfirmation = {
+    confirmationId: event.confirmationId,
+    toolName: event.tool,
+    toolId: event.toolId,
+    message: event.message,
+    details: event.details,
+    timestamp: Date.now(),
+  };
+
+  return {
+    ...state,
+    phase: 'awaiting-confirmation',
+    status: 'paused',
+    pendingConfirmation,
+    processingStatus: 'Waiting for confirmation...',
+  };
+}
+
+// ============================================
 // Main Event Processor
 // ============================================
 
@@ -597,6 +630,9 @@ function processEvent(state: UnifiedStreamState, event: StreamEvent): UnifiedStr
 
     case 'tool:end':
       return processToolEndEvent(state, event);
+
+    case 'tool:confirmation-required':
+      return processConfirmationRequiredEvent(state, event);
 
     case 'rag:context':
       return processRagEvent(state, event);
@@ -699,6 +735,15 @@ export function streamReducer(
         retryCount: state.retryCount + 1,
       };
 
+    case 'CLEAR_CONFIRMATION':
+      return {
+        ...state,
+        phase: 'streaming',
+        status: 'streaming',
+        pendingConfirmation: null,
+        processingStatus: null,
+      };
+
     default: {
       // Type exhaustiveness check
       const _exhaustiveCheck: never = action;
@@ -723,6 +768,7 @@ export function isStreamActive(state: UnifiedStreamState): boolean {
     state.phase === 'connecting' ||
     state.phase === 'streaming' ||
     state.phase === 'tool-execution' ||
+    state.phase === 'awaiting-confirmation' ||
     state.phase === 'image-generation' ||
     state.phase === 'finalizing'
   );
@@ -752,4 +798,11 @@ export function hasStreamContent(state: UnifiedStreamState): boolean {
  */
 export function isImageGenerationActive(state: UnifiedStreamState): boolean {
   return state.phase === 'image-generation' || state.imageGeneration.inProgress;
+}
+
+/**
+ * Check if the stream is awaiting user confirmation
+ */
+export function isAwaitingConfirmation(state: UnifiedStreamState): boolean {
+  return state.phase === 'awaiting-confirmation' && state.pendingConfirmation !== null;
 }

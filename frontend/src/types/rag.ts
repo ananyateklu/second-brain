@@ -11,7 +11,7 @@ export type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
 /**
  * Embedding provider options
  */
-export type EmbeddingProvider = 'OpenAI' | 'Gemini' | 'Ollama' | 'Cohere';
+export type EmbeddingProvider = 'OpenAI' | 'Google' | 'Ollama' | 'Cohere';
 
 /**
  * Embedding model information
@@ -61,7 +61,7 @@ export interface EmbeddingProviderInfo {
  */
 export const EMBEDDING_PROVIDERS: Record<EmbeddingProvider, EmbeddingProviderInfo> = {
   OpenAI: { name: 'OpenAI', dimensions: 1536, supportsPinecone: true },
-  Gemini: { name: 'Gemini', dimensions: 768, supportsPinecone: false },
+  Google: { name: 'Google', dimensions: 768, supportsPinecone: false },
   Ollama: { name: 'Ollama', dimensions: 768, supportsPinecone: false },
   Cohere: { name: 'Cohere', dimensions: 1024, supportsPinecone: false },
 };

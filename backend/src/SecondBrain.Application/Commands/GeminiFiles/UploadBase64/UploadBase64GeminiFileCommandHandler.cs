@@ -8,23 +8,23 @@ namespace SecondBrain.Application.Commands.GeminiFiles.UploadBase64;
 
 public class UploadBase64GeminiFileCommandHandler : IRequestHandler<UploadBase64GeminiFileCommand, Result<GeminiUploadedFile>>
 {
-    private readonly GeminiProvider _geminiProvider;
+    private readonly GoogleProvider _googleProvider;
     private readonly ILogger<UploadBase64GeminiFileCommandHandler> _logger;
 
     // Maximum file size: 2GB (Gemini's limit)
     private const long MaxFileSize = 2L * 1024 * 1024 * 1024;
 
     public UploadBase64GeminiFileCommandHandler(
-        GeminiProvider geminiProvider,
+        GoogleProvider googleProvider,
         ILogger<UploadBase64GeminiFileCommandHandler> logger)
     {
-        _geminiProvider = geminiProvider;
+        _googleProvider = googleProvider;
         _logger = logger;
     }
 
     public async Task<Result<GeminiUploadedFile>> Handle(UploadBase64GeminiFileCommand command, CancellationToken cancellationToken)
     {
-        if (!_geminiProvider.IsEnabled)
+        if (!_googleProvider.IsEnabled)
         {
             return Result<GeminiUploadedFile>.Failure(Error.Custom("ServiceUnavailable", "Gemini provider is not enabled"));
         }
@@ -58,8 +58,8 @@ public class UploadBase64GeminiFileCommandHandler : IRequestHandler<UploadBase64
             };
 
             var result = command.WaitForProcessing
-                ? await _geminiProvider.UploadAndWaitAsync(uploadRequest, cancellationToken: cancellationToken)
-                : await _geminiProvider.UploadFileAsync(uploadRequest, cancellationToken);
+                ? await _googleProvider.UploadAndWaitAsync(uploadRequest, cancellationToken: cancellationToken)
+                : await _googleProvider.UploadFileAsync(uploadRequest, cancellationToken);
 
             if (result == null)
             {

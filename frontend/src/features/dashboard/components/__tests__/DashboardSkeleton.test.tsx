@@ -161,12 +161,11 @@ describe('DashboardSkeleton', () => {
       expect(borderedElements.length).toBeGreaterThan(0);
     });
 
-    it('should set background color using CSS color-mix', () => {
+    it('should apply frosted glass styling via CSS class', () => {
       const { container } = render(<DashboardSkeleton />);
-      const statsGrid = container.querySelector('.dashboard-stats-grid');
-      const firstCard = statsGrid?.firstChild?.firstChild as HTMLElement;
-      // Component uses color-mix for frosted glass styling
-      expect(firstCard).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)' });
+      // Component uses insights-skeleton-card class for frosted glass styling
+      const skeletonCards = container.querySelectorAll('.insights-skeleton-card');
+      expect(skeletonCards.length).toBeGreaterThan(0);
     });
   });
 

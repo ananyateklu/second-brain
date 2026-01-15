@@ -78,11 +78,11 @@ backdrop-filter: blur(20px) saturate(180%);
 
 # Development
 dotnet watch run                    # Backend hot reload
-pnpm dev                            # Frontend dev server
-pnpm tauri dev                      # Desktop app
+bun dev                             # Frontend dev server
+bun run tauri:dev                   # Desktop app
 
 # Testing
-dotnet test && pnpm test            # Run all tests
+dotnet test && bun test             # Run all tests
 ```
 
 ---

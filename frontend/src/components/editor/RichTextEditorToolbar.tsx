@@ -6,12 +6,12 @@ interface RichTextEditorToolbarProps {
 
 export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
   return (
-    <div className="sticky top-0 z-10 mb-2 flex flex-wrap gap-1 p-2 rounded-2xl border border-[var(--border)] bg-[var(--glass-header)] shadow-sm backdrop-blur-xl">
+    <div className="sticky top-0 z-10 mb-2 flex gap-0.5 md:gap-1 p-1.5 md:p-2 rounded-xl md:rounded-2xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)] overflow-x-auto md:overflow-visible md:flex-wrap thin-scrollbar">
       {/* Heading */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Heading 1"
       >
@@ -20,20 +20,20 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Heading 2"
       >
         <span className="font-bold text-sm">H2</span>
       </button>
 
-      <div className="w-px h-6 bg-[var(--border)] mx-1 self-center" />
+      <div className="hidden md:block w-px h-6 bg-[var(--border)] mx-0.5 md:mx-1 self-center flex-shrink-0" />
 
       {/* Basic Formatting */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bold') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bold') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Bold"
       >
@@ -42,7 +42,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('italic') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('italic') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Italic"
       >
@@ -51,7 +51,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('underline') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('underline') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Underline"
       >
@@ -60,7 +60,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('strike') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('strike') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Strikethrough"
       >
@@ -69,20 +69,20 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleHighlight().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('highlight') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('highlight') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Highlight"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
       </button>
 
-      <div className="w-px h-6 bg-[var(--border)] mx-1 self-center" />
+      <div className="hidden md:block w-px h-6 bg-[var(--border)] mx-0.5 md:mx-1 self-center flex-shrink-0" />
 
       {/* Lists */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bulletList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('bulletList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Bullet List"
       >
@@ -91,7 +91,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('orderedList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('orderedList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Ordered List"
       >
@@ -100,20 +100,20 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleTaskList().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('taskList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('taskList') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Task List (Checkboxes)"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
       </button>
 
-      <div className="w-px h-6 bg-[var(--border)] mx-1 self-center" />
+      <div className="hidden md:block w-px h-6 bg-[var(--border)] mx-0.5 md:mx-1 self-center flex-shrink-0" />
 
       {/* Text Alignment */}
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'left' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Align Left"
       >
@@ -122,7 +122,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'center' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Align Center"
       >
@@ -131,20 +131,20 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive({ textAlign: 'right' }) ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Align Right"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M3 6h18M3 18h18" /></svg>
       </button>
 
-      <div className="w-px h-6 bg-[var(--border)] mx-1 self-center" />
+      <div className="hidden md:block w-px h-6 bg-[var(--border)] mx-0.5 md:mx-1 self-center flex-shrink-0" />
 
       {/* Blocks & Media */}
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('blockquote') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('blockquote') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Blockquote"
       >
@@ -153,7 +153,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('codeBlock') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('codeBlock') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Code Block"
       >
@@ -167,7 +167,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
             editor.chain().focus().setImage({ src: url }).run();
           }
         }}
-        className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
+        className="flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
         title="Insert Image"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -180,7 +180,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
             editor.chain().focus().setLink({ href: url }).run();
           }
         }}
-        className={`p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('link') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
+        className={`flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors ${editor.isActive('link') ? 'bg-[color-mix(in_srgb,var(--color-brand-500)_20%,transparent)] text-[var(--color-brand-600)] dark:text-[var(--color-brand-300)]' : 'text-[var(--text-secondary)]'
           }`}
         title="Insert Link"
       >
@@ -189,7 +189,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
       <button
         type="button"
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
+        className="flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
         title="Horizontal Rule"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" /></svg>
@@ -203,7 +203,7 @@ export function RichTextEditorToolbar({ editor }: RichTextEditorToolbarProps) {
             editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
           }
         }}
-        className="p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
+        className="flex-shrink-0 p-1.5 rounded hover:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)] transition-colors text-[var(--text-secondary)]"
         title="Insert Table"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>

@@ -9,9 +9,9 @@ public class StructuredOutputSettings
 
     /// <summary>
     /// Default provider to use when no provider is specified.
-    /// Options: "OpenAI", "Anthropic", "Gemini", "Grok", "Ollama"
+    /// Options: "OpenAI", "Anthropic", "Google", "Xai", "Ollama"
     /// </summary>
-    public string DefaultProvider { get; set; } = "Gemini";
+    public string DefaultProvider { get; set; } = "Google";
 
     /// <summary>
     /// Default temperature for structured output generation.
@@ -48,7 +48,7 @@ public class StructuredOutputProvidersConfig
         Model = "gemini-2.0-flash"
     };
 
-    public StructuredOutputProviderConfig Grok { get; set; } = new()
+    public StructuredOutputProviderConfig Xai { get; set; } = new()
     {
         Enabled = true,
         Model = "grok-3-mini"

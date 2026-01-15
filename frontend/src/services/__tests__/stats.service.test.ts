@@ -413,10 +413,10 @@ describe('statsService', () => {
       expect(model).toBe('gpt-4');
     });
 
-    it('should handle model without provider', () => {
+    it('should infer provider from model name pattern', () => {
       const [provider, model] = statsService.parseModelName('gpt-4');
 
-      expect(provider).toBe('Unknown');
+      expect(provider).toBe('OpenAI');
       expect(model).toBe('gpt-4');
     });
   });

@@ -9,20 +9,19 @@ import { DEFAULT_PREFERENCES } from '../../services/user-preferences.service';
 // Provider name mapping for health data
 const PROVIDER_NAME_MAP: Record<string, string> = {
   'OpenAI': 'OpenAI',
-  'Claude': 'Anthropic',
   'Anthropic': 'Anthropic',
-  'Gemini': 'Gemini',
+  'Google': 'Google',
   'Ollama': 'Ollama',
-  'Grok': 'Grok',
+  'Xai': 'Xai',
 };
 
 // AI Provider options for Focus
-// Note: IDs must match backend AIProviderFactory names: openai, gemini, claude, ollama, grok, xai, cohere
+// Note: IDs must match backend AIProviderFactory provider names
 const FOCUS_AI_PROVIDERS = [
   { id: 'OpenAI', name: 'OpenAI', description: 'GPT models for fast, reliable suggestions. Recommended for most users.' },
-  { id: 'Claude', name: 'Anthropic', description: 'Claude models for nuanced, thoughtful suggestions.' },
-  { id: 'Gemini', name: 'Gemini', description: 'Google Gemini models. Cost-effective with good performance.' },
-  { id: 'Grok', name: 'xAI', description: 'xAI Grok models for conversational suggestions.' },
+  { id: 'Anthropic', name: 'Anthropic', description: 'Claude models for nuanced, thoughtful suggestions.' },
+  { id: 'Google', name: 'Google', description: 'Google Gemini models. Cost-effective with good performance.' },
+  { id: 'Xai', name: 'xAI', description: 'xAI Grok models for conversational suggestions.' },
   { id: 'Ollama', name: 'Ollama', description: 'Local models. No API costs, fully private.' },
 ] as const;
 

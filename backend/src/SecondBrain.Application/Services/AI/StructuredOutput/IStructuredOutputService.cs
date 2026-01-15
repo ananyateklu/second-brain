@@ -23,7 +23,7 @@ public interface IStructuredOutputService
     /// Generate structured output matching the specified type using a specific provider.
     /// </summary>
     /// <typeparam name="T">The type to generate. Must be a class with public properties.</typeparam>
-    /// <param name="provider">The AI provider to use (e.g., "OpenAI", "Anthropic", "Gemini", "Grok", "Ollama").</param>
+    /// <param name="provider">The AI provider to use (e.g., "OpenAI", "Anthropic", "Google", "Xai", "Ollama").</param>
     /// <param name="prompt">The prompt to send to the model.</param>
     /// <param name="options">Optional generation options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

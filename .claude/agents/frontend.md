@@ -26,7 +26,7 @@ You are a React 19 and TypeScript frontend specialist for Second Brain.
 3. Add service methods in `services/`
 4. Add query keys in `lib/query-keys.ts`
 5. Add routes in `lib/router.tsx`
-6. Run `pnpm exec tsc --noEmit` to verify types
+6. Run `bun run tsc --noEmit` to verify types
 
 ### When Adding State
 1. Create slice in `store/slices/[name]-slice.ts`
@@ -39,19 +39,19 @@ You are a React 19 and TypeScript frontend specialist for Second Brain.
 2. Verify TypeScript types match API responses
 3. Check Zustand selectors are correctly memoized
 4. Verify TanStack Query cache invalidation
-5. Run `pnpm lint` and `pnpm exec tsc --noEmit`
+5. Run `bun run lint` and `bun run tsc --noEmit`
 
 ## Quick Commands
 
 ```bash
 cd frontend
-pnpm dev                    # Dev server (port 3000)
-pnpm build                  # Production build
-pnpm exec tsc --noEmit      # Type check
-pnpm lint                   # Lint check
-pnpm test                   # Run tests
-pnpm test:run               # Run once (no watch)
-pnpm tauri dev              # Desktop development
+bun dev                     # Dev server (port 3000)
+bun run build               # Production build
+bun run tsc --noEmit        # Type check
+bun run lint                # Lint check
+bun test                    # Run tests
+bun run test:run            # Run once (no watch)
+bun run tauri:dev           # Desktop development
 ```
 
 ## Key Patterns to Follow
@@ -97,7 +97,7 @@ useMutation({
 
 | Issue | Check |
 |-------|-------|
-| Type error | Run `pnpm exec tsc --noEmit`, check interface definitions |
+| Type error | Run `bun run tsc --noEmit`, check interface definitions |
 | State not updating | Verify selector, check slice is composed in bound-store |
 | Query not refreshing | Check `invalidateQueries` with correct key |
 | SSE not working | Check Network tab for EventSource, verify CORS |

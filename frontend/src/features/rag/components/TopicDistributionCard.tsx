@@ -44,27 +44,11 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
     : 0;
 
   return (
-    <div
-      className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
-    >
+    <div className="rounded-2xl transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md border insights-card insights-card-hoverable">
       {/* Header */}
-      <div
-        className="px-3 py-2 border-b flex items-center justify-between"
-        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-      >
+      <div className="px-3 py-2 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 insights-section-border">
         <div className="flex items-center gap-2">
-          <div
-            className="p-2 rounded-lg"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
-            }}
-          >
+          <div className="p-1.5 sm:p-2 rounded-lg insights-icon-wrapper-blue">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -81,7 +65,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             </svg>
           </div>
           <h3
-            className="text-base font-semibold"
+            className="text-sm sm:text-base font-semibold"
             style={{ color: 'var(--text-primary)' }}
           >
             Topic Distribution
@@ -93,12 +77,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
           <select
             value={clusterCount}
             onChange={(e) => { setClusterCount(Number(e.target.value)); }}
-            className="px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-              color: 'var(--text-secondary)',
-              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            }}
+            className="px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer insights-select"
           >
             {[3, 5, 7, 10].map((n) => (
               <option key={n} value={n}>{n} topics</option>
@@ -107,7 +86,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
           <button
             onClick={() => { clusterMutation.mutate(clusterCount); }}
             disabled={clusterMutation.isPending}
-            className="px-3 py-1 text-xs font-medium rounded-lg transition-transform duration-200 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-[1px]"
+            className="px-2 sm:px-3 py-1 text-xs font-medium rounded-lg transition-transform duration-200 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-[1px]"
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
@@ -119,9 +98,15 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                   className="w-3 h-3 border-2 rounded-full animate-spin"
                   style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }}
                 />
-                Clustering...
+                <span className="hidden sm:inline">Clustering...</span>
+                <span className="sm:hidden">...</span>
               </span>
-            ) : 'Run Clustering'}
+            ) : (
+              <>
+                <span className="hidden sm:inline">Run Clustering</span>
+                <span className="sm:hidden">Cluster</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -130,23 +115,14 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
       <div className="p-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-6">
-            <div
-              className="w-6 h-6 border-2 rounded-full animate-spin"
-              style={{
-                borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                borderTopColor: 'var(--color-brand-400)',
-              }}
-            />
+            <div className="w-6 h-6 border-2 rounded-full animate-spin insights-spinner" />
           </div>
         ) : !hasTopics ? (
           <div
             className="text-center py-6"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            <div
-              className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-            >
+            <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center insights-panel">
               <svg
                 className="w-6 h-6 opacity-50"
                 fill="none"
@@ -169,7 +145,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
         ) : (
           <div className="space-y-2">
             {/* Topic bars */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {topicData.topics.map((topic, index) => {
                 const percentage = (topic.queryCount / totalQueries) * 100;
                 const colors = TOPIC_COLORS[index % TOPIC_COLORS.length];
@@ -180,56 +156,46 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                 return (
                   <div
                     key={topic.clusterId}
-                    className="space-y-1 p-2 rounded-lg transition-colors duration-200 hover:bg-opacity-50"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)' }}
+                    className="space-y-1 p-2 rounded-lg transition-colors duration-200 hover:bg-opacity-50 insights-panel-subtle"
                   >
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                           style={{
                             backgroundColor: colors.main,
                           }}
                         />
                         <span
-                          className="font-medium"
+                          className="font-medium truncate"
                           style={{ color: 'var(--text-primary)' }}
                         >
                           {topic.label}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 pl-4 sm:pl-0">
                         <span
-                          className="tabular-nums"
+                          className="tabular-nums text-[11px] sm:text-xs"
                           style={{ color: 'var(--text-secondary)' }}
                         >
                           {topic.queryCount} queries
                         </span>
                         {feedbackRate !== null && (
                           <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium tabular-nums"
-                            style={{
-                              backgroundColor: feedbackRate >= 70
-                                ? 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)'
+                            className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium tabular-nums ${
+                              feedbackRate >= 70
+                                ? 'insights-badge-positive'
                                 : feedbackRate >= 50
-                                  ? 'color-mix(in srgb, #fbbf24 15%, transparent)'
-                                  : 'color-mix(in srgb, var(--color-error) 15%, transparent)',
-                              color: feedbackRate >= 70
-                                ? 'var(--color-brand-400)'
-                                : feedbackRate >= 50
-                                  ? '#fbbf24'
-                                  : 'var(--color-error)',
-                            }}
+                                  ? 'insights-badge-warning'
+                                  : 'insights-badge-negative'
+                            }`}
                           >
-                            {feedbackRate}% positive
+                            {feedbackRate}%
                           </span>
                         )}
                       </div>
                     </div>
-                    <div
-                      className="h-2 rounded-full overflow-hidden"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-                    >
+                    <div className="h-2 rounded-full overflow-hidden insights-progress-track">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
@@ -241,7 +207,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                     {/* Sample queries */}
                     {topic.sampleQueries.length > 0 && (
                       <p
-                        className="text-xs italic truncate pl-5"
+                        className="text-[11px] sm:text-xs italic truncate pl-4 sm:pl-5"
                         style={{ color: 'var(--text-tertiary)' }}
                         title={topic.sampleQueries[0]}
                       >
@@ -254,14 +220,8 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
             </div>
 
             {/* Summary stats */}
-            <div
-              className="pt-2 border-t grid grid-cols-2 gap-2"
-              style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-            >
-              <div
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-              >
+            <div className="pt-2 border-t grid grid-cols-2 gap-2 insights-section-border">
+              <div className="p-2 rounded-lg insights-panel">
                 <p
                   className="text-[10px] uppercase tracking-wide"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -275,10 +235,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
                   {topicData.totalClustered}
                 </p>
               </div>
-              <div
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-              >
+              <div className="p-2 rounded-lg insights-panel">
                 <p
                   className="text-[10px] uppercase tracking-wide"
                   style={{ color: 'var(--text-tertiary)' }}
@@ -296,13 +253,7 @@ export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistri
 
             {/* Insights */}
             {topicData.topics.length > 0 && (
-              <div
-                className="p-2 rounded-lg"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                }}
-              >
+              <div className="p-2 rounded-lg insights-nested-card insights-panel-subtle">
                 <div className="flex items-center gap-1.5 mb-1">
                   <svg
                     className="w-3.5 h-3.5"

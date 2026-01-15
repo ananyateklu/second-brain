@@ -7,21 +7,21 @@ namespace SecondBrain.Application.Queries.GeminiFiles.GetFile;
 
 public class GetGeminiFileQueryHandler : IRequestHandler<GetGeminiFileQuery, Result<GeminiUploadedFile>>
 {
-    private readonly GeminiProvider _geminiProvider;
+    private readonly GoogleProvider _googleProvider;
 
-    public GetGeminiFileQueryHandler(GeminiProvider geminiProvider)
+    public GetGeminiFileQueryHandler(GoogleProvider googleProvider)
     {
-        _geminiProvider = geminiProvider;
+        _googleProvider = googleProvider;
     }
 
     public async Task<Result<GeminiUploadedFile>> Handle(GetGeminiFileQuery request, CancellationToken cancellationToken)
     {
-        if (!_geminiProvider.IsEnabled)
+        if (!_googleProvider.IsEnabled)
         {
             return Result<GeminiUploadedFile>.Failure(Error.Custom("ServiceUnavailable", "Gemini provider is not enabled"));
         }
 
-        var file = await _geminiProvider.GetFileAsync(request.FileName, cancellationToken);
+        var file = await _googleProvider.GetFileAsync(request.FileName, cancellationToken);
         if (file == null)
         {
             return Result<GeminiUploadedFile>.Failure(Error.NotFound("File", request.FileName));

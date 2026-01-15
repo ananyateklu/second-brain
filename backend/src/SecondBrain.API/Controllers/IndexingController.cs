@@ -54,19 +54,26 @@ public class IndexingController : ControllerBase
     }
 
     /// <summary>
-    /// Start indexing all notes for a user
+    /// Start indexing all notes for the authenticated user
     /// </summary>
     [HttpPost("start")]
     [ProducesResponseType(typeof(IndexingJobResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IndexingJobResponse>> StartIndexing(
-        [FromQuery] string userId = "default-user",
         [FromQuery] string? embeddingProvider = null,
         [FromQuery] string? vectorStoreProvider = null,
         [FromQuery] string? embeddingModel = null,
         [FromQuery] int? customDimensions = null,
         CancellationToken cancellationToken = default)
     {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
         var command = new StartIndexingCommand(userId, embeddingProvider, vectorStoreProvider, embeddingModel, customDimensions);
         var result = await _mediator.Send(command, cancellationToken);
 
@@ -182,15 +189,22 @@ public class IndexingController : ControllerBase
     }
 
     /// <summary>
-    /// Get index statistics for a user from both PostgreSQL and Pinecone
+    /// Get index statistics for the authenticated user from both PostgreSQL and Pinecone
     /// </summary>
     [HttpGet("stats")]
     [OutputCache(PolicyName = "IndexingStats")]
     [ProducesResponseType(typeof(IndexStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IndexStatsResponse>> GetIndexStats(
-        [FromQuery] string userId = "default-user",
         CancellationToken cancellationToken = default)
     {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
         var query = new GetIndexStatsQuery(userId);
         var result = await _mediator.Send(query, cancellationToken);
 

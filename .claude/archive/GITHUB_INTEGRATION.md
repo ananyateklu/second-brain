@@ -536,7 +536,7 @@ git tag v1.0.0                # Create tag
 
 ### Before Committing
 
-- [ ] Run tests: `dotnet test && pnpm test`
+- [ ] Run tests: `dotnet test && bun test`
 - [ ] Check auto-context: `./.claude/memory-cli.sh auto-context`
 - [ ] Review changes: `git status && git diff`
 - [ ] Update session: `./.claude/memory-cli.sh update-session`

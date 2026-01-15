@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { groupModelsByCategory } from '@/utils/model-categorizer';
-import { useBoundStore } from '@/store/bound-store';
+import { useTheme } from '@/hooks/useTheme';
 import { useProviderLogo } from '@/utils/provider-logos';
 import { useModelSelectorKeyboard } from './hooks/use-model-selector-keyboard';
 import { ProviderTabs } from './ProviderTabs';
@@ -29,9 +29,7 @@ export function CombinedModelSelector({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const theme = useBoundStore((state) => state.theme);
-  const isBlueTheme = theme === 'blue';
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode, isBlueFamily: isBlueTheme } = useTheme();
 
   const selectedProviderLogo = useProviderLogo(selectedProvider || '');
   const selectedProviderData = providers.find(
@@ -166,17 +164,15 @@ export function CombinedModelSelector({
           <div
             className="fixed inset-0 z-40"
             onClick={handleClose}
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+            style={{ backgroundColor: 'var(--glass-overlay-light)' }}
           />
 
           <div
             ref={dropdownRef}
-            className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden backdrop-blur-xl"
             style={{
-              backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              backgroundColor: 'var(--glass-popup)',
+              borderColor: 'var(--border)',
             }}
           >
             <ProviderTabs

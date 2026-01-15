@@ -18,6 +18,7 @@ import {
   ChevronRightIcon,
   SidebarNavLink,
 } from './sidebar-components';
+import { isDarkTheme } from '../../config/themes';
 
 export function Sidebar() {
   const queryClient = useQueryClient();
@@ -26,7 +27,7 @@ export function Sidebar() {
   const toggleSidebar = useBoundStore((state) => state.toggleSidebar);
   const theme = useBoundStore((state) => state.theme);
   const titleBarHeight = useTitleBarHeight();
-  const logo = theme === 'light' ? logoLight : logoDark;
+  const logo = isDarkTheme(theme) ? logoDark : logoLight;
 
   // Mobile menu state
   const isMobileMenuOpen = useBoundStore((state) => state.isMobileMenuOpen);
@@ -233,6 +234,7 @@ export function Sidebar() {
     <button
       ref={ref}
       onClick={handleCreateClick}
+      data-testid="create-note-button"
       className={`group relative w-full inline-flex items-center justify-center gap-2.5 rounded-2xl text-base font-semibold transition-all duration-400 hover:scale-[1.03] hover:-translate-y-0.5 active:scale-95 overflow-hidden shadow-lg bg-[var(--btn-primary-bg)] border border-transparent hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] ${
         !showLabel ? 'md:px-3.5 md:py-3.5' : ''
       } px-6 py-4`}
@@ -258,12 +260,6 @@ export function Sidebar() {
   // Sidebar content (shared between mobile and desktop)
   const sidebarContent = (
     <>
-      {/* Ambient glow effect */}
-      <div
-        className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none transition-opacity duration-1000"
-        style={{ background: `radial-gradient(circle, var(--color-primary), transparent)` }}
-      />
-
       <div className="flex-1 flex flex-col relative z-10 overflow-y-auto thin-scrollbar min-h-0">
         {/* Logo/Brand - Desktop only */}
         <div className={`mb-6 transition-all duration-600 ease-out hidden md:block ${isCollapsed ? 'mb-4' : 'mb-8'}`}>
@@ -416,22 +412,17 @@ export function Sidebar() {
         {/* Temporary sidebar that appears on hover */}
         <aside
           ref={temporarySidebarRef}
+          data-testid="main-sidebar"
           className={`hidden md:flex fixed left-0 top-0 bottom-0 z-40 w-[23rem] flex-col p-6 transform transition-all duration-300 ease-out backdrop-blur-xl ${
             isTemporarilyOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'
           }`}
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           }}
           onMouseEnter={handleTemporarySidebarEnter}
           onMouseLeave={handleTemporarySidebarLeave}
         >
-          {/* Ambient glow effect */}
-          <div
-            className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-20 blur-3xl pointer-events-none transition-opacity duration-1000"
-            style={{ background: `radial-gradient(circle, var(--color-primary), transparent)` }}
-          />
-
           <div className="flex-1 flex flex-col relative z-10 overflow-y-auto thin-scrollbar min-h-0">
             {/* Logo */}
             <div className="mb-8 transition-all duration-600 ease-out">
@@ -504,7 +495,7 @@ export function Sidebar() {
         {isMobileMenuOpen && (
           <div
             className="md:hidden fixed inset-0 z-50 transition-opacity duration-300"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+            style={{ backgroundColor: 'var(--glass-overlay)', backdropFilter: 'blur(4px)' }}
             onClick={closeMobileMenu}
             aria-hidden="true"
           />
@@ -516,7 +507,7 @@ export function Sidebar() {
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
           }}
@@ -533,7 +524,7 @@ export function Sidebar() {
       {isMobileMenuOpen && (
         <div
           className="md:hidden fixed inset-0 z-50 transition-opacity duration-300"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+          style={{ backgroundColor: 'var(--glass-overlay)', backdropFilter: 'blur(4px)' }}
           onClick={closeMobileMenu}
           aria-hidden="true"
         />
@@ -545,7 +536,7 @@ export function Sidebar() {
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
           borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
           paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
         }}
@@ -555,6 +546,7 @@ export function Sidebar() {
 
       {/* Desktop Sidebar */}
       <aside
+        data-testid="main-sidebar"
         className={`hidden md:flex sticky ml-4 z-30 flex-col pb-4 rounded-3xl border overflow-hidden backdrop-blur-xl ${
           isCollapsed ? 'w-20' : 'w-[23rem] px-6'
         }`}
@@ -562,7 +554,7 @@ export function Sidebar() {
           top: topPosition,
           height: sidebarHeight,
           maxHeight: maxHeight,
-          backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
           paddingTop: isCollapsed ? '0.8rem' : '1.5rem',
           transition: 'all 600ms cubic-bezier(0.4, 0, 0.2, 1)',

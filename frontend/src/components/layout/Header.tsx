@@ -5,7 +5,7 @@ import { UserMenu } from '../composite/user-menu';
 import { IndexingIndicator } from '../ui/IndexingIndicator';
 import { SummaryIndicator } from '../ui/SummaryIndicator';
 import { AnalyticsTabBar } from '../../features/rag/components/AnalyticsTabBar';
-import { SettingsNavTabs, TimeRangeSelector, GitHubNavTabs, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
+import { SettingsNavTabs, SettingsTabBar, TimeRangeSelector, GitHubNavTabs, GitHubTabBar, GitNavControls, GitHubRepoSelector, GitHubBranchSelector, InsightsTabBar, FocusDashboardControls, HeaderFocusIndicator, ChatPageControls, DirectoryPageControls, VoicePageControls } from './header-components';
 import { useChatHeaderState } from '../../features/chat/context/ChatPageContext';
 import { useVoiceHeaderState } from '../../features/voice/context/VoicePageContext';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
@@ -72,6 +72,12 @@ export function Header() {
       return;
     }
 
+    // Voice page: Start new voice session
+    if (pathname === '/voice' && voiceHeaderState?.onNewSession) {
+      voiceHeaderState.onNewSession();
+      return;
+    }
+
     // Notes page (default): Open create note modal
     const rect = createButtonRef.current?.getBoundingClientRect();
     const sourceRect = rect ? {
@@ -81,13 +87,14 @@ export function Header() {
       height: rect.height,
     } : null;
     openCreateModal(sourceRect);
-  }, [location.pathname, openQuickCapture, openCreateModal, chatHeaderState]);
+  }, [location.pathname, openQuickCapture, openCreateModal, chatHeaderState, voiceHeaderState]);
 
   // Get context-aware label for the create button
   const getCreateButtonLabel = useCallback(() => {
     const pathname = location.pathname;
     if (pathname === '/') return 'Create new task';
     if (pathname === '/chat') return 'Start new chat';
+    if (pathname === '/voice') return 'New voice session';
     return 'Create new note';
   }, [location.pathname]);
 
@@ -104,6 +111,12 @@ export function Header() {
   // GitHub tab state for showing Git controls on local-changes tab
   const githubActiveTab = useBoundStore((state) => state.githubActiveTab);
   const showGitControls = isGitHubPage && githubActiveTab === 'local-changes';
+
+  // GitHub mobile sidebar state
+  const showMobileGitPanel = useBoundStore((state) => state.showMobileGitPanel);
+  const toggleMobileGitPanel = useBoundStore((state) => state.toggleMobileGitPanel);
+  const showMobileFileTree = useBoundStore((state) => state.showMobileFileTree);
+  const toggleMobileFileTree = useBoundStore((state) => state.toggleMobileFileTree);
 
   // RAG Analytics state (legacy)
   const activeTab = useBoundStore((state) => state.activeTab);
@@ -138,7 +151,7 @@ export function Header() {
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
           }}
         >
-          <div className="flex h-16 sm:h-20 items-center justify-between px-5 sm:px-8">
+          <div className="flex h-16 sm:h-20 items-center justify-between px-3 sm:px-8">
             {/* Left side - Hamburger Menu + Notes Folder Toggle */}
             <div className="flex items-center gap-2">
               <button
@@ -215,6 +228,74 @@ export function Header() {
                   </svg>
                 </button>
               )}
+
+              {/* Voice Sidebar Toggle - Only on Voice page */}
+              {isVoicePage && voiceHeaderState && (
+                <button
+                  onClick={voiceHeaderState.onToggleSidebar}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: voiceHeaderState.showSidebar
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: voiceHeaderState.showSidebar
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: voiceHeaderState.showSidebar ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={voiceHeaderState.showSidebar ? 'Hide voice sessions' : 'Show voice sessions'}
+                >
+                  {/* Clock/History icon for voice sessions */}
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              )}
+
+              {/* GitHub File Tree Toggle - Only on GitHub Code tab */}
+              {isGitHubPage && githubActiveTab === 'code' && (
+                <button
+                  onClick={toggleMobileFileTree}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: showMobileFileTree
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: showMobileFileTree
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: showMobileFileTree ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={showMobileFileTree ? 'Hide files' : 'Show files'}
+                >
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                </button>
+              )}
+
+              {/* GitHub Git Panel Toggle - Only on GitHub Local Changes tab */}
+              {isGitHubPage && githubActiveTab === 'local-changes' && (
+                <button
+                  onClick={toggleMobileGitPanel}
+                  className="group flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: showMobileGitPanel
+                      ? 'var(--btn-primary-bg)'
+                      : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    border: showMobileGitPanel
+                      ? '1px solid var(--btn-primary-border)'
+                      : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                    color: showMobileGitPanel ? 'var(--btn-primary-text)' : 'var(--text-primary)',
+                  }}
+                  aria-label={showMobileGitPanel ? 'Hide changes' : 'Show changes'}
+                >
+                  {/* Terminal/CLI icon for git status */}
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Center - Logo/Brand */}
@@ -275,35 +356,106 @@ export function Header() {
                 </>
               )}
 
-              {/* Create Button (compact) - page-aware action */}
-              <button
-                ref={createButtonRef}
-                onClick={handleCreateAction}
-                className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] hover:shadow-[var(--btn-primary-hover-shadow)]"
-                style={{
-                  color: 'var(--btn-primary-text)',
-                }}
-                aria-label={getCreateButtonLabel()}
-              >
-                {/* Dashboard: Target/Focus icon */}
-                {isDashboardPage ? (
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                ) : isChatPage ? (
-                  /* Chat: Message/Plus icon */
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                ) : (
-                  /* Notes/Default: Plus icon with rotation */
-                  <svg className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                )}
-              </button>
+              {/* Voice Session Status - Voice page only */}
+              {isVoicePage && voiceHeaderState?.isConnected && (
+                <div
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium"
+                  style={{
+                    backgroundColor: voiceHeaderState.sessionState === 'Listening'
+                      ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
+                      : voiceHeaderState.sessionState === 'Speaking'
+                        ? 'color-mix(in srgb, var(--color-accent-purple) 15%, transparent)'
+                        : 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
+                    color: voiceHeaderState.sessionState === 'Listening'
+                      ? 'var(--color-success)'
+                      : voiceHeaderState.sessionState === 'Speaking'
+                        ? 'var(--color-accent-purple)'
+                        : 'var(--color-accent-blue)',
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{
+                      backgroundColor: voiceHeaderState.sessionState === 'Listening'
+                        ? 'var(--color-success)'
+                        : voiceHeaderState.sessionState === 'Speaking'
+                          ? 'var(--color-accent-purple)'
+                          : 'var(--color-accent-blue)',
+                    }}
+                  />
+                  <span className="hidden sm:inline">
+                    {voiceHeaderState.sessionState === 'Listening' && 'Listening'}
+                    {voiceHeaderState.sessionState === 'Speaking' && 'Speaking'}
+                    {voiceHeaderState.sessionState === 'Processing' && 'Processing'}
+                    {voiceHeaderState.sessionState !== 'Listening' &&
+                      voiceHeaderState.sessionState !== 'Speaking' &&
+                      voiceHeaderState.sessionState !== 'Processing' && 'Active'}
+                  </span>
+                </div>
+              )}
+
+              {/* Insights/Settings/GitHub pages: Show User Menu instead of Create button */}
+              {(isInsightsPage || isSettingsPage || isGitHubPage) ? (
+                <UserMenu />
+              ) : (
+                /* Create Button (compact) - page-aware action */
+                <button
+                  ref={createButtonRef}
+                  onClick={handleCreateAction}
+                  className="group inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 bg-[var(--btn-primary-bg)] border-[var(--btn-primary-border)] shadow-[var(--btn-primary-shadow)] hover:bg-[var(--btn-primary-hover-bg)] hover:border-[var(--btn-primary-hover-border)] hover:shadow-[var(--btn-primary-hover-shadow)]"
+                  style={{
+                    color: 'var(--btn-primary-text)',
+                  }}
+                  aria-label={getCreateButtonLabel()}
+                >
+                  {/* Dashboard: Target/Focus icon */}
+                  {isDashboardPage ? (
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ) : isChatPage ? (
+                    /* Chat: Message/Plus icon */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  ) : isVoicePage ? (
+                    /* Voice: Microphone icon */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  ) : (
+                    /* Notes/Default: Plus icon with rotation */
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                    </svg>
+                  )}
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Insights Tab Bar - Only on Insights page (Mobile) */}
+          {isInsightsPage && (
+            <div className="px-2 pb-3 space-y-2 flex flex-col items-center">
+              <InsightsTabBar activeTab={activeInsightsTab} onTabChange={setActiveInsightsTab} />
+              {/* Time Range Selector - Only on RAG tab */}
+              {activeInsightsTab === 'rag' && <TimeRangeSelector />}
+            </div>
+          )}
+
+          {/* Settings Tab Bar - Only on Settings pages (Mobile) */}
+          {isSettingsPage && (
+            <div className="px-2 pb-3 flex justify-center overflow-x-auto scrollbar-none">
+              <SettingsTabBar />
+            </div>
+          )}
+
+          {/* GitHub Tab Bar - Only on GitHub page (Mobile) */}
+          {isGitHubPage && (
+            <div className="px-2 pb-3 flex justify-center overflow-x-auto scrollbar-none">
+              <GitHubTabBar />
+            </div>
+          )}
         </header>
       </div>
 

@@ -3,14 +3,15 @@
  * Analytics and statistics for chat conversations
  */
 
-import { memo, useMemo, CSSProperties } from 'react';
+import { memo, useMemo } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts';
 import { useAIStats } from '../../../stats/hooks/use-stats';
-import { statsService } from '../../../../services';
+import { statsService } from '../../../../services/stats.service';
 import { StatCard } from '../../../dashboard/components/StatCard';
+import { getProviderColorByName } from '../../../../utils/provider-logos';
 
 // Detect if running in Tauri (WebKit)
 const isTauri = (): boolean => {
@@ -18,43 +19,73 @@ const isTauri = (): boolean => {
   return !!(window as unknown as { __TAURI__?: unknown }).__TAURI__;
 };
 
-// Chart colors
-const CHART_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F', '#FF6B6B', '#4ECDC4', '#45B7D1'];
-const RAG_COLOR = '#8884d8';
-const REGULAR_COLOR = '#82ca9d';
-const AGENT_COLOR = '#ffc658';
-const IMAGE_COLOR = '#ff7300';
+// Get CSS variable value helper
+const getCssVar = (varName: string): string => {
+  if (typeof document === 'undefined') return '';
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+};
+
+// Feature color CSS variable names
+const FEATURE_COLORS = {
+  rag: '--color-feature-rag',
+  regular: '--color-feature-regular',
+  agent: '--color-feature-agent',
+  image: '--color-feature-image',
+} as const;
+
+// Custom tooltip for Provider Usage pie chart (to show colored text like LineChart)
+interface ProviderTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    payload: { name: string; value: number };
+  }>;
+}
+
+const ProviderPieTooltip = memo(function ProviderPieTooltip({ active, payload }: ProviderTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0];
+  const providerName = data.payload.name;
+  const value = data.payload.value;
+  const color = getProviderColorByName(providerName, 0);
+
+  return (
+    <div
+      className="rounded-xl px-3 py-2 shadow-lg backdrop-blur-xl"
+      style={{
+        backgroundColor: 'var(--glass-popup)',
+        border: '1px solid var(--border)',
+      }}
+    >
+      <span style={{ color, fontWeight: 500 }}>
+        {providerName} : {value}
+      </span>
+    </div>
+  );
+});
 
 // Skeleton component for loading state
 const ChatTabSkeleton = memo(function ChatTabSkeleton() {
   return (
-    <div className="space-y-6 p-4 animate-pulse">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-pulse">
       {/* Stats Cards Skeleton */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border p-4 h-20"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            }}
+            className="rounded-2xl border p-4 h-20 insights-skeleton-card"
           >
-            <div className="h-3 w-20 rounded mb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-            <div className="h-6 w-16 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+            <div className="h-3 w-20 rounded mb-2 insights-skeleton" />
+            <div className="h-6 w-16 rounded insights-skeleton" />
           </div>
         ))}
       </div>
       {/* Chart Skeleton */}
-      <div
-        className="rounded-3xl border p-6 h-80"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        }}
-      >
-        <div className="h-5 w-48 rounded mb-4" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
-        <div className="h-48 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }} />
+      <div className="rounded-3xl border p-6 h-80 insights-skeleton-card">
+        <div className="h-5 w-48 rounded mb-4 insights-skeleton" />
+        <div className="h-48 rounded insights-skeleton" />
       </div>
     </div>
   );
@@ -63,6 +94,14 @@ const ChatTabSkeleton = memo(function ChatTabSkeleton() {
 export const ChatTab = memo(function ChatTab() {
   const { data: stats, isLoading, error } = useAIStats();
   const isWebKit = useMemo(() => isTauri(), []);
+
+  // Feature colors from CSS variables
+  const featureColors = useMemo(() => ({
+    rag: getCssVar(FEATURE_COLORS.rag),
+    regular: getCssVar(FEATURE_COLORS.regular),
+    agent: getCssVar(FEATURE_COLORS.agent),
+    image: getCssVar(FEATURE_COLORS.image),
+  }), []);
 
   // Prepare chat type breakdown data
   const chatTypeData = useMemo(() => {
@@ -104,12 +143,14 @@ export const ChatTab = memo(function ChatTab() {
     return statsService.getConversationTrend(stats);
   }, [stats]);
 
-  // Card container styles - frosted glass with subtle shadow
-  const cardStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  // Tooltip styles for Recharts (requires style object)
+  const tooltipStyles = useMemo(() => ({
+    backgroundColor: 'var(--insights-tooltip-bg)',
+    border: '1px solid var(--insights-tooltip-border)',
+    borderRadius: '12px',
+    color: 'var(--text-primary)',
+    fontSize: '12px',
+    backdropFilter: 'blur(20px)',
   }), []);
 
   if (isLoading) {
@@ -119,13 +160,7 @@ export const ChatTab = memo(function ChatTab() {
   if (error || !stats) {
     return (
       <div className="flex items-center justify-center h-64 p-4">
-        <div
-          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-          }}
-        >
+        <div className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300 insights-error">
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
               className="h-5 w-5 flex-shrink-0"
@@ -149,9 +184,9 @@ export const ChatTab = memo(function ChatTab() {
   }
 
   return (
-    <div className="space-y-6 p-4 animate-in fade-in duration-300">
+    <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
         <StatCard
           title="Total Conversations"
           value={stats.totalConversations.toLocaleString()}
@@ -209,20 +244,11 @@ export const ChatTab = memo(function ChatTab() {
       </div>
 
       {/* Chat Usage Over Time, Provider Usage, and Feature Usage - Inline */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {/* Chat Usage Over Time */}
         {chatTypeData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -246,29 +272,22 @@ export const ChatTab = memo(function ChatTab() {
                   />
                   <YAxis stroke="var(--text-secondary)" style={{ fontSize: '9px' }} width={30} tick={{ fontSize: 9 }} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                      border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      fontSize: '12px',
-                      backdropFilter: 'blur(20px)',
-                    }}
+                    contentStyle={tooltipStyles}
                     labelStyle={{ color: 'var(--text-primary)' }}
                     isAnimationActive={!isWebKit}
                   />
-                  <Line type="monotone" dataKey="ragChats" name="RAG" stroke={RAG_COLOR} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
-                  <Line type="monotone" dataKey="regularChats" name="Regular" stroke={REGULAR_COLOR} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
-                  <Line type="monotone" dataKey="agentChats" name="Agent" stroke={AGENT_COLOR} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
-                  <Line type="monotone" dataKey="imageGenChats" name="Image" stroke={IMAGE_COLOR} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
+                  <Line type="monotone" dataKey="ragChats" name="RAG" stroke={featureColors.rag} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
+                  <Line type="monotone" dataKey="regularChats" name="Regular" stroke={featureColors.regular} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
+                  <Line type="monotone" dataKey="agentChats" name="Agent" stroke={featureColors.agent} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
+                  <Line type="monotone" dataKey="imageGenChats" name="Image" stroke={featureColors.image} strokeWidth={2} dot={false} animationDuration={isWebKit ? 300 : 500} />
                 </LineChart>
               </ResponsiveContainer>
               {/* Compact Legend */}
               <div className="flex justify-center gap-3 mt-2">
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: RAG_COLOR }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>RAG</span></div>
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: REGULAR_COLOR }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Regular</span></div>
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: AGENT_COLOR }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Agent</span></div>
-                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: IMAGE_COLOR }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Image</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: featureColors.rag }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>RAG</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: featureColors.regular }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Regular</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: featureColors.agent }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Agent</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: featureColors.image }} /><span className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>Image</span></div>
               </div>
             </div>
           </div>
@@ -277,16 +296,7 @@ export const ChatTab = memo(function ChatTab() {
         {/* Provider Usage */}
         {providerPieData.length > 0 && (
           <div
-            className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-            style={cardStyles}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-            }}
+            className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
           >
             <div>
               <div className="flex items-center gap-2 mb-3">
@@ -310,29 +320,22 @@ export const ChatTab = memo(function ChatTab() {
                       paddingAngle={2}
                       animationDuration={isWebKit ? 300 : 500}
                     >
-                      {providerPieData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      {providerPieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getProviderColorByName(entry.name, index)} />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-                        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                        borderRadius: '12px',
-                        color: 'var(--text-primary)',
-                        fontSize: '12px',
-                        backdropFilter: 'blur(20px)',
-                      }}
+                      content={<ProviderPieTooltip />}
                       isAnimationActive={!isWebKit}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="flex-1 space-y-1 overflow-hidden">
-                  {providerPieData.slice(0, 4).map((entry, index) => (
+                <div className="flex-1 space-y-1 overflow-y-auto max-h-[140px]">
+                  {providerPieData.map((entry, index) => (
                     <div key={entry.name} className="flex items-center gap-1.5">
                       <div
                         className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                        style={{ backgroundColor: getProviderColorByName(entry.name, index) }}
                       />
                       <span className="text-xs truncate" style={{ color: 'var(--text-primary)' }}>
                         {entry.name}
@@ -350,16 +353,7 @@ export const ChatTab = memo(function ChatTab() {
 
         {/* Feature Usage Breakdown */}
         <div
-          className={`rounded-2xl border p-4 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-2xl border p-4 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -383,12 +377,12 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.ragConversationsCount} ({statsService.formatPercentage(statsService.getRagUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(statsService.getRagUsagePercentage(stats), 100)}%`,
-                      backgroundColor: RAG_COLOR,
+                      backgroundColor: featureColors.rag,
                     }}
                   />
                 </div>
@@ -404,12 +398,12 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.agentConversationsCount} ({statsService.formatPercentage(statsService.getAgentUsagePercentage(stats), 0)})
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${Math.min(statsService.getAgentUsagePercentage(stats), 100)}%`,
-                      backgroundColor: AGENT_COLOR,
+                      backgroundColor: featureColors.agent,
                     }}
                   />
                 </div>
@@ -425,12 +419,12 @@ export const ChatTab = memo(function ChatTab() {
                     {stats.imageGenerationConversationsCount} ({stats.totalImagesGenerated} imgs)
                   </span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+                <div className="h-1.5 rounded-full overflow-hidden insights-progress-track">
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${stats.totalConversations > 0 ? Math.min((stats.imageGenerationConversationsCount / stats.totalConversations) * 100, 100) : 0}%`,
-                      backgroundColor: IMAGE_COLOR,
+                      backgroundColor: featureColors.image,
                     }}
                   />
                 </div>
@@ -443,16 +437,7 @@ export const ChatTab = memo(function ChatTab() {
       {/* Model Usage Summary */}
       {Object.keys(stats.modelUsageCounts).length > 0 && (
         <div
-          className={`rounded-3xl border p-6 transition-all duration-200 ${isWebKit ? '' : 'backdrop-blur-md'}`}
-          style={cardStyles}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--color-brand-500) 30%, transparent)';
-            e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)';
-            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.03)';
-          }}
+          className={`rounded-3xl border p-6 insights-card insights-card-hoverable ${isWebKit ? '' : 'backdrop-blur-md'}`}
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -464,20 +449,16 @@ export const ChatTab = memo(function ChatTab() {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {statsService.getTopModels(stats, 6).map((model, index) => (
                 <div
                   key={model.model}
-                  className="p-3 rounded-xl"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
+                  className="p-3 rounded-xl insights-nested-card"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                      style={{ backgroundColor: getProviderColorByName(model.provider, index) }}
                     />
                     <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }} title={model.model}>
                       {model.model}

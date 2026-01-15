@@ -56,7 +56,7 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
         _logger = logger;
     }
 
-    public override IReadOnlyList<string> SupportedProviders => new[] { "openai", "gemini", "ollama", "grok", "xai" };
+    public override IReadOnlyList<string> SupportedProviders => new[] { "openai", "google", "ollama", "xai" };
 
     public override bool CanHandle(AgentRequest request, AIProvidersSettings settings)
     {
@@ -217,23 +217,21 @@ public class SemanticKernelStreamingStrategy : BaseAgentStreamingStrategy
                 builder.AddOpenAIChatCompletion(modelId: request.Model, apiKey: _settings.OpenAI.ApiKey);
                 break;
 
-            case "grok":
             case "xai":
                 if (!_settings.XAI.Enabled || string.IsNullOrEmpty(_settings.XAI.ApiKey))
-                    throw new InvalidOperationException("xAI/Grok provider is not enabled or configured");
+                    throw new InvalidOperationException("xAI provider is not enabled or configured");
                 builder.AddOpenAIChatCompletion(
                     modelId: request.Model,
                     apiKey: _settings.XAI.ApiKey,
                     endpoint: new Uri(_settings.XAI.BaseUrl));
                 break;
 
-            case "claude":
             case "anthropic":
                 throw new InvalidOperationException("Anthropic provider should be handled by AnthropicStreamingStrategy");
 
-            case "gemini":
+            case "google":
                 if (!_settings.Gemini.Enabled || string.IsNullOrEmpty(_settings.Gemini.ApiKey))
-                    throw new InvalidOperationException("Gemini provider is not enabled or configured");
+                    throw new InvalidOperationException("Google provider is not enabled or configured");
                 builder.AddOpenAIChatCompletion(
                     modelId: request.Model,
                     apiKey: _settings.Gemini.ApiKey,

@@ -141,6 +141,62 @@
 }
 
 /* =============================================================================
+   Midnight Theme shadcn Overrides
+   ============================================================================= */
+[data-theme="midnight"] {
+  /* Midnight theme uses midnight palette for UI, but keeps green brand for primary actions */
+  --primary: var(--color-brand-500);
+  --primary-foreground: #ffffff;
+
+  --secondary: color-mix(in srgb, var(--color-midnight-700) 30%, transparent);
+  --secondary-foreground: var(--color-midnight-200);
+
+  --accent: color-mix(in srgb, var(--color-midnight-500) 20%, transparent);
+  --accent-foreground: var(--color-midnight-200);
+
+  --muted: var(--surface-elevated);
+  --muted-foreground: var(--text-tertiary);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  --ring: var(--color-midnight-400);
+
+  /* Midnight-tinted overlays for midnight theme */
+  --overlay: color-mix(in srgb, var(--color-midnight-950) 70%, transparent);
+  --overlay-heavy: color-mix(in srgb, var(--color-midnight-950) 85%, transparent);
+  --overlay-light: color-mix(in srgb, var(--color-midnight-950) 50%, transparent);
+}
+
+/* =============================================================================
+   Sunset Theme shadcn Overrides
+   ============================================================================= */
+[data-theme="sunset"] {
+  /* Keep green brand color for primary actions (consistent with other themes) */
+  --primary: var(--color-brand-600);
+  --primary-foreground: #ffffff;
+
+  --secondary: color-mix(in srgb, var(--color-sunset-200) 50%, transparent);
+  --secondary-foreground: var(--color-sunset-800);
+
+  --accent: color-mix(in srgb, var(--color-sunset-500) 20%, transparent);
+  --accent-foreground: var(--color-sunset-900);
+
+  --muted: color-mix(in srgb, var(--color-sunset-100) 30%, transparent);
+  --muted-foreground: var(--color-sunset-700);
+
+  --destructive: var(--color-error);
+  --destructive-foreground: #ffffff;
+
+  --ring: var(--color-brand-600);
+
+  /* Warm-tinted overlays for sunset theme */
+  --overlay: color-mix(in srgb, #3d1f0f 40%, transparent);
+  --overlay-heavy: color-mix(in srgb, #3d1f0f 60%, transparent);
+  --overlay-light: color-mix(in srgb, #3d1f0f 20%, transparent);
+}
+
+/* =============================================================================
    Sidebar tokens (for shadcn sidebar component if used)
    ============================================================================= */
 :root {

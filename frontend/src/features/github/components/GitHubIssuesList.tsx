@@ -68,14 +68,14 @@ export const GitHubIssuesList = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Filter - Fixed at top */}
-      <div className="flex-shrink-0 flex items-center justify-between mb-4">
+      {/* Header with Filter - Fixed at top, responsive */}
+      <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+          <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
             Issues
           </h2>
           <span
-            className="px-2 py-0.5 rounded-full text-xs font-medium"
+            className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
               color: 'var(--text-secondary)',
@@ -87,7 +87,7 @@ export const GitHubIssuesList = ({
 
         {/* State Filter */}
         <div
-          className="flex items-center gap-1 p-1 rounded-lg"
+          className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 rounded-lg"
           style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
         >
           {(['open', 'closed', 'all'] as IssueFilter[]).map((state) => (
@@ -97,7 +97,7 @@ export const GitHubIssuesList = ({
                 setStateFilter(state);
                 setPage(1);
               }}
-              className={`px-3 py-1 rounded-md text-xs font-medium transform-gpu transition-all duration-200 capitalize ${
+              className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-medium transform-gpu transition-all duration-200 capitalize ${
                 stateFilter === state ? 'shadow-sm' : ''
               }`}
               style={{

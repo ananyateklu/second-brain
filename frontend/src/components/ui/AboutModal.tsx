@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useBoundStore } from '../../store/bound-store';
+import { useTheme } from '../../hooks/useTheme';
 import { getAppVersion } from '../../lib/tauri-bridge';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
@@ -15,11 +15,9 @@ interface AboutModalProps {
 }
 
 export function AboutModal({ isOpen, onClose }: AboutModalProps) {
-  const theme = useBoundStore((state) => state.theme);
+  const { isDarkMode } = useTheme();
   const [appVersion, setAppVersion] = useState<string>('2.0.0');
 
-  // Determine if dark mode based on theme
-  const isDarkMode = theme === 'dark' || theme === 'blue';
   const logo = isDarkMode ? logoDark : logoLight;
 
   // Get app version from Tauri

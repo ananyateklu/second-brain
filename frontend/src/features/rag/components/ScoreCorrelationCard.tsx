@@ -81,10 +81,7 @@ const CorrelationBar = memo(({
       </div>
 
       {/* Correlation bar with gradient */}
-      <div
-        className="h-2.5 rounded-full overflow-hidden"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-      >
+      <div className="h-2.5 rounded-full overflow-hidden insights-progress-track">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{
@@ -119,23 +116,10 @@ export const ScoreCorrelationCard = memo(({ stats }: ScoreCorrelationCardProps) 
   const hasEnoughData = stats.queriesWithFeedback >= 10;
 
   return (
-    <div
-      className="rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
-    >
+    <div className="rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md border insights-card insights-card-hoverable">
       <div>
         <div className="flex items-center gap-2.5 mb-4">
-          <div
-            className="p-2.5 rounded-xl"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-            }}
-          >
+          <div className="p-2.5 rounded-xl insights-icon-wrapper">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -160,13 +144,7 @@ export const ScoreCorrelationCard = memo(({ stats }: ScoreCorrelationCardProps) 
         </div>
 
         {!hasEnoughData && (
-          <div
-            className="p-3 rounded-xl mb-4 text-sm"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-              border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            }}
-          >
+          <div className="p-3 rounded-xl mb-4 text-sm insights-nested-card">
             <div className="flex items-start gap-3">
               <svg
                 className="w-5 h-5 flex-shrink-0 mt-0.5"
@@ -219,11 +197,8 @@ export const ScoreCorrelationCard = memo(({ stats }: ScoreCorrelationCardProps) 
         </div>
 
         <div
-          className="mt-4 pt-3 border-t text-xs leading-relaxed"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            color: 'var(--text-tertiary)'
-          }}
+          className="mt-4 pt-3 border-t text-xs leading-relaxed insights-section-border"
+          style={{ color: 'var(--text-tertiary)' }}
         >
           <p>
             <strong style={{ color: 'var(--text-secondary)' }}>Interpretation:</strong> A high positive correlation (closer to 1) indicates that

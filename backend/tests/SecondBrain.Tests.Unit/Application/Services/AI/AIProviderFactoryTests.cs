@@ -37,14 +37,14 @@ public class AIProviderFactoryTests
     }
 
     [Theory]
-    [InlineData("gemini")]
-    [InlineData("Gemini")]
-    [InlineData("GEMINI")]
-    public void GetProvider_WhenGeminiRequested_ReturnsGeminiProvider(string providerName)
+    [InlineData("google")]
+    [InlineData("Google")]
+    [InlineData("GOOGLE")]
+    public void GetProvider_WhenGoogleRequested_ReturnsGoogleProvider(string providerName)
     {
         // Arrange
         var mockProvider = new Mock<IAIProvider>();
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(mockProvider.Object);
 
         // Act
@@ -56,14 +56,14 @@ public class AIProviderFactoryTests
     }
 
     [Theory]
-    [InlineData("claude")]
-    [InlineData("Claude")]
-    [InlineData("CLAUDE")]
-    public void GetProvider_WhenClaudeRequested_ReturnsClaudeProvider(string providerName)
+    [InlineData("anthropic")]
+    [InlineData("Anthropic")]
+    [InlineData("ANTHROPIC")]
+    public void GetProvider_WhenAnthropicRequested_ReturnsAnthropicProvider(string providerName)
     {
         // Arrange
         var mockProvider = new Mock<IAIProvider>();
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(mockProvider.Object);
 
         // Act
@@ -94,15 +94,14 @@ public class AIProviderFactoryTests
     }
 
     [Theory]
-    [InlineData("grok")]
-    [InlineData("Grok")]
     [InlineData("xai")]
     [InlineData("XAI")]
-    public void GetProvider_WhenGrokOrXAIRequested_ReturnsGrokProvider(string providerName)
+    [InlineData("Xai")]
+    public void GetProvider_WhenXAIRequested_ReturnsXaiProvider(string providerName)
     {
         // Arrange
         var mockProvider = new Mock<IAIProvider>();
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
             .Returns(mockProvider.Object);
 
         // Act
@@ -148,21 +147,21 @@ public class AIProviderFactoryTests
     {
         // Arrange
         var openAIProvider = CreateMockProvider("OpenAI", true);
-        var geminiProvider = CreateMockProvider("Gemini", true);
-        var claudeProvider = CreateMockProvider("Claude", false);
+        var geminiProvider = CreateMockProvider("Google", true);
+        var claudeProvider = CreateMockProvider("Anthropic", false);
         var ollamaProvider = CreateMockProvider("Ollama", true);
-        var grokProvider = CreateMockProvider("Grok", false);
+        var xaiProvider = CreateMockProvider("Xai", false);
 
         _mockServiceProvider.Setup(s => s.GetService(typeof(OpenAIProvider)))
             .Returns(openAIProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(geminiProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(claudeProvider.Object);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OllamaProvider)))
             .Returns(ollamaProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
-            .Returns(grokProvider.Object);
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
+            .Returns(xaiProvider.Object);
 
         // Act
         var result = _sut.GetAllProviders().ToList();
@@ -178,13 +177,13 @@ public class AIProviderFactoryTests
         var openAIProvider = CreateMockProvider("OpenAI", true);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OpenAIProvider)))
             .Returns(openAIProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(null!);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OllamaProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
             .Returns(null!);
 
         // Act
@@ -196,17 +195,17 @@ public class AIProviderFactoryTests
     }
 
     [Fact]
-    public void GetAllProviders_DoesNotReturnDuplicatesForAliases()
+    public void GetAllProviders_IncludesXaiProvider()
     {
-        // Arrange - Grok and XAI are aliases for the same provider
-        var grokProvider = CreateMockProvider("Grok", true);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
-            .Returns(grokProvider.Object);
+        // Arrange
+        var xaiProvider = CreateMockProvider("Xai", true);
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
+            .Returns(xaiProvider.Object);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OpenAIProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(null!);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OllamaProvider)))
             .Returns(null!);
@@ -215,8 +214,8 @@ public class AIProviderFactoryTests
         var result = _sut.GetAllProviders().ToList();
 
         // Assert
-        // GrokProvider should only appear once even though it's registered under both "grok" and "xai"
         result.Should().HaveCount(1);
+        result.First().ProviderName.Should().Be("Xai");
     }
 
     #endregion
@@ -228,17 +227,17 @@ public class AIProviderFactoryTests
     {
         // Arrange
         var enabledProvider = CreateMockProvider("OpenAI", true);
-        var disabledProvider = CreateMockProvider("Gemini", false);
+        var disabledProvider = CreateMockProvider("Google", false);
 
         _mockServiceProvider.Setup(s => s.GetService(typeof(OpenAIProvider)))
             .Returns(enabledProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(disabledProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(null!);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OllamaProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
             .Returns(null!);
 
         // Act
@@ -256,13 +255,13 @@ public class AIProviderFactoryTests
         var disabledProvider = CreateMockProvider("OpenAI", false);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OpenAIProvider)))
             .Returns(disabledProvider.Object);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GeminiProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(GoogleProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(ClaudeProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(AnthropicProvider)))
             .Returns(null!);
         _mockServiceProvider.Setup(s => s.GetService(typeof(OllamaProvider)))
             .Returns(null!);
-        _mockServiceProvider.Setup(s => s.GetService(typeof(GrokProvider)))
+        _mockServiceProvider.Setup(s => s.GetService(typeof(XaiProvider)))
             .Returns(null!);
 
         // Act

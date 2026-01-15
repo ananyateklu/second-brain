@@ -20,11 +20,14 @@
  * └──────────────┴──────────────────────────────────────┘
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBoundStore } from '../../../store/bound-store';
 import { useVoiceSession } from '../hooks/use-voice-session';
 import { useVoiceHistory, useVoiceSessionTranscript } from '../hooks/use-voice-session-history';
+import { useMobileDetection } from '../hooks/use-mobile-detection';
+import { useVoiceSessionSelection } from '../hooks/use-voice-session-selection';
+import { useVoiceConnectionFeedback } from '../hooks/use-voice-connection-feedback';
 import { useVoicePageContext } from '../context/VoicePageContext';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { VoiceTranscript } from './VoiceTranscript';
@@ -154,50 +157,38 @@ export function VoiceAgentInterface() {
   // Get historical transcript when viewing past session
   const { data: historicalTranscript } = useVoiceSessionTranscript(selectedHistoricalSessionId);
 
-  // Selection mode state
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+  // Mobile detection with sidebar handling
+  const { isMobile } = useMobileDetection({
+    sidebarVisible: voiceSidebarVisible,
+    onCloseSidebar: toggleVoiceSidebar,
+  });
 
-  // Disconnect feedback state - shows "Connection closed" briefly after disconnect
-  const [showDisconnected, setShowDisconnected] = useState(false);
+  // Selection mode for bulk operations
+  const {
+    isSelectionMode,
+    selectedSessionIds,
+    handleToggleSelectionMode,
+    handleToggleSessionSelection,
+    handleSelectAllSessions,
+    handleBulkDeleteSessions,
+    handleExitSelectionMode,
+  } = useVoiceSessionSelection({
+    sessions,
+    deleteSession,
+    selectedHistoricalSessionId,
+    setSelectedHistoricalSessionId,
+  });
 
-  // Watch for disconnect errors and show feedback briefly
-  useEffect(() => {
-    if (!error?.toLowerCase().includes('disconnected')) {
-      return;
-    }
-    // Schedule state update asynchronously to avoid cascading renders
-    const showTimer = setTimeout(() => setShowDisconnected(true), 0);
-    // Auto-reset after 3 seconds
-    const hideTimer = setTimeout(() => {
-      setShowDisconnected(false);
-      _clearError();
-    }, 3000);
-    return () => {
-      clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-    };
-  }, [error, _clearError]);
-
-  // Tool chips for floating bar - track dismissed tool IDs
-  const [dismissedToolIds, setDismissedToolIds] = useState<Set<string>>(new Set());
-
-  // Derive active tool chips from toolExecutions
-  // Show all executing tools and recently updated completed tools
-  // The VoiceToolChip handles its own animation timing and calls onComplete when done
-  const activeToolChips = useMemo(() => {
-    return toolExecutions.filter(tool => {
-      // Don't show dismissed tools
-      if (dismissedToolIds.has(tool.toolId)) return false;
-      // Show executing or completed/failed tools (chip handles exit animation)
-      return true;
-    });
-  }, [toolExecutions, dismissedToolIds]);
-
-  // Remove completed tool chip (called when chip exit animation finishes)
-  const handleToolChipComplete = useCallback((toolId: string) => {
-    setDismissedToolIds(prev => new Set([...prev, toolId]));
-  }, []);
+  // Connection feedback and tool chips
+  const {
+    showDisconnected,
+    activeToolChips,
+    handleToolChipComplete,
+  } = useVoiceConnectionFeedback({
+    error,
+    clearError: _clearError,
+    toolExecutions,
+  });
 
   // Get available providers
   const providers = healthData?.providers;
@@ -326,51 +317,6 @@ export function VoiceAgentInterface() {
       setSelectedHistoricalSessionId(null);
     }
   }, [deleteSession, selectedHistoricalSessionId, setSelectedHistoricalSessionId]);
-
-  // Selection mode handlers
-  const handleToggleSelectionMode = useCallback(() => {
-    setIsSelectionMode((prev) => !prev);
-    if (isSelectionMode) {
-      setSelectedSessionIds(new Set());
-    }
-  }, [isSelectionMode]);
-
-  const handleToggleSessionSelection = useCallback((sessionId: string) => {
-    setSelectedSessionIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(sessionId)) {
-        next.delete(sessionId);
-      } else {
-        next.add(sessionId);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleSelectAllSessions = useCallback(() => {
-    if (selectedSessionIds.size === sessions.length) {
-      setSelectedSessionIds(new Set());
-    } else {
-      setSelectedSessionIds(new Set(sessions.map((s) => s.id)));
-    }
-  }, [selectedSessionIds.size, sessions]);
-
-  const handleBulkDeleteSessions = useCallback(async () => {
-    const idsToDelete = Array.from(selectedSessionIds);
-    for (const id of idsToDelete) {
-      await deleteSession(id);
-    }
-    setSelectedSessionIds(new Set());
-    setIsSelectionMode(false);
-    if (selectedHistoricalSessionId && selectedSessionIds.has(selectedHistoricalSessionId)) {
-      setSelectedHistoricalSessionId(null);
-    }
-  }, [selectedSessionIds, deleteSession, selectedHistoricalSessionId, setSelectedHistoricalSessionId]);
-
-  const handleExitSelectionMode = useCallback(() => {
-    setIsSelectionMode(false);
-    setSelectedSessionIds(new Set());
-  }, []);
 
   // Populate header state
   useEffect(() => {
@@ -548,32 +494,74 @@ export function VoiceAgentInterface() {
 
   return (
     <div className="h-full flex">
-      {/* Sidebar */}
-      <AnimatePresence mode="wait">
-        {voiceSidebarVisible && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-          >
-            <VoiceSidebar
-              sessions={sessions}
-              selectedSessionId={selectedHistoricalSessionId}
-              currentSessionId={sessionId}
-              isLoading={isLoadingHistory}
-              isSelectionMode={isSelectionMode}
-              selectedSessionIds={selectedSessionIds}
-              onSelectSession={setSelectedHistoricalSessionId}
-              onToggleSessionSelection={handleToggleSessionSelection}
-              onDeleteSession={(id) => void handleDeleteSession(id)}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Sidebar Overlay - Backdrop */}
+      {isMobile && voiceSidebarVisible && (
+        <div
+          className="fixed inset-0 z-50 transition-opacity duration-300"
+          style={{
+            backgroundColor: 'var(--glass-overlay)',
+            backdropFilter: 'blur(4px)',
+          }}
+          onClick={toggleVoiceSidebar}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer - z-[60] to be above overlay */}
+      {isMobile && (
+        <aside
+          className={`fixed top-0 left-0 bottom-0 z-[60] w-72 max-w-[80vw] transform transition-transform duration-300 ease-out flex flex-col backdrop-blur-xl ${
+            voiceSidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`}
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+            borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+            paddingTop: 'env(safe-area-inset-top)',
+          }}
+        >
+          <VoiceSidebar
+            sessions={sessions}
+            selectedSessionId={selectedHistoricalSessionId}
+            currentSessionId={sessionId}
+            isLoading={isLoadingHistory}
+            isSelectionMode={isSelectionMode}
+            selectedSessionIds={selectedSessionIds}
+            onSelectSession={setSelectedHistoricalSessionId}
+            onToggleSessionSelection={handleToggleSessionSelection}
+            onDeleteSession={(id) => void handleDeleteSession(id)}
+            onClose={toggleVoiceSidebar}
+          />
+        </aside>
+      )}
+
+      {/* Desktop Sidebar - Animated inline */}
+      {!isMobile && (
+        <AnimatePresence mode="wait">
+          {voiceSidebarVisible && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 'auto', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <VoiceSidebar
+                sessions={sessions}
+                selectedSessionId={selectedHistoricalSessionId}
+                currentSessionId={sessionId}
+                isLoading={isLoadingHistory}
+                isSelectionMode={isSelectionMode}
+                selectedSessionIds={selectedSessionIds}
+                onSelectSession={setSelectedHistoricalSessionId}
+                onToggleSessionSelection={handleToggleSessionSelection}
+                onDeleteSession={(id) => void handleDeleteSession(id)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 relative min-h-0 min-w-0">
+      <div className="flex-1 flex flex-col relative min-h-0 min-w-0">
         {/* Configuration Banner - shown when current mode is not configured */}
         {!isCurrentModeConfigured && !isViewingHistory ? (
           <VoiceConfigurationBanner
@@ -615,6 +603,19 @@ export function VoiceAgentInterface() {
             canStart={canStart}
             disabledReason={disabledReason}
             showDisconnected={showDisconnected}
+            // Mobile controls
+            voiceProviderType={voiceProviderType}
+            onVoiceProviderTypeChange={setVoiceProviderType}
+            grokVoiceAvailable={grokVoiceAvailable}
+            standardVoiceAvailable={standardVoiceAvailable}
+            selectedVoiceId={selectedVoiceId}
+            availableVoices={availableVoices}
+            onVoiceChange={setSelectedVoiceId}
+            selectedGrokVoice={selectedGrokVoice}
+            availableGrokVoices={availableGrokVoices}
+            onGrokVoiceChange={setSelectedGrokVoice}
+            agentEnabled={agentEnabled}
+            onAgentModeChange={setAgentEnabled}
           />
         )}
 

@@ -589,7 +589,7 @@ public class AgentServiceTests
     public async Task ProcessStreamAsync_UsesCorrectProviderStrategy()
     {
         // Arrange
-        var providers = new[] { "anthropic", "openai", "gemini", "ollama", "grok" };
+        var providers = new[] { "anthropic", "openai", "google", "ollama", "xai" };
 
         foreach (var provider in providers)
         {

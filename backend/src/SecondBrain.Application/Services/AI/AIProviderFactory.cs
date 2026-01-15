@@ -15,11 +15,10 @@ public class AIProviderFactory : IAIProviderFactory
         _providerTypes = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
         {
             { "openai", typeof(Providers.OpenAIProvider) },
-            { "gemini", typeof(Providers.GeminiProvider) },
-            { "claude", typeof(Providers.ClaudeProvider) },
+            { "google", typeof(Providers.GoogleProvider) },
+            { "anthropic", typeof(Providers.AnthropicProvider) },
             { "ollama", typeof(Providers.OllamaProvider) },
-            { "grok", typeof(Providers.GrokProvider) },
-            { "xai", typeof(Providers.GrokProvider) }, // Alias for Grok
+            { "xai", typeof(Providers.XaiProvider) },
             { "cohere", typeof(Providers.CohereProvider) }
         };
     }
@@ -48,7 +47,7 @@ public class AIProviderFactory : IAIProviderFactory
 
         foreach (var providerType in _providerTypes.Values)
         {
-            // Skip if we've already processed this provider type (handles aliases like "grok" and "xai")
+            // Skip if we've already processed this provider type (handles aliases)
             if (seenTypes.Contains(providerType))
             {
                 continue;

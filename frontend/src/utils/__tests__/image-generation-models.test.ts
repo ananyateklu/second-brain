@@ -30,20 +30,20 @@ describe('image-generation-models', () => {
       expect(IMAGE_GENERATION_CONFIGS.OpenAI.defaultModel).toBe('dall-e-3');
     });
 
-    it('should have Gemini config', () => {
-      expect(IMAGE_GENERATION_CONFIGS.Gemini).toBeDefined();
-      expect(IMAGE_GENERATION_CONFIGS.Gemini.provider).toBe('Gemini');
+    it('should have Google config', () => {
+      expect(IMAGE_GENERATION_CONFIGS.Google).toBeDefined();
+      expect(IMAGE_GENERATION_CONFIGS.Google.provider).toBe('Google');
     });
 
-    it('should have Grok config', () => {
-      expect(IMAGE_GENERATION_CONFIGS.Grok).toBeDefined();
-      expect(IMAGE_GENERATION_CONFIGS.Grok.provider).toBe('Grok');
+    it('should have Xai config', () => {
+      expect(IMAGE_GENERATION_CONFIGS.Xai).toBeDefined();
+      expect(IMAGE_GENERATION_CONFIGS.Xai.provider).toBe('Xai');
     });
 
     it('should have models for each provider', () => {
       expect(IMAGE_GENERATION_CONFIGS.OpenAI.models.length).toBeGreaterThan(0);
-      expect(IMAGE_GENERATION_CONFIGS.Gemini.models.length).toBeGreaterThan(0);
-      expect(IMAGE_GENERATION_CONFIGS.Grok.models.length).toBeGreaterThan(0);
+      expect(IMAGE_GENERATION_CONFIGS.Google.models.length).toBeGreaterThan(0);
+      expect(IMAGE_GENERATION_CONFIGS.Xai.models.length).toBeGreaterThan(0);
     });
   });
 
@@ -77,7 +77,7 @@ describe('image-generation-models', () => {
     });
 
     it('should return null for non-image provider', () => {
-      expect(getImageGenerationConfig('Claude')).toBeNull();
+      expect(getImageGenerationConfig('Anthropic')).toBeNull();
     });
   });
 
@@ -123,12 +123,11 @@ describe('image-generation-models', () => {
   describe('isImageGenerationProvider', () => {
     it('should return true for image generation providers', () => {
       expect(isImageGenerationProvider('OpenAI')).toBe(true);
-      expect(isImageGenerationProvider('Gemini')).toBe(true);
-      expect(isImageGenerationProvider('Grok')).toBe(true);
+      expect(isImageGenerationProvider('Google')).toBe(true);
+      expect(isImageGenerationProvider('Xai')).toBe(true);
     });
 
     it('should return false for non-image providers', () => {
-      expect(isImageGenerationProvider('Claude')).toBe(false);
       expect(isImageGenerationProvider('Anthropic')).toBe(false);
       expect(isImageGenerationProvider('Ollama')).toBe(false);
     });
@@ -141,12 +140,12 @@ describe('image-generation-models', () => {
     it('should return true for valid image models', () => {
       expect(isImageGenerationModel('OpenAI', 'dall-e-3')).toBe(true);
       expect(isImageGenerationModel('OpenAI', 'dall-e-2')).toBe(true);
-      expect(isImageGenerationModel('Grok', 'grok-2-image')).toBe(true);
+      expect(isImageGenerationModel('Xai', 'grok-2-image')).toBe(true);
     });
 
     it('should return false for non-image models', () => {
       expect(isImageGenerationModel('OpenAI', 'gpt-4o')).toBe(false);
-      expect(isImageGenerationModel('Grok', 'grok-3')).toBe(false);
+      expect(isImageGenerationModel('Xai', 'grok-3')).toBe(false);
     });
 
     it('should return false for invalid provider', () => {
@@ -167,8 +166,8 @@ describe('image-generation-models', () => {
     it('should include expected providers', () => {
       const providers = getImageGenerationProviders();
       expect(providers).toContain('OpenAI');
-      expect(providers).toContain('Gemini');
-      expect(providers).toContain('Grok');
+      expect(providers).toContain('Google');
+      expect(providers).toContain('Xai');
     });
   });
 
@@ -178,7 +177,7 @@ describe('image-generation-models', () => {
   describe('getDefaultImageModel', () => {
     it('should return default model for provider', () => {
       expect(getDefaultImageModel('OpenAI')).toBe('dall-e-3');
-      expect(getDefaultImageModel('Grok')).toBe('grok-2-image');
+      expect(getDefaultImageModel('Xai')).toBe('grok-2-image');
     });
 
     it('should return null for invalid provider', () => {

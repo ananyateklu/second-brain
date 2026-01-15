@@ -52,6 +52,7 @@ export function UserMenu() {
               'data-[state=open]:bg-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]'
             )}
             aria-label="User menu"
+            data-testid="user-menu-button"
           >
             <UserAvatar user={user} size="sm" />
             <svg
@@ -68,10 +69,7 @@ export function UserMenu() {
 
         <DropdownMenuContent
           align="end"
-          className="w-80 rounded-2xl py-2 overflow-hidden backdrop-blur-xl"
-          style={{
-            backgroundColor: 'var(--glass-bg)',
-          }}
+          className="w-80 rounded-2xl py-2 overflow-hidden"
           sideOffset={8}
         >
           {/* Ambient glow effect */}

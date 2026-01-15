@@ -39,6 +39,7 @@ import {
   isStreamActive,
   hasStreamContent,
   isImageGenerationActive,
+  isAwaitingConfirmation,
 } from '../core/streaming/stream-reducer';
 import { StreamEventProcessor } from '../core/streaming/stream-event-processor';
 import { chatService } from '../services/chat.service';
@@ -55,8 +56,11 @@ import type {
 // Constants
 // ============================================
 
-// Note-related tools that should trigger cache invalidation when they complete
-const NOTE_MUTATION_TOOLS = ['CreateNote', 'UpdateNote', 'EditNote', 'DeleteNote', 'DuplicateNote', 'ManageTrash'];
+// Note-related tools that should trigger cache invalidation and notifications when they complete
+const NOTE_MUTATION_TOOLS = [
+  'CreateNote', 'UpdateNote', 'EditNote', 'DeleteNote',
+  'DuplicateNote', 'ManageTrash', 'SetNoteArchived', 'MoveNoteToFolder'
+];
 
 // ============================================
 // Hook Implementation
@@ -71,6 +75,8 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
     conversationId,
     onComplete,
     onError,
+    onToolComplete,
+    onConfirmationRequired,
     maxRetries = RETRY.MAX_RETRIES,
   } = options;
 
@@ -93,6 +99,7 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
   const isActive = useMemo(() => isStreamActive(state), [state]);
   const hasContent = useMemo(() => hasStreamContent(state), [state]);
   const isGeneratingImage = useMemo(() => isImageGenerationActive(state), [state]);
+  const isAwaitingConfirmationVal = useMemo(() => isAwaitingConfirmation(state), [state]);
 
   /**
    * Get the streaming endpoint based on mode
@@ -166,12 +173,27 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
     for (const event of events) {
       dispatch({ type: 'EVENT', event });
 
-      // Invalidate notes cache immediately when a note-related tool completes
+      // Handle note-related tool completions
       if (event.type === 'tool:end' && NOTE_MUTATION_TOOLS.includes(event.tool)) {
+        // Invalidate notes cache immediately
         void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        // Notify caller for toast notifications
+        onToolComplete?.(event.tool, event.result, event.success);
+      }
+
+      // Handle confirmation-required events
+      if (event.type === 'tool:confirmation-required') {
+        onConfirmationRequired?.({
+          confirmationId: event.confirmationId,
+          toolName: event.tool,
+          toolId: event.toolId,
+          message: event.message,
+          details: event.details,
+          timestamp: Date.now(),
+        });
       }
     }
-  }, [queryClient]);
+  }, [queryClient, onToolComplete, onConfirmationRequired]);
 
   /**
    * Handle stream completion
@@ -389,6 +411,43 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
   }, []);
 
   /**
+   * Respond to a pending confirmation request
+   * Sends the user's response to the backend confirmation endpoint
+   */
+  const respondToConfirmation = useCallback(async (confirmed: boolean): Promise<void> => {
+    const pendingConfirmation = state.pendingConfirmation;
+    if (!pendingConfirmation) {
+      console.warn('No pending confirmation to respond to');
+      return;
+    }
+
+    try {
+      const apiUrl = getApiBaseUrl();
+      const endpoint = `${apiUrl}/agent/confirmations/${pendingConfirmation.confirmationId}/respond`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ confirmed }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Failed to respond to confirmation:', response.status, errorText);
+      }
+
+      // Clear the confirmation state regardless of response
+      // The backend will handle the result and continue/skip the tool
+      dispatch({ type: 'CLEAR_CONFIRMATION' });
+    } catch (error) {
+      console.error('Error responding to confirmation:', error);
+      // Clear confirmation state even on error to unblock the UI
+      dispatch({ type: 'CLEAR_CONFIRMATION' });
+    }
+  }, [state.pendingConfirmation, getAuthHeaders]);
+
+  /**
    * Generate an image using the unified stream protocol
    * 
    * This method emits image events to the stream reducer and calls the
@@ -536,9 +595,11 @@ export function useUnifiedStream(options: UseUnifiedStreamOptions): UseUnifiedSt
     generateImage,
     cancel,
     reset,
+    respondToConfirmation,
     isActive,
     hasContent,
     isGeneratingImage,
+    isAwaitingConfirmation: isAwaitingConfirmationVal,
   };
 }
 

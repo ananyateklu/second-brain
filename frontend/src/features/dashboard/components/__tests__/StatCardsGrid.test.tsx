@@ -281,7 +281,8 @@ describe('StatCardsGrid', () => {
 
       const grid = container.querySelector('.dashboard-stats-grid');
       const firstCardContainer = grid?.firstChild as HTMLElement;
-      expect(firstCardContainer).toHaveStyle({ minWidth: '150px' });
+      // Component uses responsive min-w-[130px] sm:min-w-[150px], test default mobile size
+      expect(firstCardContainer).toHaveClass('min-w-[130px]', 'sm:min-w-[150px]');
     });
 
     it('should render correct number of visible cards', () => {

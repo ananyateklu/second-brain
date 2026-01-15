@@ -1,16 +1,16 @@
-import { useBoundStore } from '../../store/bound-store';
+import { useTheme, useThemeActions } from '../../hooks/useTheme';
+import { getNextTheme, getThemeConfig } from '../../config/themes';
 
 export function ThemeToggle() {
-  const theme = useBoundStore((state) => state.theme);
-  const toggleTheme = useBoundStore((state) => state.toggleTheme);
-  const isLight = theme === 'light';
-  const isDark = theme === 'dark';
-  const isBlue = theme === 'blue';
+  const { theme, isDarkMode } = useTheme();
+  const { toggleTheme } = useThemeActions();
+
+  const nextTheme = getNextTheme(theme);
+  const nextConfig = getThemeConfig(nextTheme);
+  const currentConfig = getThemeConfig(theme);
 
   const getAriaLabel = () => {
-    if (isLight) return 'Switch to dark mode';
-    if (isDark) return 'Switch to blue mode';
-    return 'Switch to light mode';
+    return `Switch to ${nextConfig.displayName.toLowerCase()} mode`;
   };
 
   return (
@@ -23,9 +23,9 @@ export function ThemeToggle() {
       }}
       aria-label={getAriaLabel()}
     >
-      {/* Sun Icon (shown in dark/blue mode, transitions to light) */}
+      {/* Sun Icon (shown in dark modes, transitions to light) */}
       <svg
-        className={`absolute h-5 w-5 transition-all duration-300 ${!isLight ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-0'
+        className={`absolute h-5 w-5 transition-all duration-300 ${isDarkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-0'
           }`}
         style={{ color: 'var(--color-primary)' }}
         fill="none"
@@ -42,7 +42,7 @@ export function ThemeToggle() {
 
       {/* Moon Icon (shown in light mode, transitions to dark) */}
       <svg
-        className={`absolute h-5 w-5 transition-all duration-300 ${isLight ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
+        className={`absolute h-5 w-5 transition-all duration-300 ${!isDarkMode ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
           }`}
         style={{ color: 'var(--color-primary)' }}
         fill="none"
@@ -57,11 +57,11 @@ export function ThemeToggle() {
         />
       </svg>
 
-      {/* Blue theme indicator (small dot shown in blue mode) */}
-      {isBlue && (
+      {/* Theme indicator dot (shown for themes with indicatorColor) */}
+      {currentConfig.indicatorColor && (
         <div
           className="absolute bottom-1 right-1 w-2 h-2 rounded-full transition-all duration-300"
-          style={{ backgroundColor: 'var(--blue-indicator)' }}
+          style={{ backgroundColor: currentConfig.indicatorColor }}
         />
       )}
     </button>

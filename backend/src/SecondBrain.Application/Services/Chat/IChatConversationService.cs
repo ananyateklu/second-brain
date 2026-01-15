@@ -47,11 +47,14 @@ public interface IChatConversationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Update conversation settings
+    /// Update conversation settings including title, provider, and model
     /// </summary>
     Task<ChatConversation?> UpdateConversationSettingsAsync(
         string conversationId,
         string userId,
+        string? title = null,
+        string? provider = null,
+        string? model = null,
         bool? ragEnabled = null,
         string? vectorStoreProvider = null,
         bool? agentEnabled = null,

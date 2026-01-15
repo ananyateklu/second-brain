@@ -1,9 +1,12 @@
 using System.Net.WebSockets;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.DTOs.Voice;
+using SecondBrain.Application.Services.Auth;
 using SecondBrain.Application.Services.Voice;
 using SecondBrain.Application.Services.Voice.GrokRealtime;
 using SecondBrain.Application.Services.Voice.Models;
@@ -26,6 +29,8 @@ public class VoiceController : ControllerBase
     private readonly IVoiceSynthesisServiceFactory _synthesisFactory;
     private readonly IVoiceTranscriptionServiceFactory _transcriptionFactory;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IJwtService _jwtService;
+    private readonly IUserRepository _userRepository;
     private readonly VoiceSettings _voiceSettings;
     private readonly AIProvidersSettings _aiSettings;
     private readonly ILogger<VoiceController> _logger;
@@ -36,6 +41,8 @@ public class VoiceController : ControllerBase
         IVoiceSynthesisServiceFactory synthesisFactory,
         IVoiceTranscriptionServiceFactory transcriptionFactory,
         IServiceProvider serviceProvider,
+        IJwtService jwtService,
+        IUserRepository userRepository,
         IOptions<VoiceSettings> voiceSettings,
         IOptions<AIProvidersSettings> aiSettings,
         ILogger<VoiceController> logger)
@@ -45,6 +52,8 @@ public class VoiceController : ControllerBase
         _synthesisFactory = synthesisFactory;
         _transcriptionFactory = transcriptionFactory;
         _serviceProvider = serviceProvider;
+        _jwtService = jwtService;
+        _userRepository = userRepository;
         _voiceSettings = voiceSettings.Value;
         _aiSettings = aiSettings.Value;
         _logger = logger;
@@ -61,10 +70,15 @@ public class VoiceController : ControllerBase
         [FromBody] VoiceSessionOptions options,
         CancellationToken cancellationToken)
     {
+        _logger.LogInformation(
+            "[VoiceSession] CreateSession called. Provider: {Provider}, Model: {Model}, VoiceProviderType: {VoiceProviderType}, AgentEnabled: {AgentEnabled}",
+            options.Provider, options.Model, options.VoiceProviderType, options.AgentEnabled);
+
         var userId = GetUserId();
 
         if (!_voiceSettings.Features.EnableVoiceAgent)
         {
+            _logger.LogWarning("[VoiceSession] Voice agent feature is disabled");
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "Voice agent feature is disabled" });
         }
 
@@ -76,6 +90,8 @@ public class VoiceController : ControllerBase
             var scheme = Request.Scheme == "https" ? "wss" : "ws";
             var webSocketUrl = $"{scheme}://{host}/api/voice/session?sessionId={session.Id}";
 
+            _logger.LogInformation("[VoiceSession] Session created successfully. SessionId: {SessionId}", session.Id);
+
             return Ok(new CreateVoiceSessionResult
             {
                 SessionId = session.Id,
@@ -86,7 +102,13 @@ public class VoiceController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "[VoiceSession] CreateSession failed with InvalidOperationException: {Message}", ex.Message);
             return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[VoiceSession] CreateSession failed with unexpected exception: {Message}", ex.Message);
+            throw; // Re-throw to let global exception handler deal with it
         }
     }
 
@@ -370,9 +392,12 @@ public class VoiceController : ControllerBase
     }
 
     /// <summary>
-    /// WebSocket endpoint for voice streaming
+    /// WebSocket endpoint for voice streaming.
+    /// Security: Authentication is handled via first message after connection,
+    /// not via URL query parameter, to prevent token exposure in logs/history.
     /// </summary>
     [HttpGet("session")]
+    [AllowAnonymous] // Auth handled in-band via first message for security
     public async Task HandleVoiceSession(
         [FromQuery] string sessionId,
         CancellationToken cancellationToken)
@@ -385,32 +410,68 @@ public class VoiceController : ControllerBase
         if (!HttpContext.WebSockets.IsWebSocketRequest)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await HttpContext.Response.WriteAsync("WebSocket connection required");
-            return;
-        }
-
-        var userId = GetUserId();
-        var session = await _sessionManager.GetSessionForUserAsync(sessionId, userId);
-
-        if (session == null)
-        {
-            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            await HttpContext.Response.WriteAsync("Session not found");
-            return;
-        }
-
-        if (!session.IsActive)
-        {
-            HttpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await HttpContext.Response.WriteAsync("Session is not active");
+            await HttpContext.Response.WriteAsync("WebSocket connection required", cancellationToken);
             return;
         }
 
         using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
 
-        _logger.LogInformation(
-            "[VoiceWS] WebSocket connected for voice session {SessionId}",
-            sessionId);
+        // Wait for authentication message (first message must be authenticate)
+        var authResult = await WaitForAuthenticationAsync(webSocket, cancellationToken);
+        if (!authResult.Success)
+        {
+            _logger.LogWarning("[VoiceWS] Authentication failed for session {SessionId}: {Error}",
+                sessionId, authResult.Error);
+
+            // Send error and close
+            var errorMsg = new ErrorMessage
+            {
+                Code = VoiceErrorCodes.Unauthorized,
+                Message = authResult.Error ?? "Authentication failed",
+                Recoverable = false
+            };
+            await SendMessageAsync(webSocket, errorMsg, cancellationToken);
+            await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation,
+                "Authentication failed", cancellationToken);
+            return;
+        }
+
+        _logger.LogInformation("[VoiceWS] WebSocket authenticated for user {UserId}", authResult.UserId);
+
+        // Now verify session ownership
+        var session = await _sessionManager.GetSessionForUserAsync(sessionId, authResult.UserId!);
+        if (session == null)
+        {
+            var errorMsg = new ErrorMessage
+            {
+                Code = VoiceErrorCodes.SessionNotFound,
+                Message = "Session not found or access denied",
+                Recoverable = false
+            };
+            await SendMessageAsync(webSocket, errorMsg, cancellationToken);
+            await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation,
+                "Session not found", cancellationToken);
+            return;
+        }
+
+        if (!session.IsActive)
+        {
+            var errorMsg = new ErrorMessage
+            {
+                Code = VoiceErrorCodes.SessionExpired,
+                Message = "Session is not active",
+                Recoverable = false
+            };
+            await SendMessageAsync(webSocket, errorMsg, cancellationToken);
+            await webSocket.CloseAsync(WebSocketCloseStatus.PolicyViolation,
+                "Session not active", cancellationToken);
+            return;
+        }
+
+        // Send authenticated confirmation
+        await SendMessageAsync(webSocket, new AuthenticatedMessage(), cancellationToken);
+
+        _logger.LogInformation("[VoiceWS] WebSocket connected for voice session {SessionId}", sessionId);
 
         // Create a new scope for the scoped orchestrator services
         await using var scope = _serviceProvider.CreateAsyncScope();
@@ -437,6 +498,90 @@ public class VoiceController : ControllerBase
             await _sessionManager.EndSessionAsync(sessionId);
             _logger.LogInformation("[VoiceWS] Voice WebSocket disconnected for session {SessionId}", sessionId);
         }
+    }
+
+    /// <summary>
+    /// Result of WebSocket authentication attempt
+    /// </summary>
+    private sealed record AuthenticationResult(bool Success, string? UserId, string? Error);
+
+    /// <summary>
+    /// Waits for and validates the authentication message from the client.
+    /// Security: This allows token to be sent via WebSocket message instead of URL.
+    /// </summary>
+    private async Task<AuthenticationResult> WaitForAuthenticationAsync(
+        WebSocket webSocket,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[4096];
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(10)); // 10 second auth timeout
+
+        try
+        {
+            var result = await webSocket.ReceiveAsync(buffer, cts.Token);
+
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                return new AuthenticationResult(false, null, "Connection closed before authentication");
+            }
+
+            if (result.MessageType != WebSocketMessageType.Text)
+            {
+                return new AuthenticationResult(false, null, "First message must be text (authenticate)");
+            }
+
+            var json = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            var message = JsonSerializer.Deserialize<AuthenticateMessage>(json);
+
+            if (message?.Type != "authenticate" || string.IsNullOrEmpty(message.Payload?.Token))
+            {
+                return new AuthenticationResult(false, null, "First message must be authenticate with token");
+            }
+
+            // Validate JWT token
+            var principal = _jwtService.ValidateToken(message.Payload.Token);
+            if (principal == null)
+            {
+                return new AuthenticationResult(false, null, "Invalid or expired token");
+            }
+
+            var userId = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? principal.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return new AuthenticationResult(false, null, "Token missing user ID");
+            }
+
+            // Verify user exists and is active
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null || !user.IsActive)
+            {
+                return new AuthenticationResult(false, null, "User not found or inactive");
+            }
+
+            return new AuthenticationResult(true, userId, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return new AuthenticationResult(false, null, "Authentication timeout");
+        }
+        catch (JsonException)
+        {
+            return new AuthenticationResult(false, null, "Invalid authenticate message format");
+        }
+    }
+
+    /// <summary>
+    /// Sends a message to the WebSocket client
+    /// </summary>
+    private static async Task SendMessageAsync<T>(WebSocket webSocket, T message, CancellationToken ct)
+        where T : ServerVoiceMessage
+    {
+        var json = JsonSerializer.Serialize(message);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        await webSocket.SendAsync(bytes, WebSocketMessageType.Text, true, ct);
     }
 
     private string GetUserId()

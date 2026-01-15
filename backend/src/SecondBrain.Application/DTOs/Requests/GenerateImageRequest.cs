@@ -11,7 +11,7 @@ public class GenerateImageRequest
     public string Prompt { get; set; } = string.Empty;
 
     /// <summary>
-    /// The AI provider to use (e.g., "OpenAI", "Gemini", "Grok")
+    /// The AI provider to use (e.g., "OpenAI", "Google", "Xai")
     /// </summary>
     public string Provider { get; set; } = string.Empty;
 

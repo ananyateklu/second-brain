@@ -72,7 +72,7 @@ export function useDesignTokens(): UseDesignTokensReturn {
     const updateTheme = () => {
       const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       setTheme(currentTheme);
-      setIsDarkMode(currentTheme === 'dark' || currentTheme === 'blue');
+      setIsDarkMode(currentTheme === 'dark' || currentTheme === 'blue' || currentTheme === 'midnight');
     };
 
     // Initial value
@@ -172,6 +172,7 @@ export function useTheme() {
     theme,
     isDarkMode,
     isLightMode: theme === 'light',
-    isBlueTheme: theme === 'blue',
+    isBlueTheme: theme === 'blue' || theme === 'midnight',
+    isMidnightTheme: theme === 'midnight',
   };
 }

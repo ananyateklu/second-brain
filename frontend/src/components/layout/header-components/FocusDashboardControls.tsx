@@ -117,7 +117,7 @@ export const FocusDashboardControls = memo(function FocusDashboardControls() {
               className={cn(
                 'flex items-center gap-2 px-2 py-1 rounded-lg transition-colors',
                 'hover:bg-[color-mix(in_srgb,var(--text-primary)_6%,transparent)]',
-                'focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-1'
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]/50'
               )}
               aria-label="Select date"
             >

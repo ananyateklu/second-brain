@@ -155,7 +155,7 @@ public class IndexingJobRepositoryTests : IAsyncLifetime
         updateJob.TotalChunks = 200;
         updateJob.ProcessedChunks = 100;
         updateJob.Errors = new List<string> { "Error 1" };
-        updateJob.EmbeddingProvider = "gemini";
+        updateJob.EmbeddingProvider = "google";
         updateJob.StartedAt = DateTime.UtcNow;
         updateJob.CompletedAt = null;
 
@@ -170,7 +170,7 @@ public class IndexingJobRepositoryTests : IAsyncLifetime
         updated.TotalChunks.Should().Be(200);
         updated.ProcessedChunks.Should().Be(100);
         updated.Errors.Should().Contain("Error 1");
-        updated.EmbeddingProvider.Should().Be("gemini");
+        updated.EmbeddingProvider.Should().Be("google");
         updated.StartedAt.Should().NotBeNull();
     }
 

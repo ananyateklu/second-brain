@@ -104,6 +104,7 @@ public class AgentService : IAgentService
         // Create streaming context
         var context = new AgentStreamingContext
         {
+            ConversationId = request.ConversationId,
             Request = request,
             Settings = _settings,
             RagSettings = _ragSettings,

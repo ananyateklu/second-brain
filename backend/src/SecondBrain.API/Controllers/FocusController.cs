@@ -125,17 +125,18 @@ public class FocusController : ControllerBase
 
     /// <summary>
     /// Get completed items within a date range.
+    /// Defaults to the last 30 days if no dates are provided.
     /// </summary>
-    /// <param name="startDate">Start date</param>
-    /// <param name="endDate">End date</param>
+    /// <param name="startDate">Start date (defaults to 30 days ago)</param>
+    /// <param name="endDate">End date (defaults to now)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of completed items</returns>
     [HttpGet("completed")]
     [ProducesResponseType(typeof(CompletedItemsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<CompletedItemsResponse>> GetCompleted(
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
         CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
@@ -144,7 +145,11 @@ public class FocusController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        var query = new GetCompletedItemsQuery(userId, startDate, endDate);
+        // Default to last 30 days if no dates provided
+        var effectiveEndDate = endDate ?? DateTime.UtcNow;
+        var effectiveStartDate = startDate ?? effectiveEndDate.AddDays(-30);
+
+        var query = new GetCompletedItemsQuery(userId, effectiveStartDate, effectiveEndDate);
         var result = await _mediator.Send(query, cancellationToken);
 
         return result.ToActionResult();

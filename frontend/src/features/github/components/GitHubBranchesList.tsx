@@ -58,13 +58,13 @@ export const GitHubBranchesList = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header - Fixed at top */}
+      {/* Header - Fixed at top, responsive */}
       <div className="flex-shrink-0 flex items-center gap-2 mb-4">
-        <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+        <h2 className="text-base sm:text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Branches
         </h2>
         <span
-          className="px-2 py-0.5 rounded-full text-xs font-medium"
+          className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             color: 'var(--text-secondary)',

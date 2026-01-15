@@ -53,12 +53,12 @@ export const BulkActionsBar = memo(({
         left: '50%',
         bottom: '1.5rem',
         transform: 'translate(-50%, 0)',
-        backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         animation: 'bulkBarSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '0 20px 50px -15px rgba(0, 0, 0, 0.25), 0 8px 20px -8px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 20px 50px -15px var(--glass-overlay-light), 0 8px 20px -8px var(--glass-overlay-light)',
       }}
     >
       {/* Selection Count */}

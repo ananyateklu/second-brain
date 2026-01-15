@@ -25,6 +25,7 @@ export type StreamEventType =
   | 'content:thinking:end'
   | 'tool:start'
   | 'tool:end'
+  | 'tool:confirmation-required'
   | 'rag:context'
   | 'grounding:sources'
   | 'code:execution'
@@ -52,6 +53,28 @@ export interface StreamToolExecution {
 }
 
 /**
+ * Details for a tool confirmation request (destructive operations)
+ */
+export interface ToolConfirmationDetails {
+  operation: string;
+  itemId: string;
+  itemTitle: string;
+  warningMessage: string;
+}
+
+/**
+ * Pending confirmation state
+ */
+export interface PendingConfirmation {
+  confirmationId: string;
+  toolName: string;
+  toolId: string;
+  message: string;
+  details: ToolConfirmationDetails;
+  timestamp: number;
+}
+
+/**
  * Process event for unified timeline.
  * Tracks thinking, tool, and text events in chronological order.
  * Text events capture content streamed between other events (e.g., before tool calls).
@@ -75,6 +98,7 @@ export type StreamEvent =
   | { type: 'content:thinking:end' }
   | { type: 'tool:start'; toolId: string; tool: string; args: string }
   | { type: 'tool:end'; toolId: string; tool: string; result: string; success: boolean }
+  | { type: 'tool:confirmation-required'; confirmationId: string; toolId: string; tool: string; message: string; details: ToolConfirmationDetails }
   | { type: 'rag:context'; notes: RagContextNote[]; ragLogId?: string }
   | { type: 'grounding:sources'; sources: GroundingSource[] }
   | { type: 'code:execution'; result: CodeExecutionResult }
@@ -129,14 +153,15 @@ export interface ImageGenerationState {
  * Represents the current phase of the streaming process.
  */
 export type StreamPhase =
-  | 'idle'             // No active stream
-  | 'connecting'       // Initiating connection
-  | 'streaming'        // Receiving content (text/thinking/etc)
-  | 'tool-execution'   // Tool is being executed
-  | 'image-generation' // Image is being generated
-  | 'finalizing'       // Stream ending, cleanup in progress
-  | 'complete'         // Stream finished successfully
-  | 'error';           // Stream encountered an error
+  | 'idle'                  // No active stream
+  | 'connecting'            // Initiating connection
+  | 'streaming'             // Receiving content (text/thinking/etc)
+  | 'tool-execution'        // Tool is being executed
+  | 'awaiting-confirmation' // Waiting for user to confirm destructive operation
+  | 'image-generation'      // Image is being generated
+  | 'finalizing'            // Stream ending, cleanup in progress
+  | 'complete'              // Stream finished successfully
+  | 'error';                // Stream encountered an error
 
 /**
  * Stream status for UI display
@@ -222,6 +247,9 @@ export interface UnifiedStreamState {
   // Error handling
   error: StreamError | null;
   retryCount: number;
+
+  // Confirmation (for destructive operations)
+  pendingConfirmation: PendingConfirmation | null;
 }
 
 /**
@@ -272,6 +300,7 @@ export const initialStreamState: UnifiedStreamState = {
   ragLogId: null,
   error: null,
   retryCount: 0,
+  pendingConfirmation: null,
 };
 
 // ============================================
@@ -287,7 +316,8 @@ export type StreamAction =
   | { type: 'CANCEL' }
   | { type: 'RESET' }
   | { type: 'SET_INPUT_TOKENS'; tokens: number }
-  | { type: 'INCREMENT_RETRY' };
+  | { type: 'INCREMENT_RETRY' }
+  | { type: 'CLEAR_CONFIRMATION' };
 
 // ============================================
 // Hook Options and Return Types
@@ -305,6 +335,10 @@ export interface UseUnifiedStreamOptions {
   onComplete?: (state: UnifiedStreamState) => void;
   /** Callback when stream encounters an error */
   onError?: (error: StreamError) => void;
+  /** Callback when a tool completes execution (for notifications) */
+  onToolComplete?: (tool: string, result: string, success: boolean) => void;
+  /** Callback when a tool requires user confirmation (destructive operations) */
+  onConfirmationRequired?: (confirmation: PendingConfirmation) => void;
   /** Maximum number of automatic retries on failure */
   maxRetries?: number;
 }
@@ -386,12 +420,16 @@ export interface UseUnifiedStreamReturn extends UnifiedStreamState {
   cancel: () => void;
   /** Reset the stream state */
   reset: () => void;
+  /** Respond to a pending confirmation request */
+  respondToConfirmation: (confirmed: boolean) => Promise<void>;
   /** Whether the stream is currently active */
   isActive: boolean;
   /** Whether there is any content to display */
   hasContent: boolean;
   /** Whether image generation is in progress */
   isGeneratingImage: boolean;
+  /** Whether awaiting user confirmation for a destructive operation */
+  isAwaitingConfirmation: boolean;
 }
 
 // ============================================
@@ -435,7 +473,7 @@ export function isStreamEvent(value: unknown): value is StreamEvent {
  * Type guard for checking if phase indicates active streaming
  */
 export function isActivePhase(phase: StreamPhase): boolean {
-  return phase === 'connecting' || phase === 'streaming' || phase === 'tool-execution' || phase === 'image-generation' || phase === 'finalizing';
+  return phase === 'connecting' || phase === 'streaming' || phase === 'tool-execution' || phase === 'awaiting-confirmation' || phase === 'image-generation' || phase === 'finalizing';
 }
 
 /**

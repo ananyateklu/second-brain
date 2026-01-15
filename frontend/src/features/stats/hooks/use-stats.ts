@@ -1,4 +1,4 @@
-import { statsService } from '../../../services';
+import { statsService } from '../../../services/stats.service';
 import { AIUsageStats, ToolCallAnalytics, ToolActionStats, ToolErrorStats } from '../../../types/stats';
 import { statsKeys, ToolAnalyticsFilters } from '../../../lib/query-keys';
 import { useApiQuery } from '../../../hooks/use-api-query';

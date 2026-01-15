@@ -90,7 +90,8 @@ describe('NotesChart', () => {
 
     it('should render chart icon', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
-      const icon = container.querySelector('svg.h-5.w-5');
+      // Component uses responsive h-4 w-4 sm:h-5 sm:w-5 classes
+      const icon = container.querySelector('svg.h-4.w-4');
       expect(icon).toBeInTheDocument();
     });
 
@@ -129,8 +130,8 @@ describe('NotesChart', () => {
       render(<NotesChart {...defaultProps} selectedTimeRange={30} />);
 
       const button7D = screen.getByText('7D');
-      // Unselected buttons use inline styles for styling - color-mix pattern
-      expect(button7D).toHaveStyle({ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' });
+      // Unselected buttons use insights-time-button CSS class for styling
+      expect(button7D).toHaveClass('insights-time-button');
     });
 
     it('should call onTimeRangeChange when button clicked', () => {
@@ -234,7 +235,8 @@ describe('NotesChart', () => {
     it('should have padding on container', () => {
       const { container } = render(<NotesChart {...defaultProps} />);
 
-      const chartContainer = container.querySelector('.p-6');
+      // Component uses responsive p-4 sm:p-6 classes
+      const chartContainer = container.querySelector('.p-4');
       expect(chartContainer).toBeInTheDocument();
     });
 

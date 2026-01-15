@@ -214,13 +214,13 @@ describe('PieChartTooltip', () => {
   describe('modelDataMap integration', () => {
     it('should use modelDataMap for conversation and token data', () => {
       const modelDataMap = new Map([
-        ['Claude', { conversations: 200, tokens: 75000 }]
+        ['Anthropic', { conversations: 200, tokens: 75000 }]
       ]);
 
       render(
         <PieChartTooltip
           active={true}
-          payload={[{ name: 'Claude', value: 100 }]}
+          payload={[{ name: 'Anthropic', value: 100 }]}
           modelDataMap={modelDataMap}
           totalConversations={1000}
           totalTokens={500000}

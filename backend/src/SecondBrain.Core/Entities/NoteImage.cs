@@ -65,7 +65,7 @@ public class NoteImage
     public string? AltText { get; set; }
 
     /// <summary>
-    /// Provider used to generate the description (e.g., 'gemini', 'openai').
+    /// Provider used to generate the description (e.g., 'google', 'openai').
     /// </summary>
     [Column("description_provider")]
     [MaxLength(50)]

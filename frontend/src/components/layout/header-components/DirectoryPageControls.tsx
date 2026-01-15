@@ -170,12 +170,12 @@ export const DirectoryPageControls = memo(function DirectoryPageControls() {
       <div
         className="absolute top-full left-0 mt-2 min-w-[160px] rounded-xl border shadow-xl z-50"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 8%, transparent)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           animation: 'dropdownFadeIn 0.15s ease-out',
-          boxShadow: '0 10px 40px -10px rgba(0, 0, 0, 0.2), 0 4px 12px -4px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 10px 40px -10px var(--glass-overlay-light), 0 4px 12px -4px var(--glass-overlay-light)',
         }}
       >
         {children}

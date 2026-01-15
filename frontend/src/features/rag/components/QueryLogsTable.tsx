@@ -21,13 +21,7 @@ interface QueryLogsTableProps {
 const FeedbackBadge = memo(({ feedback }: { feedback: RagFeedbackType | null }) => {
   if (!feedback) {
     return (
-      <span
-        className="text-xs px-2.5 py-1 rounded-full font-medium"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-          color: 'var(--text-tertiary)',
-        }}
-      >
+      <span className="text-xs px-2.5 py-1 rounded-full font-medium insights-badge-neutral">
         No feedback
       </span>
     );
@@ -35,15 +29,7 @@ const FeedbackBadge = memo(({ feedback }: { feedback: RagFeedbackType | null }) 
 
   const isPositive = feedback === 'thumbs_up';
   return (
-    <span
-      className="text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1"
-      style={{
-        backgroundColor: isPositive
-          ? 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)'
-          : 'color-mix(in srgb, var(--color-error) 15%, transparent)',
-        color: isPositive ? 'var(--color-brand-400)' : 'var(--color-error)',
-      }}
-    >
+    <span className={`text-xs px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1 ${isPositive ? 'insights-badge-positive' : 'insights-badge-negative'}`}>
       {isPositive ? '👍' : '👎'} {isPositive ? 'Helpful' : 'Not helpful'}
     </span>
   );
@@ -72,14 +58,7 @@ function truncateQuery(query: string, maxLength = 60): string {
 
 const FeatureBadge = memo(({ label }: { label: string }) => {
   return (
-    <span
-      className="text-xs px-2 py-0.5 rounded-md font-medium"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-        color: 'var(--text-secondary)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-    >
+    <span className="text-xs px-2 py-0.5 rounded-md font-medium insights-feature-badge">
       {label}
     </span>
   );
@@ -99,27 +78,13 @@ export const QueryLogsTable = memo(({
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   return (
-    <div
-      className="rounded-2xl backdrop-blur-md flex flex-col h-full"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-    >
+    <div className="rounded-2xl backdrop-blur-md flex flex-col h-full border insights-card">
       {/* Header */}
-      <div
-        className="px-5 py-2 border-b flex items-center justify-between flex-shrink-0"
-        style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className="p-2 rounded-xl"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-            }}
-          >
+      <div className="px-3 sm:px-5 py-2 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 flex-shrink-0 insights-section-border">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 rounded-xl insights-icon-wrapper">
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -135,13 +100,13 @@ export const QueryLogsTable = memo(({
           </div>
           <div>
             <h3
-              className="text-lg font-semibold"
+              className="text-sm sm:text-lg font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Query Logs
             </h3>
             <span
-              className="text-xs tabular-nums"
+              className="text-[10px] sm:text-xs tabular-nums"
               style={{ color: 'var(--text-tertiary)' }}
             >
               {totalCount.toLocaleString()} total queries
@@ -150,12 +115,12 @@ export const QueryLogsTable = memo(({
         </div>
 
         {/* Feedback Filter Checkbox */}
-        <label className="flex items-center gap-2.5 cursor-pointer group">
+        <label className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group">
           <div
-            className="relative w-5 h-5 rounded-md transition-all duration-200"
+            className={`relative w-4 h-4 sm:w-5 sm:h-5 rounded-md transition-all duration-200 flex-shrink-0 ${feedbackOnly ? '' : 'insights-checkbox-unchecked'}`}
             style={{
-              backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-              border: feedbackOnly ? 'none' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+              backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : undefined,
+              border: feedbackOnly ? 'none' : undefined,
             }}
           >
             <input
@@ -169,7 +134,7 @@ export const QueryLogsTable = memo(({
             />
             {feedbackOnly && (
               <svg
-                className="absolute inset-0 w-5 h-5 p-1"
+                className="absolute inset-0 w-4 h-4 sm:w-5 sm:h-5 p-0.5 sm:p-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="white"
@@ -180,10 +145,11 @@ export const QueryLogsTable = memo(({
             )}
           </div>
           <span
-            className="text-sm transition-colors duration-200 font-medium"
+            className="text-xs sm:text-sm transition-colors duration-200 font-medium"
             style={{ color: feedbackOnly ? 'var(--text-primary)' : 'var(--text-secondary)' }}
           >
-            Show only queries with feedback
+            <span className="hidden sm:inline">Show only queries with feedback</span>
+            <span className="sm:hidden">With feedback only</span>
           </span>
         </label>
       </div>
@@ -191,60 +157,42 @@ export const QueryLogsTable = memo(({
       {/* Table */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         <div className="overflow-x-auto overflow-y-auto thin-scrollbar flex-1">
-          <table className="w-full">
+          <table className="w-full min-w-[600px]">
             <thead className="sticky top-0 z-20">
               <tr>
                 <th
-                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Query
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Time
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Results
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Top Score
                 </th>
                 <th
-                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-3 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Feedback
                 </th>
                 <th
-                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider"
-                  style={{
-                    color: 'var(--text-secondary)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
+                  className="px-4 py-1 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap insights-panel-subtle"
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   Date
                 </th>
@@ -255,13 +203,7 @@ export const QueryLogsTable = memo(({
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <div
-                        className="w-8 h-8 border-2 rounded-full animate-spin"
-                        style={{
-                          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                          borderTopColor: 'var(--color-brand-400)',
-                        }}
-                      />
+                      <div className="w-8 h-8 border-2 rounded-full animate-spin insights-spinner" />
                       <span
                         className="text-sm"
                         style={{ color: 'var(--text-secondary)' }}
@@ -277,10 +219,7 @@ export const QueryLogsTable = memo(({
                     colSpan={6}
                     className="px-5 py-8 text-center"
                   >
-                    <div
-                      className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-                    >
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center insights-panel">
                       <svg
                         className="w-6 h-6 opacity-50"
                         fill="none"
@@ -314,12 +253,9 @@ export const QueryLogsTable = memo(({
                 logs.map((log, index) => (
                   <Fragment key={log.id}>
                     <tr
-                      className={`cursor-pointer transition-colors duration-150 ${expandedRow !== log.id ? 'hover:bg-[color-mix(in_srgb,var(--text-primary)_4%,transparent)]' : ''}`}
+                      className={`cursor-pointer transition-colors duration-150 ${expandedRow !== log.id ? 'insights-table-row-hover' : 'insights-panel'} ${index > 0 ? 'insights-table-row-border' : ''}`}
                       style={{
-                        borderTop: index > 0 ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : undefined,
-                        backgroundColor: expandedRow === log.id
-                          ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)'
-                          : 'transparent',
+                        backgroundColor: expandedRow === log.id ? undefined : 'transparent',
                       }}
                       onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
                     >
@@ -333,41 +269,35 @@ export const QueryLogsTable = memo(({
                             {truncateQuery(log.query)}
                           </p>
                           {log.topicLabel && (
-                            <span
-                              className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
-                              style={{
-                                backgroundColor: 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)',
-                                color: 'var(--color-brand-400)',
-                              }}
-                            >
+                            <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium insights-badge-positive">
                               {log.topicLabel}
                             </span>
                           )}
                         </div>
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {formatTime(log.totalTimeMs)}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm tabular-nums"
+                        className="px-3 py-1.5 text-sm tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {log.finalCount ?? '-'}
                       </td>
                       <td
-                        className="px-3 py-1.5 text-sm font-mono tabular-nums"
+                        className="px-3 py-1.5 text-sm font-mono tabular-nums whitespace-nowrap"
                         style={{ color: 'var(--text-secondary)' }}
                       >
                         {log.topCosineScore?.toFixed(3) ?? '-'}
                       </td>
-                      <td className="px-3 py-1.5">
+                      <td className="px-3 py-1.5 whitespace-nowrap">
                         <FeedbackBadge feedback={log.userFeedback} />
                       </td>
                       <td
-                        className="px-4 py-1.5 text-sm"
+                        className="px-4 py-1.5 text-sm whitespace-nowrap"
                         style={{ color: 'var(--text-tertiary)' }}
                       >
                         {formatDate(log.createdAt)}
@@ -379,20 +309,10 @@ export const QueryLogsTable = memo(({
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-5 py-2.5"
-                          style={{
-                            backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                            borderTop: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                          }}
+                          className="px-5 py-2.5 insights-panel-subtle insights-table-row-border"
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
-                            <div
-                              className="p-4 rounded-xl"
-                              style={{
-                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                              }}
-                            >
+                            <div className="p-4 rounded-xl insights-nested-card">
                               <p
                                 className="text-xs uppercase tracking-wide mb-2"
                                 style={{ color: 'var(--text-tertiary)' }}
@@ -407,13 +327,7 @@ export const QueryLogsTable = memo(({
                               </p>
                             </div>
 
-                            <div
-                              className="p-4 rounded-xl"
-                              style={{
-                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                              }}
-                            >
+                            <div className="p-4 rounded-xl insights-nested-card">
                               <p
                                 className="text-xs uppercase tracking-wide mb-2"
                                 style={{ color: 'var(--text-tertiary)' }}
@@ -431,13 +345,7 @@ export const QueryLogsTable = memo(({
                               </div>
                             </div>
 
-                            <div
-                              className="p-4 rounded-xl"
-                              style={{
-                                backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                              }}
-                            >
+                            <div className="p-4 rounded-xl insights-nested-card">
                               <p
                                 className="text-xs uppercase tracking-wide mb-2"
                                 style={{ color: 'var(--text-tertiary)' }}
@@ -464,13 +372,7 @@ export const QueryLogsTable = memo(({
                             </div>
 
                             {log.feedbackCategory && (
-                              <div
-                                className="p-4 rounded-xl"
-                                style={{
-                                  backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-                                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                                }}
-                              >
+                              <div className="p-4 rounded-xl insights-nested-card">
                                 <p
                                   className="text-xs uppercase tracking-wide mb-2"
                                   style={{ color: 'var(--text-tertiary)' }}
@@ -504,26 +406,56 @@ export const QueryLogsTable = memo(({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div
-          className="px-5 py-2 border-t flex items-center justify-between flex-shrink-0"
-          style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-        >
+        <div className="px-3 sm:px-5 py-3 border-t flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0 insights-section-border">
           <p
-            className="text-sm tabular-nums"
+            className="text-xs sm:text-sm tabular-nums"
             style={{ color: 'var(--text-tertiary)' }}
           >
-            Showing <span style={{ color: 'var(--text-secondary)' }}>{((page - 1) * pageSize) + 1}</span> to <span style={{ color: 'var(--text-secondary)' }}>{Math.min(page * pageSize, totalCount)}</span> of <span style={{ color: 'var(--text-secondary)' }}>{totalCount}</span>
+            <span className="hidden sm:inline">Showing </span>
+            <span style={{ color: 'var(--text-secondary)' }}>{((page - 1) * pageSize) + 1}</span>
+            <span className="hidden sm:inline"> to </span>
+            <span className="sm:hidden">-</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{Math.min(page * pageSize, totalCount)}</span> of <span style={{ color: 'var(--text-secondary)' }}>{totalCount}</span>
           </p>
-          <div className="flex gap-2">
+
+          {/* Mobile: Full width pagination */}
+          <div className="flex sm:hidden w-full gap-2">
             <button
               onClick={() => { onPageChange(page - 1); }}
               disabled={page <= 1}
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 insights-time-button"
+              style={{ color: page <= 1 ? 'var(--text-tertiary)' : undefined }}
+            >
+              ← Prev
+            </button>
+
+            <div
+              className="flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold min-w-[80px]"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                color: page <= 1 ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+                backgroundColor: 'var(--color-brand-500)',
+                color: 'white',
               }}
+            >
+              {page} / {totalPages}
+            </div>
+
+            <button
+              onClick={() => { onPageChange(page + 1); }}
+              disabled={page >= totalPages}
+              className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 insights-time-button"
+              style={{ color: page >= totalPages ? 'var(--text-tertiary)' : undefined }}
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Desktop: Original pagination */}
+          <div className="hidden sm:flex gap-2">
+            <button
+              onClick={() => { onPageChange(page - 1); }}
+              disabled={page <= 1}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px] insights-time-button"
+              style={{ color: page <= 1 ? 'var(--text-tertiary)' : undefined }}
             >
               ← Previous
             </button>
@@ -561,12 +493,8 @@ export const QueryLogsTable = memo(({
             <button
               onClick={() => { onPageChange(page + 1); }}
               disabled={page >= totalPages}
-              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px]"
-              style={{
-                backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                color: page >= totalPages ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-              }}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-[1px] insights-time-button"
+              style={{ color: page >= totalPages ? 'var(--text-tertiary)' : undefined }}
             >
               Next →
             </button>

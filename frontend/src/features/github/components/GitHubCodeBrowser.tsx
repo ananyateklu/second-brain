@@ -1,10 +1,11 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useGitHubBranches, useGitHubRepositoryTree, useGitHubFileContent } from '../hooks';
 import type { BranchSummary } from '../../../types/github';
 import { FileTreeView } from './code-browser/FileTreeView';
 import { CodeViewer } from './code-browser/CodeViewer';
 import { useBoundStore } from '../../../store/bound-store';
+import { useShallow } from 'zustand/react/shallow';
 
 interface GitHubCodeBrowserProps {
   owner?: string;
@@ -17,6 +18,37 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
 
   // Get branch from store
   const githubSelectedBranch = useBoundStore((state) => state.githubSelectedBranch);
+
+  // Mobile sidebar state
+  const { showMobileFileTree, setShowMobileFileTree } = useBoundStore(
+    useShallow((state) => ({
+      showMobileFileTree: state.showMobileFileTree,
+      setShowMobileFileTree: state.setShowMobileFileTree,
+    }))
+  );
+
+  // Close mobile sidebar on ESC key
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showMobileFileTree) {
+        setShowMobileFileTree(false);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [showMobileFileTree, setShowMobileFileTree]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (showMobileFileTree) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileFileTree]);
 
   // Reset file selection when branch changes (React recommended pattern for derived state)
   if (githubSelectedBranch !== prevBranch) {
@@ -81,10 +113,12 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     error: fileError,
   } = useGitHubFileContent(fileRequest);
 
-  // Handle file selection
+  // Handle file selection - close mobile sidebar after selection
   const handleFileSelect = useCallback((path: string) => {
     setSelectedFilePath(path);
-  }, []);
+    // Close mobile sidebar after file selection
+    setShowMobileFileTree(false);
+  }, [setShowMobileFileTree]);
 
   // If no repository is configured
   if (!owner || !repo) {
@@ -140,9 +174,40 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
     >
       {/* Main content area - two pane layout */}
       <div className="flex flex-1 min-h-0">
-        {/* File tree sidebar with glass morphism */}
+        {/* Mobile: Overlay drawer for file tree */}
+        <div className="md:hidden">
+          {/* Overlay backdrop */}
+          {showMobileFileTree && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity duration-200"
+              onClick={() => setShowMobileFileTree(false)}
+              aria-hidden="true"
+            />
+          )}
+          {/* Slide-in drawer */}
+          <div
+            className={`fixed inset-y-0 left-0 w-72 max-w-[80vw] z-60 transform transition-transform duration-300 ease-out backdrop-blur-sm rounded-r-xl ${
+              showMobileFileTree ? 'translate-x-0' : '-translate-x-full'
+            }`}
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 95%, transparent)',
+              borderRight: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
+            }}
+          >
+            <FileTreeView
+              entries={treeData?.entries ?? []}
+              truncated={treeData?.truncated ?? false}
+              isLoading={treeLoading}
+              error={treeError}
+              selectedPath={selectedFilePath}
+              onSelectFile={handleFileSelect}
+            />
+          </div>
+        </div>
+
+        {/* Desktop: File tree sidebar with glass morphism */}
         <div
-          className="w-90 flex-shrink-0 overflow-hidden backdrop-blur-sm rounded-l-xl"
+          className="hidden md:block w-90 flex-shrink-0 overflow-hidden backdrop-blur-sm rounded-l-xl"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--bg-secondary) 80%, transparent)',
             borderRight: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
@@ -158,7 +223,7 @@ export function GitHubCodeBrowser({ owner, repo }: GitHubCodeBrowserProps) {
           />
         </div>
 
-        {/* Code viewer */}
+        {/* Code viewer - full width on mobile */}
         <div className="flex-1 min-w-0 overflow-hidden">
           <CodeViewer
             content={fileContent ?? null}

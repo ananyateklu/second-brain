@@ -27,7 +27,7 @@ public class VoiceSession
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// AI provider used for this session (e.g., "OpenAI", "Grok", "ElevenLabs").
+    /// AI provider used for this session (e.g., "OpenAI", "Xai", "ElevenLabs").
     /// </summary>
     [Column("provider")]
     [MaxLength(50)]

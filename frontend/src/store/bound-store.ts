@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { z } from 'zod';
 import { STORAGE_KEYS } from '../lib/constants';
+import { THEME_IDS } from '../config/themes';
 import type { BoundStore } from './types';
 import { registerStore } from './store-registry';
 
@@ -35,8 +36,36 @@ const NoteViewSchema = z.enum(['list', 'grid']);
 const FontSizeSchema = z.enum(['small', 'medium', 'large']);
 const MarkdownRendererSchema = z.enum(['custom', 'llm-ui']);
 const VectorStoreProviderSchema = z.enum(['PostgreSQL', 'Pinecone']);
-const ThemeSchema = z.enum(['light', 'dark', 'blue']);
+// Theme schema derived from centralized config
+const ThemeSchema = z.enum(THEME_IDS);
 const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
+
+// User schema (aligned with User interface from types/auth.ts)
+const UserSchema = z.object({
+  userId: z.string(),
+  email: z.string(),
+  username: z.string().optional(),
+  displayName: z.string(),
+  apiKey: z.string().optional(),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// Notes filter state schemas (aligned with NotesFilterState from store/types.ts)
+const DateFilterSchema = z.enum(['all', 'today', 'yesterday', 'last7days', 'last30days', 'last90days', 'custom']);
+const SortOptionSchema = z.enum(['newest', 'oldest', 'title-asc', 'title-desc']);
+const ArchiveFilterSchema = z.enum(['all', 'archived', 'not-archived']);
+
+const NotesFilterStateSchema = z.object({
+  dateFilter: DateFilterSchema,
+  customDateStart: z.string().optional(),
+  customDateEnd: z.string().optional(),
+  selectedTags: z.array(z.string()),
+  sortBy: SortOptionSchema,
+  archiveFilter: ArchiveFilterSchema,
+  selectedFolder: z.string().nullable().optional(),
+});
 
 // Schema for the persisted part of BoundStore
 // We use .catch() or .optional() to handle missing or invalid data gracefully if we wanted,
@@ -46,7 +75,7 @@ const InsightsTabTypeSchema = z.enum(['overview', 'rag', 'chat', 'agent']);
 // The original code threw Error("Invalid persisted ...").
 const PersistedStateSchema = z.object({
   // Auth
-  user: z.any().optional(), // Complex object, skipping strict schema for now
+  user: UserSchema.nullable().optional(),
   token: z.string().nullable().optional(),
   isAuthenticated: z.boolean().optional(),
   
@@ -110,7 +139,7 @@ const PersistedStateSchema = z.object({
   theme: ThemeSchema.optional(),
 
   // Notes
-  filterState: z.any().optional(), // Complex object
+  filterState: NotesFilterStateSchema.optional(),
 
   // Git
   repositoryPath: z.string().nullable().optional(),

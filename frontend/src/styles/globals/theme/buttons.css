@@ -86,3 +86,49 @@
   --btn-secondary-shadow: 0 8px 20px -16px rgba(77, 109, 153, 0.35);
   --btn-secondary-hover-shadow: 0 16px 34px -20px rgba(143, 163, 196, 0.45);
 }
+
+/* =============================================================================
+   Midnight Theme Buttons
+   ============================================================================= */
+[data-theme="midnight"] {
+  /* Keep primary buttons green */
+  --btn-primary-bg: var(--color-brand-700);
+  --btn-primary-hover-bg: var(--color-brand-800);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 10px 24px -12px rgba(94, 145, 103, 0.55);
+  --btn-primary-hover-border: var(--color-brand-400);
+  --btn-primary-hover-shadow: 0 16px 32px -16px rgba(37, 66, 43, 0.6);
+
+  /* Secondary buttons use midnight theme colors */
+  --btn-secondary-text: var(--color-midnight-200);
+  --btn-secondary-border: rgba(46, 67, 105, 0.3);
+  --btn-secondary-hover-bg: var(--color-midnight-50);
+  --btn-secondary-hover-text: var(--color-midnight-800);
+  --btn-secondary-hover-border: var(--color-midnight-700);
+  --btn-secondary-shadow: 0 8px 20px -16px rgba(58, 82, 125, 0.35);
+  --btn-secondary-hover-shadow: 0 16px 34px -20px rgba(90, 115, 153, 0.45);
+}
+
+/* =============================================================================
+   Sunset Theme Buttons
+   ============================================================================= */
+[data-theme="sunset"] {
+  /* Keep primary buttons green (same as light theme) */
+  --btn-primary-bg: var(--color-brand-600);
+  --btn-primary-hover-bg: var(--color-brand-700);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 8px 20px -12px rgba(54, 105, 61, 0.4);
+  --btn-primary-hover-border: var(--color-brand-700);
+  --btn-primary-hover-shadow: 0 14px 28px -16px rgba(47, 86, 56, 0.45);
+
+  /* Secondary buttons use sunset theme colors */
+  --btn-secondary-text: var(--color-sunset-800);
+  --btn-secondary-border: rgba(217, 118, 66, 0.3);
+  --btn-secondary-hover-bg: var(--color-sunset-100);
+  --btn-secondary-hover-text: var(--color-sunset-800);
+  --btn-secondary-hover-border: var(--color-sunset-600);
+  --btn-secondary-shadow: 0 6px 16px -14px rgba(217, 118, 66, 0.3);
+  --btn-secondary-hover-shadow: 0 14px 32px -20px rgba(184, 90, 46, 0.4);
+}

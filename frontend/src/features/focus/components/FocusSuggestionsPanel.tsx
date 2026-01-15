@@ -323,7 +323,7 @@ export const FocusSuggestionsPanel = memo(function FocusSuggestionsPanel({
 
           {/* Suggestions list - scrollable, fills remaining space */}
           {!isLoading && !error && suggestions.length > 0 && (
-            <div className="flex-1 min-h-0 overflow-y-auto thin-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto auto-hide-scrollbar">
               <div className="divide-y divide-[color:var(--border)]">
                 {suggestions.map((suggestion) => (
                   <SuggestionItem
@@ -386,8 +386,34 @@ const SuggestionItem = memo(function SuggestionItem({
 
   return (
     <div
-      className="group p-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-all duration-150 hover:-translate-y-px border-l-2 border-l-transparent hover:border-l-[var(--color-primary)]"
+      className="group relative p-4 hover:bg-[color-mix(in_srgb,var(--text-primary)_3%,transparent)] transition-all duration-150 border-l-2 border-l-transparent hover:border-l-[var(--color-primary)]"
     >
+      {/* Action buttons - positioned top-right, appears on hover */}
+      <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 rounded-lg px-1.5 py-1 bg-[var(--background-solid)] shadow-md border border-[color-mix(in_srgb,var(--text-primary)_10%,transparent)]">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleDelete}
+          disabled={disabled || isDeleting}
+          className="h-7 w-7 p-0 rounded-md hover:bg-[color-mix(in_srgb,var(--color-error)_15%,transparent)] transition-colors"
+          title="Delete suggestion"
+        >
+          <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--color-error)' }} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleAdd}
+          disabled={disabled}
+          className="h-7 px-2.5 rounded-md text-xs font-medium hover:bg-[color-mix(in_srgb,var(--color-primary)_15%,transparent)] transition-colors"
+          style={{ color: 'var(--color-primary)' }}
+          title="Add to today's plan"
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add
+        </Button>
+      </div>
+
       <div className="flex items-start gap-3">
         {/* Priority indicator */}
         <div className="pt-0.5">
@@ -449,33 +475,6 @@ const SuggestionItem = memo(function SuggestionItem({
             >
               {confidencePercent}% match
             </span>
-          </div>
-        </div>
-
-        {/* Action buttons - collapses when not hovered */}
-        <div className="w-0 group-hover:w-auto overflow-hidden transition-all duration-150 flex-shrink-0">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={disabled || isDeleting}
-              className="h-8 w-8 p-0"
-              title="Delete suggestion"
-            >
-              <Trash2 className="h-4 w-4" style={{ color: 'var(--color-error)' }} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleAdd}
-              disabled={disabled}
-              className="h-8 px-3"
-              title="Add to today's plan"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Add
-            </Button>
           </div>
         </div>
       </div>

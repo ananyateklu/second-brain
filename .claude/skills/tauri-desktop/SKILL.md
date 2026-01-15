@@ -192,8 +192,8 @@ const unlisten = await listen<DatabaseStatus>('database-status-changed', (event)
   "version": "1.0.0",
   "identifier": "com.secondbrain.app",
   "build": {
-    "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
     "devUrl": "http://localhost:3000",
     "frontendDist": "../dist"
   },
@@ -254,11 +254,11 @@ pub async fn long_running_task(
 ## Common Commands
 
 ```bash
-cd frontend && pnpm tauri dev     # Dev mode with hot reload
-cd frontend && pnpm tauri build   # Production build
-cd frontend && pnpm tauri icon    # Generate app icons
-cargo check                        # Type check Rust code
-cargo clippy                       # Lint Rust code
+cd frontend && bun run tauri:dev      # Dev mode with hot reload
+cd frontend && bun run tauri:build    # Production build
+cd frontend && bun tauri icon         # Generate app icons
+cargo check                           # Type check Rust code
+cargo clippy                          # Lint Rust code
 ```
 
 ## Key Files

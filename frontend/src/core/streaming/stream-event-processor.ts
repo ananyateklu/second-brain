@@ -7,7 +7,7 @@
 
 import type { RagContextNote } from '../../types/rag';
 import type { GroundingSource, CodeExecutionResult, GrokSearchSource, GrokThinkingStep, ClaudeSearchSource } from '../../types/chat';
-import type { StreamEvent } from './types';
+import type { StreamEvent, ToolConfirmationDetails } from './types';
 import { loggers } from '../../utils/logger';
 
 // ============================================
@@ -119,6 +119,14 @@ interface GrokThinkingData {
 interface ClaudeSearchData {
   query?: string;
   sources?: ClaudeSearchSource[];
+}
+
+interface ConfirmationRequiredData {
+  confirmationId: string;
+  toolId: string;
+  tool: string;
+  message: string;
+  details: ToolConfirmationDetails;
 }
 
 /**
@@ -404,6 +412,36 @@ function parseGrokThinkingEvent(data: string): StreamEvent | null {
   }
 }
 
+/**
+ * Parse confirmation_required event data
+ * This event is sent when a destructive operation requires user confirmation
+ */
+function parseConfirmationRequiredEvent(data: string): StreamEvent | null {
+  try {
+    const parsed = JSON.parse(data) as ConfirmationRequiredData;
+    if (!parsed.confirmationId || !parsed.tool) {
+      loggers.stream.error('Invalid confirmation_required data:', data);
+      return null;
+    }
+    return {
+      type: 'tool:confirmation-required',
+      confirmationId: parsed.confirmationId,
+      toolId: parsed.toolId || generateToolId(),
+      tool: parsed.tool,
+      message: parsed.message || 'Confirmation required',
+      details: parsed.details || {
+        operation: '',
+        itemId: '',
+        itemTitle: '',
+        warningMessage: '',
+      },
+    };
+  } catch (e) {
+    loggers.stream.error('Failed to parse confirmation_required data:', e);
+    return null;
+  }
+}
+
 // ============================================
 // Stream Event Processor Class
 // ============================================
@@ -583,6 +621,9 @@ export class StreamEventProcessor {
 
       case 'grok_thinking':
         return parseGrokThinkingEvent(data);
+
+      case 'confirmation_required':
+        return parseConfirmationRequiredEvent(data);
 
       case 'end':
         return parseEndEvent(data);

@@ -1,12 +1,26 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { useTitleBarHeight } from './use-title-bar-height';
 import { PageTransition } from '../PageTransition';
-import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
-import { QuickCaptureButton, QuickCaptureModal } from '../../features/focus/components';
+
+// Lazy load modals to reduce initial bundle size (~150-200KB savings)
+// These components include heavy dependencies (TipTap editor, form components)
+// that are only needed when user actually opens the modals
+const CreateNoteModal = lazy(() =>
+  import('../../features/notes/components/CreateNoteModal')
+    .then(m => ({ default: m.CreateNoteModal }))
+);
+const QuickCaptureButton = lazy(() =>
+  import('../../features/focus/components/QuickCaptureButton')
+    .then(m => ({ default: m.QuickCaptureButton }))
+);
+const QuickCaptureModal = lazy(() =>
+  import('../../features/focus/components/QuickCaptureModal')
+    .then(m => ({ default: m.QuickCaptureModal }))
+);
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -20,6 +34,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isDirectoryPage = location.pathname === '/notes';
   const isVoicePage = location.pathname === '/voice';
   const isGitHubPage = location.pathname === '/github';
+  const isInsightsPage = location.pathname === '/insights';
   const isSettingsPage = location.pathname.startsWith('/settings');
 
   // Memoize main content classes to prevent unnecessary recalculations
@@ -27,7 +42,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const classes = ['flex-1'];
 
     // Padding classes - remove padding for full-width pages
-    if (isGitHubPage || isChatPage || isDirectoryPage || isVoicePage) {
+    if (isGitHubPage || isChatPage || isDirectoryPage || isVoicePage || isInsightsPage) {
       classes.push('px-0', 'pt-0');
     } else {
       classes.push('px-4', 'md:px-6');
@@ -43,14 +58,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
     // Overflow handling - pages with internal scrolling need overflow hidden
     // min-h-0 is critical for flex children to shrink below their content size
-    if (isChatPage || isVoicePage || isGitHubPage || isDashboardPage) {
+    if (isChatPage || isVoicePage || isGitHubPage || isDashboardPage || isInsightsPage) {
       classes.push('overflow-hidden', 'min-h-0');
     } else {
       classes.push('overflow-y-auto', 'thin-scrollbar');
     }
 
     return classes.join(' ');
-  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage, isDashboardPage]);
+  }, [isChatPage, isVoicePage, isGitHubPage, isSettingsPage, isDirectoryPage, isDashboardPage, isInsightsPage]);
 
   return (
     <div
@@ -84,12 +99,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
 
-      {/* Global modals available on all pages */}
-      <CreateNoteModal />
+      {/* Global modals available on all pages - lazy loaded to reduce initial bundle */}
+      <Suspense fallback={null}>
+        <CreateNoteModal />
+      </Suspense>
 
-      {/* Quick Capture - floating button + modal */}
-      <QuickCaptureButton />
-      <QuickCaptureModal />
+      {/* Quick Capture - floating button + modal (lazy loaded) */}
+      <Suspense fallback={null}>
+        <QuickCaptureButton />
+        <QuickCaptureModal />
+      </Suspense>
     </div>
   );
 }

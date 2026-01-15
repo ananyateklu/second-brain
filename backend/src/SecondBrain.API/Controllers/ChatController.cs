@@ -967,6 +967,9 @@ public class ChatController : ControllerBase
         var command = new UpdateConversationSettingsCommand(
             id,
             userId,
+            request.Title,
+            request.Provider,
+            request.Model,
             request.RagEnabled,
             request.VectorStoreProvider,
             request.AgentEnabled,

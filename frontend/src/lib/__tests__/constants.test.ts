@@ -97,8 +97,8 @@ describe('constants', () => {
         it('should have correct AI_PROVIDERS values', () => {
             expect(AI_PROVIDERS.OPENAI).toBe('OpenAI');
             expect(AI_PROVIDERS.ANTHROPIC).toBe('Anthropic');
-            expect(AI_PROVIDERS.GOOGLE).toBe('Gemini');
-            expect(AI_PROVIDERS.XAI).toBe('Grok');
+            expect(AI_PROVIDERS.GOOGLE).toBe('Google');
+            expect(AI_PROVIDERS.XAI).toBe('Xai');
             expect(AI_PROVIDERS.OLLAMA).toBe('Ollama');
         });
 
@@ -275,7 +275,7 @@ describe('constants', () => {
 
             it('should generate correct IMAGE_SIZES endpoint', () => {
                 expect(API_ENDPOINTS.CHAT.IMAGE_SIZES('openai')).toBe('/chat/image-generation/providers/openai/sizes');
-                expect(API_ENDPOINTS.CHAT.IMAGE_SIZES('gemini', 'gemini-pro')).toBe('/chat/image-generation/providers/gemini/sizes?model=gemini-pro');
+                expect(API_ENDPOINTS.CHAT.IMAGE_SIZES('google', 'gemini-pro')).toBe('/chat/image-generation/providers/google/sizes?model=gemini-pro');
             });
 
             it('should encode model parameter in IMAGE_SIZES', () => {

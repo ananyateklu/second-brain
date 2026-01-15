@@ -38,12 +38,12 @@ public class ImageDescriptionServiceTests
     #region IsAvailable Tests
 
     [Fact]
-    public void IsAvailable_WhenGeminiEnabled_ReturnsTrue()
+    public void IsAvailable_WhenGoogleEnabled_ReturnsTrue()
     {
         // Arrange
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -57,7 +57,7 @@ public class ImageDescriptionServiceTests
     public void IsAvailable_WhenOpenAIEnabled_ReturnsTrue()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns((IAIProvider)null!);
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(p => p.IsEnabled).Returns(true);
@@ -72,16 +72,16 @@ public class ImageDescriptionServiceTests
     }
 
     [Fact]
-    public void IsAvailable_WhenClaudeEnabled_ReturnsTrue()
+    public void IsAvailable_WhenAnthropicEnabled_ReturnsTrue()
     {
         // Arrange
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns((IAIProvider)null!);
         var mockProvider = new Mock<IAIProvider>();
         mockProvider.Setup(p => p.IsEnabled).Returns(true);
-        _mockProviderFactory.Setup(f => f.GetProvider("claude"))
+        _mockProviderFactory.Setup(f => f.GetProvider("anthropic"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -125,7 +125,7 @@ public class ImageDescriptionServiceTests
         // Arrange
         var disabledProvider = new Mock<IAIProvider>();
         disabledProvider.Setup(p => p.IsEnabled).Returns(false);
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(disabledProvider.Object);
 
         var enabledProvider = new Mock<IAIProvider>();
@@ -199,7 +199,7 @@ public class ImageDescriptionServiceTests
         var mediaType = "image/png";
         var mockProvider = CreateMockVisionProvider("This is a test image description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -208,7 +208,7 @@ public class ImageDescriptionServiceTests
         // Assert
         result.Success.Should().BeTrue();
         result.Description.Should().Be("This is a test image description");
-        result.Provider.Should().Be("gemini");
+        result.Provider.Should().Be("google");
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public class ImageDescriptionServiceTests
                 It.IsAny<List<ChatMessage>>(), It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new AIResponse { Success = false, Error = "API error" });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -246,7 +246,7 @@ public class ImageDescriptionServiceTests
                 It.IsAny<List<ChatMessage>>(), It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Connection failed"));
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -262,16 +262,16 @@ public class ImageDescriptionServiceTests
     #region ExtractDescriptionAsync - Provider Selection Tests
 
     [Fact]
-    public async Task ExtractDescriptionAsync_PrioritizesGemini()
+    public async Task ExtractDescriptionAsync_PrioritizesGoogle()
     {
         // Arrange
         var base64Data = "dGVzdA==";
         var mediaType = "image/png";
-        var geminiProvider = CreateMockVisionProvider("Gemini description");
+        var googleProvider = CreateMockVisionProvider("Google description");
         var openAIProvider = CreateMockVisionProvider("OpenAI description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns(geminiProvider.Object);
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
+            .Returns(googleProvider.Object);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns(openAIProvider.Object);
 
@@ -279,7 +279,7 @@ public class ImageDescriptionServiceTests
         var result = await _sut.ExtractDescriptionAsync(base64Data, mediaType);
 
         // Assert
-        result.Provider.Should().Be("gemini");
+        result.Provider.Should().Be("google");
     }
 
     [Fact]
@@ -290,7 +290,7 @@ public class ImageDescriptionServiceTests
         var mediaType = "image/png";
         var openAIProvider = CreateMockVisionProvider("OpenAI description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns(openAIProvider.Object);
@@ -303,25 +303,25 @@ public class ImageDescriptionServiceTests
     }
 
     [Fact]
-    public async Task ExtractDescriptionAsync_FallsBackToClaude()
+    public async Task ExtractDescriptionAsync_FallsBackToAnthropic()
     {
         // Arrange
         var base64Data = "dGVzdA==";
         var mediaType = "image/png";
-        var claudeProvider = CreateMockVisionProvider("Claude description");
+        var anthropicProvider = CreateMockVisionProvider("Anthropic description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns((IAIProvider)null!);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns((IAIProvider)null!);
-        _mockProviderFactory.Setup(f => f.GetProvider("claude"))
-            .Returns(claudeProvider.Object);
+        _mockProviderFactory.Setup(f => f.GetProvider("anthropic"))
+            .Returns(anthropicProvider.Object);
 
         // Act
         var result = await _sut.ExtractDescriptionAsync(base64Data, mediaType);
 
         // Assert
-        result.Provider.Should().Be("claude");
+        result.Provider.Should().Be("anthropic");
     }
 
     #endregion
@@ -343,7 +343,7 @@ public class ImageDescriptionServiceTests
             .Callback<IEnumerable<ChatMessage>, AIRequest, CancellationToken>((m, r, ct) => capturedPrompt = m.First().Content)
             .ReturnsAsync(new AIResponse { Success = true, Content = "Description" });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -367,7 +367,7 @@ public class ImageDescriptionServiceTests
             .Callback<IEnumerable<ChatMessage>, AIRequest, CancellationToken>((m, r, ct) => capturedPrompt = m.First().Content)
             .ReturnsAsync(new AIResponse { Success = true, Content = "Description" });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -398,7 +398,7 @@ public class ImageDescriptionServiceTests
                 Usage = TokenUsageDetails.CreateActual(100, 50)
             });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -417,7 +417,7 @@ public class ImageDescriptionServiceTests
         var mediaType = "image/png";
         var mockProvider = CreateMockVisionProvider("  Description with whitespace  ");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -456,7 +456,7 @@ public class ImageDescriptionServiceTests
         };
         var mockProvider = CreateMockVisionProvider("Description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -477,7 +477,7 @@ public class ImageDescriptionServiceTests
         };
         var mockProvider = CreateMockVisionProvider("Description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -497,7 +497,7 @@ public class ImageDescriptionServiceTests
         };
         var mockProvider = CreateMockVisionProvider("AI description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -548,7 +548,7 @@ public class ImageDescriptionServiceTests
             .Callback<IEnumerable<ChatMessage>, AIRequest, CancellationToken>((m, r, ct) => capturedPrompt = m.First().Content)
             .ReturnsAsync(new AIResponse { Success = true, Content = "Description" });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -581,7 +581,7 @@ public class ImageDescriptionServiceTests
             })
             .ReturnsAsync(new AIResponse { Success = true, Content = "Description" });
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -601,7 +601,7 @@ public class ImageDescriptionServiceTests
         };
         var mockProvider = CreateMockVisionProvider("Description");
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
             .Returns(mockProvider.Object);
 
         // Act
@@ -627,22 +627,22 @@ public class ImageDescriptionServiceTests
     {
         // Arrange
         var base64Data = "dGVzdA==";
-        var mediaType = "image/webp"; // Assume gemini doesn't support webp
+        var mediaType = "image/webp"; // Assume google doesn't support webp
         var openAIProvider = CreateMockVisionProvider("OpenAI description");
 
-        // Gemini returns enabled but format not supported
-        var geminiProvider = new Mock<IAIProvider>();
-        geminiProvider.Setup(p => p.IsEnabled).Returns(true);
+        // Google returns enabled but format not supported
+        var googleProvider = new Mock<IAIProvider>();
+        googleProvider.Setup(p => p.IsEnabled).Returns(true);
 
-        _mockProviderFactory.Setup(f => f.GetProvider("gemini"))
-            .Returns(geminiProvider.Object);
+        _mockProviderFactory.Setup(f => f.GetProvider("google"))
+            .Returns(googleProvider.Object);
         _mockProviderFactory.Setup(f => f.GetProvider("openai"))
             .Returns(openAIProvider.Object);
 
         // Act
         var result = await _sut.ExtractDescriptionAsync(base64Data, mediaType);
 
-        // Assert - should fall back to openai if gemini doesn't support the format
+        // Assert - should fall back to openai if google doesn't support the format
         // (actual behavior depends on MultimodalConfig.IsImageFormatSupported implementation)
         result.Should().NotBeNull();
     }

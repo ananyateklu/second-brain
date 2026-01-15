@@ -111,7 +111,7 @@ export function ImageGenerationPanel({
     <div
       className="rounded-2xl p-4 animate-in slide-in-from-bottom-2 duration-200 backdrop-blur-xl"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
         border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >

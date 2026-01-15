@@ -44,23 +44,23 @@ export async function myCommand(): Promise<string> {
 ### When Building
 1. Run `cargo check` for quick error check
 2. Run `cargo clippy` for lints
-3. Build debug: `pnpm tauri build --debug`
-4. Build release: `pnpm tauri build`
+3. Build debug: `bun run tauri:build -- --debug`
+4. Build release: `bun run tauri:build`
 
 ## Quick Commands
 
 ```bash
 # Development
-pnpm tauri dev                    # Hot reload development
+bun run tauri:dev                 # Hot reload development
 cd frontend/src-tauri && cargo check    # Quick error check
 cd frontend/src-tauri && cargo clippy   # Lint check
 cd frontend/src-tauri && cargo fmt      # Format code
 cd frontend/src-tauri && cargo test     # Run tests
 
 # Building
-pnpm tauri build                  # Production build
-pnpm tauri build --debug          # Debug build (faster)
-pnpm tauri build --target universal-apple-darwin  # Universal binary
+bun run tauri:build               # Production build
+bun run tauri:build -- --debug    # Debug build (faster)
+bun run tauri:build:universal     # Universal binary
 
 # Debugging
 lsof -i :5001                     # Check backend port

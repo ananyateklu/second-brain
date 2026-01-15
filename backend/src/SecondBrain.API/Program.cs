@@ -133,6 +133,13 @@ if (File.Exists(envPath))
 
     var deepgramKey = Environment.GetEnvironmentVariable("ELEVEN_LABS_DEEPGRAM_API_KEY");
     if (!string.IsNullOrEmpty(deepgramKey)) Environment.SetEnvironmentVariable("Voice__Deepgram__ApiKey", deepgramKey);
+
+    // Sentry
+    var sentryDsn = Environment.GetEnvironmentVariable("SENTRY_DSN");
+    if (!string.IsNullOrEmpty(sentryDsn)) Environment.SetEnvironmentVariable("Sentry__Dsn", sentryDsn);
+
+    var sentryEnv = Environment.GetEnvironmentVariable("SENTRY_ENVIRONMENT");
+    if (!string.IsNullOrEmpty(sentryEnv)) Environment.SetEnvironmentVariable("Sentry__Environment", sentryEnv);
 }
 
 Console.WriteLine();
@@ -227,6 +234,31 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
     serverOptions.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
 });
+
+// Configure Sentry for error monitoring and tracing
+var configuredSentryDsn = builder.Configuration["Sentry:Dsn"];
+var sentryEnabled = !string.IsNullOrEmpty(configuredSentryDsn) &&
+                    Uri.TryCreate(configuredSentryDsn, UriKind.Absolute, out _);
+if (sentryEnabled)
+{
+    builder.WebHost.UseSentry(options =>
+    {
+        options.Dsn = configuredSentryDsn;
+        options.Environment = builder.Configuration["Sentry:Environment"] ?? builder.Environment.EnvironmentName;
+        options.Debug = builder.Configuration.GetValue<bool>("Sentry:Debug");
+        options.TracesSampleRate = builder.Configuration.GetValue<double>("Sentry:TracesSampleRate", 0.2);
+        options.AttachStacktrace = builder.Configuration.GetValue<bool>("Sentry:AttachStacktrace", true);
+        options.SendDefaultPii = builder.Configuration.GetValue<bool>("Sentry:SendDefaultPii", false);
+        options.MaxBreadcrumbs = builder.Configuration.GetValue<int>("Sentry:MaxBreadcrumbs", 100);
+
+        // Set release version from assembly
+        options.Release = typeof(Program).Assembly.GetName().Version?.ToString() ?? "1.0.0";
+
+        // Configure which exceptions to ignore
+        options.AddExceptionFilterForType<OperationCanceledException>();
+        options.AddExceptionFilterForType<TaskCanceledException>();
+    });
+}
 
 // Configure request timeouts (ASP.NET Core 8+) for long-running RAG/agent operations
 // This ensures requests don't timeout before database operations complete (60s command timeout)
@@ -764,6 +796,12 @@ if (httpsPort.HasValue)
 
 // Response compression (before routing for maximum effectiveness)
 app.UseResponseCompression();
+
+// Sentry tracing (early in pipeline to capture all transactions)
+if (sentryEnabled)
+{
+    app.UseSentryTracing();
+}
 
 // Request timeouts (must be before routing to catch all endpoints)
 app.UseRequestTimeouts();

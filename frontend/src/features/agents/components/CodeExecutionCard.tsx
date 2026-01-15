@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { CodeExecutionResult } from '../../../types/chat';
-import { TimelineItem } from './TimelineItem';
+import { TimelineItem } from '../../../shared/components';
 
 interface CodeExecutionCardProps {
   result: CodeExecutionResult;
@@ -88,11 +88,11 @@ export function CodeExecutionCard({ result, isStreaming = false }: CodeExecution
 
             {/* Code or Output Display */}
             <div
-              className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar"
+              className="p-3 rounded-lg text-xs font-mono overflow-x-auto thin-scrollbar backdrop-blur-xl"
               style={{
-                backgroundColor: 'var(--surface-card)',
+                backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                 color: 'var(--text-secondary)',
-                border: '1px solid var(--border)',
+                border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               }}
             >
               {showCode ? (

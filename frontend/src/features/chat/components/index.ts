@@ -31,3 +31,6 @@ export { ImageGenerationProgress } from './ImageGenerationProgress';
 // Input sub-components
 export * from './input';
 
+// Re-export shared components for backward compatibility
+export { InlineNoteReference } from '../../../shared/components';
+

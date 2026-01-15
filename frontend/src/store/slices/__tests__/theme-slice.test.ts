@@ -6,14 +6,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createThemeSlice } from '../theme-slice';
 import type { ThemeSlice, BoundStore } from '../../types';
+import { THEME_IDS, THEME_ORDER } from '../../../config/themes';
 
 // Mock theme-colors utility
 vi.mock('../../../utils/theme-colors', () => ({
   resetThemeColorCache: vi.fn(),
 }));
 
-// Mock localStorage
-let localStorageMock: Record<string, string>;
+// Storage for localStorage mock
+const localStorageData: Record<string, string> = {};
 
 describe('themeSlice', () => {
   let state: Partial<BoundStore>;
@@ -32,14 +33,16 @@ describe('themeSlice', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorageMock = {};
+    // Clear storage data
+    Object.keys(localStorageData).forEach(key => delete localStorageData[key]);
 
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(
-      (key: string) => localStorageMock[key] ?? null
+    // Setup localStorage mock (already mocked in setup.ts, but we override behavior)
+    vi.mocked(localStorage.getItem).mockImplementation(
+      (key: string) => localStorageData[key] ?? null
     );
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(
+    vi.mocked(localStorage.setItem).mockImplementation(
       (key: string, value: string) => {
-        localStorageMock[key] = value;
+        localStorageData[key] = value;
       }
     );
 
@@ -69,8 +72,8 @@ describe('themeSlice', () => {
   // Initial State Tests
   // ============================================
   describe('initial state', () => {
-    it('should have a theme', () => {
-      expect(['light', 'dark', 'blue']).toContain(slice.theme);
+    it('should have a valid theme from config', () => {
+      expect(THEME_IDS).toContain(slice.theme);
     });
   });
 
@@ -94,6 +97,18 @@ describe('themeSlice', () => {
       slice.setTheme('blue');
 
       expect(mockSet).toHaveBeenCalledWith({ theme: 'blue' });
+    });
+
+    it('should set theme to midnight', () => {
+      slice.setTheme('midnight');
+
+      expect(mockSet).toHaveBeenCalledWith({ theme: 'midnight' });
+    });
+
+    it('should add dark class for midnight theme', () => {
+      slice.setTheme('midnight');
+
+      expect(document.documentElement.classList.add).toHaveBeenCalledWith('dark');
     });
 
     it('should save theme to localStorage', () => {
@@ -157,8 +172,20 @@ describe('themeSlice', () => {
       expect(mockSet).toHaveBeenCalledWith({ theme: 'blue' });
     });
 
-    it('should toggle from blue to light', () => {
+    it('should toggle from blue to midnight', () => {
       state.theme = 'blue';
+      state.setTheme = (theme) => {
+        state.theme = theme;
+        mockSet({ theme });
+      };
+
+      slice.toggleTheme();
+
+      expect(mockSet).toHaveBeenCalledWith({ theme: 'midnight' });
+    });
+
+    it('should toggle from midnight to light', () => {
+      state.theme = 'midnight';
       state.setTheme = (theme) => {
         state.theme = theme;
         mockSet({ theme });

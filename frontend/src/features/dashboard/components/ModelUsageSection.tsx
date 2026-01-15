@@ -2,6 +2,7 @@ import { useState, useMemo, CSSProperties, memo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChartTooltip } from './PieChartTooltip';
 import { formatTokenCount, TIME_RANGE_OPTIONS, TimeRangeOption, getProviderFromModelName } from '../utils/dashboard-utils';
+import { getProviderColorByName } from '../../../utils/provider-logos';
 
 // Detect if running in Tauri (WebKit)
 const isTauri = (): boolean => {
@@ -53,11 +54,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${isSelected ? '' : 'insights-time-button'}`}
     style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-      color: isSelected ? 'white' : 'var(--text-secondary)',
-      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : undefined,
+      color: isSelected ? 'white' : undefined,
+      border: isSelected ? '1px solid var(--color-brand-600)' : undefined,
       transform: isSelected ? 'scale(1.05)' : 'scale(1)',
     }}
   >
@@ -79,12 +80,7 @@ const LegendButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-all duration-200"
-    style={{
-      backgroundColor: isHidden ? 'color-mix(in srgb, var(--text-primary) 4%, transparent)' : 'transparent',
-      opacity: isHidden ? 0.5 : 1,
-      border: isHidden ? '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' : '1px solid transparent',
-    }}
+    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap cursor-pointer transition-all duration-200 ${isHidden ? 'insights-legend-item-hidden' : 'insights-legend-item'}`}
   >
     <div
       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -103,7 +99,7 @@ LegendButton.displayName = 'LegendButton';
 
 export function ModelUsageSection({
   modelUsageData,
-  colors,
+  colors: _colors, // Provider colors are now used instead
   getFilteredModelUsageData,
   animationDelay = 0,
   isAnimationReady = true,
@@ -116,8 +112,6 @@ export function ModelUsageSection({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -147,7 +141,7 @@ export function ModelUsageSection({
       }
       grouped[provider].push({
         ...entry,
-        color: colors[index % colors.length],
+        color: getProviderColorByName(provider, index),
       });
     });
 
@@ -164,7 +158,7 @@ export function ModelUsageSection({
     });
 
     return Object.fromEntries(sortedProviders);
-  }, [allFilteredModels, colors]);
+  }, [allFilteredModels]);
 
   // Filter out hidden models
   const visibleData = useMemo(
@@ -182,22 +176,26 @@ export function ModelUsageSection({
     [visibleData]
   );
 
-  // Create color map based on original order to ensure consistency
+  // Create color map based on provider for consistency
   const colorMap = useMemo(() => {
     const map = new Map<string, string>();
     filteredData.forEach((entry, index) => {
-      map.set(entry.name, colors[index % colors.length]);
+      const provider = getProviderFromModelName(entry.originalName);
+      map.set(entry.name, getProviderColorByName(provider, index));
     });
     return map;
-  }, [filteredData, colors]);
+  }, [filteredData]);
 
   // Assign colors to visible entries
   const dataWithColors = useMemo(() => {
-    return visibleData.map((entry) => ({
-      ...entry,
-      color: colorMap.get(entry.name) || colors[0],
-    }));
-  }, [visibleData, colorMap, colors]);
+    return visibleData.map((entry, index) => {
+      const provider = getProviderFromModelName(entry.originalName);
+      return {
+        ...entry,
+        color: colorMap.get(entry.name) || getProviderColorByName(provider, index),
+      };
+    });
+  }, [visibleData, colorMap]);
 
   // Toggle model visibility
   const toggleModelVisibility = (modelName: string) => {
@@ -262,14 +260,14 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className={`rounded-2xl border p-[19px] relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        className={`rounded-2xl border p-4 sm:p-5 relative overflow-hidden insights-card ${isWebKit ? '' : 'backdrop-blur-md'}`}
         style={containerStyles}
       >
         <div className="relative z-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
             <div className="flex items-center gap-2">
               <svg
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
                 style={{ color: 'var(--color-brand-600)' }}
                 fill="none"
                 viewBox="0 0 24 24"
@@ -283,7 +281,7 @@ export function ModelUsageSection({
                 />
               </svg>
               <h3
-                className="text-lg font-semibold"
+                className="text-base sm:text-lg font-semibold"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Model Usage Distribution
@@ -291,7 +289,7 @@ export function ModelUsageSection({
             </div>
 
             {/* Time Range Filters */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden thin-scrollbar -mx-1 px-1 py-0.5">
               {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
                 <TimeRangeButton
                   key={option.days}
@@ -307,27 +305,18 @@ export function ModelUsageSection({
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Models by Provider - Left Col */}
-              <div className="lg:col-span-1 h-64">
-                <div
-                  className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
-                >
+              <div className="md:col-span-1 h-48 sm:h-64">
+                <div className="h-full overflow-y-auto thin-scrollbar rounded-lg p-4 insights-nested-card insights-panel-subtle">
                   <div className="space-y-4">
                     {Object.entries(filteredModelsByProvider).map(([provider, models]) => {
                       const totalUsage = models.reduce((sum, m) => sum + m.value, 0);
                       return (
                         <div key={provider} className="space-y-2">
                           <h4
-                            className="text-sm font-semibold mb-2 pb-1 border-b"
-                            style={{
-                              color: 'var(--text-primary)',
-                              borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                            }}
+                            className="text-sm font-semibold mb-2 pb-1 border-b insights-section-border"
+                            style={{ color: 'var(--text-primary)' }}
                           >
                             {provider}
                             <span
@@ -361,11 +350,8 @@ export function ModelUsageSection({
                                   </span>
                                   {entry.tokens > 0 && (
                                     <span
-                                      className="text-[10px] px-1.5 py-0.5 rounded-full"
-                                      style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                                        color: 'var(--text-tertiary)'
-                                      }}
+                                      className="text-[10px] px-1.5 py-0.5 rounded-full insights-panel"
+                                      style={{ color: 'var(--text-tertiary)' }}
                                       title={`${entry.tokens.toLocaleString()} tokens`}
                                     >
                                       {formatTokenCount(entry.tokens)} tokens
@@ -382,27 +368,27 @@ export function ModelUsageSection({
                 </div>
               </div>
 
-              {/* Charts - Right 2 Cols */}
-              <div className="lg:col-span-2 flex flex-col gap-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Charts - Right section */}
+              <div className="md:col-span-1 lg:col-span-2 flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {/* Pie Chart - Conversations */}
                   <div className="flex flex-col min-w-0">
                     <h4
-                      className="text-sm font-medium text-center mb-2"
+                      className="text-xs sm:text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Conversation
                     </h4>
-                    <div className="min-w-0">
-                      <ResponsiveContainer width="100%" height={200}>
-                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                    <div className="min-w-0 h-[140px] sm:h-[160px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                           <Pie
                             data={dataWithColors.map(({ name, value }) => ({ name, value }))}
                             cx="50%"
                             cy="50%"
                             labelLine={true}
                             label={renderLabel}
-                            outerRadius={80}
+                            outerRadius={65}
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
@@ -443,14 +429,14 @@ export function ModelUsageSection({
                   {/* Pie Chart - Token Usage */}
                   <div className="flex flex-col min-w-0">
                     <h4
-                      className="text-sm font-medium text-center mb-2"
+                      className="text-xs sm:text-sm font-medium text-center mb-2"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       By Token Usage
                     </h4>
-                    <div className="min-w-0">
-                      <ResponsiveContainer width="100%" height={200}>
-                        <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                    <div className="min-w-0 h-[140px] sm:h-[160px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                           <Pie
                             data={dataWithColors
                               .filter(d => d.tokens > 0)
@@ -460,7 +446,7 @@ export function ModelUsageSection({
                             cy="50%"
                             labelLine={true}
                             label={renderLabel}
-                            outerRadius={80}
+                            outerRadius={65}
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
@@ -502,12 +488,7 @@ export function ModelUsageSection({
                 </div>
 
                 {/* Interactive Legend */}
-                <div
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 3%, transparent)',
-                  }}
-                >
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 justify-center items-center px-3 sm:px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar insights-panel-subtle">
                   {dataWithColors.map((entry) => (
                     <LegendButton
                       key={`legend-${entry.originalName}`}

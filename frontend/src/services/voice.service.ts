@@ -184,17 +184,18 @@ export class VoiceWebSocketConnection {
       const backendUrl = getDirectBackendUrl();
 
       // Convert HTTP URL to WebSocket URL
-      // Handle both http/https and the /api prefix
+      // Security: Token is NOT included in URL - it's sent as first message after connection
+      // This prevents token exposure in browser history, server logs, and proxy logs
       let wsUrl: string;
       if (backendUrl.startsWith('http://')) {
-        wsUrl = `ws://${backendUrl.substring(7).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+        wsUrl = `ws://${backendUrl.substring(7).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}`;
       } else if (backendUrl.startsWith('https://')) {
-        wsUrl = `wss://${backendUrl.substring(8).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+        wsUrl = `wss://${backendUrl.substring(8).replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}`;
       } else {
         // Fallback: use same protocol as the page for relative URLs
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
-        wsUrl = `${protocol}//${host}${backendUrl.replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}&token=${token}`;
+        wsUrl = `${protocol}//${host}${backendUrl.replace('/api', '')}/api/voice/session?sessionId=${this.sessionId}`;
       }
 
       // Connecting to voice WebSocket endpoint
@@ -211,12 +212,15 @@ export class VoiceWebSocketConnection {
           reject(new Error('WebSocket connection timeout'));
         }, 10000);
 
+        let authenticated = false;
+
         this.ws.onopen = () => {
-          clearTimeout(timeout);
-          this.reconnectAttempts = 0;
-          this.startPingInterval();
-          this.callbacks.onConnected?.();
-          resolve();
+          // Security: Send authentication as first message instead of URL query parameter
+          const authMessage: ClientVoiceMessage = {
+            type: 'authenticate',
+            payload: { token },
+          };
+          this.ws?.send(JSON.stringify(authMessage));
         };
 
         this.ws.onerror = (event) => {
@@ -227,11 +231,42 @@ export class VoiceWebSocketConnection {
 
         this.ws.onclose = (event) => {
           clearTimeout(timeout);
-          this.handleClose(event);
+          if (!authenticated) {
+            reject(new Error(event.reason || 'Connection closed before authentication'));
+          } else {
+            this.handleClose(event);
+          }
         };
 
         this.ws.onmessage = (event) => {
-          this.handleMessage(event);
+          try {
+            const message = JSON.parse(event.data) as ServerVoiceMessage;
+
+            if (!authenticated) {
+              // Waiting for auth response
+              if (message.type === 'authenticated') {
+                authenticated = true;
+                clearTimeout(timeout);
+                this.reconnectAttempts = 0;
+                this.startPingInterval();
+                this.callbacks.onConnected?.();
+                // Re-assign handlers for normal operation
+                if (this.ws) {
+                  this.ws.onmessage = (e) => this.handleMessage(e);
+                  this.ws.onclose = (e) => this.handleClose(e);
+                }
+                resolve();
+              } else if (message.type === 'error') {
+                clearTimeout(timeout);
+                reject(new Error(message.message || 'Authentication failed'));
+              }
+              return;
+            }
+
+            this.handleMessage(event);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
         };
       });
     } finally {
@@ -359,6 +394,10 @@ export class VoiceWebSocketConnection {
 
         case 'pong':
           // Pong received, connection is alive
+          break;
+
+        case 'authenticated':
+          // Already handled during connect(), but included for completeness during reconnection
           break;
       }
     } catch (error) {

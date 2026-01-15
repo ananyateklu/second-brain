@@ -68,13 +68,7 @@ export const RagTab = memo(function RagTab() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64 p-4">
-        <div
-          className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300"
-          style={{
-            backgroundColor: 'color-mix(in srgb, var(--color-error) 8%, transparent)',
-            border: '1px solid color-mix(in srgb, var(--color-error) 20%, transparent)',
-          }}
-        >
+        <div className="rounded-2xl p-6 text-center backdrop-blur-md max-w-md animate-in fade-in slide-in-from-top-2 duration-300 insights-error">
           <div className="flex items-center justify-center gap-2 mb-2">
             <svg
               className="h-5 w-5 flex-shrink-0"
@@ -140,9 +134,9 @@ export const RagTab = memo(function RagTab() {
   }
 
   return (
-    <div className="flex flex-col pt-4 animate-in fade-in duration-300">
+    <div className="flex flex-col pt-3 sm:pt-4 animate-in fade-in duration-300">
       {/* RAG Sub-Tab Navigation */}
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4 flex justify-center md:justify-start">
         <AnalyticsTabBar activeTab={ragSubTab} onTabChange={setRagSubTab} />
       </div>
 

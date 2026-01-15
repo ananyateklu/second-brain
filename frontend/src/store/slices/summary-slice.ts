@@ -144,7 +144,7 @@ export const createSummarySlice: SliceCreator<SummarySlice> = (set, get) => ({
     const state = get();
 
     // Only update if this is for the correct job
-    if (state.activeJob && status.id === state.activeJob.jobId) {
+    if (status.id === state.activeJob?.jobId) {
       set({
         activeJob: {
           ...state.activeJob,

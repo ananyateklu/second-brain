@@ -34,7 +34,7 @@ public static class MultimodalConfig
             // Chatgpt models
             "chatgpt-4o*"
         },
-        ["Claude"] = new List<string>
+        ["Anthropic"] = new List<string>
         {
             // All Claude 3.x models support vision (3, 3.5, 3.7, etc.)
             "claude-3*",            // claude-3-opus, claude-3-sonnet, claude-3-haiku, claude-3.5-*, claude-3.7-*, etc.
@@ -45,7 +45,7 @@ public static class MultimodalConfig
             "claude-opus*",         // claude-opus-4, etc.
             "claude-haiku*"
         },
-        ["Gemini"] = new List<string>
+        ["Google"] = new List<string>
         {
             // All Gemini models are multimodal by design
             "gemini-1*",            // gemini-1.0-*, gemini-1.5-*, etc.
@@ -71,7 +71,7 @@ public static class MultimodalConfig
             "nanollava*",
             "obsidian*"
         },
-        ["Grok"] = new List<string>
+        ["Xai"] = new List<string>
         {
             // Only Grok models with "vision" in the name support images
             "*vision*",             // Any model with "vision" in the name
@@ -130,11 +130,11 @@ public static class MultimodalConfig
         {
             "image/jpeg", "image/png", "image/gif", "image/webp"
         },
-        ["Claude"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        ["Anthropic"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "image/jpeg", "image/png", "image/gif", "image/webp"
         },
-        ["Gemini"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        ["Google"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"
         },
@@ -142,7 +142,7 @@ public static class MultimodalConfig
         {
             "image/jpeg", "image/png"
         },
-        ["Grok"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        ["Xai"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "image/jpeg", "image/png"  // xAI only supports JPEG and PNG per docs
         }

@@ -9,12 +9,8 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonStatCard() {
   return (
     <div
-      className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        minHeight: '80px',
-      }}
+      className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200 insights-skeleton-card"
+      style={{ minHeight: '80px' }}
     >
       <div>
         {/* Icon positioned top-right */}
@@ -37,20 +33,11 @@ function SkeletonStatCard() {
 
 function SkeletonCorrelationCard() {
   return (
-    <div
-      className="rounded-2xl border p-4 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-    >
+    <div className="rounded-2xl border p-4 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200 insights-skeleton-card">
       <div>
         {/* Header with icon wrapper */}
         <div className="flex items-center gap-2 mb-4">
-          <div
-            className="p-2.5 rounded-xl"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)' }}
-          >
+          <div className="p-2.5 rounded-xl insights-icon-wrapper">
             <ShimmerBlock className="h-5 w-5 rounded" />
           </div>
           <ShimmerBlock className="h-5 w-48" />
@@ -80,7 +67,7 @@ function SkeletonCorrelationCard() {
         </div>
 
         {/* Footer text */}
-        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+        <div className="mt-4 pt-3 border-t insights-section-border">
           <ShimmerBlock className="h-2 w-48" />
         </div>
       </div>
@@ -90,13 +77,7 @@ function SkeletonCorrelationCard() {
 
 function SkeletonFeedbackCard() {
   return (
-    <div
-      className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-    >
+    <div className="rounded-2xl border p-3 backdrop-blur-md hover:-translate-y-0.5 transition-transform duration-200 insights-skeleton-card">
       <div>
         {/* Header */}
         <div className="flex items-center gap-2 mb-1">
@@ -121,7 +102,7 @@ function SkeletonFeedbackCard() {
         </div>
 
         {/* Footer text with border-top */}
-        <div className="mt-4 pt-3 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
+        <div className="mt-4 pt-3 border-t insights-section-border">
           <ShimmerBlock className="h-2 w-36" />
         </div>
       </div>

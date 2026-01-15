@@ -330,7 +330,7 @@ describe('bound-store', () => {
       unsubscribe();
 
       act(() => {
-        useBoundStore.setState({ chatProvider: 'Grok' });
+        useBoundStore.setState({ chatProvider: 'Xai' });
       });
 
       expect(subscriber).toHaveBeenCalledTimes(0);

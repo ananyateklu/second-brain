@@ -1,6 +1,6 @@
 /**
  * Quick test script for the MCP PostgreSQL server
- * Run with: pnpm tsx test.ts
+ * Run with: bun test.ts
  */
 
 import pg from "pg";

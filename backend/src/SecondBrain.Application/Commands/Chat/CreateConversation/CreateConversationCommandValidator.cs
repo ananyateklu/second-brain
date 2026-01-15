@@ -7,7 +7,7 @@ namespace SecondBrain.Application.Commands.Chat.CreateConversation;
 /// </summary>
 public class CreateConversationCommandValidator : AbstractValidator<CreateConversationCommand>
 {
-    private static readonly string[] ValidProviders = { "openai", "anthropic", "claude", "gemini", "ollama", "grok", "xai" };
+    private static readonly string[] ValidProviders = { "openai", "anthropic", "google", "ollama", "xai" };
     private static readonly string[] ValidVectorStoreProviders = { "PostgreSQL", "Pinecone" };
 
     public CreateConversationCommandValidator()

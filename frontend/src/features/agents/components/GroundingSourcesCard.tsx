@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { GroundingSource } from '../../../types/chat';
-import { TimelineItem } from './TimelineItem';
+import { TimelineItem } from '../../../shared/components';
 
 interface GroundingSourcesCardProps {
   sources: GroundingSource[];
@@ -63,10 +63,10 @@ export function GroundingSourcesCard({ sources, isStreaming = false }: Grounding
                 href={source.uri}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-3 rounded-lg transition-all hover:scale-[1.01] group/source"
+                className="block p-3 rounded-lg transition-all hover:scale-[1.01] group/source backdrop-blur-xl"
                 style={{
-                  backgroundColor: 'var(--surface-card)',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                 }}
               >
                 <div className="flex items-start gap-2">

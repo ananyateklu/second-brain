@@ -38,17 +38,11 @@ public class AnthropicStreamingStrategyTests
             _mockThinkingExtractor.Object,
             _mockToolBuilder.Object,
             _mockRetryPolicy.Object,
+            Mock.Of<IConfirmationTracker>(),
             _mockLogger.Object);
     }
 
     #region SupportedProviders Tests
-
-    [Fact]
-    public void SupportedProviders_ContainsClaude()
-    {
-        // Act & Assert
-        _sut.SupportedProviders.Should().Contain("claude");
-    }
 
     [Fact]
     public void SupportedProviders_ContainsAnthropic()
@@ -58,10 +52,10 @@ public class AnthropicStreamingStrategyTests
     }
 
     [Fact]
-    public void SupportedProviders_HasTwoProviders()
+    public void SupportedProviders_HasOneProvider()
     {
-        // Act & Assert
-        _sut.SupportedProviders.Should().HaveCount(2);
+        // Act & Assert - Only "anthropic" is supported
+        _sut.SupportedProviders.Should().HaveCount(1);
     }
 
     #endregion
@@ -69,9 +63,6 @@ public class AnthropicStreamingStrategyTests
     #region CanHandle Tests
 
     [Theory]
-    [InlineData("claude")]
-    [InlineData("Claude")]
-    [InlineData("CLAUDE")]
     [InlineData("anthropic")]
     [InlineData("Anthropic")]
     [InlineData("ANTHROPIC")]
@@ -97,8 +88,8 @@ public class AnthropicStreamingStrategyTests
 
     [Theory]
     [InlineData("openai")]
-    [InlineData("gemini")]
-    [InlineData("grok")]
+    [InlineData("google")]
+    [InlineData("xai")]
     [InlineData("ollama")]
     [InlineData("unknown")]
     public void CanHandle_WhenProviderDoesNotMatch_ReturnsFalse(string provider)
@@ -125,7 +116,7 @@ public class AnthropicStreamingStrategyTests
     public void CanHandle_WhenProviderDisabled_ReturnsFalse()
     {
         // Arrange
-        var request = new AgentRequest { Provider = "claude" };
+        var request = new AgentRequest { Provider = "anthropic" };
         var settings = new AIProvidersSettings
         {
             Anthropic = new AnthropicSettings
@@ -146,7 +137,7 @@ public class AnthropicStreamingStrategyTests
     public void CanHandle_WhenApiKeyMissing_ReturnsFalse()
     {
         // Arrange
-        var request = new AgentRequest { Provider = "claude" };
+        var request = new AgentRequest { Provider = "anthropic" };
         var settings = new AIProvidersSettings
         {
             Anthropic = new AnthropicSettings
@@ -188,7 +179,7 @@ public class AnthropicStreamingStrategyTests
     public void CanHandle_WhenAllConditionsMet_ReturnsTrue()
     {
         // Arrange
-        var request = new AgentRequest { Provider = "claude" };
+        var request = new AgentRequest { Provider = "anthropic" };
         var settings = new AIProvidersSettings
         {
             Anthropic = new AnthropicSettings
@@ -275,7 +266,7 @@ public class AnthropicStreamingStrategyTests
         {
             Request = new AgentRequest
             {
-                Provider = "claude",
+                Provider = "anthropic",
                 Model = "claude-3-opus-20240229",
                 Messages = new List<AgentMessage>
                 {
@@ -299,7 +290,8 @@ public class AnthropicStreamingStrategyTests
             Logger = Mock.Of<ILogger>(),
             RagService = Mock.Of<IRagService>(),
             UserPreferencesService = Mock.Of<IUserPreferencesService>(),
-            GetSystemPrompt = _ => "You are a helpful assistant."
+            GetSystemPrompt = _ => "You are a helpful assistant.",
+            ConversationId = "test-conversation-id"
         };
     }
 

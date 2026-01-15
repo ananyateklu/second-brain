@@ -1,0 +1,277 @@
+/* =============================================================================
+   Insights Tab Design Tokens
+   Standardized surfaces, borders, and interactive states for analytics components
+   ============================================================================= */
+
+:root {
+  /* =============================================================================
+     Card Surface Tokens
+     ============================================================================= */
+  --insights-card-bg: color-mix(in srgb, var(--text-primary) 2%, transparent);
+  --insights-card-bg-hover: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --insights-card-border: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --insights-card-border-hover: color-mix(in srgb, var(--color-brand-500) 30%, transparent);
+
+  /* =============================================================================
+     Skeleton Loading Tokens
+     ============================================================================= */
+  --insights-skeleton-bg: color-mix(in srgb, var(--text-primary) 4%, transparent);
+
+  /* =============================================================================
+     Error State Tokens
+     ============================================================================= */
+  --insights-error-bg: color-mix(in srgb, var(--color-error) 8%, transparent);
+  --insights-error-border: color-mix(in srgb, var(--color-error) 20%, transparent);
+
+  /* =============================================================================
+     Tooltip/Popover Tokens
+     ============================================================================= */
+  --insights-tooltip-bg: color-mix(in srgb, var(--background) 90%, transparent);
+  --insights-tooltip-border: color-mix(in srgb, var(--text-primary) 6%, transparent);
+
+  /* =============================================================================
+     Progress Bar Tokens
+     ============================================================================= */
+  --insights-progress-track: color-mix(in srgb, var(--text-primary) 6%, transparent);
+
+  /* =============================================================================
+     Table Tokens
+     ============================================================================= */
+  --insights-table-border: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  --insights-table-row-hover: color-mix(in srgb, var(--text-primary) 4%, transparent);
+
+  /* =============================================================================
+     Shadow Tokens
+     ============================================================================= */
+  --insights-card-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  --insights-card-shadow-hover: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+/* =============================================================================
+   Utility Classes
+   ============================================================================= */
+
+/* Card surfaces - base styling */
+.insights-card {
+  background-color: var(--insights-card-bg);
+  border-color: var(--insights-card-border);
+  box-shadow: var(--insights-card-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Card hover effect - use with insights-card */
+.insights-card-hoverable:hover {
+  border-color: var(--insights-card-border-hover);
+  box-shadow: var(--insights-card-shadow-hover);
+}
+
+/* Skeleton loading backgrounds */
+.insights-skeleton {
+  background-color: var(--insights-skeleton-bg);
+}
+
+/* Skeleton container - card with skeleton styling */
+.insights-skeleton-card {
+  background-color: var(--insights-card-bg);
+  border-color: var(--insights-card-border);
+}
+
+/* Error state styling */
+.insights-error {
+  background-color: var(--insights-error-bg);
+  border: 1px solid var(--insights-error-border);
+}
+
+/* Progress bar track */
+.insights-progress-track {
+  background-color: var(--insights-progress-track);
+}
+
+/* Table borders */
+.insights-table-border {
+  border-color: var(--insights-table-border);
+}
+
+/* Table row with border bottom */
+.insights-table-row-border {
+  border-bottom: 1px solid var(--insights-table-border);
+}
+
+/* Table row hover */
+.insights-table-row-hover:hover {
+  background-color: var(--insights-table-row-hover);
+}
+
+/* Model usage card (nested cards) */
+.insights-nested-card {
+  background-color: var(--insights-card-bg);
+  border: 1px solid var(--insights-card-border);
+}
+
+/* Coming soon placeholder card */
+.insights-placeholder-card {
+  background-color: var(--insights-card-bg);
+  border: 1px solid var(--insights-card-border);
+}
+
+/* Coming soon badge */
+.insights-coming-soon-badge {
+  background-color: var(--color-primary-alpha);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+/* =============================================================================
+   Tab Bar Styles
+   ============================================================================= */
+
+/* Tab bar container */
+.insights-tab-bar {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid var(--insights-card-border);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+}
+
+/* Tab button - inactive state */
+.insights-tab-button {
+  background-color: transparent;
+  color: var(--text-secondary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.insights-tab-button:hover {
+  background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+}
+
+/* Time range button - inactive state */
+.insights-time-button {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid var(--insights-card-border);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.insights-time-button:hover {
+  background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+/* =============================================================================
+   Icon Wrapper Styles
+   ============================================================================= */
+
+/* Icon background wrapper - brand color */
+.insights-icon-wrapper {
+  background-color: color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+}
+
+/* Icon background wrapper - accent blue */
+.insights-icon-wrapper-blue {
+  background-color: color-mix(in srgb, var(--color-accent-blue) 15%, transparent);
+}
+
+/* =============================================================================
+   Badge Styles
+   ============================================================================= */
+
+/* Neutral/empty feedback badge */
+.insights-badge-neutral {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-tertiary);
+}
+
+/* Positive feedback badge */
+.insights-badge-positive {
+  background-color: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  color: var(--color-brand-400);
+}
+
+/* Negative feedback badge */
+.insights-badge-negative {
+  background-color: color-mix(in srgb, var(--color-error) 15%, transparent);
+  color: var(--color-error);
+}
+
+/* Warning/medium feedback badge */
+.insights-badge-warning {
+  background-color: color-mix(in srgb, #fbbf24 15%, transparent);
+  color: #fbbf24;
+}
+
+/* Feature badge with border */
+.insights-feature-badge {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  border: 1px solid var(--insights-card-border);
+}
+
+/* =============================================================================
+   Spinner/Loading Styles
+   ============================================================================= */
+
+.insights-spinner {
+  border-color: var(--insights-card-border);
+  border-top-color: var(--color-brand-400);
+}
+
+/* =============================================================================
+   Section/Panel Styles
+   ============================================================================= */
+
+/* Section divider border */
+.insights-section-border {
+  border-color: var(--insights-table-border);
+}
+
+/* Subtle background panel (3% opacity) */
+.insights-panel-subtle {
+  background-color: color-mix(in srgb, var(--text-primary) 3%, transparent);
+}
+
+/* Standard background panel (4% opacity) */
+.insights-panel {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+/* =============================================================================
+   Select/Input Styles
+   ============================================================================= */
+
+.insights-select {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  color: var(--text-secondary);
+  border: 1px solid var(--insights-card-border);
+}
+
+/* =============================================================================
+   Checkbox Styles
+   ============================================================================= */
+
+.insights-checkbox-unchecked {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid var(--insights-card-border);
+}
+
+/* =============================================================================
+   Legend/Interactive List Styles
+   ============================================================================= */
+
+.insights-legend-item {
+  background-color: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.insights-legend-item-hidden {
+  background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  border: 1px solid var(--insights-card-border);
+  opacity: 0.5;
+}
+
+/* =============================================================================
+   Dimension Slider Value Labels
+   ============================================================================= */
+
+.insights-slider-label {
+  background-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}

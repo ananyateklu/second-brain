@@ -24,7 +24,7 @@ namespace SecondBrain.API.Controllers;
 public class GeminiFilesController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly GeminiProvider _geminiProvider;
+    private readonly GoogleProvider _googleProvider;
     private readonly ILogger<GeminiFilesController> _logger;
 
     // Maximum file size: 2GB (Gemini's limit)
@@ -63,11 +63,11 @@ public class GeminiFilesController : ControllerBase
 
     public GeminiFilesController(
         IMediator mediator,
-        GeminiProvider geminiProvider,
+        GoogleProvider googleProvider,
         ILogger<GeminiFilesController> logger)
     {
         _mediator = mediator;
-        _geminiProvider = geminiProvider;
+        _googleProvider = googleProvider;
         _logger = logger;
     }
 
@@ -94,7 +94,7 @@ public class GeminiFilesController : ControllerBase
         [FromQuery] bool waitForProcessing = true,
         CancellationToken cancellationToken = default)
     {
-        if (!_geminiProvider.IsEnabled)
+        if (!_googleProvider.IsEnabled)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable,
                 new { error = "Gemini provider is not enabled" });
@@ -175,11 +175,11 @@ public class GeminiFilesController : ControllerBase
             GeminiUploadedFile? result;
             if (waitForProcessing)
             {
-                result = await _geminiProvider.UploadAndWaitAsync(request, cancellationToken: cancellationToken);
+                result = await _googleProvider.UploadAndWaitAsync(request, cancellationToken: cancellationToken);
             }
             else
             {
-                result = await _geminiProvider.UploadFileAsync(request, cancellationToken);
+                result = await _googleProvider.UploadFileAsync(request, cancellationToken);
             }
 
             if (result == null)

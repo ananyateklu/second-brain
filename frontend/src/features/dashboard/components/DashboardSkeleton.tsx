@@ -9,12 +9,8 @@ import { ShimmerBlock, ShimmerStyles } from '../../../components/ui/Shimmer';
 function SkeletonCard() {
   return (
     <div
-      className="rounded-2xl border p-4 flex flex-col h-full relative overflow-hidden"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        minHeight: '80px',
-      }}
+      className="rounded-2xl border p-4 flex flex-col h-full relative overflow-hidden insights-skeleton-card"
+      style={{ minHeight: '80px' }}
     >
       <div className="relative z-10 flex flex-col h-full">
         <div className="flex items-start justify-between mb-1">
@@ -33,13 +29,7 @@ function SkeletonCard() {
 
 function SkeletonChart() {
   return (
-    <div
-      className="rounded-3xl border p-6 relative overflow-hidden"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-    >
+    <div className="rounded-3xl border p-6 relative overflow-hidden insights-skeleton-card">
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -74,13 +64,7 @@ function SkeletonChart() {
 function SkeletonModelUsage() {
   return (
     <div className="space-y-3">
-      <div
-        className="rounded-3xl border p-[19px] relative overflow-hidden"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        }}
-      >
+      <div className="rounded-3xl border p-[19px] relative overflow-hidden insights-skeleton-card">
         <div className="relative z-10">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
@@ -105,20 +89,11 @@ function SkeletonModelUsage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left sidebar - Models by Provider */}
               <div className="lg:col-span-1 h-64">
-                <div
-                  className="h-full rounded-lg p-4"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                  }}
-                >
+                <div className="h-full rounded-lg p-4 insights-nested-card insights-panel">
                   <div className="space-y-4">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="space-y-2">
-                        <ShimmerBlock
-                          className="h-4 w-24 mb-2"
-                          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-                        />
+                        <ShimmerBlock className="h-4 w-24 mb-2 insights-panel" />
                         <div className="space-y-1.5">
                           {[1, 2].map((j) => (
                             <div
@@ -126,18 +101,9 @@ function SkeletonModelUsage() {
                               className="flex items-center gap-2"
                               style={{ height: '20px' }}
                             >
-                              <ShimmerBlock
-                                className="w-2.5 h-2.5 rounded-full"
-                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-                              />
-                              <ShimmerBlock
-                                className="h-3 flex-1"
-                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-                              />
-                              <ShimmerBlock
-                                className="h-3 w-12"
-                                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-                              />
+                              <ShimmerBlock className="w-2.5 h-2.5 rounded-full insights-panel" />
+                              <ShimmerBlock className="h-3 flex-1 insights-panel" />
+                              <ShimmerBlock className="h-3 w-12 insights-panel" />
                             </div>
                           ))}
                         </div>
@@ -165,21 +131,12 @@ function SkeletonModelUsage() {
                 </div>
 
                 {/* Interactive Legend */}
-                <div
-                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                  }}
-                >
+                <div className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto thin-scrollbar insights-panel">
                   {Array.from({ length: 6 }).map((_, i) => (
                     <ShimmerBlock
                       key={i}
-                      className="rounded-lg flex-shrink-0"
-                      style={{
-                        height: '28px',
-                        width: '100px',
-                        backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-                      }}
+                      className="rounded-lg flex-shrink-0 insights-panel"
+                      style={{ height: '28px', width: '100px' }}
                     />
                   ))}
                 </div>

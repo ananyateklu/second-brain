@@ -6,6 +6,7 @@
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS } from '../lib/constants';
 import { format, parse, subDays } from 'date-fns';
+import { getProviderColorByName } from '../utils/provider-logos';
 import type {
   AIUsageStats,
   ChartDataPoint,
@@ -185,17 +186,16 @@ export const statsService = {
 
   /**
    * Convert provider usage to pie chart data
+   * Uses official brand colors for each AI provider
    */
   convertProviderUsageToPieData(
     providerCounts: Record<string, number>
   ): PieChartData[] {
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F'];
-
     return Object.entries(providerCounts)
       .map(([name, value], index) => ({
         name,
         value,
-        color: colors[index % colors.length],
+        color: getProviderColorByName(name, index),
       }))
       .sort((a, b) => b.value - a.value);
   },
@@ -319,11 +319,45 @@ export const statsService = {
    * Parse model name into provider and model
    */
   parseModelName(fullName: string): [string, string] {
-    // Common patterns: "openai:gpt-4", "anthropic:claude-3", etc.
+    // Handle explicit provider:model format (e.g., Ollama models like "qwen3:4b")
     const parts = fullName.split(':');
     if (parts.length === 2) {
+      // Check if it's an Ollama model (lowercase first part, typically model family)
+      const firstPart = parts[0].toLowerCase();
+      if (['qwen3', 'llama3', 'mistral', 'codellama', 'phi', 'gemma', 'deepseek'].some(m => firstPart.includes(m))) {
+        return ['Ollama', fullName];
+      }
       return [parts[0], parts[1]];
     }
+
+    // Infer provider from model name patterns
+    const modelLower = fullName.toLowerCase();
+
+    // OpenAI models
+    if (modelLower.startsWith('gpt-') || modelLower.startsWith('o1') || modelLower.includes('davinci') || modelLower.includes('curie')) {
+      return ['OpenAI', fullName];
+    }
+
+    // Anthropic models
+    if (modelLower.startsWith('claude')) {
+      return ['Anthropic', fullName];
+    }
+
+    // Google models
+    if (modelLower.startsWith('gemini') || modelLower.startsWith('palm') || modelLower.startsWith('bard')) {
+      return ['Google', fullName];
+    }
+
+    // xAI models
+    if (modelLower.startsWith('grok')) {
+      return ['xAI', fullName];
+    }
+
+    // Cohere models
+    if (modelLower.startsWith('command') || modelLower.startsWith('coral')) {
+      return ['Cohere', fullName];
+    }
+
     return ['Unknown', fullName];
   },
 

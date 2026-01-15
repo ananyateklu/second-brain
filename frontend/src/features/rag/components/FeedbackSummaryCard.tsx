@@ -14,23 +14,10 @@ interface FeedbackSummaryCardProps {
 
 export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
   return (
-    <div
-      className="rounded-2xl p-3 transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md"
-      style={{
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-brand-500)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--text-primary) 6%, transparent)'; }}
-    >
+    <div className="rounded-2xl p-3 transition-all duration-200 hover:-translate-y-0.5 backdrop-blur-md border insights-card insights-card-hoverable">
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <div
-            className="p-2 rounded-lg"
-            style={{
-              backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 15%, transparent)',
-            }}
-          >
+          <div className="p-2 rounded-lg insights-icon-wrapper">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -71,10 +58,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
                 {stats.positiveFeedback}
               </span>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-            >
+            <div className="h-2 rounded-full overflow-hidden insights-progress-track">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -98,10 +82,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
                 {stats.negativeFeedback}
               </span>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-            >
+            <div className="h-2 rounded-full overflow-hidden insights-progress-track">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -125,10 +106,7 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
                 {stats.totalQueries - stats.queriesWithFeedback}
               </span>
             </div>
-            <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)' }}
-            >
+            <div className="h-2 rounded-full overflow-hidden insights-progress-track">
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -142,11 +120,8 @@ export function FeedbackSummaryCard({ stats }: FeedbackSummaryCardProps) {
         </div>
 
         <div
-          className="mt-3 pt-2 border-t text-[10px] leading-relaxed"
-          style={{
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            color: 'var(--text-tertiary)'
-          }}
+          className="mt-3 pt-2 border-t text-[10px] leading-relaxed insights-section-border"
+          style={{ color: 'var(--text-tertiary)' }}
         >
           <p>
             Collecting more feedback helps identify problem areas and improve RAG quality.

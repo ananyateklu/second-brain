@@ -37,11 +37,11 @@ const TimeRangeButton = memo(({
 }) => (
   <button
     onClick={onClick}
-    className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200"
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${isSelected ? '' : 'insights-time-button'}`}
     style={{
-      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
-      color: isSelected ? 'white' : 'var(--text-secondary)',
-      border: isSelected ? '1px solid var(--color-brand-600)' : '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : undefined,
+      color: isSelected ? 'white' : undefined,
+      border: isSelected ? '1px solid var(--color-brand-600)' : undefined,
       transform: isSelected ? 'scale(1.05)' : 'scale(1)',
     }}
   >
@@ -63,8 +63,6 @@ export function NotesChart({
 
   // Container animation styles - smooth opacity-only transition for skeleton blending
   const containerStyles = useMemo<CSSProperties>(() => ({
-    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
     // Smooth opacity-only transition - no movement since skeleton is in place
     opacity: isAnimationReady ? 1 : 0,
     transitionProperty: 'opacity',
@@ -77,14 +75,14 @@ export function NotesChart({
 
   return (
     <div
-      className={`rounded-2xl border p-6 ${isWebKit ? '' : 'backdrop-blur-md'}`}
+      className={`rounded-2xl border p-4 sm:p-6 insights-card ${isWebKit ? '' : 'backdrop-blur-md'}`}
       style={containerStyles}
     >
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
           <div className="flex items-center gap-2">
             <svg
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
               style={{ color: 'var(--color-brand-600)' }}
               fill="none"
               viewBox="0 0 24 24"
@@ -98,7 +96,7 @@ export function NotesChart({
               />
             </svg>
             <h2
-              className="text-xl font-semibold"
+              className="text-base sm:text-lg lg:text-xl font-semibold"
               style={{ color: 'var(--text-primary)' }}
             >
               Notes Created Over Time
@@ -106,7 +104,7 @@ export function NotesChart({
           </div>
 
           {/* Time Range Filters */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden thin-scrollbar -mx-1 px-1 py-0.5">
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
               <TimeRangeButton
                 key={option.days}
@@ -147,12 +145,12 @@ export function NotesChart({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                   border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   borderRadius: '12px',
                   color: 'var(--text-primary)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
                 }}
                 labelStyle={{ color: 'var(--text-primary)' }}
                 // Disable animation on WebKit for smoother tooltips

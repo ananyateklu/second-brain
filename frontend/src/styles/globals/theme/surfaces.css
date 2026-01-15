@@ -38,6 +38,18 @@
   --glass-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   --glass-noise-opacity: 0.4;
 
+  /* Neutral frosted glass for popups/dropdowns - passes through background */
+  --glass-popup: rgba(128, 128, 128, 0.15);
+
+  /* Component-level glass tokens (reference base glass variables for maintainability) */
+  --glass-card: var(--glass-bg);
+  --glass-sidebar: var(--glass-bg);
+  --glass-modal: var(--glass-bg);
+  --glass-dropdown: var(--glass-popup);
+  --glass-toolbar: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --glass-overlay: rgba(0, 0, 0, 0.5);
+  --glass-overlay-light: rgba(0, 0, 0, 0.3);
+
   /* Border variables */
   --border: color-mix(in srgb, var(--foreground) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
@@ -64,9 +76,15 @@
   --surface-card-solid: #ffffff;
 
   /* Frosted glass effect - lighter tint for light theme */
-  --glass-bg: color-mix(in srgb, #ffffff 85%, transparent);
-  --glass-header: color-mix(in srgb, #ffffff 75%, transparent);
-  --glass-body: color-mix(in srgb, #ffffff 70%, transparent);
+  --glass-bg: color-mix(in srgb, #ffffff 22%, transparent);
+  --glass-header: color-mix(in srgb, #ffffff 15%, transparent);
+  --glass-body: color-mix(in srgb, #ffffff 10%, transparent);
+
+  /* Neutral frosted glass for popups/dropdowns */
+  --glass-popup: rgba(255, 255, 255, 0.5);
+
+  /* Lighter overlay for light themes */
+  --glass-overlay: rgba(0, 0, 0, 0.4);
 
   --border: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-950) 25%, transparent);
@@ -105,6 +123,9 @@
   --glass-header: color-mix(in srgb, #050805 50%, transparent);
   --glass-body: color-mix(in srgb, #050805 40%, transparent);
 
+  /* Neutral frosted glass for popups/dropdowns */
+  --glass-popup: rgba(0, 0, 0, 0.3);
+
   --border: color-mix(in srgb, var(--color-brand-50) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-50) 25%, transparent);
 
@@ -125,7 +146,7 @@
 
   /* Solid (non-transparent) background colors for blue theme */
   --background-solid: var(--color-blue-900);
-  --surface-solid: var(--color-blue-950);
+  --surface-solid: var(--color-blue-900);
   --surface-elevated-solid: var(--color-blue-950);
   --surface-card-solid: var(--color-blue-950);
 
@@ -134,6 +155,9 @@
   --glass-header: color-mix(in srgb, var(--color-blue-900) 40%, transparent);
   --glass-body: color-mix(in srgb, var(--color-blue-900) 30%, transparent);
 
+  /* Neutral frosted glass for popups/dropdowns */
+  --glass-popup: rgba(0, 0, 0, 0.3);
+
   --border: color-mix(in srgb, var(--color-blue-50) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-blue-50) 25%, transparent);
 
@@ -141,4 +165,71 @@
   --text-primary: var(--color-blue-50);
   --text-secondary: color-mix(in srgb, var(--color-blue-50) 70%, transparent);
   --text-tertiary: color-mix(in srgb, var(--color-blue-50) 50%, transparent);
+}
+
+/* =============================================================================
+   Midnight Theme Surfaces
+   ============================================================================= */
+[data-theme="midnight"] {
+  /* Surface and border variables - very dark components */
+  --surface: color-mix(in srgb, var(--color-midnight-900) 60%, transparent);
+  --surface-elevated: color-mix(in srgb, var(--color-midnight-950) 70%, transparent);
+  --surface-card: color-mix(in srgb, var(--color-midnight-950) 70%, transparent);
+
+  /* Solid (non-transparent) background colors for midnight theme */
+  --background-solid: var(--color-midnight-900);
+  --surface-solid: var(--color-midnight-900);
+  --surface-elevated-solid: var(--color-midnight-950);
+  --surface-card-solid: var(--color-midnight-950);
+
+  /* Frosted glass effect - deep blue tint for midnight theme */
+  --glass-bg: color-mix(in srgb, var(--color-midnight-900) 60%, transparent);
+  --glass-header: color-mix(in srgb, var(--color-midnight-900) 40%, transparent);
+  --glass-body: color-mix(in srgb, var(--color-midnight-900) 30%, transparent);
+
+  /* Neutral frosted glass for popups/dropdowns */
+  --glass-popup: rgba(0, 0, 0, 0.3);
+
+  --border: color-mix(in srgb, var(--color-midnight-50) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-midnight-50) 25%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--color-midnight-50);
+  --text-secondary: color-mix(in srgb, var(--color-midnight-50) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-midnight-50) 50%, transparent);
+}
+
+/* =============================================================================
+   Sunset Theme Surfaces
+   ============================================================================= */
+[data-theme="sunset"] {
+  /* Surface and border variables - warm cream glass effect */
+  --surface: color-mix(in srgb, var(--color-sunset-50) 50%, transparent);
+  --surface-elevated: color-mix(in srgb, var(--color-sunset-50) 65%, transparent);
+  --surface-card: color-mix(in srgb, var(--color-sunset-50) 75%, transparent);
+
+  /* Solid (non-transparent) background colors for sunset theme - warm cream tones */
+  --background-solid: var(--color-sunset-50);
+  --surface-solid: var(--color-sunset-50);
+  --surface-elevated-solid: var(--color-sunset-50);
+  --surface-card-solid: var(--color-sunset-50);
+
+  /* Frosted glass effect - warm cream tint for sunset theme */
+  --glass-bg: color-mix(in srgb, var(--color-sunset-50) 22%, transparent);
+  --glass-header: color-mix(in srgb, var(--color-sunset-50) 15%, transparent);
+  --glass-body: color-mix(in srgb, var(--color-sunset-50) 10%, transparent);
+
+  /* Neutral frosted glass for popups/dropdowns */
+  --glass-popup: rgba(255, 255, 255, 0.5);
+
+  /* Lighter overlay for sunset theme */
+  --glass-overlay: rgba(0, 0, 0, 0.4);
+
+  --border: color-mix(in srgb, var(--color-sunset-950) 12%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-sunset-950) 20%, transparent);
+
+  /* Text hierarchy */
+  --text-primary: var(--color-sunset-950);
+  --text-secondary: color-mix(in srgb, var(--color-sunset-950) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-sunset-950) 50%, transparent);
 }

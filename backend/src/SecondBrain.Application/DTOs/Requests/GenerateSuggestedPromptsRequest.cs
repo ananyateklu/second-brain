@@ -6,7 +6,7 @@ namespace SecondBrain.Application.DTOs.Requests;
 public class GenerateSuggestedPromptsRequest
 {
     /// <summary>
-    /// The AI provider to use for generating prompts (e.g., "OpenAI", "Anthropic", "Gemini")
+    /// The AI provider to use for generating prompts (e.g., "OpenAI", "Anthropic", "Google")
     /// </summary>
     public string? Provider { get; set; }
 

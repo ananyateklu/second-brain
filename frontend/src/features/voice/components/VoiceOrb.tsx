@@ -86,7 +86,9 @@ function getStateColors(state: VoiceSessionState): StateColors {
     ? document.documentElement.getAttribute('data-theme') || 'dark'
     : 'dark';
 
-  const isBlueTheme = theme === 'blue';
+  const isBlueTheme = typeof document !== 'undefined'
+    ? ['blue', 'midnight'].includes(document.documentElement.getAttribute('data-theme') || '')
+    : false;
   const isLightTheme = theme === 'light';
 
   switch (state) {

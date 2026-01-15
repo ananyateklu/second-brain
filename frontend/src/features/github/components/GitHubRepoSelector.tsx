@@ -162,10 +162,8 @@ export const GitHubRepoSelector = ({
         <div
           className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-2rem)] rounded-xl border shadow-lg z-50 overflow-hidden backdrop-blur-xl transform-gpu animate-in fade-in slide-in-from-top-2 duration-200"
           style={{
-            backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-            borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            backgroundColor: 'var(--glass-popup)',
+            borderColor: 'var(--border)',
             boxShadow: '0 8px 32px -8px color-mix(in srgb, var(--text-primary) 15%, transparent)',
           }}
         >

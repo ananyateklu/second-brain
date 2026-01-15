@@ -39,24 +39,11 @@ export function SessionStatsSection() {
 
   if (statsLoading || activeLoading) {
     return (
-      <div
-        className="animate-pulse rounded-2xl border p-6"
-        style={{
-          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        }}
-      >
-        <div
-          className="h-6 w-48 rounded mb-4"
-          style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-        />
+      <div className="animate-pulse rounded-2xl border p-6 insights-skeleton-card">
+        <div className="h-6 w-48 rounded mb-4 insights-panel" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="h-24 rounded-xl"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
-            />
+            <div key={i} className="h-24 rounded-xl insights-panel" />
           ))}
         </div>
       </div>
@@ -66,13 +53,7 @@ export function SessionStatsSection() {
   if (!stats) return null;
 
   return (
-    <div
-      className="rounded-2xl border p-6"
-      style={{
-        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
-      }}
-    >
+    <div className="rounded-2xl border p-6 insights-card">
       <div className="flex items-center gap-2 mb-4">
         <svg className="h-5 w-5" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -124,7 +105,7 @@ export function SessionStatsSection() {
 
       {/* Active Sessions List */}
       {activeSessions && activeSessions.length > 0 && (
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}>
+        <div className="mt-4 pt-4 border-t insights-section-border">
           <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
             Active Sessions
           </h4>
@@ -132,8 +113,7 @@ export function SessionStatsSection() {
             {activeSessions.slice(0, 3).map((session) => (
               <div
                 key={session.id}
-                className="flex items-center justify-between p-2 rounded-lg"
-                style={{ backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)' }}
+                className="flex items-center justify-between p-2 rounded-lg insights-panel"
               >
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-success)' }} />

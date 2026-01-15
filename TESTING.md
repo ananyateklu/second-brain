@@ -9,13 +9,13 @@ Comprehensive testing documentation covering unit tests, integration tests, E2E 
 cd backend && dotnet test
 
 # Frontend unit tests
-cd frontend && pnpm test
+cd frontend && bun run test
 
 # E2E tests (requires running backend + frontend)
-cd frontend && pnpm e2e
+cd frontend && bun run e2e
 
 # Smoke tests only (fast)
-cd frontend && pnpm e2e:smoke
+cd frontend && bun run e2e:smoke
 ```
 
 ## Test Architecture
@@ -133,16 +133,16 @@ public class NoteServiceTests
 cd frontend
 
 # Watch mode
-pnpm test
+bun run test
 
 # Single run
-pnpm test:run
+bun run test:run
 
 # With coverage
-pnpm test:coverage
+bun run test:coverage
 
 # Specific file
-pnpm test -- notes.test.ts
+bun run test -- notes.test.ts
 ```
 
 ### Test Patterns
@@ -212,22 +212,22 @@ e2e/
 cd frontend
 
 # All E2E tests
-pnpm e2e
+bun run e2e
 
 # With UI (recommended for development)
-pnpm e2e:ui
+bun run e2e:ui
 
 # Headed mode (see browser)
-pnpm e2e:headed
+bun run e2e:headed
 
 # Debug mode
-pnpm e2e:debug
+bun run e2e:debug
 
 # Smoke tests only
-pnpm e2e:smoke
+bun run e2e:smoke
 
 # View report
-pnpm e2e:report
+bun run e2e:report
 ```
 
 ### Prerequisites
@@ -256,10 +256,10 @@ test.describe('Notes', () => {
 
 ```bash
 # Run visual tests
-pnpm e2e:visual
+bun run e2e:visual
 
 # Update baselines
-pnpm e2e:visual:update
+bun run e2e:visual:update
 ```
 
 Screenshots are stored in `e2e/visual/__screenshots__/`.
@@ -373,7 +373,7 @@ Types are generated to `frontend/src/types/api-generated.ts`.
 ### E2E Tests Failing
 - Verify backend and frontend are running
 - Check test user credentials
-- View trace files for debugging: `pnpm exec playwright show-trace`
+- View trace files for debugging: `bun run exec playwright show-trace`
 
 ## Coverage Reports
 

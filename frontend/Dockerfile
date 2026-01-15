@@ -1,15 +1,13 @@
-# Build stage
-FROM node:24-alpine AS build
+# Build stage - using Bun's official image
+FROM oven/bun:1.2-alpine AS build
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lock ./
+COPY bunfig.toml ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy source files
 COPY . .
@@ -17,13 +15,11 @@ COPY . .
 # Accept build arguments for environment variables
 ARG VITE_API_URL=http://your-server-ip:5001
 
-
 # Set environment variables for Vite build
 ENV VITE_API_URL=$VITE_API_URL
 
-
 # Build the app
-RUN pnpm build
+RUN bun run build
 
 # Production stage
 FROM nginx:alpine AS final

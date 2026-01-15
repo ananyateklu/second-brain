@@ -301,11 +301,11 @@ describe('userPreferencesService', () => {
     });
 
     it('should use currentPreferences as base', () => {
-      const current = createMockPreferences({ chatProvider: 'Gemini', chatModel: 'gemini-pro' });
+      const current = createMockPreferences({ chatProvider: 'Google', chatModel: 'gemini-pro' });
 
       const result = userPreferencesService.validatePreferences({}, current);
 
-      expect(result.chatProvider).toBe('Gemini');
+      expect(result.chatProvider).toBe('Google');
       expect(result.chatModel).toBe('gemini-pro');
     });
 

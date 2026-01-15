@@ -40,7 +40,7 @@ public class RagOptions
     /// <summary>
     /// Reranking provider to use for reranking search results.
     /// When set to "Cohere", uses Cohere's native rerank API (faster and more accurate).
-    /// Other providers (OpenAI, Anthropic, Gemini, Grok) use LLM-based reranking.
+    /// Other providers (OpenAI, Anthropic, Google, Xai) use LLM-based reranking.
     /// </summary>
     public string? RerankingProvider { get; set; }
 

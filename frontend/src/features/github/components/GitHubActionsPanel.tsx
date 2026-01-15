@@ -176,15 +176,15 @@ export const GitHubActionsPanel = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Filters - Fixed at top */}
-      <div className="flex-shrink-0 flex items-center gap-4 mb-4">
+      {/* Filters - Fixed at top, responsive layout */}
+      <div className="flex-shrink-0 flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
         <select
           value={statusFilter}
           onChange={(e) => {
             setStatusFilter(e.target.value as WorkflowStatus | '');
             setPage(1);
           }}
-          className="px-3 py-2 rounded-lg text-sm"
+          className="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -205,7 +205,7 @@ export const GitHubActionsPanel = ({
             setBranchFilter(e.target.value);
             setPage(1);
           }}
-          className="flex-1 px-3 py-2 rounded-lg text-sm"
+          className="flex-1 min-w-0 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm"
           style={{
             backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
             borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
@@ -218,13 +218,13 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             void refetch();
           }}
-          className={`p-2 rounded-lg hover:bg-surface-elevated transform-gpu transition-all duration-200 ${isFetching ? 'animate-spin' : ''
+          className={`p-1.5 sm:p-2 rounded-lg hover:bg-surface-elevated transform-gpu transition-all duration-200 shrink-0 ${isFetching ? 'animate-spin' : ''
             }`}
           title="Refresh"
           disabled={isFetching}
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4 sm:w-5 sm:h-5"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -245,7 +245,7 @@ export const GitHubActionsPanel = ({
             e.preventDefault();
             setAutoRefresh(!autoRefresh);
           }}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transform-gpu transition-all duration-200 border backdrop-blur-sm"
+          className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm transform-gpu transition-all duration-200 border backdrop-blur-sm shrink-0"
           style={{
             backgroundColor: autoRefresh
               ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
@@ -271,7 +271,7 @@ export const GitHubActionsPanel = ({
           <span>Auto</span>
           {autoRefresh && inProgressCount > 0 && (
             <span
-              className="px-1.5 py-0.5 text-xs rounded-full font-medium"
+              className="px-1 sm:px-1.5 py-0.5 text-[10px] sm:text-xs rounded-full font-medium hidden sm:inline"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--warning-text) 15%, transparent)',
                 color: 'var(--warning-text)',

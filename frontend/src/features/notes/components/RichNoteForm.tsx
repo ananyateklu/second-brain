@@ -3,7 +3,7 @@ import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors, use
 import { RichTextEditor } from '../../../components/editor/RichTextEditor';
 import { NoteFormData } from '../hooks/use-note-form';
 import { NoteImageAttachment } from './NoteImageAttachment';
-import { useBoundStore } from '../../../store/bound-store';
+import { useTheme } from '../../../hooks/useTheme';
 import type { FileAttachment } from '../../../utils/multimodal-models';
 import type { NoteImage } from '../../../types/notes';
 
@@ -53,8 +53,7 @@ export function RichNoteForm({
   const imageHandlingEnabled = !!(onAddImages && onRemoveNewImage);
 
   // Theme for tag styling
-  const theme = useBoundStore((state) => state.theme);
-  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const { isDarkMode } = useTheme();
 
   // Track tags for external display
   const [displayTags, setDisplayTags] = useState<string[]>(initialTags);
@@ -65,7 +64,7 @@ export function RichNoteForm({
   return (
     <div className="flex flex-col h-full">
       {/* Title - Sticky at top, using Controller for controlled input */}
-      <div className="shrink-0 bg-transparent -mx-2 px-2 pb-2">
+      <div className="shrink-0 bg-transparent -mx-1 md:-mx-2 px-1 md:px-2 pb-2">
         <Controller
           name="title"
           control={control}
@@ -85,7 +84,7 @@ export function RichNoteForm({
               id="title"
               placeholder="Untitled"
               disabled={isSubmitting}
-              className="w-full bg-transparent text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-2 py-2"
+              className="w-full bg-transparent text-2xl md:text-4xl font-bold border-none outline-none placeholder-[var(--text-tertiary)] text-[var(--text-primary)] px-1 md:px-2 py-1.5 md:py-2"
               autoFocus
               autoComplete="off"
               value={field.value || ''}
@@ -99,14 +98,14 @@ export function RichNoteForm({
           )}
         />
         {errors.title && (
-          <p className="text-sm text-[var(--color-error-text)] mt-1 px-2">{errors.title.message}</p>
+          <p className="text-sm text-[var(--color-error-text)] mt-1 px-1 md:px-2">{errors.title.message}</p>
         )}
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto thin-scrollbar pr-2 min-h-0">
+      <div className="flex-1 overflow-y-auto thin-scrollbar pr-1 md:pr-2 min-h-0">
         {/* Rich Content Editor */}
-        <div className="min-h-[200px]">
+        <div className="min-h-[150px] md:min-h-[200px]">
           <Controller
             name="content"
             control={control}
@@ -132,7 +131,7 @@ export function RichNoteForm({
             )}
           />
           {errors.content && (
-            <p className="text-sm text-[var(--color-error-text)] mt-1 px-2">{errors.content.message}</p>
+            <p className="text-sm text-[var(--color-error-text)] mt-1 px-1 md:px-2">{errors.content.message}</p>
           )}
         </div>
 
@@ -142,7 +141,7 @@ export function RichNoteForm({
 
       {/* Tags Display - Fixed above images */}
       {displayTags.length > 0 && (
-        <div className="shrink-0 px-2 py-2 flex flex-wrap gap-1.5">
+        <div className="shrink-0 px-1 md:px-2 py-1.5 md:py-2 flex flex-wrap gap-1 md:gap-1.5">
           <span className="text-xs font-medium self-center mr-1" style={{ color: 'var(--text-tertiary)' }}>
             Tags:
           </span>

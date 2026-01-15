@@ -284,7 +284,7 @@ public class CreateConversationCommandHandlerTests
         // Arrange
         var command = new CreateConversationCommand(
             Title: "Full Config",
-            Provider: "Gemini",
+            Provider: "Google",
             Model: "gemini-pro",
             UserId: "user-456",
             RagEnabled: true,
@@ -318,7 +318,7 @@ public class CreateConversationCommandHandlerTests
         // Assert
         _mockChatService.Verify(s => s.CreateConversationAsync(
             "Full Config",
-            "Gemini",
+            "Google",
             "gemini-pro",
             "user-456",
             true,

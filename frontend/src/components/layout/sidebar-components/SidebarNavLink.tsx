@@ -22,6 +22,7 @@ export const SidebarNavLink = memo(function SidebarNavLink({
       to={to}
       end={end}
       onClick={onClick}
+      data-testid={`nav-${routeKey}`}
       className={({ isActive }) =>
         `group relative flex items-center gap-3 rounded-xl px-3 py-3.5 transition-all duration-300 overflow-hidden ${
           isCollapsed && !isMobileMenuOpen ? 'md:justify-center' : ''

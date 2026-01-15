@@ -1,9 +1,14 @@
-import { formatTokenCount } from '../utils/dashboard-utils';
+import { formatTokenCount, getProviderFromModelName } from '../utils/dashboard-utils';
+import { getProviderColorByName } from '../../../utils/provider-logos';
 
 interface PayloadItem {
   name?: string;
   value?: number;
-  payload?: Record<string, unknown>;
+  payload?: {
+    color?: string;
+    originalName?: string;
+    [key: string]: unknown;
+  };
 }
 
 interface PieChartTooltipProps {
@@ -30,7 +35,12 @@ export function PieChartTooltip({
   const data = payload[0];
   const modelName = data.name || label || '';
   const value = typeof data.value === 'number' ? data.value : 0;
-  
+
+  // Get color from payload or derive from provider
+  const originalName = data.payload?.originalName || modelName;
+  const provider = getProviderFromModelName(originalName);
+  const modelColor = data.payload?.color || getProviderColorByName(provider, 0);
+
   // Get full model data if available
   const modelData = modelDataMap?.get(modelName);
   const conversations = modelData?.conversations ?? (isTokenUsage ? 0 : value);
@@ -46,17 +56,16 @@ export function PieChartTooltip({
 
   return (
     <div
+      className="backdrop-blur-xl"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
+        backgroundColor: 'var(--glass-popup)',
+        border: '1px solid var(--border)',
         borderRadius: '12px',
         padding: '10px 14px',
         minWidth: '180px',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
       }}
     >
-      <p style={{ color: 'var(--text-primary)', margin: '0 0 8px 0', fontWeight: 600, fontSize: '14px' }}>
+      <p style={{ color: modelColor, margin: '0 0 8px 0', fontWeight: 600, fontSize: '14px' }}>
         {modelName}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

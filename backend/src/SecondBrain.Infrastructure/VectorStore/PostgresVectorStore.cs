@@ -408,6 +408,7 @@ public class PostgresVectorStore : IVectorStore
         {
             var embeddings = await _context.NoteEmbeddings
                 .AsNoTracking()
+                .Where(e => e.UserId == userId)
                 .ToListAsync(cancellationToken);
 
             var uniqueNotes = embeddings.Select(e => e.NoteId).Distinct().Count();

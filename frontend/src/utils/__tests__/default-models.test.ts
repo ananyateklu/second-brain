@@ -52,7 +52,7 @@ describe('default-models', () => {
 
     it('should handle Gemini provider', () => {
       const models = ['gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-1.5-flash'];
-      expect(getDefaultModelForProvider('gemini', models)).toBe('gemini-2.5-flash');
+      expect(getDefaultModelForProvider('google', models)).toBe('gemini-2.5-flash');
     });
 
     it('should handle Ollama provider', () => {
@@ -80,7 +80,7 @@ describe('default-models', () => {
 
       expect(defaults.openai).toBeDefined();
       expect(defaults.anthropic).toBeDefined();
-      expect(defaults.gemini).toBeDefined();
+      expect(defaults.google).toBeDefined();
       expect(defaults.ollama).toBeDefined();
       expect(defaults.xai).toBeDefined();
     });
@@ -103,9 +103,9 @@ describe('default-models', () => {
       expect(defaults.anthropic).toBe('claude-haiku-4-5-20251001');
     });
 
-    it('should have expected Gemini default', () => {
+    it('should have expected Google default', () => {
       const defaults = getDefaultModels();
-      expect(defaults.gemini).toBe('gemini-2.5-flash');
+      expect(defaults.google).toBe('gemini-2.5-flash');
     });
 
     it('should have expected Ollama default', () => {

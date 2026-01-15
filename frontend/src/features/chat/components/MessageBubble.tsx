@@ -81,7 +81,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
                 handleDownload();
               }}
               className="p-2 rounded-lg transition-colors hover:bg-white/20"
-              style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}
+              style={{ backgroundColor: 'var(--glass-overlay)', color: 'white' }}
               title="Download image"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,7 +101,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
                 setShowLightbox(true);
               }}
               className="p-2 rounded-lg transition-colors hover:bg-white/20"
-              style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}
+              style={{ backgroundColor: 'var(--glass-overlay)', color: 'white' }}
               title="View full size"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,7 +119,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
           {image.width && image.height && (
             <span
               className="text-xs px-2 py-1 rounded"
-              style={{ backgroundColor: 'rgba(0,0,0,0.5)', color: 'white' }}
+              style={{ backgroundColor: 'var(--glass-overlay)', color: 'white' }}
             >
               {image.width}×{image.height}
             </span>

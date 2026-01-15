@@ -17,9 +17,9 @@ export const InsightsPage = memo(function InsightsPage() {
   const activeInsightsTab = useBoundStore((state) => state.activeInsightsTab);
 
   return (
-    <div className="flex flex-col min-h-0 flex-1">
+    <div className="flex flex-col min-h-0 flex-1 h-full overflow-hidden px-4 md:px-6">
       {/* Tab Content */}
-      <div className="flex-1 overflow-auto thin-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-none">
         {activeInsightsTab === 'overview' && <OverviewTab />}
         {activeInsightsTab === 'rag' && <RagTab />}
         {activeInsightsTab === 'chat' && <ChatTab />}

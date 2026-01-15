@@ -22,7 +22,7 @@ public class EmbeddingProviderFactoryTests
         var providers = new List<IEmbeddingProvider>
         {
             CreateMockProvider("OpenAI", true).Object,
-            CreateMockProvider("Gemini", true).Object
+            CreateMockProvider("Google", true).Object
         };
         SetupSettings("OpenAI");
 
@@ -114,7 +114,7 @@ public class EmbeddingProviderFactoryTests
     {
         // Arrange
         var defaultProvider = CreateMockProvider("OpenAI", true);
-        var otherProvider = CreateMockProvider("Gemini", true);
+        var otherProvider = CreateMockProvider("Google", true);
         var providers = new List<IEmbeddingProvider>
         {
             defaultProvider.Object,
@@ -170,7 +170,7 @@ public class EmbeddingProviderFactoryTests
     {
         // Arrange
         var enabledProvider = CreateMockProvider("OpenAI", true);
-        var disabledProvider = CreateMockProvider("Gemini", false);
+        var disabledProvider = CreateMockProvider("Google", false);
         var anotherEnabled = CreateMockProvider("Ollama", true);
         var providers = new List<IEmbeddingProvider>
         {

@@ -333,7 +333,7 @@ public class ChatRepositoryTests : IAsyncLifetime
         await _sut.CreateAsync(conversation);
 
         var updateConversation = CreateTestConversation("conv-1", "user-123", "Updated Title");
-        updateConversation.Provider = "claude";
+        updateConversation.Provider = "anthropic";
         updateConversation.Model = "claude-3-opus";
         updateConversation.RagEnabled = true;
         updateConversation.AgentEnabled = true;
@@ -346,7 +346,7 @@ public class ChatRepositoryTests : IAsyncLifetime
         // Assert
         updated.Should().NotBeNull();
         updated!.Title.Should().Be("Updated Title");
-        updated.Provider.Should().Be("claude");
+        updated.Provider.Should().Be("anthropic");
         updated.Model.Should().Be("claude-3-opus");
         updated.RagEnabled.Should().BeTrue();
         updated.AgentEnabled.Should().BeTrue();

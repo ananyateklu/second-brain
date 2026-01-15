@@ -4,7 +4,7 @@
  */
 
 import { Fragment } from 'react';
-import { InlineNoteReference } from '../../../chat/components/InlineNoteReference';
+import { InlineNoteReference } from '../../../../shared/components';
 import { splitTextWithNoteReferences } from '../../../../utils/note-reference-utils';
 import type { NoteStatistics, GenericResponse } from './tool-execution-card.types';
 import { StatIcons } from './stat-icons';

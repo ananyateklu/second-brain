@@ -4,7 +4,7 @@ import { MarkdownMessageWithNoteReferences } from '../../../components/MarkdownM
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
-import { TimelineItem } from '../../agents/components/TimelineItem';
+import { TimelineItem } from '../../../shared/components';
 import { GroundingSourcesCard } from '../../agents/components/GroundingSourcesCard';
 import { GrokSearchSourcesCard } from '../../agents/components/GrokSearchSourcesCard';
 import { ClaudeSearchSourcesCard } from '../../agents/components/ClaudeSearchSourcesCard';

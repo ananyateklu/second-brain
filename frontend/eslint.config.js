@@ -5,7 +5,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "coverage", "node_modules", "src-tauri", "e2e", "*.config.ts", "*.config.js"] },
+  { ignores: ["dist", "coverage", "node_modules", "src-tauri", "e2e", "*.config.ts", "*.config.js", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx", "**/*.bench.ts"] },
   // Main configuration block
   {
     extends: [
@@ -105,8 +105,9 @@ export default tseslint.config(
   },
   // Context provider files - export hooks and context by design
   // Also includes barrel files that re-export compound components
+  // And constants files that export configuration objects with JSX
   {
-    files: ["**/*Context.tsx", "**/router.tsx", "**/input/ChatInput.tsx"],
+    files: ["**/*Context.tsx", "**/router.tsx", "**/input/ChatInput.tsx", "**/*.constants.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
     },

@@ -114,7 +114,7 @@ function ChatInputAreaInner() {
             {/* Left side buttons */}
             <div className={styles.mobileButtonLeft}>
               <ChatInput.OverflowMenu />
-              <ChatInput.AttachButton />
+              <ChatInput.AttachPill />
             </div>
 
             {/* Right side buttons */}

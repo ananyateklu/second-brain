@@ -12,7 +12,7 @@ Location: `backend/tests/SecondBrain.Tests.Unit/`
 Location: `frontend/src/features/*/hooks/__tests__/`
 
 - Framework: Vitest, React Testing Library, MSW
-- Run: `cd frontend && pnpm test`
+- Run: `cd frontend && bun test`
 
 ## API Testing with curl
 

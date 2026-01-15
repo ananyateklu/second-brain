@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -20,6 +21,13 @@ export default defineConfig({
           ["babel-plugin-react-compiler", {}],
         ],
       },
+    }),
+    // Bundle analyzer - generates dist/stats.html after build
+    visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
     }),
   ],
   resolve: {
@@ -67,8 +75,11 @@ export default defineConfig({
           }
 
           // Charting library (recharts + d3) - large, only used in Dashboard
+          // Includes recharts dependencies: es-toolkit, clsx, style-to-js/style-to-object
           if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor') ||
-              id.includes('internmap') || id.includes('delaunator') || id.includes('robust-predicates')) {
+              id.includes('internmap') || id.includes('delaunator') || id.includes('robust-predicates') ||
+              id.includes('style-to-js') || id.includes('style-to-object') ||
+              id.includes('es-toolkit') || id.includes('clsx')) {
             return 'vendor-charts';
           }
 
@@ -134,23 +145,13 @@ export default defineConfig({
             return 'vendor-tauri';
           }
 
-          // ES toolkit utilities
-          if (id.includes('es-toolkit')) {
-            return 'vendor-utils';
-          }
-
-          // Other small utilities that can be safely split
-          if (id.includes('clsx') || id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
+          // CSS utility libraries (tailwind-merge, CVA)
+          if (id.includes('tailwind-merge') || id.includes('class-variance-authority')) {
             return 'vendor-utils';
           }
 
           // Cookie/session utilities
           if (id.includes('cookie') || id.includes('set-cookie-parser')) {
-            return 'vendor-utils';
-          }
-
-          // Style utilities
-          if (id.includes('style-to-js') || id.includes('style-to-object')) {
             return 'vendor-utils';
           }
 
