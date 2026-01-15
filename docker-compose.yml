@@ -199,8 +199,6 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
-    networks:
-      - secondbrain-network
     deploy:
       resources:
         limits:
@@ -262,8 +260,6 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - secondbrain-network
     deploy:
       resources:
         limits:
@@ -300,8 +296,6 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - secondbrain-network
     deploy:
       resources:
         limits:
@@ -319,10 +313,3 @@ services:
 volumes:
   postgres_data:
     driver: local
-
-networks:
-  secondbrain-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

@@ -107,7 +107,7 @@ To scrape metrics from the main Second Brain stack:
 
 ```bash
 # Connect observability network to main network
-docker network connect secondbrain-network secondbrain-prometheus
+docker network connect second-brain_default secondbrain-prometheus
 ```
 
 Or update `prometheus.yml` to use the correct target:

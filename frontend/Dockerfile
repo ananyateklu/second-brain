@@ -3,7 +3,7 @@ FROM oven/bun:1.2-alpine AS build
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY bunfig.toml ./
 
 # Install dependencies

@@ -767,7 +767,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleModelChange,
 
     // Conversation Actions
-    handleNewChat,
+    handleNewChat: () => { void handleNewChat(); },
     handleSelectConversation,
     handleDeleteConversation: (id: string) => { void handleDeleteConversation(id); },
     ...(handleBulkDeleteConversations ? {

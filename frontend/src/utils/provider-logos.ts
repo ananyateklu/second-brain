@@ -1,5 +1,5 @@
 import { useBoundStore } from '../store/bound-store';
-import { isDarkTheme, type ThemeId } from '../config/themes';
+import { isDarkTheme } from '../config/themes';
 import anthropicLight from '../assets/anthropic-light.svg';
 import anthropicDark from '../assets/anthropic-dark.svg';
 import googleLogo from '../assets/google.svg';
@@ -106,6 +106,6 @@ export function getProviderLogo(providerName: string, isDarkMode: boolean): stri
  * Use this in React components.
  */
 export function useProviderLogo(providerName: string): string | null {
-  const theme = useBoundStore((state) => state.theme) as ThemeId;
+  const theme = useBoundStore((state) => state.theme);
   return getProviderLogo(providerName, isDarkTheme(theme));
 }

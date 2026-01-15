@@ -50,7 +50,7 @@ export interface UseThemeReturn {
  * ```
  */
 export function useTheme(): UseThemeReturn {
-  const theme = useBoundStore((state) => state.theme) as ThemeId;
+  const theme = useBoundStore((state) => state.theme);
   const config = getThemeConfig(theme);
 
   return {

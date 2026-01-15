@@ -30,7 +30,7 @@ export interface ConversationManagerState {
 export interface ConversationManagerActions {
   setConversationId: (id: string | null) => void;
   setPendingMessage: (message: PendingMessage | null) => void;
-  handleNewChat: () => void;
+  handleNewChat: () => Promise<void>;
   handleSelectConversation: (id: string, onSelect?: (conv: ChatConversation) => void) => void;
   handleDeleteConversation: (id: string) => Promise<void>;
   handleBulkDeleteConversations: (ids: string[]) => Promise<void>;

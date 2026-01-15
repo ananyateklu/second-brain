@@ -29,7 +29,7 @@ scrape_configs:
 
   # Second Brain Backend API
   # Assumes backend exposes /metrics endpoint on port 8080
-  # Connect networks: docker network connect secondbrain-network secondbrain-prometheus
+  # Connect networks: docker network connect second-brain_default secondbrain-prometheus
   - job_name: 'secondbrain-backend'
     metrics_path: '/metrics'
     static_configs:

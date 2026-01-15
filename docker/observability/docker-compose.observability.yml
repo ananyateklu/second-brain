@@ -195,4 +195,4 @@ networks:
   observability-network:
     driver: bridge
     # Connect to main secondbrain network for backend scraping
-    # Use: docker network connect secondbrain-network secondbrain-prometheus
+    # Use: docker network connect second-brain_default secondbrain-prometheus

@@ -629,7 +629,7 @@ Log.Logger = new LoggerConfiguration()
 For Docker deployments, connect the networks:
 
 ```bash
-docker network connect secondbrain-network secondbrain-prometheus
+docker network connect second-brain_default secondbrain-prometheus
 ```
 
 Or update `prometheus.yml` target:
