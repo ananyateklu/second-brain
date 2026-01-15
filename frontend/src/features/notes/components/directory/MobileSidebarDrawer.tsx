@@ -29,7 +29,7 @@ export const MobileSidebarDrawer = memo(({
         <div
           className="fixed inset-0 z-50 transition-opacity duration-300"
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'var(--glass-overlay)',
             backdropFilter: 'blur(4px)',
           }}
           onClick={onClose}
@@ -43,7 +43,7 @@ export const MobileSidebarDrawer = memo(({
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 92%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
           borderRight: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >

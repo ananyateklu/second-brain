@@ -108,8 +108,8 @@ export function GitHubConfigSection({
                     placeholder="ghp_xxxxxxxxxxxx"
                     className="w-full px-3 py-2 pr-10 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-[color:var(--color-brand-600)]"
                     style={{
-                      backgroundColor: 'var(--surface-elevated)',
-                      borderColor: 'var(--border)',
+                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                      borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                       color: 'var(--text-primary)',
                     }}
                   />
@@ -166,8 +166,8 @@ export function GitHubConfigSection({
                   placeholder="Owner (e.g., username)"
                   className="px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-[color:var(--color-brand-600)]"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-primary)',
                   }}
                 />
@@ -178,8 +178,8 @@ export function GitHubConfigSection({
                   placeholder="Repository name"
                   className="px-3 py-2 rounded-xl border text-xs focus:outline-none focus:ring-2 focus:ring-[color:var(--color-brand-600)]"
                   style={{
-                    backgroundColor: 'var(--surface-elevated)',
-                    borderColor: 'var(--border)',
+                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 4%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     color: 'var(--text-primary)',
                   }}
                 />

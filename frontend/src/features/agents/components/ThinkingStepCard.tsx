@@ -225,10 +225,10 @@ export const ThinkingStepCard = memo(function ThinkingStepCard({ step, isStreami
 
         {isExpanded && (
           <div
-            className="mt-2 p-3 text-xs font-mono overflow-x-auto thinking-content"
+            className="mt-2 p-3 text-xs font-mono overflow-x-auto thinking-content backdrop-blur-xl"
             style={{
               borderRadius: 'var(--chat-radius-md)',
-              backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
               color: 'var(--text-secondary)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             }}

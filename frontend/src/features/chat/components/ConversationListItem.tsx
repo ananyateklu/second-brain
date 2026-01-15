@@ -100,7 +100,7 @@ export const ConversationListItem = memo(function ConversationListItem({
       )}
 
       <div className="flex flex-col gap-1 flex-1 min-w-0">
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 relative" style={{ minHeight: '28px' }}>
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
             {showCheckbox && (
               <CircularCheckbox

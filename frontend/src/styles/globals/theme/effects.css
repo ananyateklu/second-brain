@@ -11,8 +11,7 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 
-  /* Glassmorphism variables */
-  --glass-bg: color-mix(in srgb, var(--background) 60%, transparent);
+  /* Glassmorphism variables (--glass-bg defined in surfaces.css) */
   --glass-blur: 12px;
   --glass-border: color-mix(in srgb, var(--foreground) 10%, transparent);
   --glass-border-focus: color-mix(in srgb, var(--color-brand-500) 50%, transparent);
@@ -58,8 +57,7 @@
    Light Theme Effects
    ============================================================================= */
 [data-theme="light"] {
-  /* Glassmorphism for light theme - frosted glass effect */
-  --glass-bg: color-mix(in srgb, #ffffff 22%, transparent);
+  /* Glassmorphism for light theme (--glass-bg in surfaces.css) */
   --glass-border: color-mix(in srgb, var(--color-brand-950) 8%, transparent);
   --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
 
@@ -80,8 +78,7 @@
    Dark Theme Effects
    ============================================================================= */
 [data-theme="dark"] {
-  /* Glassmorphism for dark theme - subtle dark transparency */
-  --glass-bg: color-mix(in srgb, #0a0f0a 50%, transparent);
+  /* Glassmorphism for dark theme (--glass-bg in surfaces.css) */
   --glass-border: color-mix(in srgb, var(--color-brand-50) 8%, transparent);
   --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 
@@ -101,8 +98,7 @@
    Blue Theme Effects
    ============================================================================= */
 [data-theme="blue"] {
-  /* Glassmorphism for blue theme - subtle blue-tinted transparency */
-  --glass-bg: color-mix(in srgb, var(--color-blue-950) 50%, transparent);
+  /* Glassmorphism for blue theme (--glass-bg in surfaces.css) */
   --glass-border: color-mix(in srgb, var(--color-blue-50) 8%, transparent);
   --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 
@@ -123,8 +119,7 @@
    Midnight Theme Effects
    ============================================================================= */
 [data-theme="midnight"] {
-  /* Glassmorphism for midnight theme - deep blue-tinted transparency */
-  --glass-bg: color-mix(in srgb, var(--color-midnight-950) 50%, transparent);
+  /* Glassmorphism for midnight theme (--glass-bg in surfaces.css) */
   --glass-border: color-mix(in srgb, var(--color-midnight-50) 8%, transparent);
   --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
 
@@ -145,8 +140,7 @@
    Sunset Theme Effects
    ============================================================================= */
 [data-theme="sunset"] {
-  /* Glassmorphism for sunset theme - warm cream frosted glass */
-  --glass-bg: color-mix(in srgb, var(--color-sunset-50) 22%, transparent);
+  /* Glassmorphism for sunset theme (--glass-bg in surfaces.css) */
   --glass-border: color-mix(in srgb, var(--color-sunset-950) 8%, transparent);
   --glass-shadow: 0 4px 30px rgba(180, 120, 80, 0.08);
 

@@ -38,8 +38,8 @@ export const FloatingPagination = memo(({
       style={{
         left: '50%',
         bottom: isBulkMode ? '5.75rem' : '1.5rem',
-        backgroundColor: 'var(--glass-popup)',
-        borderColor: 'var(--border)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         opacity: isVisible ? 1 : 0,
         transform: `translate(-50%, ${isVisible ? '0' : '20px'})`,
         pointerEvents: isVisible ? 'auto' : 'none',

@@ -278,10 +278,10 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                     {imagesResult.images.map((img, index) => (
                       <div
                         key={img.id || index}
-                        className="relative overflow-hidden"
+                        className="relative overflow-hidden backdrop-blur-xl"
                         style={{
                           borderRadius: 'var(--chat-radius-sm)',
-                          backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                           border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                         }}
                       >
@@ -313,10 +313,10 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
                   </div>
                 ) : (
                   <div
-                    className="p-3 text-xs"
+                    className="p-3 text-xs backdrop-blur-xl"
                     style={{
                       borderRadius: 'var(--chat-radius-md)',
-                      backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                       color: 'var(--text-tertiary)',
                       border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                     }}
@@ -339,10 +339,10 @@ export const ToolExecutionCard = memo(function ToolExecutionCard({ execution }: 
 
               return (
                 <div
-                  className="p-3 text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap"
+                  className="p-3 text-xs font-mono overflow-x-auto thin-scrollbar whitespace-pre-wrap backdrop-blur-xl"
                   style={{
                     borderRadius: 'var(--chat-radius-md)',
-                    backgroundColor: 'color-mix(in srgb, var(--text-primary) 2%, transparent)',
+                    backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                     color: 'var(--text-secondary)',
                     border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)'
                   }}

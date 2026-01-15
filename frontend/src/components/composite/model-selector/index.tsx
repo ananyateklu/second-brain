@@ -164,7 +164,7 @@ export function CombinedModelSelector({
           <div
             className="fixed inset-0 z-40"
             onClick={handleClose}
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+            style={{ backgroundColor: 'var(--glass-overlay-light)' }}
           />
 
           <div

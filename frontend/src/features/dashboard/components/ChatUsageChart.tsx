@@ -166,12 +166,12 @@ export function ChatUsageChart({
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+                  backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                   border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
                   borderRadius: '12px',
                   color: 'var(--text-primary)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
                 }}
                 labelStyle={{ color: 'var(--text-primary)' }}
                 formatter={(value, name) => [

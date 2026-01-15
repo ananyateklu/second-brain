@@ -499,7 +499,7 @@ export function VoiceAgentInterface() {
         <div
           className="fixed inset-0 z-50 transition-opacity duration-300"
           style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'var(--glass-overlay)',
             backdropFilter: 'blur(4px)',
           }}
           onClick={toggleVoiceSidebar}

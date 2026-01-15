@@ -126,7 +126,7 @@ export const GitHubTabBar = memo(function GitHubTabBar() {
             {isActive && (
               <span
                 className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full"
-                style={{ backgroundColor: 'rgba(255,255,255,0.5)' }}
+                style={{ backgroundColor: 'var(--glass-popup)' }}
               />
             )}
           </button>

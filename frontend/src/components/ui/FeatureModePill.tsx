@@ -179,7 +179,7 @@ export function FeatureModePill({
           <div
             className="fixed inset-0 z-40"
             onClick={() => { setIsPopoverOpen(false); }}
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.15)' }}
+            style={{ backgroundColor: 'var(--glass-overlay-light)' }}
           />
 
           <div

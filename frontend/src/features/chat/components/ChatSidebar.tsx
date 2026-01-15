@@ -50,9 +50,9 @@ export const ChatSidebar = memo(function ChatSidebar({
 
   return (
     <div
-      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem]"
+      className="flex flex-col h-full flex-shrink-0 w-72 md:w-[23rem] backdrop-blur-xl"
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
         borderRightWidth: '1px',
         borderRightStyle: 'solid',
         borderRightColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',

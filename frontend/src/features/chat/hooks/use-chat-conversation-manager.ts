@@ -118,12 +118,28 @@ export function useChatConversationManager(
     }
   }, []);
 
-  // Handle new chat
-  const handleNewChat = useCallback(() => {
+  // Handle new chat - creates conversation in database immediately for persistence
+  const handleNewChat = useCallback(async () => {
     setConversationIdState(null);
     setPendingMessage(null);
-    setIsNewChat(true);
-  }, []);
+    setIsNewChat(true); // Show placeholder immediately for good UX
+
+    try {
+      const newConversation = await createConversationMutation.mutateAsync({
+        provider: selectedProvider,
+        model: selectedModel,
+        title: 'New Chat',
+        ragEnabled: ragEnabled,
+        vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
+      });
+
+      setConversationIdState(newConversation.id);
+      setIsNewChat(false);
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      // Keep placeholder on error - will create on first message as fallback
+    }
+  }, [createConversationMutation, selectedProvider, selectedModel, ragEnabled, selectedVectorStore]);
 
   // Handle conversation selection
   const handleSelectConversation = useCallback((

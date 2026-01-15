@@ -73,17 +73,17 @@ export const FocusItemCard = memo(function FocusItemCard({
   return (
     <div
       className={cn(
-        'group relative rounded-xl border p-4 transition-all duration-200',
+        'group relative rounded-xl border p-4 transition-all duration-200 backdrop-blur-xl',
         'hover:shadow-md hover:-translate-y-0.5',
         isCompleted && 'opacity-60',
         disabled && 'pointer-events-none opacity-50',
         className
       )}
       style={{
-        backgroundColor: 'var(--surface-card)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
         borderColor: item.isCurrentFocus
           ? 'var(--color-primary)'
-          : 'var(--border)',
+          : 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
       }}
     >
       {/* Current focus indicator */}

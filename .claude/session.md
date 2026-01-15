@@ -1,8 +1,101 @@
 # Current Session Context
 
-> **Last Updated**: 2026-01-09
-> **Focus**: Frontend Architecture & Code Quality Improvements
+> **Last Updated**: 2026-01-14
+> **Focus**: Frosted Glass Theme System Overhaul
 > **Reference**: `frontend/FRONTEND_ISSUES.md`
+
+---
+
+## Current Work: Frosted Glass Theme System Overhaul
+
+### Overview
+
+Comprehensive update to apply consistent frosted glass styling across the app. Light and sunset themes were showing solid backgrounds instead of the frosted glass effect present in dark themes.
+
+### Key Changes Completed
+
+#### Phase 1: Fixed Critical Architecture Issue ✅
+
+- **Problem**: `--glass-bg` was defined in BOTH `surfaces.css` and `effects.css` with different values
+- **Fix**: Removed all `--glass-bg` definitions from `effects.css` (6 theme sections)
+- **Result**: `surfaces.css` is now the single source of truth for glass variables
+
+#### Phase 2: Created Component Token Layer ✅
+
+Added to `surfaces.css`:
+
+```css
+--glass-card: var(--glass-bg);
+--glass-sidebar: var(--glass-bg);
+--glass-modal: var(--glass-bg);
+--glass-dropdown: var(--glass-popup);
+--glass-toolbar: color-mix(in srgb, var(--text-primary) 4%, transparent);
+--glass-overlay: rgba(0, 0, 0, 0.5);
+--glass-overlay-light: rgba(0, 0, 0, 0.3);
+```
+
+#### Phase 3: Updated Components with Hardcoded rgba Values ✅
+
+| File | Old Value | New Value |
+|------|-----------|-----------|
+| `Sidebar.tsx` | `rgba(0, 0, 0, 0.5)` | `var(--glass-overlay)` |
+| `FeatureModePill.tsx` | `rgba(0, 0, 0, 0.15)` | `var(--glass-overlay-light)` |
+| `SettingsTabBar.tsx` | `rgba(255,255,255,0.5)` | `var(--glass-popup)` |
+| `TimeRangeSelector.tsx` | `rgba(255,255,255,0.5)` | `var(--glass-popup)` |
+| `GitHubTabBar.tsx` | `rgba(255,255,255,0.5)` | `var(--glass-popup)` |
+| `InsightsTabBar.tsx` | `rgba(255,255,255,0.5)` | `var(--glass-popup)` |
+| `AnalyticsTabBar.tsx` | `rgba(255,255,255,0.5)` | `var(--glass-popup)` |
+| `VoiceAgentInterface.tsx` | `rgba(0, 0, 0, 0.5)` | `var(--glass-overlay)` |
+| `ModelSelector/index.tsx` | `rgba(0, 0, 0, 0.2)` | `var(--glass-overlay-light)` |
+| `ChatPage.tsx` | `rgba(0, 0, 0, 0.5)` | `var(--glass-overlay)` |
+
+#### Phase 4: Added Glass Effect to Components ✅
+
+| Component | Changes |
+|-----------|---------|
+| `RichTextEditorToolbar.tsx` | Changed to subtle 4% tint (no backdrop blur) |
+| `Sidebar.tsx` | Changed from 85-92% to 22% opacity |
+| `NoteCard.tsx` | Added `backdrop-blur-xl` + 22% background |
+| `ChatSidebar.tsx` | Added `backdrop-blur-xl` + 22% background |
+| `FocusItemCard.tsx` | Added frosted glass styling |
+| `RetrievedContextCard.tsx` | Added frosted glass styling |
+| `ToolExecutionCard.tsx` | Added frosted glass styling |
+| `ThinkingStepCard.tsx` | Added frosted glass styling |
+| `CodeExecutionCard.tsx` | Added frosted glass styling |
+| `GrokSearchSourcesCard.tsx` | Added frosted glass styling |
+| `ClaudeSearchSourcesCard.tsx` | Added frosted glass styling |
+| `GroundingSourcesCard.tsx` | Added frosted glass styling |
+| `FloatingPagination.tsx` | Changed to 22% background |
+| `MobilePagination.tsx` | Changed to 22% + added `backdrop-blur-xl` |
+
+### Standard Glass Values
+
+| Theme | `--glass-bg` | `--glass-header` | `--glass-body` |
+|-------|-------------|------------------|----------------|
+| Light/Sunset | 22% | 15% | 10% |
+| Dark | 70% | 50% | 40% |
+| Blue/Midnight | 60% | 40% | 30% |
+
+### Additional Components Fixed (2026-01-14 continued)
+
+| Component | Change |
+|-----------|--------|
+| `MessageBubble.tsx` | `rgba(0,0,0,0.5)` → `var(--glass-overlay)` for image overlays |
+| `MobileSidebarDrawer.tsx` | `rgba(0,0,0,0.5)` → `var(--glass-overlay)`, 92% → 22% |
+| `VoiceInputBar.tsx` | 85%/95% → 22% + blur 24px (mobile, desktop, dropdown) |
+| `DirectoryPageControls.tsx` | 92% → 22% + blur 24px for dropdowns |
+| `BulkActionsBar.tsx` | 92% → 22% + blur 24px |
+| `ImageGenerationPanel.tsx` | 90% → 22% |
+| `NotesChart.tsx` | 90% → 22% + blur 24px for tooltip |
+| `ChatUsageChart.tsx` | 90% → 22% + blur 24px for tooltip |
+| `EmptyState.tsx` | 85% surface-card → 22% background, blur-sm → blur-xl |
+
+### Status: ✅ Core frosted glass implementation complete
+
+All major components updated. Remaining high-opacity values are in:
+
+- CSS modules (`chat-input.module.css`) - would need separate CSS update
+- Selector components (`RagProvidersGrid`, `GitBranchSelector`, etc.) - lower priority
 
 ---
 
@@ -585,10 +678,32 @@ build: {
 
 ## Standard Patterns Reference
 
-### Color-Mix Values (Frosted Glass)
+### Frosted Glass Effect (Updated 2026-01-14)
 
 ```css
-/* Card/Container Backgrounds */
+/* Standard Glass Background - Cards, Sidebars, Modals */
+background-color: color-mix(in srgb, var(--background) 22%, transparent);
+backdrop-filter: blur(24px); /* or Tailwind: backdrop-blur-xl */
+
+/* Toolbar Backgrounds (inside modals) - No blur needed */
+background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
+
+/* Subtle Borders */
+border-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
+
+/* Overlays (Modal backdrops) */
+background-color: var(--glass-overlay); /* rgba(0,0,0,0.5) or 0.4 for light themes */
+
+/* Use CSS Variables Where Possible */
+background-color: var(--glass-bg);      /* Standard glass */
+background-color: var(--glass-popup);   /* Dropdowns, popovers */
+background-color: var(--glass-toolbar); /* Toolbars inside glass containers */
+```
+
+### Color-Mix Values (Non-Glass Components)
+
+```css
+/* Card/Container Backgrounds (non-glass) */
 background-color: color-mix(in srgb, var(--text-primary) 2%, transparent);
 
 /* Button & Input Backgrounds */
@@ -596,10 +711,6 @@ background-color: color-mix(in srgb, var(--text-primary) 4%, transparent);
 
 /* Borders & Dividers */
 border-color: color-mix(in srgb, var(--text-primary) 6%, transparent);
-
-/* Floating Containers (dropdowns, modals) */
-background-color: color-mix(in srgb, var(--background) 90%, transparent);
-backdrop-filter: blur(20px) saturate(180%);
 
 /* Selected/Active States */
 background-color: var(--color-brand-600);

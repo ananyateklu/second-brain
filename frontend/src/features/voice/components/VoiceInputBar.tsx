@@ -175,9 +175,9 @@ export function VoiceInputBar({
             style={{
               padding: '16px',
               borderRadius: '24px',
-              backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
-              backdropFilter: 'blur(20px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+              backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
               boxShadow: 'var(--chat-shadow-md)',
             }}
@@ -258,9 +258,9 @@ export function VoiceInputBar({
                   <div
                     className="absolute bottom-full left-0 mb-2 w-56 max-h-48 overflow-y-auto rounded-xl z-50"
                     style={{
-                      backgroundColor: 'color-mix(in srgb, var(--background) 95%, transparent)',
+                      backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
                       border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
-                      backdropFilter: 'blur(20px) saturate(180%)',
+                      backdropFilter: 'blur(24px) saturate(180%)',
                       boxShadow: 'var(--chat-shadow-lg)',
                     }}
                   >
@@ -449,9 +449,9 @@ export function VoiceInputBar({
           style={{
             padding: 'var(--chat-space-md) var(--chat-space-lg)',
             borderRadius: 'var(--chat-radius-full)',
-            backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
+            backdropFilter: 'blur(24px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(180%)',
             border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)',
             boxShadow: 'var(--chat-shadow-md)',
           }}

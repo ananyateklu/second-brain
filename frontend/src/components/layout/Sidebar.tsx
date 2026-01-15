@@ -495,7 +495,7 @@ export function Sidebar() {
         {isMobileMenuOpen && (
           <div
             className="md:hidden fixed inset-0 z-50 transition-opacity duration-300"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+            style={{ backgroundColor: 'var(--glass-overlay)', backdropFilter: 'blur(4px)' }}
             onClick={closeMobileMenu}
             aria-hidden="true"
           />
@@ -524,7 +524,7 @@ export function Sidebar() {
       {isMobileMenuOpen && (
         <div
           className="md:hidden fixed inset-0 z-50 transition-opacity duration-300"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+          style={{ backgroundColor: 'var(--glass-overlay)', backdropFilter: 'blur(4px)' }}
           onClick={closeMobileMenu}
           aria-hidden="true"
         />

@@ -41,6 +41,15 @@
   /* Neutral frosted glass for popups/dropdowns - passes through background */
   --glass-popup: rgba(128, 128, 128, 0.15);
 
+  /* Component-level glass tokens (reference base glass variables for maintainability) */
+  --glass-card: var(--glass-bg);
+  --glass-sidebar: var(--glass-bg);
+  --glass-modal: var(--glass-bg);
+  --glass-dropdown: var(--glass-popup);
+  --glass-toolbar: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  --glass-overlay: rgba(0, 0, 0, 0.5);
+  --glass-overlay-light: rgba(0, 0, 0, 0.3);
+
   /* Border variables */
   --border: color-mix(in srgb, var(--foreground) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
@@ -73,6 +82,9 @@
 
   /* Neutral frosted glass for popups/dropdowns */
   --glass-popup: rgba(255, 255, 255, 0.5);
+
+  /* Lighter overlay for light themes */
+  --glass-overlay: rgba(0, 0, 0, 0.4);
 
   --border: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-950) 25%, transparent);
@@ -209,6 +221,9 @@
 
   /* Neutral frosted glass for popups/dropdowns */
   --glass-popup: rgba(255, 255, 255, 0.5);
+
+  /* Lighter overlay for sunset theme */
+  --glass-overlay: rgba(0, 0, 0, 0.4);
 
   --border: color-mix(in srgb, var(--color-sunset-950) 12%, transparent);
   --border-strong: color-mix(in srgb, var(--color-sunset-950) 20%, transparent);

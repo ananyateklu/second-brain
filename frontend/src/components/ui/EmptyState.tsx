@@ -10,11 +10,11 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div
-      className="rounded-2xl backdrop-blur-sm border p-12 text-center"
+      className="rounded-2xl backdrop-blur-xl border p-12 text-center"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--surface-card) 85%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
         borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
-        boxShadow: '0 8px 32px -8px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 8px 32px -8px var(--glass-overlay-light)',
         animation: 'emptyStateFadeIn 0.4s ease-out',
       }}
     >

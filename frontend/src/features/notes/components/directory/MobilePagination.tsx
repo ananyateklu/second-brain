@@ -26,9 +26,9 @@ export const MobilePagination = memo(({
   return (
     <div className="md:hidden mt-6 pb-4 flex justify-center">
       <div
-        className="px-4 py-2.5 rounded-2xl border"
+        className="px-4 py-2.5 rounded-2xl border backdrop-blur-xl"
         style={{
-          backgroundColor: 'color-mix(in srgb, var(--background) 90%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--background) 22%, transparent)',
           borderColor: 'color-mix(in srgb, var(--text-primary) 6%, transparent)',
         }}
       >
